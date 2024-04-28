@@ -1,7 +1,38 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
+// TODO : more detailing regardings event parameters needed
 interface IPool {
+    error NativeTransferFailed();
+
+    error ERC20TransferFailed();
+
+    error NotEnoughLiquidity();
+
+    /// @notice Emitted when a stability pool issues a new stability pool token (`pDS`)
+    event Issued(uint256 indexed id, address indexed issuer, uint256 expiry);
+
+    /// @notice Emitted when the pool base asset reaches the target threshold, indicating that no further deposit should be made into the AMM until the threshold is breached
+    event TargetThresholdReached();
+
+    /// @notice Emitted when the pool base asset reaches the liquidation threshold, indicating that the pool needs to withdraw liquidity from the AMM
+    event LiquidationThresholdReached();
+
+    /// @notice Emitted after every withdrawal request, indicating the user's address, `pdsId`, and withdrawal ID
+    event WithdrawRequested(address indexed userAddress, uint256 indexed pdsId, uint256 withdrawalId);
+
+    /// @notice Emitted after every reset of the withdrawal queue
+    event WithdrawQueueResetted(uint256 time);
+
+    /// @notice Emitted after every processed withdrawal, indicating the user's address, withdrawal ID, and time
+    event WithdrawalProcessed(address indexed userAddress, uint256 indexed withdrawalId, uint256 time);
+
+    /// @notice Emitted after a depeg swap-based redemption, indicating that a swap has been redeemed successfully
+    event SwapRedeemed();
+
+    /// @notice Emitted after an early withdrawal of pool shares, indicating that an early withdrawal has been completed successfully
+    event EarlyWithdrawal(uint256 time, address indexed userAddress);
+
     /// return current rate with 1e18 = 1% representation (i.e 18 decimals)
     /// base asset = bA
     /// total shares = tS
