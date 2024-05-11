@@ -2,12 +2,12 @@
 pragma solidity ^0.8.20;
 import "./../DepegSwap.sol";
 import "./../CoverToken.sol";
-import "./PSMKey.sol";
-import "./DepegSwapInfo.sol";
+import "./PSMKeyLib.sol";
+import "./DepegSwapLib.sol";
 
 library PSM {
     using PsmKeyLibrary for PsmKey;
-    using DepegSwapLibrary for DepegSwapInfo;
+    using DepegSwapLibrary for DepegSwap;
 
     event Deposited(address indexed user, uint256 amount, uint256 indexed dsId);
     event Issued(
@@ -31,7 +31,7 @@ library PSM {
         uint256 liquidity;
         WrappedAsset wa;
         PsmKey info;
-        mapping(uint256 => DepegSwapInfo) ds;
+        mapping(uint256 => DepegSwap) ds;
     }
 
     function _isInitialized(
@@ -60,7 +60,7 @@ library PSM {
         address ct
     ) internal returns (uint256 idx) {
         idx = self.depegCount++;
-        self.ds[idx] = DepegSwapInfo({
+        self.ds[idx] = DepegSwap({
             depegSwap: ds,
             coverToken: ct,
             expiryTimestamp: expiry
@@ -69,14 +69,16 @@ library PSM {
 
     function deposit(
         State storage self,
+        address depositor,
         uint256 amount,
         uint256 dsId
     ) external {
-        DepegSwapInfo storage ds = self.ds[dsId];
-        
+        DepegSwap storage ds = self.ds[dsId];
+
         if (ds.isExpired()) {
             revert Expired();
         }
 
+        ds.issue(depositor, amount);
     }
 }
