@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
-import "./../DepegSwap.sol";
-import "./../CoverToken.sol";
+import "./../Asset.sol";
 
 struct DepegSwap {
     address depegSwap;
@@ -24,18 +23,22 @@ library DepegSwapLibrary {
     ) internal returns (DepegSwap memory) {
         return
             DepegSwap({
-                depegSwap: address(new DepegSwapContract(pairName)),
-                coverToken: address(new CoverTokenContract(pairName)),
+                depegSwap: address(new Asset("DS", pairName)),
+                coverToken: address(new Asset("CT", pairName)),
                 expiryTimestamp: expiry
             });
     }
 
-    function totalSupply(DepegSwap memory self) internal view returns (uint256) {
-        return DepegSwapContract(self.depegSwap).totalSupply();
+    function dsSupply(DepegSwap memory self) internal view returns (uint256) {
+        return Asset(self.depegSwap).totalSupply();
+    }
+
+    function ctSupply(DepegSwap memory self) internal view returns (uint256) {
+        return Asset(self.coverToken).totalSupply();
     }
 
     function issue(DepegSwap memory self, address to, uint256 amount) internal {
-        DepegSwapContract(self.depegSwap).mint(to, amount);
-        CoverTokenContract(self.coverToken).mint(to, amount);
+        Asset(self.depegSwap).mint(to, amount);
+        Asset(self.coverToken).mint(to, amount);
     }
 }

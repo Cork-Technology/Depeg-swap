@@ -7,15 +7,16 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/token/ERC20/extensions/ERC20Permit.sol";
 import "@openzeppelin/contracts/token/ERC20/extensions/ERC20FlashMint.sol";
 
-contract DepegSwapContract is ERC20, ERC20Permit, ERC20FlashMint, Ownable {
+contract Asset is ERC20, ERC20Permit, ERC20FlashMint, Ownable {
     constructor(
+        string memory prefix,
         string memory pairName
     )
         ERC20(
-            string(abi.encodePacked("DS-", pairName)),
-            string(abi.encodePacked("DS-", pairName))
+            string(abi.encodePacked(prefix, "-", pairName)),
+            string(abi.encodePacked(prefix, "-", pairName))
         )
-        ERC20Permit(string(abi.encodePacked("DS-", pairName)))
+        ERC20Permit(string(abi.encodePacked(prefix, "-", pairName)))
         Ownable(msg.sender)
     {}
 
