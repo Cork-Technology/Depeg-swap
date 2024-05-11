@@ -2,8 +2,11 @@
 pragma solidity ^0.8.20;
 import "./../DepegSwap.sol";
 import "./../CoverToken.sol";
+import "./PSMKey.sol";
 
 library PSM {
+    using PsmKeyLibrary for PsmKey;
+
     event Deposited(address indexed user, uint256 amount, uint256 indexed dsId);
     event Issued(
         address indexed dsAddress,
@@ -11,13 +14,10 @@ library PSM {
         uint256 expiry
     );
 
-    struct Info {
-        address peggedAsset;
-        address redemptionAsset;
-        uint256 fee;
-    }
+    /// @notice depegSwap is expired
+    error Expired();
 
-    struct DepegSwapInfo {
+    struct DepegSwap {
         address depegSwap;
         address coverToken;
         uint256 expiryTimestamp;
@@ -28,45 +28,44 @@ library PSM {
     }
 
     struct State {
-        Info info;
-        mapping(uint256 => DepegSwapInfo) ds;
         uint256 dsCount;
         uint256 lockedWa;
-        uint256 freeWa;
+        uint256 depegCount;
+        uint256 fee;
+        WrappedAsset wa;
+        PsmKey info;
+        mapping(uint256 => DepegSwap) ds;
+    }
+
+    function _isInitialized(
+        State storage self
+    ) internal view returns (bool status) {
+        status = self.info.isInitialized();
     }
 
     function initialize(
         State storage self,
-        address peggedAddress,
-        address redemptionAddress,
-        uint256 fee
-    ) internal {
-        self.info = Info({
-            peggedAsset: peggedAddress,
-            redemptionAsset: redemptionAddress,
-            fee: fee
-        });
+        PsmKey memory key,
+        address wrappedAsset,
+        uint256 initiaFee
+    ) internal returns (PsmId id) {
+        self.info = key;
+        self.fee = initiaFee;
+        self.wa = WrappedAsset({asset: wrappedAsset});
+
+        id = key.toId();
     }
 
     function issue(
         State storage self,
         uint256 expiry,
-        string memory name,
-        string memory symbol
-    ) internal {
-        DepegSwap ds = new DepegSwap(
-            string(abi.encodePacked("DS", name)),
-            string(abi.encodePacked("DS", symbol))
-        );
-
-        CoverToken ct = new CoverToken(
-            string(abi.encodePacked("CT", name)),
-            string(abi.encodePacked("CT", symbol))
-        );
-
-        self.info = DepegSwapInfo({
-            depegSwap: address(ds),
-            coverToken: address(ct),
+        address ds,
+        address ct
+    ) internal returns (uint256 idx) {
+        idx = self.depegCount++;
+        self.ds[idx] = DepegSwap({
+            depegSwap: ds,
+            coverToken: ct,
             expiryTimestamp: expiry
         });
     }
