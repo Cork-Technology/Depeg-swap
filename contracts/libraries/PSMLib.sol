@@ -3,9 +3,11 @@ pragma solidity ^0.8.20;
 import "./../DepegSwap.sol";
 import "./../CoverToken.sol";
 import "./PSMKey.sol";
+import "./DepegSwapInfo.sol";
 
 library PSM {
     using PsmKeyLibrary for PsmKey;
+    using DepegSwapLibrary for DepegSwapInfo;
 
     event Deposited(address indexed user, uint256 amount, uint256 indexed dsId);
     event Issued(
@@ -16,12 +18,6 @@ library PSM {
 
     /// @notice depegSwap is expired
     error Expired();
-
-    struct DepegSwap {
-        address depegSwap;
-        address coverToken;
-        uint256 expiryTimestamp;
-    }
 
     struct WrappedAsset {
         address asset;
@@ -34,7 +30,7 @@ library PSM {
         uint256 fee;
         WrappedAsset wa;
         PsmKey info;
-        mapping(uint256 => DepegSwap) ds;
+        mapping(uint256 => DepegSwapInfo) ds;
     }
 
     function _isInitialized(
@@ -63,12 +59,23 @@ library PSM {
         address ct
     ) internal returns (uint256 idx) {
         idx = self.depegCount++;
-        self.ds[idx] = DepegSwap({
+        self.ds[idx] = DepegSwapInfo({
             depegSwap: ds,
             coverToken: ct,
             expiryTimestamp: expiry
         });
     }
 
-    function deposit(uint256 amount, uint256 dsId) external {}
+    function deposit(
+        State storage self,
+        uint256 amount,
+        uint256 dsId
+    ) external {
+        DepegSwapInfo storage ds = self.ds[dsId];
+        
+        if (ds.isExpired()) {
+            revert Expired();
+        }
+
+    }
 }
