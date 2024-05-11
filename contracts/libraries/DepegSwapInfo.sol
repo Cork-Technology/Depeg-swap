@@ -15,4 +15,6 @@ library DepegSwapLibrary {
     function isInitialized(DepegSwapInfo memory self) internal pure returns (bool) {
         return self.depegSwap != address(0) && self.coverToken != address(0);
     }
+
+    
 }

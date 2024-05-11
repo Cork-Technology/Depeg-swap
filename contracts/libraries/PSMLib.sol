@@ -28,6 +28,7 @@ library PSM {
         uint256 lockedWa;
         uint256 depegCount;
         uint256 fee;
+        uint256 liquidity;
         WrappedAsset wa;
         PsmKey info;
         mapping(uint256 => DepegSwapInfo) ds;
