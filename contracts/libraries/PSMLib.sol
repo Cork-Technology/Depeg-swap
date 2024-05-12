@@ -1,9 +1,10 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.20;
-import "./../DepegSwap.sol";
-import "./../CoverToken.sol";
+
+import "./../Asset.sol";
 import "./PSMKeyLib.sol";
 import "./DepegSwapLib.sol";
+import "./WrappedAssetLib.sol";
 
 library PSM {
     using PsmKeyLibrary for PsmKey;
@@ -19,13 +20,9 @@ library PSM {
     /// @notice depegSwap is expired
     error Expired();
 
-    struct WrappedAsset {
-        address asset;
-    }
-
+    
     struct State {
         uint256 dsCount;
-        uint256 lockedWa;
         uint256 depegCount;
         uint256 fee;
         uint256 liquidity;
@@ -43,12 +40,12 @@ library PSM {
     function initialize(
         State storage self,
         PsmKey memory key,
-        address wrappedAsset,
+        string memory pairname,
         uint256 initiaFee
     ) internal returns (PsmId id) {
         self.info = key;
         self.fee = initiaFee;
-        self.wa = WrappedAsset({asset: wrappedAsset});
+        self.wa = WrappedAssetLibrary.initialize(pairname);
 
         id = key.toId();
     }
