@@ -9,6 +9,7 @@ import "./WrappedAssetLib.sol";
 library PSM {
     using PsmKeyLibrary for PsmKey;
     using DepegSwapLibrary for DepegSwap;
+    using WrappedAssetLibrary for WrappedAsset;
 
     event Deposited(address indexed user, uint256 amount, uint256 indexed dsId);
     event Issued(
@@ -20,7 +21,12 @@ library PSM {
     /// @notice depegSwap is expired
     error Expired();
 
-    
+    function _onlyNotExpired(DepegSwap storage ds) internal view {
+        if (ds.isExpired()) {
+            revert Expired();
+        }
+    }
+
     struct State {
         uint256 dsCount;
         uint256 depegCount;
@@ -72,10 +78,24 @@ library PSM {
     ) external {
         DepegSwap storage ds = self.ds[dsId];
 
-        if (ds.isExpired()) {
-            revert Expired();
-        }
+        _onlyNotExpired(ds);
 
+        self.wa.issueAndLock(amount);
         ds.issue(depositor, amount);
+    }
+
+    /// @notice preview deposit
+    /// @dev since we mint 1:1, we return the same amount, 
+    /// since rate only effective when redeeming with CT
+    function preview(
+        State storage self,
+        uint256 amount,
+        uint256 dsId
+    ) external view returns (uint256 ctReceived, uint256 dsReceived) {
+        DepegSwap storage ds = self.ds[dsId];
+
+        _onlyNotExpired(ds);
+        ctReceived = amount;
+        dsReceived = amount;
     }
 }
