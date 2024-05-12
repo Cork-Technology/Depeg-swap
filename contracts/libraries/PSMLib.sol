@@ -5,8 +5,10 @@ import "./../Asset.sol";
 import "./PSMKeyLib.sol";
 import "./DepegSwapLib.sol";
 import "./WrappedAssetLib.sol";
+import "./SignatureHelperLib.sol";
 
 library PSM {
+    using MinimalSignatureHelper for Signature;
     using PsmKeyLibrary for PsmKey;
     using DepegSwapLibrary for DepegSwap;
     using WrappedAssetLibrary for WrappedAsset;
@@ -21,10 +23,24 @@ library PSM {
     /// @notice depegSwap is expired
     error Expired();
 
+    /// @notice depegSwap is not initialized
+    error Uinitialized();
+
     function _onlyNotExpired(DepegSwap storage ds) internal view {
         if (ds.isExpired()) {
             revert Expired();
         }
+    }
+
+    function _onlyInitialized(DepegSwap storage ds) internal view {
+        if (!ds.isInitialized()) {
+            revert Uinitialized();
+        }
+    }
+
+    function _safeBeforeInteract(DepegSwap storage ds) internal view {
+        _onlyInitialized(ds);
+        _onlyNotExpired(ds);
     }
 
     struct State {
@@ -75,27 +91,46 @@ library PSM {
         address depositor,
         uint256 amount,
         uint256 dsId
-    ) external {
+    ) internal {
         DepegSwap storage ds = self.ds[dsId];
 
-        _onlyNotExpired(ds);
+        _safeBeforeInteract(ds);
 
         self.wa.issueAndLock(amount);
         ds.issue(depositor, amount);
     }
 
     /// @notice preview deposit
-    /// @dev since we mint 1:1, we return the same amount, 
+    /// @dev since we mint 1:1, we return the same amount,
     /// since rate only effective when redeeming with CT
-    function preview(
+    function previewDeposit(
         State storage self,
         uint256 amount,
         uint256 dsId
-    ) external view returns (uint256 ctReceived, uint256 dsReceived) {
+    ) internal view returns (uint256 ctReceived, uint256 dsReceived) {
         DepegSwap storage ds = self.ds[dsId];
 
-        _onlyNotExpired(ds);
+        _safeBeforeInteract(ds);
         ctReceived = amount;
         dsReceived = amount;
+    }
+
+    /// @notice redeem an RA with DS + PA
+    /// @dev since we currently have no way of knowing if the PA contract implements permit,
+    /// we depends on the frontend to make approval to the PA contract before calling this function.
+    /// for the DS, we use the permit function to approve the transfer.
+    function redeemWithDs(
+        State storage self,
+        address owner,
+        uint256 amount,
+        uint256 dsId,
+        bytes memory rawDsPermitSig,
+        uint256 deadline
+    ) internal {
+        DepegSwap storage ds = self.ds[dsId];
+        _safeBeforeInteract(ds);
+
+        ds.permit(rawDsPermitSig, owner, address(this), amount, deadline);
+        ds.asAsset().transferFrom(owner, address(this), amount);
     }
 }
