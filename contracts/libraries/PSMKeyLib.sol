@@ -3,6 +3,7 @@ pragma solidity ^0.8.20;
 
 import "./PeggedAssetLib.sol";
 import "./RedemptionAssetLib.sol";
+import "./../interfaces/IERC20Metadata.sol";
 
 type PsmId is bytes32;
 
@@ -20,6 +21,17 @@ library PsmKeyLibrary {
         assembly {
             id := k
         }
+    }
+
+    function toPairname(
+        PsmKey memory key
+    ) internal view returns (string memory pairname) {
+        (string memory _pa, string memory _ra) = (
+            IERC20Metadata(key._peggedAsset).symbol(),
+            IERC20Metadata(key._redemptionAsset).symbol()
+        );
+
+        pairname = string(abi.encodePacked(_pa, "-", _ra));
     }
 
     function initalize(

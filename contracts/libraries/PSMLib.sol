@@ -9,6 +9,14 @@ import "./SignatureHelperLib.sol";
 import "./PeggedAssetLib.sol";
 import "./RedemptionAssetLib.sol";
 
+struct State {
+    uint256 dsCount;
+    uint256 totalCtIssued;
+    WrappedAsset wa;
+    PsmKey info;
+    mapping(uint256 => DepegSwap) ds;
+}
+
 // TODO : support native token
 library PSMLibrary {
     using MinimalSignatureHelper for Signature;
@@ -62,15 +70,7 @@ library PSMLibrary {
         _onlyExpired(ds);
     }
 
-    struct State {
-        uint256 dsCount;
-        uint256 totalCtIssued;
-        WrappedAsset wa;
-        PsmKey info;
-        mapping(uint256 => DepegSwap) ds;
-    }
-
-    function _isInitialized(
+    function isInitialized(
         State storage self
     ) internal view returns (bool status) {
         status = self.info.isInitialized();
@@ -85,12 +85,17 @@ library PSMLibrary {
         self.wa = WrappedAssetLibrary.initialize(pairname);
     }
 
+    /// @notice issue a new pair of DS, will fail if the previous DS isn't yet expired
     function issueNewPair(
         State storage self,
-        uint256 expiry,
-        string memory pairName
+        uint256 expiry
     ) internal returns (uint256 idx) {
+        DepegSwap storage ds = self.ds[self.dsCount];
+
+        _safeAfterExpired(ds);
+
         idx = self.dsCount++;
+        string memory pairName = self.info.toPairname();
         self.ds[idx] = DepegSwapLibrary.initialize(pairName, expiry);
     }
 
@@ -292,11 +297,11 @@ library PSMLibrary {
         uint256 dsId,
         bytes memory rawCtPermitSig,
         uint256 deadline
-    ) internal {
+    ) internal returns (uint256 accruedPa, uint256 accruedRa) {
         DepegSwap storage ds = self.ds[dsId];
         _safeAfterExpired(ds);
 
-        (uint256 accruedPa, uint256 accruedRa) = _redeemCt(ds, self, amount);
+        (accruedPa, accruedRa) = _redeemCt(ds, self, amount);
         _afterCtRedeem(
             self,
             ds,
