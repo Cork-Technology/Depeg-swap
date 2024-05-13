@@ -160,7 +160,7 @@ library PSM {
     /// @notice redeem an RA with DS + PA
     /// @dev since we currently have no way of knowing if the PA contract implements permit,
     /// we depends on the frontend to make approval to the PA contract before calling this function.
-    /// for the DS, we use the permit function to approve the transfer. the parameter passed here must be the same
+    /// for the DS, we use the permit function to approve the transfer. the parameter passed here MUST be the same
     /// as the one used to generate the ds permit signature
     function redeemWithDs(
         State storage self,
@@ -176,7 +176,7 @@ library PSM {
         _afterRedeemWithDs(self, ds, rawDsPermitSig, owner, amount, deadline);
     }
 
-    /// @notice simulate a pds redeem.
+    /// @notice simulate a ds redeem.
     /// @return assets how much RA the user would receive
     /// @dev since the rate is constant at 1:1, we return the same amount,
     function previewRedeemWithDs(
@@ -285,6 +285,13 @@ library PSM {
         self.info.redemptionAsset().asErc20().transfer(owner, accruedRa);
     }
 
+
+
+    /// @notice redeem accrued RA + PA with CT on expiry
+    /// @dev since we currently have no way of knowing if the PA contract implements permit, 
+    /// we depends on the frontend to make approval to the PA contract before calling this function.
+    /// for the CT, we use the permit function to approve the transfer. 
+    /// the parameter passed here MUST be the same as the one used to generate the ct permit signature.
     function redeemWithCt(
         State storage self,
         address owner,
@@ -307,5 +314,19 @@ library PSM {
             rawCtPermitSig,
             deadline
         );
+    }
+
+    /// @notice simulate a ct redeem. will fail if not expired.
+    /// @return accruedPa the amount of PA the user would receive
+    /// @return accruedRa the amount of RA the user would receive
+    function previewRedeemWithCt(
+        State storage self,
+        uint256 dsId,
+        uint256 amount
+    ) internal returns (uint256 accruedPa, uint256 accruedRa) {
+        DepegSwap storage ds = self.ds[dsId];
+        _safeAfterExpired(ds);
+
+        (accruedPa, accruedRa) = _redeemCt(ds, self, amount);
     }
 }
