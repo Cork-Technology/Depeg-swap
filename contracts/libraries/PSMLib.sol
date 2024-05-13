@@ -10,7 +10,7 @@ import "./PeggedAssetLib.sol";
 import "./RedemptionAssetLib.sol";
 
 // TODO : support native token
-library PSM {
+library PSMLibrary {
     using MinimalSignatureHelper for Signature;
     using PsmKeyLibrary for PsmKey;
     using DepegSwapLibrary for DepegSwap;
@@ -64,7 +64,6 @@ library PSM {
 
     struct State {
         uint256 dsCount;
-        uint256 fee;
         uint256 totalCtIssued;
         WrappedAsset wa;
         PsmKey info;
@@ -80,14 +79,10 @@ library PSM {
     function initialize(
         State storage self,
         PsmKey memory key,
-        string memory pairname,
-        uint256 initiaFee
-    ) internal returns (PsmId id) {
+        string memory pairname
+    ) internal {
         self.info = key;
-        self.fee = initiaFee;
         self.wa = WrappedAssetLibrary.initialize(pairname);
-
-        id = key.toId();
     }
 
     function issueNewPair(
@@ -285,12 +280,10 @@ library PSM {
         self.info.redemptionAsset().asErc20().transfer(owner, accruedRa);
     }
 
-
-
     /// @notice redeem accrued RA + PA with CT on expiry
-    /// @dev since we currently have no way of knowing if the PA contract implements permit, 
+    /// @dev since we currently have no way of knowing if the PA contract implements permit,
     /// we depends on the frontend to make approval to the PA contract before calling this function.
-    /// for the CT, we use the permit function to approve the transfer. 
+    /// for the CT, we use the permit function to approve the transfer.
     /// the parameter passed here MUST be the same as the one used to generate the ct permit signature.
     function redeemWithCt(
         State storage self,
