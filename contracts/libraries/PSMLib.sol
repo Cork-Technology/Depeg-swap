@@ -75,15 +75,10 @@ library PSM {
     function issue(
         State storage self,
         uint256 expiry,
-        address ds,
-        address ct
+        string memory pairName
     ) internal returns (uint256 idx) {
         idx = self.depegCount++;
-        self.ds[idx] = DepegSwap({
-            depegSwap: ds,
-            coverToken: ct,
-            expiryTimestamp: expiry
-        });
+        self.ds[idx] = DepegSwapLibrary.initialize(pairName, expiry);
     }
 
     function deposit(
@@ -115,6 +110,21 @@ library PSM {
         dsReceived = amount;
     }
 
+    function _redeem(DepegSwap storage ds, uint256 amount) internal {
+        ds.redeemed += amount;
+    }
+
+    function _afterRedeemWithDs(
+        DepegSwap storage ds,
+        bytes memory rawDsPermitSig,
+        address owner,
+        uint256 amount,
+        uint256 deadline
+    ) internal {
+        ds.permit(rawDsPermitSig, owner, address(this), amount, deadline);
+        ds.asAsset().transferFrom(owner, address(this), amount);
+    }
+
     /// @notice redeem an RA with DS + PA
     /// @dev since we currently have no way of knowing if the PA contract implements permit,
     /// we depends on the frontend to make approval to the PA contract before calling this function.
@@ -129,8 +139,20 @@ library PSM {
     ) internal {
         DepegSwap storage ds = self.ds[dsId];
         _safeBeforeInteract(ds);
+        _redeem(ds, amount);
+        _afterRedeemWithDs(ds, rawDsPermitSig, owner, amount, deadline);
+    }
 
-        ds.permit(rawDsPermitSig, owner, address(this), amount, deadline);
-        ds.asAsset().transferFrom(owner, address(this), amount);
+    /// @notice simulate a pds redeem.
+    /// @return assets how much RA the user would receive
+    /// @dev since the rate is constant at 1:1, we return the same amount,
+    function previewRedeemWithDs(
+        State storage self,
+        uint256 dsId,
+        uint256 amount
+    ) internal view returns (uint256 assets) {
+        DepegSwap storage ds = self.ds[dsId];
+        _safeBeforeInteract(ds);
+        assets = amount;
     }
 }

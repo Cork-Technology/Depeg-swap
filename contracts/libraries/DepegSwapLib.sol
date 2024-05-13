@@ -7,6 +7,7 @@ struct DepegSwap {
     address depegSwap;
     address coverToken;
     uint256 expiryTimestamp;
+    uint256 redeemed;
 }
 
 library DepegSwapLibrary {
@@ -28,7 +29,8 @@ library DepegSwapLibrary {
             DepegSwap({
                 depegSwap: address(new Asset("DS", pairName)),
                 coverToken: address(new Asset("CT", pairName)),
-                expiryTimestamp: expiry
+                expiryTimestamp: expiry,
+                redeemed: 0
             });
     }
 
