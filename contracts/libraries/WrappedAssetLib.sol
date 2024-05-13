@@ -16,8 +16,12 @@ library WrappedAssetLibrary {
             WrappedAsset({wa: address(new Asset("WA", pairname)), locked: 0});
     }
 
+    function circulatingSupply(WrappedAsset memory self) internal view returns (uint256) {
+        return Asset(self.wa).totalSupply() - self.locked;
+    }
+
     function issueAndLock(WrappedAsset memory self, uint256 amount) internal {
-        Asset(self.wa).mint(address(this), amount);
         self.locked += amount;
+        Asset(self.wa).mint(address(this), amount);
     }
 }

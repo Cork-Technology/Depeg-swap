@@ -6,12 +6,16 @@ import "./PSMKeyLib.sol";
 import "./DepegSwapLib.sol";
 import "./WrappedAssetLib.sol";
 import "./SignatureHelperLib.sol";
+import "./PeggedAssetLib.sol";
+import "./RedemptionAssetLib.sol";
 
 library PSM {
     using MinimalSignatureHelper for Signature;
     using PsmKeyLibrary for PsmKey;
     using DepegSwapLibrary for DepegSwap;
     using WrappedAssetLibrary for WrappedAsset;
+    using PeggedAssetLibrary for PeggedAsset;
+    using RedemptionAssetLibrary for RedemptionAsset;
 
     event Deposited(address indexed user, uint256 amount, uint256 indexed dsId);
     event Issued(
@@ -26,9 +30,18 @@ library PSM {
     /// @notice depegSwap is not initialized
     error Uinitialized();
 
+    /// @notice depegSwap is not expired. e.g trying to redeem before expiry
+    error NotExpired();
+
     function _onlyNotExpired(DepegSwap storage ds) internal view {
         if (ds.isExpired()) {
             revert Expired();
+        }
+    }
+
+    function _onlyExpired(DepegSwap storage ds) internal view {
+        if (!ds.isExpired()) {
+            revert NotExpired();
         }
     }
 
@@ -38,16 +51,20 @@ library PSM {
         }
     }
 
-    function _safeBeforeInteract(DepegSwap storage ds) internal view {
+    function _safeBeforeExpired(DepegSwap storage ds) internal view {
         _onlyInitialized(ds);
         _onlyNotExpired(ds);
     }
 
+    function _safeAfterExpired(DepegSwap storage ds) internal view {
+        _onlyInitialized(ds);
+        _onlyExpired(ds);
+    }
+
     struct State {
         uint256 dsCount;
-        uint256 depegCount;
         uint256 fee;
-        uint256 liquidity;
+        uint256 totalCtIssued;
         WrappedAsset wa;
         PsmKey info;
         mapping(uint256 => DepegSwap) ds;
@@ -72,12 +89,12 @@ library PSM {
         id = key.toId();
     }
 
-    function issue(
+    function issueNewPair(
         State storage self,
         uint256 expiry,
         string memory pairName
     ) internal returns (uint256 idx) {
-        idx = self.depegCount++;
+        idx = self.dsCount++;
         self.ds[idx] = DepegSwapLibrary.initialize(pairName, expiry);
     }
 
@@ -92,7 +109,10 @@ library PSM {
     ) internal {
         DepegSwap storage ds = self.ds[dsId];
 
-        _safeBeforeInteract(ds);
+        _safeBeforeExpired(ds);
+
+        // add the amount to the total ct issued
+        self.totalCtIssued += amount;
 
         self.wa.issueAndLock(amount);
         ds.issue(depositor, amount);
@@ -108,30 +128,40 @@ library PSM {
     ) internal view returns (uint256 ctReceived, uint256 dsReceived) {
         DepegSwap storage ds = self.ds[dsId];
 
-        _safeBeforeInteract(ds);
+        _safeBeforeExpired(ds);
         ctReceived = amount;
         dsReceived = amount;
     }
 
-    function _redeem(DepegSwap storage ds, uint256 amount) internal {
-        ds.redeemed += amount;
+    function _redeemDs(DepegSwap storage ds, uint256 amount) internal {
+        ds.dsRedeemed += amount;
     }
 
     function _afterRedeemWithDs(
+        State storage self,
         DepegSwap storage ds,
         bytes memory rawDsPermitSig,
         address owner,
         uint256 amount,
         uint256 deadline
     ) internal {
-        ds.permit(rawDsPermitSig, owner, address(this), amount, deadline);
-        ds.asAsset().transferFrom(owner, address(this), amount);
+        DepegSwapLibrary.permit(
+            ds.depegSwap,
+            rawDsPermitSig,
+            owner,
+            address(this),
+            amount,
+            deadline
+        );
+        ds.dsAsAsset().transferFrom(owner, address(this), amount);
+        self.info.redemptionAsset().asErc20().transfer(owner, amount);
     }
 
     /// @notice redeem an RA with DS + PA
     /// @dev since we currently have no way of knowing if the PA contract implements permit,
     /// we depends on the frontend to make approval to the PA contract before calling this function.
-    /// for the DS, we use the permit function to approve the transfer.
+    /// for the DS, we use the permit function to approve the transfer. the parameter passed here must be the same
+    /// as the one used to generate the ds permit signature
     function redeemWithDs(
         State storage self,
         address owner,
@@ -141,9 +171,9 @@ library PSM {
         uint256 deadline
     ) internal {
         DepegSwap storage ds = self.ds[dsId];
-        _safeBeforeInteract(ds);
-        _redeem(ds, amount);
-        _afterRedeemWithDs(ds, rawDsPermitSig, owner, amount, deadline);
+        _safeBeforeExpired(ds);
+        _redeemDs(ds, amount);
+        _afterRedeemWithDs(self, ds, rawDsPermitSig, owner, amount, deadline);
     }
 
     /// @notice simulate a pds redeem.
@@ -155,7 +185,7 @@ library PSM {
         uint256 amount
     ) internal view returns (uint256 assets) {
         DepegSwap storage ds = self.ds[dsId];
-        _safeBeforeInteract(ds);
+        _safeBeforeExpired(ds);
         assets = amount;
     }
 
@@ -166,6 +196,116 @@ library PSM {
         State storage self,
         uint256 dsId
     ) external view returns (uint256 amount) {
-        amount = self.ds[dsId].redeemed;
+        amount = self.ds[dsId].dsRedeemed;
+    }
+
+    /// @notice return the next depeg swap expiry
+    function nextExpiry(
+        State storage self
+    ) internal view returns (uint256 expiry) {
+        uint256 idx = self.dsCount;
+
+        DepegSwap storage ds = self.ds[idx];
+
+        expiry = ds.expiryTimestamp;
+    }
+
+    /// @notice calculate the accrued RA
+    /// @dev this function follow below equation :
+    /// '#' refers to the total circulation supply of that token.
+    /// '&' refers to the total amount of token in the PSM.
+    ///
+    /// amount * ((&RA-#WA)/#CT)
+    function calculateAccruedRa(
+        uint256 amount,
+        uint256 availableRa,
+        uint256 totalWa,
+        uint256 totalCtIssued
+    ) internal pure returns (uint256 accrued) {
+        accrued = amount * ((availableRa - totalWa) / totalCtIssued);
+    }
+
+    /// @notice calculate the accrued PA
+    /// @dev this function follow below equation :
+    /// '#' refers to the total circulation supply of that token.
+    /// '&' refers to the total amount of token in the PSM.
+    ///
+    /// amount * (&PA/#CT)
+    function calculateAccruedPa(
+        uint256 amount,
+        uint256 availablePa,
+        uint256 totalCtIssued
+    ) internal pure returns (uint256 accrued) {
+        accrued = amount * (availablePa / totalCtIssued);
+    }
+
+    function _redeemCt(
+        DepegSwap storage ds,
+        State storage self,
+        uint256 amount
+    ) internal returns (uint256 accruedPa, uint256 accruedRa) {
+        ds.ctRedeemed += amount;
+
+        uint256 totalCtIssued = self.totalCtIssued;
+
+        uint256 availablePa = self.info.peggedAsset().psmBalance();
+        accruedPa = calculateAccruedPa(amount, availablePa, totalCtIssued);
+
+        uint256 availableRa = self.info.redemptionAsset().psmBalance();
+        uint256 totalWa = self.wa.circulatingSupply();
+        accruedRa = calculateAccruedRa(
+            amount,
+            availableRa,
+            totalWa,
+            totalCtIssued
+        );
+    }
+
+    function _afterCtRedeem(
+        State storage self,
+        DepegSwap storage ds,
+        address owner,
+        uint256 ctRedeemedAmount,
+        uint256 accruedPa,
+        uint256 accruedRa,
+        bytes memory rawCtPermitSig,
+        uint256 deadline
+    ) internal {
+        DepegSwapLibrary.permit(
+            ds.coverToken,
+            rawCtPermitSig,
+            owner,
+            address(this),
+            ctRedeemedAmount,
+            deadline
+        );
+
+        ds.ctAsAsset().transferFrom(owner, address(this), ctRedeemedAmount);
+        self.info.peggedAsset().asErc20().transfer(owner, accruedPa);
+        self.info.redemptionAsset().asErc20().transfer(owner, accruedRa);
+    }
+
+    function redeemWithCt(
+        State storage self,
+        address owner,
+        uint256 amount,
+        uint256 dsId,
+        bytes memory rawCtPermitSig,
+        uint256 deadline
+    ) internal {
+        DepegSwap storage ds = self.ds[dsId];
+        _safeAfterExpired(ds);
+
+        (uint256 accruedPa, uint256 accruedRa) = _redeemCt(ds, self, amount);
+        _afterCtRedeem(
+            self,
+            ds,
+            owner,
+            amount,
+            accruedPa,
+            accruedRa,
+            rawCtPermitSig,
+            deadline
+        );
     }
 }

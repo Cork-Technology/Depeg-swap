@@ -7,7 +7,8 @@ struct DepegSwap {
     address depegSwap;
     address coverToken;
     uint256 expiryTimestamp;
-    uint256 redeemed;
+    uint256 dsRedeemed;
+    uint256 ctRedeemed;
 }
 
 library DepegSwapLibrary {
@@ -30,7 +31,8 @@ library DepegSwapLibrary {
                 depegSwap: address(new Asset("DS", pairName)),
                 coverToken: address(new Asset("CT", pairName)),
                 expiryTimestamp: expiry,
-                redeemed: 0
+                dsRedeemed: 0,
+                ctRedeemed: 0
             });
     }
 
@@ -42,12 +44,16 @@ library DepegSwapLibrary {
         return Asset(self.coverToken).totalSupply();
     }
 
-    function asAsset(DepegSwap memory self) internal pure returns (Asset) {
+    function dsAsAsset(DepegSwap memory self) internal pure returns (Asset) {
         return Asset(self.depegSwap);
     }
 
+    function ctAsAsset(DepegSwap memory self) internal pure returns (Asset) {
+        return Asset(self.coverToken);
+    }
+
     function permit(
-        DepegSwap memory self,
+        address contract_,
         bytes memory rawSig,
         address owner,
         address spender,
@@ -56,7 +62,7 @@ library DepegSwapLibrary {
     ) internal {
         Signature memory sig = MinimalSignatureHelper.split(rawSig);
 
-        Asset(self.depegSwap).permit(
+        Asset(contract_).permit(
             owner,
             spender,
             value,
