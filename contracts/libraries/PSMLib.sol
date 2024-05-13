@@ -81,6 +81,9 @@ library PSM {
         self.ds[idx] = DepegSwapLibrary.initialize(pairName, expiry);
     }
 
+    /// @notice deposit RA to the PSM
+    /// @dev the user must approve the PSM to spend their RA
+    // TODO : handle native token
     function deposit(
         State storage self,
         address depositor,
@@ -154,5 +157,15 @@ library PSM {
         DepegSwap storage ds = self.ds[dsId];
         _safeBeforeInteract(ds);
         assets = amount;
+    }
+
+    /// @notice return the number of redeemed RA for a particular DS
+    /// @param dsId the id of the DS
+    /// @return amount the number of redeemed RA
+    function redeemed(
+        State storage self,
+        uint256 dsId
+    ) external view returns (uint256 amount) {
+        amount = self.ds[dsId].redeemed;
     }
 }
