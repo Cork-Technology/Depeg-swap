@@ -9,6 +9,7 @@ import "./SignatureHelperLib.sol";
 import "./PeggedAssetLib.sol";
 import "./RedemptionAssetLib.sol";
 
+// TODO : support native token
 library PSM {
     using MinimalSignatureHelper for Signature;
     using PsmKeyLibrary for PsmKey;
@@ -100,7 +101,6 @@ library PSM {
 
     /// @notice deposit RA to the PSM
     /// @dev the user must approve the PSM to spend their RA
-    // TODO : handle native token
     function deposit(
         State storage self,
         address depositor,
