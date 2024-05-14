@@ -239,13 +239,10 @@ library PSMLibrary {
         accrued = amount * (availablePa / totalCtIssued);
     }
 
-    function _redeemCt(
-        DepegSwap storage ds,
+    function _calcRedeemAmount(
         State storage self,
         uint256 amount
-    ) internal returns (uint256 accruedPa, uint256 accruedRa) {
-        ds.ctRedeemed += amount;
-
+    ) internal view returns (uint256 accruedPa, uint256 accruedRa) {
         uint256 totalCtIssued = self.totalCtIssued;
 
         uint256 availablePa = self.info.peggedAsset().psmBalance();
@@ -259,6 +256,9 @@ library PSMLibrary {
             totalWa,
             totalCtIssued
         );
+    }
+    function _incRedeemedCt(DepegSwap storage ds, uint256 amount) internal {
+        ds.ctRedeemed += amount;
     }
 
     function _afterCtRedeem(
@@ -301,7 +301,8 @@ library PSMLibrary {
         DepegSwap storage ds = self.ds[dsId];
         _safeAfterExpired(ds);
 
-        (accruedPa, accruedRa) = _redeemCt(ds, self, amount);
+        (accruedPa, accruedRa) = _calcRedeemAmount(self, amount);
+        _incRedeemedCt(ds, amount);
         _afterCtRedeem(
             self,
             ds,
@@ -321,10 +322,10 @@ library PSMLibrary {
         State storage self,
         uint256 dsId,
         uint256 amount
-    ) internal returns (uint256 accruedPa, uint256 accruedRa) {
+    ) internal view returns (uint256 accruedPa, uint256 accruedRa) {
         DepegSwap storage ds = self.ds[dsId];
         _safeAfterExpired(ds);
 
-        (accruedPa, accruedRa) = _redeemCt(ds, self, amount);
+        (accruedPa, accruedRa) = _calcRedeemAmount(self, amount);
     }
 }

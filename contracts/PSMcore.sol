@@ -2,65 +2,16 @@
 pragma solidity ^0.8.0;
 import "./libraries/PSMLib.sol";
 import "./libraries/PSMKeyLib.sol";
-import "./interfaces/IERC20Metadata.sol";
+import "./interfaces/IPSMcore.sol";
+import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 
 // TODO : move event, errors, docs, and function declaration to interface
 
-contract PsmCore {
+contract PsmCore is IPSMcore {
     using PSMLibrary for State;
     using PsmKeyLibrary for PsmKey;
 
-    /// @notice Emitted when a new PSM is initialized with a given pair
-    /// @param id The PSM id
-    /// @param pa The address of the pegged asset
-    /// @param ra The address of the redemption asset
-    event Initialized(PsmId indexed id, address indexed pa, address indexed ra);
-
-    /// @notice Emitted when a new DS is issued for a given PSM
-    /// @param psmId The PSM id
-    /// @param dsId The DS id
-    /// @param expiry The expiry of the DS
-    event Issued(
-        PsmId indexed psmId,
-        uint256 indexed dsId,
-        uint256 indexed expiry
-    );
-
-    /// @notice Emitted when a user redeems a DS for a given PSM
-    /// @param psmId The PSM id
-    /// @param dsId The DS id
-    /// @param redeemer The address of the redeemer
-    /// @param amount The amount of the DS redeemed
-    event DsRedeemed(
-        PsmId indexed psmId,
-        uint256 indexed dsId,
-        address indexed redeemer,
-        uint256 amount
-    );
-
-    /// @notice Emitted when a user redeems a CT for a given PSM
-    /// @param psmId The PSM id
-    /// @param dsId The DS id
-    /// @param redeemer The address of the redeemer
-    /// @param amount The amount of the CT redeemed
-    /// @param paReceived The amount of the pegged asset received
-    /// @param raReceived The amount of the redemption asset received
-    event CtRedeemed(
-        PsmId indexed psmId,
-        uint256 indexed dsId,
-        address indexed redeemer,
-        uint256 amount,
-        uint256 paReceived,
-        uint256 raReceived
-    );
-
-    /// @notice psm module is not initialized, i.e thrown when interacting with uninitialized module
-    error Uinitialized();
-
-    /// @notice psm module is already initialized, i.e thrown when trying to reinitialize a module
-    error AlreadyInitialized();
-
-    mapping(PsmId => PSMLibrary.State) public modules;
+    mapping(PsmId => State) public modules;
 
     constructor() {}
 
@@ -71,7 +22,7 @@ contract PsmCore {
         _;
     }
 
-    function initialize(address pa, address ra) external {
+    function initialize(address pa, address ra) external override {
         PsmKey memory key = PsmKeyLibrary.initalize(pa, ra);
         PsmId id = key.toId();
 
@@ -92,7 +43,10 @@ contract PsmCore {
         emit Initialized(id, pa, ra);
     }
 
-    function issueNewDs(PsmId id, uint256 expiry) external onlyInitialized(id) {
+    function issueNewDs(
+        PsmId id,
+        uint256 expiry
+    ) external override onlyInitialized(id) {
         State storage state = modules[id];
         uint256 dsId = state.issueNewPair(expiry);
 
@@ -103,7 +57,7 @@ contract PsmCore {
         PsmId id,
         uint256 dsId,
         uint256 amount
-    ) external onlyInitialized(id) {
+    ) external override onlyInitialized(id) {
         State storage state = modules[id];
         state.deposit(msg.sender, amount, dsId);
     }
@@ -115,6 +69,7 @@ contract PsmCore {
     )
         external
         view
+        override
         onlyInitialized(id)
         returns (uint256 ctReceived, uint256 dsReceived)
     {
@@ -128,7 +83,7 @@ contract PsmCore {
         uint256 amount,
         bytes memory rawDsPermitSig,
         uint256 deadline
-    ) external onlyInitialized(id) {
+    ) external override onlyInitialized(id) {
         State storage state = modules[id];
 
         emit DsRedeemed(id, dsId, msg.sender, amount);
@@ -137,9 +92,10 @@ contract PsmCore {
     }
 
     function previewRedeemWithDs(
+        PsmId id,
         uint256 dsId,
         uint256 amount
-    ) external view onlyInitialized(id) returns (uint256 assets) {
+    ) external view override onlyInitialized(id) returns (uint256 assets) {
         State storage state = modules[id];
         assets = state.previewRedeemWithDs(amount, dsId);
     }
@@ -150,7 +106,7 @@ contract PsmCore {
         uint256 amount,
         bytes memory rawCtPermitSig,
         uint256 deadline
-    ) external onlyInitialized(id) {
+    ) external override onlyInitialized(id) {
         State storage state = modules[id];
 
         (uint256 accruedPa, uint256 accruedRa) = state.redeemWithCt(
@@ -171,6 +127,7 @@ contract PsmCore {
     )
         external
         view
+        override
         onlyInitialized(id)
         returns (uint256 paReceived, uint256 raReceived)
     {

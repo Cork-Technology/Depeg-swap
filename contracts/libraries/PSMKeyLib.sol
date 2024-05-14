@@ -3,7 +3,7 @@ pragma solidity ^0.8.20;
 
 import "./PeggedAssetLib.sol";
 import "./RedemptionAssetLib.sol";
-import "./../interfaces/IERC20Metadata.sol";
+import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 
 type PsmId is bytes32;
 
