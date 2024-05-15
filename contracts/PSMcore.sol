@@ -8,10 +8,10 @@ import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 // TODO : move event, errors, docs, and function declaration to interface
 
 contract PsmCore is IPSMcore {
-    using PSMLibrary for State;
+    using PSMLibrary for PsmState;
     using PsmKeyLibrary for PsmKey;
 
-    mapping(PsmId => State) public modules;
+    mapping(PsmId => PsmState) public modules;
 
     constructor() {}
 
@@ -32,7 +32,7 @@ contract PsmCore is IPSMcore {
         );
         string memory pairname = string(abi.encodePacked(_pa, "-", _ra));
 
-        State storage state = modules[id];
+        PsmState storage state = modules[id];
 
         if (state.isInitialized()) {
             revert AlreadyInitialized();
@@ -47,7 +47,7 @@ contract PsmCore is IPSMcore {
         PsmId id,
         uint256 expiry
     ) external override onlyInitialized(id) {
-        State storage state = modules[id];
+        PsmState storage state = modules[id];
         uint256 dsId = state.issueNewPair(expiry);
 
         emit Issued(id, dsId, expiry);
@@ -58,7 +58,7 @@ contract PsmCore is IPSMcore {
         uint256 dsId,
         uint256 amount
     ) external override onlyInitialized(id) {
-        State storage state = modules[id];
+        PsmState storage state = modules[id];
         state.deposit(msg.sender, amount, dsId);
     }
 
@@ -73,7 +73,7 @@ contract PsmCore is IPSMcore {
         onlyInitialized(id)
         returns (uint256 ctReceived, uint256 dsReceived)
     {
-        State storage state = modules[id];
+        PsmState storage state = modules[id];
         (ctReceived, dsReceived) = state.previewDeposit(amount, dsId);
     }
 
@@ -84,7 +84,7 @@ contract PsmCore is IPSMcore {
         bytes memory rawDsPermitSig,
         uint256 deadline
     ) external override onlyInitialized(id) {
-        State storage state = modules[id];
+        PsmState storage state = modules[id];
 
         emit DsRedeemed(id, dsId, msg.sender, amount);
 
@@ -96,7 +96,7 @@ contract PsmCore is IPSMcore {
         uint256 dsId,
         uint256 amount
     ) external view override onlyInitialized(id) returns (uint256 assets) {
-        State storage state = modules[id];
+        PsmState storage state = modules[id];
         assets = state.previewRedeemWithDs(amount, dsId);
     }
 
@@ -107,7 +107,7 @@ contract PsmCore is IPSMcore {
         bytes memory rawCtPermitSig,
         uint256 deadline
     ) external override onlyInitialized(id) {
-        State storage state = modules[id];
+        PsmState storage state = modules[id];
 
         (uint256 accruedPa, uint256 accruedRa) = state.redeemWithCt(
             msg.sender,
@@ -131,7 +131,7 @@ contract PsmCore is IPSMcore {
         onlyInitialized(id)
         returns (uint256 paReceived, uint256 raReceived)
     {
-        State storage state = modules[id];
+        PsmState storage state = modules[id];
         (paReceived, raReceived) = state.previewRedeemWithCt(amount, dsId);
     }
 }

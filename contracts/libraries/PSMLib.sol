@@ -9,7 +9,7 @@ import "./SignatureHelperLib.sol";
 import "./PeggedAssetLib.sol";
 import "./RedemptionAssetLib.sol";
 
-struct State {
+struct PsmState {
     uint256 dsCount;
     uint256 totalCtIssued;
     WrappedAsset wa;
@@ -71,13 +71,13 @@ library PSMLibrary {
     }
 
     function isInitialized(
-        State storage self
+        PsmState storage self
     ) internal view returns (bool status) {
         status = self.info.isInitialized();
     }
 
     function initialize(
-        State storage self,
+        PsmState storage self,
         PsmKey memory key,
         string memory pairname
     ) internal {
@@ -87,7 +87,7 @@ library PSMLibrary {
 
     /// @notice issue a new pair of DS, will fail if the previous DS isn't yet expired
     function issueNewPair(
-        State storage self,
+        PsmState storage self,
         uint256 expiry
     ) internal returns (uint256 idx) {
         DepegSwap storage ds = self.ds[self.dsCount];
@@ -102,7 +102,7 @@ library PSMLibrary {
     /// @notice deposit RA to the PSM
     /// @dev the user must approve the PSM to spend their RA
     function deposit(
-        State storage self,
+        PsmState storage self,
         address depositor,
         uint256 amount,
         uint256 dsId
@@ -122,7 +122,7 @@ library PSMLibrary {
     /// @dev since we mint 1:1, we return the same amount,
     /// since rate only effective when redeeming with CT
     function previewDeposit(
-        State storage self,
+        PsmState storage self,
         uint256 amount,
         uint256 dsId
     ) internal view returns (uint256 ctReceived, uint256 dsReceived) {
@@ -138,7 +138,7 @@ library PSMLibrary {
     }
 
     function _afterRedeemWithDs(
-        State storage self,
+        PsmState storage self,
         DepegSwap storage ds,
         bytes memory rawDsPermitSig,
         address owner,
@@ -163,7 +163,7 @@ library PSMLibrary {
     /// for the DS, we use the permit function to approve the transfer. the parameter passed here MUST be the same
     /// as the one used to generate the ds permit signature
     function redeemWithDs(
-        State storage self,
+        PsmState storage self,
         address owner,
         uint256 amount,
         uint256 dsId,
@@ -180,7 +180,7 @@ library PSMLibrary {
     /// @return assets how much RA the user would receive
     /// @dev since the rate is constant at 1:1, we return the same amount,
     function previewRedeemWithDs(
-        State storage self,
+        PsmState storage self,
         uint256 dsId,
         uint256 amount
     ) internal view returns (uint256 assets) {
@@ -193,7 +193,7 @@ library PSMLibrary {
     /// @param dsId the id of the DS
     /// @return amount the number of redeemed RA
     function redeemed(
-        State storage self,
+        PsmState storage self,
         uint256 dsId
     ) external view returns (uint256 amount) {
         amount = self.ds[dsId].dsRedeemed;
@@ -201,7 +201,7 @@ library PSMLibrary {
 
     /// @notice return the next depeg swap expiry
     function nextExpiry(
-        State storage self
+        PsmState storage self
     ) internal view returns (uint256 expiry) {
         uint256 idx = self.dsCount;
 
@@ -240,7 +240,7 @@ library PSMLibrary {
     }
 
     function _calcRedeemAmount(
-        State storage self,
+        PsmState storage self,
         uint256 amount
     ) internal view returns (uint256 accruedPa, uint256 accruedRa) {
         uint256 totalCtIssued = self.totalCtIssued;
@@ -262,7 +262,7 @@ library PSMLibrary {
     }
 
     function _afterCtRedeem(
-        State storage self,
+        PsmState storage self,
         DepegSwap storage ds,
         address owner,
         uint256 ctRedeemedAmount,
@@ -291,7 +291,7 @@ library PSMLibrary {
     /// for the CT, we use the permit function to approve the transfer.
     /// the parameter passed here MUST be the same as the one used to generate the ct permit signature.
     function redeemWithCt(
-        State storage self,
+        PsmState storage self,
         address owner,
         uint256 amount,
         uint256 dsId,
@@ -319,7 +319,7 @@ library PSMLibrary {
     /// @return accruedPa the amount of PA the user would receive
     /// @return accruedRa the amount of RA the user would receive
     function previewRedeemWithCt(
-        State storage self,
+        PsmState storage self,
         uint256 dsId,
         uint256 amount
     ) internal view returns (uint256 accruedPa, uint256 accruedRa) {
