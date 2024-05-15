@@ -2,7 +2,7 @@
 pragma solidity ^0.8.20;
 
 import "./../Asset.sol";
-import "./PSMKeyLib.sol";
+import "./PairKey.sol";
 import "./DepegSwapLib.sol";
 import "./WrappedAssetLib.sol";
 import "./SignatureHelperLib.sol";
@@ -13,14 +13,14 @@ struct PsmState {
     uint256 dsCount;
     uint256 totalCtIssued;
     WrappedAsset wa;
-    PsmKey info;
+    PairKey info;
     mapping(uint256 => DepegSwap) ds;
 }
 
 // TODO : support native token
 library PSMLibrary {
     using MinimalSignatureHelper for Signature;
-    using PsmKeyLibrary for PsmKey;
+    using PairKeyLibrary for PairKey;
     using DepegSwapLibrary for DepegSwap;
     using WrappedAssetLibrary for WrappedAsset;
     using PeggedAssetLibrary for PeggedAsset;
@@ -78,7 +78,7 @@ library PSMLibrary {
 
     function initialize(
         PsmState storage self,
-        PsmKey memory key,
+        PairKey memory key,
         string memory pairname
     ) internal {
         self.info = key;

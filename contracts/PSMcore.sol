@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.0;
 import "./libraries/PSMLib.sol";
-import "./libraries/PSMKeyLib.sol";
+import "./libraries/PairKey.sol";
 import "./interfaces/IPSMcore.sol";
 import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 
@@ -9,7 +9,7 @@ import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 
 contract PsmCore is IPSMcore {
     using PSMLibrary for PsmState;
-    using PsmKeyLibrary for PsmKey;
+    using PairKeyLibrary for PairKey;
 
     mapping(PsmId => PsmState) public modules;
 
@@ -23,7 +23,7 @@ contract PsmCore is IPSMcore {
     }
 
     function initialize(address pa, address ra) external override {
-        PsmKey memory key = PsmKeyLibrary.initalize(pa, ra);
+        PairKey memory key = PairKeyLibrary.initalize(pa, ra);
         PsmId id = key.toId();
 
         (string memory _pa, string memory _ra) = (
