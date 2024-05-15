@@ -8,7 +8,7 @@ import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 // TODO : move event, errors, docs, and function declaration to interface
 
 contract PsmCore is IPSMcore {
-    using PSMLibrary for PsmState;
+    using PSMLibrary for PsmPsmState;
     using PairKeyLibrary for PairKey;
 
     mapping(PsmId => PsmState) public modules;
