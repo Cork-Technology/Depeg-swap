@@ -13,6 +13,10 @@ contract PsmCore is IPSMcore {
 
     mapping(PsmId => State) public modules;
 
+    function getId(address pa, address ra) external pure returns (PsmId) {
+        return PsmKeyLibrary.initalize(pa, ra).toId();
+    }
+
     constructor() {}
 
     modifier onlyInitialized(PsmId id) {
