@@ -14,7 +14,21 @@ library LvAssetLibrary {
         return IERC20(self._address);
     }
 
-    function depositUnchecked(LvAsset memory self, address from, uint256 amount) internal {
+    function depositUnchecked(
+        LvAsset memory self,
+        address from,
+        uint256 amount
+    ) internal {
         self.asErc20().transferFrom(from, address(this), amount);
+    }
+
+    function totalIssued(
+        LvAsset memory self
+    ) internal view returns (uint256 total) {
+        total = IERC20(self._address).totalSupply();
+    }
+
+    function issue(LvAsset memory self, address to, uint256 amount) internal {
+        IERC20(self._address).transfer(to, amount);
     }
 }
