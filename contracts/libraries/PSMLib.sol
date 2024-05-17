@@ -90,9 +90,11 @@ library PSMLibrary {
         PsmState storage self,
         uint256 expiry
     ) internal returns (uint256 idx) {
-        DepegSwap storage ds = self.ds[self.dsCount];
+        if (self.dsCount <= 0) {
+            DepegSwap storage ds = self.ds[self.dsCount];
 
-        _safeAfterExpired(ds);
+            _safeAfterExpired(ds);
+        }
 
         idx = self.dsCount++;
         string memory pairName = self.info.toPairname();
@@ -257,6 +259,7 @@ library PSMLibrary {
             totalCtIssued
         );
     }
+
     function _incRedeemedCt(DepegSwap storage ds, uint256 amount) internal {
         ds.ctRedeemed += amount;
     }
