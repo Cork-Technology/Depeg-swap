@@ -89,16 +89,19 @@ library PSMLibrary {
     function issueNewPair(
         State storage self,
         uint256 expiry
-    ) internal returns (uint256 idx) {
-        if (self.dsCount <= 0) {
+    ) internal returns (uint256 idx, address dsAddress, address ct) {
+        if (self.dsCount != 0) {
             DepegSwap storage ds = self.ds[self.dsCount];
-
             _safeAfterExpired(ds);
         }
 
-        idx = self.dsCount++;
+        // to prevent 0 index
+        self.dsCount++;
+        idx = self.dsCount;
+
         string memory pairName = self.info.toPairname();
         self.ds[idx] = DepegSwapLibrary.initialize(pairName, expiry);
+        (dsAddress, ct) = (self.ds[idx].depegSwap, self.ds[idx].coverToken);
     }
 
     /// @notice deposit RA to the PSM
@@ -106,9 +109,10 @@ library PSMLibrary {
     function deposit(
         State storage self,
         address depositor,
-        uint256 amount,
-        uint256 dsId
-    ) internal {
+        uint256 amount
+    ) internal returns (uint256 dsId) {
+        dsId = self.dsCount;
+
         DepegSwap storage ds = self.ds[dsId];
 
         _safeBeforeExpired(ds);
@@ -117,6 +121,7 @@ library PSMLibrary {
         self.totalCtIssued += amount;
 
         self.wa.issueAndLock(amount);
+        self.info.redemptionAsset().asErc20().transferFrom(depositor, address(this), amount);
         ds.issue(depositor, amount);
     }
 
@@ -125,9 +130,13 @@ library PSMLibrary {
     /// since rate only effective when redeeming with CT
     function previewDeposit(
         State storage self,
-        uint256 amount,
-        uint256 dsId
-    ) internal view returns (uint256 ctReceived, uint256 dsReceived) {
+        uint256 amount
+    )
+        internal
+        view
+        returns (uint256 ctReceived, uint256 dsReceived, uint256 dsId)
+    {
+        dsId = self.dsCount;
         DepegSwap storage ds = self.ds[dsId];
 
         _safeBeforeExpired(ds);
