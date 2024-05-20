@@ -10,6 +10,7 @@ import {
   Chain,
   erc20Abi,
   etherUnits,
+  formatEther,
   getAddress,
   GetContractReturnType,
   parseEther,
@@ -213,7 +214,7 @@ describe("PSM core", function () {
         mintAmount,
       ]);
 
-      resource.ra.write.approve([resource.psmCore.address, mintAmount]);
+      await resource.ra.write.approve([resource.psmCore.address, mintAmount]);
 
       await resource.psmCore.write.deposit(
         [resource.psmid, parseEther("100")],
@@ -238,7 +239,7 @@ describe("PSM core", function () {
         mintAmount,
       ]);
 
-      resource.ra.write.approve([resource.psmCore.address, mintAmount]);
+      await resource.ra.write.approve([resource.psmCore.address, mintAmount]);
 
       await resource.psmCore.write.deposit(
         [resource.psmid, parseEther("100")],
@@ -282,5 +283,66 @@ describe("PSM core", function () {
 
       expect(event.length).to.equal(1);
     });
+
+    it("should redeem CT", async function () {
+      const mintAmount = parseEther("1000");
+      const resource = await loadFixture(withDs);
+      await resource.ra.write.mint([
+        resource.signer.account.address,
+        mintAmount,
+      ]);
+
+      await resource.ra.write.approve([resource.psmCore.address, mintAmount]);
+
+      await resource.psmCore.write.deposit(
+        [resource.psmid, parseEther("100")],
+        {
+          account: resource.signer.account,
+        }
+      );
+
+      // just to buffer
+      const deadline = BigInt(resource.expiry + 1);
+
+      const msg = permit(
+        resource.signer,
+        resource.ctAddress as Address,
+        resource.psmCore.address,
+        parseEther("3"),
+        deadline
+      );
+
+      const ct = await hre.viem.getContractAt(
+        "Asset",
+        resource.ctAddress as Address
+      );
+
+      const psmBalance = await ct.read.balanceOf([resource.psmCore.address]);
+      const userBalance = await ct.read.balanceOf([
+        resource.signer.account.address,
+      ]);
+
+      await time.increaseTo(resource.expiry);
+
+      await resource.psmCore.write.redeemWithCT(
+        [resource.psmid, resource.dsId, parseEther("3"), await msg, deadline],
+        {
+          account: resource.signer.account,
+        }
+      );
+
+      const event = await resource.psmCore.getEvents.CtRedeemed({
+        psmId: resource.psmid,
+        redeemer: resource.signer.account.address,
+      });
+
+      console.log(formatEther(event[0].args.amount!));
+
+      expect(event.length).to.equal(1);
+    });
   });
 });
+
+// TODO : test preview output to be the same as actual function call
+// TODO : test redeem ct + ds in 1 scenario, verify the amount is correct!
+// TODO : make a gas profiling report.

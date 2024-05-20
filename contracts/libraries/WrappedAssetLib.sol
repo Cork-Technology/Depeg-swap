@@ -25,3 +25,5 @@ library WrappedAssetLibrary {
         Asset(self.wa).mint(address(this), amount);
     }
 }
+
+// TODO : fix this, move this to a dedicated wrapper contract
