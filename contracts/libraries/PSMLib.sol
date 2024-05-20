@@ -226,7 +226,7 @@ library PSMLibrary {
     /// '#' refers to the total circulation supply of that token.
     /// '&' refers to the total amount of token in the PSM.
     ///
-    /// amount * ((&RA-#WA)/#CT)
+    /// amount * (&RA-#WA)/#CT)
     function calculateAccruedRa(
         uint256 amount,
         uint256 availableRa,
