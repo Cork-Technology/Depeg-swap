@@ -9,6 +9,18 @@ interface IPSMcore {
     /// @param ra The address of the redemption asset
     event Initialized(PsmId indexed id, address indexed pa, address indexed ra);
 
+    /// @notice Emitted when a user deposits assets into a given PSM
+    /// @param psmId The PSM id
+    /// @param dsId The DS id
+    /// @param depositor The address of the depositor
+    /// @param amount The amount of the asset deposited
+    event Deposited(
+        PsmId indexed psmId,
+        uint256 indexed dsId,
+        address indexed depositor,
+        uint256 amount
+    );
+
     /// @notice Emitted when a new DS is issued for a given PSM
     /// @param psmId The PSM id
     /// @param dsId The DS id
@@ -16,7 +28,9 @@ interface IPSMcore {
     event Issued(
         PsmId indexed psmId,
         uint256 indexed dsId,
-        uint256 indexed expiry
+        uint256 indexed expiry,
+        address ds,
+        address ct
     );
 
     /// @notice Emitted when a user redeems a DS for a given PSM
@@ -54,13 +68,16 @@ interface IPSMcore {
     error AlreadyInitialized();
 
     function initialize(address pa, address ra) external;
+
     function issueNewDs(PsmId id, uint256 expiry) external;
-    function deposit(PsmId id, uint256 dsId, uint256 amount) external;
+
+    function deposit(PsmId id, uint256 amount) external;
+
     function previewDeposit(
         PsmId id,
-        uint256 dsId,
         uint256 amount
-    ) external view returns (uint256 ctReceived, uint256 dsReceived);
+    ) external view returns (uint256 ctReceived, uint256 dsReceived, uint256 dsId);
+
     function redeemWithDs(
         PsmId id,
         uint256 dsId,
@@ -68,11 +85,13 @@ interface IPSMcore {
         bytes memory rawDsPermitSig,
         uint256 deadline
     ) external;
+
     function previewRedeemWithDs(
         PsmId id,
         uint256 dsId,
         uint256 amount
     ) external view returns (uint256 assets);
+
     function redeemWithCT(
         PsmId id,
         uint256 dsId,
@@ -80,6 +99,7 @@ interface IPSMcore {
         bytes memory rawCtPermitSig,
         uint256 deadline
     ) external;
+
     function previewRedeemWithCt(
         PsmId id,
         uint256 dsId,

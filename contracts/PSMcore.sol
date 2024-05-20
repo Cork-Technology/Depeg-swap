@@ -52,33 +52,32 @@ contract PsmCore is IPSMcore {
         uint256 expiry
     ) external override onlyInitialized(id) {
         PsmState storage state = modules[id];
-        uint256 dsId = state.issueNewPair(expiry);
+        (uint256 dsId, address ds, address ct) = state.issueNewPair(expiry);
 
-        emit Issued(id, dsId, expiry);
+        emit Issued(id, dsId, expiry, ds, ct);
     }
 
     function deposit(
         PsmId id,
-        uint256 dsId,
         uint256 amount
     ) external override onlyInitialized(id) {
         PsmState storage state = modules[id];
-        state.deposit(msg.sender, amount, dsId);
+        uint256 dsId = state.deposit(msg.sender, amount);
+        emit Deposited(id, dsId, msg.sender, amount);
     }
 
     function previewDeposit(
         PsmId id,
-        uint256 dsId,
         uint256 amount
     )
         external
         view
         override
         onlyInitialized(id)
-        returns (uint256 ctReceived, uint256 dsReceived)
+        returns (uint256 ctReceived, uint256 dsReceived, uint256 dsId)
     {
         PsmState storage state = modules[id];
-        (ctReceived, dsReceived) = state.previewDeposit(amount, dsId);
+        (ctReceived, dsReceived, dsId) = state.previewDeposit(amount);
     }
 
     function redeemWithDs(
