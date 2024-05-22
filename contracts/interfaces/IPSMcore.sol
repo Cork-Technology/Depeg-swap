@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.0;
-import "../libraries/PSMKeyLib.sol";
+import "../libraries/PairKey.sol";
 
 interface IPSMcore {
     /// @notice Emitted when a new PSM is initialized with a given pair
