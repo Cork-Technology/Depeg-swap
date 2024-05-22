@@ -21,6 +21,6 @@ contract Asset is ERC20, ERC20Permit, ERC20FlashMint, Ownable {
     {}
 
     function mint(address to, uint256 amount) public onlyOwner {
-        _mint(to, amount);
+        _mint(to, amount); 
     }
 }
