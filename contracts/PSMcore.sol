@@ -80,7 +80,7 @@ contract PsmCore is IPSMcore {
         (ctReceived, dsReceived, dsId) = state.previewDeposit(amount);
     }
 
-    function redeemWithDs(
+    function redeemWithRaWithDs(
         PsmId id,
         uint256 dsId,
         uint256 amount,

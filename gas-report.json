@@ -28,8 +28,8 @@
   "showUncalledMethods": false,
   "coinmarketcap": "[REDACTED]",
   "token": "ETH",
-  "tokenPrice": "3124.81",
-  "gasPrice": 15,
+  "tokenPrice": "3678.68",
+  "gasPrice": 14,
   "blockGasLimit": 30000000,
   "solcInfo": {
    "version": "0.8.24",
@@ -71,9 +71,11 @@
     "intrinsicGas": [
      21644,
      21644,
+     21644,
      21644
     ],
     "callData": [
+     0,
      0,
      0,
      0
@@ -81,12 +83,13 @@
     "gasData": [
      46400,
      46400,
+     46400,
      46400
     ],
-    "numberOfCalls": 3,
+    "numberOfCalls": 4,
     "executionGasAverage": 46400,
     "calldataGasAverage": 0,
-    "cost": "2.17",
+    "cost": "2.39",
     "min": 46400,
     "max": 46400
    },
@@ -165,9 +168,11 @@
     "intrinsicGas": [
      21644,
      21644,
+     21644,
      21644
     ],
     "callData": [
+     0,
      0,
      0,
      0
@@ -175,12 +180,13 @@
     "gasData": [
      70636,
      70636,
+     70636,
      70636
     ],
-    "numberOfCalls": 3,
+    "numberOfCalls": 4,
     "executionGasAverage": 70636,
     "calldataGasAverage": 0,
-    "cost": "3.31",
+    "cost": "3.64",
     "min": 70636,
     "max": 70636
    },
@@ -318,7 +324,7 @@
     "numberOfCalls": 3,
     "executionGasAverage": 264776,
     "calldataGasAverage": 0,
-    "cost": "12.41",
+    "cost": "13.64",
     "min": 264776,
     "max": 264776
    },
@@ -350,16 +356,16 @@
      0
     ],
     "gasData": [
-     1252922,
-     1252922,
-     1252922
+     1252833,
+     1252833,
+     1252833
     ],
     "numberOfCalls": 3,
-    "executionGasAverage": 1252922,
+    "executionGasAverage": 1252833,
     "calldataGasAverage": 0,
-    "cost": "58.73",
-    "min": 1252922,
-    "max": 1252922
+    "cost": "64.52",
+    "min": 1252833,
+    "max": 1252833
    },
    "PsmCore_39e2cf90": {
     "key": "39e2cf90",
@@ -376,15 +382,15 @@
      0
     ],
     "gasData": [
-     2426236,
-     2426236
+     2426258,
+     2426258
     ],
     "numberOfCalls": 2,
-    "executionGasAverage": 2426236,
+    "executionGasAverage": 2426258,
     "calldataGasAverage": 0,
-    "cost": "113.72",
-    "min": 2426236,
-    "max": 2426236
+    "cost": "124.96",
+    "min": 2426258,
+    "max": 2426258
    },
    "PsmCore_b0b6cc1a": {
     "key": "b0b6cc1a",
@@ -436,43 +442,21 @@
     "contract": "PsmCore",
     "method": "redeemWithCT",
     "fnSig": "redeemWithCT(bytes32,uint256,uint256,bytes,uint256)",
-    "intrinsicGas": [
-     23524
-    ],
-    "callData": [
-     0
-    ],
-    "gasData": [
-     167198
-    ],
-    "numberOfCalls": 1,
-    "executionGasAverage": 167198,
-    "calldataGasAverage": 0,
-    "cost": "7.84",
-    "min": 167198,
-    "max": 167198
+    "intrinsicGas": [],
+    "callData": [],
+    "gasData": [],
+    "numberOfCalls": 0
    },
-   "PsmCore_f3183c0e": {
-    "key": "f3183c0e",
+   "PsmCore_2b06ef24": {
+    "key": "2b06ef24",
     "isCall": false,
     "contract": "PsmCore",
-    "method": "redeemWithDs",
-    "fnSig": "redeemWithDs(bytes32,uint256,uint256,bytes,uint256)",
-    "intrinsicGas": [
-     23536
-    ],
-    "callData": [
-     0
-    ],
-    "gasData": [
-     146410
-    ],
-    "numberOfCalls": 1,
-    "executionGasAverage": 146410,
-    "calldataGasAverage": 0,
-    "cost": "6.86",
-    "min": 146410,
-    "max": 146410
+    "method": "redeemWithRaWithDs",
+    "fnSig": "redeemWithRaWithDs(bytes32,uint256,uint256,bytes,uint256)",
+    "intrinsicGas": [],
+    "callData": [],
+    "gasData": [],
+    "numberOfCalls": 0
    }
   },
   "deployments": [
@@ -520,7 +504,7 @@
     ],
     "executionGasAverage": 1267453,
     "calldataGasAverage": 0,
-    "cost": "59.41",
+    "cost": "65.28",
     "min": 1267453,
     "max": 1267453,
     "percent": 4.2
@@ -643,21 +627,21 @@
    {
     "name": "PsmCore",
     "gasData": [
-     3214632,
-     3214632,
-     3214632
+     3250837,
+     3250837,
+     3250837
     ],
     "callData": [
      0,
      0,
      0
     ],
-    "executionGasAverage": 3214632,
+    "executionGasAverage": 3250837,
     "calldataGasAverage": 0,
-    "cost": "150.68",
-    "min": 3214632,
-    "max": 3214632,
-    "percent": 10.7
+    "cost": "167.42",
+    "min": 3250837,
+    "max": 3250837,
+    "percent": 10.8
    },
    {
     "name": "PsmKeyLibrary",

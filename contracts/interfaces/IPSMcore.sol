@@ -78,7 +78,7 @@ interface IPSMcore {
         uint256 amount
     ) external view returns (uint256 ctReceived, uint256 dsReceived, uint256 dsId);
 
-    function redeemWithDs(
+    function redeemWithRaWithDs(
         PsmId id,
         uint256 dsId,
         uint256 amount,
