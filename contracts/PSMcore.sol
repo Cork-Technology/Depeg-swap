@@ -5,8 +5,6 @@ import "./libraries/PSMKeyLib.sol";
 import "./interfaces/IPSMcore.sol";
 import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 
-// TODO : move event, errors, docs, and function declaration to interface
-
 contract PsmCore is IPSMcore {
     using PSMLibrary for State;
     using PsmKeyLibrary for PsmKey;

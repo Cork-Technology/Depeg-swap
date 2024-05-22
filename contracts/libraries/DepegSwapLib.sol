@@ -27,6 +27,8 @@ library DepegSwapLibrary {
         uint256 expiry
     ) internal returns (DepegSwap memory) {
         return
+            // TODO : move deployments to factory contract
+            
             DepegSwap({
                 depegSwap: address(new Asset("DS", pairName)),
                 coverToken: address(new Asset("CT", pairName)),
