@@ -121,7 +121,11 @@ library PSMLibrary {
         self.totalCtIssued += amount;
 
         self.wa.issueAndLock(amount);
-        self.info.redemptionAsset().asErc20().transferFrom(depositor, address(this), amount);
+        self.info.redemptionAsset().asErc20().transferFrom(
+            depositor,
+            address(this),
+            amount
+        );
         ds.issue(depositor, amount);
     }
 
@@ -164,7 +168,13 @@ library PSMLibrary {
             amount,
             deadline
         );
+
         ds.dsAsAsset().transferFrom(owner, address(this), amount);
+        self.info.peggedAsset().asErc20().transferFrom(
+            owner,
+            address(this),
+            amount
+        );
         self.info.redemptionAsset().asErc20().transfer(owner, amount);
     }
 

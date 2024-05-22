@@ -268,7 +268,15 @@ describe("PSM core", function () {
         resource.signer.account.address,
       ]);
 
-      await resource.psmCore.write.redeemWithDs(
+      // prepare pa
+      await resource.pa.write.mint([
+        resource.signer.account.address,
+        mintAmount,
+      ]);
+
+      await resource.pa.write.approve([resource.psmCore.address, mintAmount]);
+
+      await resource.psmCore.write.redeemWithRaWithDs(
         [resource.psmid, resource.dsId, parseEther("10"), await msg, deadline],
         {
           account: resource.signer.account,
@@ -302,7 +310,7 @@ describe("PSM core", function () {
       );
 
       // just to buffer
-      const deadline = BigInt(resource.expiry + 1);
+      const deadline = BigInt(resource.expiry + 10);
 
       const msg = permit(
         resource.signer,
