@@ -4,25 +4,7 @@ import {
 } from "@nomicfoundation/hardhat-toolbox-viem/network-helpers";
 import { expect } from "chai";
 import hre from "hardhat";
-import {
-  Account,
-  Address,
-  Chain,
-  erc20Abi,
-  etherUnits,
-  formatEther,
-  getAddress,
-  GetContractReturnType,
-  parseEther,
-  parseGwei,
-  PrivateKeyAccount,
-  PublicClient,
-  Transport,
-  WalletClient,
-} from "viem";
-import { ERC20$Type } from "../artifacts/@openzeppelin/contracts/token/ERC20/ERC20.sol/ERC20";
-import { Asset$Type } from "../artifacts/contracts/Asset.sol/Asset";
-import { getChainId } from "viem/_types/actions/public/getChainId";
+import { Address, formatEther, parseEther, WalletClient } from "viem";
 
 describe("PSM core", function () {
   function nowTimestampInSeconds() {
