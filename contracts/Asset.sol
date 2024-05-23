@@ -10,17 +10,18 @@ import "@openzeppelin/contracts/token/ERC20/extensions/ERC20FlashMint.sol";
 contract Asset is ERC20, ERC20Permit, ERC20FlashMint, Ownable {
     constructor(
         string memory prefix,
-        string memory pairName
+        string memory pairName,
+        address owner
     )
         ERC20(
             string(abi.encodePacked(prefix, "-", pairName)),
             string(abi.encodePacked(prefix, "-", pairName))
         )
         ERC20Permit(string(abi.encodePacked(prefix, "-", pairName)))
-        Ownable(msg.sender)
+        Ownable(owner)
     {}
 
     function mint(address to, uint256 amount) public onlyOwner {
-        _mint(to, amount); 
+        _mint(to, amount);
     }
 }
