@@ -30,8 +30,8 @@ library DepegSwapLibrary {
             // TODO : move deployments to factory contract
             
             DepegSwap({
-                depegSwap: address(new Asset("DS", pairName)),
-                coverToken: address(new Asset("CT", pairName)),
+                depegSwap: address(new Asset("DS", pairName,address(this))),
+                coverToken: address(new Asset("CT", pairName, address(this))),
                 expiryTimestamp: expiry,
                 dsRedeemed: 0,
                 ctRedeemed: 0

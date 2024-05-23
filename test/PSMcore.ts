@@ -12,24 +12,33 @@ describe("PSM core", function () {
   }
 
   async function fixture() {
-    return await hre.viem.deployContract("PsmCore");
+    const signers = await hre.viem.getWalletClients();
+    const signer = signers[0];
+    const psmcore = await hre.viem.deployContract("PsmCore");
+    const pa = await hre.viem.deployContract(
+      "DummyERCWithMetadata",
+      ["PA-TOKEN", "PTKN"],
+      {
+        client: {
+          wallet: signer,
+        },
+      }
+    );
+
+    const ra = await hre.viem.deployContract(
+      "DummyERCWithMetadata",
+      ["RA-TOKEN", "RTKN"],
+      {
+        client: {
+          wallet: signer,
+        },
+      }
+    );
+    return { psmCore: psmcore, pa, ra, signer };
   }
 
   async function withDs() {
-    const signers = await hre.viem.getWalletClients();
-    const signer = signers[0];
-
-    const psmCore = await loadFixture(fixture);
-    const pa = await hre.viem.deployContract("Asset", ["1", "TKN"], {
-      client: {
-        wallet: signer,
-      },
-    });
-    const ra = await hre.viem.deployContract("Asset", ["2", "TKN"], {
-      client: {
-        wallet: signer,
-      },
-    });
+    const { psmCore, pa, ra, signer } = await loadFixture(fixture);
 
     const pair = await psmCore.write.initialize([pa.address, ra.address], {
       account: signer.account,
@@ -148,11 +157,9 @@ describe("PSM core", function () {
 
   describe("issue pair", function () {
     it("Should issue a pair", async function () {
-      const psmCore = await loadFixture(fixture);
-      const pa = await hre.viem.deployContract("Asset", ["1", "TKN"]);
-      const ra = await hre.viem.deployContract("Asset", ["2", "TKN"]);
+      const { psmCore, pa, ra } = await loadFixture(fixture);
 
-      const pair = await psmCore.write.initialize([pa.address, ra.address]);
+      await psmCore.write.initialize([pa.address, ra.address]);
       const event = await psmCore.getEvents.Initialized({
         pa: pa.address,
         ra: ra.address,
@@ -162,9 +169,7 @@ describe("PSM core", function () {
     });
 
     it("should issue new ds", async function () {
-      const psmCore = await loadFixture(fixture);
-      const pa = await hre.viem.deployContract("Asset", ["1", "TKN"]);
-      const ra = await hre.viem.deployContract("Asset", ["2", "TKN"]);
+      const { psmCore, pa, ra } = await loadFixture(fixture);
 
       const pair = await psmCore.write.initialize([pa.address, ra.address]);
       const event = await psmCore.getEvents.Initialized({
