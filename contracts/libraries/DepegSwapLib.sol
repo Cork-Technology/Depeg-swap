@@ -4,9 +4,8 @@ import "./../Asset.sol";
 import "./SignatureHelperLib.sol";
 
 struct DepegSwap {
-    address depegSwap;
-    address coverToken;
-    uint256 expiryTimestamp;
+    address ds;
+    address ct;
     uint256 dsRedeemed;
     uint256 ctRedeemed;
 }
@@ -15,43 +14,18 @@ library DepegSwapLibrary {
     using MinimalSignatureHelper for Signature;
 
     function isExpired(DepegSwap memory self) internal view returns (bool) {
-        return block.timestamp >= self.expiryTimestamp;
+        return Asset(self.ds).isExpired();
     }
 
     function isInitialized(DepegSwap memory self) internal pure returns (bool) {
-        return self.depegSwap != address(0) && self.coverToken != address(0);
+        return self.ds != address(0) && self.ct != address(0);
     }
 
     function initialize(
-        string memory pairName,
-        uint256 expiry
-    ) internal returns (DepegSwap memory) {
-        return
-            // TODO : move deployments to factory contract
-            
-            DepegSwap({
-                depegSwap: address(new Asset("DS", pairName,address(this))),
-                coverToken: address(new Asset("CT", pairName, address(this))),
-                expiryTimestamp: expiry,
-                dsRedeemed: 0,
-                ctRedeemed: 0
-            });
-    }
-
-    function dsSupply(DepegSwap memory self) internal view returns (uint256) {
-        return Asset(self.depegSwap).totalSupply();
-    }
-
-    function ctSupply(DepegSwap memory self) internal view returns (uint256) {
-        return Asset(self.coverToken).totalSupply();
-    }
-
-    function dsAsAsset(DepegSwap memory self) internal pure returns (Asset) {
-        return Asset(self.depegSwap);
-    }
-
-    function ctAsAsset(DepegSwap memory self) internal pure returns (Asset) {
-        return Asset(self.coverToken);
+        address ds,
+        address ct
+    ) internal pure returns (DepegSwap memory) {
+        return DepegSwap({ds: ds, ct: ct, dsRedeemed: 0, ctRedeemed: 0});
     }
 
     function permit(
@@ -76,7 +50,7 @@ library DepegSwapLibrary {
     }
 
     function issue(DepegSwap memory self, address to, uint256 amount) internal {
-        Asset(self.depegSwap).mint(to, amount);
-        Asset(self.coverToken).mint(to, amount);
+        Asset(self.ds).mint(to, amount);
+        Asset(self.ct).mint(to, amount);
     }
 }
