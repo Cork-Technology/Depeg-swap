@@ -13,7 +13,7 @@ library WrappedAssetLibrary {
         string memory pairname
     ) internal returns (WrappedAsset memory) {
         return
-            WrappedAsset({wa: address(new Asset("WA", pairname)), locked: 0});
+            WrappedAsset({wa: address(new Asset("WA", pairname, address(this))), locked: 0});
     }
 
     function circulatingSupply(WrappedAsset memory self) internal view returns (uint256) {

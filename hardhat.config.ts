@@ -1,6 +1,8 @@
 import { HardhatUserConfig } from "hardhat/config";
 import "@nomicfoundation/hardhat-toolbox-viem";
 import "hardhat-gas-reporter";
+import "@openzeppelin/hardhat-upgrades";
+import "@nomicfoundation/hardhat-ethers";
 import loadEnv from "dotenv";
 
 loadEnv.config();
