@@ -120,7 +120,9 @@ contract AssetFactory is IAssetFactory, OwnableUpgradeable, UUPSUpgradeable {
         ct = address(new Asset(CT_PREFIX, pairname, msg.sender, expiry));
         ds = address(new Asset(DS_PREFIX, pairname, msg.sender, expiry));
 
+        // TODO : tests this with ~100 pairs
         swapAssets[wa].push(SwapAssets(ct, ds));
+        emit AssetDeployed(wa, ct, ds);
     }
 
     // TODO : owner will be config contract later
@@ -132,6 +134,8 @@ contract AssetFactory is IAssetFactory, OwnableUpgradeable, UUPSUpgradeable {
         wa = address(new WrappedAsset(ra));
 
         wrappedAssets[_idx] = WrappedAssets(ra, wa);
+
+        emit WrappedAssetDeployed(ra, wa);
     }
 
     function _authorizeUpgrade(
