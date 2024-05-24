@@ -7,7 +7,7 @@ import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Permit.sol";
 import "./../WrappedAsset.sol";
 
 struct WrappedAssetInfo {
-    address wa;
+    address _address;
     uint256 locked;
 }
 
@@ -17,13 +17,13 @@ library WrappedAssetLibrary {
     function initialize(
         address wa
     ) internal pure returns (WrappedAssetInfo memory) {
-        return WrappedAssetInfo({wa: wa, locked: 0});
+        return WrappedAssetInfo({_address: wa, locked: 0});
     }
 
     function circulatingSupply(
         WrappedAssetInfo memory self
     ) internal view returns (uint256) {
-        return IERC20(self.wa).totalSupply() - self.locked;
+        return IERC20(self._address).totalSupply() - self.locked;
     }
 
     function lock(
@@ -37,7 +37,7 @@ library WrappedAssetLibrary {
         self.locked += amount;
         Signature memory sig = MinimalSignatureHelper.split(rawSig);
 
-        IERC20Permit(self.wa).permit(
+        IERC20Permit(self._address).permit(
             owner,
             spender,
             amount,
@@ -47,7 +47,7 @@ library WrappedAssetLibrary {
             sig.s
         );
 
-        IERC20(self.wa).transferFrom(owner, address(this), amount);
+        IERC20(self._address).transferFrom(owner, address(this), amount);
     }
 }
 

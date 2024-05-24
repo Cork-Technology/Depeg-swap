@@ -71,12 +71,20 @@ interface IPSMcore {
 
     function issueNewDs(PsmId id, uint256 expiry) external;
 
-    function deposit(PsmId id, uint256 amount) external;
+    function deposit(
+        PsmId id,
+        uint256 amount,
+        bytes memory rawWaSig,
+        uint256 deadline
+    ) external;
 
     function previewDeposit(
         PsmId id,
         uint256 amount
-    ) external view returns (uint256 ctReceived, uint256 dsReceived, uint256 dsId);
+    )
+        external
+        view
+        returns (uint256 ctReceived, uint256 dsReceived, uint256 dsId);
 
     function redeemWithRaWithDs(
         PsmId id,

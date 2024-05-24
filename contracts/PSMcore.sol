@@ -54,18 +54,27 @@ contract PsmCore is IPSMcore {
     ) external override onlyInitialized(id) {
         State storage state = modules[id];
         IAssetFactory factoryInstance = IAssetFactory(factory);
-        (address ct, address ds) = factoryInstance.
-        // (uint256 dsId, address ds, address ct) = state.issueNewPair(expiry);
+
+        (address ct, address ds) = factoryInstance.deploySwapAssets(
+            state.info._redemptionAsset,
+            state.info._peggedAsset,
+            state.wa._address,
+            expiry
+        );
+
+        uint256 dsId = state.issueNewPair(ct, ds);
 
         emit Issued(id, dsId, expiry, ds, ct);
     }
 
     function deposit(
         PsmId id,
-        uint256 amount
+        uint256 amount,
+        bytes memory rawWaSig,
+        uint256 deadline
     ) external override onlyInitialized(id) {
         State storage state = modules[id];
-        uint256 dsId = state.deposit(msg.sender, amount);
+        uint256 dsId = state.deposit(msg.sender, amount, rawWaSig, deadline);
         emit Deposited(id, dsId, msg.sender, amount);
     }
 
