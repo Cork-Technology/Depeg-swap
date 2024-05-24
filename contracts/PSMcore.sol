@@ -26,15 +26,22 @@ contract PsmCore is IPSMcore {
         _;
     }
 
+    function _onlyValidAsset(address asset) internal view {
+        if (IAssetFactory(factory).isDeployed(asset) == false) {
+            revert InvalidAsset(asset);
+        }
+    }
+
     function getId(address pa, address ra) external pure returns (PsmId) {
         return PsmKeyLibrary.initalize(pa, ra).toId();
     }
 
-    function initialize(address pa, address ra) external override {
+    // TODO : only allow to call this from config contract later or router
+    function initialize(address pa, address ra, address wa) external override {
+        _onlyValidAsset(pa);
+
         PsmKey memory key = PsmKeyLibrary.initalize(pa, ra);
         PsmId id = key.toId();
-
-        IAssetFactory factoryInstance = IAssetFactory(factory);
 
         State storage state = modules[id];
 
@@ -42,25 +49,22 @@ contract PsmCore is IPSMcore {
             revert AlreadyInitialized();
         }
 
-        address wa = factoryInstance.deployWrappedAsset(ra, pa);
         state.initialize(key, wa);
 
         emit Initialized(id, pa, ra);
     }
 
+    // TODO : only allow to call this from config contract later or router
     function issueNewDs(
         PsmId id,
-        uint256 expiry
+        uint256 expiry,
+        address ct,
+        address ds
     ) external override onlyInitialized(id) {
+        _onlyValidAsset(ct);
+        _onlyValidAsset(ds);
+        
         State storage state = modules[id];
-        IAssetFactory factoryInstance = IAssetFactory(factory);
-
-        (address ct, address ds) = factoryInstance.deploySwapAssets(
-            state.info._redemptionAsset,
-            state.info._peggedAsset,
-            state.wa._address,
-            expiry
-        );
 
         uint256 dsId = state.issueNewPair(ct, ds);
 

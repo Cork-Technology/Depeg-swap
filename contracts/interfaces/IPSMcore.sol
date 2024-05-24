@@ -67,9 +67,17 @@ interface IPSMcore {
     /// @notice psm module is already initialized, i.e thrown when trying to reinitialize a module
     error AlreadyInitialized();
 
-    function initialize(address pa, address ra) external;
+    /// @notice invalid asset, thrown when trying to do something with an asset not deployed with asset factory
+    error InvalidAsset(address asset);
 
-    function issueNewDs(PsmId id, uint256 expiry) external;
+    function initialize(address pa, address ra, address wa) external;
+
+    function issueNewDs(
+        PsmId id,
+        uint256 expiry,
+        address ct,
+        address ds
+    ) external;
 
     function deposit(
         PsmId id,

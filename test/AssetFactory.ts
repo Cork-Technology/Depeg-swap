@@ -7,10 +7,17 @@ import hre from "hardhat";
 import { ethers, upgrades } from "hardhat";
 
 import { Address, formatEther, parseEther, WalletClient } from "viem";
+import { getSigners } from "./helper/TestHelper";
 
 describe("Asset Factory", function () {
   it("should deploy AssetFactory", async function () {
-    const c = await hre.viem.deployContract("AssetFactory", []);
-    c.write.initialize();
+    const { defaultSigner } = await getSigners();
+    const contract = await hre.viem.deployContract("AssetFactory", [], {
+      client: {
+        wallet: defaultSigner,
+      },
+    });
+
+    expect(contract).to.be.ok;
   });
 });

@@ -5,214 +5,73 @@ import {
 import { expect } from "chai";
 import hre from "hardhat";
 import { Address, formatEther, parseEther, WalletClient } from "viem";
+import * as helper from "./helper/TestHelper";
 
 describe("PSM core", function () {
-  function nowTimestampInSeconds() {
-    return Math.floor(Date.now() / 1000);
-  }
-
-  async function fixture() {
-    const signers = await hre.viem.getWalletClients();
-    const signer = signers[0];
-    const psmcore = await hre.viem.deployContract("PsmCore");
-    const pa = await hre.viem.deployContract(
-      "DummyERCWithMetadata",
-      ["PA-TOKEN", "PTKN"],
-      {
-        client: {
-          wallet: signer,
-        },
-      }
-    );
-
-    const ra = await hre.viem.deployContract(
-      "DummyERCWithMetadata",
-      ["RA-TOKEN", "RTKN"],
-      {
-        client: {
-          wallet: signer,
-        },
-      }
-    );
-    return { psmCore: psmcore, pa, ra, signer };
-  }
-
-  async function withDs() {
-    const { psmCore, pa, ra, signer } = await loadFixture(fixture);
-
-    const pair = await psmCore.write.initialize([pa.address, ra.address], {
-      account: signer.account,
-    });
-    const event = await psmCore.getEvents.Initialized({
-      pa: pa.address,
-      ra: ra.address,
-    });
-
-    const psmid = event[0].args.id!;
-
-    // 1 hour
-    const expiry = nowTimestampInSeconds() + 3600;
-
-    const ds = await psmCore.write.issueNewDs([psmid, BigInt(expiry)]);
-    const issuedEvent = await psmCore.getEvents.Issued({
-      psmId: psmid,
-      expiry: BigInt(expiry),
-    });
-
-    const dsId = issuedEvent[0].args.dsId!;
-    const dsAddress = issuedEvent[0].args.ds;
-    const ctAddress = issuedEvent[0].args.ct;
-
-    return {
-      psmCore,
-      pa,
-      ra,
-      psmid,
-      dsId,
-      expiry,
-      signer,
-      dsAddress,
-      ctAddress,
-    };
-  }
-
-  async function permit(
-    signer: WalletClient,
-    contractAddress: string,
-    psmAddres: string,
-    amount: bigint,
-    deadline: bigint
-  ) {
-    const contractName = await (
-      await hre.viem.getContractAt("Asset", contractAddress as Address)
-    ).read.name();
-    const nonces = await (
-      await hre.viem.getContractAt("Asset", contractAddress as Address)
-    ).read.nonces([signer.account!.address as Address]);
-
-    // set the domain parameters
-    const domain = {
-      name: contractName,
-      version: "1",
-      chainId: hre.network.config.chainId!,
-      verifyingContract: psmAddres,
-    };
-
-    // set the Permit type parameters
-    const types = {
-      Permit: [
-        {
-          name: "owner",
-          type: "address",
-        },
-        {
-          name: "spender",
-          type: "address",
-        },
-        {
-          name: "value",
-          type: "uint256",
-        },
-        {
-          name: "nonce",
-          type: "uint256",
-        },
-        {
-          name: "deadline",
-          type: "uint256",
-        },
-      ],
-    };
-
-    // set the Permit type values
-    const values = {
-      owner: signer.account!.address,
-      spender: psmAddres,
-      value: amount,
-      nonce: nonces,
-      deadline: deadline,
-    };
-
-    // sign the Permit type data with the deployer's private key
-    return await signer.signTypedData({
-      domain: {
-        chainId: hre.network.config.chainId!,
-        name: contractName,
-        verifyingContract: contractAddress as Address,
-        version: "1",
-      },
-      account: signer.account?.address as Address,
-      types: types,
-      primaryType: "Permit",
-      message: values,
-    });
-  }
-
-  describe("deployment", function () {
-    it("Should deploy the PsmCore contract", async function () {
-      const psmCore = await loadFixture(fixture);
-      expect(psmCore).to.be.ok;
-    });
-  });
-
   describe("issue pair", function () {
-    it("Should issue a pair", async function () {
-      const { psmCore, pa, ra } = await loadFixture(fixture);
-
-      await psmCore.write.initialize([pa.address, ra.address]);
-      const event = await psmCore.getEvents.Initialized({
-        pa: pa.address,
-        ra: ra.address,
-      });
-
-      expect(event.length).to.equal(1);
-    });
-
     it("should issue new ds", async function () {
-      const { psmCore, pa, ra } = await loadFixture(fixture);
+      const { defaultSigner } = await helper.getSigners();
+      const { ra, pa } = await loadFixture(helper.backedAssets);
+      const psmFixture = await loadFixture(helper.pmCoreWithInitializedPsm);
+      const expiry = helper.expiry(10);
 
-      const pair = await psmCore.write.initialize([pa.address, ra.address]);
-      const event = await psmCore.getEvents.Initialized({
-        pa: pa.address,
-        ra: ra.address,
+      const contract = await hre.viem.getContractAt(
+        "PsmCore",
+        psmFixture.psmCore.contract.address
+      );
+      const psmId = await contract.read.getId([pa.address, ra.address]);
+      await contract.write.issueNewDs([psmId, BigInt(expiry)], {
+        account: defaultSigner.account,
       });
 
-      const psmid = event[0].args.id!;
-
-      // 1 hour
-      const expiry = nowTimestampInSeconds() + 3600;
-
-      const ds = await psmCore.write.issueNewDs([psmid, BigInt(expiry)]);
-      const issuedEvent = await psmCore.getEvents.Issued({
-        psmId: psmid,
+      const events = await contract.getEvents.Issued({
+        psmId,
         expiry: BigInt(expiry),
       });
 
-      expect(issuedEvent.length).to.equal(1);
+      expect(events.length).to.equal(1);
     });
   });
 
   describe("commons", function () {
     it("should deposit", async function () {
+      const { defaultSigner } = await helper.getSigners();
+      const fixture = await loadFixture(helper.pmCoreWithInitializedPsm);
       const mintAmount = parseEther("1000");
-      const resource = await loadFixture(withDs);
-      await resource.ra.write.mint([
-        resource.signer.account.address,
+      const expTime = 10;
+
+      await fixture.ra.write.approve([
+        fixture.psmCore.contract.address,
         mintAmount,
       ]);
 
-      await resource.ra.write.approve([resource.psmCore.address, mintAmount]);
+      const deadline = BigInt(helper.expiry(expTime));
+      const waSig = await helper.permit({
+        amount: parseEther("100"),
+        deadline,
+        erc20contractAddress: (await fixture.wa).address,
+        psmAddress: fixture.psmCore.contract.address,
+        signer: defaultSigner,
+      });
 
-      await resource.psmCore.write.deposit(
-        [resource.psmid, parseEther("100")],
+      const { dsId } = await helper.issueNewSwapAssets({
+        expiry: helper.nowTimestampInSeconds() + 20,
+        psmCore: fixture.psmCore.contract.address,
+        pa: fixture.pa.address,
+        ra: fixture.ra.address,
+      });
+
+      await fixture.psmCore.contract.write.deposit(
+        [fixture.psmId, parseEther("100"), waSig, deadline],
         {
-          account: resource.signer.account,
+          account: defaultSigner.account,
         }
       );
-      const event = await resource.psmCore.getEvents.Deposited({
-        depositor: resource.signer.account.address,
-        dsId: resource.dsId,
-        psmId: resource.psmid,
+
+      const event = await fixture.psmCore.contract.getEvents.Deposited({
+        psmId: fixture.psmId,
+        dsId,
+        depositor: defaultSigner.account.address,
       });
 
       expect(event.length).to.equal(1);
