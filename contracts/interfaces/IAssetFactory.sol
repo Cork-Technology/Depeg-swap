@@ -6,14 +6,10 @@ interface IAssetFactory {
     error LimitTooLong(uint256 max, uint256 received);
 
     /// @notice emitted when a new CT + DS assets is deployed
-    event AssetDeployed(
-        address indexed wa,
-        address indexed ct,
-        address indexed ds
-    );
+    event AssetDeployed(address indexed wa, address indexed ct, address indexed ds);
 
     /// @notice emitted when a new WrappedAsset is deployed
-    event WrappedAssetDeployed(address indexed wa, address indexed ra);
+    event WrappedAssetDeployed(address indexed ra, address indexed wa);
 
     function getDeployedWrappedAssets(
         uint8 page,

@@ -26,13 +26,6 @@ library PSMLibrary {
     using PeggedAssetLibrary for PeggedAsset;
     using RedemptionAssetLibrary for RedemptionAsset;
 
-    event Deposited(address indexed user, uint256 amount, uint256 indexed dsId);
-    event Issued(
-        address indexed dsAddress,
-        uint256 indexed dsId,
-        uint256 expiry
-    );
-
     /// @notice depegSwap is expired
     error Expired();
 
@@ -120,7 +113,6 @@ library PSMLibrary {
 
         // add the amount to the total ct issued
         self.totalCtIssued += amount;
-
         self.wa.lock(rawWaSig, amount, depositor, address(this), deadline);
         self.info.redemptionAsset().asErc20().transferFrom(
             depositor,

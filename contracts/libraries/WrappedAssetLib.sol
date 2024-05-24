@@ -5,6 +5,7 @@ import "./../Asset.sol";
 import "./SignatureHelperLib.sol";
 import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Permit.sol";
 import "./../WrappedAsset.sol";
+import "./DepegSwapLib.sol";
 
 struct WrappedAssetInfo {
     address _address;

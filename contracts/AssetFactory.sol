@@ -27,7 +27,6 @@ contract AssetFactory is IAssetFactory, OwnableUpgradeable, UUPSUpgradeable {
     mapping(address => SwapAssets[]) swapAssets;
     mapping(address => bool) deployed;
 
-
     // for safety checks in psm core, also act as kind of like a registry
     function isDeployed(address asset) external view override returns (bool) {
         return deployed[asset];
@@ -122,6 +121,10 @@ contract AssetFactory is IAssetFactory, OwnableUpgradeable, UUPSUpgradeable {
 
         // TODO : tests this with ~100 pairs
         swapAssets[wa].push(SwapAssets(ct, ds));
+
+        deployed[ct] = true;
+        deployed[ds] = true;
+
         emit AssetDeployed(wa, ct, ds);
     }
 
@@ -134,6 +137,8 @@ contract AssetFactory is IAssetFactory, OwnableUpgradeable, UUPSUpgradeable {
         wa = address(new WrappedAsset(ra));
 
         wrappedAssets[_idx] = WrappedAssets(ra, wa);
+
+        deployed[wa] = true;
 
         emit WrappedAssetDeployed(ra, wa);
     }

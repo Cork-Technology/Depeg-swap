@@ -38,7 +38,7 @@ contract PsmCore is IPSMcore {
 
     // TODO : only allow to call this from config contract later or router
     function initialize(address pa, address ra, address wa) external override {
-        _onlyValidAsset(pa);
+        _onlyValidAsset(wa);
 
         PsmKey memory key = PsmKeyLibrary.initalize(pa, ra);
         PsmId id = key.toId();
@@ -63,7 +63,7 @@ contract PsmCore is IPSMcore {
     ) external override onlyInitialized(id) {
         _onlyValidAsset(ct);
         _onlyValidAsset(ds);
-        
+
         State storage state = modules[id];
 
         uint256 dsId = state.issueNewPair(ct, ds);
