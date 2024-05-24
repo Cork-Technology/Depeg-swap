@@ -5,10 +5,11 @@ interface IAssetFactory {
     function getDeployedAssets(
         uint8 page,
         uint8 limit
-    ) external view returns (address[] memory);
+    ) external view returns (address[] memory ct, address[] memory ds);
 
     function deploy(
         address ra,
-        address pa
+        address pa,
+        address wa
     ) external returns (address ct, address ds);
 }
