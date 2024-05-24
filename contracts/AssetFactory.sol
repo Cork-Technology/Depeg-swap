@@ -7,8 +7,7 @@ import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import "./WrappedAsset.sol";
 import "./Asset.sol";
 
-// IAssetFactory
-contract AssetFactory is OwnableUpgradeable, UUPSUpgradeable {
+contract AssetFactory is IAssetFactory, OwnableUpgradeable, UUPSUpgradeable {
     /// @notice limit too long when getting deployed assets
     error LimitTooLong(uint256 max, uint256 received);
 
@@ -57,6 +56,7 @@ contract AssetFactory is OwnableUpgradeable, UUPSUpgradeable {
     )
         external
         view
+        override
         withinLimit(limit)
         returns (address[] memory ra, address[] memory pa, address[] memory wa)
     {
@@ -86,6 +86,7 @@ contract AssetFactory is OwnableUpgradeable, UUPSUpgradeable {
     )
         external
         view
+        override
         withinLimit(limit)
         returns (address[] memory ct, address[] memory ds)
     {
@@ -112,7 +113,13 @@ contract AssetFactory is OwnableUpgradeable, UUPSUpgradeable {
         address pa,
         address wa,
         uint256 expiry
-    ) external onlyOwner notDelegated returns (address ct, address ds) {
+    )
+        external
+        override
+        onlyOwner
+        notDelegated
+        returns (address ct, address ds)
+    {
         string memory pairname = string(
             abi.encodePacked(Asset(ra).name(), "-", Asset(pa).name())
         );
@@ -126,7 +133,7 @@ contract AssetFactory is OwnableUpgradeable, UUPSUpgradeable {
     function deployWrappedAsset(
         address ra,
         address pa
-    ) external onlyOwner notDelegated returns (address wa) {
+    ) external override onlyOwner notDelegated returns (address wa) {
         uint256 _idx = idx++;
 
         wa = address(new WrappedAsset(ra));

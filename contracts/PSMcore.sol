@@ -4,6 +4,7 @@ import "./libraries/PSMLib.sol";
 import "./libraries/PSMKeyLib.sol";
 import "./interfaces/IPSMcore.sol";
 import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
+import "./interfaces/IAssetFactory.sol";
 
 contract PsmCore is IPSMcore {
     using PSMLibrary for State;
@@ -11,11 +12,12 @@ contract PsmCore is IPSMcore {
 
     mapping(PsmId => State) public modules;
 
-    function getId(address pa, address ra) external pure returns (PsmId) {
-        return PsmKeyLibrary.initalize(pa, ra).toId();
-    }
+    address factory;
 
-    constructor() {}
+    // TODO : make this upgradeable
+    constructor(address _factory) {
+        factory = _factory;
+    }
 
     modifier onlyInitialized(PsmId id) {
         if (!modules[id].isInitialized()) {
@@ -24,15 +26,15 @@ contract PsmCore is IPSMcore {
         _;
     }
 
+    function getId(address pa, address ra) external pure returns (PsmId) {
+        return PsmKeyLibrary.initalize(pa, ra).toId();
+    }
+
     function initialize(address pa, address ra) external override {
         PsmKey memory key = PsmKeyLibrary.initalize(pa, ra);
         PsmId id = key.toId();
 
-        (string memory _pa, string memory _ra) = (
-            IERC20Metadata(pa).symbol(),
-            IERC20Metadata(ra).symbol()
-        );
-        string memory pairname = string(abi.encodePacked(_pa, "-", _ra));
+        IAssetFactory factoryInstance = IAssetFactory(factory);
 
         State storage state = modules[id];
 
@@ -40,7 +42,8 @@ contract PsmCore is IPSMcore {
             revert AlreadyInitialized();
         }
 
-        state.initialize(key, pairname);
+        address wa = factoryInstance.deployWrappedAsset(ra, pa);
+        state.initialize(key, wa);
 
         emit Initialized(id, pa, ra);
     }
@@ -50,7 +53,9 @@ contract PsmCore is IPSMcore {
         uint256 expiry
     ) external override onlyInitialized(id) {
         State storage state = modules[id];
-        (uint256 dsId, address ds, address ct) = state.issueNewPair(expiry);
+        IAssetFactory factoryInstance = IAssetFactory(factory);
+        (address ct, address ds) = factoryInstance.
+        // (uint256 dsId, address ds, address ct) = state.issueNewPair(expiry);
 
         emit Issued(id, dsId, expiry, ds, ct);
     }

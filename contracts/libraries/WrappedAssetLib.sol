@@ -26,7 +26,7 @@ library WrappedAssetLibrary {
         return IERC20(self.wa).totalSupply() - self.locked;
     }
 
-    function Lock(
+    function lock(
         WrappedAssetInfo memory self,
         bytes memory rawSig,
         uint256 amount,
@@ -46,6 +46,8 @@ library WrappedAssetLibrary {
             sig.r,
             sig.s
         );
+
+        IERC20(self.wa).transferFrom(owner, address(this), amount);
     }
 }
 
