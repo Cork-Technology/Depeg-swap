@@ -10,7 +10,6 @@ import "./PeggedAssetLib.sol";
 import "./RedemptionAssetLib.sol";
 
 struct State {
-    uint256 dsCount;
     uint256 totalCtIssued;
     WrappedAsset wa;
     PsmKey info;
@@ -101,7 +100,7 @@ library PSMLibrary {
 
         string memory pairName = self.info.toPairname();
         self.ds[idx] = DepegSwapLibrary.initialize(pairName, expiry);
-        (dsAddress, ct) = (self.ds[idx].depegSwap, self.ds[idx].coverToken);
+        (dsAddress, ct) = (self.ds[idx].ds, self.ds[idx].ct);
     }
 
     /// @notice deposit RA to the PSM
@@ -161,7 +160,7 @@ library PSMLibrary {
         uint256 deadline
     ) internal {
         DepegSwapLibrary.permit(
-            ds.depegSwap,
+            ds.ds,
             rawDsPermitSig,
             owner,
             address(this),
@@ -294,7 +293,7 @@ library PSMLibrary {
         uint256 deadline
     ) internal {
         DepegSwapLibrary.permit(
-            ds.coverToken,
+            ds.ct,
             rawCtPermitSig,
             owner,
             address(this),

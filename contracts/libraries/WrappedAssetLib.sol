@@ -2,27 +2,50 @@
 pragma solidity ^0.8.0;
 
 import "./../Asset.sol";
+import "./SignatureHelperLib.sol";
+import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Permit.sol";
+import "./../WrappedAsset.sol";
 
-struct WrappedAsset {
+struct WrappedAssetInfo {
     address wa;
     uint256 locked;
 }
 
 library WrappedAssetLibrary {
+    using MinimalSignatureHelper for Signature;
+
     function initialize(
-        string memory pairname
-    ) internal returns (WrappedAsset memory) {
-        return
-            WrappedAsset({wa: address(new Asset("WA", pairname, address(this))), locked: 0});
+        address wa
+    ) internal pure returns (WrappedAssetInfo memory) {
+        return WrappedAssetInfo({wa: wa, locked: 0});
     }
 
-    function circulatingSupply(WrappedAsset memory self) internal view returns (uint256) {
-        return Asset(self.wa).totalSupply() - self.locked;
+    function circulatingSupply(
+        WrappedAssetInfo memory self
+    ) internal view returns (uint256) {
+        return IERC20(self.wa).totalSupply() - self.locked;
     }
 
-    function issueAndLock(WrappedAsset memory self, uint256 amount) internal {
+    function Lock(
+        WrappedAssetInfo memory self,
+        bytes memory rawSig,
+        uint256 amount,
+        address owner,
+        address spender,
+        uint256 deadline
+    ) internal {
         self.locked += amount;
-        Asset(self.wa).mint(address(this), amount);
+        Signature memory sig = MinimalSignatureHelper.split(rawSig);
+
+        IERC20Permit(self.wa).permit(
+            owner,
+            spender,
+            amount,
+            deadline,
+            sig.v,
+            sig.r,
+            sig.s
+        );
     }
 }
 
