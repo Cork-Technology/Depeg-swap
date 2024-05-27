@@ -6,7 +6,6 @@ import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import "./WrappedAsset.sol";
 import "./Asset.sol";
-import "hardhat/console.sol";
 
 contract AssetFactory is IAssetFactory, OwnableUpgradeable, UUPSUpgradeable {
     uint8 public constant MAX_LIMIT = 10;
@@ -24,6 +23,7 @@ contract AssetFactory is IAssetFactory, OwnableUpgradeable, UUPSUpgradeable {
     }
 
     uint256 idx;
+    
     mapping(uint256 => WrappedAssets) wrappedAssets;
     mapping(address => SwapAssets[]) swapAssets;
     mapping(address => bool) deployed;
