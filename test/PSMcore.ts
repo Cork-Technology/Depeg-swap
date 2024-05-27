@@ -76,7 +76,7 @@ describe("PSM core", function () {
       );
 
       const { dsId } = await helper.issueNewSwapAssets({
-        expiry: helper.nowTimestampInSeconds() + 20,
+        expiry: helper.nowTimestampInSeconds() + 10000,
         psmCore: fixture.psmCore.contract.address,
         pa: fixture.pa.address,
         ra: fixture.ra.address,
@@ -125,7 +125,7 @@ describe("PSM core", function () {
       );
 
       const { dsId, ds, ct } = await helper.issueNewSwapAssets({
-        expiry: helper.nowTimestampInSeconds() + 20,
+        expiry: helper.nowTimestampInSeconds() + 1000,
         psmCore: fixture.psmCore.contract.address,
         pa: fixture.pa.address,
         ra: fixture.ra.address,
@@ -167,6 +167,7 @@ describe("PSM core", function () {
       const lockedBalance = await fixture.psmCore.contract.read.valueLocked([
         fixture.psmId,
       ]);
+
       console.log("locked balance", formatEther(lockedBalance));
 
       await fixture.psmCore.contract.write.redeemWithRaWithDs(
@@ -189,7 +190,7 @@ describe("PSM core", function () {
       const { defaultSigner } = await helper.getSigners();
       const fixture = await loadFixture(helper.pmCoreWithInitializedPsm);
       const mintAmount = parseEther("1000");
-      const expTime = 10000;
+      const expTime = 100000;
 
       await fixture.ra.write.approve([
         fixture.psmCore.contract.address,
@@ -210,7 +211,7 @@ describe("PSM core", function () {
       );
 
       const { dsId, ds, ct, expiry } = await helper.issueNewSwapAssets({
-        expiry: helper.nowTimestampInSeconds() + 20,
+        expiry: helper.nowTimestampInSeconds() + 10000,
         psmCore: fixture.psmCore.contract.address,
         pa: fixture.pa.address,
         ra: fixture.ra.address,

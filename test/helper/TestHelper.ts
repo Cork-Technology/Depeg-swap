@@ -38,6 +38,8 @@ export async function deployAssetFactory() {
     },
   });
 
+  await contract.write.initialize();
+
   return {
     contract,
   };

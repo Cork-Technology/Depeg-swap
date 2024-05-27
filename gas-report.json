@@ -28,8 +28,8 @@
   "showUncalledMethods": false,
   "coinmarketcap": "[REDACTED]",
   "token": "ETH",
-  "tokenPrice": "3678.68",
-  "gasPrice": 14,
+  "tokenPrice": "3948.24",
+  "gasPrice": 30,
   "blockGasLimit": 30000000,
   "solcInfo": {
    "version": "0.8.24",
@@ -68,30 +68,10 @@
     "contract": "Asset",
     "method": "approve",
     "fnSig": "approve(address,uint256)",
-    "intrinsicGas": [
-     21644,
-     21644,
-     21644,
-     21644
-    ],
-    "callData": [
-     0,
-     0,
-     0,
-     0
-    ],
-    "gasData": [
-     46400,
-     46400,
-     46400,
-     46400
-    ],
-    "numberOfCalls": 4,
-    "executionGasAverage": 46400,
-    "calldataGasAverage": 0,
-    "cost": "2.39",
-    "min": 46400,
-    "max": 46400
+    "intrinsicGas": [],
+    "callData": [],
+    "gasData": [],
+    "numberOfCalls": 0
    },
    "Asset_70a08231": {
     "key": "70a08231",
@@ -126,6 +106,17 @@
     "gasData": [],
     "numberOfCalls": 0
    },
+   "Asset_e184c9be": {
+    "key": "e184c9be",
+    "isCall": true,
+    "contract": "Asset",
+    "method": "expiry",
+    "fnSig": "expiry()",
+    "intrinsicGas": [],
+    "callData": [],
+    "gasData": [],
+    "numberOfCalls": 0
+   },
    "Asset_d9d98ce4": {
     "key": "d9d98ce4",
     "isCall": true,
@@ -148,6 +139,17 @@
     "gasData": [],
     "numberOfCalls": 0
    },
+   "Asset_2f13b60c": {
+    "key": "2f13b60c",
+    "isCall": true,
+    "contract": "Asset",
+    "method": "isExpired",
+    "fnSig": "isExpired()",
+    "intrinsicGas": [],
+    "callData": [],
+    "gasData": [],
+    "numberOfCalls": 0
+   },
    "Asset_613255ab": {
     "key": "613255ab",
     "isCall": true,
@@ -165,30 +167,10 @@
     "contract": "Asset",
     "method": "mint",
     "fnSig": "mint(address,uint256)",
-    "intrinsicGas": [
-     21644,
-     21644,
-     21644,
-     21644
-    ],
-    "callData": [
-     0,
-     0,
-     0,
-     0
-    ],
-    "gasData": [
-     70636,
-     70636,
-     70636,
-     70636
-    ],
-    "numberOfCalls": 4,
-    "executionGasAverage": 70636,
-    "calldataGasAverage": 0,
-    "cost": "3.64",
-    "min": 70636,
-    "max": 70636
+    "intrinsicGas": [],
+    "callData": [],
+    "gasData": [],
+    "numberOfCalls": 0
    },
    "Asset_06fdde03": {
     "key": "06fdde03",
@@ -300,6 +282,169 @@
     "gasData": [],
     "numberOfCalls": 0
    },
+   "AssetFactory_114cccd2": {
+    "key": "114cccd2",
+    "isCall": true,
+    "contract": "AssetFactory",
+    "method": "MAX_LIMIT",
+    "fnSig": "MAX_LIMIT()",
+    "intrinsicGas": [],
+    "callData": [],
+    "gasData": [],
+    "numberOfCalls": 0
+   },
+   "AssetFactory_ad3cb1cc": {
+    "key": "ad3cb1cc",
+    "isCall": true,
+    "contract": "AssetFactory",
+    "method": "UPGRADE_INTERFACE_VERSION",
+    "fnSig": "UPGRADE_INTERFACE_VERSION()",
+    "intrinsicGas": [],
+    "callData": [],
+    "gasData": [],
+    "numberOfCalls": 0
+   },
+   "AssetFactory_7e479c9f": {
+    "key": "7e479c9f",
+    "isCall": false,
+    "contract": "AssetFactory",
+    "method": "deploySwapAssets",
+    "fnSig": "deploySwapAssets(address,address,address,address,uint256)",
+    "intrinsicGas": [
+     22700,
+     22700,
+     22700,
+     22700
+    ],
+    "callData": [
+     0,
+     0,
+     0,
+     0
+    ],
+    "gasData": [
+     2503144,
+     2503144,
+     2503144,
+     2503144
+    ],
+    "numberOfCalls": 4,
+    "executionGasAverage": 2503144,
+    "calldataGasAverage": 0,
+    "cost": "296.49",
+    "min": 2503144,
+    "max": 2503144
+   },
+   "AssetFactory_05310d53": {
+    "key": "05310d53",
+    "isCall": false,
+    "contract": "AssetFactory",
+    "method": "deployWrappedAsset",
+    "fnSig": "deployWrappedAsset(address)",
+    "intrinsicGas": [
+     21420
+    ],
+    "callData": [
+     0
+    ],
+    "gasData": [
+     1300070
+    ],
+    "numberOfCalls": 1,
+    "executionGasAverage": 1300070,
+    "calldataGasAverage": 0,
+    "cost": "153.99",
+    "min": 1300070,
+    "max": 1300070
+   },
+   "AssetFactory_2377e8c5": {
+    "key": "2377e8c5",
+    "isCall": true,
+    "contract": "AssetFactory",
+    "method": "getDeployedSwapAssets",
+    "fnSig": "getDeployedSwapAssets(address,uint8,uint8)",
+    "intrinsicGas": [],
+    "callData": [],
+    "gasData": [],
+    "numberOfCalls": 0
+   },
+   "AssetFactory_3c2bdc5a": {
+    "key": "3c2bdc5a",
+    "isCall": true,
+    "contract": "AssetFactory",
+    "method": "getDeployedWrappedAssets",
+    "fnSig": "getDeployedWrappedAssets(uint8,uint8)",
+    "intrinsicGas": [],
+    "callData": [],
+    "gasData": [],
+    "numberOfCalls": 0
+   },
+   "AssetFactory_90184b02": {
+    "key": "90184b02",
+    "isCall": true,
+    "contract": "AssetFactory",
+    "method": "isDeployed",
+    "fnSig": "isDeployed(address)",
+    "intrinsicGas": [],
+    "callData": [],
+    "gasData": [],
+    "numberOfCalls": 0
+   },
+   "AssetFactory_8da5cb5b": {
+    "key": "8da5cb5b",
+    "isCall": true,
+    "contract": "AssetFactory",
+    "method": "owner",
+    "fnSig": "owner()",
+    "intrinsicGas": [],
+    "callData": [],
+    "gasData": [],
+    "numberOfCalls": 0
+   },
+   "AssetFactory_52d1902d": {
+    "key": "52d1902d",
+    "isCall": true,
+    "contract": "AssetFactory",
+    "method": "proxiableUUID",
+    "fnSig": "proxiableUUID()",
+    "intrinsicGas": [],
+    "callData": [],
+    "gasData": [],
+    "numberOfCalls": 0
+   },
+   "AssetFactory_715018a6": {
+    "key": "715018a6",
+    "isCall": false,
+    "contract": "AssetFactory",
+    "method": "renounceOwnership",
+    "fnSig": "renounceOwnership()",
+    "intrinsicGas": [],
+    "callData": [],
+    "gasData": [],
+    "numberOfCalls": 0
+   },
+   "AssetFactory_f2fde38b": {
+    "key": "f2fde38b",
+    "isCall": false,
+    "contract": "AssetFactory",
+    "method": "transferOwnership",
+    "fnSig": "transferOwnership(address)",
+    "intrinsicGas": [],
+    "callData": [],
+    "gasData": [],
+    "numberOfCalls": 0
+   },
+   "AssetFactory_4f1ef286": {
+    "key": "4f1ef286",
+    "isCall": false,
+    "contract": "AssetFactory",
+    "method": "upgradeToAndCall",
+    "fnSig": "upgradeToAndCall(address,bytes)",
+    "intrinsicGas": [],
+    "callData": [],
+    "gasData": [],
+    "numberOfCalls": 0
+   },
    "PsmCore_1de26e16": {
     "key": "1de26e16",
     "isCall": false,
@@ -307,9 +452,9 @@
     "method": "deposit",
     "fnSig": "deposit(bytes32,uint256)",
     "intrinsicGas": [
-     21788,
-     21788,
-     21788
+     21776,
+     21776,
+     21776
     ],
     "callData": [
      0,
@@ -317,16 +462,16 @@
      0
     ],
     "gasData": [
-     264776,
-     264776,
-     264776
+     298091,
+     298091,
+     298091
     ],
     "numberOfCalls": 3,
-    "executionGasAverage": 264776,
+    "executionGasAverage": 298091,
     "calldataGasAverage": 0,
-    "cost": "13.64",
-    "min": 264776,
-    "max": 264776
+    "cost": "35.31",
+    "min": 298091,
+    "max": 298091
    },
    "PsmCore_36ef80db": {
     "key": "36ef80db",
@@ -339,58 +484,58 @@
     "gasData": [],
     "numberOfCalls": 0
    },
-   "PsmCore_485cc955": {
-    "key": "485cc955",
+   "PsmCore_c0c53b8b": {
+    "key": "c0c53b8b",
     "isCall": false,
     "contract": "PsmCore",
     "method": "initialize",
-    "fnSig": "initialize(address,address)",
+    "fnSig": "initialize(address,address,address)",
     "intrinsicGas": [
-     21800,
-     21800,
-     21800
+     22156
     ],
     "callData": [
-     0,
-     0,
      0
     ],
     "gasData": [
-     1252833,
-     1252833,
-     1252833
+     102277
     ],
-    "numberOfCalls": 3,
-    "executionGasAverage": 1252833,
+    "numberOfCalls": 1,
+    "executionGasAverage": 102277,
     "calldataGasAverage": 0,
-    "cost": "64.52",
-    "min": 1252833,
-    "max": 1252833
+    "cost": "12.11",
+    "min": 102277,
+    "max": 102277
    },
-   "PsmCore_39e2cf90": {
-    "key": "39e2cf90",
+   "PsmCore_08646d30": {
+    "key": "08646d30",
     "isCall": false,
     "contract": "PsmCore",
     "method": "issueNewDs",
-    "fnSig": "issueNewDs(bytes32,uint256)",
+    "fnSig": "issueNewDs(bytes32,uint256,address,address)",
     "intrinsicGas": [
-     21752,
-     21752
+     22488,
+     22488,
+     22488,
+     22488
     ],
     "callData": [
+     0,
+     0,
      0,
      0
     ],
     "gasData": [
-     2426258,
-     2426258
+     112443,
+     112443,
+     112443,
+     112443
     ],
-    "numberOfCalls": 2,
-    "executionGasAverage": 2426258,
+    "numberOfCalls": 4,
+    "executionGasAverage": 112443,
     "calldataGasAverage": 0,
-    "cost": "124.96",
-    "min": 2426258,
-    "max": 2426258
+    "cost": "13.32",
+    "min": 112443,
+    "max": 112443
    },
    "PsmCore_b0b6cc1a": {
     "key": "b0b6cc1a",
@@ -442,10 +587,21 @@
     "contract": "PsmCore",
     "method": "redeemWithCT",
     "fnSig": "redeemWithCT(bytes32,uint256,uint256,bytes,uint256)",
-    "intrinsicGas": [],
-    "callData": [],
-    "gasData": [],
-    "numberOfCalls": 0
+    "intrinsicGas": [
+     23536
+    ],
+    "callData": [
+     0
+    ],
+    "gasData": [
+     164841
+    ],
+    "numberOfCalls": 1,
+    "executionGasAverage": 164841,
+    "calldataGasAverage": 0,
+    "cost": "19.52",
+    "min": 164841,
+    "max": 164841
    },
    "PsmCore_2b06ef24": {
     "key": "2b06ef24",
@@ -453,34 +609,256 @@
     "contract": "PsmCore",
     "method": "redeemWithRaWithDs",
     "fnSig": "redeemWithRaWithDs(bytes32,uint256,uint256,bytes,uint256)",
+    "intrinsicGas": [
+     23524
+    ],
+    "callData": [
+     0
+    ],
+    "gasData": [
+     205352
+    ],
+    "numberOfCalls": 1,
+    "executionGasAverage": 205352,
+    "calldataGasAverage": 0,
+    "cost": "24.32",
+    "min": 205352,
+    "max": 205352
+   },
+   "PsmCore_a208bc0a": {
+    "key": "a208bc0a",
+    "isCall": true,
+    "contract": "PsmCore",
+    "method": "valueLocked",
+    "fnSig": "valueLocked(bytes32)",
     "intrinsicGas": [],
     "callData": [],
     "gasData": [],
     "numberOfCalls": 0
-   }
-  },
-  "deployments": [
-   {
-    "name": "Asset",
-    "gasData": [
-     1267453,
-     1267453,
-     1267453,
-     1267453,
-     1267453,
-     1267453,
-     1267453,
-     1267453,
-     1267453,
-     1267453,
-     1267453,
-     1267453,
-     1267453,
-     1267453,
-     1267453,
-     1267453,
-     1267453,
-     1267453
+   },
+   "WrappedAsset_3644e515": {
+    "key": "3644e515",
+    "isCall": true,
+    "contract": "WrappedAsset",
+    "method": "DOMAIN_SEPARATOR",
+    "fnSig": "DOMAIN_SEPARATOR()",
+    "intrinsicGas": [],
+    "callData": [],
+    "gasData": [],
+    "numberOfCalls": 0
+   },
+   "WrappedAsset_dd62ed3e": {
+    "key": "dd62ed3e",
+    "isCall": true,
+    "contract": "WrappedAsset",
+    "method": "allowance",
+    "fnSig": "allowance(address,address)",
+    "intrinsicGas": [],
+    "callData": [],
+    "gasData": [],
+    "numberOfCalls": 0
+   },
+   "WrappedAsset_095ea7b3": {
+    "key": "095ea7b3",
+    "isCall": false,
+    "contract": "WrappedAsset",
+    "method": "approve",
+    "fnSig": "approve(address,uint256)",
+    "intrinsicGas": [],
+    "callData": [],
+    "gasData": [],
+    "numberOfCalls": 0
+   },
+   "WrappedAsset_70a08231": {
+    "key": "70a08231",
+    "isCall": true,
+    "contract": "WrappedAsset",
+    "method": "balanceOf",
+    "fnSig": "balanceOf(address)",
+    "intrinsicGas": [],
+    "callData": [],
+    "gasData": [],
+    "numberOfCalls": 0
+   },
+   "WrappedAsset_313ce567": {
+    "key": "313ce567",
+    "isCall": true,
+    "contract": "WrappedAsset",
+    "method": "decimals",
+    "fnSig": "decimals()",
+    "intrinsicGas": [],
+    "callData": [],
+    "gasData": [],
+    "numberOfCalls": 0
+   },
+   "WrappedAsset_2f4f21e2": {
+    "key": "2f4f21e2",
+    "isCall": false,
+    "contract": "WrappedAsset",
+    "method": "depositFor",
+    "fnSig": "depositFor(address,uint256)",
+    "intrinsicGas": [],
+    "callData": [],
+    "gasData": [],
+    "numberOfCalls": 0
+   },
+   "WrappedAsset_84b0196e": {
+    "key": "84b0196e",
+    "isCall": true,
+    "contract": "WrappedAsset",
+    "method": "eip712Domain",
+    "fnSig": "eip712Domain()",
+    "intrinsicGas": [],
+    "callData": [],
+    "gasData": [],
+    "numberOfCalls": 0
+   },
+   "WrappedAsset_06fdde03": {
+    "key": "06fdde03",
+    "isCall": true,
+    "contract": "WrappedAsset",
+    "method": "name",
+    "fnSig": "name()",
+    "intrinsicGas": [],
+    "callData": [],
+    "gasData": [],
+    "numberOfCalls": 0
+   },
+   "WrappedAsset_7ecebe00": {
+    "key": "7ecebe00",
+    "isCall": true,
+    "contract": "WrappedAsset",
+    "method": "nonces",
+    "fnSig": "nonces(address)",
+    "intrinsicGas": [],
+    "callData": [],
+    "gasData": [],
+    "numberOfCalls": 0
+   },
+   "WrappedAsset_d505accf": {
+    "key": "d505accf",
+    "isCall": false,
+    "contract": "WrappedAsset",
+    "method": "permit",
+    "fnSig": "permit(address,address,uint256,uint256,uint8,bytes32,bytes32)",
+    "intrinsicGas": [],
+    "callData": [],
+    "gasData": [],
+    "numberOfCalls": 0
+   },
+   "WrappedAsset_95d89b41": {
+    "key": "95d89b41",
+    "isCall": true,
+    "contract": "WrappedAsset",
+    "method": "symbol",
+    "fnSig": "symbol()",
+    "intrinsicGas": [],
+    "callData": [],
+    "gasData": [],
+    "numberOfCalls": 0
+   },
+   "WrappedAsset_18160ddd": {
+    "key": "18160ddd",
+    "isCall": true,
+    "contract": "WrappedAsset",
+    "method": "totalSupply",
+    "fnSig": "totalSupply()",
+    "intrinsicGas": [],
+    "callData": [],
+    "gasData": [],
+    "numberOfCalls": 0
+   },
+   "WrappedAsset_a9059cbb": {
+    "key": "a9059cbb",
+    "isCall": false,
+    "contract": "WrappedAsset",
+    "method": "transfer",
+    "fnSig": "transfer(address,uint256)",
+    "intrinsicGas": [],
+    "callData": [],
+    "gasData": [],
+    "numberOfCalls": 0
+   },
+   "WrappedAsset_23b872dd": {
+    "key": "23b872dd",
+    "isCall": false,
+    "contract": "WrappedAsset",
+    "method": "transferFrom",
+    "fnSig": "transferFrom(address,address,uint256)",
+    "intrinsicGas": [],
+    "callData": [],
+    "gasData": [],
+    "numberOfCalls": 0
+   },
+   "WrappedAsset_6f307dc3": {
+    "key": "6f307dc3",
+    "isCall": true,
+    "contract": "WrappedAsset",
+    "method": "underlying",
+    "fnSig": "underlying()",
+    "intrinsicGas": [],
+    "callData": [],
+    "gasData": [],
+    "numberOfCalls": 0
+   },
+   "WrappedAsset_de0e9a3e": {
+    "key": "de0e9a3e",
+    "isCall": false,
+    "contract": "WrappedAsset",
+    "method": "unwrap",
+    "fnSig": "unwrap(uint256)",
+    "intrinsicGas": [],
+    "callData": [],
+    "gasData": [],
+    "numberOfCalls": 0
+   },
+   "WrappedAsset_205c2878": {
+    "key": "205c2878",
+    "isCall": false,
+    "contract": "WrappedAsset",
+    "method": "withdrawTo",
+    "fnSig": "withdrawTo(address,uint256)",
+    "intrinsicGas": [],
+    "callData": [],
+    "gasData": [],
+    "numberOfCalls": 0
+   },
+   "WrappedAsset_ea598cb0": {
+    "key": "ea598cb0",
+    "isCall": false,
+    "contract": "WrappedAsset",
+    "method": "wrap",
+    "fnSig": "wrap(uint256)",
+    "intrinsicGas": [],
+    "callData": [],
+    "gasData": [],
+    "numberOfCalls": 0
+   },
+   "DummyERCWithMetadata_dd62ed3e": {
+    "key": "dd62ed3e",
+    "isCall": true,
+    "contract": "DummyERCWithMetadata",
+    "method": "allowance",
+    "fnSig": "allowance(address,address)",
+    "intrinsicGas": [],
+    "callData": [],
+    "gasData": [],
+    "numberOfCalls": 0
+   },
+   "DummyERCWithMetadata_095ea7b3": {
+    "key": "095ea7b3",
+    "isCall": false,
+    "contract": "DummyERCWithMetadata",
+    "method": "approve",
+    "fnSig": "approve(address,uint256)",
+    "intrinsicGas": [
+     21644,
+     21632,
+     21644,
+     21632,
+     21644,
+     21644,
+     21632
     ],
     "callData": [
      0,
@@ -489,12 +867,155 @@
      0,
      0,
      0,
+     0
+    ],
+    "gasData": [
+     29283,
+     46371,
+     46371,
+     46371,
+     46383,
+     46383,
+     46383
+    ],
+    "numberOfCalls": 7,
+    "executionGasAverage": 43935,
+    "calldataGasAverage": 0,
+    "cost": "5.20",
+    "min": 29283,
+    "max": 46383
+   },
+   "DummyERCWithMetadata_70a08231": {
+    "key": "70a08231",
+    "isCall": true,
+    "contract": "DummyERCWithMetadata",
+    "method": "balanceOf",
+    "fnSig": "balanceOf(address)",
+    "intrinsicGas": [],
+    "callData": [],
+    "gasData": [],
+    "numberOfCalls": 0
+   },
+   "DummyERCWithMetadata_313ce567": {
+    "key": "313ce567",
+    "isCall": true,
+    "contract": "DummyERCWithMetadata",
+    "method": "decimals",
+    "fnSig": "decimals()",
+    "intrinsicGas": [],
+    "callData": [],
+    "gasData": [],
+    "numberOfCalls": 0
+   },
+   "DummyERCWithMetadata_40c10f19": {
+    "key": "40c10f19",
+    "isCall": false,
+    "contract": "DummyERCWithMetadata",
+    "method": "mint",
+    "fnSig": "mint(address,uint256)",
+    "intrinsicGas": [
+     21644,
+     21644,
+     21644,
+     21644
+    ],
+    "callData": [
      0,
      0,
      0,
-     0,
-     0,
-     0,
+     0
+    ],
+    "gasData": [
+     68433,
+     68433,
+     68433,
+     68433
+    ],
+    "numberOfCalls": 4,
+    "executionGasAverage": 68433,
+    "calldataGasAverage": 0,
+    "cost": "8.11",
+    "min": 68433,
+    "max": 68433
+   },
+   "DummyERCWithMetadata_06fdde03": {
+    "key": "06fdde03",
+    "isCall": true,
+    "contract": "DummyERCWithMetadata",
+    "method": "name",
+    "fnSig": "name()",
+    "intrinsicGas": [],
+    "callData": [],
+    "gasData": [],
+    "numberOfCalls": 0
+   },
+   "DummyERCWithMetadata_95d89b41": {
+    "key": "95d89b41",
+    "isCall": true,
+    "contract": "DummyERCWithMetadata",
+    "method": "symbol",
+    "fnSig": "symbol()",
+    "intrinsicGas": [],
+    "callData": [],
+    "gasData": [],
+    "numberOfCalls": 0
+   },
+   "DummyERCWithMetadata_18160ddd": {
+    "key": "18160ddd",
+    "isCall": true,
+    "contract": "DummyERCWithMetadata",
+    "method": "totalSupply",
+    "fnSig": "totalSupply()",
+    "intrinsicGas": [],
+    "callData": [],
+    "gasData": [],
+    "numberOfCalls": 0
+   },
+   "DummyERCWithMetadata_a9059cbb": {
+    "key": "a9059cbb",
+    "isCall": false,
+    "contract": "DummyERCWithMetadata",
+    "method": "transfer",
+    "fnSig": "transfer(address,uint256)",
+    "intrinsicGas": [],
+    "callData": [],
+    "gasData": [],
+    "numberOfCalls": 0
+   },
+   "DummyERCWithMetadata_23b872dd": {
+    "key": "23b872dd",
+    "isCall": false,
+    "contract": "DummyERCWithMetadata",
+    "method": "transferFrom",
+    "fnSig": "transferFrom(address,address,uint256)",
+    "intrinsicGas": [],
+    "callData": [],
+    "gasData": [],
+    "numberOfCalls": 0
+   }
+  },
+  "deployments": [
+   {
+    "name": "Address",
+    "gasData": [],
+    "callData": []
+   },
+   {
+    "name": "Asset",
+    "gasData": [],
+    "callData": []
+   },
+   {
+    "name": "AssetFactory",
+    "gasData": [
+     4322876,
+     4322876,
+     4322876,
+     4322876,
+     4322876,
+     4322876
+    ],
+    "callData": [
      0,
      0,
      0,
@@ -502,15 +1023,25 @@
      0,
      0
     ],
-    "executionGasAverage": 1267453,
+    "executionGasAverage": 4322876,
     "calldataGasAverage": 0,
-    "cost": "65.28",
-    "min": 1267453,
-    "max": 1267453,
-    "percent": 4.2
+    "cost": "512.03",
+    "min": 4322876,
+    "max": 4322876,
+    "percent": 14.4
+   },
+   {
+    "name": "console",
+    "gasData": [],
+    "callData": []
    },
    {
     "name": "Context",
+    "gasData": [],
+    "callData": []
+   },
+   {
+    "name": "ContextUpgradeable",
     "gasData": [],
     "callData": []
    },
@@ -520,12 +1051,42 @@
     "callData": []
    },
    {
+    "name": "DummyERCWithMetadata",
+    "gasData": [
+     526934,
+     526934,
+     526934,
+     526934,
+     526934,
+     526934
+    ],
+    "callData": [
+     0,
+     0,
+     0,
+     0,
+     0,
+     0
+    ],
+    "executionGasAverage": 526934,
+    "calldataGasAverage": 0,
+    "cost": "62.41",
+    "min": 526934,
+    "max": 526934,
+    "percent": 1.8
+   },
+   {
     "name": "ECDSA",
     "gasData": [],
     "callData": []
    },
    {
     "name": "EIP712",
+    "gasData": [],
+    "callData": []
+   },
+   {
+    "name": "ERC1967Utils",
     "gasData": [],
     "callData": []
    },
@@ -545,7 +1106,27 @@
     "callData": []
    },
    {
+    "name": "ERC20Wrapper",
+    "gasData": [],
+    "callData": []
+   },
+   {
+    "name": "IAssetFactory",
+    "gasData": [],
+    "callData": []
+   },
+   {
+    "name": "IBeacon",
+    "gasData": [],
+    "callData": []
+   },
+   {
     "name": "IERC1155Errors",
+    "gasData": [],
+    "callData": []
+   },
+   {
+    "name": "IERC1822Proxiable",
     "gasData": [],
     "callData": []
    },
@@ -590,6 +1171,11 @@
     "callData": []
    },
    {
+    "name": "Initializable",
+    "gasData": [],
+    "callData": []
+   },
+   {
     "name": "IPSMcore",
     "gasData": [],
     "callData": []
@@ -620,6 +1206,11 @@
     "callData": []
    },
    {
+    "name": "OwnableUpgradeable",
+    "gasData": [],
+    "callData": []
+   },
+   {
     "name": "PeggedAssetLibrary",
     "gasData": [],
     "callData": []
@@ -627,21 +1218,21 @@
    {
     "name": "PsmCore",
     "gasData": [
-     3250837,
-     3250837,
-     3250837
+     1605195,
+     1605195,
+     1605195
     ],
     "callData": [
      0,
      0,
      0
     ],
-    "executionGasAverage": 3250837,
+    "executionGasAverage": 1605195,
     "calldataGasAverage": 0,
-    "cost": "167.42",
-    "min": 3250837,
-    "max": 3250837,
-    "percent": 10.8
+    "cost": "190.13",
+    "min": 1605195,
+    "max": 1605195,
+    "percent": 5.4
    },
    {
     "name": "PsmKeyLibrary",
@@ -655,6 +1246,11 @@
    },
    {
     "name": "RedemptionAssetLibrary",
+    "gasData": [],
+    "callData": []
+   },
+   {
+    "name": "SafeERC20",
     "gasData": [],
     "callData": []
    },
@@ -675,6 +1271,16 @@
    },
    {
     "name": "Strings",
+    "gasData": [],
+    "callData": []
+   },
+   {
+    "name": "UUPSUpgradeable",
+    "gasData": [],
+    "callData": []
+   },
+   {
+    "name": "WrappedAsset",
     "gasData": [],
     "callData": []
    },

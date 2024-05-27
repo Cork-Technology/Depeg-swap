@@ -21,6 +21,7 @@ const config: HardhatUserConfig = {
     coinmarketcap: process.env.CMC_API_KEY,
     outputJSON: true,
     outputJSONFile: "gas-report.json",
+    includeIntrinsicGas: true,
   },
 };
 

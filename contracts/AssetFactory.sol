@@ -6,6 +6,7 @@ import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import "./WrappedAsset.sol";
 import "./Asset.sol";
+import "hardhat/console.sol";
 
 contract AssetFactory is IAssetFactory, OwnableUpgradeable, UUPSUpgradeable {
     uint8 public constant MAX_LIMIT = 10;
@@ -39,7 +40,9 @@ contract AssetFactory is IAssetFactory, OwnableUpgradeable, UUPSUpgradeable {
         _;
     }
 
-    constructor() initializer notDelegated {
+    constructor() {}
+
+    function initialize() external initializer notDelegated {
         __Ownable_init(msg.sender);
         __UUPSUpgradeable_init();
     }
@@ -56,18 +59,25 @@ contract AssetFactory is IAssetFactory, OwnableUpgradeable, UUPSUpgradeable {
     {
         uint256 start = uint256(page) * uint256(limit);
         uint256 end = start + uint256(limit);
+        uint256 arrLen = end - start;
 
         if (end > idx) {
             end = idx;
         }
 
-        ra = new address[](end - start);
-        wa = new address[](end - start);
+        if (start > idx) {
+            return (ra, wa);
+        }
+
+        ra = new address[](arrLen);
+        wa = new address[](arrLen);
 
         for (uint256 i = start; i < end; i++) {
             WrappedAssets storage asset = wrappedAssets[i];
-            ra[i - start] = asset.ra;
-            wa[i - start] = asset.wa;
+            uint8 _idx = uint8(i - start);
+
+            ra[_idx] = asset.ra;
+            wa[_idx] = asset.wa;
         }
     }
 
@@ -86,15 +96,17 @@ contract AssetFactory is IAssetFactory, OwnableUpgradeable, UUPSUpgradeable {
 
         uint256 start = uint256(page) * uint256(limit);
         uint256 end = start + uint256(limit);
+        uint256 arrLen = end - start;
 
         if (end > assets.length) {
             end = assets.length;
         }
 
-        ct = new address[](end - start);
-        ds = new address[](end - start);
+        ct = new address[](arrLen);
+        ds = new address[](arrLen);
 
         for (uint256 i = start; i < end; i++) {
+            
             ct[i - start] = assets[i].ct;
             ds[i - start] = assets[i].ds;
         }
