@@ -104,6 +104,7 @@ contract AssetFactory is IAssetFactory, OwnableUpgradeable, UUPSUpgradeable {
         address ra,
         address pa,
         address wa,
+        address owner,
         uint256 expiry
     )
         external
@@ -116,8 +117,8 @@ contract AssetFactory is IAssetFactory, OwnableUpgradeable, UUPSUpgradeable {
             abi.encodePacked(Asset(ra).name(), "-", Asset(pa).name())
         );
 
-        ct = address(new Asset(CT_PREFIX, pairname, msg.sender, expiry));
-        ds = address(new Asset(DS_PREFIX, pairname, msg.sender, expiry));
+        ct = address(new Asset(CT_PREFIX, pairname, owner, expiry));
+        ds = address(new Asset(DS_PREFIX, pairname, owner, expiry));
 
         // TODO : tests this with ~100 pairs
         swapAssets[wa].push(SwapAssets(ct, ds));

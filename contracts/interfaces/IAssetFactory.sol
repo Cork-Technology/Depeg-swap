@@ -28,6 +28,7 @@ interface IAssetFactory {
         address ra,
         address pa,
         address wa,
+        address owner,
         uint256 expiry
     ) external returns (address ct, address ds);
 
