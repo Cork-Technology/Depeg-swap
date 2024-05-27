@@ -90,12 +90,32 @@ export type IssueNewSwapAssetsArg = {
   wa: Address;
 };
 
+export async function mintAndWrap(
+  ra: Address,
+  wa: Address,
+  to: Address,
+  amount: bigint
+) {
+  const raContract = await hre.viem.getContractAt("DummyERCWithMetadata", ra);
+  await raContract.write.mint([to, amount]);
+  const waCotnract = await hre.viem.getContractAt("WrappedAsset", wa);
+  await raContract.write.approve([wa, amount], {
+    account: to,
+  });
+  const underlying = await waCotnract.read.underlying();
+
+  await waCotnract.write.wrap([amount], {
+    account: to,
+  });
+}
+
 export async function issueNewSwapAssets(arg: IssueNewSwapAssetsArg) {
   const factory = await hre.viem.getContractAt("AssetFactory", arg.factory);
   await factory.write.deploySwapAssets([
     arg.ra,
     arg.pa,
     arg.wa,
+    arg.psmCore,
     BigInt(arg.expiry),
   ]);
 

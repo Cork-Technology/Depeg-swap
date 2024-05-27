@@ -4,7 +4,6 @@ import {
 } from "@nomicfoundation/hardhat-toolbox-viem/network-helpers";
 import { expect } from "chai";
 import hre from "hardhat";
-import { ethers, upgrades } from "hardhat";
 
 import { Address, formatEther, parseEther, WalletClient } from "viem";
 import { getSigners } from "./helper/TestHelper";

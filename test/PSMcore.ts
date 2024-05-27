@@ -22,7 +22,8 @@ describe("PSM core", function () {
       await psmFixture.factory.contract.write.deploySwapAssets([
         psmFixture.ra.address,
         psmFixture.pa.address,
-        (await psmFixture.wa).address,
+        psmFixture.wa.address,
+        psmFixture.psmCore.contract.address,
         BigInt(expiry),
       ]);
 
@@ -56,7 +57,7 @@ describe("PSM core", function () {
       const { defaultSigner } = await helper.getSigners();
       const fixture = await loadFixture(helper.pmCoreWithInitializedPsm);
       const mintAmount = parseEther("1000");
-      const expTime = 10;
+      const expTime = 10000;
 
       await fixture.ra.write.approve([
         fixture.psmCore.contract.address,
@@ -64,22 +65,24 @@ describe("PSM core", function () {
       ]);
 
       const deadline = BigInt(helper.expiry(expTime));
-      console.log("Wa", fixture.wa.address);
-      console.log("signer", defaultSigner.account.address);
-      console.log("psm", fixture.psmCore.contract.address);
-      console.log("factory", fixture.factory.contract.address);
-      console.log("pa", fixture.pa.address);
-      console.log("ra", fixture.ra.address);
 
-      const waSig = await helper.permit(
-        {
-          amount: parseEther("100"),
-          deadline,
-          erc20contractAddress: fixture.wa.address,
-          psmAddress: fixture.psmCore.contract.address,
-          signer: defaultSigner,
-        },
-        "WrappedAsset"
+      await helper.mintAndWrap(
+        fixture.ra.address,
+        fixture.wa.address,
+        defaultSigner.account.address,
+        mintAmount
+      );
+
+      const waSig = await helper.permit({
+        amount: parseEther("10"),
+        deadline,
+        erc20contractAddress: fixture.wa.address,
+        psmAddress: fixture.psmCore.contract.address,
+        signer: defaultSigner,
+      });
+
+      (await hre.viem.getContractAt("ERC20", fixture.pa.address)).write.approve(
+        [fixture.psmCore.contract.address, parseEther("10")]
       );
 
       const { dsId } = await helper.issueNewSwapAssets({
@@ -92,7 +95,7 @@ describe("PSM core", function () {
       });
 
       await fixture.psmCore.contract.write.deposit(
-        [fixture.psmId, parseEther("100"), waSig, deadline],
+        [fixture.psmId, parseEther("10"), waSig, deadline],
         {
           account: defaultSigner.account,
         }

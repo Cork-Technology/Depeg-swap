@@ -31,16 +31,14 @@ library WrappedAssetLibrary {
         WrappedAssetInfo memory self,
         bytes memory rawSig,
         uint256 amount,
-        address owner,
-        address spender,
         uint256 deadline
     ) internal {
         self.locked += amount;
         Signature memory sig = MinimalSignatureHelper.split(rawSig);
 
         IERC20Permit(self._address).permit(
-            owner,
-            spender,
+            msg.sender,
+            address(this),
             amount,
             deadline,
             sig.v,
@@ -48,7 +46,8 @@ library WrappedAssetLibrary {
             sig.s
         );
 
-        IERC20(self._address).transferFrom(owner, address(this), amount);
+        // TODO : PA impl contract still needs to call approval
+        IERC20(self._address).transferFrom(msg.sender, address(this), amount);
     }
 }
 
