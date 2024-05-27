@@ -25,7 +25,7 @@ contract WrappedAsset is ERC20Permit, ERC20Wrapper {
         ERC20Wrapper(IERC20(_underlying))
         ERC20Permit(
             string(
-                abi.encodePacked(PREFIX, IERC20Metadata(_underlying).symbol())
+                abi.encodePacked(PREFIX, IERC20Metadata(_underlying).name ())
             )
         )
     {}
@@ -41,12 +41,12 @@ contract WrappedAsset is ERC20Permit, ERC20Wrapper {
     }
 
     function wrap(uint256 amount) external {
-        depositFor(_msgSender(), amount);
+        depositFor(msg.sender, amount);
         emit Wrapped(msg.sender, amount);
     }
 
     function unwrap(uint256 amount) external {
-        withdrawTo(_msgSender(), amount);
+        withdrawTo(msg.sender, amount);
         emit UnWrapped(msg.sender, amount);
     }
 }

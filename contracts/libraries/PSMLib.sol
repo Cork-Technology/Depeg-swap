@@ -18,6 +18,7 @@ struct State {
 }
 
 // TODO : support native token
+// TODO : make an entrypoint that does not depend on permit
 library PSMLibrary {
     using MinimalSignatureHelper for Signature;
     using PsmKeyLibrary for PsmKey;
@@ -25,13 +26,6 @@ library PSMLibrary {
     using WrappedAssetLibrary for WrappedAssetInfo;
     using PeggedAssetLibrary for PeggedAsset;
     using RedemptionAssetLibrary for RedemptionAsset;
-
-    event Deposited(address indexed user, uint256 amount, uint256 indexed dsId);
-    event Issued(
-        address indexed dsAddress,
-        uint256 indexed dsId,
-        uint256 expiry
-    );
 
     /// @notice depegSwap is expired
     error Expired();
@@ -108,9 +102,7 @@ library PSMLibrary {
     function deposit(
         State storage self,
         address depositor,
-        uint256 amount,
-        bytes memory rawWaSig,
-        uint256 deadline
+        uint256 amount
     ) internal returns (uint256 dsId) {
         dsId = self.dsCount;
 
@@ -120,13 +112,7 @@ library PSMLibrary {
 
         // add the amount to the total ct issued
         self.totalCtIssued += amount;
-
-        self.wa.lock(rawWaSig, amount, depositor, address(this), deadline);
-        self.info.redemptionAsset().asErc20().transferFrom(
-            depositor,
-            address(this),
-            amount
-        );
+        self.wa.lock(amount);
         ds.issue(depositor, amount);
     }
 
@@ -176,7 +162,11 @@ library PSMLibrary {
             address(this),
             amount
         );
-        self.info.redemptionAsset().asErc20().transfer(owner, amount);
+        self.wa.unlock(amount);
+    }
+
+    function valueLocked(State storage self) internal view returns (uint256) {
+        return self.wa.locked;
     }
 
     /// @notice redeem an RA with DS + PA
