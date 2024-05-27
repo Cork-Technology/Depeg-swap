@@ -6,6 +6,7 @@ import "./interfaces/IPSMcore.sol";
 import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import "./interfaces/IAssetFactory.sol";
 
+// TODO : make entrypoint that do not rely on permit with function overloading or different function altogether
 contract PsmCore is IPSMcore {
     using PSMLibrary for State;
     using PsmKeyLibrary for PsmKey;
