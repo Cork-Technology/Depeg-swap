@@ -113,12 +113,7 @@ library PSMLibrary {
 
         // add the amount to the total ct issued
         self.totalCtIssued += amount;
-        self.wa.lock(rawWaSig, amount, depositor, address(this), deadline);
-        self.info.redemptionAsset().asErc20().transferFrom(
-            depositor,
-            address(this),
-            amount
-        );
+        self.wa.lock(rawWaSig, amount, deadline);
         ds.issue(depositor, amount);
     }
 
