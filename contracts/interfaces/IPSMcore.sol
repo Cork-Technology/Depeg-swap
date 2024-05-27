@@ -79,12 +79,7 @@ interface IPSMcore {
         address ds
     ) external;
 
-    function deposit(
-        PsmId id,
-        uint256 amount,
-        bytes memory rawWaSig,
-        uint256 deadline
-    ) external;
+    function deposit(PsmId id, uint256 amount) external;
 
     function previewDeposit(
         PsmId id,
@@ -121,4 +116,6 @@ interface IPSMcore {
         uint256 dsId,
         uint256 amount
     ) external view returns (uint256 paReceived, uint256 raReceived);
+
+    function valueLocked(PsmId id) external view returns (uint256);
 }

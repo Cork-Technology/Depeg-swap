@@ -74,12 +74,10 @@ contract PsmCore is IPSMcore {
 
     function deposit(
         PsmId id,
-        uint256 amount,
-        bytes memory rawWaSig,
-        uint256 deadline
+        uint256 amount
     ) external override onlyInitialized(id) {
         State storage state = modules[id];
-        uint256 dsId = state.deposit(msg.sender, amount, rawWaSig, deadline);
+        uint256 dsId = state.deposit(msg.sender, amount);
         emit Deposited(id, dsId, msg.sender, amount);
     }
 
@@ -109,6 +107,11 @@ contract PsmCore is IPSMcore {
         emit DsRedeemed(id, dsId, msg.sender, amount);
 
         state.redeemWithDs(msg.sender, amount, dsId, rawDsPermitSig, deadline);
+    }
+
+    function valueLocked(PsmId id) external view override returns (uint256) {
+        State storage state = modules[id];
+        return state.valueLocked();
     }
 
     function previewRedeemWithDs(

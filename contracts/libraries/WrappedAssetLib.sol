@@ -27,28 +27,20 @@ library WrappedAssetLibrary {
         return IERC20(self._address).totalSupply() - self.locked;
     }
 
-    function lock(
-        WrappedAssetInfo memory self,
-        bytes memory rawSig,
-        uint256 amount,
-        uint256 deadline
-    ) internal {
-        self.locked += amount;
-        Signature memory sig = MinimalSignatureHelper.split(rawSig);
+    function lock(WrappedAssetInfo storage self, uint256 amount) internal {
+        self.locked = self.locked + amount;
 
-        IERC20Permit(self._address).permit(
-            msg.sender,
-            address(this),
-            amount,
-            deadline,
-            sig.v,
-            sig.r,
-            sig.s
-        );
+        IERC20 underlying = ERC20Wrapper(self._address).underlying();
+        underlying.transferFrom(msg.sender, address(this), amount);
+        underlying.approve(self._address, amount);
+        WrappedAsset(self._address).wrap(amount);
+    }
 
-        // TODO : PA impl contract still needs to call approval
-        IERC20(self._address).transferFrom(msg.sender, address(this), amount);
+    function unlock(WrappedAssetInfo storage self, uint256 amount) internal {
+        self.locked = self.locked - amount;
+        
+        WrappedAsset(self._address).unwrap(amount);
+        IERC20 underlying = ERC20Wrapper(self._address).underlying();
+        underlying.transfer(msg.sender, amount);
     }
 }
-
-// TODO : fix this, move this to a dedicated wrapper contract, and make a factory our of it
