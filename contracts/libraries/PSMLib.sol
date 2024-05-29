@@ -13,7 +13,7 @@ struct PsmState {
     uint256 dsCount;
     uint256 totalCtIssued;
     WrappedAssetInfo wa;
-    PsmKey info;
+    PairKey info;
     mapping(uint256 => DepegSwap) ds;
 }
 
@@ -71,8 +71,8 @@ library PSMLibrary {
     }
 
     function initialize(
-        State storage self,
-        PsmKey memory key,
+        PsmState storage self,
+        PairKey memory key,
         address wa
     ) internal {
         self.info = key;
@@ -81,7 +81,7 @@ library PSMLibrary {
 
     /// @notice issue a new pair of DS, will fail if the previous DS isn't yet expired
     function issueNewPair(
-        State storage self,
+        PsmState storage self,
         address ct,
         address ds
     ) internal returns (uint256 idx) {
@@ -120,7 +120,7 @@ library PSMLibrary {
     /// @dev since we mint 1:1, we return the same amount,
     /// since rate only effective when redeeming with CT
     function previewDeposit(
-        State storage self,
+        PsmState storage self,
         uint256 amount
     )
         internal
@@ -165,7 +165,7 @@ library PSMLibrary {
         self.wa.unlock(amount);
     }
 
-    function valueLocked(State storage self) internal view returns (uint256) {
+    function valueLocked(PsmState storage self) internal view returns (uint256) {
         return self.wa.locked;
     }
 

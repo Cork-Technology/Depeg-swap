@@ -61,7 +61,9 @@ library VaultLibrary {
         (uint256 locked, uint256 free) = self.config.calcWa(amount);
         self.config.increaseWaBalance(free);
         self.config.increaseCtBalance(locked);
-        psm.wa.issueAndLock(locked);
+        
+        // psm.wa.issueAndLock(locked);
+        
         self.lvAsset.issue(from, amount);
 
         if (self.config.mustDepositWaAmm()) {

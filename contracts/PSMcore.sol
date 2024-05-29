@@ -13,10 +13,6 @@ contract PsmCore is IPSMcore {
 
     mapping(PsmId => PsmState) public modules;
 
-    function getId(address pa, address ra) external pure returns (PsmId) {
-        return PairKeyLibrary.initalize(pa, ra).toId();
-    }
-
     address factory;
 
     // TODO : make this upgradeable
@@ -38,21 +34,15 @@ contract PsmCore is IPSMcore {
     }
 
     function getId(address pa, address ra) external pure returns (PsmId) {
-        return PsmKeyLibrary.initalize(pa, ra).toId();
+        return PairKeyLibrary.initalize(pa, ra).toId();
     }
 
     // TODO : only allow to call this from config contract later or router
     function initialize(address pa, address ra, address wa) external override {
         _onlyValidAsset(wa);
 
-        PsmKey memory key = PsmKeyLibrary.initalize(pa, ra);
+        PairKey memory key = PairKeyLibrary.initalize(pa, ra);
         PsmId id = key.toId();
-
-        (string memory _pa, string memory _ra) = (
-            IERC20Metadata(pa).symbol(),
-            IERC20Metadata(ra).symbol()
-        );
-        string memory pairname = string(abi.encodePacked(_pa, "-", _ra));
 
         PsmState storage state = modules[id];
 
@@ -86,7 +76,7 @@ contract PsmCore is IPSMcore {
         PsmId id,
         uint256 amount
     ) external override onlyInitialized(id) {
-        State storage state = modules[id];
+        PsmState storage state = modules[id];
         uint256 dsId = state.deposit(msg.sender, amount);
         emit Deposited(id, dsId, msg.sender, amount);
     }
@@ -120,7 +110,7 @@ contract PsmCore is IPSMcore {
     }
 
     function valueLocked(PsmId id) external view override returns (uint256) {
-        State storage state = modules[id];
+        PsmState storage state = modules[id];
         return state.valueLocked();
     }
 
