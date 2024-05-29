@@ -4,9 +4,9 @@ import "./libraries/PSMLib.sol";
 import "./libraries/PairKey.sol";
 import "./interfaces/IPSMcore.sol";
 import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
+import "./interfaces/IAssetFactory.sol";
 
-// TODO : move event, errors, docs, and function declaration to interface
-
+// TODO : make entrypoint that do not rely on permit with function overloading or different function altogether
 contract PsmCore is IPSMcore {
     using PSMLibrary for PsmState;
     using PairKeyLibrary for PairKey;
@@ -17,7 +17,12 @@ contract PsmCore is IPSMcore {
         return PairKeyLibrary.initalize(pa, ra).toId();
     }
 
-    constructor() {}
+    address factory;
+
+    // TODO : make this upgradeable
+    constructor(address _factory) {
+        factory = _factory;
+    }
 
     modifier onlyInitialized(PsmId id) {
         if (!modules[id].isInitialized()) {
@@ -26,8 +31,21 @@ contract PsmCore is IPSMcore {
         _;
     }
 
-    function initialize(address pa, address ra) external override {
-        PairKey memory key = PairKeyLibrary.initalize(pa, ra);
+    function _onlyValidAsset(address asset) internal view {
+        if (IAssetFactory(factory).isDeployed(asset) == false) {
+            revert InvalidAsset(asset);
+        }
+    }
+
+    function getId(address pa, address ra) external pure returns (PsmId) {
+        return PsmKeyLibrary.initalize(pa, ra).toId();
+    }
+
+    // TODO : only allow to call this from config contract later or router
+    function initialize(address pa, address ra, address wa) external override {
+        _onlyValidAsset(wa);
+
+        PsmKey memory key = PsmKeyLibrary.initalize(pa, ra);
         PsmId id = key.toId();
 
         (string memory _pa, string memory _ra) = (
@@ -42,17 +60,24 @@ contract PsmCore is IPSMcore {
             revert AlreadyInitialized();
         }
 
-        state.initialize(key, pairname);
+        state.initialize(key, wa);
 
         emit Initialized(id, pa, ra);
     }
 
+    // TODO : only allow to call this from config contract later or router
     function issueNewDs(
         PsmId id,
-        uint256 expiry
+        uint256 expiry,
+        address ct,
+        address ds
     ) external override onlyInitialized(id) {
+        _onlyValidAsset(ct);
+        _onlyValidAsset(ds);
+
         PsmState storage state = modules[id];
-        (uint256 dsId, address ds, address ct) = state.issueNewPair(expiry);
+
+        uint256 dsId = state.issueNewPair(ct, ds);
 
         emit Issued(id, dsId, expiry, ds, ct);
     }
@@ -61,7 +86,7 @@ contract PsmCore is IPSMcore {
         PsmId id,
         uint256 amount
     ) external override onlyInitialized(id) {
-        PsmState storage state = modules[id];
+        State storage state = modules[id];
         uint256 dsId = state.deposit(msg.sender, amount);
         emit Deposited(id, dsId, msg.sender, amount);
     }
@@ -92,6 +117,11 @@ contract PsmCore is IPSMcore {
         emit DsRedeemed(id, dsId, msg.sender, amount);
 
         state.redeemWithDs(msg.sender, amount, dsId, rawDsPermitSig, deadline);
+    }
+
+    function valueLocked(PsmId id) external view override returns (uint256) {
+        State storage state = modules[id];
+        return state.valueLocked();
     }
 
     function previewRedeemWithDs(

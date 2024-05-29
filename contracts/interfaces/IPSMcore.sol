@@ -67,16 +67,27 @@ interface IPSMcore {
     /// @notice psm module is already initialized, i.e thrown when trying to reinitialize a module
     error AlreadyInitialized();
 
-    function initialize(address pa, address ra) external;
+    /// @notice invalid asset, thrown when trying to do something with an asset not deployed with asset factory
+    error InvalidAsset(address asset);
 
-    function issueNewDs(PsmId id, uint256 expiry) external;
+    function initialize(address pa, address ra, address wa) external;
+
+    function issueNewDs(
+        PsmId id,
+        uint256 expiry,
+        address ct,
+        address ds
+    ) external;
 
     function deposit(PsmId id, uint256 amount) external;
 
     function previewDeposit(
         PsmId id,
         uint256 amount
-    ) external view returns (uint256 ctReceived, uint256 dsReceived, uint256 dsId);
+    )
+        external
+        view
+        returns (uint256 ctReceived, uint256 dsReceived, uint256 dsId);
 
     function redeemWithRaWithDs(
         PsmId id,
@@ -105,4 +116,6 @@ interface IPSMcore {
         uint256 dsId,
         uint256 amount
     ) external view returns (uint256 paReceived, uint256 raReceived);
+
+    function valueLocked(PsmId id) external view returns (uint256);
 }

@@ -12,26 +12,20 @@ import "./RedemptionAssetLib.sol";
 struct PsmState {
     uint256 dsCount;
     uint256 totalCtIssued;
-    WrappedAsset wa;
-    PairKey info;
+    WrappedAssetInfo wa;
+    PsmKey info;
     mapping(uint256 => DepegSwap) ds;
 }
 
 // TODO : support native token
+// TODO : make an entrypoint that does not depend on permit
 library PSMLibrary {
     using MinimalSignatureHelper for Signature;
     using PairKeyLibrary for PairKey;
     using DepegSwapLibrary for DepegSwap;
-    using WrappedAssetLibrary for WrappedAsset;
+    using WrappedAssetLibrary for WrappedAssetInfo;
     using PeggedAssetLibrary for PeggedAsset;
     using RedemptionAssetLibrary for RedemptionAsset;
-
-    event Deposited(address indexed user, uint256 amount, uint256 indexed dsId);
-    event Issued(
-        address indexed dsAddress,
-        uint256 indexed dsId,
-        uint256 expiry
-    );
 
     /// @notice depegSwap is expired
     error Expired();
@@ -77,31 +71,30 @@ library PSMLibrary {
     }
 
     function initialize(
-        PsmState storage self,
-        PairKey memory key,
-        string memory pairname
+        State storage self,
+        PsmKey memory key,
+        address wa
     ) internal {
         self.info = key;
-        self.wa = WrappedAssetLibrary.initialize(pairname);
+        self.wa = WrappedAssetLibrary.initialize(wa);
     }
 
     /// @notice issue a new pair of DS, will fail if the previous DS isn't yet expired
     function issueNewPair(
-        PsmState storage self,
-        uint256 expiry
-    ) internal returns (uint256 idx, address dsAddress, address ct) {
+        State storage self,
+        address ct,
+        address ds
+    ) internal returns (uint256 idx) {
         if (self.dsCount != 0) {
-            DepegSwap storage ds = self.ds[self.dsCount];
-            _safeAfterExpired(ds);
+            DepegSwap storage _ds = self.ds[self.dsCount];
+            _safeAfterExpired(_ds);
         }
 
         // to prevent 0 index
         self.dsCount++;
         idx = self.dsCount;
 
-        string memory pairName = self.info.toPairname();
-        self.ds[idx] = DepegSwapLibrary.initialize(pairName, expiry);
-        (dsAddress, ct) = (self.ds[idx].depegSwap, self.ds[idx].coverToken);
+        self.ds[idx] = DepegSwapLibrary.initialize(ds, ct);
     }
 
     /// @notice deposit RA to the PSM
@@ -119,13 +112,7 @@ library PSMLibrary {
 
         // add the amount to the total ct issued
         self.totalCtIssued += amount;
-
-        self.wa.issueAndLock(amount);
-        self.info.redemptionAsset().asErc20().transferFrom(
-            depositor,
-            address(this),
-            amount
-        );
+        self.wa.lock(amount);
         ds.issue(depositor, amount);
     }
 
@@ -133,7 +120,7 @@ library PSMLibrary {
     /// @dev since we mint 1:1, we return the same amount,
     /// since rate only effective when redeeming with CT
     function previewDeposit(
-        PsmState storage self,
+        State storage self,
         uint256 amount
     )
         internal
@@ -161,7 +148,7 @@ library PSMLibrary {
         uint256 deadline
     ) internal {
         DepegSwapLibrary.permit(
-            ds.depegSwap,
+            ds.ds,
             rawDsPermitSig,
             owner,
             address(this),
@@ -169,13 +156,17 @@ library PSMLibrary {
             deadline
         );
 
-        ds.dsAsAsset().transferFrom(owner, address(this), amount);
+        IERC20(ds.ds).transferFrom(owner, address(this), amount);
         self.info.peggedAsset().asErc20().transferFrom(
             owner,
             address(this),
             amount
         );
-        self.info.redemptionAsset().asErc20().transfer(owner, amount);
+        self.wa.unlock(amount);
+    }
+
+    function valueLocked(State storage self) internal view returns (uint256) {
+        return self.wa.locked;
     }
 
     /// @notice redeem an RA with DS + PA
@@ -228,7 +219,7 @@ library PSMLibrary {
 
         DepegSwap storage ds = self.ds[idx];
 
-        expiry = ds.expiryTimestamp;
+        expiry = Asset(ds.ds).expiry();
     }
 
     /// @notice calculate the accrued RA
@@ -294,7 +285,7 @@ library PSMLibrary {
         uint256 deadline
     ) internal {
         DepegSwapLibrary.permit(
-            ds.coverToken,
+            ds.ct,
             rawCtPermitSig,
             owner,
             address(this),
@@ -302,7 +293,7 @@ library PSMLibrary {
             deadline
         );
 
-        ds.ctAsAsset().transferFrom(owner, address(this), ctRedeemedAmount);
+        IERC20(ds.ct).transferFrom(owner, address(this), ctRedeemedAmount);
         self.info.peggedAsset().asErc20().transfer(owner, accruedPa);
         self.info.redemptionAsset().asErc20().transfer(owner, accruedRa);
     }
