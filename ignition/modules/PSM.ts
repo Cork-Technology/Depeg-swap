@@ -1,9 +1,10 @@
 import { buildModule } from "@nomicfoundation/hardhat-ignition/modules";
-import { parseEther } from "viem";
+import assetFactory from "./AssetFactory";
 
 const PsmModule = buildModule("PsmModule", (m) => {
-  const contract = m.contract("PsmCore");
+  const { contract } = m.useModule(assetFactory);
 
+  const elle = m.contract("PsmCore", [contract]);
   return { contract };
 });
 

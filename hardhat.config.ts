@@ -15,6 +15,14 @@ const config: HardhatUserConfig = {
       },
     },
   },
+  networks: {
+    hardhat: {},
+    sepolia: {
+      url: "https://rpc.sepolia.org	",
+      chainId: 1337,
+      accounts: [process.env.PRIVATE_KEY!],
+    },
+  },
   gasReporter: {
     enabled: process.env.REPORT_GAS === "true" ? true : false,
     currency: "USD",
