@@ -28,8 +28,8 @@
   "showUncalledMethods": false,
   "coinmarketcap": "[REDACTED]",
   "token": "ETH",
-  "tokenPrice": "3751.79",
-  "gasPrice": 11,
+  "tokenPrice": "3935.71",
+  "gasPrice": 20,
   "blockGasLimit": 30000000,
   "solcInfo": {
    "version": "0.8.24",
@@ -724,7 +724,7 @@
     "numberOfCalls": 135,
     "executionGasAverage": 2487092,
     "calldataGasAverage": 0,
-    "cost": "102.64",
+    "cost": "195.77",
     "min": 2486079,
     "max": 2503179
    },
@@ -1151,7 +1151,7 @@
     "numberOfCalls": 136,
     "executionGasAverage": 1284112,
     "calldataGasAverage": 0,
-    "cost": "52.99",
+    "cost": "101.08",
     "min": 1282958,
     "max": 1300082
    },
@@ -1219,7 +1219,7 @@
     "numberOfCalls": 9,
     "executionGasAverage": 69627,
     "calldataGasAverage": 0,
-    "cost": "2.87",
+    "cost": "5.48",
     "min": 69627,
     "max": 69627
    },
@@ -1313,7 +1313,7 @@
     "numberOfCalls": 3,
     "executionGasAverage": 298091,
     "calldataGasAverage": 0,
-    "cost": "12.30",
+    "cost": "23.46",
     "min": 298091,
     "max": 298091
    },
@@ -1346,7 +1346,7 @@
     "numberOfCalls": 1,
     "executionGasAverage": 102267,
     "calldataGasAverage": 0,
-    "cost": "4.22",
+    "cost": "8.05",
     "min": 102267,
     "max": 102267
    },
@@ -1377,7 +1377,7 @@
     "numberOfCalls": 4,
     "executionGasAverage": 112399,
     "calldataGasAverage": 0,
-    "cost": "4.64",
+    "cost": "8.85",
     "min": 112399,
     "max": 112399
    },
@@ -1432,20 +1432,20 @@
     "method": "redeemWithCT",
     "fnSig": "redeemWithCT(bytes32,uint256,uint256,bytes,uint256)",
     "intrinsicGas": [
-     23524
+     23536
     ],
     "callData": [
      0
     ],
     "gasData": [
-     164829
+     164841
     ],
     "numberOfCalls": 1,
-    "executionGasAverage": 164829,
+    "executionGasAverage": 164841,
     "calldataGasAverage": 0,
-    "cost": "6.80",
-    "min": 164829,
-    "max": 164829
+    "cost": "12.98",
+    "min": 164841,
+    "max": 164841
    },
    "PsmCore_2b06ef24": {
     "key": "2b06ef24",
@@ -1465,7 +1465,7 @@
     "numberOfCalls": 1,
     "executionGasAverage": 205362,
     "calldataGasAverage": 0,
-    "cost": "8.48",
+    "cost": "16.16",
     "min": 205362,
     "max": 205362
    },
@@ -1725,7 +1725,7 @@
     "numberOfCalls": 7,
     "executionGasAverage": 43935,
     "calldataGasAverage": 0,
-    "cost": "1.81",
+    "cost": "3.46",
     "min": 29283,
     "max": 46383
    },
@@ -1778,7 +1778,7 @@
     "numberOfCalls": 4,
     "executionGasAverage": 68433,
     "calldataGasAverage": 0,
-    "cost": "2.82",
+    "cost": "5.39",
     "min": 68433,
     "max": 68433
    },
@@ -1928,7 +1928,7 @@
     ],
     "executionGasAverage": 4370094,
     "calldataGasAverage": 0,
-    "cost": "180.35",
+    "cost": "343.99",
     "min": 4370094,
     "max": 4370094,
     "percent": 14.6
@@ -3593,7 +3593,7 @@
     ],
     "executionGasAverage": 526934,
     "calldataGasAverage": 0,
-    "cost": "21.75",
+    "cost": "41.48",
     "min": 526934,
     "max": 526934,
     "percent": 1.8
@@ -3768,9 +3768,15 @@
     "executionGasAverage": 1605183,
     "calldataGasAverage": 0,
     "cost": "66.25",
+    "cost": "126.35",
     "min": 1605183,
     "max": 1605183,
     "percent": 5.4
+   },
+   {
+    "name": "PsmKeyLibrary",
+    "gasData": [],
+    "callData": []
    },
    {
     "name": "PSMLibrary",
