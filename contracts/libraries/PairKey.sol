@@ -7,15 +7,15 @@ import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 
 type PsmId is bytes32;
 
-struct PsmKey {
+struct PairKey {
     address _peggedAsset;
     address _redemptionAsset;
 }
 
-library PsmKeyLibrary {
+library PairKeyLibrary {
     using PeggedAssetLibrary for PeggedAsset;
 
-    function toId(PsmKey memory key) internal pure returns (PsmId id) {
+    function toId(PairKey memory key) internal pure returns (PsmId id) {
         bytes32 k = keccak256(abi.encode(key));
 
         assembly {
@@ -24,7 +24,7 @@ library PsmKeyLibrary {
     }
 
     function toPairname(
-        PsmKey memory key
+        PairKey memory key
     ) internal view returns (string memory pairname) {
         (string memory _pa, string memory _ra) = (
             IERC20Metadata(key._peggedAsset).symbol(),
@@ -37,24 +37,24 @@ library PsmKeyLibrary {
     function initalize(
         address pa,
         address ra
-    ) internal pure returns (PsmKey memory key) {
-        key = PsmKey({_peggedAsset: pa, _redemptionAsset: ra});
+    ) internal pure returns (PairKey memory key) {
+        key = PairKey({_peggedAsset: pa, _redemptionAsset: ra});
     }
 
     function peggedAsset(
-        PsmKey memory key
+        PairKey memory key
     ) internal pure returns (PeggedAsset memory pa) {
         pa = PeggedAsset({_address: key._peggedAsset});
     }
 
     function redemptionAsset(
-        PsmKey memory key
+        PairKey memory key
     ) internal pure returns (RedemptionAsset memory ra) {
         ra = RedemptionAsset({_address: key._redemptionAsset});
     }
 
     function isInitialized(
-        PsmKey memory key
+        PairKey memory key
     ) internal pure returns (bool status) {
         status =
             key._peggedAsset != address(0) &&

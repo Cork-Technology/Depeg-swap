@@ -1,17 +1,17 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.0;
 import "./libraries/PSMLib.sol";
-import "./libraries/PSMKeyLib.sol";
+import "./libraries/PairKey.sol";
 import "./interfaces/IPSMcore.sol";
 import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import "./interfaces/IAssetFactory.sol";
 
 // TODO : make entrypoint that do not rely on permit with function overloading or different function altogether
 contract PsmCore is IPSMcore {
-    using PSMLibrary for State;
-    using PsmKeyLibrary for PsmKey;
+    using PSMLibrary for PsmState;
+    using PairKeyLibrary for PairKey;
 
-    mapping(PsmId => State) public modules;
+    mapping(PsmId => PsmState) public modules;
 
     address factory;
 
@@ -34,17 +34,17 @@ contract PsmCore is IPSMcore {
     }
 
     function getId(address pa, address ra) external pure returns (PsmId) {
-        return PsmKeyLibrary.initalize(pa, ra).toId();
+        return PairKeyLibrary.initalize(pa, ra).toId();
     }
 
     // TODO : only allow to call this from config contract later or router
     function initialize(address pa, address ra, address wa) external override {
         _onlyValidAsset(wa);
 
-        PsmKey memory key = PsmKeyLibrary.initalize(pa, ra);
+        PairKey memory key = PairKeyLibrary.initalize(pa, ra);
         PsmId id = key.toId();
 
-        State storage state = modules[id];
+        PsmState storage state = modules[id];
 
         if (state.isInitialized()) {
             revert AlreadyInitialized();
@@ -65,7 +65,7 @@ contract PsmCore is IPSMcore {
         _onlyValidAsset(ct);
         _onlyValidAsset(ds);
 
-        State storage state = modules[id];
+        PsmState storage state = modules[id];
 
         uint256 dsId = state.issueNewPair(ct, ds);
 
@@ -76,7 +76,7 @@ contract PsmCore is IPSMcore {
         PsmId id,
         uint256 amount
     ) external override onlyInitialized(id) {
-        State storage state = modules[id];
+        PsmState storage state = modules[id];
         uint256 dsId = state.deposit(msg.sender, amount);
         emit Deposited(id, dsId, msg.sender, amount);
     }
@@ -91,7 +91,7 @@ contract PsmCore is IPSMcore {
         onlyInitialized(id)
         returns (uint256 ctReceived, uint256 dsReceived, uint256 dsId)
     {
-        State storage state = modules[id];
+        PsmState storage state = modules[id];
         (ctReceived, dsReceived, dsId) = state.previewDeposit(amount);
     }
 
@@ -102,7 +102,7 @@ contract PsmCore is IPSMcore {
         bytes memory rawDsPermitSig,
         uint256 deadline
     ) external override onlyInitialized(id) {
-        State storage state = modules[id];
+        PsmState storage state = modules[id];
 
         emit DsRedeemed(id, dsId, msg.sender, amount);
 
@@ -110,7 +110,7 @@ contract PsmCore is IPSMcore {
     }
 
     function valueLocked(PsmId id) external view override returns (uint256) {
-        State storage state = modules[id];
+        PsmState storage state = modules[id];
         return state.valueLocked();
     }
 
@@ -119,7 +119,7 @@ contract PsmCore is IPSMcore {
         uint256 dsId,
         uint256 amount
     ) external view override onlyInitialized(id) returns (uint256 assets) {
-        State storage state = modules[id];
+        PsmState storage state = modules[id];
         assets = state.previewRedeemWithDs(amount, dsId);
     }
 
@@ -130,7 +130,7 @@ contract PsmCore is IPSMcore {
         bytes memory rawCtPermitSig,
         uint256 deadline
     ) external override onlyInitialized(id) {
-        State storage state = modules[id];
+        PsmState storage state = modules[id];
 
         (uint256 accruedPa, uint256 accruedRa) = state.redeemWithCt(
             msg.sender,
@@ -154,7 +154,7 @@ contract PsmCore is IPSMcore {
         onlyInitialized(id)
         returns (uint256 paReceived, uint256 raReceived)
     {
-        State storage state = modules[id];
+        PsmState storage state = modules[id];
         (paReceived, raReceived) = state.previewRedeemWithCt(amount, dsId);
     }
 }

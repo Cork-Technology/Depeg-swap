@@ -1836,6 +1836,17 @@
     "callData": [],
     "gasData": [],
     "numberOfCalls": 0
+   },
+   "VaultLibrary_ef8b30f7": {
+    "key": "ef8b30f7",
+    "isCall": true,
+    "contract": "VaultLibrary",
+    "method": "previewDeposit",
+    "fnSig": "previewDeposit(uint256)",
+    "intrinsicGas": [],
+    "callData": [],
+    "gasData": [],
+    "numberOfCalls": 0
    }
   },
   "deployments": [
@@ -3683,12 +3694,22 @@
     "callData": []
    },
    {
+    "name": "IMinimalAMM",
+    "gasData": [],
+    "callData": []
+   },
+   {
     "name": "Initializable",
     "gasData": [],
     "callData": []
    },
    {
     "name": "IPSMcore",
+    "gasData": [],
+    "callData": []
+   },
+   {
+    "name": "LvAssetLibrary",
     "gasData": [],
     "callData": []
    },
@@ -3723,6 +3744,11 @@
     "callData": []
    },
    {
+    "name": "PairKeyLibrary",
+    "gasData": [],
+    "callData": []
+   },
+   {
     "name": "PeggedAssetLibrary",
     "gasData": [],
     "callData": []
@@ -3741,6 +3767,7 @@
     ],
     "executionGasAverage": 1605183,
     "calldataGasAverage": 0,
+    "cost": "66.25",
     "cost": "126.35",
     "min": 1605183,
     "max": 1605183,
@@ -3788,6 +3815,16 @@
    },
    {
     "name": "UUPSUpgradeable",
+    "gasData": [],
+    "callData": []
+   },
+   {
+    "name": "VaultConfigLibrary",
+    "gasData": [],
+    "callData": []
+   },
+   {
+    "name": "VaultLibrary",
     "gasData": [],
     "callData": []
    },
