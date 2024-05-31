@@ -84,12 +84,4 @@ library VaultConfigLibrary {
     ) internal pure {
         self.freeWaBalance -= amount;
     }
-
-    function calcWa(
-        VaultConfig memory self,
-        uint256 amount
-    ) internal pure returns (uint256 locked, uint256 free) {
-        locked = amount - (amount * self.waConvertThreshold) / 1e20;
-        free = amount - locked;
-    }
 }

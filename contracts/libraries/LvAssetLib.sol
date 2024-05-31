@@ -2,6 +2,7 @@
 pragma solidity ^0.8.20;
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "../Asset.sol";
 
 struct LvAsset {
     address _address;
@@ -29,6 +30,6 @@ library LvAssetLibrary {
     }
 
     function issue(LvAsset memory self, address to, uint256 amount) internal {
-        IERC20(self._address).transfer(to, amount);
+        Asset(self._address).mint(to, amount);
     }
 }
