@@ -68,9 +68,11 @@ contract PsmCore is IPSMcore {
 
         State storage state = modules[id];
 
-        uint256 dsId = state.issueNewPair(ct, ds);
+        uint256 prevIdx = state.globalAssetIdx++;
+        uint256 idx = state.globalAssetIdx;
+        state.issueNewPair(ct, ds, idx, prevIdx);
 
-        emit Issued(id, dsId, expiry, ds, ct);
+        emit Issued(id, idx, expiry, ds, ct);
     }
 
     function deposit(
