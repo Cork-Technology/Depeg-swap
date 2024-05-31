@@ -11,8 +11,20 @@ struct LvAsset {
 library LvAssetLibrary {
     using LvAssetLibrary for LvAsset;
 
+    function initialize(address _address) internal pure returns (LvAsset memory) {
+        return LvAsset(_address);
+    }
+
     function asErc20(LvAsset memory self) internal pure returns (IERC20) {
         return IERC20(self._address);
+    }
+
+    function isExpired(LvAsset memory self) internal view returns (bool) {
+        return Asset(self._address).isExpired();
+    }
+
+    function isInitialized(LvAsset memory self) internal pure returns (bool) {
+        return self._address != address(0);
     }
 
     function depositUnchecked(

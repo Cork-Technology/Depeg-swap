@@ -9,6 +9,7 @@ import "./SignatureHelperLib.sol";
 import "./PeggedAssetLib.sol";
 import "./RedemptionAssetLib.sol";
 import "./State.sol";
+import "./Guard.sol";
 
 // TODO : support native token
 // TODO : make an entrypoint that does not depend on permit
@@ -19,43 +20,6 @@ library PSMLibrary {
     using WrappedAssetLibrary for WrappedAssetInfo;
     using PeggedAssetLibrary for PeggedAsset;
     using RedemptionAssetLibrary for RedemptionAsset;
-
-    /// @notice depegSwap is expired
-    error Expired();
-
-    /// @notice depegSwap is not initialized
-    error Uinitialized();
-
-    /// @notice depegSwap is not expired. e.g trying to redeem before expiry
-    error NotExpired();
-
-    function _onlyNotExpired(DepegSwap storage ds) internal view {
-        if (ds.isExpired()) {
-            revert Expired();
-        }
-    }
-
-    function _onlyExpired(DepegSwap storage ds) internal view {
-        if (!ds.isExpired()) {
-            revert NotExpired();
-        }
-    }
-
-    function _onlyInitialized(DepegSwap storage ds) internal view {
-        if (!ds.isInitialized()) {
-            revert Uinitialized();
-        }
-    }
-
-    function _safeBeforeExpired(DepegSwap storage ds) internal view {
-        _onlyInitialized(ds);
-        _onlyNotExpired(ds);
-    }
-
-    function _safeAfterExpired(DepegSwap storage ds) internal view {
-        _onlyInitialized(ds);
-        _onlyExpired(ds);
-    }
 
     function isInitialized(
         State storage self
@@ -76,16 +40,15 @@ library PSMLibrary {
     function issueNewPair(
         State storage self,
         address ct,
-        address ds
-    ) internal returns (uint256 idx) {
-        if (self.dsCount != 0) {
-            DepegSwap storage _ds = self.ds[self.dsCount];
-            _safeAfterExpired(_ds);
+        address ds,
+        uint256 idx,
+        uint256 prevIdx
+    ) internal {
+        if (prevIdx != 0) {
+            DepegSwap storage _prevDs = self.ds[prevIdx];
+            Guard.safeAfterExpired(_prevDs);
+            
         }
-
-        // to prevent 0 index
-        self.dsCount++;
-        idx = self.dsCount;
 
         self.ds[idx] = DepegSwapLibrary.initialize(ds, ct);
     }
@@ -97,11 +60,11 @@ library PSMLibrary {
         address depositor,
         uint256 amount
     ) internal returns (uint256 dsId) {
-        dsId = self.dsCount;
+        dsId = self.globalAssetIdx;
 
         DepegSwap storage ds = self.ds[dsId];
 
-        _safeBeforeExpired(ds);
+        Guard.safeBeforeExpired(ds);
 
         // add the amount to the total ct issued
         self.totalCtIssued += amount;
@@ -120,10 +83,10 @@ library PSMLibrary {
         view
         returns (uint256 ctReceived, uint256 dsReceived, uint256 dsId)
     {
-        dsId = self.dsCount;
+        dsId = self.globalAssetIdx;
         DepegSwap storage ds = self.ds[dsId];
 
-        _safeBeforeExpired(ds);
+        Guard.safeBeforeExpired(ds);
         ctReceived = amount;
         dsReceived = amount;
     }
@@ -176,7 +139,7 @@ library PSMLibrary {
         uint256 deadline
     ) internal {
         DepegSwap storage ds = self.ds[dsId];
-        _safeBeforeExpired(ds);
+        Guard.safeBeforeExpired(ds);
         _redeemDs(ds, amount);
         _afterRedeemWithDs(self, ds, rawDsPermitSig, owner, amount, deadline);
     }
@@ -190,7 +153,7 @@ library PSMLibrary {
         uint256 amount
     ) internal view returns (uint256 assets) {
         DepegSwap storage ds = self.ds[dsId];
-        _safeBeforeExpired(ds);
+        Guard.safeBeforeExpired(ds);
         assets = amount;
     }
 
@@ -208,7 +171,7 @@ library PSMLibrary {
     function nextExpiry(
         State storage self
     ) internal view returns (uint256 expiry) {
-        uint256 idx = self.dsCount;
+        uint256 idx = self.globalAssetIdx;
 
         DepegSwap storage ds = self.ds[idx];
 
@@ -305,7 +268,7 @@ library PSMLibrary {
         uint256 deadline
     ) internal returns (uint256 accruedPa, uint256 accruedRa) {
         DepegSwap storage ds = self.ds[dsId];
-        _safeAfterExpired(ds);
+        Guard.safeAfterExpired(ds);
 
         (accruedPa, accruedRa) = _calcRedeemAmount(self, amount);
         _incRedeemedCt(ds, amount);
@@ -330,7 +293,7 @@ library PSMLibrary {
         uint256 amount
     ) internal view returns (uint256 accruedPa, uint256 accruedRa) {
         DepegSwap storage ds = self.ds[dsId];
-        _safeAfterExpired(ds);
+        Guard.safeAfterExpired(ds);
 
         (accruedPa, accruedRa) = _calcRedeemAmount(self, amount);
     }

@@ -6,9 +6,9 @@ import "./WrappedAssetLib.sol";
 import "./VaultConfig.sol";
 import "./LvAssetLib.sol";
 
-
 struct State {
-    uint256 dsCount;
+    /// @dev used to track current
+    uint256 globalAssetIdx;
     uint256 totalCtIssued;
     WrappedAssetInfo wa;
     PairKey info;
@@ -22,6 +22,6 @@ struct PsmState {
 
 struct VaultState {
     VaultConfig config;
-    LvAsset lv;
+    mapping(uint256 => LvAsset) lv;
     mapping(address => bool) withdrawEligible;
 }
