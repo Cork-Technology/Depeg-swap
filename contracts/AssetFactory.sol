@@ -7,6 +7,7 @@ import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import "./WrappedAsset.sol";
 import "./Asset.sol";
 
+// TODO : add LV asset
 contract AssetFactory is IAssetFactory, OwnableUpgradeable, UUPSUpgradeable {
     uint8 public constant MAX_LIMIT = 10;
     string private constant CT_PREFIX = "CT";
