@@ -94,7 +94,8 @@ library VaultLibrary {
         (LvAsset storage lv, uint256 lvId) = safeBeforeExpired(self);
 
         uint256 ratio = MathHelper.calculatePriceRatio(
-            self.vault.getSqrtPriceX96()
+            self.vault.getSqrtPriceX96(),
+            MathHelper.DEFAULT_DECIMAL
         );
         (
             uint256 amountWa,
