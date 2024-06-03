@@ -65,10 +65,9 @@ describe("Math Helper", function () {
       expect(leftoverCt).to.equal(parseEther("5"));
     });
 
-    it("shoudl convert sqrtx96 to ratio(4090)", async function () {
-      // 4090
-      const sqrtpricex96 = BigInt("1234217676608908277512433764");
-      const ratio = BigInt("4090");
+    it("should convert sqrtx96 to ratio (4)", async function () {
+      const sqrtpricex96 = BigInt("158456325028528675187087900672");
+      const ratio = parseEther("4");
 
       const contract = await loadFixture(deployMathHelper);
 

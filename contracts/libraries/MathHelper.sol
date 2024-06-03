@@ -38,6 +38,7 @@ library MathHelper {
     // TODO: test this, and maybe add support for 2 different decimals token? but since we're
     // using wa and ct, which both has 18 decimals so will default into that one for now
     /// @dev should only pass ERC20.decimals() onto the decimal field
+    /// @dev will output price ratio in 18 decimal precision.
     function calculatePriceRatio(
         uint160 sqrtPriceX96,
         uint8 decimal
