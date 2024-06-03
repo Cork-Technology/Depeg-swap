@@ -6,18 +6,17 @@ library MathHelper {
     /// @dev default decimals for now to calculate price ratio
     uint8 internal constant DEFAULT_DECIMAL = 18;
 
-
     /**
      * @dev calculate the amount of wa and ct needed to provide AMM with liquidity in respect to the price ratio
-     *  
+     *
      * @param amount  the total amount of liquidity user provide(e.g 2 WA)
      * @param priceRatio the price ratio of the pair, should be retrieved from the AMM as sqrtx96 and be converted to ratio
-     * @return amountWa the amount of wa needed to provide AMM with liquidity 
+     * @return amountWa the amount of wa needed to provide AMM with liquidity
      * @return amountCt the amount of ct needed to provide AMM with liquidity
      * @return leftoverWa the leftover wa after providing AMM with liquidit, should for now reside in the LV
      * @return leftoverCt the leftover ct after providing AMM with liquidit, should for now reside in the LV
      */
-     function calculateAmounts(
+    function calculateAmounts(
         uint256 amount,
         uint256 priceRatio
     )
@@ -59,5 +58,47 @@ library MathHelper {
         uint256 denominator = 1 << 192;
 
         return (numerator1 * numerator2) / denominator;
+    }
+
+    /**
+     *  @dev calculate the base withdrawal amount of ra and pa in respect of given amount
+     * @param totalLv the total amount of lv in the pool
+     * @param accruedRa the total amount of ra accrued in the pool  
+     * @param accruedPa the total amount of pa accrued in the pool
+     * @param amount the amount of lv user want to withdraw
+     * @return ra the amount of ra user will receive
+     * @return pa the amount of pa user will receive
+     */
+    function calculateBaseWithdrawal(
+        uint256 totalLv,
+        uint256 accruedRa,
+        uint256 accruedPa,
+        uint256 amount
+    ) external pure returns (uint256 ra, uint256 pa) {
+        (uint256 raPerLv, uint256 paPerLv) = calculateLvValue(
+            totalLv,
+            accruedRa,
+            accruedPa
+        );
+
+        ra = (amount * raPerLv);
+        pa = (amount * paPerLv);
+    }
+
+    /**
+     * @dev calculate the value of ra and pa per lv
+     * @param totalLv the total amount of lv in the pool
+     * @param accruedRa the total amount of ra accrued in the pool
+     * @param accruedPa the total amount of pa accrued in the pool
+     * @return ra the value of ra per lv
+     * @return pa the value of pa per lv
+     */
+    function calculateLvValue(
+        uint256 totalLv,
+        uint256 accruedRa,
+        uint256 accruedPa
+    ) internal pure returns (uint256 ra, uint256 pa) {
+        ra = accruedRa / totalLv;
+        pa = accruedPa / totalLv;
     }
 }
