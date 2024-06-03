@@ -78,5 +78,26 @@ describe("Math Helper", function () {
 
       expect(converted).to.equal(ratio);
     });
+
+    it("should calculate ra and pa value per lv", async function () {
+      const contract = await loadFixture(deployMathHelper);
+
+      const totalLv = parseEther("10");
+      const accruedRa = parseEther("10");
+      const accruedPa = parseEther("10");
+      const amount = parseEther("2");
+
+      const [raPerLv, paPerLv] = await contract.read.calculateBaseWithdrawal([
+        totalLv,
+        accruedRa,
+        accruedPa,
+        amount,
+      ]);
+
+      const claimedAmount = parseEther("2");
+
+      expect(raPerLv).to.equal(claimedAmount);
+      expect(paPerLv).to.equal(claimedAmount);
+    });
   });
 });
