@@ -6,7 +6,18 @@ library MathHelper {
     /// @dev default decimals for now to calculate price ratio
     uint8 internal constant DEFAULT_DECIMAL = 18;
 
-    function calculateAmounts(
+
+    /**
+     * @dev calculate the amount of wa and ct needed to provide AMM with liquidity in respect to the price ratio
+     *  
+     * @param amount  the total amount of liquidity user provide(e.g 2 WA)
+     * @param priceRatio the price ratio of the pair, should be retrieved from the AMM as sqrtx96 and be converted to ratio
+     * @return amountWa the amount of wa needed to provide AMM with liquidity 
+     * @return amountCt the amount of ct needed to provide AMM with liquidity
+     * @return leftoverWa the leftover wa after providing AMM with liquidit, should for now reside in the LV
+     * @return leftoverCt the leftover ct after providing AMM with liquidit, should for now reside in the LV
+     */
+     function calculateAmounts(
         uint256 amount,
         uint256 priceRatio
     )
