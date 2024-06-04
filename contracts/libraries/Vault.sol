@@ -8,6 +8,7 @@ import "./PSMLib.sol";
 import "./WrappedAssetLib.sol";
 import "./MathHelper.sol";
 import "./Guard.sol";
+import "@openzeppelin/contracts/token/ERC20/extensions/ERC20Burnable.sol";
 
 library VaultLibrary {
     using VaultConfigLibrary for VaultConfig;
@@ -50,39 +51,17 @@ library VaultLibrary {
         return 0;
     }
 
-    /// @notice issue a new pair of DS, will fail if the previous DS isn't yet expired
-    function issueNewLv(
-        State storage self,
-        address lv,
-        uint256 idx,
-        uint256 prevIdx
-    ) internal {
-        if (prevIdx != 0) {
-            LvAsset storage _lv = self.vault.lv[prevIdx];
-            Guard.safeAfterExpired(_lv);
-        }
+    function safeBeforeExpired(State storage self) internal view {
+        uint256 dsId = self.globalAssetIdx;
+        DepegSwap storage ds = self.ds[dsId];
 
-        // to prevent 0 index
-        self.globalAssetIdx++;
-        idx = self.globalAssetIdx;
-
-        self.vault.lv[idx] = LvAssetLibrary.initialize(lv);
+        Guard.safeBeforeExpired(ds);
     }
 
-    function safeBeforeExpired(
-        State storage self
-    ) internal view returns (LvAsset storage lv, uint256 lvId) {
-        lvId = self.globalAssetIdx;
-        lv = self.vault.lv[lvId];
-        Guard.safeBeforeExpired(lv);
-    }
-
-    function safeAfterExpired(
-        State storage self
-    ) internal view returns (LvAsset storage lv, uint256 lvId) {
-        lvId = self.globalAssetIdx;
-        lv = self.vault.lv[lvId];
-        Guard.safeAfterExpired(lv);
+    function safeAfterExpired(State storage self) internal view {
+        uint256 dsId = self.globalAssetIdx;
+        DepegSwap storage ds = self.ds[dsId];
+        Guard.safeAfterExpired(ds);
     }
 
     // TODO : check for initialization
@@ -90,8 +69,8 @@ library VaultLibrary {
         State storage self,
         address from,
         uint256 amount
-    ) internal returns (uint256) {
-        (LvAsset storage lv, uint256 lvId) = safeBeforeExpired(self);
+    ) internal {
+        safeBeforeExpired(self);
 
         uint256 ratio = MathHelper.calculatePriceRatio(
             self.vault.getSqrtPriceX96(),
@@ -112,9 +91,7 @@ library VaultLibrary {
         }
 
         _limitOrderDs(amount);
-        lv.issue(from, amount);
-
-        return lvId;
+        self.vault.lv.issue(from, amount);
     }
 
     // preview a deposit action with current exchange rate,
@@ -140,18 +117,38 @@ library VaultLibrary {
         // 3. The excess CT is used to claim RA + PA as described above
         // 4. All of the above WA get collected in a WA container, the WA is used to redeem RA
         // 5. End state: Only RA + redeemed PA remains
-        
+
         self.vault.lpLiquidated = true;
         wa = 0;
         ct = 0;
     }
 
-    function redeemExpired(State storage self) internal {
+    function redeemExpired(
+        State storage self,
+        address owner,
+        address receiver,
+        uint256 amount
+    ) internal {
         safeAfterExpired(self);
 
         if (!self.vault.lpLiquidated) {
             _liquidatedLp(self);
         }
+
+        IERC20 ra = IERC20(self.info._redemptionAsset);
+        IERC20 pa = IERC20(self.info._peggedAsset);
+        ERC20Burnable lv = ERC20Burnable(self.vault.lv._address);
+
+        uint256 accruedRa = ra.balanceOf(address(this));
+        uint256 accruedPa = pa.balanceOf(address(this));
+        uint256 totalLv = lv.balanceOf(address(this));
+
+        (uint256 attributedRa, uint256 attributedPa) = MathHelper
+            .calculateBaseWithdrawal(totalLv, accruedRa, accruedPa, amount);
+
+        ra.transfer(receiver, attributedRa);
+        pa.transfer(receiver, attributedPa);
+        lv.burnFrom(owner, amount);
     }
 
     function redeemEarly(uint256 amount) internal {

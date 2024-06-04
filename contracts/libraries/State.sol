@@ -21,7 +21,7 @@ struct PsmState {
 
 struct VaultState {
     VaultConfig config;
-    mapping(uint256 => LvAsset) lv;
+    LvAsset lv;
     mapping(address => bool) withdrawEligible;
     bool lpLiquidated;
 }
