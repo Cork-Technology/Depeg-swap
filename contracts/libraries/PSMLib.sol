@@ -47,7 +47,6 @@ library PSMLibrary {
         if (prevIdx != 0) {
             DepegSwap storage _prevDs = self.ds[prevIdx];
             Guard.safeAfterExpired(_prevDs);
-            
         }
 
         self.ds[idx] = DepegSwapLibrary.initialize(ds, ct);
@@ -66,8 +65,6 @@ library PSMLibrary {
 
         Guard.safeBeforeExpired(ds);
 
-        // add the amount to the total ct issued
-        self.totalCtIssued += amount;
         self.wa.lock(amount);
         ds.issue(depositor, amount);
     }
@@ -209,10 +206,9 @@ library PSMLibrary {
 
     function _calcRedeemAmount(
         State storage self,
-        uint256 amount
+        uint256 amount,
+        uint256 totalCtIssued
     ) internal view returns (uint256 accruedPa, uint256 accruedRa) {
-        uint256 totalCtIssued = self.totalCtIssued;
-
         uint256 availablePa = self.info.peggedAsset().psmBalance();
         accruedPa = calculateAccruedPa(amount, availablePa, totalCtIssued);
 
@@ -270,7 +266,8 @@ library PSMLibrary {
         DepegSwap storage ds = self.ds[dsId];
         Guard.safeAfterExpired(ds);
 
-        (accruedPa, accruedRa) = _calcRedeemAmount(self, amount);
+        uint256 totalCtIssued = IERC20(ds.ct).totalSupply();
+        (accruedPa, accruedRa) = _calcRedeemAmount(self, amount, totalCtIssued);
         _incRedeemedCt(ds, amount);
         _afterCtRedeem(
             self,
@@ -295,6 +292,7 @@ library PSMLibrary {
         DepegSwap storage ds = self.ds[dsId];
         Guard.safeAfterExpired(ds);
 
-        (accruedPa, accruedRa) = _calcRedeemAmount(self, amount);
+        uint256 totalCtIssued = IERC20(ds.ct).totalSupply();
+        (accruedPa, accruedRa) = _calcRedeemAmount(self, amount, totalCtIssued);
     }
 }

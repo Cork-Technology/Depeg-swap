@@ -9,7 +9,6 @@ import "./LvAssetLib.sol";
 struct State {
     /// @dev used to track current
     uint256 globalAssetIdx;
-    uint256 totalCtIssued;
     WrappedAssetInfo wa;
     PairKey info;
     mapping(uint256 => DepegSwap) ds;
@@ -24,4 +23,5 @@ struct VaultState {
     VaultConfig config;
     mapping(uint256 => LvAsset) lv;
     mapping(address => bool) withdrawEligible;
+    bool lpLiquidated;
 }

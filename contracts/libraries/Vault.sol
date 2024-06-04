@@ -36,17 +36,17 @@ library VaultLibrary {
         uint256 amountWa,
         uint256 amountCt
     ) internal {
-        // placeholder
+        // TODO : placeholder
     }
 
     function _limitOrderDs(uint256 amount) internal {
-        // placeholder
+        // TODO : placeholder
     }
 
     function getSqrtPriceX96(
         VaultState storage self
     ) internal view returns (uint160) {
-        // placeholder
+        // TODO : placeholder
         return 0;
     }
 
@@ -130,9 +130,28 @@ library VaultLibrary {
         self.vault.withdrawEligible[owner] = true;
     }
 
+    function _liquidatedLp(
+        State storage self
+    ) internal returns (uint256 wa, uint256 ct) {
+        // TODO : placeholder
+        // the following things should happen here(taken directly from the whitepaper) :
+        // 1. The AMM LP is redeemed to receive CT + WA
+        // 2. Any excess DS in the LV is paired with CT to mint WA
+        // 3. The excess CT is used to claim RA + PA as described above
+        // 4. All of the above WA get collected in a WA container, the WA is used to redeem RA
+        // 5. End state: Only RA + redeemed PA remains
+        
+        self.vault.lpLiquidated = true;
+        wa = 0;
+        ct = 0;
+    }
+
     function redeemExpired(State storage self) internal {
         safeAfterExpired(self);
-        // TODO calculate LV
+
+        if (!self.vault.lpLiquidated) {
+            _liquidatedLp(self);
+        }
     }
 
     function redeemEarly(uint256 amount) internal {
