@@ -99,5 +99,37 @@ describe("Math Helper", function () {
       expect(raPerLv).to.equal(claimedAmount);
       expect(paPerLv).to.equal(claimedAmount);
     });
+
+    it("should calculate base lv and ratio correctly(WA:CT = 4) ", async function () {
+      const sqrtpricex96 = BigInt("158456325028528675187087900672");
+      const expectedRatio = parseEther("4");
+
+      const contract = await loadFixture(deployMathHelper);
+
+      const ratio = await contract.read.calculatePriceRatio([sqrtpricex96, 18]);
+
+      expect(ratio).to.equal(expectedRatio);
+
+      const amount = parseEther("40");
+
+      const [wa, ct, leftoverWa, leftoverCt] =
+        await contract.read.calculateAmounts([amount, ratio]);
+
+      console.log(
+        "wa: ",
+        formatEther(wa),
+        "ct: ",
+        formatEther(ct),
+        "leftover wa: ",
+        formatEther(leftoverWa),
+        "leftover ct: ",
+        formatEther(leftoverCt)
+      );
+
+      expect(wa).to.equal(parseEther("40"));
+      expect(ct).to.equal(parseEther("10"));
+      expect(leftoverWa).to.equal(parseEther("0"));
+      expect(leftoverCt).to.equal(parseEther("30"));
+    });
   });
 });
