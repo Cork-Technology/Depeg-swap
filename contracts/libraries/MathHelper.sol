@@ -62,7 +62,7 @@ library MathHelper {
     /**
      *  @dev calculate the base withdrawal amount of ra and pa in respect of given amount
      * @param totalLv the total amount of lv in the pool
-     * @param accruedRa the total amount of ra accrued in the pool  
+     * @param accruedRa the total amount of ra accrued in the pool
      * @param accruedPa the total amount of pa accrued in the pool
      * @param amount the amount of lv user want to withdraw
      * @return ra the amount of ra user will receive
@@ -99,5 +99,20 @@ library MathHelper {
     ) internal pure returns (uint256 ra, uint256 pa) {
         ra = accruedRa / totalLv;
         pa = accruedPa / totalLv;
+    }
+
+    function calculateEarlyLvRate(
+        uint256 lvWaBalance,
+        uint256 totalLv,
+        uint256 amount
+    ) external pure returns (uint256 ratePerLv) {
+        ratePerLv = (amount * ((lvWaBalance * 1e18) / totalLv)) / 1e18;
+    }
+
+    function calculatePrecentageFee(
+        uint256 fee1e8,
+        uint256 amount
+    ) external pure returns (uint256) {
+        return (((amount * 1e18) * fee1e8) / (100 * 1e18)) / 1e18;
     }
 }

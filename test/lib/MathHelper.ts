@@ -131,5 +131,31 @@ describe("Math Helper", function () {
       expect(leftoverWa).to.equal(parseEther("0"));
       expect(leftoverCt).to.equal(parseEther("30"));
     });
+
+    it("should calculate early lv", async function () {
+      const contract = await loadFixture(deployMathHelper);
+
+      const amount = parseEther("1");
+      const totalLv = parseEther("10");
+      const wa = parseEther("5");
+
+      const result = await contract.read.calculateEarlyLvRate([
+        wa,
+        totalLv,
+        amount,
+      ]);
+
+      expect(result).to.equal(parseEther("0.5"));
+    });
+
+    it("should calculate precentage fee", async function () {
+      const fee = parseEther("10");
+      const amount = parseEther("100");
+
+      const contract = await loadFixture(deployMathHelper);
+
+      const result = await contract.read.calculatePrecentageFee([fee, amount]);
+      expect(result).to.equal(parseEther("10"));
+    });
   });
 });

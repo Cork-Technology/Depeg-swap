@@ -119,6 +119,7 @@ library VaultLibrary {
         // 5. End state: Only RA + redeemed PA remains
 
         self.vault.lpLiquidated = true;
+
         wa = 0;
         ct = 0;
     }
@@ -151,7 +152,50 @@ library VaultLibrary {
         lv.burnFrom(owner, amount);
     }
 
-    function redeemEarly(uint256 amount) internal {
-        // placeholder
+    // taken directly from spec document, technically below is what should happen in this function
+    //
+    // '#' refers to the total circulation supply of that token.
+    // '&' refers to the total amount of token in the LV.
+    //
+    // say our percent fee is 3%
+    // fee(amount)
+    //
+    // say the amount of user LV token is 'N'
+    //
+    // AMM LP liquidation (#LP/#LV) provide more CT($CT) + WA($WA) :
+    // &CT = &CT + $CT
+    // &WA = &WA + $WA
+    //
+    // Create WA pairing CT with DS inside the vault :
+    // &WA = &WA + &(CT + DS)
+    //
+    // Excess and unpaired CT is sold to AMM to provide WA($WA) :
+    // &WA = $WA
+    //
+    // the LV token rate is :
+    // eLV = &WA/#LV
+    //
+    // redemption amount(rA) :
+    // rA = N x eLV
+    //
+    // final amount(Fa) :
+    // Fa = rA - fee(rA)
+    function redeemEarly(
+        State storage self,
+        address owner,
+        address receiver,
+        uint256 amount
+    ) internal {
+        safeBeforeExpired(self);
+        _liquidatedLp(self);
+        createWaPairings(self);
+    }
+
+    function sellExcessCt(State storage self) internal {
+        // TODO : placeholder
+    }
+
+    function createWaPairings(State storage self) internal {
+        // TODO : placeholder
     }
 }
