@@ -7,7 +7,7 @@ import "./VaultConfig.sol";
 import "./LvAssetLib.sol";
 
 struct State {
-    /// @dev used to track current
+    /// @dev used to track current ds and ct for both lv and psm
     uint256 globalAssetIdx;
     WrappedAssetInfo wa;
     PairKey info;

@@ -101,14 +101,25 @@ library MathHelper {
         pa = accruedPa / totalLv;
     }
 
+    /**
+     * calculate the early lv rate in respect to the amount given
+     * @param lvWaBalance the total amount of wa in the lv
+     * @param totalLv the total amount of lv in the pool
+     * @param amount the amount of lv user want to withdraw
+     */
     function calculateEarlyLvRate(
         uint256 lvWaBalance,
         uint256 totalLv,
         uint256 amount
-    ) external pure returns (uint256 ratePerLv) {
-        ratePerLv = (amount * ((lvWaBalance * 1e18) / totalLv)) / 1e18;
+    ) external pure returns (uint256 received) {
+        received = (amount * ((lvWaBalance * 1e18) / totalLv)) / 1e18;
     }
 
+    /**
+     * @dev calculate the fee in respect to the amount given
+     * @param fee1e8 the fee in 1e8 
+     * @param amount the amount of lv user want to withdraw
+     */
     function calculatePrecentageFee(
         uint256 fee1e8,
         uint256 amount

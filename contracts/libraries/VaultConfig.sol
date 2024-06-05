@@ -5,8 +5,6 @@ struct VaultConfig {
     // 1 % = 1e18
     uint256 fee;
     //
-    // TODO : update implementation of threshold, as currently it simplfies
-    // by just comparing the free balance with the threshold
     uint256 freeWaBalance;
     uint256 ammWaDepositThreshold;
     //

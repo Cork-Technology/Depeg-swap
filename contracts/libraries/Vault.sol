@@ -189,6 +189,21 @@ library VaultLibrary {
         safeBeforeExpired(self);
         _liquidatedLp(self);
         createWaPairings(self);
+
+        uint256 received = MathHelper.calculateEarlyLvRate(
+            self.vault.config.freeWaBalance,
+            IERC20(self.vault.lv._address).totalSupply(),
+            amount
+        );
+
+        received =
+            received -
+            MathHelper.calculatePrecentageFee(received, self.vault.config.fee);
+
+        self.vault.config.freeWaBalance -= received;
+
+        ERC20Burnable(self.vault.lv._address).burnFrom(owner, amount);
+        WrappedAsset(self.wa._address).unwrapTo(receiver, received);
     }
 
     function sellExcessCt(State storage self) internal {
