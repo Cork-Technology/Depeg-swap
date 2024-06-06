@@ -19,6 +19,10 @@ library VaultLibrary {
     using WrappedAssetLibrary for WrappedAsset;
     using VaultLibrary for VaultState;
 
+    /// @notice caller is not authorized to perform the action, e.g transfering
+    /// redemption rights to another address while not having the rights
+    error Unauthorized(address caller);
+
     function initialize(
         VaultState storage self,
         uint256 fee,
@@ -105,6 +109,21 @@ library VaultLibrary {
     function requestRedemption(State storage self, address owner) internal {
         safeBeforeExpired(self);
         self.vault.withdrawEligible[owner] = true;
+    }
+
+    function transferRedemptionRights(
+        State storage self,
+        address from,
+        address to
+    ) internal {
+        safeBeforeExpired(self);
+
+        if (!self.vault.withdrawEligible[from]) {
+            revert Unauthorized(msg.sender);
+        }
+
+        self.vault.withdrawEligible[from] = false;
+        self.vault.withdrawEligible[to] = true;
     }
 
     function _liquidatedLp(
