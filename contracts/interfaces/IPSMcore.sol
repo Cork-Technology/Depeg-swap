@@ -68,9 +68,9 @@ interface IPSMcore {
         address ds
     ) external;
 
-    function deposit(PsmId id, uint256 amount) external;
+    function depositPsm(PsmId id, uint256 amount) external;
 
-    function previewDeposit(
+    function previewDepositPsm(
         PsmId id,
         uint256 amount
     )
@@ -78,7 +78,7 @@ interface IPSMcore {
         view
         returns (uint256 ctReceived, uint256 dsReceived, uint256 dsId);
 
-    function redeemWithRaWithDs(
+    function redeemRaWithDs(
         PsmId id,
         uint256 dsId,
         uint256 amount,
@@ -86,7 +86,7 @@ interface IPSMcore {
         uint256 deadline
     ) external;
 
-    function previewRedeemWithDs(
+    function previewRedeemRaWithDs(
         PsmId id,
         uint256 dsId,
         uint256 amount

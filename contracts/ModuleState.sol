@@ -5,10 +5,10 @@ import "./libraries/PairKey.sol";
 import "./libraries/State.sol";
 import "./interfaces/IAssetFactory.sol";
 import "./interfaces/ICommon.sol";
-import "./libraries/StateLib.sol";
+import "./libraries/PsmLib.sol";
 
 contract ModuleState is ICommon {
-    using StateLib for State;
+    using PsmLibrary for State;
 
     mapping(PsmId => State) internal states;
     address _factory;

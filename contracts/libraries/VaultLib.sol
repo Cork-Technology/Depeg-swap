@@ -4,7 +4,7 @@ pragma solidity ^0.8.0;
 import "./VaultConfig.sol";
 import "./PairKey.sol";
 import "./LvAssetLib.sol";
-import "./PSMLib.sol";
+import "./PsmLib.sol";
 import "./WrappedAssetLib.sol";
 import "./MathHelper.sol";
 import "./Guard.sol";
@@ -15,7 +15,7 @@ library VaultLibrary {
     using PairKeyLibrary for PairKey;
     using LvAssetLibrary for LvAsset;
     using VaultLibrary for VaultState;
-    using PSMLibrary for State;
+    using PsmLibrary for State;
     using WrappedAssetLibrary for WrappedAsset;
     using VaultLibrary for VaultState;
 

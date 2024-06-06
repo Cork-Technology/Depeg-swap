@@ -13,7 +13,7 @@ import "./Guard.sol";
 
 // TODO : support native token
 // TODO : make an entrypoint that does not depend on permit
-library StateLib {
+library PsmLibrary {
     using MinimalSignatureHelper for Signature;
     using PairKeyLibrary for PairKey;
     using DepegSwapLibrary for DepegSwap;
