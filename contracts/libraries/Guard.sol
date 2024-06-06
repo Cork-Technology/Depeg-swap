@@ -21,21 +21,9 @@ library Guard {
             revert Expired();
         }
     }
-    
-    function _onlyNotExpired(LvAsset storage lv) internal view {
-        if (lv.isExpired()) {
-            revert Expired();
-        }
-    }
 
     function _onlyExpired(DepegSwap storage ds) internal view {
         if (!ds.isExpired()) {
-            revert NotExpired();
-        }
-    }
-    
-    function _onlyExpired(LvAsset storage lv) internal view {
-        if (!lv.isExpired()) {
             revert NotExpired();
         }
     }
@@ -46,29 +34,13 @@ library Guard {
         }
     }
 
-    function _onlyInitialized(LvAsset storage lv) internal view {
-        if (!lv.isInitialized()) {
-            revert Uinitialized();
-        }
-    }
-
     function safeBeforeExpired(DepegSwap storage ds) internal view {
         _onlyInitialized(ds);
         _onlyNotExpired(ds);
-    }
-   
-    function safeBeforeExpired(LvAsset storage lv) internal view {
-        _onlyInitialized(lv);
-        _onlyNotExpired(lv);
     }
 
     function safeAfterExpired(DepegSwap storage ds) internal view {
         _onlyInitialized(ds);
         _onlyExpired(ds);
-    }
-    
-    function safeAfterExpired(LvAsset storage lv) internal view {
-        _onlyInitialized(lv);
-        _onlyExpired(lv);
     }
 }

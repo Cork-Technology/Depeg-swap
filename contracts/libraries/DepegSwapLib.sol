@@ -4,6 +4,7 @@ import "./../Asset.sol";
 import "./SignatureHelperLib.sol";
 
 struct DepegSwap {
+    bool expiredEventEmitted;
     address ds;
     address ct;
     uint256 dsRedeemed;
@@ -25,7 +26,14 @@ library DepegSwapLibrary {
         address ds,
         address ct
     ) internal pure returns (DepegSwap memory) {
-        return DepegSwap({ds: ds, ct: ct, dsRedeemed: 0, ctRedeemed: 0});
+        return
+            DepegSwap({
+                expiredEventEmitted: false,
+                ds: ds,
+                ct: ct,
+                dsRedeemed: 0,
+                ctRedeemed: 0
+            });
     }
 
     function permit(

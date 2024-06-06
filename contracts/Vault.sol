@@ -5,40 +5,49 @@ import "./libraries/PairKey.sol";
 import "./libraries/State.sol";
 import "./ModuleState.sol";
 import "@openzeppelin/contracts/utils/Context.sol";
+import "./interfaces/IVault.sol";
 
 // TODO : add events and interfaces
-abstract contract VaultCore is ModuleState, Context {
+abstract contract VaultCore is ModuleState, Context, IVault {
     using PairKeyLibrary for PairKey;
     using VaultLibrary for State;
 
-    function depositLv(ModuleId id, address from, uint256 amount) external {
+    function depositLv(
+        ModuleId id,
+        uint256 amount
+    ) external override {
         State storage state = states[id];
-        state.deposit(from, amount);
-        // TODO emit event
+        state.deposit(_msgSender(), amount);
+        emit LvDeposited(id, _msgSender(), amount);
     }
 
     function previewDeposit(uint256 amount) external pure returns (uint256 lv) {
         lv = VaultLibrary.previewDeposit(amount);
     }
 
-    function requestRedemption(ModuleId id) external {
+    function requestRedemption(ModuleId id) external override {
         State storage state = states[id];
         state.requestRedemption(_msgSender());
-        // TODO emit event
+        emit RedemptionRequested(id, _msgSender());
     }
 
-    function transferRedemptionRights(ModuleId id, address to) external {
+    function transferRedemptionRights(
+        ModuleId id,
+        address to
+    ) external override {
         State storage state = states[id];
         state.transferRedemptionRights(_msgSender(), to);
-        // TODO emit event
+        emit RedemptionRightTransferred(id, _msgSender(), to);
     }
 
-    function redeemExpiredLv(address receiver, uint256 amount) external {
-        State storage state = states[
-            PairKeyLibrary.initalize(address(0), address(0)).toId()
-        ];
+    function redeemExpiredLv(
+        ModuleId id,
+        address receiver,
+        uint256 amount
+    ) external override {
+        State storage state = states[id];
         state.redeemExpired(_msgSender(), receiver, amount);
-        // TODO emit event
+        emit LvRedeemExpired(id, receiver, amount);
     }
 
     function redeemEarlyLv(
@@ -48,6 +57,6 @@ abstract contract VaultCore is ModuleState, Context {
     ) external {
         State storage state = states[id];
         state.redeemEarly(_msgSender(), receiver, amount);
-        // TODO emit event
+        emit LvRedeemEarly(id, receiver, amount);
     }
 }
