@@ -23,6 +23,7 @@ library VaultLibrary {
     /// redemption rights to another address while not having the rights
     error Unauthorized(address caller);
 
+    // TODO : integrate this
     function initialize(
         VaultState storage self,
         uint256 fee,

@@ -5,7 +5,7 @@ import "./PeggedAssetLib.sol";
 import "./RedemptionAssetLib.sol";
 import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 
-type PsmId is bytes32;
+type ModuleId is bytes32;
 
 struct PairKey {
     address _peggedAsset;
@@ -15,7 +15,7 @@ struct PairKey {
 library PairKeyLibrary {
     using PeggedAssetLibrary for PeggedAsset;
 
-    function toId(PairKey memory key) internal pure returns (PsmId id) {
+    function toId(PairKey memory key) internal pure returns (ModuleId id) {
         bytes32 k = keccak256(abi.encode(key));
 
         assembly {

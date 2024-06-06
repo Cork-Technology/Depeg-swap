@@ -11,16 +11,16 @@ abstract contract PsmCore is IPSMcore, ModuleState {
     using PairKeyLibrary for PairKey;
 
     function depositPsm(
-        PsmId id,
+        ModuleId id,
         uint256 amount
     ) external override onlyInitialized(id) {
         State storage state = states[id];
         uint256 dsId = state.deposit(msg.sender, amount);
-        emit Deposited(id, dsId, msg.sender, amount);
+        emit PsmDeposited(id, dsId, msg.sender, amount);
     }
 
     function previewDepositPsm(
-        PsmId id,
+        ModuleId id,
         uint256 amount
     )
         external
@@ -34,7 +34,7 @@ abstract contract PsmCore is IPSMcore, ModuleState {
     }
 
     function redeemRaWithDs(
-        PsmId id,
+        ModuleId id,
         uint256 dsId,
         uint256 amount,
         bytes memory rawDsPermitSig,
@@ -48,7 +48,7 @@ abstract contract PsmCore is IPSMcore, ModuleState {
     }
 
     function previewRedeemRaWithDs(
-        PsmId id,
+        ModuleId id,
         uint256 dsId,
         uint256 amount
     ) external view override onlyInitialized(id) returns (uint256 assets) {
@@ -57,7 +57,7 @@ abstract contract PsmCore is IPSMcore, ModuleState {
     }
 
     function redeemWithCT(
-        PsmId id,
+        ModuleId id,
         uint256 dsId,
         uint256 amount,
         bytes memory rawCtPermitSig,
@@ -77,7 +77,7 @@ abstract contract PsmCore is IPSMcore, ModuleState {
     }
 
     function previewRedeemWithCt(
-        PsmId id,
+        ModuleId id,
         uint256 dsId,
         uint256 amount
     )
@@ -91,7 +91,7 @@ abstract contract PsmCore is IPSMcore, ModuleState {
         (paReceived, raReceived) = state.previewRedeemWithCt(amount, dsId);
     }
 
-    function valueLocked(PsmId id) external view override returns (uint256) {
+    function valueLocked(ModuleId id) external view override returns (uint256) {
         State storage state = states[id];
         return state.valueLocked();
     }

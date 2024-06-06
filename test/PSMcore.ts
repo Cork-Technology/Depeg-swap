@@ -35,17 +35,17 @@ describe("PSM core", function () {
       const ct = ctDsEvents[0].args.ct!;
       const ds = ctDsEvents[0].args.ds!;
 
-      const psmId = await contract.read.getId([
+      const ModuleId = await contract.read.getId([
         psmFixture.pa.address,
         psmFixture.ra.address,
       ]);
 
-      await contract.write.issueNewDs([psmId, BigInt(expiry), ct, ds], {
+      await contract.write.issueNewDs([ModuleId, BigInt(expiry), ct, ds], {
         account: defaultSigner.account,
       });
 
       const events = await contract.getEvents.Issued({
-        psmId,
+        ModuleId,
         expiry: BigInt(expiry),
       });
 
@@ -85,14 +85,14 @@ describe("PSM core", function () {
       });
 
       await fixture.psmCore.contract.write.deposit(
-        [fixture.psmId, parseEther("10")],
+        [fixture.ModuleId, parseEther("10")],
         {
           account: defaultSigner.account,
         }
       );
 
       const event = await fixture.psmCore.contract.getEvents.Deposited({
-        psmId: fixture.psmId,
+        ModuleId: fixture.ModuleId,
         dsId,
         depositor: defaultSigner.account.address,
       });
@@ -134,14 +134,14 @@ describe("PSM core", function () {
       });
 
       await fixture.psmCore.contract.write.deposit(
-        [fixture.psmId, parseEther("10")],
+        [fixture.ModuleId, parseEther("10")],
         {
           account: defaultSigner.account,
         }
       );
 
       const depositEvents = await fixture.psmCore.contract.getEvents.Deposited({
-        psmId: fixture.psmId,
+        ModuleId: fixture.ModuleId,
         dsId,
         depositor: defaultSigner.account.address,
       });
@@ -165,13 +165,13 @@ describe("PSM core", function () {
       });
 
       const lockedBalance = await fixture.psmCore.contract.read.valueLocked([
-        fixture.psmId,
+        fixture.ModuleId,
       ]);
 
       console.log("locked balance", formatEther(lockedBalance));
 
       await fixture.psmCore.contract.write.redeemWithRaWithDs(
-        [fixture.psmId, dsId!, parseEther("10"), permitmsg, deadline],
+        [fixture.ModuleId, dsId!, parseEther("10"), permitmsg, deadline],
         {
           account: defaultSigner.account,
         }
@@ -179,7 +179,7 @@ describe("PSM core", function () {
 
       const event = await fixture.psmCore.contract.getEvents.DsRedeemed({
         dsId: dsId,
-        psmId: fixture.psmId,
+        ModuleId: fixture.ModuleId,
         redeemer: defaultSigner.account.address,
       });
 
@@ -220,7 +220,7 @@ describe("PSM core", function () {
       });
 
       await fixture.psmCore.contract.write.deposit(
-        [fixture.psmId, parseEther("10")],
+        [fixture.ModuleId, parseEther("10")],
         {
           account: defaultSigner.account,
         }
@@ -237,14 +237,14 @@ describe("PSM core", function () {
       });
 
       await fixture.psmCore.contract.write.redeemWithCT(
-        [fixture.psmId, dsId!, parseEther("10"), msgPermit, deadline],
+        [fixture.ModuleId, dsId!, parseEther("10"), msgPermit, deadline],
         {
           account: defaultSigner.account,
         }
       );
 
       const event = await fixture.psmCore.contract.getEvents.CtRedeemed({
-        psmId: fixture.psmId,
+        ModuleId: fixture.ModuleId,
         redeemer: defaultSigner.account.address,
       });
 

@@ -9,25 +9,27 @@ import "./libraries/State.sol";
 import "./ModuleState.sol";
 import "./interfaces/ICommon.sol";
 import "./Psm.sol";
+import "./Vault.sol";
 
 // TODO : make entrypoint that do not rely on permit with function overloading or different function altogether
 // TODO : make sync function to sync each pair of DS and CT balance
-contract ModuleCore is PsmCore, Initialize {
+contract ModuleCore is PsmCore, Initialize, VaultCore {
     using PsmLibrary for State;
     using PairKeyLibrary for PairKey;
 
     constructor(address factory) ModuleState(factory) {}
 
-    function getId(address pa, address ra) external pure returns (PsmId) {
+    function getId(address pa, address ra) external pure returns (ModuleId) {
         return PairKeyLibrary.initalize(pa, ra).toId();
     }
 
     // TODO : only allow to call this from config contract later or router
+    // TODO : handle this with the new abstract contract
     function initialize(address pa, address ra, address wa) external override {
         _onlyValidAsset(wa);
 
         PairKey memory key = PairKeyLibrary.initalize(pa, ra);
-        PsmId id = key.toId();
+        ModuleId id = key.toId();
 
         State storage state = states[id];
 
@@ -42,7 +44,7 @@ contract ModuleCore is PsmCore, Initialize {
 
     // TODO : only allow to call this from config contract later or router
     function issueNewDs(
-        PsmId id,
+        ModuleId id,
         uint256 expiry,
         address ct,
         address ds

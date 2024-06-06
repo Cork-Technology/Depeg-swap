@@ -10,7 +10,7 @@ import "./libraries/PsmLib.sol";
 contract ModuleState is ICommon {
     using PsmLibrary for State;
 
-    mapping(PsmId => State) internal states;
+    mapping(ModuleId => State) internal states;
     address _factory;
 
     constructor(address factory) {
@@ -21,7 +21,7 @@ contract ModuleState is ICommon {
         return IAssetFactory(_factory);
     }
 
-    modifier onlyInitialized(PsmId id) {
+    modifier onlyInitialized(ModuleId id) {
         if (!states[id].isInitialized()) {
             revert Uinitialized();
         }
