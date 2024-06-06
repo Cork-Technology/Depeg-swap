@@ -45,9 +45,9 @@ export async function deployAssetFactory() {
   };
 }
 
-export async function deployPsmCore(factory: Address) {
+export async function deployModuleCore(factory: Address) {
   const { defaultSigner } = await getSigners();
-  const contract = await hre.viem.deployContract("PsmCore", [factory], {
+  const contract = await hre.viem.deployContract("ModuleCore", [factory], {
     client: {
       wallet: defaultSigner,
     },
@@ -67,7 +67,7 @@ export type InitializeNewPsmArg = {
 
 export async function initializeNewPSm(arg: InitializeNewPsmArg) {
   const { defaultSigner } = await getSigners();
-  const contract = await hre.viem.getContractAt("PsmCore", arg.psmCore);
+  const contract = await hre.viem.getContractAt("ModuleCore", arg.psmCore);
 
   await contract.write.initialize([arg.pa, arg.ra, arg.wa], {
     account: defaultSigner.account,
@@ -116,7 +116,7 @@ export async function issueNewSwapAssets(arg: IssueNewSwapAssetsArg) {
 
   const { defaultSigner } = await getSigners();
 
-  const contract = await hre.viem.getContractAt("PsmCore", arg.psmCore);
+  const contract = await hre.viem.getContractAt("ModuleCore", arg.psmCore);
   const ModuleId = await contract.read.getId([arg.pa, arg.ra]);
   await contract.write.issueNewDs([ModuleId, BigInt(arg.expiry), ct, ds], {
     account: defaultSigner.account,
@@ -266,16 +266,16 @@ export async function permit(arg: PermitArg) {
 
 export async function onlyPsmCoreWithFactory() {
   const factory = await deployAssetFactory();
-  const psmCore = await deployPsmCore(factory.contract.address);
+  const moduleCore = await deployModuleCore(factory.contract.address);
 
   return {
     factory,
-    psmCore,
+    moduleCore,
   };
 }
 
-export async function pmCoreWithInitializedPsm() {
-  const { factory, psmCore } = await onlyPsmCoreWithFactory();
+export async function ModuleCoreWithInitializedPsm() {
+  const { factory, moduleCore: psmCore } = await onlyPsmCoreWithFactory();
   const { pa, ra } = await backedAssets();
   const wa = await createWa({
     factory: factory.contract.address,

@@ -7,7 +7,7 @@ import "./interfaces/IAssetFactory.sol";
 import "./interfaces/ICommon.sol";
 import "./libraries/PsmLib.sol";
 
-contract ModuleState is ICommon {
+abstract contract ModuleState is ICommon {
     using PsmLibrary for State;
 
     mapping(ModuleId => State) internal states;

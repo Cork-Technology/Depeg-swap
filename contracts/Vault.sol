@@ -21,7 +21,7 @@ abstract contract VaultCore is ModuleState, Context, IVault {
         emit LvDeposited(id, _msgSender(), amount);
     }
 
-    function previewDeposit(uint256 amount) external pure returns (uint256 lv) {
+    function previewLvDeposit(uint256 amount) external override pure returns (uint256 lv) {
         lv = VaultLibrary.previewDeposit(amount);
     }
 
@@ -54,7 +54,7 @@ abstract contract VaultCore is ModuleState, Context, IVault {
         ModuleId id,
         address receiver,
         uint256 amount
-    ) external {
+    ) external override{
         State storage state = states[id];
         state.redeemEarly(_msgSender(), receiver, amount);
         emit LvRedeemEarly(id, receiver, amount);
