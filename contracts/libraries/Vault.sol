@@ -111,6 +111,7 @@ library VaultLibrary {
         self.vault.withdrawEligible[owner] = true;
     }
 
+    // TODO : test this
     function transferRedemptionRights(
         State storage self,
         address from,
@@ -150,6 +151,10 @@ library VaultLibrary {
         uint256 amount
     ) internal {
         safeAfterExpired(self);
+
+        if (!self.vault.withdrawEligible[owner]) {
+            revert Unauthorized(owner);
+        }
 
         if (!self.vault.lpLiquidated) {
             _liquidatedLp(self);
