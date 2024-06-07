@@ -7,6 +7,8 @@ import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 
 type Id is bytes32;
 
+/// @dev represent a token pair that does not assumes relationship between the two
+/// it may be a pegged asset and a redemption asset, or ct and ds or any other pair
 struct Pair {
     address pair0;
     address pair1;

@@ -15,6 +15,10 @@ contract Expiry is IExpiry {
     }
 
     function isExpired() external view virtual returns (bool) {
+        if (timestamp == 0) {
+            return false;
+        }
+
         return block.timestamp >= timestamp;
     }
 
