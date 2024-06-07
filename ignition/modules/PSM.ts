@@ -1,11 +1,17 @@
 import { buildModule } from "@nomicfoundation/hardhat-ignition/modules";
 import assetFactory from "./AssetFactory";
 
-const PsmModule = buildModule("PsmModule", (m) => {
+const ModuleCore = buildModule("PsmModule", (m) => {
   const { contract } = m.useModule(assetFactory);
 
-  const elle = m.contract("PsmCore", [contract]);
-  return { contract };
+  const mathHelper = m.library("MathHelper");
+  const module = m.contract("ModuleCore", [contract], {
+    libraries: {
+      MathHelper: mathHelper,
+    },
+  });
+
+  return { module };
 });
 
-export default PsmModule;
+export default ModuleCore;

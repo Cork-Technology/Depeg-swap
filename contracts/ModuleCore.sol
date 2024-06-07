@@ -2,6 +2,7 @@
 pragma solidity ^0.8.0;
 import "./libraries/PsmLib.sol";
 import "./libraries/PairKey.sol";
+import "./libraries/MathHelper.sol";
 import "./interfaces/IPSMcore.sol";
 import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import "./interfaces/IAssetFactory.sol";

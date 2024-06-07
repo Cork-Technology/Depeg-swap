@@ -47,9 +47,14 @@ export async function deployAssetFactory() {
 
 export async function deployModuleCore(factory: Address) {
   const { defaultSigner } = await getSigners();
+  const mathLib = await hre.viem.deployContract("MathHelper");
+
   const contract = await hre.viem.deployContract("ModuleCore", [factory], {
     client: {
       wallet: defaultSigner,
+    },
+    libraries: {
+      MathHelper: mathLib.address,
     },
   });
 

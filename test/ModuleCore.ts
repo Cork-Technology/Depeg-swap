@@ -10,14 +10,19 @@ import * as helper from "./helper/TestHelper";
 describe("ModuleCore", function () {
   it("should deploy", async function () {
     const { defaultSigner } = await helper.getSigners();
-    console.log("defaultSigner", defaultSigner.account.address);
+
+    const mathLib = await hre.viem.deployContract("MathHelper");
 
     const contract = await hre.viem.deployContract(
       "ModuleCore",
       [defaultSigner.account.address],
+
       {
         client: {
           wallet: defaultSigner,
+        },
+        libraries: {
+          MathHelper: mathLib.address,
         },
       }
     );
