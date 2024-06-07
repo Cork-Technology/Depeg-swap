@@ -5,7 +5,7 @@ import {
 import { expect } from "chai";
 import hre from "hardhat";
 import { Address, formatEther, parseEther, WalletClient } from "viem";
-import * as helper from "./helper/TestHelper";
+import * as helper from "../helper/TestHelper";
 
 describe("ModuleCore", function () {
   it("should deploy", async function () {
