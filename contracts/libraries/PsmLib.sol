@@ -2,7 +2,7 @@
 pragma solidity ^0.8.20;
 
 import "./../Asset.sol";
-import "./PairKey.sol";
+import "./Pair.sol";
 import "./DepegSwapLib.sol";
 import "./WrappedAssetLib.sol";
 import "./SignatureHelperLib.sol";
@@ -15,7 +15,7 @@ import "./Guard.sol";
 // TODO : make an entrypoint that does not depend on permit
 library PsmLibrary {
     using MinimalSignatureHelper for Signature;
-    using PairKeyLibrary for PairKey;
+    using PairLibrary for Pair;
     using DepegSwapLibrary for DepegSwap;
     using WrappedAssetLibrary for WrappedAssetInfo;
     using PeggedAssetLibrary for PeggedAsset;
@@ -29,7 +29,7 @@ library PsmLibrary {
 
     function initialize(
         State storage self,
-        PairKey memory key,
+        Pair memory key,
         address wa
     ) internal {
         self.info = key;

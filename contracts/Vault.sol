@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.0;
 import "./libraries/VaultLib.sol";
-import "./libraries/PairKey.sol";
+import "./libraries/Pair.sol";
 import "./libraries/State.sol";
 import "./ModuleState.sol";
 import "@openzeppelin/contracts/utils/Context.sol";
@@ -9,10 +9,10 @@ import "./interfaces/IVault.sol";
 
 // TODO : add events and interfaces
 abstract contract VaultCore is ModuleState, Context, IVault {
-    using PairKeyLibrary for PairKey;
+    using PairLibrary for Pair;
     using VaultLibrary for State;
 
-    function depositLv(ModuleId id, uint256 amount) external override {
+    function depositLv(Id id, uint256 amount) external override {
         State storage state = states[id];
         state.deposit(_msgSender(), amount);
         emit LvDeposited(id, _msgSender(), amount);
@@ -24,14 +24,14 @@ abstract contract VaultCore is ModuleState, Context, IVault {
         lv = VaultLibrary.previewDeposit(amount);
     }
 
-    function requestRedemption(ModuleId id) external override {
+    function requestRedemption(Id id) external override {
         State storage state = states[id];
         state.requestRedemption(_msgSender());
         emit RedemptionRequested(id, _msgSender());
     }
 
     function transferRedemptionRights(
-        ModuleId id,
+        Id id,
         address to
     ) external override {
         State storage state = states[id];
@@ -40,7 +40,7 @@ abstract contract VaultCore is ModuleState, Context, IVault {
     }
 
     function redeemExpiredLv(
-        ModuleId id,
+        Id id,
         address receiver,
         uint256 amount
     ) external override {
@@ -50,7 +50,7 @@ abstract contract VaultCore is ModuleState, Context, IVault {
     }
 
     function redeemEarlyLv(
-        ModuleId id,
+        Id id,
         address receiver,
         uint256 amount
     ) external override {

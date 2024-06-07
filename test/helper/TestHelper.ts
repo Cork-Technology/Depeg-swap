@@ -84,7 +84,7 @@ export async function initializeNewPSm(arg: InitializeNewPsmArg) {
   });
 
   return {
-    ModuleId: events[0].args.id,
+    Id: events[0].args.id,
   };
 }
 
@@ -122,13 +122,13 @@ export async function issueNewSwapAssets(arg: IssueNewSwapAssetsArg) {
   const { defaultSigner } = await getSigners();
 
   const contract = await hre.viem.getContractAt("ModuleCore", arg.psmCore);
-  const ModuleId = await contract.read.getId([arg.pa, arg.ra]);
-  await contract.write.issueNewDs([ModuleId, BigInt(arg.expiry), ct, ds], {
+  const Id = await contract.read.getId([arg.pa, arg.ra]);
+  await contract.write.issueNewDs([Id, BigInt(arg.expiry), ct, ds], {
     account: defaultSigner.account,
   });
 
   const events = await contract.getEvents.Issued({
-    ModuleId,
+    Id,
     expiry: BigInt(arg.expiry),
   });
 
@@ -136,7 +136,7 @@ export async function issueNewSwapAssets(arg: IssueNewSwapAssetsArg) {
     ct: events[0].args.ct,
     ds: events[0].args.ds,
     dsId: events[0].args.dsId,
-    ModuleId,
+    Id,
     expiry: BigInt(arg.expiry),
   };
 }
@@ -287,7 +287,7 @@ export async function ModuleCoreWithInitializedPsm() {
     ra: ra.address,
   });
 
-  const { ModuleId } = await initializeNewPSm({
+  const { Id } = await initializeNewPSm({
     psmCore: psmCore.contract.address,
     pa: pa.address,
     ra: ra.address,
@@ -300,7 +300,7 @@ export async function ModuleCoreWithInitializedPsm() {
     pa,
     ra,
     wa: await hre.viem.getContractAt("WrappedAsset", wa!),
-    ModuleId: ModuleId!,
+    Id: Id!,
   };
 }
 

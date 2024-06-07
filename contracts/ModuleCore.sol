@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.0;
 import "./libraries/PsmLib.sol";
-import "./libraries/PairKey.sol";
+import "./libraries/Pair.sol";
 import "./libraries/MathHelper.sol";
 import "./interfaces/IPSMcore.sol";
 import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
@@ -16,12 +16,12 @@ import "./Vault.sol";
 // TODO : make sync function to sync each pair of DS and CT balance
 contract ModuleCore is PsmCore, Initialize, VaultCore {
     using PsmLibrary for State;
-    using PairKeyLibrary for PairKey;
+    using PairLibrary for Pair;
 
     constructor(address factory) ModuleState(factory) {}
 
-    function getId(address pa, address ra) external pure returns (ModuleId) {
-        return PairKeyLibrary.initalize(pa, ra).toId();
+    function getId(address pa, address ra) external pure returns (Id) {
+        return PairLibrary.initalize(pa, ra).toId();
     }
 
     // TODO : only allow to call this from config contract later or router
@@ -29,8 +29,8 @@ contract ModuleCore is PsmCore, Initialize, VaultCore {
     function initialize(address pa, address ra, address wa) external override {
         _onlyValidAsset(wa);
 
-        PairKey memory key = PairKeyLibrary.initalize(pa, ra);
-        ModuleId id = key.toId();
+        Pair memory key = PairLibrary.initalize(pa, ra);
+        Id id = key.toId();
 
         State storage state = states[id];
 
@@ -45,7 +45,7 @@ contract ModuleCore is PsmCore, Initialize, VaultCore {
 
     // TODO : only allow to call this from config contract later or router
     function issueNewDs(
-        ModuleId id,
+        Id id,
         uint256 expiry,
         address ct,
         address ds

@@ -1,17 +1,17 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.0;
 import "./libraries/PsmLib.sol";
-import "./libraries/PairKey.sol";
+import "./libraries/Pair.sol";
 import "./interfaces/IPSMcore.sol";
 import "./libraries/State.sol";
 import "./ModuleState.sol";
 
 abstract contract PsmCore is IPSMcore, ModuleState {
     using PsmLibrary for State;
-    using PairKeyLibrary for PairKey;
+    using PairLibrary for Pair;
 
     function depositPsm(
-        ModuleId id,
+        Id id,
         uint256 amount
     ) external override onlyInitialized(id) {
         State storage state = states[id];
@@ -20,7 +20,7 @@ abstract contract PsmCore is IPSMcore, ModuleState {
     }
 
     function previewDepositPsm(
-        ModuleId id,
+        Id id,
         uint256 amount
     )
         external
@@ -34,7 +34,7 @@ abstract contract PsmCore is IPSMcore, ModuleState {
     }
 
     function redeemRaWithDs(
-        ModuleId id,
+        Id id,
         uint256 dsId,
         uint256 amount,
         bytes memory rawDsPermitSig,
@@ -48,7 +48,7 @@ abstract contract PsmCore is IPSMcore, ModuleState {
     }
 
     function previewRedeemRaWithDs(
-        ModuleId id,
+        Id id,
         uint256 dsId,
         uint256 amount
     ) external view override onlyInitialized(id) returns (uint256 assets) {
@@ -57,7 +57,7 @@ abstract contract PsmCore is IPSMcore, ModuleState {
     }
 
     function redeemWithCT(
-        ModuleId id,
+        Id id,
         uint256 dsId,
         uint256 amount,
         bytes memory rawCtPermitSig,
@@ -77,7 +77,7 @@ abstract contract PsmCore is IPSMcore, ModuleState {
     }
 
     function previewRedeemWithCt(
-        ModuleId id,
+        Id id,
         uint256 dsId,
         uint256 amount
     )
@@ -91,7 +91,7 @@ abstract contract PsmCore is IPSMcore, ModuleState {
         (paReceived, raReceived) = state.previewRedeemWithCt(amount, dsId);
     }
 
-    function valueLocked(ModuleId id) external view override returns (uint256) {
+    function valueLocked(Id id) external view override returns (uint256) {
         State storage state = states[id];
         return state.valueLocked();
     }

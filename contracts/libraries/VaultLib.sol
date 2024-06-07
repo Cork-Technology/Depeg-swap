@@ -2,7 +2,7 @@
 pragma solidity ^0.8.0;
 
 import "./VaultConfig.sol";
-import "./PairKey.sol";
+import "./Pair.sol";
 import "./LvAssetLib.sol";
 import "./PsmLib.sol";
 import "./WrappedAssetLib.sol";
@@ -12,7 +12,7 @@ import "@openzeppelin/contracts/token/ERC20/extensions/ERC20Burnable.sol";
 
 library VaultLibrary {
     using VaultConfigLibrary for VaultConfig;
-    using PairKeyLibrary for PairKey;
+    using PairLibrary for Pair;
     using LvAssetLibrary for LvAsset;
     using VaultLibrary for VaultState;
     using PsmLibrary for State;
@@ -161,8 +161,8 @@ library VaultLibrary {
             _liquidatedLp(self);
         }
 
-        IERC20 ra = IERC20(self.info._redemptionAsset);
-        IERC20 pa = IERC20(self.info._peggedAsset);
+        IERC20 ra = IERC20(self.info.pair1);
+        IERC20 pa = IERC20(self.info.pair0);
         ERC20Burnable lv = ERC20Burnable(self.vault.lv._address);
 
         uint256 accruedRa = ra.balanceOf(address(this));

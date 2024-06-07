@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.0;
-import "../libraries/PairKey.sol";
+import "../libraries/Pair.sol";
 
 interface ICommon {
     /// @notice module is not initialized, i.e thrown when interacting with uninitialized module
@@ -16,14 +16,14 @@ interface ICommon {
     /// @param id The PSM id
     /// @param pa The address of the pegged asset
     /// @param ra The address of the redemption asset
-    event Initialized(ModuleId indexed id, address indexed pa, address indexed ra);
+    event Initialized(Id indexed id, address indexed pa, address indexed ra);
 
     /// @notice Emitted when a new DS is issued for a given PSM
-    /// @param ModuleId The PSM id
+    /// @param Id The PSM id
     /// @param dsId The DS id
     /// @param expiry The expiry of the DS
     event Issued(
-        ModuleId indexed ModuleId,
+        Id indexed Id,
         uint256 indexed dsId,
         uint256 indexed expiry,
         address ds,
@@ -35,7 +35,7 @@ interface Initialize {
     function initialize(address pa, address ra, address wa) external;
 
     function issueNewDs(
-        ModuleId id,
+        Id id,
         uint256 expiry,
         address ct,
         address ds

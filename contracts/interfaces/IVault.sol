@@ -1,51 +1,51 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.0;
-import "../libraries/PairKey.sol";
+import "../libraries/Pair.sol";
 
 interface IVault {
     /// @notice Emitted when a user deposits assets into a given Vault
-    /// @param ModuleId The Module id that is used to reference both psm and lv of a given pair
+    /// @param Id The Module id that is used to reference both psm and lv of a given pair
     /// @param depositor The address of the depositor
     /// @param amount  The amount of the asset deposited
     event LvDeposited(
-        ModuleId indexed ModuleId,
+        Id indexed Id,
         address indexed depositor,
         uint256 amount
     );
 
     /// @notice Emitted when a user requests redemption of a given Vault
-    /// @param ModuleId The Module id that is used to reference both psm and lv of a given pair
+    /// @param Id The Module id that is used to reference both psm and lv of a given pair
     /// @param redeemer The address of the redeemer
     event RedemptionRequested(
-        ModuleId indexed ModuleId,
+        Id indexed Id,
         address indexed redeemer
     );
 
     /// @notice Emitted when a user transfers redemption rights of a given Vault
-    /// @param ModuleId The Module id that is used to reference both psm and lv of a given pair
+    /// @param Id The Module id that is used to reference both psm and lv of a given pair
     /// @param from The address of the previous owner of the redemption rights
     event RedemptionRightTransferred(
-        ModuleId indexed ModuleId,
+        Id indexed Id,
         address indexed from,
         address indexed to
     );
 
     /// @notice Emitted when a user redeems expired Lv
-    /// @param ModuleId The Module id that is used to reference both psm and lv of a given pair
+    /// @param Id The Module id that is used to reference both psm and lv of a given pair
     /// @param receiver The address of the receiver
     /// @param amount The amount of the asset redeemed
     event LvRedeemExpired(
-        ModuleId indexed ModuleId,
+        Id indexed Id,
         address indexed receiver,
         uint256 amount
     );
 
     /// @notice Emitted when a user redeems Lv before expiry
-    /// @param ModuleId The Module id that is used to reference both psm and lv of a given pair
+    /// @param Id The Module id that is used to reference both psm and lv of a given pair
     /// @param receiver The address of the receiver
     /// @param amount The amount of the asset redeemed
     event LvRedeemEarly(
-        ModuleId indexed ModuleId,
+        Id indexed Id,
         address indexed receiver,
         uint256 amount
     );
@@ -55,7 +55,7 @@ interface IVault {
      * @param id The Module id that is used to reference both psm and lv of a given pair
      * @param amount The amount of the redemption asset(ra) deposited
      */
-    function depositLv(ModuleId id, uint256 amount) external;
+    function depositLv(Id id, uint256 amount) external;
 
     /**
      * @notice Preview the amount of lv that will be deposited
@@ -67,14 +67,14 @@ interface IVault {
      * @notice Request redemption of a given vault at expiry
      * @param id The Module id that is used to reference both psm and lv of a given pair
      */
-    function requestRedemption(ModuleId id) external;
+    function requestRedemption(Id id) external;
 
     /**
      * @notice Transfer redemption rights of a given vault at expiry
      * @param id The Module id that is used to reference both psm and lv of a given pair
      * @param to The address of the new owner of the redemption rights
      */
-    function transferRedemptionRights(ModuleId id, address to) external;
+    function transferRedemptionRights(Id id, address to) external;
 
     /**
      * @notice Redeem expired lv
@@ -83,7 +83,7 @@ interface IVault {
      * @param amount The amount of the asset to be redeemed
      */
     function redeemExpiredLv(
-        ModuleId id,
+        Id id,
         address receiver,
         uint256 amount
     ) external;
@@ -95,7 +95,7 @@ interface IVault {
      * @param amount The amount of the asset to be redeemed 
      */
     function redeemEarlyLv(
-        ModuleId id,
+        Id id,
         address receiver,
         uint256 amount
     ) external;

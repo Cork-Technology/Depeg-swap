@@ -5,7 +5,19 @@ import "./interfaces/IAssetFactory.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import "./WrappedAsset.sol";
+import "./Lv.sol";
 import "./Asset.sol";
+import "./libraries/FactoryFetcher.sol";
+
+struct WrappedAssets {
+    address ra;
+    address wa;
+}
+
+struct SwapAssets {
+    address ct;
+    address ds;
+}
 
 // TODO : add LV asset
 contract AssetFactory is IAssetFactory, OwnableUpgradeable, UUPSUpgradeable {
@@ -13,18 +25,9 @@ contract AssetFactory is IAssetFactory, OwnableUpgradeable, UUPSUpgradeable {
     string private constant CT_PREFIX = "CT";
     string private constant DS_PREFIX = "DS";
 
-    struct WrappedAssets {
-        address ra;
-        address wa;
-    }
-
-    struct SwapAssets {
-        address ct;
-        address ds;
-    }
-
     uint256 idx;
-    
+
+    mapping(uint256 => address) lvs;
     mapping(uint256 => WrappedAssets) wrappedAssets;
     mapping(address => SwapAssets[]) swapAssets;
     mapping(address => bool) deployed;
@@ -58,28 +61,12 @@ contract AssetFactory is IAssetFactory, OwnableUpgradeable, UUPSUpgradeable {
         withinLimit(limit)
         returns (address[] memory ra, address[] memory wa)
     {
-        uint256 start = uint256(page) * uint256(limit);
-        uint256 end = start + uint256(limit);
-        uint256 arrLen = end - start;
-
-        if (end > idx) {
-            end = idx;
-        }
-
-        if (start > idx) {
-            return (ra, wa);
-        }
-
-        ra = new address[](arrLen);
-        wa = new address[](arrLen);
-
-        for (uint256 i = start; i < end; i++) {
-            WrappedAssets storage asset = wrappedAssets[i];
-            uint8 _idx = uint8(i - start);
-
-            ra[_idx] = asset.ra;
-            wa[_idx] = asset.wa;
-        }
+        (ra, wa) = Fetcher.getDeployedWrappedAssets(
+            page,
+            limit,
+            idx,
+            wrappedAssets
+        );
     }
 
     function getDeployedSwapAssets(
@@ -107,7 +94,6 @@ contract AssetFactory is IAssetFactory, OwnableUpgradeable, UUPSUpgradeable {
         ds = new address[](arrLen);
 
         for (uint256 i = start; i < end; i++) {
-            
             ct[i - start] = assets[i].ct;
             ds[i - start] = assets[i].ds;
         }
@@ -144,17 +130,28 @@ contract AssetFactory is IAssetFactory, OwnableUpgradeable, UUPSUpgradeable {
 
     // TODO : owner will be config contract later
     function deployWrappedAsset(
-        address ra
-    ) external override onlyOwner notDelegated returns (address wa) {
+        address ra,
+        address pa,
+        address owner
+    )
+        external
+        override
+        onlyOwner
+        notDelegated
+        returns (address wa, address lv)
+    {
         uint256 _idx = idx++;
 
+        lv = address(new Lv(ra, pa, owner));
         wa = address(new WrappedAsset(ra));
 
         wrappedAssets[_idx] = WrappedAssets(ra, wa);
+        lvs[_idx] = lv;
 
         deployed[wa] = true;
+        deployed[lv] = true;
 
-        emit WrappedAssetDeployed(ra, wa);
+        emit WrappedAssetDeployed(ra, wa, lv);
     }
 
     function _authorizeUpgrade(
