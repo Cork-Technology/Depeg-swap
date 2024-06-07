@@ -16,12 +16,19 @@ interface IAssetFactory {
     event WrappedAssetDeployed(address indexed ra, address indexed wa);
 
     /// @notice emitted when a new LvAsset is deployed
-    event LvAssetDeployed(address indexed ra, address indexed pa, address indexed lv);
+    event LvAssetDeployed(
+        address indexed ra,
+        address indexed pa,
+        address indexed lv
+    );
 
     function getDeployedWrappedAssets(
         uint8 page,
         uint8 limit
-    ) external view returns (address[] memory ra, address[] memory wa, address[] memory lv);
+    )
+        external
+        view
+        returns (address[] memory ra, address[] memory wa, address[] memory lv);
 
     function isDeployed(address asset) external view returns (bool);
 
@@ -38,6 +45,13 @@ interface IAssetFactory {
         address owner,
         uint256 expiry
     ) external returns (address ct, address ds);
+
+    function deployLv(
+        address ra,
+        address pa,
+        address wa,
+        address owner
+    ) external returns (address lv);
 
     function deployWrappedAsset(address ra) external returns (address wa);
 }

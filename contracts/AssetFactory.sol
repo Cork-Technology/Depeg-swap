@@ -67,6 +67,7 @@ contract AssetFactory is IAssetFactory, OwnableUpgradeable, UUPSUpgradeable {
 
         ra = new address[](arrLen);
         wa = new address[](arrLen);
+        lv = new address[](arrLen);
 
         for (uint256 i = start; i < end; i++) {
             Pair storage asset = wrappedAssets[i];
@@ -142,7 +143,7 @@ contract AssetFactory is IAssetFactory, OwnableUpgradeable, UUPSUpgradeable {
         address pa,
         address wa,
         address owner
-    ) external onlyOwner notDelegated returns (address lv) {
+    ) external override onlyOwner notDelegated returns (address lv) {
         lv = address(
             new Asset(
                 LV_PREFIX,

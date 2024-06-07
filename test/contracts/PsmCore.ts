@@ -11,7 +11,9 @@ describe("PSM core", function () {
   describe("issue pair", function () {
     it("should issue new ds", async function () {
       const { defaultSigner } = await helper.getSigners();
-      const psmFixture = await loadFixture(helper.ModuleCoreWithInitializedPsm);
+      const psmFixture = await loadFixture(
+        helper.ModuleCoreWithInitializedPsmLv
+      );
       const expiry = helper.expiry(10);
 
       const contract = await hre.viem.getContractAt(
@@ -56,7 +58,7 @@ describe("PSM core", function () {
   describe("commons", function () {
     it("should deposit", async function () {
       const { defaultSigner } = await helper.getSigners();
-      const fixture = await loadFixture(helper.ModuleCoreWithInitializedPsm);
+      const fixture = await loadFixture(helper.ModuleCoreWithInitializedPsmLv);
       const mintAmount = parseEther("1000");
       const expTime = 10000;
 
@@ -102,7 +104,7 @@ describe("PSM core", function () {
 
     it("should redeem DS", async function () {
       const { defaultSigner } = await helper.getSigners();
-      const fixture = await loadFixture(helper.ModuleCoreWithInitializedPsm);
+      const fixture = await loadFixture(helper.ModuleCoreWithInitializedPsmLv);
       const mintAmount = parseEther("1000");
       const expTime = 10000;
 
@@ -189,7 +191,7 @@ describe("PSM core", function () {
 
     it("should redeem CT", async function () {
       const { defaultSigner } = await helper.getSigners();
-      const fixture = await loadFixture(helper.ModuleCoreWithInitializedPsm);
+      const fixture = await loadFixture(helper.ModuleCoreWithInitializedPsmLv);
       const mintAmount = parseEther("1000");
       const expTime = 100000;
 
