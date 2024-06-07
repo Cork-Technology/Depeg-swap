@@ -31,13 +31,3 @@ interface ICommon {
     );
 }
 
-interface Initialize {
-    function initialize(address pa, address ra, address wa) external;
-
-    function issueNewDs(
-        Id id,
-        uint256 expiry,
-        address ct,
-        address ds
-    ) external;
-}

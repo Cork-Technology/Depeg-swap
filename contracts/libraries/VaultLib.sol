@@ -26,6 +26,7 @@ library VaultLibrary {
     // TODO : integrate this
     function initialize(
         VaultState storage self,
+        address lv,
         uint256 fee,
         uint256 ammWaDepositThreshold,
         uint256 ammCtDepositThreshold
@@ -35,6 +36,8 @@ library VaultLibrary {
             ammWaDepositThreshold,
             ammCtDepositThreshold
         );
+        
+        self.lv = LvAsset(lv);
     }
 
     function provideAmmLiquidity(

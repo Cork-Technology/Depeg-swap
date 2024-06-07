@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.0;
 import "./libraries/PsmLib.sol";
+import "./libraries/VaultLib.sol";
 import "./libraries/Pair.sol";
 import "./libraries/MathHelper.sol";
 import "./interfaces/IPSMcore.sol";
@@ -11,6 +12,7 @@ import "./ModuleState.sol";
 import "./interfaces/ICommon.sol";
 import "./Psm.sol";
 import "./Vault.sol";
+import "./interfaces/Init.sol";
 
 // TODO : make entrypoint that do not rely on permit with function overloading or different function altogether
 // TODO : make sync function to sync each pair of DS and CT balance
@@ -26,7 +28,15 @@ contract ModuleCore is PsmCore, Initialize, VaultCore {
 
     // TODO : only allow to call this from config contract later or router
     // TODO : handle this with the new abstract contract
-    function initialize(address pa, address ra, address wa) external override {
+    function initialize(
+        address pa,
+        address ra,
+        address wa,
+        address lv,
+        uint256 lvFee,
+        uint256 lvAmmWaDepositThreshold,
+        uint256 lvAmmCtDepositThreshold
+    ) external {
         _onlyValidAsset(wa);
 
         Pair memory key = PairLibrary.initalize(pa, ra);
@@ -37,8 +47,15 @@ contract ModuleCore is PsmCore, Initialize, VaultCore {
         if (state.isInitialized()) {
             revert AlreadyInitialized();
         }
-
-        state.initialize(key, wa);
+        
+        PsmLibrary.initialize(state, key, wa);
+        VaultLibrary.initialize(
+            state.vault,
+            lv,
+            lvFee,
+            lvAmmWaDepositThreshold,
+            lvAmmCtDepositThreshold
+        );
 
         emit Initialized(id, pa, ra);
     }
