@@ -7,10 +7,12 @@ import "../ModuleState.sol";
 import "../libraries/VaultLib.sol";
 import "../libraries/WrappedAssetLib.sol";
 import "../libraries/State.sol";
+import "../libraries/VaultLib.sol";
 
 abstract contract LvDev is ModuleState, ILvDev {
     using VaultLibrary for *;
     using WrappedAssetLibrary for WrappedAssetInfo;
+    using VaultLibrary for VaultState;
 
     function lvIncreaseCtBalance(
         address ct,
@@ -74,21 +76,22 @@ abstract contract LvDev is ModuleState, ILvDev {
     }
 
     function lvIncreaseFreeWaBalance(uint256 amount, Id id) external override {
-        address ra = states[id].info.pair0;
+        State storage self = states[id];
+        address ra = self.info.pair0;
 
         IDevToken(ra).mint(address(this), amount);
-        states[id].vault.balances.raBalance += amount;
-        
-        IDevToken(wa).mint(address(this), amount);
-        states[id].vault.balances.raBalance += amount;
+        // need this since we manually lock the wa
+        self.vault.balances.wa.locked += amount;
+        WrappedAssetLibrary.approveAndWrap(self.vault.lv._address, amount);
     }
 
-    function lvDecreaseFreeWaBalance(
-        address wa,
-        uint256 amount,
-        Id id
-    ) external override {
-        IDevToken(wa).burnSelf(amount);
-        states[id].vault.balances.raBalance -= amount;
+    function lvDecreaseFreeWaBalance(uint256 amount, Id id) external override {
+        State storage self = states[id];
+
+        WrappedAssetLibrary.unlockTo(
+            self.vault.balances.wa,
+            amount,
+            address(0)
+        );
     }
 }
