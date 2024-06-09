@@ -27,21 +27,26 @@ library WrappedAssetLibrary {
         return IERC20(self._address).totalSupply() - self.locked;
     }
 
-    function lock(WrappedAssetInfo storage self, uint256 amount) internal {
+    function approveAndWrap(address _address, uint256 amount)  internal {
+        IERC20 underlying = ERC20Wrapper(_address).underlying();
+        underlying.approve(_address, amount);
+        WrappedAsset(_address).wrap(amount);
+    }
+
+    function lockFrom(WrappedAssetInfo storage self, uint256 amount, address from) internal {
         self.locked = self.locked + amount;
 
         IERC20 underlying = ERC20Wrapper(self._address).underlying();
-        underlying.transferFrom(msg.sender, address(this), amount);
-        underlying.approve(self._address, amount);
-        WrappedAsset(self._address).wrap(amount);
+        underlying.transferFrom(from, address(this), amount);
+        approveAndWrap(self._address, amount);
     }
 
-    function unlock(WrappedAssetInfo storage self, uint256 amount) internal {
+    function unlockTo(WrappedAssetInfo storage self, uint256 amount, address to) internal {
         self.locked = self.locked - amount;
         
         WrappedAsset(self._address).unwrap(amount);
         IERC20 underlying = ERC20Wrapper(self._address).underlying();
-        underlying.transfer(msg.sender, amount);
+        underlying.transfer(to, amount);
     }
 }
 
