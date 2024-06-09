@@ -8,7 +8,7 @@ import "../libraries/VaultLib.sol";
 import "../libraries/WrappedAssetLib.sol";
 import "../libraries/State.sol";
 
-abstract contract LvDev is ModuleState, IPsmDev {
+abstract contract PsmDev is ModuleState, IPsmDev {
     using VaultLibrary for *;
     using WrappedAssetLibrary for WrappedAssetInfo;
 

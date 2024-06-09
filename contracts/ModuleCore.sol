@@ -13,10 +13,12 @@ import "./interfaces/ICommon.sol";
 import "./Psm.sol";
 import "./Vault.sol";
 import "./interfaces/Init.sol";
+import "./dev/LvDev.sol";
+import "./dev/PsmDev.sol";
 
 // TODO : make entrypoint that do not rely on permit with function overloading or different function altogether
 // TODO : make sync function to sync each pair of DS and CT balance
-contract ModuleCore is PsmCore, Initialize, VaultCore {
+contract ModuleCore is PsmCore, Initialize, VaultCore, LvDev, PsmDev {
     using PsmLibrary for State;
     using PairLibrary for Pair;
 
@@ -47,7 +49,7 @@ contract ModuleCore is PsmCore, Initialize, VaultCore {
         if (state.isInitialized()) {
             revert AlreadyInitialized();
         }
-        
+
         PsmLibrary.initialize(state, key, wa);
         VaultLibrary.initialize(
             state.vault,
