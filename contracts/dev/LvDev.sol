@@ -48,47 +48,37 @@ abstract contract LvDev is ModuleState, ILvDev {
         states[id].vault.balances.dsBalance -= amount;
     }
 
-    function lvIncreasePaBalance(
-        address pa,
-        uint256 amount,
-        Id id
-    ) external override {
+    function lvIncreasePaBalance(uint256 amount, Id id) external override {
+        address pa = states[id].info.pair1;
         IDevToken(pa).mint(address(this), amount);
         states[id].vault.balances.paBalance += amount;
     }
 
-    function lvDecreasePaBalance(
-        address pa,
-        uint256 amount,
-        Id id
-    ) external override {
+    function lvDecreasePaBalance(uint256 amount, Id id) external override {
+        address pa = states[id].info.pair1;
         IDevToken(pa).burnSelf(amount);
         states[id].vault.balances.paBalance -= amount;
     }
 
-    function lvIncreaseRaBalance(
-        address ra,
-        uint256 amount,
-        Id id
-    ) external override {
+    function lvIncreaseRaBalance(uint256 amount, Id id) external override {
+        address ra = states[id].info.pair0;
+
         IDevToken(ra).mint(address(this), amount);
         states[id].vault.balances.raBalance += amount;
     }
 
-    function lvDecreaseRaBalance(
-        address ra,
-        uint256 amount,
-        Id id
-    ) external override {
+    function lvDecreaseRaBalance(uint256 amount, Id id) external override {
+        address ra = states[id].info.pair0;
         IDevToken(ra).burnSelf(amount);
         states[id].vault.balances.raBalance -= amount;
     }
 
-    function lvIncreaseFreeWaBalance(
-        address wa,
-        uint256 amount,
-        Id id
-    ) external override {
+    function lvIncreaseFreeWaBalance(uint256 amount, Id id) external override {
+        address ra = states[id].info.pair0;
+
+        IDevToken(ra).mint(address(this), amount);
+        states[id].vault.balances.raBalance += amount;
+        
         IDevToken(wa).mint(address(this), amount);
         states[id].vault.balances.raBalance += amount;
     }
