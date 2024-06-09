@@ -17,8 +17,6 @@ interface ILvDev {
 
     function lvDecreaseDsBalance(address ds, uint256 amount, Id id) external;
 
-    function lvDdepositDev(address wa, uint256 amount, Id id) external;
-
     function lvIncreasePaBalance(address pa, uint256 amount, Id id) external;
 
     function lvDecreasePaBalance(address pa, uint256 amount, Id id) external;
@@ -27,7 +25,15 @@ interface ILvDev {
 
     function lvDecreaseRaBalance(address ra, uint256 amount, Id id) external;
 
-    function lvIncreaseFreeWaBalance(address wa, uint256 amount, Id id) external;
+    function lvIncreaseFreeWaBalance(
+        address wa,
+        uint256 amount,
+        Id id
+    ) external;
 
-    function lvDecreaseFreeWaBalance(address wa, uint256 amount, Id id) external;
+    function lvDecreaseFreeWaBalance(
+        address wa,
+        uint256 amount,
+        Id id
+    ) external;
 }

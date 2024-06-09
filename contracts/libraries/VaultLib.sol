@@ -17,6 +17,8 @@ library VaultLibrary {
     using VaultLibrary for VaultState;
     using PsmLibrary for State;
     using WrappedAssetLibrary for WrappedAsset;
+    using WrappedAssetLibrary for WrappedAssetInfo;
+
     using VaultLibrary for VaultState;
 
     /// @notice caller is not authorized to perform the action, e.g transfering
@@ -80,6 +82,7 @@ library VaultLibrary {
         uint256 amount
     ) internal {
         safeBeforeExpired(self);
+        self.vault.balances.wa.lockFrom(amount, from);
 
         uint256 ratio = MathHelper.calculatePriceRatio(
             self.vault.getSqrtPriceX96(),
@@ -227,7 +230,7 @@ library VaultLibrary {
         self.vault.config.freeWaBalance -= received;
 
         ERC20Burnable(self.vault.lv._address).burnFrom(owner, amount);
-        WrappedAsset(self.wa._address).unwrapTo(receiver, received);
+        self.vault.balances.wa.unlockTo(received, receiver);
     }
 
     function sellExcessCt(State storage self) internal {

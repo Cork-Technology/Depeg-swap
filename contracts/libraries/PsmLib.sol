@@ -13,6 +13,7 @@ import "./Guard.sol";
 
 // TODO : support native token
 // TODO : make an entrypoint that does not depend on permit
+// TODO : make every redeem have receiver address
 library PsmLibrary {
     using MinimalSignatureHelper for Signature;
     using PairLibrary for Pair;
@@ -33,7 +34,7 @@ library PsmLibrary {
         address wa
     ) internal {
         self.info = key;
-        self.wa = WrappedAssetLibrary.initialize(wa);
+        self.psmBalances.wa = WrappedAssetLibrary.initialize(wa);
     }
 
     /// @notice issue a new pair of DS, will fail if the previous DS isn't yet expired
@@ -65,7 +66,7 @@ library PsmLibrary {
 
         Guard.safeBeforeExpired(ds);
 
-        self.wa.lock(amount);
+        self.psmBalances.wa.lockFrom(amount, depositor);
         ds.issue(depositor, amount);
     }
 
@@ -121,11 +122,12 @@ library PsmLibrary {
             address(this),
             amount
         );
-        self.wa.unlock(amount);
+
+        self.psmBalances.wa.unlockTo(amount, owner);
     }
 
     function valueLocked(State storage self) internal view returns (uint256) {
-        return self.wa.locked;
+        return self.psmBalances.wa.locked;
     }
 
     /// @notice redeem an RA with DS + PA
@@ -219,7 +221,7 @@ library PsmLibrary {
         accruedPa = calculateAccruedPa(amount, availablePa, totalCtIssued);
 
         uint256 availableRa = self.info.redemptionAsset().psmBalance();
-        uint256 totalWa = self.wa.circulatingSupply();
+        uint256 totalWa = self.psmBalances.wa.circulatingSupply();
         accruedRa = calculateAccruedRa(
             amount,
             availableRa,

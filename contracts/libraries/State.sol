@@ -9,7 +9,6 @@ import "./LvAssetLib.sol";
 struct State {
     /// @dev used to track current ds and ct for both lv and psm
     uint256 globalAssetIdx;
-    WrappedAssetInfo wa;
     Pair info;
     mapping(uint256 => DepegSwap) ds;
     Balances psmBalances;
@@ -17,6 +16,7 @@ struct State {
 }
 
 struct Balances {
+    WrappedAssetInfo wa;
     uint256 dsBalance;
     uint256 ctBalance;
     uint256 paBalance;
