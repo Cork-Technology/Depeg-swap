@@ -47,24 +47,4 @@ library VaultConfigLibrary {
         self.ammWaDepositThreshold = ammDepositThreshold;
     }
 
-    function increaseWaBalance(
-        VaultConfig memory self,
-        uint256 amount
-    ) internal pure {
-        self.freeWaBalance += amount;
-    }
-
-    function increaseCtBalance(
-        VaultConfig memory self,
-        uint256 amount
-    ) internal pure {
-        self.freeCtBalance += amount;
-    }
-
-    function decreaseAmmWaBalance(
-        VaultConfig memory self,
-        uint256 amount
-    ) internal pure {
-        self.freeWaBalance -= amount;
-    }
 }

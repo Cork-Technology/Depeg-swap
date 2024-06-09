@@ -168,6 +168,9 @@ library VaultLibrary {
         (uint256 attributedRa, uint256 attributedPa) = MathHelper
             .calculateBaseWithdrawal(totalLv, accruedRa, accruedPa, amount);
 
+        self.vault.balances.raBalance -= attributedRa;
+        self.vault.balances.paBalance -= attributedPa;
+
         ra.transfer(receiver, attributedRa);
         pa.transfer(receiver, attributedPa);
         lv.burnFrom(owner, amount);
