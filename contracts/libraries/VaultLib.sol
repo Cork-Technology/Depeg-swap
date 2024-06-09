@@ -36,7 +36,7 @@ library VaultLibrary {
             ammWaDepositThreshold,
             ammCtDepositThreshold
         );
-        
+
         self.lv = LvAsset(lv);
     }
 
@@ -56,7 +56,8 @@ library VaultLibrary {
         VaultState storage self
     ) internal view returns (uint160) {
         // TODO : placeholder
-        return 0;
+        // 4 for now, so that every 4 wa there must be 1 ct
+        return 158456325028528675187087900672;
     }
 
     function safeBeforeExpired(State storage self) internal view {
@@ -84,18 +85,10 @@ library VaultLibrary {
             self.vault.getSqrtPriceX96(),
             MathHelper.DEFAULT_DECIMAL
         );
-        (
-            uint256 amountWa,
-            uint256 amountCt,
-            uint256 leftoverWa,
-            uint256 leftoverCt
-        ) = MathHelper.calculateAmounts(amount, ratio);
-
-        self.vault.config.increaseWaBalance(leftoverWa);
-        self.vault.config.increaseCtBalance(leftoverCt);
+        (uint256 wa, uint256 ct) = MathHelper.calculateAmounts(amount, ratio);
 
         if (self.vault.config.mustProvideLiquidity()) {
-            self.vault.provideAmmLiquidity(amountWa, amountCt);
+            self.vault.provideAmmLiquidity(wa, ct);
         }
 
         _limitOrderDs(amount);

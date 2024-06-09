@@ -11,31 +11,24 @@ describe("Math Helper", function () {
     return await hre.viem.deployContract("MathHelper", []);
   }
   describe("LV math", function () {
-    it("should calculate provided liquidity correctly on the LV (WA:CT = 0.2)", async function () {
+    it("should calculate provided liquidity correctly on the LV (WA:CT = 0.5)", async function () {
       const contract = await loadFixture(deployMathHelper);
 
-      // every 5 ct there must be 1 wa
-      const ratio = parseEther("0.2");
+      // every ct costs 0.5 wa
+      const ratio = parseEther("0.5");
       const amount = parseEther("10");
 
-      const [wa, ct, leftoverWa, leftoverCt] =
-        await contract.read.calculateAmounts([amount, ratio]);
+      const [wa, ct] = await contract.read.calculateAmounts([amount, ratio]);
 
-      console.log(
-        "wa: ",
-        formatEther(wa),
-        "ct: ",
-        formatEther(ct),
-        "leftover wa: ",
-        formatEther(leftoverWa),
-        "leftover ct: ",
-        formatEther(leftoverCt)
-      );
+      console.log("wa: ", formatEther(wa), "ct: ", formatEther(ct));
 
-      expect(wa).to.equal(parseEther("2"));
-      expect(ct).to.equal(parseEther("10"));
-      expect(leftoverWa).to.equal(parseEther("8"));
-      expect(leftoverCt).to.equal(parseEther("0"));
+      // since it costs a half of whatever ct here, it essentially boils down
+      // 6666666666666666666 / 2 = 3333333333333333333 + 1 imprecision equal to of ~0,000000000000000001
+      const expectedCt = BigInt("6666666666666666666");
+      const expectedWa = BigInt("3333333333333333334");
+
+      expect(ct).to.equal(expectedCt);
+      expect(wa).to.equal(expectedWa);
     });
 
     it("should calculate provided liquidity correctly on the LV (WA:CT = 2)", async function () {
@@ -45,24 +38,14 @@ describe("Math Helper", function () {
       const ratio = parseEther("2");
       const amount = parseEther("10");
 
-      const [wa, ct, leftoverWa, leftoverCt] =
-        await contract.read.calculateAmounts([amount, ratio]);
+      const [wa, ct] = await contract.read.calculateAmounts([amount, ratio]);
 
-      console.log(
-        "wa: ",
-        formatEther(wa),
-        "ct: ",
-        formatEther(ct),
-        "leftover wa: ",
-        formatEther(leftoverWa),
-        "leftover ct: ",
-        formatEther(leftoverCt)
-      );
+      // this is just basically a reverse from the above with some imprecision of ~0,000000000000000001
+      const expectedWa = BigInt("6666666666666666667");
+      const expectedCt = BigInt("3333333333333333333");
 
-      expect(wa).to.equal(parseEther("10"));
-      expect(ct).to.equal(parseEther("5"));
-      expect(leftoverWa).to.equal(parseEther("0"));
-      expect(leftoverCt).to.equal(parseEther("5"));
+      expect(ct).to.equal(expectedCt);
+      expect(wa).to.equal(expectedWa);
     });
 
     it("should convert sqrtx96 to ratio (4)", async function () {
@@ -110,26 +93,12 @@ describe("Math Helper", function () {
 
       expect(ratio).to.equal(expectedRatio);
 
-      const amount = parseEther("40");
+      const amount = parseEther("10");
 
-      const [wa, ct, leftoverWa, leftoverCt] =
-        await contract.read.calculateAmounts([amount, ratio]);
+      const [wa, ct] = await contract.read.calculateAmounts([amount, ratio]);
 
-      console.log(
-        "wa: ",
-        formatEther(wa),
-        "ct: ",
-        formatEther(ct),
-        "leftover wa: ",
-        formatEther(leftoverWa),
-        "leftover ct: ",
-        formatEther(leftoverCt)
-      );
-
-      expect(wa).to.equal(parseEther("40"));
-      expect(ct).to.equal(parseEther("10"));
-      expect(leftoverWa).to.equal(parseEther("0"));
-      expect(leftoverCt).to.equal(parseEther("30"));
+      expect(wa).to.equal(parseEther("8"));
+      expect(ct).to.equal(parseEther("2"));
     });
 
     it("should calculate early lv", async function () {

@@ -5,43 +5,23 @@ library MathHelper {
     /// @dev default decimals for now to calculate price ratio
     uint8 internal constant DEFAULT_DECIMAL = 18;
 
+    // TODO :  distribute evenly the amount to amountWa and amountCt
     /**
      * @dev calculate the amount of wa and ct needed to provide AMM with liquidity in respect to the price ratio
      *
-     * @param amount  the total amount of liquidity user provide(e.g 2 WA)
+     * @param amountWa the total amount of liquidity user provide(e.g 2 WA)
      * @param priceRatio the price ratio of the pair, should be retrieved from the AMM as sqrtx96 and be converted to ratio
-     * @return amountWa the amount of wa needed to provide AMM with liquidity
-     * @return amountCt the amount of ct needed to provide AMM with liquidity
-     * @return leftoverWa the leftover wa after providing AMM with liquidit, should for now reside in the LV
-     * @return leftoverCt the leftover ct after providing AMM with liquidit, should for now reside in the LV
+     * @return wa the amount of wa needed to provide AMM with liquidity
+     * @return ct the amount of ct needed to provide AMM with liquidity, also the amount of how much wa should be converted to ct
      */
     function calculateAmounts(
-        uint256 amount,
+        uint256 amountWa,
         uint256 priceRatio
-    )
-        external
-        pure
-        returns (
-            uint256 amountWa,
-            uint256 amountCt,
-            uint256 leftoverWa,
-            uint256 leftoverCt
-        )
-    {
-        uint256 requiredWa = (amount * priceRatio) / 1e18;
-        uint256 requiredCt = (amount * 1e18) / priceRatio;
+    ) external pure returns (uint256 wa, uint256 ct) {
+        ct = (amountWa * 1e18) / (priceRatio + 1e18);
+        wa = (amountWa - ct);
 
-        if (requiredWa <= amount) {
-            amountCt = amount;
-            amountWa = requiredWa;
-            leftoverCt = 0;
-            leftoverWa = amount - requiredWa;
-        } else {
-            amountCt = requiredCt;
-            amountWa = amount;
-            leftoverCt = amount - requiredCt;
-            leftoverWa = 0;
-        }
+        assert((ct + wa) == amountWa);
     }
 
     // TODO: test this, and maybe add support for 2 different decimals token? but since we're
@@ -117,7 +97,7 @@ library MathHelper {
 
     /**
      * @dev calculate the fee in respect to the amount given
-     * @param fee1e8 the fee in 1e8 
+     * @param fee1e8 the fee in 1e8
      * @param amount the amount of lv user want to withdraw
      */
     function calculatePrecentageFee(
