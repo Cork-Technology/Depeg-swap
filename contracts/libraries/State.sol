@@ -12,14 +12,20 @@ struct State {
     WrappedAssetInfo wa;
     Pair info;
     mapping(uint256 => DepegSwap) ds;
+    Balances psmBalances;
     VaultState vault;
 }
 
-struct PsmState {
+struct Balances {
+    uint256 dsBalance;
+    uint256 ctBalance;
+    uint256 paBalance;
+    uint256 raBalance;
     uint256 totalCtIssued;
 }
 
 struct VaultState {
+    Balances balances;
     VaultConfig config;
     LvAsset lv;
     mapping(address => bool) withdrawEligible;

@@ -88,7 +88,13 @@ library PsmLibrary {
         dsReceived = amount;
     }
 
-    function _redeemDs(DepegSwap storage ds, uint256 amount) internal {
+    function _redeemDs(
+        Balances storage self,
+        DepegSwap storage ds,
+        uint256 amount
+    ) internal {
+        self.dsBalance += amount;
+        self.paBalance += amount;
         ds.dsRedeemed += amount;
     }
 
@@ -137,7 +143,7 @@ library PsmLibrary {
     ) internal {
         DepegSwap storage ds = self.ds[dsId];
         Guard.safeBeforeExpired(ds);
-        _redeemDs(ds, amount);
+        _redeemDs(self.psmBalances, ds, amount);
         _afterRedeemWithDs(self, ds, rawDsPermitSig, owner, amount, deadline);
     }
 
@@ -209,7 +215,7 @@ library PsmLibrary {
         uint256 amount,
         uint256 totalCtIssued
     ) internal view returns (uint256 accruedPa, uint256 accruedRa) {
-        uint256 availablePa = self.info.peggedAsset().psmBalance();
+        uint256 availablePa = self.psmBalances.paBalance;
         accruedPa = calculateAccruedPa(amount, availablePa, totalCtIssued);
 
         uint256 availableRa = self.info.redemptionAsset().psmBalance();
@@ -222,8 +228,17 @@ library PsmLibrary {
         );
     }
 
-    function _incRedeemedCt(DepegSwap storage ds, uint256 amount) internal {
+    function _beforeCtRedeem(
+        Balances storage self,
+        DepegSwap storage ds,
+        uint256 amount,
+        uint256 accruedPa,
+        uint256 accruedRa
+    ) internal {
         ds.ctRedeemed += amount;
+        self.ctBalance += amount;
+        self.paBalance -= accruedPa;
+        self.raBalance -= accruedRa;
     }
 
     function _afterCtRedeem(
@@ -268,7 +283,7 @@ library PsmLibrary {
 
         uint256 totalCtIssued = IERC20(ds.ct).totalSupply();
         (accruedPa, accruedRa) = _calcRedeemAmount(self, amount, totalCtIssued);
-        _incRedeemedCt(ds, amount);
+        _beforeCtRedeem(self.psmBalances, ds, amount, accruedPa, accruedRa);
         _afterCtRedeem(
             self,
             ds,
