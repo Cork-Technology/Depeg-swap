@@ -17,23 +17,15 @@ interface IPsmDev {
 
     function psmDecreaseDsBalance(address ds, uint256 amount, Id id) external;
 
-    function psmIncreasePaBalance(address pa, uint256 amount, Id id) external;
+    function psmIncreasePaBalance(uint256 amount, Id id) external;
 
-    function psmDecreasePaBalance(address pa, uint256 amount, Id id) external;
+    function psmDecreasePaBalance(uint256 amount, Id id) external;
 
-    function psmIncreaseRaBalance(address ra, uint256 amount, Id id) external;
+    function psmIncreaseRaBalance(uint256 amount, Id id) external;
 
-    function psmDecreaseRaBalance(address ra, uint256 amount, Id id) external;
+    function psmDecreaseRaBalance(uint256 amount, Id id) external;
 
-    function psmIncreaselockedWaBalance(
-        address wa,
-        uint256 amount,
-        Id id
-    ) external;
+    function psmIncreaselockedWaBalance(uint256 amount, Id id) external;
 
-    function psmDecreaselockedWaBalance(
-        address wa,
-        uint256 amount,
-        Id id
-    ) external;
+    function psmDecreaselockedWaBalance(uint256 amount, Id id) external;
 }

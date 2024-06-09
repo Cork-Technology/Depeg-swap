@@ -48,56 +48,59 @@ abstract contract LvDev is ModuleState, IPsmDev {
         states[id].psmBalances.dsBalance -= amount;
     }
 
-    function psmIncreasePaBalance(
-        address pa,
-        uint256 amount,
-        Id id
-    ) external override {
+    function psmIncreasePaBalance(uint256 amount, Id id) external override {
+        address pa = states[id].info.pair1;
+
         IDevToken(pa).mint(address(this), amount);
         states[id].psmBalances.paBalance += amount;
     }
 
-    function psmDecreasePaBalance(
-        address pa,
-        uint256 amount,
-        Id id
-    ) external override {
+    function psmDecreasePaBalance(uint256 amount, Id id) external override {
+        address pa = states[id].info.pair1;
         IDevToken(pa).burnSelf(amount);
         states[id].psmBalances.paBalance -= amount;
     }
 
-    function psmIncreaseRaBalance(
-        address ra,
-        uint256 amount,
-        Id id
-    ) external override {
+    function psmIncreaseRaBalance(uint256 amount, Id id) external override {
+        address ra = states[id].info.pair0;
+
         IDevToken(ra).mint(address(this), amount);
         states[id].psmBalances.raBalance += amount;
     }
 
-    function psmDecreaseRaBalance(
-        address ra,
-        uint256 amount,
-        Id id
-    ) external override {
+    function psmDecreaseRaBalance(uint256 amount, Id id) external override {
+        address ra = states[id].info.pair0;
+
         IDevToken(ra).burnSelf(amount);
         states[id].psmBalances.raBalance -= amount;
     }
 
     function psmIncreaselockedWaBalance(
-        address wa,
         uint256 amount,
         Id id
     ) external override {
         State storage self = states[id];
-        self.psmBalances.wa;
+        address ra = self.info.pair0;
+        IDevToken(ra).mint(address(this), amount);
+        
+        // mint RA, wrap it to WA and deposit to psm
         self.psmBalances.wa.locked += amount;
-        self.waInfo.mint(amount);
+        WrappedAssetLibrary.approveAndWrap(
+            self.psmBalances.wa._address,
+            amount
+        );
     }
 
     function psmDecreaselockedWaBalance(
-        address wa,
         uint256 amount,
         Id id
-    ) external override;
+    ) external override {
+        State storage self = states[id];
+
+        WrappedAssetLibrary.unlockTo(
+            self.psmBalances.wa,
+            amount,
+            address(0)
+        );
+    }
 }
