@@ -31,7 +31,8 @@ library VaultLibrary {
         address lv,
         uint256 fee,
         uint256 ammWaDepositThreshold,
-        uint256 ammCtDepositThreshold
+        uint256 ammCtDepositThreshold,
+        address wa
     ) internal {
         self.config = VaultConfigLibrary.initialize(
             fee,
@@ -40,6 +41,7 @@ library VaultLibrary {
         );
 
         self.lv = LvAsset(lv);
+        self.balances.wa = WrappedAssetLibrary.initialize(wa);
     }
 
     function provideAmmLiquidity(
@@ -88,6 +90,7 @@ library VaultLibrary {
             self.vault.getSqrtPriceX96(),
             MathHelper.DEFAULT_DECIMAL
         );
+
         (uint256 wa, uint256 ct) = MathHelper.calculateAmounts(amount, ratio);
 
         if (self.vault.config.mustProvideLiquidity()) {
@@ -144,12 +147,23 @@ library VaultLibrary {
         ct = 0;
     }
 
+    function _unwrapAllWaToSelf(State storage self) internal {
+        // IMPORTANT : for now, we only unlock the wa to ourself
+        // since we don't have the AMM LP yet
+        self.vault.balances.raBalance += self.vault.balances.wa.locked;
+
+        self.vault.balances.wa.unlockTo(
+            self.vault.balances.wa.locked,
+            address(this)
+        );
+    }
+
     function redeemExpired(
         State storage self,
         address owner,
         address receiver,
         uint256 amount
-    ) internal {
+    ) internal returns (uint256 attributedRa, uint256 attributedPa) {
         safeAfterExpired(self);
 
         if (!self.vault.withdrawEligible[owner]) {
@@ -158,18 +172,24 @@ library VaultLibrary {
 
         if (!self.vault.lpLiquidated) {
             _liquidatedLp(self);
+            _unwrapAllWaToSelf(self);
+            assert(self.vault.balances.wa.locked == 0);
         }
 
         IERC20 ra = IERC20(self.info.pair1);
         IERC20 pa = IERC20(self.info.pair0);
         ERC20Burnable lv = ERC20Burnable(self.vault.lv._address);
 
-        uint256 accruedRa = ra.balanceOf(address(this));
-        uint256 accruedPa = pa.balanceOf(address(this));
-        uint256 totalLv = lv.balanceOf(address(this));
+        uint256 accruedRa = self.vault.balances.raBalance;
+        uint256 accruedPa = self.vault.balances.paBalance;
+        uint256 totalLv = lv.totalSupply();
 
-        (uint256 attributedRa, uint256 attributedPa) = MathHelper
-            .calculateBaseWithdrawal(totalLv, accruedRa, accruedPa, amount);
+        (attributedRa, attributedPa) = MathHelper.calculateBaseWithdrawal(
+            totalLv,
+            accruedRa,
+            accruedPa,
+            amount
+        );
 
         self.vault.balances.raBalance -= attributedRa;
         self.vault.balances.paBalance -= attributedPa;
