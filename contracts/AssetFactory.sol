@@ -5,27 +5,23 @@ import "./interfaces/IAssetFactory.sol";
 import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import "./WrappedAsset.sol";
+import "./libraries/Pair.sol";
 import "./Asset.sol";
 
+// TODO : add LV asset
 contract AssetFactory is IAssetFactory, OwnableUpgradeable, UUPSUpgradeable {
+    using PairLibrary for Pair;
+
     uint8 public constant MAX_LIMIT = 10;
     string private constant CT_PREFIX = "CT";
     string private constant DS_PREFIX = "DS";
-
-    struct WrappedAssets {
-        address ra;
-        address wa;
-    }
-
-    struct SwapAssets {
-        address ct;
-        address ds;
-    }
+    string private constant LV_PREFIX = "LV";
 
     uint256 idx;
-    
-    mapping(uint256 => WrappedAssets) wrappedAssets;
-    mapping(address => SwapAssets[]) swapAssets;
+
+    mapping(Id => address) lvs;
+    mapping(uint256 => Pair) wrappedAssets;
+    mapping(address => Pair[]) swapAssets;
     mapping(address => bool) deployed;
 
     // for safety checks in psm core, also act as kind of like a registry
@@ -55,7 +51,7 @@ contract AssetFactory is IAssetFactory, OwnableUpgradeable, UUPSUpgradeable {
         view
         override
         withinLimit(limit)
-        returns (address[] memory ra, address[] memory wa)
+        returns (address[] memory ra, address[] memory wa, address[] memory lv)
     {
         uint256 start = uint256(page) * uint256(limit);
         uint256 end = start + uint256(limit);
@@ -66,18 +62,20 @@ contract AssetFactory is IAssetFactory, OwnableUpgradeable, UUPSUpgradeable {
         }
 
         if (start > idx) {
-            return (ra, wa);
+            return (ra, wa, lv);
         }
 
         ra = new address[](arrLen);
         wa = new address[](arrLen);
+        lv = new address[](arrLen);
 
         for (uint256 i = start; i < end; i++) {
-            WrappedAssets storage asset = wrappedAssets[i];
+            Pair storage asset = wrappedAssets[i];
             uint8 _idx = uint8(i - start);
 
-            ra[_idx] = asset.ra;
-            wa[_idx] = asset.wa;
+            ra[_idx] = asset.pair0;
+            wa[_idx] = asset.pair1;
+            lv[_idx] = lvs[asset.toId()];
         }
     }
 
@@ -92,7 +90,7 @@ contract AssetFactory is IAssetFactory, OwnableUpgradeable, UUPSUpgradeable {
         withinLimit(limit)
         returns (address[] memory ct, address[] memory ds)
     {
-        SwapAssets[] storage assets = swapAssets[wa];
+        Pair[] storage assets = swapAssets[wa];
 
         uint256 start = uint256(page) * uint256(limit);
         uint256 end = start + uint256(limit);
@@ -106,9 +104,8 @@ contract AssetFactory is IAssetFactory, OwnableUpgradeable, UUPSUpgradeable {
         ds = new address[](arrLen);
 
         for (uint256 i = start; i < end; i++) {
-            
-            ct[i - start] = assets[i].ct;
-            ds[i - start] = assets[i].ds;
+            ct[i - start] = assets[i].pair0;
+            ds[i - start] = assets[i].pair1;
         }
     }
 
@@ -133,12 +130,34 @@ contract AssetFactory is IAssetFactory, OwnableUpgradeable, UUPSUpgradeable {
         ds = address(new Asset(DS_PREFIX, pairname, owner, expiry));
 
         // TODO : tests this with ~100 pairs
-        swapAssets[wa].push(SwapAssets(ct, ds));
+        swapAssets[wa].push(Pair(ct, ds));
 
         deployed[ct] = true;
         deployed[ds] = true;
 
         emit AssetDeployed(wa, ct, ds);
+    }
+
+    function deployLv(
+        address ra,
+        address pa,
+        address wa,
+        address owner
+    ) external override onlyOwner notDelegated returns (address lv) {
+        lv = address(
+            new Asset(
+                LV_PREFIX,
+                string(
+                    abi.encodePacked(Asset(ra).name(), "-", Asset(pa).name())
+                ),
+                owner,
+                0
+            )
+        );
+        Pair memory pair = Pair(ra, wa);
+        lvs[pair.toId()] = lv;
+
+        emit LvAssetDeployed(ra, pa, lv);
     }
 
     // TODO : owner will be config contract later
@@ -149,7 +168,7 @@ contract AssetFactory is IAssetFactory, OwnableUpgradeable, UUPSUpgradeable {
 
         wa = address(new WrappedAsset(ra));
 
-        wrappedAssets[_idx] = WrappedAssets(ra, wa);
+        wrappedAssets[_idx] = Pair(ra, wa);
 
         deployed[wa] = true;
 

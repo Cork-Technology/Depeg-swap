@@ -10,7 +10,7 @@
     "@nomicfoundation/hardhat-network-helpers": "^1.0.0",
     "@nomicfoundation/hardhat-toolbox-viem": "^3.0.0",
     "@nomicfoundation/hardhat-verify": "^2.0.0",
-    "@nomicfoundation/hardhat-viem": "^2.0.0",
+    "@nomicfoundation/hardhat-viem": "^2.0.2",
     "@types/chai": "^4.2.0",
     "@types/chai-as-promised": "^7.1.6",
     "@types/mocha": ">=9.1.0",
@@ -21,7 +21,7 @@
     "solidity-coverage": "^0.8.0",
     "ts-node": ">=8.0.0",
     "typescript": "~5.0.4",
-    "viem": "^2.7.6"
+    "viem": "^2.13.7"
   },
   "dependencies": {
     "@nomicfoundation/hardhat-ethers": "^3.0.6",
