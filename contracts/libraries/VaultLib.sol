@@ -189,19 +189,11 @@ library VaultLibrary {
             amount
         );
 
-        IERC20 ra = IERC20(self.info.pair1);
-        IERC20 pa = IERC20(self.info.pair0);
-        ERC20Burnable lv = ERC20Burnable(self.vault.lv._address);
-
-        uint256 accruedRa = ra.balanceOf(address(this));
-        uint256 accruedPa = pa.balanceOf(address(this));
-        uint256 totalLv = lv.balanceOf(address(this));
-
-        (uint256 attributedRa, uint256 attributedPa) = MathHelper
-            .calculateBaseWithdrawal(totalLv, accruedRa, accruedPa, amount);
-
         self.vault.balances.raBalance -= attributedRa;
         self.vault.balances.paBalance -= attributedPa;
+
+        IERC20 ra = IERC20(self.info.pair1);
+        IERC20 pa = IERC20(self.info.pair0);
 
         ra.transfer(receiver, attributedRa);
         pa.transfer(receiver, attributedPa);
