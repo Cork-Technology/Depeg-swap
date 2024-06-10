@@ -5,11 +5,13 @@ struct VaultConfig {
     // 1 % = 1e18
     uint256 fee;
     //
-    uint256 freeWaBalance;
+    uint256 lpWaBalance;
     uint256 ammWaDepositThreshold;
     //
     uint256 ammCtDepositThreshold;
-    uint256 freeCtBalance;
+    uint256 lpCtBalance;
+
+    uint256 accmulatedFee;
 }
 
 library VaultConfigLibrary {
@@ -22,9 +24,10 @@ library VaultConfigLibrary {
             VaultConfig({
                 fee: fee,
                 ammWaDepositThreshold: ammWaDepositThreshold,
-                freeWaBalance: 0,
-                freeCtBalance: 0,
-                ammCtDepositThreshold: ammCtDepositThreshold
+                lpWaBalance: 0,
+                lpCtBalance: 0,
+                ammCtDepositThreshold: ammCtDepositThreshold,
+                accmulatedFee: 0
             });
     }
 
@@ -32,8 +35,8 @@ library VaultConfigLibrary {
         VaultConfig memory self
     ) internal pure returns (bool) {
         return
-            (self.freeWaBalance > self.ammWaDepositThreshold) &&
-            (self.freeCtBalance > self.ammCtDepositThreshold);
+            (self.lpWaBalance > self.ammWaDepositThreshold) &&
+            (self.lpCtBalance > self.ammCtDepositThreshold);
     }
 
     function updateFee(VaultConfig memory self, uint256 fee) internal pure {

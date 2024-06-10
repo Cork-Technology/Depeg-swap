@@ -84,7 +84,7 @@ library VaultLibrary {
         uint256 amount
     ) internal {
         safeBeforeExpired(self);
-        self.vault.balances.wa.lockFrom(amount, from);
+        self.vault.balances.wa.lockUnchecked(amount, from);
 
         uint256 ratio = MathHelper.calculatePriceRatio(
             self.vault.getSqrtPriceX96(),
@@ -92,6 +92,8 @@ library VaultLibrary {
         );
 
         (uint256 wa, uint256 ct) = MathHelper.calculateAmounts(amount, ratio);
+        self.vault.config.lpWaBalance += wa;
+        self.vault.config.lpCtBalance += ct;
 
         if (self.vault.config.mustProvideLiquidity()) {
             self.vault.provideAmmLiquidity(wa, ct);
@@ -120,8 +122,6 @@ library VaultLibrary {
         address from,
         address to
     ) internal {
-        safeBeforeExpired(self);
-
         if (!self.vault.withdrawEligible[from]) {
             revert Unauthorized(msg.sender);
         }
@@ -150,12 +150,12 @@ library VaultLibrary {
     function _unwrapAllWaToSelf(State storage self) internal {
         // IMPORTANT : for now, we only unlock the wa to ourself
         // since we don't have the AMM LP yet
-        self.vault.balances.raBalance += self.vault.balances.wa.locked;
+        // since the ds isn't sold right now so it's safe to do this
+        uint256 total = self.vault.config.lpWaBalance +
+            self.vault.config.lpCtBalance;
+        self.vault.balances.raBalance += total;
 
-        self.vault.balances.wa.unlockTo(
-            self.vault.balances.wa.locked,
-            address(this)
-        );
+        self.vault.balances.wa.unlockToUnchecked(total, address(this));
     }
 
     function redeemExpired(
@@ -176,8 +176,6 @@ library VaultLibrary {
             assert(self.vault.balances.wa.locked == 0);
         }
 
-        IERC20 ra = IERC20(self.info.pair1);
-        IERC20 pa = IERC20(self.info.pair0);
         ERC20Burnable lv = ERC20Burnable(self.vault.lv._address);
 
         uint256 accruedRa = self.vault.balances.raBalance;
@@ -194,8 +192,12 @@ library VaultLibrary {
         self.vault.balances.raBalance -= attributedRa;
         self.vault.balances.paBalance -= attributedPa;
 
+        IERC20 ra = IERC20(self.info.pair1);
+        IERC20 pa = IERC20(self.info.pair0);
+
         ra.transfer(receiver, attributedRa);
         pa.transfer(receiver, attributedPa);
+
         lv.burnFrom(owner, amount);
     }
 
@@ -232,25 +234,67 @@ library VaultLibrary {
         address owner,
         address receiver,
         uint256 amount
-    ) internal {
+    ) internal returns (uint256 received, uint256 fee,uint256 feePrecentage) {
         safeBeforeExpired(self);
         _liquidatedLp(self);
         createWaPairings(self);
 
-        uint256 received = MathHelper.calculateEarlyLvRate(
-            self.vault.config.freeWaBalance,
+        feePrecentage = self.vault.config.fee;
+
+        uint256 totalWa = self.vault.config.lpWaBalance +
+            self.vault.config.lpCtBalance;
+
+        received = MathHelper.calculateEarlyLvRate(
+            totalWa,
             IERC20(self.vault.lv._address).totalSupply(),
             amount
         );
 
-        received =
-            received -
-            MathHelper.calculatePrecentageFee(received, self.vault.config.fee);
+        uint256 ratio = MathHelper.calculatePriceRatio(
+            self.vault.getSqrtPriceX96(),
+            MathHelper.DEFAULT_DECIMAL
+        );
 
-        self.vault.config.freeWaBalance -= received;
+        // calculate substracted LP liquidity in respect to the price ratio
+        // this is done to minimize price impact
+        (uint256 wa, uint256 ct) = MathHelper.calculateAmounts(received, ratio);
+        self.vault.config.lpWaBalance -= wa;
+        self.vault.config.lpCtBalance -= ct;
+
+        fee = MathHelper.calculatePrecentageFee(
+            received,
+            self.vault.config.fee
+        );
+        self.vault.config.accmulatedFee += fee;
+        received = received - fee;
+
+        // IMPORTANT: ideally, the source of the WA that's used to fulfill
+        // early redemption should be calculated in a way that respect the
+        // current price ratio of the asset in the AMM and then an algorithm should
+        // decide how much LP WA is used, how much CT is paired with existing DS in the LV
+        // to turned into WA for user redemption, it should look like this :
+        //
+        // if the price ratio is 2:1, then for every 2 WA, there should be 1 CT
+        // assuming the DS is not sold yet, then it should use ~66% of WA and ~33% of CT to be paired with DS
+        // for user withdrawal
+        //
+        // but for now, as we don't currently have a good general grip on AMM mechanics,
+        // we calculate the rate in as if all the CT can be readyily paired with DS and turned into WA, but we
+        // but we source everything from the LP WA which will most likely has a worse side effect on price than the ideal one.
+        // you could say we currently use the "dumb" algorithm for now.
+        //
+
+        // it's safe to do this as of now since no token is actually moving anywhere.
+        self.vault.config.lpWaBalance -= received;
 
         ERC20Burnable(self.vault.lv._address).burnFrom(owner, amount);
-        self.vault.balances.wa.unlockTo(received, receiver);
+        self.vault.balances.wa.unlockToUnchecked(received, receiver);
+        returnLpFunds(self);
+    }
+
+    function returnLpFunds(State storage self) internal {
+        self.vault.lpLiquidated = false;
+        // TODO : placeholder
     }
 
     function sellExcessCt(State storage self) internal {
