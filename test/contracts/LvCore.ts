@@ -282,4 +282,112 @@ describe("LvCore", function () {
     expect(event.args.feePrecentage).to.be.equal(parseEther("10"));
     expect(event.args.amount).to.be.equal(parseEther("0.9"));
   });
+
+  it("should return correct preview expired redeem", async function () {
+    const expiry = helper.expiry(1000000);
+    const depositAmount = parseEther("10");
+    const fixture = await loadFixture(helper.ModuleCoreWithInitializedPsmLv);
+    const { defaultSigner, signers } = await helper.getSigners();
+    const secondSigner = signers[1];
+
+    await fixture.ra.write.mint([defaultSigner.account.address, depositAmount]);
+    await fixture.ra.write.mint([secondSigner.account.address, depositAmount]);
+
+    await fixture.ra.write.approve([
+      fixture.moduleCore.contract.address,
+      depositAmount,
+    ]);
+
+    await fixture.ra.write.approve(
+      [fixture.moduleCore.contract.address, depositAmount],
+      {
+        account: secondSigner.account,
+      }
+    );
+
+    const { Id } = await helper.issueNewSwapAssets({
+      expiry,
+      factory: fixture.factory.contract.address,
+      moduleCore: fixture.moduleCore.contract.address,
+      pa: fixture.pa.address,
+      ra: fixture.ra.address,
+      wa: fixture.wa.address,
+    });
+
+    const lv = fixture.Id;
+    await fixture.moduleCore.contract.write.depositLv([lv, depositAmount]);
+    await fixture.moduleCore.contract.write.depositLv([lv, depositAmount], {
+      account: secondSigner.account,
+    });
+
+    await fixture.moduleCore.contract.write.requestRedemption([Id]);
+    await fixture.moduleCore.contract.write.requestRedemption([Id], {
+      account: secondSigner.account,
+    });
+
+    await time.increase(expiry + 1);
+
+    await fixture.lv.write.approve(
+      [fixture.moduleCore.contract.address, depositAmount],
+      {
+        account: secondSigner.account,
+      }
+    );
+
+    await fixture.moduleCore.contract.write.redeemExpiredLv(
+      [lv, secondSigner.account.address, depositAmount],
+      {
+        account: secondSigner.account,
+      }
+    );
+
+    const [ra, pa] =
+      await fixture.moduleCore.contract.read.previewRedeemExpiredLv([
+        lv,
+        depositAmount,
+      ]);
+
+    expect(ra).to.be.equal(depositAmount);
+    expect(pa).to.be.equal(BigInt(0));
+  });
+
+  it("should return correct preview early redeem", async function () {
+    const expiry = helper.expiry(1000000);
+    const depositAmount = parseEther("10");
+    const fixture = await loadFixture(helper.ModuleCoreWithInitializedPsmLv);
+    const { defaultSigner, signers } = await helper.getSigners();
+
+    await fixture.ra.write.mint([defaultSigner.account.address, depositAmount]);
+
+    await fixture.ra.write.approve([
+      fixture.moduleCore.contract.address,
+      depositAmount,
+    ]);
+
+    const { Id } = await helper.issueNewSwapAssets({
+      expiry,
+      factory: fixture.factory.contract.address,
+      moduleCore: fixture.moduleCore.contract.address,
+      pa: fixture.pa.address,
+      ra: fixture.ra.address,
+      wa: fixture.wa.address,
+    });
+
+    const lv = fixture.Id;
+    await fixture.moduleCore.contract.write.depositLv([lv, depositAmount]);
+    await fixture.lv.write.approve([
+      fixture.moduleCore.contract.address,
+      depositAmount,
+    ]);
+    const [rcv, fee, precentage] =
+      await fixture.moduleCore.contract.read.previewRedeemEarlyLv([
+        lv,
+        parseEther("1"),
+      ]);
+
+    expect(fee).to.be.equal(parseEther("0.1"));
+    // 10% fee
+    expect(precentage).to.be.equal(parseEther("10"));
+    expect(rcv).to.be.equal(parseEther("0.9"));
+  });
 });

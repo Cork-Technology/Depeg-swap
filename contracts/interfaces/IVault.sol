@@ -87,10 +87,33 @@ interface IVault {
     function redeemExpiredLv(Id id, address receiver, uint256 amount) external;
 
     /**
+     * @notice preview redeem expired lv
+     * @param id The Module id that is used to reference both psm and lv of a given pair
+     * @param amount The amount of the asset to be redeemed
+     */
+    function previewRedeemExpiredLv(
+        Id id,
+        uint256 amount
+    ) external view returns (uint256 attributedRa, uint256 attributedPa);
+
+    /**
      * @notice Redeem lv before expiry
      * @param id The Module id that is used to reference both psm and lv of a given pair
      * @param receiver The address of the receiver
      * @param amount The amount of the asset to be redeemed
      */
     function redeemEarlyLv(Id id, address receiver, uint256 amount) external;
+
+    /**
+     * @notice preview redeem lv before expiry
+     * @param id The Module id that is used to reference both psm and lv of a given pair
+     * @param amount The amount of the asset to be redeemed
+     */
+    function previewRedeemEarlyLv(
+        Id id,
+        uint256 amount
+    )
+        external
+        view
+        returns (uint256 received, uint256 fee, uint256 feePrecentage);
 }

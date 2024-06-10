@@ -50,6 +50,19 @@ abstract contract VaultCore is ModuleState, Context, IVault {
         emit LvRedeemExpired(id, receiver, attributedRa, attributedPa);
     }
 
+    function previewRedeemExpiredLv(
+        Id id,
+        uint256 amount
+    )
+        external
+        view
+        override
+        returns (uint256 attributedRa, uint256 attributedPa)
+    {
+        State storage state = states[id];
+        (attributedRa, attributedPa) = state.previewRedeemExpired(amount);
+    }
+
     function redeemEarlyLv(
         Id id,
         address receiver,
@@ -67,5 +80,18 @@ abstract contract VaultCore is ModuleState, Context, IVault {
             fee,
             feePrecentage
         );
+    }
+
+    function previewRedeemEarlyLv(
+        Id id,
+        uint256 amount
+    )
+        external
+        view
+        override
+        returns (uint256 received, uint256 fee, uint256 feePrecentage)
+    {
+        State storage state = states[id];
+        (received, fee, feePrecentage) = state.previewRedeemEarly(amount);
     }
 }

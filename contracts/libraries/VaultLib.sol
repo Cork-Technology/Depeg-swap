@@ -201,6 +201,24 @@ library VaultLibrary {
         lv.burnFrom(owner, amount);
     }
 
+    function previewRedeemExpired(
+        State storage self,
+        uint256 amount
+    ) internal view returns (uint256 attributedRa, uint256 attributedPa) {
+        ERC20Burnable lv = ERC20Burnable(self.vault.lv._address);
+
+        uint256 accruedRa = self.vault.balances.raBalance;
+        uint256 accruedPa = self.vault.balances.paBalance;
+        uint256 totalLv = lv.totalSupply();
+        
+        (attributedRa, attributedPa) = MathHelper.calculateBaseWithdrawal(
+            totalLv,
+            accruedRa,
+            accruedPa,
+            amount
+        );
+    }
+
     // taken directly from spec document, technically below is what should happen in this function
     //
     // '#' refers to the total circulation supply of that token.
@@ -234,7 +252,7 @@ library VaultLibrary {
         address owner,
         address receiver,
         uint256 amount
-    ) internal returns (uint256 received, uint256 fee,uint256 feePrecentage) {
+    ) internal returns (uint256 received, uint256 fee, uint256 feePrecentage) {
         safeBeforeExpired(self);
         _liquidatedLp(self);
         createWaPairings(self);
@@ -290,6 +308,35 @@ library VaultLibrary {
         ERC20Burnable(self.vault.lv._address).burnFrom(owner, amount);
         self.vault.balances.wa.unlockToUnchecked(received, receiver);
         returnLpFunds(self);
+    }
+
+    function previewRedeemEarly(
+        State storage self,
+        uint256 amount
+    )
+        internal
+        view
+        returns (uint256 received, uint256 fee, uint256 feePrecentage)
+    {
+        safeBeforeExpired(self);
+
+        feePrecentage = self.vault.config.fee;
+
+        uint256 totalWa = self.vault.config.lpWaBalance +
+            self.vault.config.lpCtBalance;
+
+        received = MathHelper.calculateEarlyLvRate(
+            totalWa,
+            IERC20(self.vault.lv._address).totalSupply(),
+            amount
+        );
+
+        fee = MathHelper.calculatePrecentageFee(
+            received,
+            self.vault.config.fee
+        );
+
+        received = received - fee;
     }
 
     function returnLpFunds(State storage self) internal {
