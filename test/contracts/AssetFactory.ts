@@ -6,7 +6,7 @@ import { expect } from "chai";
 import hre from "hardhat";
 
 import { Address, formatEther, parseEther, WalletClient } from "viem";
-import * as helper from "./helper/TestHelper";
+import * as helper from "../helper/TestHelper";
 
 describe("Asset Factory", function () {
   it("should deploy AssetFactory", async function () {

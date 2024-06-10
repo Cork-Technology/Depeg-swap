@@ -5,17 +5,19 @@ import "./PeggedAssetLib.sol";
 import "./RedemptionAssetLib.sol";
 import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 
-type PsmId is bytes32;
+type Id is bytes32;
 
-struct PairKey {
-    address _peggedAsset;
-    address _redemptionAsset;
+/// @dev represent a token pair that does not assumes relationship between the two
+/// it may be a pegged asset and a redemption asset, or ct and ds or any other pair
+struct Pair {
+    address pair0;
+    address pair1;
 }
 
-library PairKeyLibrary {
+library PairLibrary {
     using PeggedAssetLibrary for PeggedAsset;
 
-    function toId(PairKey memory key) internal pure returns (PsmId id) {
+    function toId(Pair memory key) internal pure returns (Id id) {
         bytes32 k = keccak256(abi.encode(key));
 
         assembly {
@@ -24,11 +26,11 @@ library PairKeyLibrary {
     }
 
     function toPairname(
-        PairKey memory key
+        Pair memory key
     ) internal view returns (string memory pairname) {
         (string memory _pa, string memory _ra) = (
-            IERC20Metadata(key._peggedAsset).symbol(),
-            IERC20Metadata(key._redemptionAsset).symbol()
+            IERC20Metadata(key.pair0).symbol(),
+            IERC20Metadata(key.pair1).symbol()
         );
 
         pairname = string(abi.encodePacked(_pa, "-", _ra));
@@ -37,27 +39,27 @@ library PairKeyLibrary {
     function initalize(
         address pa,
         address ra
-    ) internal pure returns (PairKey memory key) {
-        key = PairKey({_peggedAsset: pa, _redemptionAsset: ra});
+    ) internal pure returns (Pair memory key) {
+        key = Pair({pair0: pa, pair1: ra});
     }
 
     function peggedAsset(
-        PairKey memory key
+        Pair memory key
     ) internal pure returns (PeggedAsset memory pa) {
-        pa = PeggedAsset({_address: key._peggedAsset});
+        pa = PeggedAsset({_address: key.pair0});
     }
 
     function redemptionAsset(
-        PairKey memory key
+        Pair memory key
     ) internal pure returns (RedemptionAsset memory ra) {
-        ra = RedemptionAsset({_address: key._redemptionAsset});
+        ra = RedemptionAsset({_address: key.pair1});
     }
 
     function isInitialized(
-        PairKey memory key
+        Pair memory key
     ) internal pure returns (bool status) {
         status =
-            key._peggedAsset != address(0) &&
-            key._redemptionAsset != address(0);
+            key.pair0 != address(0) &&
+            key.pair1 != address(0);
     }
 }

@@ -21,27 +21,62 @@ library WrappedAssetLibrary {
         return WrappedAssetInfo({_address: wa, locked: 0});
     }
 
+    function incLocked(WrappedAssetInfo storage self, uint256 amount) internal {
+        self.locked = self.locked + amount;
+    }
+
+    function decLocked(WrappedAssetInfo storage self, uint256 amount) internal {
+        self.locked = self.locked - amount;
+    }
+
     function circulatingSupply(
         WrappedAssetInfo memory self
     ) internal view returns (uint256) {
         return IERC20(self._address).totalSupply() - self.locked;
     }
 
-    function lock(WrappedAssetInfo storage self, uint256 amount) internal {
-        self.locked = self.locked + amount;
-
-        IERC20 underlying = ERC20Wrapper(self._address).underlying();
-        underlying.transferFrom(msg.sender, address(this), amount);
-        underlying.approve(self._address, amount);
-        WrappedAsset(self._address).wrap(amount);
+    function approveAndWrap(address _address, uint256 amount) internal {
+        IERC20 underlying = ERC20Wrapper(_address).underlying();
+        underlying.approve(_address, amount);
+        WrappedAsset(_address).wrap(amount);
     }
 
-    function unlock(WrappedAssetInfo storage self, uint256 amount) internal {
-        self.locked = self.locked - amount;
-        
+    function lockFrom(
+        WrappedAssetInfo storage self,
+        uint256 amount,
+        address from
+    ) internal {
+        incLocked(self, amount);
+        lockUnchecked(self, amount, from);
+    }
+
+    function lockUnchecked(
+        WrappedAssetInfo storage self,
+        uint256 amount,
+        address from
+    ) internal {
+        IERC20 underlying = ERC20Wrapper(self._address).underlying();
+        underlying.transferFrom(from, address(this), amount);
+        approveAndWrap(self._address, amount);
+    }
+
+    function unlockTo(
+        WrappedAssetInfo storage self,
+        uint256 amount,
+        address to
+    ) internal {
+        decLocked(self, amount);
+        unlockToUnchecked(self, amount, to);
+    }
+
+    function unlockToUnchecked(
+        WrappedAssetInfo storage self,
+        uint256 amount,
+        address to
+    ) internal {
         WrappedAsset(self._address).unwrap(amount);
         IERC20 underlying = ERC20Wrapper(self._address).underlying();
-        underlying.transfer(msg.sender, amount);
+        underlying.transfer(to, amount);
     }
 }
 

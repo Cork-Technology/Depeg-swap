@@ -1,14 +1,18 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.0;
 
-import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/extensions/ERC20Burnable.sol";
 import "@openzeppelin/contracts/interfaces/IERC20Metadata.sol";
 
 // dummy contract for RA and PA
-contract DummyERCWithMetadata is ERC20 {
+contract DummyERCWithMetadata is ERC20Burnable {
     constructor(string memory name, string memory symbol) ERC20(name, symbol) {}
 
-    function mint(address to, uint256 amount) public {
+    function mint(address to, uint256 amount) external {
         _mint(to, amount);
+    }
+
+    function burnSelf(uint256 amount) external {
+        _burn(msg.sender, amount);
     }
 }
