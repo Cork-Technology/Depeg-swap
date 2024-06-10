@@ -76,7 +76,7 @@ library WrappedAssetLibrary {
     ) internal {
         WrappedAsset(self._address).unwrap(amount);
         IERC20 underlying = ERC20Wrapper(self._address).underlying();
-        underlying.transfer(msg.sender, amount);
+        underlying.transfer(to, amount);
     }
 }
 
