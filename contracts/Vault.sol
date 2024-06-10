@@ -30,10 +30,7 @@ abstract contract VaultCore is ModuleState, Context, IVault {
         emit RedemptionRequested(id, _msgSender());
     }
 
-    function transferRedemptionRights(
-        Id id,
-        address to
-    ) external override {
+    function transferRedemptionRights(Id id, address to) external override {
         State storage state = states[id];
         state.transferRedemptionRights(_msgSender(), to);
         emit RedemptionRightTransferred(id, _msgSender(), to);
@@ -45,8 +42,12 @@ abstract contract VaultCore is ModuleState, Context, IVault {
         uint256 amount
     ) external override {
         State storage state = states[id];
-        state.redeemExpired(_msgSender(), receiver, amount);
-        emit LvRedeemExpired(id, receiver, amount);
+        (uint256 attributedRa, uint256 attributedPa) = state.redeemExpired(
+            _msgSender(),
+            receiver,
+            amount
+        );
+        emit LvRedeemExpired(id, receiver, attributedRa, attributedPa);
     }
 
     function redeemEarlyLv(

@@ -4,11 +4,11 @@ import "../libraries/Pair.sol";
 
 interface IVault {
     /// @notice Emitted when a user deposits assets into a given Vault
-    /// @param Id The Module id that is used to reference both psm and lv of a given pair
+    /// @param id The Module id that is used to reference both psm and lv of a given pair
     /// @param depositor The address of the depositor
     /// @param amount  The amount of the asset deposited
     event LvDeposited(
-        Id indexed Id,
+        Id indexed id,
         address indexed depositor,
         uint256 amount
     );
@@ -33,11 +33,13 @@ interface IVault {
     /// @notice Emitted when a user redeems expired Lv
     /// @param Id The Module id that is used to reference both psm and lv of a given pair
     /// @param receiver The address of the receiver
-    /// @param amount The amount of the asset redeemed
+    /// @param ra The amount of ra redeemed
+    /// @param pa The amount of pa redeemed
     event LvRedeemExpired(
         Id indexed Id,
         address indexed receiver,
-        uint256 amount
+        uint256 ra,
+        uint256 pa
     );
 
     /// @notice Emitted when a user redeems Lv before expiry
