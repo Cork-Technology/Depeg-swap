@@ -30,10 +30,7 @@ abstract contract VaultCore is ModuleState, Context, IVault {
         emit RedemptionRequested(id, _msgSender());
     }
 
-    function transferRedemptionRights(
-        Id id,
-        address to
-    ) external override {
+    function transferRedemptionRights(Id id, address to) external override {
         State storage state = states[id];
         state.transferRedemptionRights(_msgSender(), to);
         emit RedemptionRightTransferred(id, _msgSender(), to);
@@ -45,8 +42,25 @@ abstract contract VaultCore is ModuleState, Context, IVault {
         uint256 amount
     ) external override {
         State storage state = states[id];
-        state.redeemExpired(_msgSender(), receiver, amount);
-        emit LvRedeemExpired(id, receiver, amount);
+        (uint256 attributedRa, uint256 attributedPa) = state.redeemExpired(
+            _msgSender(),
+            receiver,
+            amount
+        );
+        emit LvRedeemExpired(id, receiver, attributedRa, attributedPa);
+    }
+
+    function previewRedeemExpiredLv(
+        Id id,
+        uint256 amount
+    )
+        external
+        view
+        override
+        returns (uint256 attributedRa, uint256 attributedPa)
+    {
+        State storage state = states[id];
+        (attributedRa, attributedPa) = state.previewRedeemExpired(amount);
     }
 
     function redeemEarlyLv(
@@ -55,7 +69,29 @@ abstract contract VaultCore is ModuleState, Context, IVault {
         uint256 amount
     ) external override {
         State storage state = states[id];
-        state.redeemEarly(_msgSender(), receiver, amount);
-        emit LvRedeemEarly(id, receiver, amount);
+        (uint256 received, uint256 fee, uint256 feePrecentage) = state
+            .redeemEarly(_msgSender(), receiver, amount);
+
+        emit LvRedeemEarly(
+            id,
+            _msgSender(),
+            receiver,
+            received,
+            fee,
+            feePrecentage
+        );
+    }
+
+    function previewRedeemEarlyLv(
+        Id id,
+        uint256 amount
+    )
+        external
+        view
+        override
+        returns (uint256 received, uint256 fee, uint256 feePrecentage)
+    {
+        State storage state = states[id];
+        (received, fee, feePrecentage) = state.previewRedeemEarly(amount);
     }
 }

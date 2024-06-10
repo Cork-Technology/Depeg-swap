@@ -56,7 +56,8 @@ contract ModuleCore is PsmCore, Initialize, VaultCore, LvDev, PsmDev {
             lv,
             lvFee,
             lvAmmWaDepositThreshold,
-            lvAmmCtDepositThreshold
+            lvAmmCtDepositThreshold,
+            wa
         );
 
         emit Initialized(id, pa, ra);

@@ -14,11 +14,11 @@ struct DepegSwap {
 library DepegSwapLibrary {
     using MinimalSignatureHelper for Signature;
 
-    function isExpired(DepegSwap memory self) internal view returns (bool) {
+    function isExpired(DepegSwap storage self) internal view returns (bool) {
         return Asset(self.ds).isExpired();
     }
 
-    function isInitialized(DepegSwap memory self) internal pure returns (bool) {
+    function isInitialized(DepegSwap storage self) internal view returns (bool) {
         return self.ds != address(0) && self.ct != address(0);
     }
 
