@@ -31,14 +31,10 @@ contract ModuleCore is PsmCore, Initialize, VaultCore {
     function initialize(
         address pa,
         address ra,
-        address wa,
-        address lv,
         uint256 lvFee,
         uint256 lvAmmWaDepositThreshold,
         uint256 lvAmmCtDepositThreshold
-    ) external {
-        _onlyValidAsset(wa);
-
+    ) external override {
         Pair memory key = PairLibrary.initalize(pa, ra);
         Id id = key.toId();
 
@@ -47,7 +43,12 @@ contract ModuleCore is PsmCore, Initialize, VaultCore {
         if (state.isInitialized()) {
             revert AlreadyInitialized();
         }
-        
+
+        IAssetFactory factory = IAssetFactory(_factory);
+
+        address wa = factory.deployWrappedAsset(ra);
+        address lv = factory.deployLv(ra, pa, wa, address(this));
+
         PsmLibrary.initialize(state, key, wa);
         VaultLibrary.initialize(
             state.vault,
@@ -58,25 +59,32 @@ contract ModuleCore is PsmCore, Initialize, VaultCore {
             wa
         );
 
-        emit Initialized(id, pa, ra);
+        emit Initialized(id, pa, ra, wa, lv);
     }
 
     // TODO : only allow to call this from config contract later or router
     function issueNewDs(
         Id id,
-        uint256 expiry,
-        address ct,
-        address ds
+        uint256 expiry
     ) external override onlyInitialized(id) {
-        _onlyValidAsset(ct);
-        _onlyValidAsset(ds);
-
         State storage state = states[id];
+
+        address pa = state.info.pair0;
+        address ra = state.info.pair1;
+        address wa = state.psmBalances.wa._address;
+
+        (address _ct, address _ds) = IAssetFactory(_factory).deploySwapAssets(
+            pa,
+            ra,
+            wa,
+            address(this),
+            expiry
+        );
 
         uint256 prevIdx = state.globalAssetIdx++;
         uint256 idx = state.globalAssetIdx;
-        state.issueNewPair(ct, ds, idx, prevIdx);
+        state.issueNewPair(_ct, _ds, idx, prevIdx);
 
-        emit Issued(id, idx, expiry, ds, ct);
+        emit Issued(id, idx, expiry, _ds, _ct);
     }
 }

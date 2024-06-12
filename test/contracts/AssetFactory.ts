@@ -28,7 +28,7 @@ describe("Asset Factory", function () {
       },
     });
 
-    await contract.write.initialize({
+    await contract.write.initialize([defaultSigner.account.address], {
       account: defaultSigner.account,
     });
 
@@ -52,7 +52,7 @@ describe("Asset Factory", function () {
       },
     });
 
-    await contract.write.initialize({
+    await contract.write.initialize([defaultSigner.account.address], {
       account: defaultSigner.account,
     });
 
@@ -76,7 +76,7 @@ describe("Asset Factory", function () {
       },
     });
 
-    await contract.write.initialize({
+    await contract.write.initialize([defaultSigner.account.address], {
       account: defaultSigner.account,
     });
 
@@ -111,7 +111,7 @@ describe("Asset Factory", function () {
       },
     });
 
-    await contract.write.initialize({
+    await contract.write.initialize([defaultSigner.account.address], {
       account: defaultSigner.account,
     });
 
@@ -146,7 +146,7 @@ describe("Asset Factory", function () {
       },
     });
 
-    await contract.write.initialize({
+    await contract.write.initialize([defaultSigner.account.address], {
       account: defaultSigner.account,
     });
 
@@ -183,7 +183,7 @@ describe("Asset Factory", function () {
       },
     });
 
-    await contract.write.initialize({
+    await contract.write.initialize([defaultSigner.account.address], {
       account: defaultSigner.account,
     });
 
@@ -222,7 +222,7 @@ describe("Asset Factory", function () {
       },
     });
 
-    await contract.write.initialize({
+    await contract.write.initialize([defaultSigner.account.address], {
       account: defaultSigner.account,
     });
 
@@ -270,7 +270,7 @@ describe("Asset Factory", function () {
       },
     });
 
-    await contract.write.initialize({
+    await contract.write.initialize([defaultSigner.account.address], {
       account: defaultSigner.account,
     });
 

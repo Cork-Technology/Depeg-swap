@@ -6,12 +6,10 @@ interface Initialize {
     function initialize(
         address pa,
         address ra,
-        address wa,
-        address lv,
         uint256 lvFee,
         uint256 lvAmmWaDepositThreshold,
         uint256 lvAmmCtDepositThreshold
     ) external;
 
-    function issueNewDs(Id id, uint256 expiry, address ct, address ds) external;
+    function issueNewDs(Id id, uint256 expiry) external;
 }
