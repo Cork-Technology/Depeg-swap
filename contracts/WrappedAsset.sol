@@ -35,7 +35,7 @@ contract WrappedAsset is ERC20Permit, ERC20Wrapper {
         override(ERC20, ERC20Wrapper)
         returns (uint8)
     {
-        return this.decimals();
+        return ERC20Wrapper.decimals();
     }
 
     function wrap(uint256 amount) external {

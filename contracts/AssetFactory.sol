@@ -38,8 +38,8 @@ contract AssetFactory is IAssetFactory, OwnableUpgradeable, UUPSUpgradeable {
 
     constructor() {}
 
-    function initialize() external initializer notDelegated {
-        __Ownable_init(msg.sender);
+    function initialize(address moduleCore) external initializer notDelegated {
+        __Ownable_init(moduleCore);
         __UUPSUpgradeable_init();
     }
 

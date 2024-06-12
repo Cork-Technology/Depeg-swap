@@ -21,28 +21,12 @@ describe("PSM core", function () {
         psmFixture.moduleCore.contract.address
       );
 
-      await psmFixture.factory.contract.write.deploySwapAssets([
-        psmFixture.ra.address,
-        psmFixture.pa.address,
-        psmFixture.wa.address,
-        psmFixture.moduleCore.contract.address,
-        BigInt(expiry),
-      ]);
-
-      const ctDsEvents =
-        await psmFixture.factory.contract.getEvents.AssetDeployed({
-          wa: psmFixture.wa.address,
-        });
-
-      const ct = ctDsEvents[0].args.ct!;
-      const ds = ctDsEvents[0].args.ds!;
-
       const Id = await contract.read.getId([
         psmFixture.pa.address,
         psmFixture.ra.address,
       ]);
 
-      await contract.write.issueNewDs([Id, BigInt(expiry), ct, ds], {
+      await contract.write.issueNewDs([Id, BigInt(expiry)], {
         account: defaultSigner.account,
       });
 
