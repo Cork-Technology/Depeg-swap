@@ -302,9 +302,6 @@ library VaultLibrary {
         // you could say we currently use the "dumb" algorithm for now.
         //
 
-        // it's safe to do this as of now since no token is actually moving anywhere.
-        self.vault.config.lpWaBalance -= received;
-
         ERC20Burnable(self.vault.lv._address).burnFrom(owner, amount);
         self.vault.balances.wa.unlockToUnchecked(received, receiver);
         returnLpFunds(self);

@@ -8,6 +8,7 @@ import { Address, formatEther, parseEther, WalletClient } from "viem";
 import * as helper from "../helper/TestHelper";
 
 describe("wrapped asset", function () {
+  // @yusak found this bug, causes explorer to fail to display the decimals
   it("should get correct decimals", async function () {
     const { defaultSigner } = await helper.getSigners();
     const { contract: factory } = await helper.deployAssetFactory();
