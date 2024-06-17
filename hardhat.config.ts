@@ -3,6 +3,7 @@ import "@nomicfoundation/hardhat-toolbox-viem";
 import "hardhat-gas-reporter";
 import "@nomicfoundation/hardhat-viem";
 import loadEnv from "dotenv";
+import "hardhat-contract-sizer";
 
 loadEnv.config();
 
@@ -31,6 +32,10 @@ const config: HardhatUserConfig = {
     outputJSON: true,
     outputJSONFile: "gas-report.json",
     includeIntrinsicGas: true,
+  },
+  contractSizer: {
+    runOnCompile: true,
+    only: ["ModuleCore"],
   },
 };
 
