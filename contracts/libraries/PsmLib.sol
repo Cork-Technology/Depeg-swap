@@ -142,9 +142,9 @@ library PsmLibrary {
     }
 
     function exchangeRate(
-        State storage self,
-        uint256 dsId
+        State storage self
     ) internal view returns (uint256 rates) {
+        uint256 dsId = self.globalAssetIdx;
         DepegSwap storage ds = self.ds[dsId];
         rates = ds.exchangeRate();
     }
