@@ -106,11 +106,28 @@ library MathHelper {
         precentage = (((amount * 1e18) * fee1e8) / (100 * 1e18)) / 1e18;
     }
 
-    function calculateAmountWithExchangeRate(
+    /**
+     * @dev calcualte how much ct + ds user will receive based on the amount of the current exchange rate
+     * @param amount  the amount of user  deposit
+     * @param exchangeRate the current exchange rate between RA:(CT+DS)
+     */
+    function calculateDepositAmountWithExchangeRate(
         uint256 amount,
         uint256 exchangeRate
-    ) external pure returns (uint256) {
-        return (amount * exchangeRate) / 1e18;
+    ) external pure returns (uint256 _amount) {
+        _amount = (amount * exchangeRate) / 1e18;
+    }
+
+    /**
+     * @dev caclulcate how much ra user will receive when redeeming with x amount of ds based on the current exchange rate
+     * @param amount the amount of ds user want to redeem
+     * @param exchangeRate the current exchange rate between RA:(CT+DS) 
+     */
+    function calculateRedeemAmountWithExchangeRate(
+        uint256 amount,
+        uint256 exchangeRate
+    ) external pure returns (uint256 _amount) {
+        _amount = (amount * 1e18) / exchangeRate;
     }
 
     // TODO : unit test this, just move here from psm

@@ -56,7 +56,6 @@ library PsmLibrary {
 
     /// @notice deposit RA to the PSM
     /// @dev the user must approve the PSM to spend their RA
-    // TODO: adjust this with exchange rates
     function deposit(
         State storage self,
         address depositor,
@@ -70,7 +69,7 @@ library PsmLibrary {
 
         self.psmBalances.wa.lockFrom(amount, depositor);
         uint256 normalizedRateAmount = MathHelper
-            .calculateAmountWithExchangeRate(amount, ds.exchangeRate());
+            .calculateDepositAmountWithExchangeRate(amount, ds.exchangeRate());
 
         ds.issue(depositor, normalizedRateAmount);
     }
@@ -78,7 +77,6 @@ library PsmLibrary {
     /// @notice preview deposit
     /// @dev since we mint 1:1, we return the same amount,
     /// since rate only effective when redeeming with CT
-    // TODO: adjust this with exchange rates
     // TODO: test this
     function previewDeposit(
         State storage self,
@@ -93,7 +91,7 @@ library PsmLibrary {
 
         Guard.safeBeforeExpired(ds);
         uint256 normalizedRateAmount = MathHelper
-            .calculateAmountWithExchangeRate(amount, ds.exchangeRate());
+            .calculateDepositAmountWithExchangeRate(amount, ds.exchangeRate());
 
         ctReceived = normalizedRateAmount;
         dsReceived = normalizedRateAmount;
@@ -133,7 +131,10 @@ library PsmLibrary {
             amount
         );
 
-        self.psmBalances.wa.unlockTo(amount, owner);
+        uint256 normalizedRateAmount = MathHelper
+            .calculateRedeemAmountWithExchangeRate(amount, ds.exchangeRate());
+
+        self.psmBalances.wa.unlockTo(normalizedRateAmount, owner);
     }
 
     function valueLocked(State storage self) internal view returns (uint256) {
@@ -153,7 +154,6 @@ library PsmLibrary {
     /// we depends on the frontend to make approval to the PA contract before calling this function.
     /// for the DS, we use the permit function to approve the transfer. the parameter passed here MUST be the same
     /// as the one used to generate the ds permit signature
-    // TODO: adjust this with exchange rates
     function redeemWithDs(
         State storage self,
         address owner,
@@ -171,7 +171,6 @@ library PsmLibrary {
     /// @notice simulate a ds redeem.
     /// @return assets how much RA the user would receive
     /// @dev since the rate is constant at 1:1, we return the same amount,
-    // TODO: adjust this with exchange rates
     // TODO: test this
     function previewRedeemWithDs(
         State storage self,
@@ -180,7 +179,11 @@ library PsmLibrary {
     ) internal view returns (uint256 assets) {
         DepegSwap storage ds = self.ds[dsId];
         Guard.safeBeforeExpired(ds);
-        assets = amount;
+
+        uint256 normalizedRateAmount = MathHelper
+            .calculateRedeemAmountWithExchangeRate(amount, ds.exchangeRate());
+
+        assets = normalizedRateAmount;
     }
 
     /// @notice return the number of redeemed RA for a particular DS
