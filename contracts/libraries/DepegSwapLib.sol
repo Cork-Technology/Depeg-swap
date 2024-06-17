@@ -21,6 +21,10 @@ library DepegSwapLibrary {
     function isInitialized(DepegSwap storage self) internal view returns (bool) {
         return self.ds != address(0) && self.ct != address(0);
     }
+    
+    function exchangeRate(DepegSwap storage self) internal view returns (uint256) {
+        return Asset(self.ds).exchangeRate();
+    }
 
     function initialize(
         address ds,

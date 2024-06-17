@@ -126,5 +126,149 @@ describe("Math Helper", function () {
       const result = await contract.read.calculatePrecentageFee([fee, amount]);
       expect(result).to.equal(parseEther("10"));
     });
+
+    it("should calcuate psm deposit amount with exchange rates", async function () {
+      const contract = await loadFixture(deployMathHelper);
+
+      const amount = parseEther("10");
+      const rate = parseEther("1");
+
+      const result = await contract.read.calculateDepositAmountWithExchangeRate(
+        [amount, rate]
+      );
+
+      expect(result).to.equal(parseEther("10"));
+
+      const rate2 = parseEther("2");
+
+      const result2 =
+        await contract.read.calculateDepositAmountWithExchangeRate([
+          amount,
+          rate2,
+        ]);
+
+      expect(result2).to.equal(parseEther("20"));
+
+      const rate3 = parseEther("0.5");
+
+      const result3 =
+        await contract.read.calculateDepositAmountWithExchangeRate([
+          amount,
+          rate3,
+        ]);
+
+      expect(result3).to.equal(parseEther("5"));
+
+      const rate4 = parseEther("0.6");
+
+      const result4 =
+        await contract.read.calculateDepositAmountWithExchangeRate([
+          amount,
+          rate4,
+        ]);
+
+      expect(result4).to.equal(parseEther("6"));
+
+      const result5 =
+        await contract.read.calculateDepositAmountWithExchangeRate([
+          parseEther("2"),
+          rate4,
+        ]);
+
+      expect(result5).to.equal(parseEther("1.2"));
+
+      const result6 =
+        await contract.read.calculateDepositAmountWithExchangeRate([
+          parseEther("0.5"),
+          rate3,
+        ]);
+
+      expect(result6).to.equal(parseEther("0.25"));
+    });
+
+    it("should calculate psm redeem amount with exchange rates", async function () {
+      const contract = await loadFixture(deployMathHelper);
+
+      const amount = parseEther("10");
+      const rate = parseEther("1");
+
+      const result = await contract.read.calculateRedeemAmountWithExchangeRate([
+        amount,
+        rate,
+      ]);
+
+      expect(result).to.equal(parseEther("10"));
+
+      const rate2 = parseEther("2");
+
+      const result2 = await contract.read.calculateRedeemAmountWithExchangeRate(
+        [amount, rate2]
+      );
+
+      expect(result2).to.equal(parseEther("5"));
+
+      const rate3 = parseEther("0.5");
+
+      const result3 = await contract.read.calculateRedeemAmountWithExchangeRate(
+        [amount, rate3]
+      );
+
+      expect(result3).to.equal(parseEther("20"));
+    });
+
+    it("should balance when psm deposit and redeem using exchange rate", async function () {
+      const contract = await loadFixture(deployMathHelper);
+
+      const amount = parseEther("10");
+      const rate = parseEther("1");
+
+      const deposit =
+        await contract.read.calculateDepositAmountWithExchangeRate([
+          amount,
+          rate,
+        ]);
+
+      const redeem = await contract.read.calculateRedeemAmountWithExchangeRate([
+        deposit,
+        rate,
+      ]);
+
+      expect(redeem).to.equal(amount);
+
+      const rate2 = parseEther("2");
+
+      const deposit2 =
+        await contract.read.calculateDepositAmountWithExchangeRate([
+          amount,
+          rate2,
+        ]);
+
+      const redeem2 = await contract.read.calculateRedeemAmountWithExchangeRate(
+        [deposit2, rate2]
+      );
+
+      expect(redeem2).to.equal(amount);
+
+      const rate3 = parseEther("0.5");
+
+      const deposit3 =
+        await contract.read.calculateDepositAmountWithExchangeRate([
+          amount,
+          rate3,
+        ]);
+
+      console.log(`got ${formatEther(deposit3)} from deposit`);
+      console.log(
+        `redeeeming ${formatEther(deposit3)} with rate ${formatEther(rate3)}`
+      );
+
+      const redeem3 = await contract.read.calculateRedeemAmountWithExchangeRate(
+        [deposit3, rate3]
+      );
+
+      console.log(`redeemed ${formatEther(redeem3)}`);
+
+      expect(redeem3).to.equal(amount);
+    });
   });
 });

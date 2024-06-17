@@ -7,7 +7,6 @@ import "./ModuleState.sol";
 import "@openzeppelin/contracts/utils/Context.sol";
 import "./interfaces/IVault.sol";
 
-// TODO : add events and interfaces
 abstract contract VaultCore is ModuleState, Context, IVault {
     using PairLibrary for Pair;
     using VaultLibrary for State;

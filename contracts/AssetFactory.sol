@@ -8,7 +8,6 @@ import "./WrappedAsset.sol";
 import "./libraries/Pair.sol";
 import "./Asset.sol";
 
-// TODO : add LV asset
 contract AssetFactory is IAssetFactory, OwnableUpgradeable, UUPSUpgradeable {
     using PairLibrary for Pair;
 
@@ -114,7 +113,8 @@ contract AssetFactory is IAssetFactory, OwnableUpgradeable, UUPSUpgradeable {
         address pa,
         address wa,
         address owner,
-        uint256 expiry
+        uint256 expiry,
+        uint256 psmExchangeRate
     )
         external
         override
@@ -126,10 +126,13 @@ contract AssetFactory is IAssetFactory, OwnableUpgradeable, UUPSUpgradeable {
             abi.encodePacked(Asset(ra).name(), "-", Asset(pa).name())
         );
 
-        ct = address(new Asset(CT_PREFIX, pairname, owner, expiry));
-        ds = address(new Asset(DS_PREFIX, pairname, owner, expiry));
+        ct = address(
+            new Asset(CT_PREFIX, pairname, owner, expiry, psmExchangeRate)
+        );
+        ds = address(
+            new Asset(DS_PREFIX, pairname, owner, expiry, psmExchangeRate)
+        );
 
-        // TODO : tests this with ~100 pairs
         swapAssets[wa].push(Pair(ct, ds));
 
         deployed[ct] = true;
@@ -151,6 +154,7 @@ contract AssetFactory is IAssetFactory, OwnableUpgradeable, UUPSUpgradeable {
                     abi.encodePacked(Asset(ra).name(), "-", Asset(pa).name())
                 ),
                 owner,
+                0,
                 0
             )
         );

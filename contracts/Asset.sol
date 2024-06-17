@@ -6,6 +6,19 @@ import "@openzeppelin/contracts/token/ERC20/extensions/ERC20Permit.sol";
 import "@openzeppelin/contracts/token/ERC20/extensions/ERC20FlashMint.sol";
 import "@openzeppelin/contracts/token/ERC20/extensions/ERC20Burnable.sol";
 import "./interfaces/IExpiry.sol";
+import "./interfaces/IRates.sol";
+
+contract ExchangeRate is IRates {
+    uint256 internal rate;
+
+    constructor(uint256 _rate) {
+        rate = _rate;
+    }
+
+    function exchangeRate() external view override returns (uint256) {
+        return rate;
+    }
+}
 
 contract Expiry is IExpiry {
     uint256 internal timestamp;
@@ -27,13 +40,22 @@ contract Expiry is IExpiry {
     }
 }
 
-contract Asset is ERC20Burnable, ERC20Permit, ERC20FlashMint, Ownable, Expiry {
+contract Asset is
+    ERC20Burnable,
+    ERC20Permit,
+    ERC20FlashMint,
+    Ownable,
+    Expiry,
+    ExchangeRate
+{
     constructor(
         string memory prefix,
         string memory pairName,
         address _owner,
-        uint256 _expiry
+        uint256 _expiry,
+        uint256 _rate
     )
+        ExchangeRate(_rate)
         ERC20(
             string(abi.encodePacked(prefix, "-", pairName)),
             string(abi.encodePacked(prefix, "-", pairName))

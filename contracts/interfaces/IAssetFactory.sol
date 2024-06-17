@@ -43,7 +43,8 @@ interface IAssetFactory {
         address pa,
         address wa,
         address owner,
-        uint256 expiry
+        uint256 expiry,
+        uint256 psmExchangeRate
     ) external returns (address ct, address ds);
 
     function deployLv(

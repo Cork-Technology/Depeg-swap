@@ -80,4 +80,3 @@ library WrappedAssetLibrary {
     }
 }
 
-// TODO : fix this, move this to a dedicated wrapper contract, and make a factory our of it

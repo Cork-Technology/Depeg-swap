@@ -15,7 +15,6 @@ import "./Vault.sol";
 import "./interfaces/Init.sol";
 
 // TODO : make entrypoint that do not rely on permit with function overloading or different function altogether
-// TODO : make sync function to sync each pair of DS and CT balance
 contract ModuleCore is PsmCore, Initialize, VaultCore {
     using PsmLibrary for State;
     using PairLibrary for Pair;
@@ -27,7 +26,6 @@ contract ModuleCore is PsmCore, Initialize, VaultCore {
     }
 
     // TODO : only allow to call this from config contract later or router
-    // TODO : handle this with the new abstract contract
     function initialize(
         address pa,
         address ra,
@@ -65,7 +63,8 @@ contract ModuleCore is PsmCore, Initialize, VaultCore {
     // TODO : only allow to call this from config contract later or router
     function issueNewDs(
         Id id,
-        uint256 expiry
+        uint256 expiry,
+        uint256 exchangeRates
     ) external override onlyInitialized(id) {
         State storage state = states[id];
 
@@ -78,7 +77,8 @@ contract ModuleCore is PsmCore, Initialize, VaultCore {
             ra,
             wa,
             address(this),
-            expiry
+            expiry,
+            exchangeRates
         );
 
         uint256 prevIdx = state.globalAssetIdx++;

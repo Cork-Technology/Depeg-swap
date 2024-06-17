@@ -5,7 +5,6 @@ library MathHelper {
     /// @dev default decimals for now to calculate price ratio
     uint8 internal constant DEFAULT_DECIMAL = 18;
 
-    // TODO :  distribute evenly the amount to amountWa and amountCt
     /**
      * @dev calculate the amount of wa and ct needed to provide AMM with liquidity in respect to the price ratio
      *
@@ -24,7 +23,7 @@ library MathHelper {
         assert((ct + wa) == amountWa);
     }
 
-    // TODO: test this, and maybe add support for 2 different decimals token? but since we're
+    // TODO: add support for 2 different decimals token? but since we're
     // using wa and ct, which both has 18 decimals so will default into that one for now
     /// @dev should only pass ERC20.decimals() onto the decimal field
     /// @dev will output price ratio in 18 decimal precision.
@@ -103,7 +102,62 @@ library MathHelper {
     function calculatePrecentageFee(
         uint256 fee1e8,
         uint256 amount
-    ) external pure returns (uint256) {
-        return (((amount * 1e18) * fee1e8) / (100 * 1e18)) / 1e18;
+    ) external pure returns (uint256 precentage) {
+        precentage = (((amount * 1e18) * fee1e8) / (100 * 1e18)) / 1e18;
+    }
+
+    /**
+     * @dev calcualte how much ct + ds user will receive based on the amount of the current exchange rate
+     * @param amount  the amount of user  deposit
+     * @param exchangeRate the current exchange rate between RA:(CT+DS)
+     */
+    function calculateDepositAmountWithExchangeRate(
+        uint256 amount,
+        uint256 exchangeRate
+    ) external pure returns (uint256 _amount) {
+        _amount = (amount * exchangeRate) / 1e18;
+    }
+
+    /**
+     * @dev caclulcate how much ra user will receive when redeeming with x amount of ds based on the current exchange rate
+     * @param amount the amount of ds user want to redeem
+     * @param exchangeRate the current exchange rate between RA:(CT+DS) 
+     */
+    function calculateRedeemAmountWithExchangeRate(
+        uint256 amount,
+        uint256 exchangeRate
+    ) external pure returns (uint256 _amount) {
+        _amount = (amount * 1e18) / exchangeRate;
+    }
+
+    // TODO : unit test this, just move here from psm
+    /// @notice calculate the accrued RA
+    /// @dev this function follow below equation :
+    /// '#' refers to the total circulation supply of that token.
+    /// '&' refers to the total amount of token in the PSM.
+    ///
+    /// amount * (&RA-#WA)/#CT)
+    function calculateAccruedRa(
+        uint256 amount,
+        uint256 availableRa,
+        uint256 totalWa,
+        uint256 totalCtIssued
+    ) internal pure returns (uint256 accrued) {
+        accrued = amount * ((availableRa - totalWa) / totalCtIssued);
+    }
+
+    // TODO : unit test this, just move here from psm
+    /// @notice calculate the accrued PA
+    /// @dev this function follow below equation :
+    /// '#' refers to the total circulation supply of that token.
+    /// '&' refers to the total amount of token in the PSM.
+    ///
+    /// amount * (&PA/#CT)
+    function calculateAccruedPa(
+        uint256 amount,
+        uint256 availablePa,
+        uint256 totalCtIssued
+    ) internal pure returns (uint256 accrued) {
+        accrued = amount * (availablePa / totalCtIssued);
     }
 }
