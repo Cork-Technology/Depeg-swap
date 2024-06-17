@@ -106,6 +106,7 @@ export type IssueNewSwapAssetsArg = {
   expiry: number;
   factory: Address;
   wa: Address;
+  rates?: bigint;
 };
 
 export async function mintRa(ra: Address, to: Address, amount: bigint) {
@@ -116,9 +117,11 @@ export async function mintRa(ra: Address, to: Address, amount: bigint) {
 export async function issueNewSwapAssets(arg: IssueNewSwapAssetsArg) {
   const { defaultSigner } = await getSigners();
 
+  const rate = arg.rates ?? parseEther("1");
+
   const contract = await hre.viem.getContractAt("ModuleCore", arg.moduleCore);
   const Id = await contract.read.getId([arg.pa, arg.ra]);
-  await contract.write.issueNewDs([Id, BigInt(arg.expiry)], {
+  await contract.write.issueNewDs([Id, BigInt(arg.expiry), rate], {
     account: defaultSigner.account,
   });
 

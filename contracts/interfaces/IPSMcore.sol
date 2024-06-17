@@ -45,6 +45,11 @@ interface IPSMcore {
 
     function depositPsm(Id id, uint256 amount) external;
 
+    function exchangeRate(
+        Id id,
+        uint256 dsId
+    ) external view returns (uint256 rates);
+
     function previewDepositPsm(
         Id id,
         uint256 amount

@@ -10,6 +10,7 @@ import "./PeggedAssetLib.sol";
 import "./RedemptionAssetLib.sol";
 import "./State.sol";
 import "./Guard.sol";
+import "./MathHelper.sol";
 
 // TODO : support native token
 // TODO : make an entrypoint that does not depend on permit
@@ -67,12 +68,16 @@ library PsmLibrary {
         Guard.safeBeforeExpired(ds);
 
         self.psmBalances.wa.lockFrom(amount, depositor);
-        ds.issue(depositor, amount);
+        uint256 normalizedRateAmount = MathHelper
+            .calculateDepositAmountWithExchangeRate(amount, ds.exchangeRate());
+
+        ds.issue(depositor, normalizedRateAmount);
     }
 
     /// @notice preview deposit
     /// @dev since we mint 1:1, we return the same amount,
     /// since rate only effective when redeeming with CT
+    // TODO: test this
     function previewDeposit(
         State storage self,
         uint256 amount
@@ -85,8 +90,11 @@ library PsmLibrary {
         DepegSwap storage ds = self.ds[dsId];
 
         Guard.safeBeforeExpired(ds);
-        ctReceived = amount;
-        dsReceived = amount;
+        uint256 normalizedRateAmount = MathHelper
+            .calculateDepositAmountWithExchangeRate(amount, ds.exchangeRate());
+
+        ctReceived = normalizedRateAmount;
+        dsReceived = normalizedRateAmount;
     }
 
     function _redeemDs(
@@ -123,11 +131,22 @@ library PsmLibrary {
             amount
         );
 
-        self.psmBalances.wa.unlockTo(amount, owner);
+        uint256 normalizedRateAmount = MathHelper
+            .calculateRedeemAmountWithExchangeRate(amount, ds.exchangeRate());
+
+        self.psmBalances.wa.unlockTo(normalizedRateAmount, owner);
     }
 
     function valueLocked(State storage self) internal view returns (uint256) {
         return self.psmBalances.wa.locked;
+    }
+
+    function exchangeRate(
+        State storage self,
+        uint256 dsId
+    ) internal view returns (uint256 rates) {
+        DepegSwap storage ds = self.ds[dsId];
+        rates = ds.exchangeRate();
     }
 
     /// @notice redeem an RA with DS + PA
@@ -152,6 +171,7 @@ library PsmLibrary {
     /// @notice simulate a ds redeem.
     /// @return assets how much RA the user would receive
     /// @dev since the rate is constant at 1:1, we return the same amount,
+    // TODO: test this
     function previewRedeemWithDs(
         State storage self,
         uint256 dsId,
@@ -159,7 +179,11 @@ library PsmLibrary {
     ) internal view returns (uint256 assets) {
         DepegSwap storage ds = self.ds[dsId];
         Guard.safeBeforeExpired(ds);
-        assets = amount;
+
+        uint256 normalizedRateAmount = MathHelper
+            .calculateRedeemAmountWithExchangeRate(amount, ds.exchangeRate());
+
+        assets = normalizedRateAmount;
     }
 
     /// @notice return the number of redeemed RA for a particular DS
@@ -183,46 +207,21 @@ library PsmLibrary {
         expiry = Asset(ds.ds).expiry();
     }
 
-    /// @notice calculate the accrued RA
-    /// @dev this function follow below equation :
-    /// '#' refers to the total circulation supply of that token.
-    /// '&' refers to the total amount of token in the PSM.
-    ///
-    /// amount * (&RA-#WA)/#CT)
-    function calculateAccruedRa(
-        uint256 amount,
-        uint256 availableRa,
-        uint256 totalWa,
-        uint256 totalCtIssued
-    ) internal pure returns (uint256 accrued) {
-        accrued = amount * ((availableRa - totalWa) / totalCtIssued);
-    }
-
-    /// @notice calculate the accrued PA
-    /// @dev this function follow below equation :
-    /// '#' refers to the total circulation supply of that token.
-    /// '&' refers to the total amount of token in the PSM.
-    ///
-    /// amount * (&PA/#CT)
-    function calculateAccruedPa(
-        uint256 amount,
-        uint256 availablePa,
-        uint256 totalCtIssued
-    ) internal pure returns (uint256 accrued) {
-        accrued = amount * (availablePa / totalCtIssued);
-    }
-
     function _calcRedeemAmount(
         State storage self,
         uint256 amount,
         uint256 totalCtIssued
     ) internal view returns (uint256 accruedPa, uint256 accruedRa) {
         uint256 availablePa = self.psmBalances.paBalance;
-        accruedPa = calculateAccruedPa(amount, availablePa, totalCtIssued);
+        accruedPa = MathHelper.calculateAccruedPa(
+            amount,
+            availablePa,
+            totalCtIssued
+        );
 
-        uint256 availableRa = self.info.redemptionAsset().psmBalance();
+        uint256 availableRa = self.psmBalances.raBalance;
         uint256 totalWa = self.psmBalances.wa.circulatingSupply();
-        accruedRa = calculateAccruedRa(
+        accruedRa = MathHelper.calculateAccruedRa(
             amount,
             availableRa,
             totalWa,

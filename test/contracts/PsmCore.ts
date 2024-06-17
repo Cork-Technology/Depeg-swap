@@ -26,7 +26,7 @@ describe("PSM core", function () {
         psmFixture.ra.address,
       ]);
 
-      await contract.write.issueNewDs([Id, BigInt(expiry)], {
+      await contract.write.issueNewDs([Id, BigInt(expiry), parseEther("1")], {
         account: defaultSigner.account,
       });
 
@@ -244,4 +244,4 @@ describe("PSM core", function () {
 
 // TODO : test preview output to be the same as actual function call
 // TODO : test redeem ct + ds in 1 scenario, verify the amount is correct!
-// TODO : make a gas profiling report.
+// TODO : add test suites for different exchange rate entirely

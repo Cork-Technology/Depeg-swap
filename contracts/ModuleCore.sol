@@ -29,7 +29,6 @@ contract ModuleCore is PsmCore, Initialize, VaultCore, LvDev, PsmDev {
     }
 
     // TODO : only allow to call this from config contract later or router
-    // TODO : handle this with the new abstract contract
     function initialize(
         address pa,
         address ra,
@@ -67,7 +66,8 @@ contract ModuleCore is PsmCore, Initialize, VaultCore, LvDev, PsmDev {
     // TODO : only allow to call this from config contract later or router
     function issueNewDs(
         Id id,
-        uint256 expiry
+        uint256 expiry,
+        uint256 exchangeRates
     ) external override onlyInitialized(id) {
         State storage state = states[id];
 
@@ -80,7 +80,8 @@ contract ModuleCore is PsmCore, Initialize, VaultCore, LvDev, PsmDev {
             ra,
             wa,
             address(this),
-            expiry
+            expiry,
+            exchangeRates
         );
 
         uint256 prevIdx = state.globalAssetIdx++;
