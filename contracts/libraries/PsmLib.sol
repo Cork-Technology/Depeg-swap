@@ -130,6 +130,14 @@ library PsmLibrary {
         return self.psmBalances.wa.locked;
     }
 
+    function exchangeRate(
+        State storage self,
+        uint256 dsId
+    ) internal view returns (uint256 rates) {
+        DepegSwap storage ds = self.ds[dsId];
+        rates = ds.exchangeRate();
+    }
+
     /// @notice redeem an RA with DS + PA
     /// @dev since we currently have no way of knowing if the PA contract implements permit,
     /// we depends on the frontend to make approval to the PA contract before calling this function.

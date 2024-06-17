@@ -5,6 +5,7 @@ import "./libraries/Pair.sol";
 import "./interfaces/IPSMcore.sol";
 import "./libraries/State.sol";
 import "./ModuleState.sol";
+import "./interfaces/IRates.sol";
 
 abstract contract PsmCore is IPSMcore, ModuleState {
     using PsmLibrary for State;
@@ -45,6 +46,14 @@ abstract contract PsmCore is IPSMcore, ModuleState {
         emit DsRedeemed(id, dsId, msg.sender, amount);
 
         state.redeemWithDs(msg.sender, amount, dsId, rawDsPermitSig, deadline);
+    }
+
+    function exchangeRate(
+        Id id,
+        uint256 dsId
+    ) external view override returns (uint256 rates) {
+        State storage state = states[id];
+        rates = state.exchangeRate(dsId);
     }
 
     function previewRedeemRaWithDs(
