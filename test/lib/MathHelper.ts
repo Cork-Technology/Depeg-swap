@@ -133,7 +133,7 @@ describe("Math Helper", function () {
       const amount = parseEther("10");
       const rate = parseEther("1");
 
-      const result = await contract.read.calculateRedeemAmountWithExchangeRate([
+      const result = await contract.read.calculateAmountWithExchangeRate([
         amount,
         rate,
       ]);
@@ -142,37 +142,42 @@ describe("Math Helper", function () {
 
       const rate2 = parseEther("2");
 
-      const result2 = await contract.read.calculateRedeemAmountWithExchangeRate(
-        [amount, rate2]
-      );
+      const result2 = await contract.read.calculateAmountWithExchangeRate([
+        amount,
+        rate2,
+      ]);
 
       expect(result2).to.equal(parseEther("20"));
 
       const rate3 = parseEther("0.5");
 
-      const result3 = await contract.read.calculateRedeemAmountWithExchangeRate(
-        [amount, rate3]
-      );
+      const result3 = await contract.read.calculateAmountWithExchangeRate([
+        amount,
+        rate3,
+      ]);
 
       expect(result3).to.equal(parseEther("5"));
 
       const rate4 = parseEther("0.6");
 
-      const result4 = await contract.read.calculateRedeemAmountWithExchangeRate(
-        [amount, rate4]
-      );
+      const result4 = await contract.read.calculateAmountWithExchangeRate([
+        amount,
+        rate4,
+      ]);
 
       expect(result4).to.equal(parseEther("6"));
 
-      const result5 = await contract.read.calculateRedeemAmountWithExchangeRate(
-        [parseEther("2"), rate4]
-      );
+      const result5 = await contract.read.calculateAmountWithExchangeRate([
+        parseEther("2"),
+        rate4,
+      ]);
 
       expect(result5).to.equal(parseEther("1.2"));
 
-      const result6 = await contract.read.calculateRedeemAmountWithExchangeRate(
-        [parseEther("0.5"), rate3]
-      );
+      const result6 = await contract.read.calculateAmountWithExchangeRate([
+        parseEther("0.5"),
+        rate3,
+      ]);
 
       expect(result6).to.equal(parseEther("0.25"));
     });

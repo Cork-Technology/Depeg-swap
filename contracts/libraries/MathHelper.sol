@@ -106,7 +106,7 @@ library MathHelper {
         precentage = (((amount * 1e18) * fee1e8) / (100 * 1e18)) / 1e18;
     }
 
-    function calculateRedeemAmountWithExchangeRate(
+    function calculateAmountWithExchangeRate(
         uint256 amount,
         uint256 exchangeRate
     ) external pure returns (uint256) {
