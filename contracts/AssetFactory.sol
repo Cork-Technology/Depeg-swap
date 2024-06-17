@@ -8,7 +8,6 @@ import "./WrappedAsset.sol";
 import "./libraries/Pair.sol";
 import "./Asset.sol";
 
-// TODO : add LV asset
 contract AssetFactory is IAssetFactory, OwnableUpgradeable, UUPSUpgradeable {
     using PairLibrary for Pair;
 
@@ -134,7 +133,6 @@ contract AssetFactory is IAssetFactory, OwnableUpgradeable, UUPSUpgradeable {
             new Asset(DS_PREFIX, pairname, owner, expiry, psmExchangeRate)
         );
 
-        // TODO : tests this with ~100 pairs
         swapAssets[wa].push(Pair(ct, ds));
 
         deployed[ct] = true;

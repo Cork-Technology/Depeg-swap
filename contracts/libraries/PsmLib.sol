@@ -10,6 +10,7 @@ import "./PeggedAssetLib.sol";
 import "./RedemptionAssetLib.sol";
 import "./State.sol";
 import "./Guard.sol";
+import "./MathHelper.sol";
 
 // TODO : support native token
 // TODO : make an entrypoint that does not depend on permit
@@ -191,46 +192,21 @@ library PsmLibrary {
         expiry = Asset(ds.ds).expiry();
     }
 
-    /// @notice calculate the accrued RA
-    /// @dev this function follow below equation :
-    /// '#' refers to the total circulation supply of that token.
-    /// '&' refers to the total amount of token in the PSM.
-    ///
-    /// amount * (&RA-#WA)/#CT)
-    function calculateAccruedRa(
-        uint256 amount,
-        uint256 availableRa,
-        uint256 totalWa,
-        uint256 totalCtIssued
-    ) internal pure returns (uint256 accrued) {
-        accrued = amount * ((availableRa - totalWa) / totalCtIssued);
-    }
-
-    /// @notice calculate the accrued PA
-    /// @dev this function follow below equation :
-    /// '#' refers to the total circulation supply of that token.
-    /// '&' refers to the total amount of token in the PSM.
-    ///
-    /// amount * (&PA/#CT)
-    function calculateAccruedPa(
-        uint256 amount,
-        uint256 availablePa,
-        uint256 totalCtIssued
-    ) internal pure returns (uint256 accrued) {
-        accrued = amount * (availablePa / totalCtIssued);
-    }
-
     function _calcRedeemAmount(
         State storage self,
         uint256 amount,
         uint256 totalCtIssued
     ) internal view returns (uint256 accruedPa, uint256 accruedRa) {
         uint256 availablePa = self.psmBalances.paBalance;
-        accruedPa = calculateAccruedPa(amount, availablePa, totalCtIssued);
+        accruedPa = MathHelper.calculateAccruedPa(
+            amount,
+            availablePa,
+            totalCtIssued
+        );
 
         uint256 availableRa = self.info.redemptionAsset().psmBalance();
         uint256 totalWa = self.psmBalances.wa.circulatingSupply();
-        accruedRa = calculateAccruedRa(
+        accruedRa = MathHelper.calculateAccruedRa(
             amount,
             availableRa,
             totalWa,

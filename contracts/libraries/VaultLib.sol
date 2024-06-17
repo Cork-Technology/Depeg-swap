@@ -25,7 +25,6 @@ library VaultLibrary {
     /// redemption rights to another address while not having the rights
     error Unauthorized(address caller);
 
-    // TODO : integrate this
     function initialize(
         VaultState storage self,
         address lv,
@@ -77,7 +76,6 @@ library VaultLibrary {
         Guard.safeAfterExpired(ds);
     }
 
-    // TODO : check for initialization
     function deposit(
         State storage self,
         address from,
@@ -116,7 +114,6 @@ library VaultLibrary {
         self.vault.withdrawEligible[owner] = true;
     }
 
-    // TODO : test this
     function transferRedemptionRights(
         State storage self,
         address from,

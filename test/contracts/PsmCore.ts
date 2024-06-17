@@ -26,7 +26,7 @@ describe("PSM core", function () {
         psmFixture.ra.address,
       ]);
 
-      await contract.write.issueNewDs([Id, BigInt(expiry)], {
+      await contract.write.issueNewDs([Id, BigInt(expiry), parseEther("1")], {
         account: defaultSigner.account,
       });
 

@@ -166,6 +166,7 @@ describe("Asset Factory", function () {
       wa!,
       defaultSigner.account.address,
       BigInt(helper.expiry(100000)),
+      parseEther("1"),
     ]);
 
     const events = await contract.getEvents.AssetDeployed({
@@ -204,6 +205,7 @@ describe("Asset Factory", function () {
         wa!,
         defaultSigner.account.address,
         BigInt(helper.expiry(100000)),
+        parseEther("1"),
       ]);
     }
 
@@ -243,6 +245,7 @@ describe("Asset Factory", function () {
         wa!,
         defaultSigner.account.address,
         BigInt(helper.expiry(100000)),
+        parseEther("1"),
       ]);
     }
 
@@ -291,6 +294,7 @@ describe("Asset Factory", function () {
         wa!,
         defaultSigner.account.address,
         BigInt(helper.expiry(100000)),
+        parseEther("1"),
       ]);
     }
 
