@@ -49,11 +49,10 @@ abstract contract PsmCore is IPSMcore, ModuleState {
     }
 
     function exchangeRate(
-        Id id,
-        uint256 dsId
+        Id id
     ) external view override returns (uint256 rates) {
         State storage state = states[id];
-        rates = state.exchangeRate(dsId);
+        rates = state.exchangeRate();
     }
 
     function previewRedeemRaWithDs(
