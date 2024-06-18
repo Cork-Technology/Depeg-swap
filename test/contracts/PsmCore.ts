@@ -240,8 +240,57 @@ describe("PSM core", function () {
       expect(event.length).to.equal(1);
     });
   });
+
+  describe("with exchange rate", function () {
+    it("should deposit with correct exchange rate", async function () {
+      const { defaultSigner } = await helper.getSigners();
+      const fixture = await loadFixture(helper.ModuleCoreWithInitializedPsmLv);
+      const mintAmount = parseEther("1000");
+      const expTime = 10000;
+
+      await fixture.ra.write.approve([
+        fixture.moduleCore.contract.address,
+        mintAmount,
+      ]);
+
+      await helper.mintRa(
+        fixture.ra.address,
+        defaultSigner.account.address,
+        mintAmount
+      );
+
+      (await hre.viem.getContractAt("ERC20", fixture.pa.address)).write.approve(
+        [fixture.moduleCore.contract.address, parseEther("10")]
+      );
+
+      const { dsId } = await helper.issueNewSwapAssets({
+        expiry: helper.nowTimestampInSeconds() + 10000,
+        moduleCore: fixture.moduleCore.contract.address,
+        pa: fixture.pa.address,
+        ra: fixture.ra.address,
+        factory: fixture.factory.contract.address,
+        wa: fixture.wa.address,
+        // rates: parseEther(),
+      });
+
+      await fixture.moduleCore.contract.write.depositPsm(
+        [fixture.Id, parseEther("10")],
+        {
+          account: defaultSigner.account,
+        }
+      );
+
+      const event = await fixture.moduleCore.contract.getEvents.PsmDeposited({
+        Id: fixture.Id,
+        dsId,
+        depositor: defaultSigner.account.address,
+      });
+
+      expect(event.length).to.equal(1);
+    });
+    // test("should redeem DS with correct exchange rate", async function () {});
+    // test("should get correct preview output", async function () {});
+  });
 });
 
-// TODO : test preview output to be the same as actual function call
 // TODO : test redeem ct + ds in 1 scenario, verify the amount is correct!
-// TODO : add test suites for different exchange rate entirely

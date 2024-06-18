@@ -45,6 +45,11 @@ interface IPSMcore {
 
     function depositPsm(Id id, uint256 amount) external;
 
+    /**
+     * This determines the rate of how much the user will receive for the amount of asset they want to deposit.
+     * for example, if the rate is 1.5, then the user will need to deposit 1.5 token to get 1 CT and DS.
+     * @param id the id of the PSM
+     */
     function exchangeRate(Id id) external view returns (uint256 rates);
 
     function previewDepositPsm(
