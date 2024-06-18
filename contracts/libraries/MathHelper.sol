@@ -115,19 +115,19 @@ library MathHelper {
         uint256 amount,
         uint256 exchangeRate
     ) external pure returns (uint256 _amount) {
-        _amount = (amount * exchangeRate) / 1e18;
+        _amount = (amount * 1e18) / exchangeRate;
     }
 
     /**
      * @dev caclulcate how much ra user will receive when redeeming with x amount of ds based on the current exchange rate
      * @param amount the amount of ds user want to redeem
-     * @param exchangeRate the current exchange rate between RA:(CT+DS) 
+     * @param exchangeRate the current exchange rate between RA:(CT+DS)
      */
     function calculateRedeemAmountWithExchangeRate(
         uint256 amount,
         uint256 exchangeRate
     ) external pure returns (uint256 _amount) {
-        _amount = (amount * 1e18) / exchangeRate;
+        _amount = (amount * exchangeRate) / 1e18;
     }
 
     // TODO : unit test this, just move here from psm
