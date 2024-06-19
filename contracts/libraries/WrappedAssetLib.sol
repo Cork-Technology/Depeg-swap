@@ -62,8 +62,8 @@ library WrappedAssetLibrary {
 
     function unlockTo(
         WrappedAssetInfo storage self,
-        uint256 amount,
-        address to
+        address to,
+        uint256 amount
     ) internal {
         decLocked(self, amount);
         unlockToUnchecked(self, amount, to);
@@ -74,9 +74,6 @@ library WrappedAssetLibrary {
         uint256 amount,
         address to
     ) internal {
-        WrappedAsset(self._address).unwrap(amount);
-        IERC20 underlying = ERC20Wrapper(self._address).underlying();
-        underlying.transfer(to, amount);
+        WrappedAsset(self._address).unwrapTo(to, amount);
     }
 }
-

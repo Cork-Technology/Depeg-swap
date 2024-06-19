@@ -6,6 +6,7 @@ import { expect } from "chai";
 import hre from "hardhat";
 import { Address, formatEther, parseEther, WalletClient } from "viem";
 import * as helper from "../helper/TestHelper";
+import exp from "constants";
 
 describe("PSM core", function () {
   describe("issue pair", function () {
@@ -290,6 +291,149 @@ describe("PSM core", function () {
     });
     // test("should redeem DS with correct exchange rate", async function () {});
     // test("should get correct preview output", async function () {});
+  });
+
+  describe("cancel position", function () {
+    it("should cancel position", async function () {
+      const { defaultSigner } = await helper.getSigners();
+      const fixture = await loadFixture(helper.ModuleCoreWithInitializedPsmLv);
+      const mintAmount = parseEther("1");
+      const expTime = 10000;
+
+      await fixture.ra.write.approve([
+        fixture.moduleCore.contract.address,
+        mintAmount,
+      ]);
+
+      await helper.mintRa(
+        fixture.ra.address,
+        defaultSigner.account.address,
+        mintAmount
+      );
+
+      (await hre.viem.getContractAt("ERC20", fixture.pa.address)).write.approve(
+        [fixture.moduleCore.contract.address, parseEther("10")]
+      );
+
+      const { dsId, ds, ct } = await helper.issueNewSwapAssets({
+        expiry: helper.nowTimestampInSeconds() + 10000,
+        moduleCore: fixture.moduleCore.contract.address,
+        pa: fixture.pa.address,
+        ra: fixture.ra.address,
+        factory: fixture.factory.contract.address,
+        wa: fixture.wa.address,
+        rates: parseEther("0.5"),
+      });
+
+      await fixture.moduleCore.contract.write.depositPsm(
+        [fixture.Id, parseEther("1")],
+        {
+          account: defaultSigner.account,
+        }
+      );
+
+      const dsContract = await hre.viem.getContractAt("ERC20", ds!);
+      const dsBalance = await dsContract.read.balanceOf([
+        defaultSigner.account.address,
+      ]);
+
+      expect(dsBalance).to.equal(parseEther("2"));
+
+      const ctContract = await hre.viem.getContractAt("ERC20", ct!);
+      const ctBalance = await ctContract.read.balanceOf([
+        defaultSigner.account.address,
+      ]);
+
+      expect(ctBalance).to.equal(parseEther("2"));
+
+      await dsContract.write.approve([
+        fixture.moduleCore.contract.address,
+        parseEther("2"),
+      ]);
+
+      await ctContract.write.approve([
+        fixture.moduleCore.contract.address,
+        parseEther("2"),
+      ]);
+
+      await fixture.moduleCore.contract.write.redeemRaWithCtDs(
+        [fixture.Id, parseEther("2")],
+        {
+          account: defaultSigner.account,
+        }
+      );
+
+      const events = await fixture.moduleCore.contract.getEvents.Cancelled({
+        Id: fixture.Id,
+        redeemer: defaultSigner.account.address,
+        dsId,
+      });
+
+      const event = events[0];
+
+      expect(event.args.exchangeRates).to.equal(parseEther("0.5"));
+      expect(event.args.swapAmount).to.equal(parseEther("2"));
+      expect(event.args.raAmount).to.equal(parseEther("1"));
+
+      const raBalance = await fixture.ra.read.balanceOf([
+        defaultSigner.account.address,
+      ]);
+
+      expect(raBalance).to.equal(parseEther("1"));
+
+      const afterDsBalance = await dsContract.read.balanceOf([
+        defaultSigner.account.address,
+      ]);
+
+      expect(afterDsBalance).to.equal(parseEther("0"));
+
+      const afterCtBalance = await ctContract.read.balanceOf([
+        defaultSigner.account.address,
+      ]);
+
+      expect(afterCtBalance).to.equal(parseEther("0"));
+    });
+
+    it("should preview cancel position", async function () {
+      const { defaultSigner } = await helper.getSigners();
+      const fixture = await loadFixture(helper.ModuleCoreWithInitializedPsmLv);
+      const mintAmount = parseEther("1");
+      const expTime = 10000;
+
+      await fixture.ra.write.approve([
+        fixture.moduleCore.contract.address,
+        mintAmount,
+      ]);
+
+      await helper.mintRa(
+        fixture.ra.address,
+        defaultSigner.account.address,
+        mintAmount
+      );
+
+      (await hre.viem.getContractAt("ERC20", fixture.pa.address)).write.approve(
+        [fixture.moduleCore.contract.address, parseEther("10")]
+      );
+
+      const { dsId, ds, ct } = await helper.issueNewSwapAssets({
+        expiry: helper.nowTimestampInSeconds() + 10000,
+        moduleCore: fixture.moduleCore.contract.address,
+        pa: fixture.pa.address,
+        ra: fixture.ra.address,
+        factory: fixture.factory.contract.address,
+        wa: fixture.wa.address,
+        rates: parseEther("0.5"),
+      });
+
+      const [raAmount, rates] =
+        await fixture.moduleCore.contract.read.previewRedeemRaWithCtDs([
+          fixture.Id,
+          parseEther("2"),
+        ]);
+
+      expect(raAmount).to.equal(parseEther("1"));
+      expect(rates).to.equal(parseEther("0.5"));
+    });
   });
 });
 
