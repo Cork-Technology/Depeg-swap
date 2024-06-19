@@ -90,8 +90,8 @@ abstract contract LvDev is ModuleState, ILvDev {
 
         WrappedAssetLibrary.unlockTo(
             self.vault.balances.wa,
-            amount,
-            address(0)
+            address(0),
+            amount
         );
     }
 }

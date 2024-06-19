@@ -99,8 +99,8 @@ abstract contract PsmDev is ModuleState, IPsmDev {
 
         WrappedAssetLibrary.unlockTo(
             self.psmBalances.wa,
-            amount,
-            address(0)
+            address(0),
+            amount
         );
     }
 }
