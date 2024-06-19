@@ -11,6 +11,7 @@ import "./RedemptionAssetLib.sol";
 import "./State.sol";
 import "./Guard.sol";
 import "./MathHelper.sol";
+import "@openzeppelin/contracts/token/ERC20/extensions/ERC20Burnable.sol";
 
 // TODO : support native token
 // TODO : make an entrypoint that does not depend on permit
@@ -67,9 +68,12 @@ library PsmLibrary {
 
         Guard.safeBeforeExpired(ds);
 
-        self.psmBalances.wa.lockFrom(amount, depositor);
         uint256 normalizedRateAmount = MathHelper
             .calculateDepositAmountWithExchangeRate(amount, ds.exchangeRate());
+
+        self.psmBalances.totalCtIssued += normalizedRateAmount;
+
+        self.psmBalances.wa.lockFrom(amount, depositor);
 
         ds.issue(depositor, normalizedRateAmount);
     }
@@ -95,6 +99,39 @@ library PsmLibrary {
 
         ctReceived = normalizedRateAmount;
         dsReceived = normalizedRateAmount;
+    }
+
+    function previewRedeemRaWithCtDs(
+        State storage self,
+        uint256 amount
+    ) internal view returns (uint256 ra, uint256 dsId, uint256 rates) {
+        dsId = self.globalAssetIdx;
+        DepegSwap storage ds = self.ds[dsId];
+        Guard.safeBeforeExpired(ds);
+
+        rates = ds.exchangeRate();
+        ra = MathHelper.calculateRedeemAmountWithExchangeRate(amount, rates);
+    }
+
+    function redeemRaWithCtDs(
+        State storage self,
+        address owner,
+        uint256 amount
+    ) internal returns (uint256 ra, uint256 dsId, uint256 rates) {
+        dsId = self.globalAssetIdx;
+        DepegSwap storage ds = self.ds[dsId];
+        Guard.safeBeforeExpired(ds);
+
+        rates = ds.exchangeRate();
+
+        ra = MathHelper.calculateRedeemAmountWithExchangeRate(amount, rates);
+
+        self.psmBalances.totalCtIssued -= amount;
+
+        self.psmBalances.wa.unlockTo(owner, ra);
+
+        ERC20Burnable(ds.ct).burnFrom(owner, amount);
+        ERC20Burnable(ds.ds).burnFrom(owner, amount);
     }
 
     function _redeemDs(
@@ -134,7 +171,7 @@ library PsmLibrary {
         uint256 normalizedRateAmount = MathHelper
             .calculateRedeemAmountWithExchangeRate(amount, ds.exchangeRate());
 
-        self.psmBalances.wa.unlockTo(normalizedRateAmount, owner);
+        self.psmBalances.wa.unlockTo(owner, normalizedRateAmount);
     }
 
     function valueLocked(State storage self) internal view returns (uint256) {
