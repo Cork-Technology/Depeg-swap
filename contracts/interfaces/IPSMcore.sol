@@ -43,6 +43,22 @@ interface IPSMcore {
         uint256 raReceived
     );
 
+    /// @notice Emitted when a user cancels their DS position by depositing the CT + DS back into the PSM
+    /// @param Id The PSM id
+    /// @param dsId The DS id
+    /// @param redeemer The address of the redeemer
+    /// @param raAmount The amount of RA received
+    /// @param swapAmount The amount of CT + DS swapped
+    /// @param exchangeRates The exchange rate between RA:(CT+DS) at the time of the swap
+    event Cancelled(
+        Id indexed Id,
+        uint256 indexed dsId,
+        address indexed redeemer,
+        uint256 raAmount,
+        uint256 swapAmount,
+        uint256 exchangeRates
+    );
+
     function depositPsm(Id id, uint256 amount) external;
 
     /**
@@ -87,6 +103,13 @@ interface IPSMcore {
         uint256 dsId,
         uint256 amount
     ) external view returns (uint256 paReceived, uint256 raReceived);
+
+    function redeemRaWithCtDs(Id id, uint256 amount) external;
+
+    function previewRedeemRaWithCtDs(
+        Id id,
+        uint256 amount
+    ) external view returns (uint256 ra, uint256 rates);
 
     function valueLocked(Id id) external view returns (uint256);
 }
