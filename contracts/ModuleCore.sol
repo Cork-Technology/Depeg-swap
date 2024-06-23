@@ -87,4 +87,10 @@ contract ModuleCore is PsmCore, Initialize, VaultCore {
 
         emit Issued(id, idx, expiry, _ds, _ct);
     }
+
+    function lastDsId(
+        Id id
+    ) external view override returns (uint256 dsId) {
+        return states[id].globalAssetIdx;
+    }
 }
