@@ -5,7 +5,10 @@ import "./Pair.sol";
 import "./WrappedAssetLib.sol";
 import "./VaultConfig.sol";
 import "./LvAssetLib.sol";
+import "@openzeppelin/contracts/utils/structs/BitMaps.sol";
 
+// TODO : should refactor this into distinct structs for psm and lv states, especially the balances
+// as there are some fields that are used in PSM but not in LV
 struct State {
     /// @dev used to track current ds and ct for both lv and psm
     uint256 globalAssetIdx;
@@ -28,6 +31,7 @@ struct VaultState {
     Balances balances;
     VaultConfig config;
     LvAsset lv;
-    mapping(address => bool) withdrawEligible;
-    bool lpLiquidated;
+    /// @dev user => (dsId => amount)
+    mapping(address => uint256) withdrawEligible;
+    BitMaps.BitMap lpLiquidated;
 }

@@ -18,7 +18,13 @@ interface ICommon {
     /// @param ra The address of the redemption asset
     /// @param wa The address of the wrapped asset
     /// @param lv The address of the LV
-    event Initialized(Id indexed id, address indexed pa, address indexed ra, address wa, address lv);
+    event Initialized(
+        Id indexed id,
+        address indexed pa,
+        address indexed ra,
+        address wa,
+        address lv
+    );
 
     /// @notice Emitted when a new DS is issued for a given PSM
     /// @param Id The PSM id
@@ -31,5 +37,12 @@ interface ICommon {
         address ds,
         address ct
     );
-}
 
+    /**
+     * @notice Get the last DS id issued for a given module, the returned DS doesn't guarantee to be active
+     * @param id The current module id
+     * @return dsId The current effective DS id
+     *
+     */
+    function lastDsId(Id id) external view returns (uint256 dsId);
+}

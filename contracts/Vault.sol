@@ -23,16 +23,20 @@ abstract contract VaultCore is ModuleState, Context, IVault {
         lv = VaultLibrary.previewDeposit(amount);
     }
 
-    function requestRedemption(Id id) external override {
+    function requestRedemption(Id id, uint256 amount) external override {
         State storage state = states[id];
-        state.requestRedemption(_msgSender());
-        emit RedemptionRequested(id, _msgSender());
+        state.requestRedemption(_msgSender(), amount);
+        emit RedemptionRequested(id, _msgSender(), amount);
     }
 
-    function transferRedemptionRights(Id id, address to) external override {
+    function transferRedemptionRights(
+        Id id,
+        address to,
+        uint256 amount
+    ) external override {
         State storage state = states[id];
-        state.transferRedemptionRights(_msgSender(), to);
-        emit RedemptionRightTransferred(id, _msgSender(), to);
+        state.transferRedemptionRights(_msgSender(), to, amount);
+        emit RedemptionRightTransferred(id, _msgSender(), to, amount);
     }
 
     function redeemExpiredLv(
@@ -56,10 +60,15 @@ abstract contract VaultCore is ModuleState, Context, IVault {
         external
         view
         override
-        returns (uint256 attributedRa, uint256 attributedPa)
+        returns (
+            uint256 attributedRa,
+            uint256 attributedPa,
+            uint256 approvedAmount
+        )
     {
         State storage state = states[id];
-        (attributedRa, attributedPa) = state.previewRedeemExpired(amount);
+        (attributedRa, attributedPa, approvedAmount) = state
+            .previewRedeemExpired(amount, _msgSender());
     }
 
     function redeemEarlyLv(
