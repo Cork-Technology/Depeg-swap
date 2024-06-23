@@ -12,15 +12,22 @@ interface IVault {
     /// @notice Emitted when a user requests redemption of a given Vault
     /// @param Id The Module id that is used to reference both psm and lv of a given pair
     /// @param redeemer The address of the redeemer
-    event RedemptionRequested(Id indexed Id, address indexed redeemer);
+    /// @param amount The amount of the asset to be redeemed
+    event RedemptionRequested(
+        Id indexed Id,
+        address indexed redeemer,
+        uint256 amount
+    );
 
     /// @notice Emitted when a user transfers redemption rights of a given Vault
     /// @param Id The Module id that is used to reference both psm and lv of a given pair
     /// @param from The address of the previous owner of the redemption rights
+    /// @param to The address of the new owner of the redemption rights
     event RedemptionRightTransferred(
         Id indexed Id,
         address indexed from,
-        address indexed to
+        address indexed to,
+        uint256 amount
     );
 
     /// @notice Emitted when a user redeems expired Lv
@@ -50,6 +57,16 @@ interface IVault {
         uint256 feePrecentage
     );
 
+    /// @notice Emitted when a user cancels a redemption request
+    /// @param Id The Module id that is used to reference both psm and lv of a given pair
+    /// @param redeemer The address of the redeemer
+    /// @param amount The amount of the asset to be redeemed
+    event RedemptionRequestCancelled(
+        Id indexed Id,
+        address indexed redeemer,
+        uint256 amount
+    );
+
     /**
      * @notice Deposit a wrapped asset into a given vault
      * @param id The Module id that is used to reference both psm and lv of a given pair
@@ -69,17 +86,22 @@ interface IVault {
      * @notice Request redemption of a given vault at expiry
      * @param id The Module id that is used to reference both psm and lv of a given pair
      */
-    function requestRedemption(Id id) external;
+    function requestRedemption(Id id, uint256 amount) external;
 
     /**
      * @notice Transfer redemption rights of a given vault at expiry
      * @param id The Module id that is used to reference both psm and lv of a given pair
      * @param to The address of the new owner of the redemption rights
+     * @param amount The amount of the user locked LV token to be transferred
      */
-    function transferRedemptionRights(Id id, address to) external;
+    function transferRedemptionRights(
+        Id id,
+        address to,
+        uint256 amount
+    ) external;
 
     /**
-     * @notice Redeem expired lv
+     * @notice Redeem expired lv, when there's no active DS issuance, there's no cap on the amount of lv that can be redeemed.
      * @param id The Module id that is used to reference both psm and lv of a given pair
      * @param receiver  The address of the receiver
      * @param amount The amount of the asset to be redeemed
@@ -90,11 +112,15 @@ interface IVault {
      * @notice preview redeem expired lv
      * @param id The Module id that is used to reference both psm and lv of a given pair
      * @param amount The amount of the asset to be redeemed
+     * @return attributedRa The amount of ra that will be redeemed
+     * @return attributedPa The amount of pa that will be redeemed
+     * @return approvedAmount The amount of lv needed to be approved before redeeming, 
+     * this is necessary when the user doesn't have enough locked LV token to redeem the full amount
      */
     function previewRedeemExpiredLv(
         Id id,
         uint256 amount
-    ) external view returns (uint256 attributedRa, uint256 attributedPa);
+    ) external view returns (uint256 attributedRa, uint256 attributedPa, uint256 approvedAmount);
 
     /**
      * @notice Redeem lv before expiry
