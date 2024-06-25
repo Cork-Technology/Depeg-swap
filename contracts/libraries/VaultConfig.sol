@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.0;
 
+// TODO : remove all threshold
+
 struct VaultConfig {
     // 1 % = 1e18
     uint256 fee;

@@ -13,8 +13,12 @@ abstract contract ModuleState is ICommon {
     mapping(Id => State) internal states;
     address _factory;
 
-    constructor(address factory) {
-        _factory = factory;
+    function factory() external view returns (address) {
+        return _factory;
+    }
+
+    constructor(address factoryAddress) {
+        _factory = factoryAddress;
     }
 
     function getFactory() internal view returns (IAssetFactory) {
