@@ -11,6 +11,8 @@ const ModuleCore = buildModule("ModuleCore", (m) => {
     },
   });
 
+  m.call(contract, "initialize", [module]);
+
   return { module };
 });
 

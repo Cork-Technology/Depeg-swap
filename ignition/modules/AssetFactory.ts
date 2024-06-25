@@ -5,6 +5,6 @@ export default buildModule("AssetFactory", (m) => {
 
   const deployer = m.getAccount(1);
   const contract = m.contract("AssetFactory");
-  m.call(contract, "initialize", [], { from: deployer });
+
   return { contract };
 });
