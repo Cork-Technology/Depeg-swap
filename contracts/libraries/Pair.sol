@@ -2,7 +2,6 @@
 pragma solidity ^0.8.20;
 
 import "./PeggedAssetLib.sol";
-import "./RedemptionAssetLib.sol";
 import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 
 type Id is bytes32;
@@ -53,15 +52,13 @@ library PairLibrary {
 
     function redemptionAsset(
         Pair memory key
-    ) internal pure returns (RedemptionAsset memory ra) {
-        ra = RedemptionAsset({_address: key.pair1});
+    ) internal pure returns (address ra) {
+        ra = key.pair1;
     }
 
     function isInitialized(
         Pair memory key
     ) internal pure returns (bool status) {
-        status =
-            key.pair0 != address(0) &&
-            key.pair1 != address(0);
+        status = key.pair0 != address(0) && key.pair1 != address(0);
     }
 }

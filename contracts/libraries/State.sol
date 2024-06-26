@@ -2,7 +2,7 @@
 pragma solidity ^0.8.20;
 
 import "./Pair.sol";
-import "./WrappedAssetLib.sol";
+import "./RedemptionAssetManagerLib.sol";
 import "./VaultConfig.sol";
 import "./LvAssetLib.sol";
 import "@openzeppelin/contracts/utils/structs/BitMaps.sol";
@@ -19,11 +19,10 @@ struct State {
 }
 
 struct Balances {
-    WrappedAssetInfo wa;
+    RedemptionAssetManager ra;
     uint256 dsBalance;
     uint256 ctBalance;
     uint256 paBalance;
-    uint256 raBalance;
     uint256 totalCtIssued;
 }
 

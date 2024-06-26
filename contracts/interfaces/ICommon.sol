@@ -16,13 +16,11 @@ interface ICommon {
     /// @param id The PSM id
     /// @param pa The address of the pegged asset
     /// @param ra The address of the redemption asset
-    /// @param wa The address of the wrapped asset
     /// @param lv The address of the LV
     event Initialized(
         Id indexed id,
         address indexed pa,
         address indexed ra,
-        address wa,
         address lv
     );
 

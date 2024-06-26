@@ -7,13 +7,10 @@ interface IAssetFactory {
 
     /// @notice emitted when a new CT + DS assets is deployed
     event AssetDeployed(
-        address indexed wa,
+        address indexed ra,
         address indexed ct,
         address indexed ds
     );
-
-    /// @notice emitted when a new WrappedAsset is deployed
-    event WrappedAssetDeployed(address indexed ra, address indexed wa);
 
     /// @notice emitted when a new LvAsset is deployed
     event LvAssetDeployed(
@@ -22,18 +19,15 @@ interface IAssetFactory {
         address indexed lv
     );
 
-    function getDeployedWrappedAssets(
+    function getDeployedAssets(
         uint8 page,
         uint8 limit
-    )
-        external
-        view
-        returns (address[] memory ra, address[] memory wa, address[] memory lv);
+    ) external view returns (address[] memory ra, address[] memory lv);
 
     function isDeployed(address asset) external view returns (bool);
 
     function getDeployedSwapAssets(
-        address wa,
+        address ra,
         uint8 page,
         uint8 limit
     ) external view returns (address[] memory ct, address[] memory ds);
@@ -41,7 +35,6 @@ interface IAssetFactory {
     function deploySwapAssets(
         address ra,
         address pa,
-        address wa,
         address owner,
         uint256 expiry,
         uint256 psmExchangeRate
@@ -50,9 +43,6 @@ interface IAssetFactory {
     function deployLv(
         address ra,
         address pa,
-        address wa,
         address owner
     ) external returns (address lv);
-
-    function deployWrappedAsset(address ra) external returns (address wa);
 }
