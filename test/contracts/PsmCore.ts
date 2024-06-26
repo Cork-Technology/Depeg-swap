@@ -68,7 +68,6 @@ describe("PSM core", function () {
         pa: fixture.pa.address,
         ra: fixture.ra.address,
         factory: fixture.factory.contract.address,
-        wa: fixture.wa.address,
       });
 
       await fixture.moduleCore.contract.write.depositPsm(
@@ -117,7 +116,6 @@ describe("PSM core", function () {
         pa: fixture.pa.address,
         ra: fixture.ra.address,
         factory: fixture.factory.contract.address,
-        wa: fixture.wa.address,
       });
 
       await fixture.moduleCore.contract.write.depositPsm(
@@ -204,7 +202,6 @@ describe("PSM core", function () {
         pa: fixture.pa.address,
         ra: fixture.ra.address,
         factory: fixture.factory.contract.address,
-        wa: fixture.wa.address,
       });
 
       await fixture.moduleCore.contract.write.depositPsm(
@@ -270,7 +267,7 @@ describe("PSM core", function () {
         pa: fixture.pa.address,
         ra: fixture.ra.address,
         factory: fixture.factory.contract.address,
-        wa: fixture.wa.address,
+
         // rates: parseEther(),
       });
 
@@ -321,7 +318,7 @@ describe("PSM core", function () {
         pa: fixture.pa.address,
         ra: fixture.ra.address,
         factory: fixture.factory.contract.address,
-        wa: fixture.wa.address,
+
         rates: parseEther("0.5"),
       });
 
@@ -421,7 +418,7 @@ describe("PSM core", function () {
         pa: fixture.pa.address,
         ra: fixture.ra.address,
         factory: fixture.factory.contract.address,
-        wa: fixture.wa.address,
+
         rates: parseEther("0.5"),
       });
 

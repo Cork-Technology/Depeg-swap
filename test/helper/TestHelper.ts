@@ -94,7 +94,6 @@ export async function initializeNewPsmLv(arg: InitializeNewPsmArg) {
 
   return {
     lv: events[0].args.lv,
-    wa: events[0].args.wa,
     Id: events[0].args.id,
   };
 }
@@ -105,7 +104,6 @@ export type IssueNewSwapAssetsArg = {
   pa: Address;
   expiry: number;
   factory: Address;
-  wa: Address;
   rates?: bigint;
 };
 
@@ -181,34 +179,18 @@ export type CreateWaArg = {
   ra: Address;
 };
 
-export async function createWa(arg: CreateWaArg) {
-  const { defaultSigner } = await getSigners();
-  const contract = await hre.viem.getContractAt("AssetFactory", arg.factory);
-
-  await contract.write.deployWrappedAsset([arg.ra], {
-    account: defaultSigner.account,
-  });
-
-  const events = await contract.getEvents.WrappedAssetDeployed({
-    ra: arg.ra,
-  });
-
-  return events[0].args.wa;
-}
-
 export type CreateLvArg = {
   moduleCore: Address;
   ra: Address;
   pa: Address;
   factory: Address;
-  wa: Address;
 };
 
 export async function createLv(arg: CreateLvArg) {
   const { defaultSigner } = await getSigners();
   const contract = await hre.viem.getContractAt("AssetFactory", arg.factory);
 
-  await contract.write.deployLv([arg.ra, arg.pa, arg.wa, arg.moduleCore], {
+  await contract.write.deployLv([arg.ra, arg.pa, arg.moduleCore], {
     account: defaultSigner.account,
   });
 
@@ -310,7 +292,7 @@ export async function ModuleCoreWithInitializedPsmLv() {
   // 0 for now cause we dont have any amm
   const depositThreshold = parseEther("0");
 
-  const { Id, lv, wa } = await initializeNewPsmLv({
+  const { Id, lv } = await initializeNewPsmLv({
     moduleCore: moduleCore.contract.address,
     pa: pa.address,
     ra: ra.address,
@@ -325,7 +307,6 @@ export async function ModuleCoreWithInitializedPsmLv() {
     lv: await hre.viem.getContractAt("Asset", lv!),
     pa,
     ra,
-    wa: await hre.viem.getContractAt("WrappedAsset", wa!),
     Id: Id!,
     lvFee: fee,
     lvAmmWaDepositThreshold: depositThreshold,
