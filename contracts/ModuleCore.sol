@@ -44,20 +44,19 @@ contract ModuleCore is PsmCore, Initialize, VaultCore {
 
         IAssetFactory factory = IAssetFactory(_factory);
 
-        address wa = factory.deployWrappedAsset(ra);
-        address lv = factory.deployLv(ra, pa, wa, address(this));
+        address lv = factory.deployLv(ra, pa, address(this));
 
-        PsmLibrary.initialize(state, key, wa);
+        PsmLibrary.initialize(state, key);
         VaultLibrary.initialize(
             state.vault,
             lv,
             lvFee,
             lvAmmWaDepositThreshold,
             lvAmmCtDepositThreshold,
-            wa
+            ra
         );
 
-        emit Initialized(id, pa, ra, wa, lv);
+        emit Initialized(id, pa, ra, lv);
     }
 
     // TODO : only allow to call this from config contract later or router
@@ -70,12 +69,10 @@ contract ModuleCore is PsmCore, Initialize, VaultCore {
 
         address pa = state.info.pair0;
         address ra = state.info.pair1;
-        address wa = state.psmBalances.wa._address;
 
         (address _ct, address _ds) = IAssetFactory(_factory).deploySwapAssets(
             pa,
             ra,
-            wa,
             address(this),
             expiry,
             exchangeRates
@@ -88,9 +85,7 @@ contract ModuleCore is PsmCore, Initialize, VaultCore {
         emit Issued(id, idx, expiry, _ds, _ct);
     }
 
-    function lastDsId(
-        Id id
-    ) external view override returns (uint256 dsId) {
+    function lastDsId(Id id) external view override returns (uint256 dsId) {
         return states[id].globalAssetIdx;
     }
 }

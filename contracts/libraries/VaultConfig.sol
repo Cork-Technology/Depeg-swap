@@ -7,8 +7,8 @@ struct VaultConfig {
     // 1 % = 1e18
     uint256 fee;
     //
-    uint256 lpWaBalance;
-    uint256 ammWaDepositThreshold;
+    uint256 lpRaBalance;
+    uint256 ammRaDepositThreshold;
     //
     uint256 ammCtDepositThreshold;
     uint256 lpCtBalance;
@@ -25,8 +25,8 @@ library VaultConfigLibrary {
         return
             VaultConfig({
                 fee: fee,
-                ammWaDepositThreshold: ammWaDepositThreshold,
-                lpWaBalance: 0,
+                ammRaDepositThreshold: ammWaDepositThreshold,
+                lpRaBalance: 0,
                 lpCtBalance: 0,
                 ammCtDepositThreshold: ammCtDepositThreshold,
                 accmulatedFee: 0
@@ -37,7 +37,7 @@ library VaultConfigLibrary {
         VaultConfig memory self
     ) internal pure returns (bool) {
         return
-            (self.lpWaBalance > self.ammWaDepositThreshold) &&
+            (self.lpRaBalance > self.ammRaDepositThreshold) &&
             (self.lpCtBalance > self.ammCtDepositThreshold);
     }
 
@@ -49,7 +49,7 @@ library VaultConfigLibrary {
         VaultConfig memory self,
         uint256 ammDepositThreshold
     ) internal pure {
-        self.ammWaDepositThreshold = ammDepositThreshold;
+        self.ammRaDepositThreshold = ammDepositThreshold;
     }
 
 }
