@@ -6,25 +6,25 @@ library MathHelper {
     uint8 internal constant DEFAULT_DECIMAL = 18;
 
     /**
-     * @dev calculate the amount of wa and ct needed to provide AMM with liquidity in respect to the price ratio
+     * @dev calculate the amount of ra and ct needed to provide AMM with liquidity in respect to the price ratio
      *
-     * @param amountWa the total amount of liquidity user provide(e.g 2 WA)
+     * @param amountra the total amount of liquidity user provide(e.g 2 ra)
      * @param priceRatio the price ratio of the pair, should be retrieved from the AMM as sqrtx96 and be converted to ratio
-     * @return wa the amount of wa needed to provide AMM with liquidity
-     * @return ct the amount of ct needed to provide AMM with liquidity, also the amount of how much wa should be converted to ct
+     * @return ra the amount of ra needed to provide AMM with liquidity
+     * @return ct the amount of ct needed to provide AMM with liquidity, also the amount of how much ra should be converted to ct
      */
     function calculateAmounts(
-        uint256 amountWa,
+        uint256 amountra,
         uint256 priceRatio
-    ) external pure returns (uint256 wa, uint256 ct) {
-        ct = (amountWa * 1e18) / (priceRatio + 1e18);
-        wa = (amountWa - ct);
+    ) external pure returns (uint256 ra, uint256 ct) {
+        ct = (amountra * 1e18) / (priceRatio + 1e18);
+        ra = (amountra - ct);
 
-        assert((ct + wa) == amountWa);
+        assert((ct + ra) == amountra);
     }
 
     // TODO: add support for 2 different decimals token? but since we're
-    // using wa and ct, which both has 18 decimals so will default into that one for now
+    // using ra and ct, which both has 18 decimals so will default into that one for now
     /// @dev should only pass ERC20.decimals() onto the decimal field
     /// @dev will output price ratio in 18 decimal precision.
     function calculatePriceRatio(
@@ -82,16 +82,16 @@ library MathHelper {
 
     /**
      * calculate the early lv rate in respect to the amount given
-     * @param lvWaBalance the total amount of wa in the lv
+     * @param lvRaBalance the total amount of ra in the lv
      * @param totalLv the total amount of lv in the pool
      * @param amount the amount of lv user want to withdraw
      */
     function calculateEarlyLvRate(
-        uint256 lvWaBalance,
+        uint256 lvRaBalance,
         uint256 totalLv,
         uint256 amount
     ) external pure returns (uint256 received) {
-        received = (amount * ((lvWaBalance * 1e18) / totalLv)) / 1e18;
+        received = (amount * ((lvRaBalance * 1e18) / totalLv)) / 1e18;
     }
 
     /**
@@ -131,33 +131,17 @@ library MathHelper {
     }
 
     // TODO : unit test this, just move here from psm
-    /// @notice calculate the accrued RA
+    /// @notice calculate the accrued PA & RA
     /// @dev this function follow below equation :
     /// '#' refers to the total circulation supply of that token.
     /// '&' refers to the total amount of token in the PSM.
     ///
-    /// amount * (&RA-#WA)/#CT)
-    function calculateAccruedRa(
+    /// amount * (&PA or &RA/#CT)
+    function calculateAccrued(
         uint256 amount,
-        uint256 availableRa,
-        uint256 totalWa,
+        uint256 available,
         uint256 totalCtIssued
     ) internal pure returns (uint256 accrued) {
-        accrued = amount * ((availableRa - totalWa) / totalCtIssued);
-    }
-
-    // TODO : unit test this, just move here from psm
-    /// @notice calculate the accrued PA
-    /// @dev this function follow below equation :
-    /// '#' refers to the total circulation supply of that token.
-    /// '&' refers to the total amount of token in the PSM.
-    ///
-    /// amount * (&PA/#CT)
-    function calculateAccruedPa(
-        uint256 amount,
-        uint256 availablePa,
-        uint256 totalCtIssued
-    ) internal pure returns (uint256 accrued) {
-        accrued = amount * (availablePa / totalCtIssued);
+        accrued = amount * (available / totalCtIssued);
     }
 }
