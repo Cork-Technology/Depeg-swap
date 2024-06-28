@@ -24,8 +24,4 @@ interface IPsmDev {
     function psmIncreaseRaBalance(uint256 amount, Id id) external;
 
     function psmDecreaseRaBalance(uint256 amount, Id id) external;
-
-    function psmIncreaselockedWaBalance(uint256 amount, Id id) external;
-
-    function psmDecreaselockedWaBalance(uint256 amount, Id id) external;
 }

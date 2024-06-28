@@ -5,12 +5,10 @@ import "../interfaces/dev/IPsmDev.sol";
 import "./Dev.sol";
 import "../ModuleState.sol";
 import "../libraries/VaultLib.sol";
-import "../libraries/WrappedAssetLib.sol";
 import "../libraries/State.sol";
 
 abstract contract PsmDev is ModuleState, IPsmDev {
     using VaultLibrary for *;
-    using WrappedAssetLibrary for WrappedAssetInfo;
 
     function psmIncreaseCtBalance(
         address ct,
@@ -65,42 +63,13 @@ abstract contract PsmDev is ModuleState, IPsmDev {
         address ra = states[id].info.pair0;
 
         IDevToken(ra).mint(address(this), amount);
-        states[id].psmBalances.raBalance += amount;
+        states[id].psmBalances.ra.free += amount;
     }
 
     function psmDecreaseRaBalance(uint256 amount, Id id) external override {
         address ra = states[id].info.pair0;
 
         IDevToken(ra).burnSelf(amount);
-        states[id].psmBalances.raBalance -= amount;
-    }
-
-    function psmIncreaselockedWaBalance(
-        uint256 amount,
-        Id id
-    ) external override {
-        State storage self = states[id];
-        address ra = self.info.pair0;
-        IDevToken(ra).mint(address(this), amount);
-        
-        // mint RA, wrap it to WA and deposit to psm
-        self.psmBalances.wa.locked += amount;
-        WrappedAssetLibrary.approveAndWrap(
-            self.psmBalances.wa._address,
-            amount
-        );
-    }
-
-    function psmDecreaselockedWaBalance(
-        uint256 amount,
-        Id id
-    ) external override {
-        State storage self = states[id];
-
-        WrappedAssetLibrary.unlockTo(
-            self.psmBalances.wa,
-            address(0),
-            amount
-        );
+        states[id].psmBalances.ra.free -= amount;
     }
 }

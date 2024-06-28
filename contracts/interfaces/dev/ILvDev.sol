@@ -24,8 +24,4 @@ interface ILvDev {
     function lvIncreaseRaBalance(uint256 amount, Id id) external;
 
     function lvDecreaseRaBalance(uint256 amount, Id id) external;
-
-    function lvIncreaseFreeWaBalance(uint256 amount, Id id) external;
-
-    function lvDecreaseFreeWaBalance(uint256 amount, Id id) external;
 }
