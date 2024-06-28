@@ -5,7 +5,7 @@ import "./VaultConfig.sol";
 import "./Pair.sol";
 import "./LvAssetLib.sol";
 import "./PsmLib.sol";
-import "./WrappedAssetLib.sol";
+import "./RedemptionAssetManagerLib.sol";
 import "./MathHelper.sol";
 import "./Guard.sol";
 import "@openzeppelin/contracts/token/ERC20/extensions/ERC20Burnable.sol";
@@ -17,8 +17,8 @@ library VaultLibrary {
     using LvAssetLibrary for LvAsset;
     using VaultLibrary for VaultState;
     using PsmLibrary for State;
-    using WrappedAssetLibrary for WrappedAsset;
-    using WrappedAssetLibrary for WrappedAssetInfo;
+    using RedemptionAssetManagerLibrary for WrappedAsset;
+    using RedemptionAssetManagerLibrary for RedemptionAssetManager;
     using BitMaps for BitMaps.BitMap;
     using VaultLibrary for VaultState;
     using DepegSwapLibrary for DepegSwap;
@@ -40,7 +40,7 @@ library VaultLibrary {
         uint256 fee,
         uint256 ammWaDepositThreshold,
         uint256 ammCtDepositThreshold,
-        address wa
+        address ra
     ) internal {
         self.config = VaultConfigLibrary.initialize(
             fee,
@@ -49,7 +49,7 @@ library VaultLibrary {
         );
 
         self.lv = LvAssetLibrary.initialize(lv);
-        self.balances.wa = WrappedAssetLibrary.initialize(wa);
+        self.balances.ra = RedemptionAssetManagerLibrary.initialize(ra);
     }
 
     function provideAmmLiquidity(
@@ -68,7 +68,7 @@ library VaultLibrary {
         VaultState storage self
     ) internal view returns (uint160) {
         // TODO : placeholder
-        // 4 for now, so that every 4 wa there must be 1 ct
+        // 4 for now, so that every 4 ra there must be 1 ct
         return 158456325028528675187087900672;
     }
 
@@ -91,19 +91,19 @@ library VaultLibrary {
         uint256 amount
     ) internal {
         safeBeforeExpired(self);
-        self.vault.balances.wa.lockUnchecked(amount, from);
+        self.vault.balances.ra.lockUnchecked(amount, from);
 
         uint256 ratio = MathHelper.calculatePriceRatio(
             self.vault.getSqrtPriceX96(),
             MathHelper.DEFAULT_DECIMAL
         );
 
-        (uint256 wa, uint256 ct) = MathHelper.calculateAmounts(amount, ratio);
-        self.vault.config.lpWaBalance += wa;
+        (uint256 ra, uint256 ct) = MathHelper.calculateAmounts(amount, ratio);
+        self.vault.config.lpRaBalance += ra;
         self.vault.config.lpCtBalance += ct;
 
         if (self.vault.config.mustProvideLiquidity()) {
-            self.vault.provideAmmLiquidity(wa, ct);
+            self.vault.provideAmmLiquidity(ra, ct);
         }
 
         _limitOrderDs(amount);
@@ -193,15 +193,17 @@ library VaultLibrary {
         ct = 0;
     }
 
-    function _____tempUnwrapAllWaToSelf(State storage self) internal {
+    function _____tempTransferAllLpRaToSelf(State storage self) internal {
         // IMPORTANT : for now, we only unlock the wa to ourself
         // since we don't have the AMM LP yet
         // since the ds isn't sold right now so it's safe to do this
-        uint256 total = self.vault.config.lpWaBalance +
+        uint256 total = self.vault.config.lpRaBalance +
             self.vault.config.lpCtBalance;
-        self.vault.balances.raBalance += total;
 
-        self.vault.balances.wa.unlockToUnchecked(total, address(this));
+        self.vault.balances.ra.incFree(total);
+
+        self.vault.config.lpRaBalance = 0;
+        self.vault.config.lpCtBalance = 0;
     }
 
     function redeemExpired(
@@ -212,11 +214,10 @@ library VaultLibrary {
     ) internal returns (uint256 attributedRa, uint256 attributedPa) {
         uint256 dsId = self.globalAssetIdx;
         DepegSwap storage ds = self.ds[dsId];
-        Guard.safeAfterExpired(ds);
 
         uint256 userEligible = self.vault.withdrawEligible[owner];
 
-        if (userEligible == 0) {
+        if (userEligible == 0 && !ds.isExpired()) {
             revert Unauthorized(owner);
         }
 
@@ -234,23 +235,23 @@ library VaultLibrary {
             self.vault.withdrawEligible[owner] -= amount;
         }
 
-        if (!self.vault.lpLiquidated.get(dsId)) {
+        if (ds.isExpired() && !self.vault.lpLiquidated.get(dsId)) {
             _liquidatedLp(self, dsId);
             // FIXME : this will be changed after LV AMM integration with potentially bucketizing redeem amount
-            _____tempUnwrapAllWaToSelf(self);
-            assert(self.vault.balances.wa.locked == 0);
+            _____tempTransferAllLpRaToSelf(self);
+            assert(self.vault.balances.ra.locked == 0);
         }
 
         ERC20Burnable lv = ERC20Burnable(self.vault.lv._address);
 
         (attributedRa, attributedPa) = MathHelper.calculateBaseWithdrawal(
             lv.totalSupply(),
-            self.vault.balances.raBalance,
+            self.vault.balances.ra.free,
             self.vault.balances.paBalance,
             amount
         );
 
-        self.vault.balances.raBalance -= attributedRa;
+        self.vault.balances.ra.free -= attributedRa;
         self.vault.balances.paBalance -= attributedPa;
 
         //ra
@@ -292,7 +293,7 @@ library VaultLibrary {
     {
         ERC20Burnable lv = ERC20Burnable(self.vault.lv._address);
 
-        uint256 accruedRa = self.vault.balances.raBalance;
+        uint256 accruedRa = self.vault.balances.ra.free;
         uint256 accruedPa = self.vault.balances.paBalance;
         uint256 totalLv = lv.totalSupply();
 
@@ -359,7 +360,7 @@ library VaultLibrary {
 
         feePrecentage = self.vault.config.fee;
 
-        uint256 totalWa = self.vault.config.lpWaBalance +
+        uint256 totalWa = self.vault.config.lpRaBalance +
             self.vault.config.lpCtBalance;
 
         received = MathHelper.calculateEarlyLvRate(
@@ -375,8 +376,8 @@ library VaultLibrary {
 
         // calculate substracted LP liquidity in respect to the price ratio
         // this is done to minimize price impact
-        (uint256 wa, uint256 ct) = MathHelper.calculateAmounts(received, ratio);
-        self.vault.config.lpWaBalance -= wa;
+        (uint256 ra, uint256 ct) = MathHelper.calculateAmounts(received, ratio);
+        self.vault.config.lpRaBalance -= ra;
         self.vault.config.lpCtBalance -= ct;
 
         fee = MathHelper.calculatePrecentageFee(
@@ -403,7 +404,7 @@ library VaultLibrary {
         //
 
         ERC20Burnable(self.vault.lv._address).burnFrom(owner, amount);
-        self.vault.balances.wa.unlockToUnchecked(received, receiver);
+        self.vault.balances.ra.unlockToUnchecked(received, receiver);
         returnLpFunds(self, dsId);
     }
 
@@ -419,7 +420,7 @@ library VaultLibrary {
 
         feePrecentage = self.vault.config.fee;
 
-        uint256 totalWa = self.vault.config.lpWaBalance +
+        uint256 totalWa = self.vault.config.lpRaBalance +
             self.vault.config.lpCtBalance;
 
         received = MathHelper.calculateEarlyLvRate(

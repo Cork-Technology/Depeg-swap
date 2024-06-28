@@ -25,7 +25,6 @@ describe("LvCore", function () {
       moduleCore: fixture.moduleCore.contract.address,
       pa: fixture.pa.address,
       ra: fixture.ra.address,
-      wa: fixture.wa.address,
     });
 
     const lv = fixture.Id;
@@ -81,7 +80,6 @@ describe("LvCore", function () {
       moduleCore: fixture.moduleCore.contract.address,
       pa: fixture.pa.address,
       ra: fixture.ra.address,
-      wa: fixture.wa.address,
     });
 
     const lv = fixture.Id;
@@ -168,10 +166,10 @@ describe("LvCore", function () {
       moduleCore: fixture.moduleCore.contract.address,
       pa: fixture.pa.address,
       ra: fixture.ra.address,
-      wa: fixture.wa.address,
     });
 
     const lv = fixture.Id;
+
     await fixture.moduleCore.contract.write.depositLv([lv, depositAmount]);
     await fixture.moduleCore.contract.write.depositLv([lv, depositAmount], {
       account: secondSigner.account,
@@ -203,7 +201,6 @@ describe("LvCore", function () {
       moduleCore: fixture.moduleCore.contract.address,
       pa: fixture.pa.address,
       ra: fixture.ra.address,
-      wa: fixture.wa.address,
     });
     // should revert if we specified higher amount than requested
     await expect(
@@ -241,50 +238,6 @@ describe("LvCore", function () {
     expect(event[0].args.pa).to.be.equal(BigInt(0));
   });
 
-  it("should not be able to redeem when not requested", async function () {
-    const expiry = helper.expiry(1000000);
-    const depositAmount = parseEther("10");
-    const fixture = await loadFixture(helper.ModuleCoreWithInitializedPsmLv);
-    const { defaultSigner, signers } = await helper.getSigners();
-
-    await fixture.ra.write.mint([defaultSigner.account.address, depositAmount]);
-
-    await fixture.ra.write.approve([
-      fixture.moduleCore.contract.address,
-      depositAmount,
-    ]);
-
-    const { Id, dsId } = await helper.issueNewSwapAssets({
-      expiry,
-      factory: fixture.factory.contract.address,
-      moduleCore: fixture.moduleCore.contract.address,
-      pa: fixture.pa.address,
-      ra: fixture.ra.address,
-      wa: fixture.wa.address,
-    });
-
-    const lv = fixture.Id;
-    await fixture.moduleCore.contract.write.depositLv([lv, depositAmount]);
-
-    await time.increase(expiry + 1);
-
-    await fixture.lv.write.approve(
-      [fixture.moduleCore.contract.address, depositAmount],
-      {
-        account: defaultSigner.account,
-      }
-    );
-
-    await expect(
-      fixture.moduleCore.contract.write.redeemExpiredLv(
-        [lv, defaultSigner.account.address, depositAmount],
-        {
-          account: defaultSigner.account,
-        }
-      )
-    ).to.be.rejected;
-  });
-
   it("should redeem after transferring right", async function () {
     const expiry = helper.expiry(1000000000000);
     const depositAmount = parseEther("10");
@@ -313,7 +266,6 @@ describe("LvCore", function () {
       moduleCore: fixture.moduleCore.contract.address,
       pa: fixture.pa.address,
       ra: fixture.ra.address,
-      wa: fixture.wa.address,
     });
 
     const lv = fixture.Id;
@@ -377,7 +329,6 @@ describe("LvCore", function () {
       moduleCore: fixture.moduleCore.contract.address,
       pa: fixture.pa.address,
       ra: fixture.ra.address,
-      wa: fixture.wa.address,
     });
 
     const lv = fixture.Id;
@@ -424,7 +375,6 @@ describe("LvCore", function () {
       moduleCore: fixture.moduleCore.contract.address,
       pa: fixture.pa.address,
       ra: fixture.ra.address,
-      wa: fixture.wa.address,
     });
 
     const lv = fixture.Id;
@@ -481,7 +431,6 @@ describe("LvCore", function () {
       moduleCore: fixture.moduleCore.contract.address,
       pa: fixture.pa.address,
       ra: fixture.ra.address,
-      wa: fixture.wa.address,
     });
 
     const lv = fixture.Id;
@@ -561,7 +510,6 @@ describe("LvCore", function () {
       moduleCore: fixture.moduleCore.contract.address,
       pa: fixture.pa.address,
       ra: fixture.ra.address,
-      wa: fixture.wa.address,
     });
 
     const lv = fixture.Id;
@@ -610,7 +558,6 @@ describe("LvCore", function () {
       moduleCore: fixture.moduleCore.contract.address,
       pa: fixture.pa.address,
       ra: fixture.ra.address,
-      wa: fixture.wa.address,
     });
 
     const lv = fixture.Id;

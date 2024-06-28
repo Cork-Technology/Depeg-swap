@@ -19,7 +19,7 @@ contract AssetFactory is IAssetFactory, OwnableUpgradeable, UUPSUpgradeable {
     uint256 idx;
 
     mapping(Id => address) lvs;
-    mapping(uint256 => Pair) wrappedAssets;
+    mapping(uint256 => Pair) pairs;
     mapping(address => Pair[]) swapAssets;
     mapping(address => bool) deployed;
 
@@ -42,7 +42,7 @@ contract AssetFactory is IAssetFactory, OwnableUpgradeable, UUPSUpgradeable {
         __UUPSUpgradeable_init();
     }
 
-    function getDeployedWrappedAssets(
+    function getDeployedAssets(
         uint8 page,
         uint8 limit
     )
@@ -50,7 +50,7 @@ contract AssetFactory is IAssetFactory, OwnableUpgradeable, UUPSUpgradeable {
         view
         override
         withinLimit(limit)
-        returns (address[] memory ra, address[] memory wa, address[] memory lv)
+        returns (address[] memory ra, address[] memory lv)
     {
         uint256 start = uint256(page) * uint256(limit);
         uint256 end = start + uint256(limit);
@@ -61,25 +61,23 @@ contract AssetFactory is IAssetFactory, OwnableUpgradeable, UUPSUpgradeable {
         }
 
         if (start > idx) {
-            return (ra, wa, lv);
+            return (ra, lv);
         }
 
         ra = new address[](arrLen);
-        wa = new address[](arrLen);
         lv = new address[](arrLen);
 
         for (uint256 i = start; i < end; i++) {
-            Pair storage asset = wrappedAssets[i];
+            Pair storage asset = pairs[i];
             uint8 _idx = uint8(i - start);
 
             ra[_idx] = asset.pair0;
-            wa[_idx] = asset.pair1;
             lv[_idx] = lvs[asset.toId()];
         }
     }
 
     function getDeployedSwapAssets(
-        address wa,
+        address ra,
         uint8 page,
         uint8 limit
     )
@@ -89,29 +87,28 @@ contract AssetFactory is IAssetFactory, OwnableUpgradeable, UUPSUpgradeable {
         withinLimit(limit)
         returns (address[] memory ct, address[] memory ds)
     {
-        Pair[] storage assets = swapAssets[wa];
+        Pair[] storage _assets = swapAssets[ra];
 
         uint256 start = uint256(page) * uint256(limit);
         uint256 end = start + uint256(limit);
         uint256 arrLen = end - start;
 
-        if (end > assets.length) {
-            end = assets.length;
+        if (end > _assets.length) {
+            end = _assets.length;
         }
 
         ct = new address[](arrLen);
         ds = new address[](arrLen);
 
         for (uint256 i = start; i < end; i++) {
-            ct[i - start] = assets[i].pair0;
-            ds[i - start] = assets[i].pair1;
+            ct[i - start] = _assets[i].pair0;
+            ds[i - start] = _assets[i].pair1;
         }
     }
 
     function deploySwapAssets(
         address ra,
         address pa,
-        address wa,
         address owner,
         uint256 expiry,
         uint256 psmExchangeRate
@@ -133,18 +130,17 @@ contract AssetFactory is IAssetFactory, OwnableUpgradeable, UUPSUpgradeable {
             new Asset(DS_PREFIX, pairname, owner, expiry, psmExchangeRate)
         );
 
-        swapAssets[wa].push(Pair(ct, ds));
+        swapAssets[ra].push(Pair(ct, ds));
 
         deployed[ct] = true;
         deployed[ds] = true;
 
-        emit AssetDeployed(wa, ct, ds);
+        emit AssetDeployed(ra, ct, ds);
     }
 
     function deployLv(
         address ra,
         address pa,
-        address wa,
         address owner
     ) external override onlyOwner notDelegated returns (address lv) {
         lv = address(
@@ -158,25 +154,10 @@ contract AssetFactory is IAssetFactory, OwnableUpgradeable, UUPSUpgradeable {
                 0
             )
         );
-        Pair memory pair = Pair(ra, wa);
+        Pair memory pair = Pair(pa, ra);
         lvs[pair.toId()] = lv;
 
         emit LvAssetDeployed(ra, pa, lv);
-    }
-
-    // TODO : owner will be config contract later
-    function deployWrappedAsset(
-        address ra
-    ) external override onlyOwner notDelegated returns (address wa) {
-        uint256 _idx = idx++;
-
-        wa = address(new WrappedAsset(ra));
-
-        wrappedAssets[_idx] = Pair(ra, wa);
-
-        deployed[wa] = true;
-
-        emit WrappedAssetDeployed(ra, wa);
     }
 
     function _authorizeUpgrade(

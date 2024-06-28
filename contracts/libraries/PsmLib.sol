@@ -4,10 +4,9 @@ pragma solidity ^0.8.20;
 import "./../Asset.sol";
 import "./Pair.sol";
 import "./DepegSwapLib.sol";
-import "./WrappedAssetLib.sol";
+import "./RedemptionAssetManagerLib.sol";
 import "./SignatureHelperLib.sol";
 import "./PeggedAssetLib.sol";
-import "./RedemptionAssetLib.sol";
 import "./State.sol";
 import "./Guard.sol";
 import "./MathHelper.sol";
@@ -20,9 +19,8 @@ library PsmLibrary {
     using MinimalSignatureHelper for Signature;
     using PairLibrary for Pair;
     using DepegSwapLibrary for DepegSwap;
-    using WrappedAssetLibrary for WrappedAssetInfo;
+    using RedemptionAssetManagerLibrary for RedemptionAssetManager;
     using PeggedAssetLibrary for PeggedAsset;
-    using RedemptionAssetLibrary for RedemptionAsset;
 
     function isInitialized(
         State storage self
@@ -32,11 +30,10 @@ library PsmLibrary {
 
     function initialize(
         State storage self,
-        Pair memory key,
-        address wa
+        Pair memory key
     ) internal {
         self.info = key;
-        self.psmBalances.wa = WrappedAssetLibrary.initialize(wa);
+        self.psmBalances.ra = RedemptionAssetManagerLibrary.initialize(key.redemptionAsset());
     }
 
     /// @notice issue a new pair of DS, will fail if the previous DS isn't yet expired
@@ -73,7 +70,7 @@ library PsmLibrary {
 
         self.psmBalances.totalCtIssued += normalizedRateAmount;
 
-        self.psmBalances.wa.lockFrom(amount, depositor);
+        self.psmBalances.ra.lockFrom(amount, depositor);
 
         ds.issue(depositor, normalizedRateAmount);
     }
@@ -128,7 +125,7 @@ library PsmLibrary {
 
         self.psmBalances.totalCtIssued -= amount;
 
-        self.psmBalances.wa.unlockTo(owner, ra);
+        self.psmBalances.ra.unlockTo(owner, ra);
 
         ERC20Burnable(ds.ct).burnFrom(owner, amount);
         ERC20Burnable(ds.ds).burnFrom(owner, amount);
@@ -171,11 +168,11 @@ library PsmLibrary {
         uint256 normalizedRateAmount = MathHelper
             .calculateRedeemAmountWithExchangeRate(amount, ds.exchangeRate());
 
-        self.psmBalances.wa.unlockTo(owner, normalizedRateAmount);
+        self.psmBalances.ra.unlockTo(owner, normalizedRateAmount);
     }
 
     function valueLocked(State storage self) internal view returns (uint256) {
-        return self.psmBalances.wa.locked;
+        return self.psmBalances.ra.locked;
     }
 
     function exchangeRate(
@@ -247,21 +244,19 @@ library PsmLibrary {
     function _calcRedeemAmount(
         State storage self,
         uint256 amount,
-        uint256 totalCtIssued
+        uint256 totalCtIssued,
+        uint256 availableRa
     ) internal view returns (uint256 accruedPa, uint256 accruedRa) {
         uint256 availablePa = self.psmBalances.paBalance;
-        accruedPa = MathHelper.calculateAccruedPa(
+        accruedPa = MathHelper.calculateAccrued(
             amount,
             availablePa,
             totalCtIssued
         );
 
-        uint256 availableRa = self.psmBalances.raBalance;
-        uint256 totalWa = self.psmBalances.wa.circulatingSupply();
-        accruedRa = MathHelper.calculateAccruedRa(
+        accruedRa = MathHelper.calculateAccrued(
             amount,
             availableRa,
-            totalWa,
             totalCtIssued
         );
     }
@@ -276,7 +271,7 @@ library PsmLibrary {
         ds.ctRedeemed += amount;
         self.ctBalance += amount;
         self.paBalance -= accruedPa;
-        self.raBalance -= accruedRa;
+        self.ra.decFree(accruedRa);
     }
 
     function _afterCtRedeem(
@@ -300,7 +295,7 @@ library PsmLibrary {
 
         IERC20(ds.ct).transferFrom(owner, address(this), ctRedeemedAmount);
         self.info.peggedAsset().asErc20().transfer(owner, accruedPa);
-        self.info.redemptionAsset().asErc20().transfer(owner, accruedRa);
+        IERC20(self.info.redemptionAsset()).transfer(owner, accruedRa);
     }
 
     /// @notice redeem accrued RA + PA with CT on expiry
@@ -320,7 +315,8 @@ library PsmLibrary {
         Guard.safeAfterExpired(ds);
 
         uint256 totalCtIssued = IERC20(ds.ct).totalSupply();
-        (accruedPa, accruedRa) = _calcRedeemAmount(self, amount, totalCtIssued);
+        uint256 availableRa = self.psmBalances.ra.convertAllToFree();
+        (accruedPa, accruedRa) = _calcRedeemAmount(self, amount, totalCtIssued, availableRa);
         _beforeCtRedeem(self.psmBalances, ds, amount, accruedPa, accruedRa);
         _afterCtRedeem(
             self,
@@ -346,6 +342,7 @@ library PsmLibrary {
         Guard.safeAfterExpired(ds);
 
         uint256 totalCtIssued = IERC20(ds.ct).totalSupply();
-        (accruedPa, accruedRa) = _calcRedeemAmount(self, amount, totalCtIssued);
+        uint256 availableRa = self.psmBalances.ra.tryConvertAllToFee();
+        (accruedPa, accruedRa) = _calcRedeemAmount(self, amount, totalCtIssued,availableRa);
     }
 }
