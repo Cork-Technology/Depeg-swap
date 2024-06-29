@@ -103,7 +103,7 @@ abstract contract PsmCore is IPSMcore, ModuleState, Context {
         returns (uint256 paReceived, uint256 raReceived)
     {
         State storage state = states[id];
-        (paReceived, raReceived) = state.previewRedeemWithCt(amount, dsId);
+        (paReceived, raReceived) = state.previewRedeemWithCt(dsId, amount);
     }
 
     function valueLocked(Id id) external view override returns (uint256) {

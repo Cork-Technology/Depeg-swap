@@ -176,6 +176,8 @@ describe("PSM core", function () {
       const { defaultSigner } = await helper.getSigners();
       const fixture = await loadFixture(helper.ModuleCoreWithInitializedPsmLv);
       const mintAmount = parseEther("1000");
+      const redeemAmount = parseEther("5");
+      const depositAmount = parseEther("10");
       const expTime = 100000;
 
       await fixture.ra.write.approve([
@@ -193,7 +195,7 @@ describe("PSM core", function () {
       const deadline = BigInt(helper.expiry(expTime));
 
       (await hre.viem.getContractAt("ERC20", fixture.pa.address)).write.approve(
-        [fixture.moduleCore.contract.address, parseEther("10")]
+        [fixture.moduleCore.contract.address, depositAmount]
       );
 
       const { dsId, ds, ct, expiry } = await helper.issueNewSwapAssets({
@@ -205,7 +207,7 @@ describe("PSM core", function () {
       });
 
       await fixture.moduleCore.contract.write.depositPsm(
-        [fixture.Id, parseEther("10")],
+        [fixture.Id, depositAmount],
         {
           account: defaultSigner.account,
         }
@@ -214,15 +216,24 @@ describe("PSM core", function () {
       await time.increaseTo(expiry);
 
       const msgPermit = await helper.permit({
-        amount: parseEther("10"),
+        amount: redeemAmount,
         deadline,
         erc20contractAddress: ct!,
         psmAddress: fixture.moduleCore.contract.address,
         signer: defaultSigner,
       });
 
+      const [_, raReceivedPreview] =
+        await fixture.moduleCore.contract.read.previewRedeemWithCt([
+          fixture.Id,
+          dsId!,
+          redeemAmount,
+        ]);
+
+      expect(raReceivedPreview).to.equal(redeemAmount);
+
       await fixture.moduleCore.contract.write.redeemWithCT(
-        [fixture.Id, dsId!, parseEther("10"), msgPermit, deadline],
+        [fixture.Id, dsId!, redeemAmount, msgPermit, deadline],
         {
           account: defaultSigner.account,
         }
@@ -233,9 +244,8 @@ describe("PSM core", function () {
         redeemer: defaultSigner.account.address,
       });
 
-      console.log(formatEther(event[0].args.amount!));
-
-      expect(event.length).to.equal(1);
+      expect(event[0].args.amount!).to.equal(redeemAmount);
+      expect(event[0].args.raReceived!).to.equal(redeemAmount);
     });
   });
 
