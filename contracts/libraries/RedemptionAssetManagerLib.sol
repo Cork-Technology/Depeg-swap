@@ -57,7 +57,7 @@ library RedemptionAssetManagerLibrary {
         return self.free;
     }
 
-    function tryConvertAllToFee(
+    function tryConvertAllToFree(
         RedemptionAssetManager storage self
     ) internal view returns (uint256) {
         if (self.locked == 0) {

@@ -28,12 +28,11 @@ library PsmLibrary {
         status = self.info.isInitialized();
     }
 
-    function initialize(
-        State storage self,
-        Pair memory key
-    ) internal {
+    function initialize(State storage self, Pair memory key) internal {
         self.info = key;
-        self.psmBalances.ra = RedemptionAssetManagerLibrary.initialize(key.redemptionAsset());
+        self.psmBalances.ra = RedemptionAssetManagerLibrary.initialize(
+            key.redemptionAsset()
+        );
     }
 
     /// @notice issue a new pair of DS, will fail if the previous DS isn't yet expired
@@ -316,7 +315,14 @@ library PsmLibrary {
 
         uint256 totalCtIssued = IERC20(ds.ct).totalSupply();
         uint256 availableRa = self.psmBalances.ra.convertAllToFree();
-        (accruedPa, accruedRa) = _calcRedeemAmount(self, amount, totalCtIssued, availableRa);
+
+        (accruedPa, accruedRa) = _calcRedeemAmount(
+            self,
+            amount,
+            totalCtIssued,
+            availableRa
+        );
+
         _beforeCtRedeem(self.psmBalances, ds, amount, accruedPa, accruedRa);
         _afterCtRedeem(
             self,
@@ -342,7 +348,14 @@ library PsmLibrary {
         Guard.safeAfterExpired(ds);
 
         uint256 totalCtIssued = IERC20(ds.ct).totalSupply();
-        uint256 availableRa = self.psmBalances.ra.tryConvertAllToFee();
-        (accruedPa, accruedRa) = _calcRedeemAmount(self, amount, totalCtIssued,availableRa);
+
+        uint256 availableRa = self.psmBalances.ra.tryConvertAllToFree();
+
+        (accruedPa, accruedRa) = _calcRedeemAmount(
+            self,
+            amount,
+            totalCtIssued,
+            availableRa
+        );
     }
 }
