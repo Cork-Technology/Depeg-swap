@@ -286,14 +286,16 @@ describe("LvCore", function () {
 
     await time.increase(expiry + 1);
 
+    const redeemAmount = depositAmount / BigInt(2);
+
     await fixture.moduleCore.contract.write.transferRedemptionRights([
       lv,
       secondSigner.account.address,
-      depositAmount,
+      redeemAmount,
     ]);
 
     await fixture.moduleCore.contract.write.redeemExpiredLv(
-      [lv, secondSigner.account.address, depositAmount],
+      [lv, secondSigner.account.address, redeemAmount],
       {
         account: secondSigner.account,
       }
@@ -306,7 +308,7 @@ describe("LvCore", function () {
 
     expect(event.length).to.be.equal(1);
 
-    expect(event[0].args.ra).to.be.equal(depositAmount);
+    expect(event[0].args.ra).to.be.equal(redeemAmount);
     expect(event[0].args.pa).to.be.equal(BigInt(0));
   });
 

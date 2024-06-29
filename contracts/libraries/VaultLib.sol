@@ -171,7 +171,7 @@ library VaultLibrary {
             revert InsufficientBalance(from, amount, initialOwneramount);
         }
 
-        self.vault.withdrawEligible[to] += initialOwneramount;
+        self.vault.withdrawEligible[to] += amount;
         self.vault.withdrawEligible[from] -= amount;
     }
 
