@@ -11,6 +11,8 @@ import "./Guard.sol";
 import "@openzeppelin/contracts/token/ERC20/extensions/ERC20Burnable.sol";
 import "@openzeppelin/contracts/utils/structs/BitMaps.sol";
 
+import "hardhat/console.sol";
+
 library VaultLibrary {
     using VaultConfigLibrary for VaultConfig;
     using PairLibrary for Pair;
@@ -261,14 +263,18 @@ library VaultLibrary {
 
         // we need to burn the LV token that's redeemed, if the user withdraw without a cap
         // then we also need to burn the remaining user LV token that's not locked in the LV
-        uint256 burnSelfAmount = userEligible;
-        // we only need to burn user LV when the user redeem more LV than requested
+        uint256 burnSelfAmount;
         uint256 burnUserAmount;
 
-        if (userEligible < amount) {
+        // we only need to burn user LV when the user redeem more LV than requested
+        if (amount > userEligible) {
             burnUserAmount = amount - userEligible;
+            burnSelfAmount = userEligible;
+        } else {
+            burnSelfAmount = amount;
         }
 
+        console.log(burnSelfAmount, burnUserAmount, amount);
         assert(burnSelfAmount + burnUserAmount == amount);
 
         self.vault.lv.burnSelf(burnSelfAmount);

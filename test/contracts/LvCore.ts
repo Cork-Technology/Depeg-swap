@@ -291,7 +291,7 @@ describe("LvCore", function () {
     await fixture.moduleCore.contract.write.transferRedemptionRights([
       lv,
       secondSigner.account.address,
-      redeemAmount,
+      depositAmount,
     ]);
 
     await fixture.moduleCore.contract.write.redeemExpiredLv(
