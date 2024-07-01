@@ -18,7 +18,7 @@ library VaultLibrary {
     using VaultLibrary for VaultState;
     using PsmLibrary for State;
     using RedemptionAssetManagerLibrary for WrappedAsset;
-    using RedemptionAssetManagerLibrary for RedemptionAssetManager;
+    using RedemptionAssetManagerLibrary for PsmRedemptionAssetManager;
     using BitMaps for BitMaps.BitMap;
     using VaultLibrary for VaultState;
     using DepegSwapLibrary for DepegSwap;
@@ -102,6 +102,8 @@ library VaultLibrary {
         self.vault.config.lpRaBalance += ra;
         self.vault.config.lpCtBalance += ct;
 
+        PsmLibrary.lvIssue(self, amount);
+
         if (self.vault.config.mustProvideLiquidity()) {
             self.vault.provideAmmLiquidity(ra, ct);
         }
@@ -184,8 +186,7 @@ library VaultLibrary {
         // 1. The AMM LP is redeemed to receive CT + WA
         // 2. Any excess DS in the LV is paired with CT to mint WA
         // 3. The excess CT is used to claim RA + PA as described above
-        // 4. All of the above WA get collected in a WA container, the WA is used to redeem RA
-        // 5. End state: Only RA + redeemed PA remains
+        // 4. End state: Only RA + redeemed PA remains
 
         self.vault.lpLiquidated.set(dsId);
 

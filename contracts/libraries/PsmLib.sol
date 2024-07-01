@@ -19,7 +19,7 @@ library PsmLibrary {
     using MinimalSignatureHelper for Signature;
     using PairLibrary for Pair;
     using DepegSwapLibrary for DepegSwap;
-    using RedemptionAssetManagerLibrary for RedemptionAssetManager;
+    using RedemptionAssetManagerLibrary for PsmRedemptionAssetManager;
     using PeggedAssetLibrary for PeggedAsset;
 
     function isInitialized(
@@ -67,11 +67,19 @@ library PsmLibrary {
         uint256 normalizedRateAmount = MathHelper
             .calculateDepositAmountWithExchangeRate(amount, ds.exchangeRate());
 
-        self.psmBalances.totalCtIssued += normalizedRateAmount;
-
         self.psmBalances.ra.lockFrom(amount, depositor);
 
         ds.issue(depositor, normalizedRateAmount);
+    }
+
+    // This is here just for semantics, since in the whitepaper, all the CT DS issuance
+    // happens in the PSM, although they essentially lives in the same contract, we leave it here just for consistency sake
+    function lvIssue(State storage self, uint256 amount) internal {
+        uint256 dsId = self.globalAssetIdx;
+
+        DepegSwap storage ds = self.ds[dsId];
+
+        ds.issue(address(this), amount);
     }
 
     /// @notice preview deposit
@@ -121,8 +129,6 @@ library PsmLibrary {
         rates = ds.exchangeRate();
 
         ra = MathHelper.calculateRedeemAmountWithExchangeRate(amount, rates);
-
-        self.psmBalances.totalCtIssued -= amount;
 
         self.psmBalances.ra.unlockTo(owner, ra);
 

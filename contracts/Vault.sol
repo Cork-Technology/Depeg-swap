@@ -17,6 +17,14 @@ abstract contract VaultCore is ModuleState, Context, IVault {
         emit LvDeposited(id, _msgSender(), amount);
     }
 
+    function lockedLvfor(
+        Id id,
+        address user
+    ) external view returns (uint256 locked) {
+        State storage state = states[id];
+        locked = state.lvLockedFor(user);
+    }
+
     function previewLvDeposit(
         uint256 amount
     ) external pure override returns (uint256 lv) {

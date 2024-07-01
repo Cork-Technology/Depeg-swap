@@ -114,13 +114,20 @@ interface IVault {
      * @param amount The amount of the asset to be redeemed
      * @return attributedRa The amount of ra that will be redeemed
      * @return attributedPa The amount of pa that will be redeemed
-     * @return approvedAmount The amount of lv needed to be approved before redeeming, 
+     * @return approvedAmount The amount of lv needed to be approved before redeeming,
      * this is necessary when the user doesn't have enough locked LV token to redeem the full amount
      */
     function previewRedeemExpiredLv(
         Id id,
         uint256 amount
-    ) external view returns (uint256 attributedRa, uint256 attributedPa, uint256 approvedAmount);
+    )
+        external
+        view
+        returns (
+            uint256 attributedRa,
+            uint256 attributedPa,
+            uint256 approvedAmount
+        );
 
     /**
      * @notice Redeem lv before expiry
@@ -129,6 +136,16 @@ interface IVault {
      * @param amount The amount of the asset to be redeemed
      */
     function redeemEarlyLv(Id id, address receiver, uint256 amount) external;
+
+    /**
+     * @notice Get the amount of locked lv for a given user
+     * @param id The Module id that is used to reference both psm and lv of a given pair
+     * @param user The address of the user
+     */
+    function lockedLvfor(
+        Id id,
+        address user
+    ) external view returns (uint256 locked);
 
     /**
      * @notice preview redeem lv before expiry
