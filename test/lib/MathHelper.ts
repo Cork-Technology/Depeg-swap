@@ -66,8 +66,8 @@ describe("Math Helper", function () {
       const contract = await loadFixture(deployMathHelper);
 
       const totalLv = parseEther("10");
-      const accruedRa = parseEther("10");
-      const accruedPa = parseEther("10");
+      const accruedRa = parseEther("1");
+      const accruedPa = parseEther("1");
       const amount = parseEther("2");
 
       const [raPerLv, paPerLv] = await contract.read.calculateBaseWithdrawal([
@@ -77,7 +77,7 @@ describe("Math Helper", function () {
         amount,
       ]);
 
-      const claimedAmount = parseEther("2");
+      const claimedAmount = parseEther("0.2");
 
       expect(raPerLv).to.equal(claimedAmount);
       expect(paPerLv).to.equal(claimedAmount);

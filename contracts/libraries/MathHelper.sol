@@ -53,32 +53,10 @@ library MathHelper {
         uint256 accruedPa,
         uint256 amount
     ) external pure returns (uint256 ra, uint256 pa) {
-        (uint256 raPerLv, uint256 paPerLv) = calculateLvValue(
-            totalLv,
-            accruedRa,
-            accruedPa
-        );
-
-        ra = (amount * raPerLv);
-        pa = (amount * paPerLv);
+        ra = (amount * ((accruedRa * 1e18) / totalLv)) / 1e18;
+        pa = (amount * ((accruedPa * 1e18) / totalLv)) / 1e18;
     }
 
-    /**
-     * @dev calculate the value of ra and pa per lv
-     * @param totalLv the total amount of lv in the pool
-     * @param accruedRa the total amount of ra accrued in the pool
-     * @param accruedPa the total amount of pa accrued in the pool
-     * @return ra the value of ra per lv
-     * @return pa the value of pa per lv
-     */
-    function calculateLvValue(
-        uint256 totalLv,
-        uint256 accruedRa,
-        uint256 accruedPa
-    ) internal pure returns (uint256 ra, uint256 pa) {
-        ra = accruedRa / totalLv;
-        pa = accruedPa / totalLv;
-    }
 
     /**
      * calculate the early lv rate in respect to the amount given
@@ -143,5 +121,17 @@ library MathHelper {
         uint256 totalCtIssued
     ) internal pure returns (uint256 accrued) {
         accrued = amount * (available / totalCtIssued);
+    }
+
+    function separateLiquidity(
+        uint256 totalAmount,
+        uint256 totalLvIssued,
+        uint256 totalLvWithdrawn
+    )
+        internal
+        pure
+        returns (uint256 attributedWithdrawal, uint256 attributedAmm)
+    {
+        uint256 ratePerLv = totalAmount / totalLvIssued;
     }
 }
