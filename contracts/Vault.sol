@@ -11,10 +11,25 @@ abstract contract VaultCore is ModuleState, Context, IVault {
     using PairLibrary for Pair;
     using VaultLibrary for State;
 
+    function reservedUserWithdrawal(
+        Id id
+    ) external view override returns (uint256 reservedRa, uint256 reservedPa) {
+        State storage state = states[id];
+        (reservedRa, reservedPa) = state.reservedForWithdrawal();
+    }
+
     function depositLv(Id id, uint256 amount) external override {
         State storage state = states[id];
         state.deposit(_msgSender(), amount);
         emit LvDeposited(id, _msgSender(), amount);
+    }
+
+    function lockedLvfor(
+        Id id,
+        address user
+    ) external view returns (uint256 locked) {
+        State storage state = states[id];
+        locked = state.lvLockedFor(user);
     }
 
     function previewLvDeposit(

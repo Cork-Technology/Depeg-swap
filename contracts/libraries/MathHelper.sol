@@ -53,31 +53,8 @@ library MathHelper {
         uint256 accruedPa,
         uint256 amount
     ) external pure returns (uint256 ra, uint256 pa) {
-        (uint256 raPerLv, uint256 paPerLv) = calculateLvValue(
-            totalLv,
-            accruedRa,
-            accruedPa
-        );
-
-        ra = (amount * raPerLv);
-        pa = (amount * paPerLv);
-    }
-
-    /**
-     * @dev calculate the value of ra and pa per lv
-     * @param totalLv the total amount of lv in the pool
-     * @param accruedRa the total amount of ra accrued in the pool
-     * @param accruedPa the total amount of pa accrued in the pool
-     * @return ra the value of ra per lv
-     * @return pa the value of pa per lv
-     */
-    function calculateLvValue(
-        uint256 totalLv,
-        uint256 accruedRa,
-        uint256 accruedPa
-    ) internal pure returns (uint256 ra, uint256 pa) {
-        ra = accruedRa / totalLv;
-        pa = accruedPa / totalLv;
+        ra = (amount * ((accruedRa * 1e18) / totalLv)) / 1e18;
+        pa = (amount * ((accruedPa * 1e18) / totalLv)) / 1e18;
     }
 
     /**
@@ -119,7 +96,7 @@ library MathHelper {
     }
 
     /**
-     * @dev caclulcate how much ra user will receive when redeeming with x amount of ds based on the current exchange rate
+     * @dev caclulcate how much ra user will receive based on an exchange rate
      * @param amount the amount of ds user want to redeem
      * @param exchangeRate the current exchange rate between RA:(CT+DS)
      */
@@ -142,6 +119,27 @@ library MathHelper {
         uint256 available,
         uint256 totalCtIssued
     ) internal pure returns (uint256 accrued) {
-        accrued = amount * (available / totalCtIssued);
+        accrued = (amount * ((available * 1e18) / totalCtIssued)) / 1e18;
+    }
+
+    function separateLiquidity(
+        uint256 totalAmount,
+        uint256 totalLvIssued,
+        uint256 totalLvWithdrawn
+    )
+        external
+        pure
+        returns (
+            uint256 attributedWithdrawal,
+            uint256 attributedAmm,
+            uint256 ratePerLv
+        )
+    {
+        // with 1e18 precision
+        ratePerLv = ((totalAmount * 1e18) / totalLvIssued);
+        attributedWithdrawal = (ratePerLv * totalLvWithdrawn) / 1e18;
+        attributedAmm = totalAmount - attributedWithdrawal;
+
+        assert((attributedWithdrawal + attributedAmm) == totalAmount);
     }
 }
