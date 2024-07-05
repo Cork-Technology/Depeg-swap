@@ -57,7 +57,6 @@ library MathHelper {
         pa = (amount * ((accruedPa * 1e18) / totalLv)) / 1e18;
     }
 
-
     /**
      * calculate the early lv rate in respect to the amount given
      * @param lvRaBalance the total amount of ra in the lv
@@ -97,7 +96,7 @@ library MathHelper {
     }
 
     /**
-     * @dev caclulcate how much ra user will receive when redeeming with x amount of ds based on the current exchange rate
+     * @dev caclulcate how much ra user will receive based on an exchange rate
      * @param amount the amount of ds user want to redeem
      * @param exchangeRate the current exchange rate between RA:(CT+DS)
      */
@@ -120,7 +119,7 @@ library MathHelper {
         uint256 available,
         uint256 totalCtIssued
     ) internal pure returns (uint256 accrued) {
-        accrued = amount * (available / totalCtIssued);
+        accrued = (amount * ((available * 1e18) / totalCtIssued)) / 1e18;
     }
 
     function separateLiquidity(
@@ -128,10 +127,19 @@ library MathHelper {
         uint256 totalLvIssued,
         uint256 totalLvWithdrawn
     )
-        internal
+        external
         pure
-        returns (uint256 attributedWithdrawal, uint256 attributedAmm)
+        returns (
+            uint256 attributedWithdrawal,
+            uint256 attributedAmm,
+            uint256 ratePerLv
+        )
     {
-        uint256 ratePerLv = totalAmount / totalLvIssued;
+        // with 1e18 precision
+        ratePerLv = ((totalAmount * 1e18) / totalLvIssued);
+        attributedWithdrawal = (ratePerLv * totalLvWithdrawn) / 1e18;
+        attributedAmm = totalAmount - attributedWithdrawal;
+
+        assert((attributedWithdrawal + attributedAmm) == totalAmount);
     }
 }
