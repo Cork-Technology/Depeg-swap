@@ -10,6 +10,7 @@ import "./MathHelper.sol";
 import "./Guard.sol";
 import "@openzeppelin/contracts/token/ERC20/extensions/ERC20Burnable.sol";
 import "@openzeppelin/contracts/utils/structs/BitMaps.sol";
+import "./VaultPoolLib.sol";
 
 import "hardhat/console.sol";
 
@@ -24,6 +25,7 @@ library VaultLibrary {
     using BitMaps for BitMaps.BitMap;
     using VaultLibrary for VaultState;
     using DepegSwapLibrary for DepegSwap;
+    using VaultPoolLibrary for VaultPool;
 
     /// @notice caller is not authorized to perform the action, e.g transfering
     /// redemption rights to another address while not having the rights
@@ -54,12 +56,18 @@ library VaultLibrary {
         self.balances.ra = RedemptionAssetManagerLibrary.initialize(ra);
     }
 
-    function provideAmmLiquidity(
-        VaultState storage self,
-        uint256 amountWa,
-        uint256 amountCt
-    ) internal {
-        // TODO : placeholder
+    function provideAmmLiquidityFromPool(State storage self) internal {
+        uint256 ratio = MathHelper.calculatePriceRatio(
+            self.vault.getSqrtPriceX96(),
+            MathHelper.DEFAULT_DECIMAL
+        );
+
+        (uint256 ra, uint256 ct) = self.vault.pool.rationedToAmm(ratio);
+
+        self.vault.config.lpRaBalance += ra;
+        self.vault.config.lpCtBalance += ct;
+
+        self.vault.pool.resetAmmPool();
     }
 
     function _limitOrderDs(uint256 amount) internal {
@@ -70,8 +78,22 @@ library VaultLibrary {
         VaultState storage self
     ) internal view returns (uint160) {
         // TODO : placeholder
-        // 4 for now, so that every 4 ra there must be 1 ct
-        return 158456325028528675187087900672;
+        // 1 for now, so that every 1 ra there must be 1 ct
+        return 79228162514264337593543950336;
+    }
+
+    // MUST be called on every new DS issuance
+    function onNewIssuanceAndExpiry(State storage self, uint256 dsId) internal {
+        // do nothing at first issuance
+        if (dsId == 0) {
+            return;
+        }
+
+        if (!self.vault.lpLiquidated.get(dsId)) {
+            _liquidatedLp(self, dsId);
+        }
+
+        provideAmmLiquidityFromPool(self);
     }
 
     function safeBeforeExpired(State storage self) internal view {
@@ -104,11 +126,7 @@ library VaultLibrary {
         self.vault.config.lpRaBalance += ra;
         self.vault.config.lpCtBalance += ct;
 
-        PsmLibrary.lvIssue(self, amount);
-
-        if (self.vault.config.mustProvideLiquidity()) {
-            self.vault.provideAmmLiquidity(ra, ct);
-        }
+        PsmLibrary.lvIssue(self, ct);
 
         _limitOrderDs(amount);
         self.vault.lv.issue(from, amount);
@@ -128,7 +146,8 @@ library VaultLibrary {
         uint256 amount
     ) internal {
         safeBeforeExpired(self);
-        self.vault.withdrawEligible[owner] += amount;
+        self.vault.pool.withdrawEligible[owner] += amount;
+        self.vault.pool.withdrawalPool.atrributedLv += amount;
         self.vault.lv.lockFrom(amount, owner);
     }
 
@@ -136,7 +155,7 @@ library VaultLibrary {
         State storage self,
         address owner
     ) internal view returns (uint256) {
-        return self.vault.withdrawEligible[owner];
+        return self.vault.pool.withdrawEligible[owner];
     }
 
     function cancelRedemptionRequest(
@@ -145,7 +164,7 @@ library VaultLibrary {
         uint256 amount
     ) internal {
         safeBeforeExpired(self);
-        uint256 userEligible = self.vault.withdrawEligible[owner];
+        uint256 userEligible = self.vault.pool.withdrawEligible[owner];
 
         if (userEligible == 0) {
             revert Unauthorized(msg.sender);
@@ -155,7 +174,8 @@ library VaultLibrary {
             revert InsufficientBalance(owner, amount, userEligible);
         }
 
-        self.vault.withdrawEligible[owner] -= amount;
+        self.vault.pool.withdrawEligible[owner] -= amount;
+        self.vault.pool.withdrawalPool.atrributedLv -= amount;
         self.vault.lv.unlockTo(amount, owner);
     }
 
@@ -165,7 +185,7 @@ library VaultLibrary {
         address to,
         uint256 amount
     ) internal {
-        uint256 initialOwneramount = self.vault.withdrawEligible[from];
+        uint256 initialOwneramount = self.vault.pool.withdrawEligible[from];
 
         if (initialOwneramount == 0) {
             revert Unauthorized(msg.sender);
@@ -175,38 +195,73 @@ library VaultLibrary {
             revert InsufficientBalance(from, amount, initialOwneramount);
         }
 
-        self.vault.withdrawEligible[to] += amount;
-        self.vault.withdrawEligible[from] -= amount;
+        self.vault.pool.withdrawEligible[to] += amount;
+        self.vault.pool.withdrawEligible[from] -= amount;
     }
 
-    function _liquidatedLp(
-        State storage self,
-        uint256 dsId
-    ) internal returns (uint256 wa, uint256 ct) {
+    function _liquidatedLp(State storage self, uint256 dsId) internal {
         // TODO : placeholder
         // the following things should happen here(taken directly from the whitepaper) :
-        // 1. The AMM LP is redeemed to receive CT + WA
-        // 2. Any excess DS in the LV is paired with CT to mint WA
-        // 3. The excess CT is used to claim RA + PA as described above
+        // 1. The AMM LP is redeemed to receive CT + RA
+        // 2. Any excess DS in the LV is paired with CT to redeem RA
+        // 3. The excess CT is used to claim RA + PA in the PSM
         // 4. End state: Only RA + redeemed PA remains
 
         self.vault.lpLiquidated.set(dsId);
-
-        wa = 0;
-        ct = 0;
-    }
-
-    function _____tempTransferAllLpRaToSelf(State storage self) internal {
         // IMPORTANT : for now, we only unlock the wa to ourself
         // since we don't have the AMM LP yet
         // since the ds isn't sold right now so it's safe to do this
-        uint256 total = self.vault.config.lpRaBalance +
-            self.vault.config.lpCtBalance;
+        // but that means we won't receive any pegged asset from the PSM yet
+        // since the number of CT and DS in LV will always be the same
+        // due to not having an actual AMM.
+        uint256 ammCtBalance = self.vault.config.lpCtBalance;
+        uint256 totalRa = self.vault.config.lpRaBalance + ammCtBalance;
+        PsmLibrary.lvRedeemRaWithCtDs(self, ammCtBalance, dsId);
 
-        self.vault.balances.ra.incFree(total);
+        // static values for PA for now.
+        uint256 ctAttributedToPa = 0;
+        uint256 pa = PsmLibrary.lvRedeemRaPaWithCt(self, ctAttributedToPa);
+
+        self.vault.pool.reserve(self.vault.lv.totalIssued(), totalRa, pa);
 
         self.vault.config.lpRaBalance = 0;
         self.vault.config.lpCtBalance = 0;
+    }
+
+    function reservedForWithdrawal(
+        State storage self
+    ) internal view returns (uint256 ra, uint256 pa) {
+        ra = self.vault.pool.withdrawalPool.raBalance;
+        pa = self.vault.pool.withdrawalPool.paBalance;
+    }
+
+    // FIXME : maybe remove this when the off-chain aggregator is finalized
+    function _tryLiquidateLp(
+        State storage self
+    )
+        internal
+        view
+        returns (
+            VaultWithdrawalPool memory withdrawalPool,
+            VaultAmmLiquidityPool memory ammLiquidityPool
+        )
+    {
+        // due to not having an actual AMM.
+        uint256 ammCtBalance = self.vault.config.lpCtBalance;
+        uint256 totalRa = self.vault.config.lpRaBalance + ammCtBalance;
+
+        withdrawalPool = self.vault.pool.withdrawalPool;
+        ammLiquidityPool = self.vault.pool.ammLiquidityPool;
+
+        // static values for PA for now.
+        uint256 ctAttributedToPa = 0;
+        VaultPoolLibrary.tryReserve(
+            withdrawalPool,
+            ammLiquidityPool,
+            self.vault.lv.totalIssued(),
+            totalRa,
+            ctAttributedToPa
+        );
     }
 
     function redeemExpired(
@@ -218,7 +273,7 @@ library VaultLibrary {
         uint256 dsId = self.globalAssetIdx;
         DepegSwap storage ds = self.ds[dsId];
 
-        uint256 userEligible = self.vault.withdrawEligible[owner];
+        uint256 userEligible = self.vault.pool.withdrawEligible[owner];
 
         if (userEligible == 0 && !ds.isExpired()) {
             revert Unauthorized(owner);
@@ -230,52 +285,25 @@ library VaultLibrary {
             revert InsufficientBalance(owner, amount, userEligible);
         }
 
-        // we set the user eligible to 0, since the user has redeemed more LV than requested
-        // else we just subtract the amount from the user eligible
-        if (userEligible <= amount) {
-            self.vault.withdrawEligible[owner] = 0;
-        } else {
-            self.vault.withdrawEligible[owner] -= amount;
-        }
-
         if (ds.isExpired() && !self.vault.lpLiquidated.get(dsId)) {
             _liquidatedLp(self, dsId);
-            // FIXME : this will be changed after LV AMM integration with potentially bucketizing redeem amount
-            _____tempTransferAllLpRaToSelf(self);
             assert(self.vault.balances.ra.locked == 0);
         }
 
         ERC20Burnable lv = ERC20Burnable(self.vault.lv._address);
 
-        (attributedRa, attributedPa) = MathHelper.calculateBaseWithdrawal(
-            lv.totalSupply(),
-            self.vault.balances.ra.free,
-            self.vault.balances.paBalance,
-            amount
-        );
-
-        self.vault.balances.ra.free -= attributedRa;
-        self.vault.balances.paBalance -= attributedPa;
+        uint256 burnUserAmount;
+        uint256 burnSelfAmount;
+        (attributedRa, attributedPa, burnUserAmount, burnSelfAmount) = self
+            .vault
+            .pool
+            .redeem(amount, owner);
 
         //ra
         IERC20(self.info.pair1).transfer(receiver, attributedRa);
         //pa
         IERC20(self.info.pair0).transfer(receiver, attributedPa);
 
-        // we need to burn the LV token that's redeemed, if the user withdraw without a cap
-        // then we also need to burn the remaining user LV token that's not locked in the LV
-        uint256 burnSelfAmount;
-        uint256 burnUserAmount;
-
-        // we only need to burn user LV when the user redeem more LV than requested
-        if (amount > userEligible) {
-            burnUserAmount = amount - userEligible;
-            burnSelfAmount = userEligible;
-        } else {
-            burnSelfAmount = amount;
-        }
-
-        console.log(burnSelfAmount, burnUserAmount, amount);
         assert(burnSelfAmount + burnUserAmount == amount);
 
         self.vault.lv.burnSelf(burnSelfAmount);
@@ -298,31 +326,44 @@ library VaultLibrary {
             uint256 approvedAmount
         )
     {
-        ERC20Burnable lv = ERC20Burnable(self.vault.lv._address);
+        uint256 dsId = self.globalAssetIdx;
+        DepegSwap storage ds = self.ds[dsId];
 
-        uint256 accruedRa = self.vault.balances.ra.free;
-        uint256 accruedPa = self.vault.balances.paBalance;
-        uint256 totalLv = lv.totalSupply();
+        uint256 userEligible = self.vault.pool.withdrawEligible[owner];
 
-        (attributedRa, attributedPa) = MathHelper.calculateBaseWithdrawal(
-            totalLv,
-            accruedRa,
-            accruedPa,
-            amount
-        );
-
-        uint256 userEligible = self.vault.withdrawEligible[owner];
-
-        // we need to burn the LV token that's redeemed, if the user withdraw without a cap
-        // then we also need to burn the remaining user LV token that's not locked in the LV
-        uint256 burnSelfAmount = userEligible;
-        // we only need to burn user LV when the user redeem more LV than requested
-
-        if (userEligible < amount) {
-            approvedAmount = amount - userEligible;
+        if (userEligible == 0 && !ds.isExpired()) {
+            revert Unauthorized(owner);
         }
 
-        assert(burnSelfAmount + approvedAmount == amount);
+        // user can only redeem up to the amount they requested, when there's a DS active
+        // if there's no DS active, then there's no cap on the amount of LV that can be redeemed
+        if (!ds.isExpired() && userEligible < amount) {
+            revert InsufficientBalance(owner, amount, userEligible);
+        }
+
+        VaultWithdrawalPool memory withdrawalPool = self
+            .vault
+            .pool
+            .withdrawalPool;
+
+        VaultAmmLiquidityPool memory ammLiquidityPool = self
+            .vault
+            .pool
+            .ammLiquidityPool;
+
+        if (ds.isExpired() && !self.vault.lpLiquidated.get(dsId)) {
+            (withdrawalPool, ammLiquidityPool) = _tryLiquidateLp(self);
+            assert(self.vault.balances.ra.locked == 0);
+        }
+
+        (attributedRa, attributedPa, approvedAmount) = VaultPoolLibrary
+            .tryRedeem(
+                self.vault.pool.withdrawEligible,
+                withdrawalPool,
+                ammLiquidityPool,
+                amount,
+                owner
+            );
     }
 
     // taken directly from spec document, technically below is what should happen in this function
@@ -362,16 +403,16 @@ library VaultLibrary {
         safeBeforeExpired(self);
         uint256 dsId = self.globalAssetIdx;
 
-        _liquidatedLp(self, dsId);
-        createWaPairings(self);
-
         feePrecentage = self.vault.config.fee;
 
-        uint256 totalWa = self.vault.config.lpRaBalance +
+        // again, it's safe to do this because there's the same amount of CT + DS in the LV so we treat CT the same as RA
+        uint256 totalRa = self.vault.config.lpRaBalance +
             self.vault.config.lpCtBalance;
 
+        console.log("totalRa", totalRa);
+
         received = MathHelper.calculateEarlyLvRate(
-            totalWa,
+            totalRa,
             IERC20(self.vault.lv._address).totalSupply(),
             amount
         );
@@ -384,6 +425,8 @@ library VaultLibrary {
         // calculate substracted LP liquidity in respect to the price ratio
         // this is done to minimize price impact
         (uint256 ra, uint256 ct) = MathHelper.calculateAmounts(received, ratio);
+
+        // TODO : change this into pool function
         self.vault.config.lpRaBalance -= ra;
         self.vault.config.lpCtBalance -= ct;
 
@@ -412,7 +455,6 @@ library VaultLibrary {
 
         ERC20Burnable(self.vault.lv._address).burnFrom(owner, amount);
         self.vault.balances.ra.unlockToUnchecked(received, receiver);
-        returnLpFunds(self, dsId);
     }
 
     function previewRedeemEarly(
@@ -427,11 +469,11 @@ library VaultLibrary {
 
         feePrecentage = self.vault.config.fee;
 
-        uint256 totalWa = self.vault.config.lpRaBalance +
+        uint256 totalRa = self.vault.config.lpRaBalance +
             self.vault.config.lpCtBalance;
 
         received = MathHelper.calculateEarlyLvRate(
-            totalWa,
+            totalRa,
             IERC20(self.vault.lv._address).totalSupply(),
             amount
         );
@@ -442,11 +484,6 @@ library VaultLibrary {
         );
 
         received = received - fee;
-    }
-
-    function returnLpFunds(State storage self, uint256 dsId) internal {
-        self.vault.lpLiquidated.unset(dsId);
-        // TODO : placeholder
     }
 
     function sellExcessCt(State storage self) internal {
