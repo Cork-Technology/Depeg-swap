@@ -18,11 +18,15 @@ library DepegSwapLibrary {
         return Asset(self.ds).isExpired();
     }
 
-    function isInitialized(DepegSwap storage self) internal view returns (bool) {
+    function isInitialized(
+        DepegSwap storage self
+    ) internal view returns (bool) {
         return self.ds != address(0) && self.ct != address(0);
     }
-    
-    function exchangeRate(DepegSwap storage self) internal view returns (uint256) {
+
+    function exchangeRate(
+        DepegSwap storage self
+    ) internal view returns (uint256) {
         return Asset(self.ds).exchangeRate();
     }
 
@@ -64,5 +68,10 @@ library DepegSwapLibrary {
     function issue(DepegSwap memory self, address to, uint256 amount) internal {
         Asset(self.ds).mint(to, amount);
         Asset(self.ct).mint(to, amount);
+    }
+
+    function burnBothforSelf(DepegSwap storage self, uint256 amount) internal {
+        Asset(self.ds).burn(amount);
+        Asset(self.ct).burn(amount);
     }
 }

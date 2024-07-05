@@ -24,6 +24,10 @@ contract Expiry is IExpiry {
     uint256 internal timestamp;
 
     constructor(uint256 _expiry) {
+        if (_expiry != 0 && _expiry < block.timestamp) {
+            revert Expired();
+        }
+
         timestamp = _expiry;
     }
 

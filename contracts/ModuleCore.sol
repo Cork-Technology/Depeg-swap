@@ -80,7 +80,9 @@ contract ModuleCore is PsmCore, Initialize, VaultCore {
 
         uint256 prevIdx = state.globalAssetIdx++;
         uint256 idx = state.globalAssetIdx;
-        state.issueNewPair(_ct, _ds, idx, prevIdx);
+
+        PsmLibrary.issueNewPair(state, _ct, _ds, idx, prevIdx);
+        VaultLibrary.onNewIssuanceAndExpiry(state, prevIdx);
 
         emit Issued(id, idx, expiry, _ds, _ct);
     }

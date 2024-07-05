@@ -8,7 +8,7 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "./../WrappedAsset.sol";
 import "./DepegSwapLib.sol";
 
-struct RedemptionAssetManager {
+struct PsmRedemptionAssetManager {
     address _address;
     uint256 locked;
     uint256 free;
@@ -19,33 +19,33 @@ library RedemptionAssetManagerLibrary {
 
     function initialize(
         address ra
-    ) internal pure returns (RedemptionAssetManager memory) {
-        return RedemptionAssetManager(ra, 0, 0);
+    ) internal pure returns (PsmRedemptionAssetManager memory) {
+        return PsmRedemptionAssetManager(ra, 0, 0);
     }
 
     function incLocked(
-        RedemptionAssetManager storage self,
+        PsmRedemptionAssetManager storage self,
         uint256 amount
     ) internal {
         self.locked = self.locked + amount;
     }
 
     function incFree(
-        RedemptionAssetManager storage self,
+        PsmRedemptionAssetManager storage self,
         uint256 amount
     ) internal {
         self.free = self.free + amount;
     }
 
     function decFree(
-        RedemptionAssetManager storage self,
+        PsmRedemptionAssetManager storage self,
         uint256 amount
     ) internal {
         self.free = self.free - amount;
     }
 
     function convertAllToFree(
-        RedemptionAssetManager storage self
+        PsmRedemptionAssetManager storage self
     ) internal returns (uint256) {
         if (self.locked == 0) {
             return self.free;
@@ -58,7 +58,7 @@ library RedemptionAssetManagerLibrary {
     }
 
     function tryConvertAllToFree(
-        RedemptionAssetManager storage self
+        PsmRedemptionAssetManager storage self
     ) internal view returns (uint256) {
         if (self.locked == 0) {
             return self.free;
@@ -68,20 +68,20 @@ library RedemptionAssetManagerLibrary {
     }
 
     function decLocked(
-        RedemptionAssetManager storage self,
+        PsmRedemptionAssetManager storage self,
         uint256 amount
     ) internal {
         self.locked = self.locked - amount;
     }
 
     function circulatingSupply(
-        RedemptionAssetManager memory self
+        PsmRedemptionAssetManager memory self
     ) internal view returns (uint256) {
         return IERC20(self._address).totalSupply() - self.locked;
     }
 
     function lockFrom(
-        RedemptionAssetManager storage self,
+        PsmRedemptionAssetManager storage self,
         uint256 amount,
         address from
     ) internal {
@@ -90,7 +90,7 @@ library RedemptionAssetManagerLibrary {
     }
 
     function lockUnchecked(
-        RedemptionAssetManager storage self,
+        PsmRedemptionAssetManager storage self,
         uint256 amount,
         address from
     ) internal {
@@ -98,7 +98,7 @@ library RedemptionAssetManagerLibrary {
     }
 
     function unlockTo(
-        RedemptionAssetManager storage self,
+        PsmRedemptionAssetManager storage self,
         address to,
         uint256 amount
     ) internal {
@@ -107,7 +107,7 @@ library RedemptionAssetManagerLibrary {
     }
 
     function unlockToUnchecked(
-        RedemptionAssetManager storage self,
+        PsmRedemptionAssetManager storage self,
         uint256 amount,
         address to
     ) internal {

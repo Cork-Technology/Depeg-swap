@@ -18,19 +18,40 @@ struct State {
     VaultState vault;
 }
 
+// TODO : to PSM balance
 struct Balances {
-    RedemptionAssetManager ra;
+    PsmRedemptionAssetManager ra;
     uint256 dsBalance;
     uint256 ctBalance;
     uint256 paBalance;
-    uint256 totalCtIssued;
+}
+
+struct VaultPool {
+    VaultWithdrawalPool withdrawalPool;
+    VaultAmmLiquidityPool ammLiquidityPool;
+    /// @dev user => (dsId => amount)
+    mapping(address => uint256) withdrawEligible;
+}
+struct VaultWithdrawalPool {
+    uint256 atrributedLv;
+    uint256 raExchangeRate;
+    uint256 paExchangeRate;
+    uint256 raBalance;
+    uint256 paBalance;
+    // FIXME : this is only temporary, for now
+    // we trate PA the same as RA, thus we also separate PA
+    // the difference is the PA here isn't being used as anything
+    // and for now will just sit there until rationed again at next expiry.
+    uint256 stagnatedPaBalance;
+}
+struct VaultAmmLiquidityPool {
+    uint256 balance;
 }
 
 struct VaultState {
     Balances balances;
     VaultConfig config;
     LvAsset lv;
-    /// @dev user => (dsId => amount)
-    mapping(address => uint256) withdrawEligible;
     BitMaps.BitMap lpLiquidated;
+    VaultPool pool;
 }
