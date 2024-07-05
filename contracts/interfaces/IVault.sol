@@ -159,4 +159,12 @@ interface IVault {
         external
         view
         returns (uint256 received, uint256 fee, uint256 feePrecentage);
+
+    /**
+     * Returns the amount of RA and PA reserved for user withdrawal
+     * @param id The Module id that is used to reference both psm and lv of a given pair
+     */
+    function reservedUserWithdrawal(
+        Id id
+    ) external view returns (uint256 reservedRa, uint256 reservedPa);
 }
