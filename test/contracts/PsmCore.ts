@@ -15,7 +15,7 @@ describe("PSM core", function () {
       const psmFixture = await loadFixture(
         helper.ModuleCoreWithInitializedPsmLv
       );
-      const expiry = helper.expiry(10);
+      const expiry = helper.expiry(1e18 * 1000);
 
       const contract = await hre.viem.getContractAt(
         "ModuleCore",
