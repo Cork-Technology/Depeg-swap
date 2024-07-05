@@ -29,12 +29,14 @@ struct Balances {
 struct VaultPool {
     VaultWithdrawalPool withdrawalPool;
     VaultAmmLiquidityPool ammLiquidityPool;
+    /// @dev user => (dsId => amount)
+    mapping(address => uint256) withdrawEligible;
 }
 struct VaultWithdrawalPool {
     uint256 atrributedLv;
     uint256 raExchangeRate;
     uint256 paExchangeRate;
-    uint256 raBalance; 
+    uint256 raBalance;
     uint256 paBalance;
     // FIXME : this is only temporary, for now
     // we trate PA the same as RA, thus we also separate PA
@@ -50,8 +52,6 @@ struct VaultState {
     Balances balances;
     VaultConfig config;
     LvAsset lv;
-    /// @dev user => (dsId => amount)
-    mapping(address => uint256) withdrawEligible;
     BitMaps.BitMap lpLiquidated;
     VaultPool pool;
 }
