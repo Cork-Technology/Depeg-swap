@@ -82,6 +82,23 @@ library PsmLibrary {
         ds.issue(address(this), amount);
     }
 
+    function lvRedeemRaWithCtDs(
+        State storage self,
+        uint256 amount,
+        uint256 dsId
+    ) internal {
+        DepegSwap storage ds = self.ds[dsId];
+
+        ds.burnBothforSelf(amount);
+    }
+
+    function lvRedeemRaPaWithCt(
+        State storage self,
+        uint256 amount
+    ) internal returns (uint256 pa) {
+        // just for semantics for now.
+    }
+
     /// @notice preview deposit
     /// @dev since we mint 1:1, we return the same amount,
     /// since rate only effective when redeeming with CT
