@@ -90,4 +90,18 @@ contract ModuleCore is PsmCore, Initialize, VaultCore {
     function lastDsId(Id id) external view override returns (uint256 dsId) {
         return states[id].globalAssetIdx;
     }
+
+    function underlyingAsset(
+        Id id
+    ) external view override returns (address ra, address pa) {
+        (ra, pa) = states[id].info.underlyingAsset();
+    }
+
+    function swapAsset(
+        Id id,
+        uint256 dsId
+    ) external view override returns (address ct, address ds) {
+        ct = states[id].ds[dsId].ct;
+        ds = states[id].ds[dsId].ds;
+    }
 }

@@ -50,6 +50,13 @@ library PairLibrary {
         pa = PeggedAsset({_address: key.pair0});
     }
 
+    function underlyingAsset(
+        Pair memory key
+    ) internal pure returns (address ra, address pa) {
+        pa = key.pair0;
+        ra = key.pair1;
+    }
+
     function redemptionAsset(
         Pair memory key
     ) internal pure returns (address ra) {
