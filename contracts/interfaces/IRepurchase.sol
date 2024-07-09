@@ -26,9 +26,8 @@ interface IRepurchase {
     /**
      * @notice returns the fee precentage for repurchasing(1e18 = 1%)
      * @param id the id of PSM
-     * @param dsId the id of the DS
      */
-    function fee(Id id, uint256 dsId) external view returns (uint256);
+    function repurchaseFee(Id id) external view returns (uint256);
 
     /**
      * @notice repurchase using RA
@@ -59,4 +58,10 @@ interface IRepurchase {
     function availableForRepurchase(
         Id id
     ) external view returns (uint256 pa, uint256 ds, uint256 dsId);
+
+    /**
+     * @notice returns the repurchase rates for a given DS
+     * @param id the id of PSM
+     */
+    function repurchaseRates(Id id) external view returns (uint256 rates);
 }

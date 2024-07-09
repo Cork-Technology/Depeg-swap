@@ -2,6 +2,7 @@
 pragma solidity ^0.8.20;
 import "./../Asset.sol";
 import "./SignatureHelperLib.sol";
+import "../interfaces/IRates.sol";
 
 struct DepegSwap {
     bool expiredEventEmitted;
@@ -28,6 +29,16 @@ library DepegSwapLibrary {
         DepegSwap storage self
     ) internal view returns (uint256) {
         return Asset(self.ds).exchangeRate();
+    }
+
+    function rates(
+        DepegSwap storage self
+    ) internal view returns (uint256 rate) {
+        uint256 dsRate = IRates(self.ds).exchangeRate();
+        uint256 ctRate = IRates(self.ct).exchangeRate();
+
+        assert(dsRate == ctRate);
+        rate = dsRate;
     }
 
     function initialize(

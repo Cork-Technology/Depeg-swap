@@ -6,11 +6,40 @@ import "./interfaces/IPSMcore.sol";
 import "./libraries/State.sol";
 import "./ModuleState.sol";
 import "./interfaces/IRates.sol";
+import "./interfaces/IRepurchase.sol";
 import "@openzeppelin/contracts/utils/Context.sol";
 
-abstract contract PsmCore is IPSMcore, ModuleState, Context {
+abstract contract PsmCore is IPSMcore, ModuleState, Context, IRepurchase {
     using PsmLibrary for State;
     using PairLibrary for Pair;
+
+    function repurchaseFee(Id id) external view override returns (uint256) {
+        State storage state = states[id];
+        return state.repurchaseFeePrecentage();
+    }
+
+    function repurchase(Id id, uint256 amount) external override {
+        // TODO
+    }
+
+    function previewRepurchase(
+        Id id,
+        uint256 amount
+    ) external view override returns (uint256 pa, uint256 ds, uint256 dsId) {
+        // TODO
+    }
+
+    function availableForRepurchase(
+        Id id
+    ) external view override returns (uint256 pa, uint256 ds, uint256 dsId){
+        State storage state = states[id];
+        (pa, ds, dsId) = state.availableForRepurchase();
+    }
+
+    function repurchaseRates(Id id) external view returns (uint256 rates){
+        State storage state = states[id];
+        rates = state.repurchaseRates();
+    }
 
     function depositPsm(
         Id id,

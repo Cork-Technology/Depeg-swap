@@ -30,7 +30,7 @@ library PsmLibrary {
 
     function initialize(State storage self, Pair memory key) internal {
         self.info = key;
-        self.psmBalances.ra = RedemptionAssetManagerLibrary.initialize(
+        self.psm.balances.ra = RedemptionAssetManagerLibrary.initialize(
             key.redemptionAsset()
         );
     }
@@ -47,6 +47,9 @@ library PsmLibrary {
             DepegSwap storage _prevDs = self.ds[prevIdx];
             Guard.safeAfterExpired(_prevDs);
         }
+
+        // essentially burn unpurchased ds as we're going in with a new issuance
+        self.psm.balances.dsBalance = 0;
 
         self.ds[idx] = DepegSwapLibrary.initialize(ds, ct);
     }
@@ -67,7 +70,7 @@ library PsmLibrary {
         uint256 normalizedRateAmount = MathHelper
             .calculateDepositAmountWithExchangeRate(amount, ds.exchangeRate());
 
-        self.psmBalances.ra.lockFrom(amount, depositor);
+        self.psm.balances.ra.lockFrom(amount, depositor);
 
         ds.issue(depositor, normalizedRateAmount);
     }
@@ -147,10 +150,37 @@ library PsmLibrary {
 
         ra = MathHelper.calculateRedeemAmountWithExchangeRate(amount, rates);
 
-        self.psmBalances.ra.unlockTo(owner, ra);
+        self.psm.balances.ra.unlockTo(owner, ra);
 
         ERC20Burnable(ds.ct).burnFrom(owner, amount);
         ERC20Burnable(ds.ds).burnFrom(owner, amount);
+    }
+
+    function availableForRepurchase(
+        State storage self
+    ) internal view returns (uint256 pa, uint256 ds, uint256 dsId) {
+        dsId = self.globalAssetIdx;
+        DepegSwap storage _ds = self.ds[dsId];
+        Guard.safeBeforeExpired(_ds);
+
+        pa = self.psm.balances.paBalance;
+        ds = self.psm.balances.dsBalance;
+    }
+
+    function repurchaseRates(
+        State storage self
+    ) internal view returns (uint256 rates) {
+        uint256 dsId = self.globalAssetIdx;
+        DepegSwap storage ds = self.ds[dsId];
+        Guard.safeBeforeExpired(ds);
+
+        rates = ds.exchangeRate();
+    }
+
+    function repurchaseFeePrecentage(
+        State storage self
+    ) internal view returns (uint256 rates) {
+        rates = self.psm.repurchaseFeePrecentage;
     }
 
     function _redeemDs(
@@ -190,11 +220,11 @@ library PsmLibrary {
         uint256 normalizedRateAmount = MathHelper
             .calculateRedeemAmountWithExchangeRate(amount, ds.exchangeRate());
 
-        self.psmBalances.ra.unlockTo(owner, normalizedRateAmount);
+        self.psm.balances.ra.unlockTo(owner, normalizedRateAmount);
     }
 
     function valueLocked(State storage self) internal view returns (uint256) {
-        return self.psmBalances.ra.locked;
+        return self.psm.balances.ra.locked;
     }
 
     function exchangeRate(
@@ -220,7 +250,7 @@ library PsmLibrary {
     ) internal {
         DepegSwap storage ds = self.ds[dsId];
         Guard.safeBeforeExpired(ds);
-        _redeemDs(self.psmBalances, ds, amount);
+        _redeemDs(self.psm.balances, ds, amount);
         _afterRedeemWithDs(self, ds, rawDsPermitSig, owner, amount, deadline);
     }
 
@@ -269,7 +299,7 @@ library PsmLibrary {
         uint256 totalCtIssued,
         uint256 availableRa
     ) internal view returns (uint256 accruedPa, uint256 accruedRa) {
-        uint256 availablePa = self.psmBalances.paBalance;
+        uint256 availablePa = self.psm.balances.paBalance;
         accruedPa = MathHelper.calculateAccrued(
             amount,
             availablePa,
@@ -337,7 +367,7 @@ library PsmLibrary {
         Guard.safeAfterExpired(ds);
 
         uint256 totalCtIssued = IERC20(ds.ct).totalSupply();
-        uint256 availableRa = self.psmBalances.ra.convertAllToFree();
+        uint256 availableRa = self.psm.balances.ra.convertAllToFree();
 
         (accruedPa, accruedRa) = _calcRedeemAmount(
             self,
@@ -346,7 +376,7 @@ library PsmLibrary {
             availableRa
         );
 
-        _beforeCtRedeem(self.psmBalances, ds, amount, accruedPa, accruedRa);
+        _beforeCtRedeem(self.psm.balances, ds, amount, accruedPa, accruedRa);
         _afterCtRedeem(
             self,
             ds,
@@ -372,7 +402,7 @@ library PsmLibrary {
 
         uint256 totalCtIssued = IERC20(ds.ct).totalSupply();
 
-        uint256 availableRa = self.psmBalances.ra.tryConvertAllToFree();
+        uint256 availableRa = self.psm.balances.ra.tryConvertAllToFree();
 
         (accruedPa, accruedRa) = _calcRedeemAmount(
             self,
