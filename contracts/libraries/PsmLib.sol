@@ -10,6 +10,8 @@ import "./PeggedAssetLib.sol";
 import "./State.sol";
 import "./Guard.sol";
 import "./MathHelper.sol";
+import "../interfaces/IRepurchase.sol";
+import "./VaultLib.sol";
 import "@openzeppelin/contracts/token/ERC20/extensions/ERC20Burnable.sol";
 
 // TODO : support native token
@@ -77,7 +79,7 @@ library PsmLibrary {
 
     // This is here just for semantics, since in the whitepaper, all the CT DS issuance
     // happens in the PSM, although they essentially lives in the same contract, we leave it here just for consistency sake
-    function lvIssue(State storage self, uint256 amount) internal {
+    function issueCtToLv(State storage self, uint256 amount) internal {
         uint256 dsId = self.globalAssetIdx;
 
         DepegSwap storage ds = self.ds[dsId];
@@ -153,7 +155,7 @@ library PsmLibrary {
         self.psm.balances.ra.unlockTo(owner, ra);
 
         ERC20Burnable(ds.ct).burnFrom(owner, amount);
-        ERC20Burnable(ds.ds).burnFrom(owner, amount);
+        ERC20Burnable(ds._address).burnFrom(owner, amount);
     }
 
     function availableForRepurchase(
@@ -183,6 +185,66 @@ library PsmLibrary {
         rates = self.psm.repurchaseFeePrecentage;
     }
 
+    function repurchase(
+        State storage self,
+        address buyer,
+        uint256 amount
+    )
+        internal
+        returns (
+            uint256 dsId,
+            uint256 received,
+            uint256 feePrecentage,
+            uint256 fee,
+            uint256 exchangeRates
+        )
+    {
+        dsId = self.globalAssetIdx;
+
+        DepegSwap storage ds = self.ds[dsId];
+        Guard.safeBeforeExpired(ds);
+
+        exchangeRates = ds.exchangeRate();
+
+        received = MathHelper.calculateRedeemAmountWithExchangeRate(
+            amount,
+            exchangeRates
+        );
+
+        received =
+            received -
+            MathHelper.calculatePrecentageFee(
+                received,
+                self.psm.repurchaseFeePrecentage
+            );
+
+        uint256 available = self.psm.balances.paBalance;
+        // ensure that we have an equal amount of DS and PA
+        assert(available == self.psm.balances.dsBalance);
+
+        if (received > available) {
+            revert IRepurchase.InsufficientLiquidity(available, received);
+        }
+
+        // decrease PSM balance
+        self.psm.balances.paBalance -= received;
+        self.psm.balances.dsBalance -= received;
+
+        // transfer user RA to the PSM/LV
+        self.psm.balances.ra.lockUnchecked(amount, buyer);
+
+        // transfer user attrubuted DS + PA
+        // PA
+        (, address pa) = self.info.underlyingAsset();
+        IERC20(pa).transfer(buyer, received);
+
+        // DS
+        IERC20(ds._address).transfer(buyer, received);
+
+        // Provide liquidity
+        VaultLibrary.provideLiquidityWithPsmRepurchase(self, amount);
+    }
+
     function _redeemDs(
         Balances storage self,
         DepegSwap storage ds,
@@ -202,7 +264,7 @@ library PsmLibrary {
         uint256 deadline
     ) internal {
         DepegSwapLibrary.permit(
-            ds.ds,
+            ds._address,
             rawDsPermitSig,
             owner,
             address(this),
@@ -210,7 +272,7 @@ library PsmLibrary {
             deadline
         );
 
-        IERC20(ds.ds).transferFrom(owner, address(this), amount);
+        IERC20(ds._address).transferFrom(owner, address(this), amount);
         self.info.peggedAsset().asErc20().transferFrom(
             owner,
             address(this),
@@ -290,7 +352,7 @@ library PsmLibrary {
 
         DepegSwap storage ds = self.ds[idx];
 
-        expiry = Asset(ds.ds).expiry();
+        expiry = Asset(ds._address).expiry();
     }
 
     function _calcRedeemAmount(
