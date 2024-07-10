@@ -12,16 +12,25 @@ interface IRepurchase {
      * @param received the amount of RA used
      * @param fee the fee charged
      * @param feePrecentage the fee in precentage
+     * @param exchangeRates the effective DS exchange rate at the time of repurchase
      */
     event Repurchased(
         Id indexed id,
         address indexed buyer,
-        uint256 dsId,
+        uint256 indexed dsId,
         uint256 raUsed,
         uint256 received,
         uint256 feePrecentage,
-        uint256 fee
+        uint256 fee,
+        uint256 exchangeRates
     );
+
+    /**
+     * @notice thrown when the user tries to repurchase more than the available PA + DSliquidity
+     * @param available the amount of available PA + DS
+     * @param requested the amount of PA + DS user will receive
+     */
+    error InsufficientLiquidity(uint256 available, uint256 requested);
 
     /**
      * @notice returns the fee precentage for repurchasing(1e18 = 1%)
