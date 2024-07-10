@@ -5,6 +5,9 @@ interface IAssetFactory {
     /// @notice limit too long when getting deployed assets
     error LimitTooLong(uint256 max, uint256 received);
 
+    /// @notice error when trying to deploying a swap asset of a non existent pair
+    error NotExist(address ra, address pa);
+
     /// @notice emitted when a new CT + DS assets is deployed
     event AssetDeployed(
         address indexed ra,

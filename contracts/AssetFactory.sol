@@ -119,6 +119,14 @@ contract AssetFactory is IAssetFactory, OwnableUpgradeable, UUPSUpgradeable {
         notDelegated
         returns (address ct, address ds)
     {
+        Pair memory asset = Pair(pa, ra);
+        
+        // prevent deploying a swap asset of a non existent pair, logically won't ever happen
+        // just to be safe
+        if (lvs[asset.toId()] == address(0)) {
+            revert NotExist(ra, pa);
+        }
+
         string memory pairname = string(
             abi.encodePacked(Asset(ra).name(), "-", Asset(pa).name())
         );
@@ -154,7 +162,11 @@ contract AssetFactory is IAssetFactory, OwnableUpgradeable, UUPSUpgradeable {
                 0
             )
         );
+
+        // signal that a pair actually exists. Only after this it's possible to deploy a swap asset for this pair
         Pair memory pair = Pair(pa, ra);
+        pairs[idx++] = pair;
+        
         lvs[pair.toId()] = lv;
 
         emit LvAssetDeployed(ra, pa, lv);
