@@ -29,6 +29,8 @@ contract ModuleCore is PsmCore, Initialize, VaultCore, LvDev, PsmDev {
     }
 
     // TODO : only allow to call this from config contract later or router
+    // TODO : make a pair id associated with it's interval.
+    // TODO : auto issue.
     function initialize(
         address pa,
         address ra,
@@ -74,8 +76,8 @@ contract ModuleCore is PsmCore, Initialize, VaultCore, LvDev, PsmDev {
         address ra = state.info.pair1;
 
         (address _ct, address _ds) = IAssetFactory(_factory).deploySwapAssets(
-            pa,
             ra,
+            pa,
             address(this),
             expiry,
             exchangeRates

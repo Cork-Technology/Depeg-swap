@@ -34,6 +34,13 @@ describe("Asset Factory", function () {
 
     const { ra, pa } = await helper.backedAssets();
 
+    // deploy lv to signal that a pair exist
+    await contract.write.deployLv([
+      ra.address,
+      pa.address,
+      defaultSigner.account.address,
+    ]);
+
     await contract.write.deploySwapAssets([
       ra.address,
       pa.address,
@@ -62,6 +69,13 @@ describe("Asset Factory", function () {
     });
 
     const { ra, pa } = await helper.backedAssets();
+
+    // deploy lv to signal that a pair exist
+    await contract.write.deployLv([
+      ra.address,
+      pa.address,
+      defaultSigner.account.address,
+    ]);
 
     for (let i = 0; i < 100; i++) {
       await contract.write.deploySwapAssets([
@@ -94,6 +108,13 @@ describe("Asset Factory", function () {
     });
 
     const { ra, pa } = await helper.backedAssets();
+
+    // deploy lv to signal that a pair exist
+    await contract.write.deployLv([
+      ra.address,
+      pa.address,
+      defaultSigner.account.address,
+    ]);
 
     for (let i = 0; i < 20; i++) {
       await contract.write.deploySwapAssets([
@@ -142,6 +163,13 @@ describe("Asset Factory", function () {
     });
 
     const { ra, pa } = await helper.backedAssets();
+
+    // deploy lv to signal that a pair exist
+    await contract.write.deployLv([
+      ra.address,
+      pa.address,
+      defaultSigner.account.address,
+    ]);
 
     for (let i = 0; i < 10; i++) {
       await contract.write.deploySwapAssets([
