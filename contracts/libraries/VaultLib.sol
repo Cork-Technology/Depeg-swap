@@ -64,10 +64,19 @@ library VaultLibrary {
 
         (uint256 ra, uint256 ct) = self.vault.pool.rationedToAmm(ratio);
 
-        self.vault.config.lpRaBalance += ra;
-        self.vault.config.lpCtBalance += ct;
+        __addLiquidityToAmmUnchecked(self, ra, ct);
 
         self.vault.pool.resetAmmPool();
+    }
+
+    // FIXME :  temporary, will be updated once we integrate with uniswap
+    function __addLiquidityToAmmUnchecked(
+        State storage self,
+        uint256 ra,
+        uint256 ct
+    ) internal {
+        self.vault.config.lpRaBalance += ra;
+        self.vault.config.lpCtBalance += ct;
     }
 
     function _limitOrderDs(uint256 amount) internal {
@@ -109,6 +118,23 @@ library VaultLibrary {
         Guard.safeAfterExpired(ds);
     }
 
+    function __provideLiquidityWithRatio(
+        State storage self,
+        uint256 amount
+    ) internal returns (uint256 ra, uint256 ct) {
+        uint256 ratio = MathHelper.calculatePriceRatio(
+            self.vault.getSqrtPriceX96(),
+            MathHelper.DEFAULT_DECIMAL
+        );
+
+        (ra, ct) = MathHelper.calculateAmounts(amount, ratio);
+        __addLiquidityToAmmUnchecked(self, ra, ct);
+
+        PsmLibrary.issueCtToLv(self, ct);
+
+        _limitOrderDs(amount);
+    }
+
     function deposit(
         State storage self,
         address from,
@@ -116,19 +142,7 @@ library VaultLibrary {
     ) internal {
         safeBeforeExpired(self);
         self.vault.balances.ra.lockUnchecked(amount, from);
-
-        uint256 ratio = MathHelper.calculatePriceRatio(
-            self.vault.getSqrtPriceX96(),
-            MathHelper.DEFAULT_DECIMAL
-        );
-
-        (uint256 ra, uint256 ct) = MathHelper.calculateAmounts(amount, ratio);
-        self.vault.config.lpRaBalance += ra;
-        self.vault.config.lpCtBalance += ct;
-
-        PsmLibrary.lvIssue(self, ct);
-
-        _limitOrderDs(amount);
+        __provideLiquidityWithRatio(self, amount);
         self.vault.lv.issue(from, amount);
     }
 
@@ -484,6 +498,14 @@ library VaultLibrary {
         );
 
         received = received - fee;
+    }
+
+    // IMPORTANT : only psm can call this function
+    function provideLiquidityWithPsmRepurchase(
+        State storage self,
+        uint256 amount
+    ) internal {
+        __provideLiquidityWithRatio(self, amount);
     }
 
     function sellExcessCt(State storage self) internal {
