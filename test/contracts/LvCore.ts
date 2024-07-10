@@ -3,7 +3,6 @@ import {
   loadFixture,
 } from "@nomicfoundation/hardhat-toolbox-viem/network-helpers";
 import { expect } from "chai";
-import hre from "hardhat";
 import { Address, formatEther, parseEther, WalletClient } from "viem";
 import * as helper from "../helper/TestHelper";
 
