@@ -185,6 +185,46 @@ library PsmLibrary {
         rates = self.psm.repurchaseFeePrecentage;
     }
 
+    function previewRepurchase(
+        State storage self,
+        uint256 amount
+    )
+        internal
+        view
+        returns (
+            uint256 dsId,
+            uint256 received,
+            uint256 feePrecentage,
+            uint256 fee,
+            uint256 exchangeRates,
+            DepegSwap storage ds
+        )
+    {
+        dsId = self.globalAssetIdx;
+
+        ds = self.ds[dsId];
+        Guard.safeBeforeExpired(ds);
+
+        exchangeRates = ds.exchangeRate();
+
+        received = MathHelper.calculateRedeemAmountWithExchangeRate(
+            amount,
+            exchangeRates
+        );
+
+        feePrecentage = self.psm.repurchaseFeePrecentage;
+        fee = MathHelper.calculatePrecentageFee(received, feePrecentage);
+        received = received - fee;
+
+        uint256 available = self.psm.balances.paBalance;
+        // ensure that we have an equal amount of DS and PA
+        assert(available == self.psm.balances.dsBalance);
+
+        if (received > available) {
+            revert IRepurchase.InsufficientLiquidity(available, received);
+        }
+    }
+
     function repurchase(
         State storage self,
         address buyer,
@@ -199,29 +239,16 @@ library PsmLibrary {
             uint256 exchangeRates
         )
     {
-        dsId = self.globalAssetIdx;
+        DepegSwap storage ds;
 
-        DepegSwap storage ds = self.ds[dsId];
-        Guard.safeBeforeExpired(ds);
-
-        exchangeRates = ds.exchangeRate();
-
-        received = MathHelper.calculateRedeemAmountWithExchangeRate(
-            amount,
-            exchangeRates
-        );
-        
-        feePrecentage = self.psm.repurchaseFeePrecentage;
-        fee = MathHelper.calculatePrecentageFee(received, feePrecentage);
-        received = received - fee;
-
-        uint256 available = self.psm.balances.paBalance;
-        // ensure that we have an equal amount of DS and PA
-        assert(available == self.psm.balances.dsBalance);
-
-        if (received > available) {
-            revert IRepurchase.InsufficientLiquidity(available, received);
-        }
+        (
+            dsId,
+            received,
+            feePrecentage,
+            fee,
+            exchangeRates,
+            ds
+        ) = previewRepurchase(self, amount);
 
         // decrease PSM balance
         self.psm.balances.paBalance -= received;
