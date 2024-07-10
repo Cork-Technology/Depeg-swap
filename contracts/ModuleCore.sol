@@ -104,6 +104,6 @@ contract ModuleCore is PsmCore, Initialize, VaultCore {
         uint256 dsId
     ) external view override returns (address ct, address ds) {
         ct = states[id].ds[dsId].ct;
-        ds = states[id].ds[dsId].ds;
+        ds = states[id].ds[dsId]._address;
     }
 }
