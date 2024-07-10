@@ -1,8 +1,9 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.0;
 import "../libraries/Pair.sol";
+import "./IRepurchase.sol";
 
-interface IPSMcore {
+interface IPSMcore is IRepurchase {
     /// @notice Emitted when a user deposits assets into a given PSM
     /// @param Id The PSM id
     /// @param dsId The DS id

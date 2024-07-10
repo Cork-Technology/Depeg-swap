@@ -9,7 +9,7 @@ import "./interfaces/IRates.sol";
 import "./interfaces/IRepurchase.sol";
 import "@openzeppelin/contracts/utils/Context.sol";
 
-abstract contract PsmCore is IPSMcore, ModuleState, Context, IRepurchase {
+abstract contract PsmCore is IPSMcore, ModuleState, Context {
     using PsmLibrary for State;
     using PairLibrary for Pair;
 
