@@ -210,13 +210,10 @@ library PsmLibrary {
             amount,
             exchangeRates
         );
-
-        received =
-            received -
-            MathHelper.calculatePrecentageFee(
-                received,
-                self.psm.repurchaseFeePrecentage
-            );
+        
+        feePrecentage = self.psm.repurchaseFeePrecentage;
+        fee = MathHelper.calculatePrecentageFee(received, feePrecentage);
+        received = received - fee;
 
         uint256 available = self.psm.balances.paBalance;
         // ensure that we have an equal amount of DS and PA
