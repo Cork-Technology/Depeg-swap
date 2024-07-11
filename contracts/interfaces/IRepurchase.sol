@@ -49,13 +49,25 @@ interface IRepurchase {
      * @notice returns the amount of pa and ds tokens that will be received after repurchasing
      * @param id the id of PSM
      * @param amount the amount of RA to use
-     * @return pa the amount of PA received
-     * @return ds the amount of DS received
+     * @return dsId the id of the DS
+     * @return received the amount of RA received
+     * @return feePrecentage the fee in precentage
+     * @return fee the fee charged
+     * @return exchangeRates the effective DS exchange rate at the time of repurchase
      */
     function previewRepurchase(
         Id id,
         uint256 amount
-    ) external view returns (uint256 pa, uint256 ds, uint256 dsId);
+    )
+        external
+        view
+        returns (
+            uint256 dsId,
+            uint256 received,
+            uint256 feePrecentage,
+            uint256 fee,
+            uint256 exchangeRates
+        );
 
     /**
      * @notice return the amount of available PA and DS to purchase.

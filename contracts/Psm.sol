@@ -19,24 +19,55 @@ abstract contract PsmCore is IPSMcore, ModuleState, Context {
     }
 
     function repurchase(Id id, uint256 amount) external override {
-        // TODO
+        State storage state = states[id];
+        (
+            uint256 dsId,
+            uint256 received,
+            uint256 feePrecentage,
+            uint256 fee,
+            uint256 exchangeRates
+        ) = state.repurchase(_msgSender(), amount);
+
+        emit Repurchased(
+            id,
+            _msgSender(),
+            dsId,
+            amount,
+            received,
+            feePrecentage,
+            fee,
+            exchangeRates
+        );
     }
 
     function previewRepurchase(
         Id id,
         uint256 amount
-    ) external view override returns (uint256 pa, uint256 ds, uint256 dsId) {
-        // TODO
+    )
+        external
+        view
+        override
+        returns (
+            uint256 dsId,
+            uint256 received,
+            uint256 feePrecentage,
+            uint256 fee,
+            uint256 exchangeRates
+        )
+    {
+        State storage state = states[id];
+        (dsId, received, feePrecentage, fee, exchangeRates, ) = state
+            .previewRepurchase(amount);
     }
 
     function availableForRepurchase(
         Id id
-    ) external view override returns (uint256 pa, uint256 ds, uint256 dsId){
+    ) external view override returns (uint256 pa, uint256 ds, uint256 dsId) {
         State storage state = states[id];
         (pa, ds, dsId) = state.availableForRepurchase();
     }
 
-    function repurchaseRates(Id id) external view returns (uint256 rates){
+    function repurchaseRates(Id id) external view returns (uint256 rates) {
         State storage state = states[id];
         rates = state.repurchaseRates();
     }
