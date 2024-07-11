@@ -32,6 +32,7 @@ contract ModuleCore is PsmCore, Initialize, VaultCore {
         address pa,
         address ra,
         uint256 lvFee,
+        // TODO : maybe remove this threshold
         uint256 lvAmmWaDepositThreshold,
         uint256 lvAmmCtDepositThreshold
     ) external override {
@@ -65,7 +66,8 @@ contract ModuleCore is PsmCore, Initialize, VaultCore {
     function issueNewDs(
         Id id,
         uint256 expiry,
-        uint256 exchangeRates
+        uint256 exchangeRates,
+        uint256 repurchaseFeePrecentage
     ) external override onlyInitialized(id) {
         State storage state = states[id];
 
@@ -83,7 +85,14 @@ contract ModuleCore is PsmCore, Initialize, VaultCore {
         uint256 prevIdx = state.globalAssetIdx++;
         uint256 idx = state.globalAssetIdx;
 
-        PsmLibrary.issueNewPair(state, _ct, _ds, idx, prevIdx);
+        PsmLibrary.issueNewPair(
+            state,
+            _ct,
+            _ds,
+            idx,
+            prevIdx,
+            repurchaseFeePrecentage
+        );
         VaultLibrary.onNewIssuanceAndExpiry(state, prevIdx);
 
         emit Issued(id, idx, expiry, _ds, _ct);

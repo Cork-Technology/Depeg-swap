@@ -699,11 +699,15 @@ describe("LvCore", function () {
 
     await expect(
       fixture.moduleCore.contract.write.issueNewDs(
-        [Id, BigInt(expiry), parseEther("1")],
+        [Id, BigInt(expiry), parseEther("1"), parseEther("1")],
         {
           account: defaultSigner.account,
         }
       )
     ).to.be.rejected;
+  });
+
+  describe("repurchase", function () {
+    it("should accrue RA to LV holders after issuance", async function () {});
   });
 });

@@ -9,11 +9,15 @@ interface IPSMcore is IRepurchase {
     /// @param dsId The DS id
     /// @param depositor The address of the depositor
     /// @param amount The amount of the asset deposited
+    /// @param received The amount of swap asset received
+    /// @param exchangeRate The exchange rate of DS at the time of deposit
     event PsmDeposited(
         Id indexed Id,
         uint256 indexed dsId,
         address indexed depositor,
-        uint256 amount
+        uint256 amount,
+        uint256 received,
+        uint256 exchangeRate
     );
 
     /// @notice Emitted when a user redeems a DS for a given PSM
@@ -21,11 +25,15 @@ interface IPSMcore is IRepurchase {
     /// @param dsId The DS id
     /// @param redeemer The address of the redeemer
     /// @param amount The amount of the DS redeemed
+    /// @param received The amount of  asset received
+    /// @param exchangeRate The exchange rate of DS at the time of redeem
     event DsRedeemed(
         Id indexed Id,
         uint256 indexed dsId,
         address indexed redeemer,
-        uint256 amount
+        uint256 amount,
+        uint256 received,
+        uint256 exchangeRate
     );
 
     /// @notice Emitted when a user redeems a CT for a given PSM

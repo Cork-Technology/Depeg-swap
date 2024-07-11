@@ -77,8 +77,18 @@ abstract contract PsmCore is IPSMcore, ModuleState, Context {
         uint256 amount
     ) external override onlyInitialized(id) {
         State storage state = states[id];
-        uint256 dsId = state.deposit(_msgSender(), amount);
-        emit PsmDeposited(id, dsId, _msgSender(), amount);
+        (uint256 dsId, uint256 received, uint256 _exchangeRate) = state.deposit(
+            _msgSender(),
+            amount
+        );
+        emit PsmDeposited(
+            id,
+            dsId,
+            _msgSender(),
+            amount,
+            received,
+            _exchangeRate
+        );
     }
 
     function previewDepositPsm(
@@ -104,14 +114,21 @@ abstract contract PsmCore is IPSMcore, ModuleState, Context {
     ) external override onlyInitialized(id) {
         State storage state = states[id];
 
-        emit DsRedeemed(id, dsId, _msgSender(), amount);
-
-        state.redeemWithDs(
+        (uint256 received, uint256 _exchangeRate) = state.redeemWithDs(
             _msgSender(),
             amount,
             dsId,
             rawDsPermitSig,
             deadline
+        );
+
+        emit DsRedeemed(
+            id,
+            dsId,
+            _msgSender(),
+            amount,
+            received,
+            _exchangeRate
         );
     }
 
@@ -128,7 +145,7 @@ abstract contract PsmCore is IPSMcore, ModuleState, Context {
         uint256 amount
     ) external view override onlyInitialized(id) returns (uint256 assets) {
         State storage state = states[id];
-        assets = state.previewRedeemWithDs(amount, dsId);
+        assets = state.previewRedeemWithDs(dsId, amount);
     }
 
     function redeemWithCT(

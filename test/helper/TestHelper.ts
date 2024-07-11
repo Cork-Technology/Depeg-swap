@@ -105,6 +105,7 @@ export type IssueNewSwapAssetsArg = {
   expiry: number;
   factory: Address;
   rates?: bigint;
+  repurhcaseFeePrecent?: bigint;
 };
 
 export async function mintRa(ra: Address, to: Address, amount: bigint) {
@@ -116,12 +117,17 @@ export async function issueNewSwapAssets(arg: IssueNewSwapAssetsArg) {
   const { defaultSigner } = await getSigners();
 
   const rate = arg.rates ?? parseEther("1");
+  // 10% by default
+  const repurchaseFeePercent = arg.repurhcaseFeePrecent ?? parseEther("10");
 
   const contract = await hre.viem.getContractAt("ModuleCore", arg.moduleCore);
   const Id = await contract.read.getId([arg.pa, arg.ra]);
-  await contract.write.issueNewDs([Id, BigInt(arg.expiry), rate], {
-    account: defaultSigner.account,
-  });
+  await contract.write.issueNewDs(
+    [Id, BigInt(arg.expiry), rate, repurchaseFeePercent],
+    {
+      account: defaultSigner.account,
+    }
+  );
 
   const events = await contract.getEvents.Issued({
     Id,

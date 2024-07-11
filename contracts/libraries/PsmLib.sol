@@ -43,7 +43,8 @@ library PsmLibrary {
         address ct,
         address ds,
         uint256 idx,
-        uint256 prevIdx
+        uint256 prevIdx,
+        uint256 repurchaseFeePercent
     ) internal {
         if (prevIdx != 0) {
             DepegSwap storage _prevDs = self.ds[prevIdx];
@@ -53,6 +54,7 @@ library PsmLibrary {
         // essentially burn unpurchased ds as we're going in with a new issuance
         self.psm.balances.dsBalance = 0;
 
+        self.psm.repurchaseFeePrecentage = repurchaseFeePercent;
         self.ds[idx] = DepegSwapLibrary.initialize(ds, ct);
     }
 
@@ -62,19 +64,27 @@ library PsmLibrary {
         State storage self,
         address depositor,
         uint256 amount
-    ) internal returns (uint256 dsId) {
+    )
+        internal
+        returns (
+            uint256 dsId,
+            uint256 received,
+            uint256 _exchangeRate
+        )
+    {
         dsId = self.globalAssetIdx;
 
         DepegSwap storage ds = self.ds[dsId];
 
         Guard.safeBeforeExpired(ds);
+        _exchangeRate = ds.exchangeRate();
 
-        uint256 normalizedRateAmount = MathHelper
-            .calculateDepositAmountWithExchangeRate(amount, ds.exchangeRate());
+        received = MathHelper
+            .calculateDepositAmountWithExchangeRate(amount, _exchangeRate);
 
         self.psm.balances.ra.lockFrom(amount, depositor);
 
-        ds.issue(depositor, normalizedRateAmount);
+        ds.issue(depositor, received);
     }
 
     // This is here just for semantics, since in the whitepaper, all the CT DS issuance
@@ -245,6 +255,7 @@ library PsmLibrary {
             dsId,
             received,
             feePrecentage,
+            // TODO : what do we do with the fee?
             fee,
             exchangeRates,
             ds
@@ -286,7 +297,7 @@ library PsmLibrary {
         address owner,
         uint256 amount,
         uint256 deadline
-    ) internal {
+    ) internal returns (uint256 received, uint256 _exchangeRate) {
         DepegSwapLibrary.permit(
             ds._address,
             rawDsPermitSig,
@@ -303,10 +314,13 @@ library PsmLibrary {
             amount
         );
 
-        uint256 normalizedRateAmount = MathHelper
-            .calculateRedeemAmountWithExchangeRate(amount, ds.exchangeRate());
+        _exchangeRate = ds.exchangeRate();
+        received = MathHelper.calculateRedeemAmountWithExchangeRate(
+            amount,
+            _exchangeRate
+        );
 
-        self.psm.balances.ra.unlockTo(owner, normalizedRateAmount);
+        self.psm.balances.ra.unlockTo(owner, received);
     }
 
     function valueLocked(State storage self) internal view returns (uint256) {
@@ -333,16 +347,22 @@ library PsmLibrary {
         uint256 dsId,
         bytes memory rawDsPermitSig,
         uint256 deadline
-    ) internal {
+    ) internal returns (uint256 received, uint256 _exchangeRate) {
         DepegSwap storage ds = self.ds[dsId];
         Guard.safeBeforeExpired(ds);
         _redeemDs(self.psm.balances, ds, amount);
-        _afterRedeemWithDs(self, ds, rawDsPermitSig, owner, amount, deadline);
+        (received, _exchangeRate) = _afterRedeemWithDs(
+            self,
+            ds,
+            rawDsPermitSig,
+            owner,
+            amount,
+            deadline
+        );
     }
 
     /// @notice simulate a ds redeem.
     /// @return assets how much RA the user would receive
-    /// @dev since the rate is constant at 1:1, we return the same amount,
     // TODO: test this
     function previewRedeemWithDs(
         State storage self,
