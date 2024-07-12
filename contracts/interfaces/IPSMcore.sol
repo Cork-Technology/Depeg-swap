@@ -26,14 +26,14 @@ interface IPSMcore is IRepurchase {
     /// @param redeemer The address of the redeemer
     /// @param amount The amount of the DS redeemed
     /// @param received The amount of  asset received
-    /// @param exchangeRate The exchange rate of DS at the time of redeem
+    /// @param dsExchangeRate The exchange rate of DS at the time of redeem
     event DsRedeemed(
         Id indexed Id,
         uint256 indexed dsId,
         address indexed redeemer,
         uint256 amount,
         uint256 received,
-        uint256 exchangeRate
+        uint256 dsExchangeRate
     );
 
     /// @notice Emitted when a user redeems a CT for a given PSM
@@ -58,14 +58,14 @@ interface IPSMcore is IRepurchase {
     /// @param redeemer The address of the redeemer
     /// @param raAmount The amount of RA received
     /// @param swapAmount The amount of CT + DS swapped
-    /// @param exchangeRates The exchange rate between RA:(CT+DS) at the time of the swap
+    /// @param dSexchangeRates The exchange rate between RA:(CT+DS) at the time of the swap
     event Cancelled(
         Id indexed Id,
         uint256 indexed dsId,
         address indexed redeemer,
         uint256 raAmount,
         uint256 swapAmount,
-        uint256 exchangeRates
+        uint256 dSexchangeRates
     );
 
     function depositPsm(Id id, uint256 amount) external;
