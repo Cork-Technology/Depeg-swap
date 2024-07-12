@@ -14,8 +14,14 @@ struct State {
     uint256 globalAssetIdx;
     Pair info;
     mapping(uint256 => DepegSwap) ds;
-    Balances psmBalances;
+    PsmState psm;
     VaultState vault;
+}
+
+struct PsmState {
+    Balances balances;
+    // TODO : make a function to update this
+    uint256 repurchaseFeePrecentage;
 }
 
 // TODO : to PSM balance
@@ -54,4 +60,17 @@ struct VaultState {
     LvAsset lv;
     BitMaps.BitMap lpLiquidated;
     VaultPool pool;
+}
+
+// TODO : remove all threshold
+struct VaultConfig {
+    // 1 % = 1e18
+    uint256 fee;
+    //
+    uint256 lpRaBalance;
+    uint256 ammRaDepositThreshold;
+    //
+    uint256 ammCtDepositThreshold;
+    uint256 lpCtBalance;
+    uint256 accmulatedFee;
 }

@@ -35,6 +35,7 @@ contract ModuleCore is PsmCore, Initialize, VaultCore, LvDev, PsmDev {
         address pa,
         address ra,
         uint256 lvFee,
+        // TODO : maybe remove this threshold
         uint256 lvAmmWaDepositThreshold,
         uint256 lvAmmCtDepositThreshold
     ) external override {
@@ -68,7 +69,8 @@ contract ModuleCore is PsmCore, Initialize, VaultCore, LvDev, PsmDev {
     function issueNewDs(
         Id id,
         uint256 expiry,
-        uint256 exchangeRates
+        uint256 exchangeRates,
+        uint256 repurchaseFeePrecentage
     ) external override onlyInitialized(id) {
         State storage state = states[id];
 
@@ -86,7 +88,14 @@ contract ModuleCore is PsmCore, Initialize, VaultCore, LvDev, PsmDev {
         uint256 prevIdx = state.globalAssetIdx++;
         uint256 idx = state.globalAssetIdx;
 
-        PsmLibrary.issueNewPair(state, _ct, _ds, idx, prevIdx);
+        PsmLibrary.issueNewPair(
+            state,
+            _ct,
+            _ds,
+            idx,
+            prevIdx,
+            repurchaseFeePrecentage
+        );
         VaultLibrary.onNewIssuanceAndExpiry(state, prevIdx);
 
         emit Issued(id, idx, expiry, _ds, _ct);
@@ -94,5 +103,19 @@ contract ModuleCore is PsmCore, Initialize, VaultCore, LvDev, PsmDev {
 
     function lastDsId(Id id) external view override returns (uint256 dsId) {
         return states[id].globalAssetIdx;
+    }
+
+    function underlyingAsset(
+        Id id
+    ) external view override returns (address ra, address pa) {
+        (ra, pa) = states[id].info.underlyingAsset();
+    }
+
+    function swapAsset(
+        Id id,
+        uint256 dsId
+    ) external view override returns (address ct, address ds) {
+        ct = states[id].ds[dsId].ct;
+        ds = states[id].ds[dsId]._address;
     }
 }

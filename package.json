@@ -5,6 +5,7 @@
   "author": "ziankork <zian@cork.technology>",
   "license": "MIT",
   "devDependencies": {
+    "@nomicfoundation/hardhat-chai-matchers": "^2.0.7",
     "@nomicfoundation/hardhat-ignition": "^0.15.0",
     "@nomicfoundation/hardhat-ignition-viem": "^0.15.0",
     "@nomicfoundation/hardhat-network-helpers": "^1.0.0",

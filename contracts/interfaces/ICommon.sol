@@ -43,4 +43,27 @@ interface ICommon {
      *
      */
     function lastDsId(Id id) external view returns (uint256 dsId);
+
+    /**
+     * @notice returns the address of the underlying RA and PA token
+     * @param id the id of PSM
+     * @return ra address of the underlying RA token
+     * @return pa address of the underlying PA token
+     */
+    function underlyingAsset(
+        Id id
+    ) external view returns (address ra, address pa);
+
+    // TODO : add issuance interval/expiry interval after it's integrated
+    /**
+     * @notice returns the address of CT and DS associated with a certain DS id
+     * @param id the id of PSM
+     * @param dsId the DS id
+     * @return ct address of the CT token
+     * @return ds address of the DS token
+     */
+    function swapAsset(
+        Id id,
+        uint256 dsId
+    ) external view returns (address ct, address ds);
 }
