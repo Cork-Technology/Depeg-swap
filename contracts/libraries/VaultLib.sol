@@ -12,7 +12,6 @@ import "@openzeppelin/contracts/token/ERC20/extensions/ERC20Burnable.sol";
 import "@openzeppelin/contracts/utils/structs/BitMaps.sol";
 import "./VaultPoolLib.sol";
 
-import "hardhat/console.sol";
 
 library VaultLibrary {
     using VaultConfigLibrary for VaultConfig;
@@ -64,10 +63,22 @@ library VaultLibrary {
 
         (uint256 ra, uint256 ct) = self.vault.pool.rationedToAmm(ratio);
 
-        self.vault.config.lpRaBalance += ra;
-        self.vault.config.lpCtBalance += ct;
+        __addLiquidityToAmmUnchecked(self, ra, ct);
+        PsmLibrary.unsafeIssueToLv(self, ct);
 
         self.vault.pool.resetAmmPool();
+
+        // TODO : actually mint CT and DS
+    }
+
+    // FIXME :  temporary, will be updated once we integrate with uniswap
+    function __addLiquidityToAmmUnchecked(
+        State storage self,
+        uint256 ra,
+        uint256 ct
+    ) internal {
+        self.vault.config.lpRaBalance += ra;
+        self.vault.config.lpCtBalance += ct;
     }
 
     function _limitOrderDs(uint256 amount) internal {
@@ -109,6 +120,23 @@ library VaultLibrary {
         Guard.safeAfterExpired(ds);
     }
 
+    function __provideLiquidityWithRatio(
+        State storage self,
+        uint256 amount
+    ) internal returns (uint256 ra, uint256 ct) {
+        uint256 ratio = MathHelper.calculatePriceRatio(
+            self.vault.getSqrtPriceX96(),
+            MathHelper.DEFAULT_DECIMAL
+        );
+
+        (ra, ct) = MathHelper.calculateAmounts(amount, ratio);
+        __addLiquidityToAmmUnchecked(self, ra, ct);
+
+        PsmLibrary.unsafeIssueToLv(self, ct);
+
+        _limitOrderDs(amount);
+    }
+
     function deposit(
         State storage self,
         address from,
@@ -116,19 +144,7 @@ library VaultLibrary {
     ) internal {
         safeBeforeExpired(self);
         self.vault.balances.ra.lockUnchecked(amount, from);
-
-        uint256 ratio = MathHelper.calculatePriceRatio(
-            self.vault.getSqrtPriceX96(),
-            MathHelper.DEFAULT_DECIMAL
-        );
-
-        (uint256 ra, uint256 ct) = MathHelper.calculateAmounts(amount, ratio);
-        self.vault.config.lpRaBalance += ra;
-        self.vault.config.lpCtBalance += ct;
-
-        PsmLibrary.lvIssue(self, ct);
-
-        _limitOrderDs(amount);
+        __provideLiquidityWithRatio(self, amount);
         self.vault.lv.issue(from, amount);
     }
 
@@ -401,15 +417,12 @@ library VaultLibrary {
         uint256 amount
     ) internal returns (uint256 received, uint256 fee, uint256 feePrecentage) {
         safeBeforeExpired(self);
-        uint256 dsId = self.globalAssetIdx;
 
         feePrecentage = self.vault.config.fee;
 
         // again, it's safe to do this because there's the same amount of CT + DS in the LV so we treat CT the same as RA
         uint256 totalRa = self.vault.config.lpRaBalance +
             self.vault.config.lpCtBalance;
-
-        console.log("totalRa", totalRa);
 
         received = MathHelper.calculateEarlyLvRate(
             totalRa,
@@ -484,6 +497,14 @@ library VaultLibrary {
         );
 
         received = received - fee;
+    }
+
+    // IMPORTANT : only psm can call this function
+    function provideLiquidityWithPsmRepurchase(
+        State storage self,
+        uint256 amount
+    ) internal {
+        __provideLiquidityWithRatio(self, amount);
     }
 
     function sellExcessCt(State storage self) internal {

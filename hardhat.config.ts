@@ -4,6 +4,7 @@ import "hardhat-gas-reporter";
 import "@nomicfoundation/hardhat-viem";
 import loadEnv from "dotenv";
 import "hardhat-contract-sizer";
+// import "@nomicfoundation/hardhat-chai-matchers";
 
 loadEnv.config();
 

@@ -11,5 +11,10 @@ interface Initialize {
         uint256 lvAmmCtDepositThreshold
     ) external;
 
-    function issueNewDs(Id id, uint256 expiry, uint256 exchangeRates) external;
+    function issueNewDs(
+        Id id,
+        uint256 expiry,
+        uint256 exchangeRates,
+        uint256 repurchaseFeePrecentage
+    ) external;
 }

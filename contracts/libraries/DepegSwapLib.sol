@@ -2,10 +2,11 @@
 pragma solidity ^0.8.20;
 import "./../Asset.sol";
 import "./SignatureHelperLib.sol";
+import "../interfaces/IRates.sol";
 
 struct DepegSwap {
     bool expiredEventEmitted;
-    address ds;
+    address _address;
     address ct;
     uint256 dsRedeemed;
     uint256 ctRedeemed;
@@ -15,29 +16,39 @@ library DepegSwapLibrary {
     using MinimalSignatureHelper for Signature;
 
     function isExpired(DepegSwap storage self) internal view returns (bool) {
-        return Asset(self.ds).isExpired();
+        return Asset(self._address).isExpired();
     }
 
     function isInitialized(
         DepegSwap storage self
     ) internal view returns (bool) {
-        return self.ds != address(0) && self.ct != address(0);
+        return self._address != address(0) && self.ct != address(0);
     }
 
     function exchangeRate(
         DepegSwap storage self
     ) internal view returns (uint256) {
-        return Asset(self.ds).exchangeRate();
+        return Asset(self._address).exchangeRate();
+    }
+
+    function rates(
+        DepegSwap storage self
+    ) internal view returns (uint256 rate) {
+        uint256 dsRate = IRates(self._address).exchangeRate();
+        uint256 ctRate = IRates(self.ct).exchangeRate();
+
+        assert(dsRate == ctRate);
+        rate = dsRate;
     }
 
     function initialize(
-        address ds,
+        address _address,
         address ct
     ) internal pure returns (DepegSwap memory) {
         return
             DepegSwap({
                 expiredEventEmitted: false,
-                ds: ds,
+                _address: _address,
                 ct: ct,
                 dsRedeemed: 0,
                 ctRedeemed: 0
@@ -66,12 +77,12 @@ library DepegSwapLibrary {
     }
 
     function issue(DepegSwap memory self, address to, uint256 amount) internal {
-        Asset(self.ds).mint(to, amount);
+        Asset(self._address).mint(to, amount);
         Asset(self.ct).mint(to, amount);
     }
 
     function burnBothforSelf(DepegSwap storage self, uint256 amount) internal {
-        Asset(self.ds).burn(amount);
+        Asset(self._address).burn(amount);
         Asset(self.ct).burn(amount);
     }
 }

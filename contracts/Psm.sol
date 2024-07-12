@@ -6,19 +6,89 @@ import "./interfaces/IPSMcore.sol";
 import "./libraries/State.sol";
 import "./ModuleState.sol";
 import "./interfaces/IRates.sol";
+import "./interfaces/IRepurchase.sol";
 import "@openzeppelin/contracts/utils/Context.sol";
 
 abstract contract PsmCore is IPSMcore, ModuleState, Context {
     using PsmLibrary for State;
     using PairLibrary for Pair;
 
+    function repurchaseFee(Id id) external view override returns (uint256) {
+        State storage state = states[id];
+        return state.repurchaseFeePrecentage();
+    }
+
+    function repurchase(Id id, uint256 amount) external override {
+        State storage state = states[id];
+        (
+            uint256 dsId,
+            uint256 received,
+            uint256 feePrecentage,
+            uint256 fee,
+            uint256 exchangeRates
+        ) = state.repurchase(_msgSender(), amount);
+
+        emit Repurchased(
+            id,
+            _msgSender(),
+            dsId,
+            amount,
+            received,
+            feePrecentage,
+            fee,
+            exchangeRates
+        );
+    }
+
+    function previewRepurchase(
+        Id id,
+        uint256 amount
+    )
+        external
+        view
+        override
+        returns (
+            uint256 dsId,
+            uint256 received,
+            uint256 feePrecentage,
+            uint256 fee,
+            uint256 exchangeRates
+        )
+    {
+        State storage state = states[id];
+        (dsId, received, feePrecentage, fee, exchangeRates, ) = state
+            .previewRepurchase(amount);
+    }
+
+    function availableForRepurchase(
+        Id id
+    ) external view override returns (uint256 pa, uint256 ds, uint256 dsId) {
+        State storage state = states[id];
+        (pa, ds, dsId) = state.availableForRepurchase();
+    }
+
+    function repurchaseRates(Id id) external view returns (uint256 rates) {
+        State storage state = states[id];
+        rates = state.repurchaseRates();
+    }
+
     function depositPsm(
         Id id,
         uint256 amount
     ) external override onlyInitialized(id) {
         State storage state = states[id];
-        uint256 dsId = state.deposit(_msgSender(), amount);
-        emit PsmDeposited(id, dsId, _msgSender(), amount);
+        (uint256 dsId, uint256 received, uint256 _exchangeRate) = state.deposit(
+            _msgSender(),
+            amount
+        );
+        emit PsmDeposited(
+            id,
+            dsId,
+            _msgSender(),
+            amount,
+            received,
+            _exchangeRate
+        );
     }
 
     function previewDepositPsm(
@@ -44,14 +114,21 @@ abstract contract PsmCore is IPSMcore, ModuleState, Context {
     ) external override onlyInitialized(id) {
         State storage state = states[id];
 
-        emit DsRedeemed(id, dsId, _msgSender(), amount);
-
-        state.redeemWithDs(
+        (uint256 received, uint256 _exchangeRate) = state.redeemWithDs(
             _msgSender(),
             amount,
             dsId,
             rawDsPermitSig,
             deadline
+        );
+
+        emit DsRedeemed(
+            id,
+            dsId,
+            _msgSender(),
+            amount,
+            received,
+            _exchangeRate
         );
     }
 
@@ -68,7 +145,7 @@ abstract contract PsmCore is IPSMcore, ModuleState, Context {
         uint256 amount
     ) external view override onlyInitialized(id) returns (uint256 assets) {
         State storage state = states[id];
-        assets = state.previewRedeemWithDs(amount, dsId);
+        assets = state.previewRedeemWithDs(dsId, amount);
     }
 
     function redeemWithCT(
