@@ -12,8 +12,14 @@ import {
   WalletClient,
 } from "viem";
 
+const DEVISOR = BigInt(1e18);
+
 export function nowTimestampInSeconds() {
   return Math.floor(Date.now() / 1000);
+}
+
+export function toNumber(b: bigint) {
+  return Number(b / DEVISOR);
 }
 
 export function expiry(withinSeconds: number) {
