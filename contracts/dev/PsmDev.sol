@@ -16,7 +16,7 @@ abstract contract PsmDev is ModuleState, IPsmDev {
         Id id
     ) external override {
         IDevToken(ct).mint(address(this), amount);
-        states[id].psmBalances.ctBalance += amount;
+        states[id].psm.balances.ctBalance += amount;
     }
 
     function psmDecreaseCtBalance(
@@ -25,7 +25,7 @@ abstract contract PsmDev is ModuleState, IPsmDev {
         Id id
     ) external override {
         IDevToken(ct).burnSelf(amount);
-        states[id].psmBalances.ctBalance -= amount;
+        states[id].psm.balances.ctBalance -= amount;
     }
 
     function psmIncreaseDsBalance(
@@ -34,7 +34,7 @@ abstract contract PsmDev is ModuleState, IPsmDev {
         Id id
     ) external override {
         IDevToken(ds).mint(address(this), amount);
-        states[id].psmBalances.dsBalance += amount;
+        states[id].psm.balances.dsBalance += amount;
     }
 
     function psmDecreaseDsBalance(
@@ -43,33 +43,33 @@ abstract contract PsmDev is ModuleState, IPsmDev {
         Id id
     ) external override {
         IDevToken(ds).burnSelf(amount);
-        states[id].psmBalances.dsBalance -= amount;
+        states[id].psm.balances.dsBalance -= amount;
     }
 
     function psmIncreasePaBalance(uint256 amount, Id id) external override {
         address pa = states[id].info.pair1;
 
         IDevToken(pa).mint(address(this), amount);
-        states[id].psmBalances.paBalance += amount;
+        states[id].psm.balances.paBalance += amount;
     }
 
     function psmDecreasePaBalance(uint256 amount, Id id) external override {
         address pa = states[id].info.pair1;
         IDevToken(pa).burnSelf(amount);
-        states[id].psmBalances.paBalance -= amount;
+        states[id].psm.balances.paBalance -= amount;
     }
 
     function psmIncreaseRaBalance(uint256 amount, Id id) external override {
         address ra = states[id].info.pair0;
 
         IDevToken(ra).mint(address(this), amount);
-        states[id].psmBalances.ra.free += amount;
+        states[id].psm.balances.ra.free += amount;
     }
 
     function psmDecreaseRaBalance(uint256 amount, Id id) external override {
         address ra = states[id].info.pair0;
 
         IDevToken(ra).burnSelf(amount);
-        states[id].psmBalances.ra.free -= amount;
+        states[id].psm.balances.ra.free -= amount;
     }
 }
