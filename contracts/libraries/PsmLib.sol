@@ -64,14 +64,7 @@ library PsmLibrary {
         State storage self,
         address depositor,
         uint256 amount
-    )
-        internal
-        returns (
-            uint256 dsId,
-            uint256 received,
-            uint256 _exchangeRate
-        )
-    {
+    ) internal returns (uint256 dsId, uint256 received, uint256 _exchangeRate) {
         dsId = self.globalAssetIdx;
 
         DepegSwap storage ds = self.ds[dsId];
@@ -79,8 +72,10 @@ library PsmLibrary {
         Guard.safeBeforeExpired(ds);
         _exchangeRate = ds.exchangeRate();
 
-        received = MathHelper
-            .calculateDepositAmountWithExchangeRate(amount, _exchangeRate);
+        received = MathHelper.calculateDepositAmountWithExchangeRate(
+            amount,
+            _exchangeRate
+        );
 
         self.psm.balances.ra.lockFrom(amount, depositor);
 
@@ -89,10 +84,16 @@ library PsmLibrary {
 
     // This is here just for semantics, since in the whitepaper, all the CT DS issuance
     // happens in the PSM, although they essentially lives in the same contract, we leave it here just for consistency sake
-    function issueCtToLv(State storage self, uint256 amount) internal {
+    //
+    // IMPORTANT/FIXME: this is unsafe because by issuing CT, we also lock an equal amount of RA into the PSM. 
+    // it is a must, that the LV won't count the amount being locked in the PSM as it's balances. 
+    // doing so would create a mismatch between the accounting balance and the actual token balance. 
+    function unsafeIssueToLv(State storage self, uint256 amount) internal {
         uint256 dsId = self.globalAssetIdx;
 
         DepegSwap storage ds = self.ds[dsId];
+        
+        self.psm.balances.ra.incLocked(amount);
 
         ds.issue(address(this), amount);
     }
@@ -103,7 +104,6 @@ library PsmLibrary {
         uint256 dsId
     ) internal {
         DepegSwap storage ds = self.ds[dsId];
-
         ds.burnBothforSelf(amount);
     }
 
@@ -217,14 +217,18 @@ library PsmLibrary {
 
         exchangeRates = ds.exchangeRate();
 
-        received = MathHelper.calculateRedeemAmountWithExchangeRate(
+        // the fee is taken directly from RA before it's even converted to DS
+        feePrecentage = self.psm.repurchaseFeePrecentage;
+        fee = MathHelper.calculatePrecentageFee(amount, feePrecentage);
+        amount = amount - fee;
+
+        // we use deposit here because technically the user deposit RA to the PSM when repurchasing
+        received = MathHelper.calculateDepositAmountWithExchangeRate(
             amount,
             exchangeRates
         );
 
-        feePrecentage = self.psm.repurchaseFeePrecentage;
-        fee = MathHelper.calculatePrecentageFee(received, feePrecentage);
-        received = received - fee;
+        received = received;
 
         uint256 available = self.psm.balances.paBalance;
         // ensure that we have an equal amount of DS and PA
@@ -255,15 +259,15 @@ library PsmLibrary {
             dsId,
             received,
             feePrecentage,
-            // TODO : what do we do with the fee?
             fee,
             exchangeRates,
             ds
         ) = previewRepurchase(self, amount);
 
         // decrease PSM balance
-        self.psm.balances.paBalance -= received;
-        self.psm.balances.dsBalance -= received;
+        // we also include the fee here to separate the accumulated fee from the repurchase
+        self.psm.balances.paBalance -= (received);
+        self.psm.balances.dsBalance -= (received);
 
         // transfer user RA to the PSM/LV
         self.psm.balances.ra.lockUnchecked(amount, buyer);
@@ -275,9 +279,10 @@ library PsmLibrary {
 
         // DS
         IERC20(ds._address).transfer(buyer, received);
+        console.log("fee        :", fee);
 
         // Provide liquidity
-        VaultLibrary.provideLiquidityWithPsmRepurchase(self, amount);
+        VaultLibrary.provideLiquidityWithPsmRepurchase(self, fee);
     }
 
     function _redeemDs(
@@ -406,6 +411,7 @@ library PsmLibrary {
         uint256 availableRa
     ) internal view returns (uint256 accruedPa, uint256 accruedRa) {
         uint256 availablePa = self.psm.balances.paBalance;
+        console.log("availablePa    :", availablePa);
         accruedPa = MathHelper.calculateAccrued(
             amount,
             availablePa,
@@ -509,6 +515,7 @@ library PsmLibrary {
         uint256 totalCtIssued = IERC20(ds.ct).totalSupply();
 
         uint256 availableRa = self.psm.balances.ra.tryConvertAllToFree();
+        console.log("availableRa    :", availableRa);
 
         (accruedPa, accruedRa) = _calcRedeemAmount(
             self,
@@ -516,5 +523,9 @@ library PsmLibrary {
             totalCtIssued,
             availableRa
         );
+
+        console.log("totalct        :", totalCtIssued);
+        console.log("accruedPa      :", accruedPa);
+        console.log("accruedRa      :", accruedRa);
     }
 }
