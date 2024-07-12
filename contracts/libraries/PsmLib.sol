@@ -85,14 +85,14 @@ library PsmLibrary {
     // This is here just for semantics, since in the whitepaper, all the CT DS issuance
     // happens in the PSM, although they essentially lives in the same contract, we leave it here just for consistency sake
     //
-    // IMPORTANT/FIXME: this is unsafe because by issuing CT, we also lock an equal amount of RA into the PSM. 
-    // it is a must, that the LV won't count the amount being locked in the PSM as it's balances. 
-    // doing so would create a mismatch between the accounting balance and the actual token balance. 
+    // IMPORTANT/FIXME: this is unsafe because by issuing CT, we also lock an equal amount of RA into the PSM.
+    // it is a must, that the LV won't count the amount being locked in the PSM as it's balances.
+    // doing so would create a mismatch between the accounting balance and the actual token balance.
     function unsafeIssueToLv(State storage self, uint256 amount) internal {
         uint256 dsId = self.globalAssetIdx;
 
         DepegSwap storage ds = self.ds[dsId];
-        
+
         self.psm.balances.ra.incLocked(amount);
 
         ds.issue(address(this), amount);
@@ -279,7 +279,6 @@ library PsmLibrary {
 
         // DS
         IERC20(ds._address).transfer(buyer, received);
-        console.log("fee        :", fee);
 
         // Provide liquidity
         VaultLibrary.provideLiquidityWithPsmRepurchase(self, fee);
@@ -411,7 +410,6 @@ library PsmLibrary {
         uint256 availableRa
     ) internal view returns (uint256 accruedPa, uint256 accruedRa) {
         uint256 availablePa = self.psm.balances.paBalance;
-        console.log("availablePa    :", availablePa);
         accruedPa = MathHelper.calculateAccrued(
             amount,
             availablePa,
@@ -515,7 +513,6 @@ library PsmLibrary {
         uint256 totalCtIssued = IERC20(ds.ct).totalSupply();
 
         uint256 availableRa = self.psm.balances.ra.tryConvertAllToFree();
-        console.log("availableRa    :", availableRa);
 
         (accruedPa, accruedRa) = _calcRedeemAmount(
             self,
@@ -523,9 +520,5 @@ library PsmLibrary {
             totalCtIssued,
             availableRa
         );
-
-        console.log("totalct        :", totalCtIssued);
-        console.log("accruedPa      :", accruedPa);
-        console.log("accruedRa      :", accruedRa);
     }
 }
