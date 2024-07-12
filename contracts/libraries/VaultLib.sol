@@ -65,8 +65,11 @@ library VaultLibrary {
         (uint256 ra, uint256 ct) = self.vault.pool.rationedToAmm(ratio);
 
         __addLiquidityToAmmUnchecked(self, ra, ct);
+        PsmLibrary.unsafeIssueToLv(self, ct);
 
         self.vault.pool.resetAmmPool();
+
+        // TODO : actually mint CT and DS
     }
 
     // FIXME :  temporary, will be updated once we integrate with uniswap
@@ -130,7 +133,7 @@ library VaultLibrary {
         (ra, ct) = MathHelper.calculateAmounts(amount, ratio);
         __addLiquidityToAmmUnchecked(self, ra, ct);
 
-        PsmLibrary.issueCtToLv(self, ct);
+        PsmLibrary.unsafeIssueToLv(self, ct);
 
         _limitOrderDs(amount);
     }
