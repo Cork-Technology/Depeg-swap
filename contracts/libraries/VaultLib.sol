@@ -417,15 +417,12 @@ library VaultLibrary {
         uint256 amount
     ) internal returns (uint256 received, uint256 fee, uint256 feePrecentage) {
         safeBeforeExpired(self);
-        uint256 dsId = self.globalAssetIdx;
 
         feePrecentage = self.vault.config.fee;
 
         // again, it's safe to do this because there's the same amount of CT + DS in the LV so we treat CT the same as RA
         uint256 totalRa = self.vault.config.lpRaBalance +
             self.vault.config.lpCtBalance;
-
-        console.log("totalRa", totalRa);
 
         received = MathHelper.calculateEarlyLvRate(
             totalRa,
