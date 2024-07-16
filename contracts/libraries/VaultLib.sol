@@ -94,7 +94,7 @@ library VaultLibrary {
     }
 
     // MUST be called on every new DS issuance
-    function onNewIssuanceAndExpiry(State storage self, uint256 dsId) internal {
+    function onNewIssuance(State storage self, uint256 dsId) internal {
         // do nothing at first issuance
         if (dsId == 0) {
             return;

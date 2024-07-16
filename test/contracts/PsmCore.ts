@@ -982,6 +982,97 @@ describe("PSM core", function () {
       expiry = expiry + expiryInterval;
     }
   });
+
+  it("should separate liquidity", async function () {
+    const { defaultSigner } = await helper.getSigners();
+    const fixture = await loadFixture(helper.ModuleCoreWithInitializedPsmLv);
+    const mintAmount = parseEther("10000");
+    const expTime = 10000;
+
+    await fixture.ra.write.approve([
+      fixture.moduleCore.contract.address,
+      mintAmount,
+    ]);
+
+    await helper.mintRa(
+      fixture.ra.address,
+      defaultSigner.account.address,
+      mintAmount
+    );
+
+    (await hre.viem.getContractAt("ERC20", fixture.pa.address)).write.approve([
+      fixture.moduleCore.contract.address,
+      parseEther("10000"),
+    ]);
+
+    const expiry = helper.expiry(expTime);
+
+    await helper.issueNewSwapAssets({
+      expiry,
+      moduleCore: fixture.moduleCore.contract.address,
+      pa: fixture.pa.address,
+      ra: fixture.ra.address,
+      factory: fixture.factory.contract.address,
+    });
+
+    await fixture.moduleCore.contract.write.depositPsm(
+      [fixture.Id, parseEther("1000")],
+      {
+        account: defaultSigner.account,
+      }
+    );
+    await time.increaseTo(expiry);
+
+    const newExpiry = helper.expiry(expiry * 2);
+
+    const { dsId, ct } = await helper.issueNewSwapAssets({
+      expiry: newExpiry,
+      moduleCore: fixture.moduleCore.contract.address,
+      pa: fixture.pa.address,
+      ra: fixture.ra.address,
+      factory: fixture.factory.contract.address,
+    });
+
+    await fixture.moduleCore.contract.write.depositPsm(
+      [fixture.Id, parseEther("1000")],
+      {
+        account: defaultSigner.account,
+      }
+    );
+
+    const deadline = BigInt(newExpiry * 2);
+
+    const msgPermit = await helper.permit({
+      amount: parseEther("100"),
+      deadline,
+      erc20contractAddress: ct!,
+      psmAddress: fixture.moduleCore.contract.address,
+      signer: defaultSigner,
+    });
+
+    time.increaseTo(newExpiry);
+
+    await fixture.moduleCore.contract.write.redeemWithCT([
+      fixture.Id,
+      dsId!,
+      parseEther("100"),
+      msgPermit,
+      deadline,
+    ]);
+
+    const event = await fixture.moduleCore.contract.getEvents
+      .CtRedeemed({
+        Id: fixture.Id,
+        redeemer: defaultSigner.account.address,
+        dsId,
+      })
+      .then((e) => e[0]);
+
+    // we expect the amount to be 100 because we deposit 1000 on the DS id while having a total
+    // of 2000 RA on the PSM including the DS ID before this, so if we get 1/10 of 1000 back from what
+    // we deposited on this DS ID, we can consider this a success
+    expect(event.args.raReceived!).to.equal(parseEther("100"));
+  });
 });
 
 // TODO : test redeem ct + ds in 1 scenario, verify the amount is correct!

@@ -88,7 +88,7 @@ contract ModuleCore is PsmCore, Initialize, VaultCore, LvDev, PsmDev {
         uint256 prevIdx = state.globalAssetIdx++;
         uint256 idx = state.globalAssetIdx;
 
-        PsmLibrary.issueNewPair(
+        PsmLibrary.onNewIssuance(
             state,
             _ct,
             _ds,
@@ -96,7 +96,7 @@ contract ModuleCore is PsmCore, Initialize, VaultCore, LvDev, PsmDev {
             prevIdx,
             repurchaseFeePrecentage
         );
-        VaultLibrary.onNewIssuanceAndExpiry(state, prevIdx);
+        VaultLibrary.onNewIssuance(state, prevIdx);
 
         emit Issued(id, idx, expiry, _ds, _ct);
     }
