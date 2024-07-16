@@ -23,6 +23,11 @@ library RedemptionAssetManagerLibrary {
         return PsmRedemptionAssetManager(ra, 0, 0);
     }
 
+    function reset(PsmRedemptionAssetManager storage self) internal {
+        self.locked = 0;
+        self.free = 0;
+    }
+
     function incLocked(
         PsmRedemptionAssetManager storage self,
         uint256 amount

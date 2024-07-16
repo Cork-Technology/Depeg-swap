@@ -23,6 +23,7 @@ library PsmLibrary {
     using DepegSwapLibrary for DepegSwap;
     using RedemptionAssetManagerLibrary for PsmRedemptionAssetManager;
     using PeggedAssetLibrary for PeggedAsset;
+    using BitMaps for BitMaps.BitMap;
 
     function isInitialized(
         State storage self
@@ -38,7 +39,7 @@ library PsmLibrary {
     }
 
     /// @notice issue a new pair of DS, will fail if the previous DS isn't yet expired
-    function issueNewPair(
+    function onNewIssuance(
         State storage self,
         address ct,
         address ds,
@@ -49,6 +50,7 @@ library PsmLibrary {
         if (prevIdx != 0) {
             DepegSwap storage _prevDs = self.ds[prevIdx];
             Guard.safeAfterExpired(_prevDs);
+            _separateLiquidity(self, prevIdx);
         }
 
         // essentially burn unpurchased ds as we're going in with a new issuance
@@ -56,6 +58,31 @@ library PsmLibrary {
 
         self.psm.repurchaseFeePrecentage = repurchaseFeePercent;
         self.ds[idx] = DepegSwapLibrary.initialize(ds, ct);
+    }
+
+    function _separateLiquidity(State storage self, uint256 prevIdx) internal {
+        if (self.psm.liquiditySeparated.get(prevIdx)) {
+            return;
+        }
+
+        DepegSwap storage ds = self.ds[prevIdx];
+        Guard.safeAfterExpired(ds);
+
+        uint256 totalCtIssued = IERC20(ds.ct).totalSupply();
+        uint256 availableRa = self.psm.balances.ra.convertAllToFree();
+        uint256 availablePa = self.psm.balances.paBalance;
+
+        self.psm.poolArchive[prevIdx] = PsmPoolArchive(
+            availableRa,
+            availablePa,
+            IERC20(ds.ct).totalSupply()
+        );
+
+        // reset current balances
+        self.psm.balances.ra.reset();
+        self.psm.balances.paBalance = 0;
+
+        self.psm.liquiditySeparated.set(prevIdx);
     }
 
     /// @notice deposit RA to the PSM
@@ -407,9 +434,9 @@ library PsmLibrary {
         State storage self,
         uint256 amount,
         uint256 totalCtIssued,
-        uint256 availableRa
+        uint256 availableRa,
+        uint256 availablePa
     ) internal view returns (uint256 accruedPa, uint256 accruedRa) {
-        uint256 availablePa = self.psm.balances.paBalance;
         accruedPa = MathHelper.calculateAccrued(
             amount,
             availablePa,
@@ -424,16 +451,17 @@ library PsmLibrary {
     }
 
     function _beforeCtRedeem(
-        Balances storage self,
+        State storage self,
         DepegSwap storage ds,
+        uint256 dsId,
         uint256 amount,
         uint256 accruedPa,
         uint256 accruedRa
     ) internal {
         ds.ctRedeemed += amount;
-        self.ctBalance += amount;
-        self.paBalance -= accruedPa;
-        self.ra.decFree(accruedRa);
+        self.psm.poolArchive[dsId].ctAttributed -= amount;
+        self.psm.poolArchive[dsId].paAccrued -= accruedPa;
+        self.psm.poolArchive[dsId].raAccrued -= accruedRa;
     }
 
     function _afterCtRedeem(
@@ -475,18 +503,28 @@ library PsmLibrary {
     ) internal returns (uint256 accruedPa, uint256 accruedRa) {
         DepegSwap storage ds = self.ds[dsId];
         Guard.safeAfterExpired(ds);
+        _separateLiquidity(self, dsId);
 
-        uint256 totalCtIssued = IERC20(ds.ct).totalSupply();
-        uint256 availableRa = self.psm.balances.ra.convertAllToFree();
+        uint256 totalCtIssued = self.psm.poolArchive[dsId].ctAttributed;
+        PsmPoolArchive storage archive = self.psm.poolArchive[dsId];
 
         (accruedPa, accruedRa) = _calcRedeemAmount(
             self,
             amount,
             totalCtIssued,
-            availableRa
+            archive.raAccrued,
+            archive.paAccrued
         );
 
-        _beforeCtRedeem(self.psm.balances, ds, amount, accruedPa, accruedRa);
+        _beforeCtRedeem(
+            self,
+            ds,
+            dsId,
+            amount,
+            accruedPa,
+            accruedRa
+        );
+        
         _afterCtRedeem(
             self,
             ds,
@@ -511,14 +549,22 @@ library PsmLibrary {
         Guard.safeAfterExpired(ds);
 
         uint256 totalCtIssued = IERC20(ds.ct).totalSupply();
-
         uint256 availableRa = self.psm.balances.ra.tryConvertAllToFree();
+        uint256 availablePa = self.psm.balances.paBalance;
+
+        if (self.psm.liquiditySeparated.get(dsId)) {
+            PsmPoolArchive storage archive = self.psm.poolArchive[dsId];
+            totalCtIssued = archive.ctAttributed;
+            availableRa = archive.raAccrued;
+            availablePa = archive.paAccrued;
+        }
 
         (accruedPa, accruedRa) = _calcRedeemAmount(
             self,
             amount,
             totalCtIssued,
-            availableRa
+            availableRa,
+            availablePa
         );
     }
 }
