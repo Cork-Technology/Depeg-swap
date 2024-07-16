@@ -13,6 +13,7 @@ struct State {
     /// @dev used to track current ds and ct for both lv and psm
     uint256 globalAssetIdx;
     Pair info;
+    /// @dev dsId => DepegSwap(CT + DS)
     mapping(uint256 => DepegSwap) ds;
     PsmState psm;
     VaultState vault;
@@ -22,6 +23,15 @@ struct PsmState {
     Balances balances;
     // TODO : make a function to update this
     uint256 repurchaseFeePrecentage;
+    BitMaps.BitMap liquiditySeparated;
+    /// @dev dsId => PsmPoolArchive
+    mapping(uint256 => PsmPoolArchive) poolArchive;
+}
+
+struct PsmPoolArchive {
+    uint256 raAccrued;
+    uint256 paAccrued;
+    uint256 ctAttributed;
 }
 
 // TODO : to PSM balance
