@@ -1,3 +1,6 @@
 [submodule "v2-core"]
 	path = v2-core
 	url = https://github.com/Cork-Technology/v2-core.git
+[submodule "v2-periphery"]
+	path = v2-periphery
+	url = https://github.com/Cork-Technology/v2-periphery.git
