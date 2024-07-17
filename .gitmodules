@@ -1,0 +1,3 @@
+[submodule "v2-core"]
+	path = v2-core
+	url = https://github.com/Cork-Technology/v2-core.git
