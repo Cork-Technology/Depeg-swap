@@ -1,5 +1,5 @@
-// SPDX-License-Identifier: UNLICENSED
-pragma solidity ^0.8.20;
+// taken directly from forked repo
+pragma solidity ^0.8.0;
 import "./UQ112x112.sol";
 
 // library function for handling math operations for DS swap contract
