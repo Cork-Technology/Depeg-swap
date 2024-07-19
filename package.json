@@ -4,6 +4,9 @@
   "main": "index.js",
   "author": "ziankork <zian@cork.technology>",
   "license": "MIT",
+  "scripts": {
+    "test": "npx hardhat test"
+  },
   "devDependencies": {
     "@nomicfoundation/hardhat-chai-matchers": "^2.0.7",
     "@nomicfoundation/hardhat-ignition": "^0.15.0",
