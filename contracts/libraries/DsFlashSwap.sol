@@ -39,4 +39,40 @@ library DsFlashSwaplibrary {
             self.ds[dsId].ds.exchangeRate()
         );
     }
+
+    function getAmountIn(
+        ReserveState storage self,
+        uint256 dsId,
+        uint256 amountOut
+    ) internal view returns (uint256 amountIn) {
+        (uint112 raReserve, uint112 ctReserve, ) = self
+            .ds[dsId]
+            .pair
+            .getReserves();
+
+        amountIn = SwapperMathLibrary.getAmountIn(
+            amountOut,
+            raReserve,
+            ctReserve,
+            self.ds[dsId].ds.exchangeRate()
+        );
+    }
+
+    function getAmountOut(
+        ReserveState storage self,
+        uint256 dsId,
+        uint256 amountIn
+    ) internal view returns (uint256 amountOut) {
+        (uint112 raReserve, uint112 ctReserve, ) = self
+            .ds[dsId]
+            .pair
+            .getReserves();
+
+        amountOut = SwapperMathLibrary.getAmountOut(
+            amountIn,
+            raReserve,
+            ctReserve,
+            self.ds[dsId].ds.exchangeRate()
+        );
+    }
 }
