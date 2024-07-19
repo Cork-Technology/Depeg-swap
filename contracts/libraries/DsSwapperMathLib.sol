@@ -13,7 +13,7 @@ library SwapperMathLibrary {
     function getPriceRatios(
         uint112 raReserve,
         uint112 ctReserve
-    ) internal pure returns (uint256 raPriceRatio, uint256 ctPriceRatio) {
+    ) public pure returns (uint256 raPriceRatio, uint256 ctPriceRatio) {
         if (raReserve > 0 || ctReserve > 0) {
             revert ZeroReserve();
         }
@@ -35,7 +35,7 @@ library SwapperMathLibrary {
         uint112 raReserve,
         uint112 ctReserve,
         uint256 dsExchangeRate
-    ) internal pure returns (uint256 price) {
+    ) public pure returns (uint256 price) {
         (, uint256 ctPriceRatio) = getPriceRatios(raReserve, ctReserve);
 
         price = dsExchangeRate - ctPriceRatio;
@@ -46,7 +46,7 @@ library SwapperMathLibrary {
         uint112 raReserve, // Reserve of the input token
         uint112 ctReserve, // Reserve of the other token (needed for price ratio calculation)
         uint256 dsExchangeRate // DS exchange rate
-    ) internal pure returns (uint256 amountIn) {
+    ) external pure returns (uint256 amountIn) {
         if (amountOut == 0) {
             revert InsufficientOtuputAmount();
         }
@@ -69,7 +69,7 @@ library SwapperMathLibrary {
         uint112 reserveIn, // Reserve of the input token
         uint112 reserveOut, // Reserve of the other token (needed for price ratio calculation)
         uint256 dsExchangeRate // DS exchange rate
-    ) internal pure returns (uint256 amountOut) {
+    ) external pure returns (uint256 amountOut) {
         if (amountIn == 0) {
             revert InsufficientInputAmount();
         }
