@@ -7,6 +7,7 @@ import hre from "hardhat";
 import {
   Address,
   formatEther,
+  keccak256,
   parseEther,
   verifyTypedData,
   WalletClient,
@@ -16,6 +17,12 @@ const DEVISOR = BigInt(1e18);
 
 export function nowTimestampInSeconds() {
   return Math.floor(Date.now() / 1000);
+}
+
+export async function computeInitHash(address: Address) {
+  const client = await hre.viem.getPublicClient();
+  const byteceode = await client.getBytecode({ address });
+  return keccak256(`0x${byteceode}`);
 }
 
 export function toNumber(b: bigint) {
