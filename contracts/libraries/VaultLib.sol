@@ -19,7 +19,6 @@ library VaultLibrary {
     using LvAssetLibrary for LvAsset;
     using VaultLibrary for VaultState;
     using PsmLibrary for State;
-    using RedemptionAssetManagerLibrary for WrappedAsset;
     using RedemptionAssetManagerLibrary for PsmRedemptionAssetManager;
     using BitMaps for BitMaps.BitMap;
     using VaultLibrary for VaultState;

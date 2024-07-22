@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.0;
 
-import "./libraries/Pair.sol";
-import "./libraries/State.sol";
-import "./interfaces/IAssetFactory.sol";
-import "./interfaces/ICommon.sol";
-import "./libraries/PsmLib.sol";
+import "../libraries/Pair.sol";
+import "../libraries/State.sol";
+import "../interfaces/IAssetFactory.sol";
+import "../interfaces/ICommon.sol";
+import "../libraries/PsmLib.sol";
 
 abstract contract ModuleState is ICommon {
     using PsmLibrary for State;

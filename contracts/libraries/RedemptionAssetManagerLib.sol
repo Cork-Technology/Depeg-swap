@@ -1,11 +1,10 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.0;
 
-import "./../Asset.sol";
+import "../core/assets/Asset.sol";
 import "./SignatureHelperLib.sol";
 import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Permit.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "./../WrappedAsset.sol";
 import "./DepegSwapLib.sol";
 
 struct PsmRedemptionAssetManager {

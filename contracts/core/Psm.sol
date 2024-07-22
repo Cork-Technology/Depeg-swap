@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.0;
-import "./libraries/PsmLib.sol";
-import "./libraries/Pair.sol";
-import "./interfaces/IPSMcore.sol";
-import "./libraries/State.sol";
+import "../libraries/PsmLib.sol";
+import "../libraries/Pair.sol";
+import "../interfaces/IPSMcore.sol";
+import "../libraries/State.sol";
 import "./ModuleState.sol";
-import "./interfaces/IRates.sol";
-import "./interfaces/IRepurchase.sol";
+import "../interfaces/IRates.sol";
+import "../interfaces/IRepurchase.sol";
 import "@openzeppelin/contracts/utils/Context.sol";
 
 abstract contract PsmCore is IPSMcore, ModuleState, Context {

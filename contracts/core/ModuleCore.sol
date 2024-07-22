@@ -1,18 +1,18 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.0;
-import "./libraries/PsmLib.sol";
-import "./libraries/VaultLib.sol";
-import "./libraries/Pair.sol";
-import "./libraries/MathHelper.sol";
-import "./interfaces/IPSMcore.sol";
+import "../libraries/PsmLib.sol";
+import "../libraries/VaultLib.sol";
+import "../libraries/Pair.sol";
+import "../libraries/MathHelper.sol";
+import "../interfaces/IPSMcore.sol";
 import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
-import "./interfaces/IAssetFactory.sol";
-import "./libraries/State.sol";
+import "../interfaces/IAssetFactory.sol";
+import "../libraries/State.sol";
 import "./ModuleState.sol";
-import "./interfaces/ICommon.sol";
+import "../interfaces/ICommon.sol";
 import "./Psm.sol";
 import "./Vault.sol";
-import "./interfaces/Init.sol";
+import "../interfaces/Init.sol";
 
 // TODO : make entrypoint that do not rely on permit with function overloading or different function altogether
 contract ModuleCore is PsmCore, Initialize, VaultCore {
