@@ -3,8 +3,10 @@ pragma solidity ^0.8.0;
 
 import "../../libraries/DsFlashSwap.sol";
 import "../../libraries/Pair.sol";
+import "../../interfaces/IDsFlashSwapRouter.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
 
-abstract contract RouterState {
+abstract contract RouterState is IDsFlashSwapUtility, Ownable {
     using DsFlashSwaplibrary for ReserveState;
 
     mapping(Id => ReserveState) reserves;
@@ -16,7 +18,7 @@ abstract contract RouterState {
         address pair,
         uint256 initialReserve,
         uint256 initialLvReserve
-    ) internal {
+    ) external onlyOwner {
         reserves[reserveId].onNewIssuance(
             dsId,
             ds,
@@ -35,7 +37,7 @@ abstract contract RouterState {
     function getCurrentDsPrice(
         Id id,
         uint256 dsId
-    ) internal view returns (uint256 price) {
+    ) external view returns (uint256 price) {
         return reserves[id].getCurrentDsPrice(dsId);
     }
 
@@ -43,7 +45,7 @@ abstract contract RouterState {
         Id id,
         uint256 dsId,
         uint256 amountOut
-    ) internal view returns (uint256 amountIn) {
+    ) external view returns (uint256 amountIn) {
         return reserves[id].getAmountIn(dsId, amountOut);
     }
 
@@ -51,7 +53,7 @@ abstract contract RouterState {
         Id id,
         uint256 dsId,
         uint256 amountIn
-    ) internal view returns (uint256 amountOut) {
+    ) external view returns (uint256 amountOut) {
         return reserves[id].getAmountOut(dsId, amountIn);
     }
 }

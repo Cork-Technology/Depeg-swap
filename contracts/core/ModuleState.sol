@@ -6,6 +6,8 @@ import "../libraries/State.sol";
 import "../interfaces/IAssetFactory.sol";
 import "../interfaces/ICommon.sol";
 import "../libraries/PsmLib.sol";
+import "../interfaces/uniswap-v2/factory.sol";
+import "./flash-swaps/RouterState.sol";
 
 abstract contract ModuleState is ICommon {
     using PsmLibrary for State;
@@ -15,17 +17,32 @@ abstract contract ModuleState is ICommon {
     /// @dev in this case is uni v2
     address ammFactory;
 
+    address dsFlashSwapRouter;
+
     function factory() external view returns (address) {
         return swapAssetFactory;
     }
 
-    constructor(address _swapAssetFactory, address _ammFactory) {
+    constructor(
+        address _swapAssetFactory,
+        address _ammFactory,
+        address _dsFlashSwapRouter
+    ) {
         swapAssetFactory = _swapAssetFactory;
         ammFactory = _ammFactory;
+        dsFlashSwapRouter = _dsFlashSwapRouter;
     }
 
     function getSwapAssetFactory() internal view returns (IAssetFactory) {
         return IAssetFactory(swapAssetFactory);
+    }
+
+    function getRouterCore() internal view returns (RouterState) {
+        return RouterState(dsFlashSwapRouter);
+    }
+
+    function getAmmFactory() internal view returns (IUniswapV2Factory) {
+        return IUniswapV2Factory(ammFactory);
     }
 
     modifier onlyInitialized(Id id) {

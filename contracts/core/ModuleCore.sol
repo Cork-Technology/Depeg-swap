@@ -13,6 +13,8 @@ import "../interfaces/ICommon.sol";
 import "./Psm.sol";
 import "./Vault.sol";
 import "../interfaces/Init.sol";
+import "../interfaces/uniswap-v2/factory.sol";
+import "./flash-swaps/RouterState.sol";
 
 // TODO : make entrypoint that do not rely on permit with function overloading or different function altogether
 contract ModuleCore is PsmCore, Initialize, VaultCore {
@@ -21,8 +23,9 @@ contract ModuleCore is PsmCore, Initialize, VaultCore {
 
     constructor(
         address swapAssetFactory,
-        address ammFactory
-    ) ModuleState(swapAssetFactory, ammFactory) {}
+        address ammFactory,
+        address flashSwapRouter
+    ) ModuleState(swapAssetFactory, ammFactory, flashSwapRouter) {}
 
     function getId(address pa, address ra) external pure returns (Id) {
         return PairLibrary.initalize(pa, ra).toId();
@@ -77,7 +80,7 @@ contract ModuleCore is PsmCore, Initialize, VaultCore {
         address pa = state.info.pair0;
         address ra = state.info.pair1;
 
-        (address _ct, address _ds) = getSwapAssetFactory().deploySwapAssets(
+        (address ct, address ds) = getSwapAssetFactory().deploySwapAssets(
             ra,
             pa,
             address(this),
@@ -90,15 +93,22 @@ contract ModuleCore is PsmCore, Initialize, VaultCore {
 
         PsmLibrary.onNewIssuance(
             state,
-            _ct,
-            _ds,
+            ct,
+            ds,
             idx,
             prevIdx,
             repurchaseFeePrecentage
         );
         VaultLibrary.onNewIssuance(state, prevIdx);
 
-        emit Issued(id, idx, expiry, _ds, _ct);
+        IUniswapV2Factory ammFactory = getAmmFactory();
+
+        address ammPair = ammFactory.createPair(ra, ct);
+
+        // TODO : 0 for both initial reserve for now, will be calculated later when rollover stragegy is implemented
+        getRouterCore().onNewIssuance(id, idx, ds, ammPair, 0, 0);
+
+        emit Issued(id, idx, expiry, ds, ct, ammPair);
     }
 
     function lastDsId(Id id) external view override returns (uint256 dsId) {

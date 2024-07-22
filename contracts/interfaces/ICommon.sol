@@ -28,12 +28,16 @@ interface ICommon {
     /// @param Id The PSM id
     /// @param dsId The DS id
     /// @param expiry The expiry of the DS
+    /// @param ds The address of the DS token
+    /// @param ct The address of the CT token
+    /// @param raCtUniPair The address of the uniswap-v2 pair between RA and CT
     event Issued(
         Id indexed Id,
         uint256 indexed dsId,
         uint256 indexed expiry,
         address ds,
-        address ct
+        address ct,
+        address raCtUniPair
     );
 
     /**
