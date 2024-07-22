@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.20;
 
-import "./../Asset.sol";
+import "../core/assets/Asset.sol";
 import "./Pair.sol";
 import "./DepegSwapLib.sol";
 import "./RedemptionAssetManagerLib.sol";

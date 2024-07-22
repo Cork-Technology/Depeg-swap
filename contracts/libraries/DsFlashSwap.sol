@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.20;
 import "../interfaces/uniswap-v2/pair.sol";
-import "../Asset.sol";
+import "../core/assets/Asset.sol";
 import "./DsSwapperMathLib.sol";
 
 struct AssetPair {

@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.0;
-import "./libraries/VaultLib.sol";
-import "./libraries/Pair.sol";
-import "./libraries/State.sol";
+import "../libraries/VaultLib.sol";
+import "../libraries/Pair.sol";
+import "../libraries/State.sol";
 import "./ModuleState.sol";
 import "@openzeppelin/contracts/utils/Context.sol";
-import "./interfaces/IVault.sol";
+import "../interfaces/IVault.sol";
 
 abstract contract VaultCore is ModuleState, Context, IVault {
     using PairLibrary for Pair;

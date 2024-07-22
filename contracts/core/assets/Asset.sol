@@ -5,8 +5,8 @@ import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/token/ERC20/extensions/ERC20Permit.sol";
 import "@openzeppelin/contracts/token/ERC20/extensions/ERC20FlashMint.sol";
 import "@openzeppelin/contracts/token/ERC20/extensions/ERC20Burnable.sol";
-import "./interfaces/IExpiry.sol";
-import "./interfaces/IRates.sol";
+import "../../interfaces/IExpiry.sol";
+import "../../interfaces/IRates.sol";
 
 contract ExchangeRate is IRates {
     uint256 internal rate;
