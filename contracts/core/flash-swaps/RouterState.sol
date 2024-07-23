@@ -16,16 +16,17 @@ abstract contract RouterState is IDsFlashSwapUtility, Ownable {
         uint256 dsId,
         address ds,
         address pair,
-        uint256 initialReserve,
-        uint256 initialLvReserve
+        uint256 initialReserve
     ) external onlyOwner {
-        reserves[reserveId].onNewIssuance(
-            dsId,
-            ds,
-            pair,
-            initialReserve,
-            initialLvReserve
-        );
+        reserves[reserveId].onNewIssuance(dsId, ds, pair, initialReserve);
+    }
+
+    function addReserve(
+        Id id,
+        uint256 dsId,
+        uint256 amount
+    ) external onlyOwner {
+        reserves[id].addReserve(dsId, amount);
     }
 
     function getState(

@@ -8,12 +8,10 @@ struct AssetPair {
     Asset ds;
     /// @dev [RA, CT]
     IUniswapV2Pair pair;
-    /// @dev this is the amount that the flash swap router has in reserve
-    uint256 reserve;
     /// @dev this represent the amount of DS that the LV has in reserve
     /// will be used to fullfill buy DS orders based on the LV DS selling strategy
     // (i.e 50:50 for first expiry, and 80:20 on subsequent expiries. note that it's represented as LV:AMM)
-    uint256 lvReserve;
+    uint256 reserve;
 }
 struct ReserveState {
     /// @dev dsId => [RA, CT, DS]
@@ -26,15 +24,22 @@ library DsFlashSwaplibrary {
         uint256 dsId,
         address ds,
         address pair,
-        uint256 initialReserve,
-        uint256 initialLvReserve
+        uint256 initialReserve
     ) internal {
         self.ds[dsId] = AssetPair(
             Asset(ds),
             IUniswapV2Pair(pair),
-            initialReserve,
-            initialLvReserve
+            initialReserve
         );
+    }
+
+    function addReserve(
+        ReserveState storage self,
+        uint256 dsId,
+        uint256 amount
+    ) internal returns (uint256 reserve) {
+        self.ds[dsId].reserve += amount;
+        reserve = self.ds[dsId].reserve;
     }
 
     function getCurrentDsPrice(

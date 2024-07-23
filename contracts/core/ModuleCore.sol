@@ -105,8 +105,8 @@ contract ModuleCore is PsmCore, Initialize, VaultCore {
 
         address ammPair = ammFactory.createPair(ra, ct);
 
-        // TODO : 0 for both initial reserve for now, will be calculated later when rollover stragegy is implemented
-        getRouterCore().onNewIssuance(id, idx, ds, ammPair, 0, 0);
+        // TODO : 0 for initial reserve for now, will be calculated later when rollover stragegy is implemented
+        getRouterCore().onNewIssuance(id, idx, ds, ammPair, 0);
 
         emit Issued(id, idx, expiry, ds, ct, ammPair);
     }
