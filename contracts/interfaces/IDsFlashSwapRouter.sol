@@ -21,3 +21,15 @@ interface IDsFlashSwapUtility {
         uint256 amountIn
     ) external view returns (uint256 amountOut);
 }
+
+interface IDsFlashSwapCore {
+    function onNewIssuance(
+        Id reserveId,
+        uint256 dsId,
+        address ds,
+        address pair,
+        uint256 initialReserve
+    ) external;
+
+    function addReserve(Id id, uint256 dsId, uint256 amount) external;
+}

@@ -11,7 +11,7 @@ import "./Guard.sol";
 import "@openzeppelin/contracts/token/ERC20/extensions/ERC20Burnable.sol";
 import "@openzeppelin/contracts/utils/structs/BitMaps.sol";
 import "./VaultPoolLib.sol";
-
+import "../interfaces/IDsFlashSwapRouter.sol";
 
 library VaultLibrary {
     using VaultConfigLibrary for VaultConfig;
@@ -80,7 +80,11 @@ library VaultLibrary {
         self.vault.config.lpCtBalance += ct;
     }
 
-    function _limitOrderDs(uint256 amount) internal {
+    function _addFlashSwapReserve(
+        State storage self,
+        IDsFlashSwapCore flashSwapRouter,
+        uint256 amount
+    ) internal {
         // TODO : placeholder
     }
 
@@ -121,7 +125,8 @@ library VaultLibrary {
 
     function __provideLiquidityWithRatio(
         State storage self,
-        uint256 amount
+        uint256 amount,
+        IDsFlashSwapCore flashSwapRouter
     ) internal returns (uint256 ra, uint256 ct) {
         uint256 ratio = MathHelper.calculatePriceRatio(
             self.vault.getSqrtPriceX96(),
@@ -133,17 +138,18 @@ library VaultLibrary {
 
         PsmLibrary.unsafeIssueToLv(self, ct);
 
-        _limitOrderDs(amount);
+        _addFlashSwapReserve(self, flashSwapRouter, amount);
     }
 
     function deposit(
         State storage self,
         address from,
-        uint256 amount
+        uint256 amount,
+        IDsFlashSwapCore flashSwapRouter
     ) internal {
         safeBeforeExpired(self);
         self.vault.balances.ra.lockUnchecked(amount, from);
-        __provideLiquidityWithRatio(self, amount);
+        __provideLiquidityWithRatio(self, amount, flashSwapRouter);
         self.vault.lv.issue(from, amount);
     }
 
@@ -501,9 +507,10 @@ library VaultLibrary {
     // IMPORTANT : only psm can call this function
     function provideLiquidityWithPsmRepurchase(
         State storage self,
-        uint256 amount
+        uint256 amount,
+        IDsFlashSwapCore flashSwapRouter
     ) internal {
-        __provideLiquidityWithRatio(self, amount);
+        __provideLiquidityWithRatio(self, amount, flashSwapRouter);
     }
 
     function sellExcessCt(State storage self) internal {

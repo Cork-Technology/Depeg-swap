@@ -269,7 +269,8 @@ library PsmLibrary {
     function repurchase(
         State storage self,
         address buyer,
-        uint256 amount
+        uint256 amount,
+        IDsFlashSwapCore flashSwapRouter
     )
         internal
         returns (
@@ -308,7 +309,11 @@ library PsmLibrary {
         IERC20(ds._address).transfer(buyer, received);
 
         // Provide liquidity
-        VaultLibrary.provideLiquidityWithPsmRepurchase(self, fee);
+        VaultLibrary.provideLiquidityWithPsmRepurchase(
+            self,
+            fee,
+            flashSwapRouter
+        );
     }
 
     function _redeemDs(
@@ -516,15 +521,8 @@ library PsmLibrary {
             archive.paAccrued
         );
 
-        _beforeCtRedeem(
-            self,
-            ds,
-            dsId,
-            amount,
-            accruedPa,
-            accruedRa
-        );
-        
+        _beforeCtRedeem(self, ds, dsId, amount, accruedPa, accruedRa);
+
         _afterCtRedeem(
             self,
             ds,

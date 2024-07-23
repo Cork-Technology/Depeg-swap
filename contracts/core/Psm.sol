@@ -26,7 +26,7 @@ abstract contract PsmCore is IPSMcore, ModuleState, Context {
             uint256 feePrecentage,
             uint256 fee,
             uint256 exchangeRates
-        ) = state.repurchase(_msgSender(), amount);
+        ) = state.repurchase(_msgSender(), amount, getRouterCore());
 
         emit Repurchased(
             id,

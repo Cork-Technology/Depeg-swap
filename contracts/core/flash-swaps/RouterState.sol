@@ -6,7 +6,11 @@ import "../../libraries/Pair.sol";
 import "../../interfaces/IDsFlashSwapRouter.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 
-abstract contract RouterState is IDsFlashSwapUtility, Ownable {
+abstract contract RouterState is
+    IDsFlashSwapUtility,
+    IDsFlashSwapCore,
+    Ownable
+{
     using DsFlashSwaplibrary for ReserveState;
 
     mapping(Id => ReserveState) reserves;
@@ -17,7 +21,7 @@ abstract contract RouterState is IDsFlashSwapUtility, Ownable {
         address ds,
         address pair,
         uint256 initialReserve
-    ) external onlyOwner {
+    ) external override onlyOwner {
         reserves[reserveId].onNewIssuance(dsId, ds, pair, initialReserve);
     }
 
@@ -25,7 +29,7 @@ abstract contract RouterState is IDsFlashSwapUtility, Ownable {
         Id id,
         uint256 dsId,
         uint256 amount
-    ) external onlyOwner {
+    ) external override onlyOwner {
         reserves[id].addReserve(dsId, amount);
     }
 
