@@ -99,7 +99,6 @@ contract ModuleCore is PsmCore, Initialize, VaultCore {
             prevIdx,
             repurchaseFeePrecentage
         );
-        VaultLibrary.onNewIssuance(state, prevIdx);
 
         IUniswapV2Factory ammFactory = getAmmFactory();
 
@@ -107,6 +106,8 @@ contract ModuleCore is PsmCore, Initialize, VaultCore {
 
         // TODO : 0 for initial reserve for now, will be calculated later when rollover stragegy is implemented
         getRouterCore().onNewIssuance(id, idx, ds, ammPair, 0);
+
+        VaultLibrary.onNewIssuance(state, prevIdx, getRouterCore());
 
         emit Issued(id, idx, expiry, ds, ct, ammPair);
     }

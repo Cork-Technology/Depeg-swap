@@ -270,7 +270,7 @@ library PsmLibrary {
         State storage self,
         address buyer,
         uint256 amount,
-        IDsFlashSwapCore flashSwapRouter
+        RouterState flashSwapRouter
     )
         internal
         returns (

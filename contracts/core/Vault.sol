@@ -93,7 +93,7 @@ abstract contract VaultCore is ModuleState, Context, IVault {
     ) external override {
         State storage state = states[id];
         (uint256 received, uint256 fee, uint256 feePrecentage) = state
-            .redeemEarly(_msgSender(), receiver, amount);
+            .redeemEarly(_msgSender(), receiver, amount, getRouterCore());
 
         emit LvRedeemEarly(
             id,

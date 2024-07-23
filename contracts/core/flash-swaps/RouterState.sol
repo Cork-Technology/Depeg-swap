@@ -25,6 +25,18 @@ abstract contract RouterState is
         reserves[reserveId].onNewIssuance(dsId, ds, pair, initialReserve);
     }
 
+    function getCurrentPriceRatio(
+        Id id,
+        uint256 dsId
+    )
+        external
+        view
+        override
+        returns (uint256 raPriceRatio, uint256 ctPriceRatio)
+    {
+        (raPriceRatio, ctPriceRatio) = reserves[id].getPriceRatio(dsId);
+    }
+
     function addReserve(
         Id id,
         uint256 dsId,

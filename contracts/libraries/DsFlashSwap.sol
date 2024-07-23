@@ -33,6 +33,21 @@ library DsFlashSwaplibrary {
         );
     }
 
+    function getPriceRatio(
+        ReserveState storage self,
+        uint256 dsId
+    ) internal view returns (uint256 raPriceRatio, uint256 ctPriceRatio) {
+        (uint112 raReserve, uint112 ctReserve, ) = self
+            .ds[dsId]
+            .pair
+            .getReserves();
+
+        (raPriceRatio, ctPriceRatio) = SwapperMathLibrary.getPriceRatioUniv2(
+            raReserve,
+            ctReserve
+        );
+    }
+
     function addReserve(
         ReserveState storage self,
         uint256 dsId,

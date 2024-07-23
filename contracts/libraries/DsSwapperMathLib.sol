@@ -10,7 +10,7 @@ library SwapperMathLibrary {
     error InsufficientLiquidity();
     error InsufficientOtuputAmount();
 
-    function getPriceRatios(
+    function getPriceRatioUniv2(
         uint112 raReserve,
         uint112 ctReserve
     ) public pure returns (uint256 raPriceRatio, uint256 ctPriceRatio) {
@@ -36,7 +36,7 @@ library SwapperMathLibrary {
         uint112 ctReserve,
         uint256 dsExchangeRate
     ) public pure returns (uint256 price) {
-        (, uint256 ctPriceRatio) = getPriceRatios(raReserve, ctReserve);
+        (, uint256 ctPriceRatio) = getPriceRatioUniv2(raReserve, ctReserve);
 
         price = dsExchangeRate - ctPriceRatio;
     }

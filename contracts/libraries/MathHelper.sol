@@ -27,7 +27,7 @@ library MathHelper {
     // using ra and ct, which both has 18 decimals so will default into that one for now
     /// @dev should only pass ERC20.decimals() onto the decimal field
     /// @dev will output price ratio in 18 decimal precision.
-    function calculatePriceRatio(
+    function calculatePriceRatioUniV4(
         uint160 sqrtPriceX96,
         uint8 decimal
     ) external pure returns (uint256) {

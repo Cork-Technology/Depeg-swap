@@ -12,6 +12,7 @@ import "@openzeppelin/contracts/token/ERC20/extensions/ERC20Burnable.sol";
 import "@openzeppelin/contracts/utils/structs/BitMaps.sol";
 import "./VaultPoolLib.sol";
 import "../interfaces/IDsFlashSwapRouter.sol";
+import "../core/flash-swaps/RouterState.sol";
 
 library VaultLibrary {
     using VaultConfigLibrary for VaultConfig;
@@ -54,13 +55,16 @@ library VaultLibrary {
         self.balances.ra = RedemptionAssetManagerLibrary.initialize(ra);
     }
 
-    function provideAmmLiquidityFromPool(State storage self) internal {
-        uint256 ratio = MathHelper.calculatePriceRatio(
-            self.vault.getSqrtPriceX96(),
-            MathHelper.DEFAULT_DECIMAL
+    function provideAmmLiquidityFromPool(
+        State storage self,
+        RouterState flashSwapRouter
+    ) internal {
+        (uint256 raRatio, ) = flashSwapRouter.getCurrentPriceRatio(
+            self.info.toId(),
+            self.globalAssetIdx
         );
 
-        (uint256 ra, uint256 ct) = self.vault.pool.rationedToAmm(ratio);
+        (uint256 ra, uint256 ct) = self.vault.pool.rationedToAmm(raRatio);
 
         __addLiquidityToAmmUnchecked(self, ra, ct);
         PsmLibrary.unsafeIssueToLv(self, ct);
@@ -82,10 +86,14 @@ library VaultLibrary {
 
     function _addFlashSwapReserve(
         State storage self,
-        IDsFlashSwapCore flashSwapRouter,
+        RouterState flashSwapRouter,
         uint256 amount
     ) internal {
-        // TODO : placeholder
+        flashSwapRouter.addReserve(
+            self.info.toId(),
+            self.globalAssetIdx,
+            amount
+        );
     }
 
     function getSqrtPriceX96(
@@ -97,7 +105,11 @@ library VaultLibrary {
     }
 
     // MUST be called on every new DS issuance
-    function onNewIssuance(State storage self, uint256 dsId) internal {
+    function onNewIssuance(
+        State storage self,
+        uint256 dsId,
+        RouterState flashSwapRouter
+    ) internal {
         // do nothing at first issuance
         if (dsId == 0) {
             return;
@@ -107,7 +119,7 @@ library VaultLibrary {
             _liquidatedLp(self, dsId);
         }
 
-        provideAmmLiquidityFromPool(self);
+        provideAmmLiquidityFromPool(self, flashSwapRouter);
     }
 
     function safeBeforeExpired(State storage self) internal view {
@@ -126,14 +138,14 @@ library VaultLibrary {
     function __provideLiquidityWithRatio(
         State storage self,
         uint256 amount,
-        IDsFlashSwapCore flashSwapRouter
+        RouterState flashSwapRouter
     ) internal returns (uint256 ra, uint256 ct) {
-        uint256 ratio = MathHelper.calculatePriceRatio(
-            self.vault.getSqrtPriceX96(),
-            MathHelper.DEFAULT_DECIMAL
+        (uint256 raRatio, ) = flashSwapRouter.getCurrentPriceRatio(
+            self.info.toId(),
+            self.globalAssetIdx
         );
 
-        (ra, ct) = MathHelper.calculateAmounts(amount, ratio);
+        (ra, ct) = MathHelper.calculateAmounts(amount, raRatio);
         __addLiquidityToAmmUnchecked(self, ra, ct);
 
         PsmLibrary.unsafeIssueToLv(self, ct);
@@ -145,7 +157,7 @@ library VaultLibrary {
         State storage self,
         address from,
         uint256 amount,
-        IDsFlashSwapCore flashSwapRouter
+        RouterState flashSwapRouter
     ) internal {
         safeBeforeExpired(self);
         self.vault.balances.ra.lockUnchecked(amount, from);
@@ -419,7 +431,8 @@ library VaultLibrary {
         State storage self,
         address owner,
         address receiver,
-        uint256 amount
+        uint256 amount,
+        RouterState flashSwapRouter
     ) internal returns (uint256 received, uint256 fee, uint256 feePrecentage) {
         safeBeforeExpired(self);
 
@@ -435,14 +448,16 @@ library VaultLibrary {
             amount
         );
 
-        uint256 ratio = MathHelper.calculatePriceRatio(
-            self.vault.getSqrtPriceX96(),
-            MathHelper.DEFAULT_DECIMAL
+        (uint256 raRatio, ) = flashSwapRouter.getCurrentPriceRatio(
+            self.info.toId(),
+            self.globalAssetIdx
         );
-
         // calculate substracted LP liquidity in respect to the price ratio
         // this is done to minimize price impact
-        (uint256 ra, uint256 ct) = MathHelper.calculateAmounts(received, ratio);
+        (uint256 ra, uint256 ct) = MathHelper.calculateAmounts(
+            received,
+            raRatio
+        );
 
         // TODO : change this into pool function
         self.vault.config.lpRaBalance -= ra;
@@ -508,7 +523,7 @@ library VaultLibrary {
     function provideLiquidityWithPsmRepurchase(
         State storage self,
         uint256 amount,
-        IDsFlashSwapCore flashSwapRouter
+        RouterState flashSwapRouter
     ) internal {
         __provideLiquidityWithRatio(self, amount, flashSwapRouter);
     }
