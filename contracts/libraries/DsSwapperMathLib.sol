@@ -3,6 +3,7 @@ pragma solidity ^0.8.0;
 import "./UQ112x112.sol";
 
 // library function for handling math operations for DS swap contract
+// TODO : separately test this
 library SwapperMathLibrary {
     using UQ112x112 for uint224;
     error ZeroReserve();
