@@ -5,6 +5,11 @@ library MathHelper {
     /// @dev default decimals for now to calculate price ratio
     uint8 internal constant DEFAULT_DECIMAL = 18;
 
+    // TODO : discuss what value of this should be set to. currently set to 1% tolerance.
+    // this is used to calculate tolerance level when adding liqudity to AMM pair
+    /// @dev 1e18 == 1%.
+    uint256 internal constant UNIV2_STATIC_TOLERANCE = 1000000000000000000;
+
     /**
      * @dev calculate the amount of ra and ct needed to provide AMM with liquidity in respect to the price ratio
      *
@@ -107,7 +112,6 @@ library MathHelper {
         _amount = (amount * exchangeRate) / 1e18;
     }
 
-    // TODO : unit test this, just move here from psm
     /// @notice calculate the accrued PA & RA
     /// @dev this function follow below equation :
     /// '#' refers to the total circulation supply of that token.
@@ -146,5 +150,19 @@ library MathHelper {
         attributedAmm = totalAmount - attributedWithdrawal;
 
         assert((attributedWithdrawal + attributedAmm) == totalAmount);
+    }
+
+    function calculateWithTolreance(
+        uint256 ra,
+        uint256 ct,
+        uint256 tolerance
+    ) external pure returns (uint256 raTolerance, uint256 ctTolerance) {
+        raTolerance = (ra * tolerance) / 1e18;
+        ctTolerance = (ct * tolerance) / 1e18;
+    }
+
+    function name() external pure returns (string memory) {
+        return "MathHelper";
+        
     }
 }
