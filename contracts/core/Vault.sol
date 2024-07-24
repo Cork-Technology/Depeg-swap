@@ -20,7 +20,7 @@ abstract contract VaultCore is ModuleState, Context, IVault {
 
     function depositLv(Id id, uint256 amount) external override {
         State storage state = states[id];
-        state.deposit(_msgSender(), amount, getRouterCore());
+        state.deposit(_msgSender(), amount, getRouterCore(), getAmmRouter());
         emit LvDeposited(id, _msgSender(), amount);
     }
 

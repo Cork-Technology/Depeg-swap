@@ -24,8 +24,9 @@ contract ModuleCore is PsmCore, Initialize, VaultCore {
     constructor(
         address swapAssetFactory,
         address ammFactory,
-        address flashSwapRouter
-    ) ModuleState(swapAssetFactory, ammFactory, flashSwapRouter) {}
+        address flashSwapRouter,
+        address ammRouter
+    ) ModuleState(swapAssetFactory, ammFactory, flashSwapRouter, ammRouter) {}
 
     function getId(address pa, address ra) external pure returns (Id) {
         return PairLibrary.initalize(pa, ra).toId();
@@ -107,7 +108,12 @@ contract ModuleCore is PsmCore, Initialize, VaultCore {
         // TODO : 0 for initial reserve for now, will be calculated later when rollover stragegy is implemented
         getRouterCore().onNewIssuance(id, idx, ds, ammPair, 0);
 
-        VaultLibrary.onNewIssuance(state, prevIdx, getRouterCore());
+        VaultLibrary.onNewIssuance(
+            state,
+            prevIdx,
+            getRouterCore(),
+            getAmmRouter()
+        );
 
         emit Issued(id, idx, expiry, ds, ct, ammPair);
     }

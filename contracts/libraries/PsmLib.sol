@@ -270,7 +270,8 @@ library PsmLibrary {
         State storage self,
         address buyer,
         uint256 amount,
-        RouterState flashSwapRouter
+        RouterState flashSwapRouter,
+        IUniswapV2Router02 ammRouter
     )
         internal
         returns (
@@ -312,7 +313,8 @@ library PsmLibrary {
         VaultLibrary.provideLiquidityWithPsmRepurchase(
             self,
             fee,
-            flashSwapRouter
+            flashSwapRouter,
+            ammRouter
         );
     }
 
