@@ -25,6 +25,13 @@ abstract contract RouterState is
         reserves[reserveId].onNewIssuance(dsId, ds, pair, initialReserve);
     }
 
+    function emptyReserve(
+        Id reserveId,
+        uint256 dsId
+    ) external returns (uint256 amount) {
+        return reserves[reserveId].emptyReserve(dsId, owner());
+    }
+
     function getCurrentPriceRatio(
         Id id,
         uint256 dsId
