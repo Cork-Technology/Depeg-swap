@@ -117,8 +117,10 @@ library VaultLibrary {
     function _addFlashSwapReserve(
         State storage self,
         RouterState flashSwapRouter,
+        DepegSwap storage ds,
         uint256 amount
     ) internal {
+        Asset(ds._address).approve(address(flashSwapRouter), amount);
         flashSwapRouter.addReserve(
             self.info.toId(),
             self.globalAssetIdx,
@@ -170,9 +172,10 @@ library VaultLibrary {
         address ctAddress,
         IUniswapV2Router02 ammRouter
     ) internal returns (uint256 ra, uint256 ct) {
+        uint256 dsId = self.globalAssetIdx;
         (uint256 raRatio, ) = flashSwapRouter.getCurrentPriceRatio(
             self.info.toId(),
-            self.globalAssetIdx
+            dsId
         );
 
         (ra, ct) = MathHelper.calculateAmounts(amount, raRatio);
@@ -187,7 +190,7 @@ library VaultLibrary {
 
         PsmLibrary.unsafeIssueToLv(self, ct);
 
-        _addFlashSwapReserve(self, flashSwapRouter, amount);
+        _addFlashSwapReserve(self, flashSwapRouter, self.ds[dsId], amount);
     }
 
     function deposit(

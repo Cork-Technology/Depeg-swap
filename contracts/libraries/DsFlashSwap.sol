@@ -39,7 +39,7 @@ library DsFlashSwaplibrary {
         address to
     ) internal returns (uint256 reserve) {
         self.ds[dsId].ds.transfer(to, self.ds[dsId].reserve);
-        
+
         reserve = self.ds[dsId].reserve;
         self.ds[dsId].reserve = 0;
     }
@@ -62,8 +62,11 @@ library DsFlashSwaplibrary {
     function addReserve(
         ReserveState storage self,
         uint256 dsId,
-        uint256 amount
+        uint256 amount,
+        address from
     ) internal returns (uint256 reserve) {
+        self.ds[dsId].ds.transferFrom(from, address(this), amount);
+        
         self.ds[dsId].reserve += amount;
         reserve = self.ds[dsId].reserve;
     }

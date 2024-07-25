@@ -49,7 +49,7 @@ abstract contract RouterState is
         uint256 dsId,
         uint256 amount
     ) external override onlyOwner {
-        reserves[id].addReserve(dsId, amount);
+        reserves[id].addReserve(dsId, amount, owner());
     }
 
     function getState(
