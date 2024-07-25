@@ -22,7 +22,7 @@ interface IDsFlashSwapUtility {
     ) external view returns (uint256 amountOut);
 
     function getCurrentPriceRatio(
-        Id id ,
+        Id id,
         uint256 dsId
     ) external view returns (uint256 raPriceRatio, uint256 ctPriceRatio);
 }
@@ -37,4 +37,9 @@ interface IDsFlashSwapCore {
     ) external;
 
     function addReserve(Id id, uint256 dsId, uint256 amount) external;
+
+    function emptyReserve(
+        Id reserveId,
+        uint256 dsId
+    ) external returns (uint256 amount);
 }
