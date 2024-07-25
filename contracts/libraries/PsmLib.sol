@@ -43,6 +43,7 @@ library PsmLibrary {
         State storage self,
         address ct,
         address ds,
+        address ammPair,
         uint256 idx,
         uint256 prevIdx,
         uint256 repurchaseFeePercent
@@ -57,7 +58,7 @@ library PsmLibrary {
         self.psm.balances.dsBalance = 0;
 
         self.psm.repurchaseFeePrecentage = repurchaseFeePercent;
-        self.ds[idx] = DepegSwapLibrary.initialize(ds, ct);
+        self.ds[idx] = DepegSwapLibrary.initialize(ds, ct, ammPair);
     }
 
     function _separateLiquidity(State storage self, uint256 prevIdx) internal {
@@ -118,6 +119,7 @@ library PsmLibrary {
     function unsafeIssueToLv(State storage self, uint256 amount) internal {
         uint256 dsId = self.globalAssetIdx;
 
+        // TODO : handle rebasing token exchange rate
         DepegSwap storage ds = self.ds[dsId];
 
         self.psm.balances.ra.incLocked(amount);
@@ -136,9 +138,31 @@ library PsmLibrary {
 
     function lvRedeemRaPaWithCt(
         State storage self,
-        uint256 amount
-    ) internal returns (uint256 pa) {
-        // just for semantics for now.
+        uint256 amount,
+        uint256 dsId
+    ) internal returns (uint256 accruedPa, uint256 accruedRa) {
+        // we separate the liquidity here, that means, LP liquidation on the LV also triggers
+        _separateLiquidity(self, dsId);
+
+        uint256 totalCtIssued = self.psm.poolArchive[dsId].ctAttributed;
+        PsmPoolArchive storage archive = self.psm.poolArchive[dsId];
+
+        (accruedPa, accruedRa) = _calcRedeemAmount(
+            self,
+            amount,
+            totalCtIssued,
+            archive.raAccrued,
+            archive.paAccrued
+        );
+
+        _beforeCtRedeem(
+            self,
+            self.ds[dsId],
+            dsId,
+            amount,
+            accruedPa,
+            accruedRa
+        );
     }
 
     /// @notice preview deposit

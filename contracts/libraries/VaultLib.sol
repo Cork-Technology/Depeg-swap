@@ -81,11 +81,8 @@ library VaultLibrary {
         PsmLibrary.unsafeIssueToLv(self, ct);
 
         self.vault.pool.resetAmmPool();
-
-        // TODO : actually mint CT and DS
     }
 
-    // FIXME :  temporary, will be updated once we integrate with uniswap
     function __addLiquidityToAmmUnchecked(
         State storage self,
         uint256 raAmount,
@@ -129,14 +126,6 @@ library VaultLibrary {
         );
     }
 
-    function getSqrtPriceX96(
-        VaultState storage self
-    ) internal view returns (uint160) {
-        // TODO : placeholder
-        // 1 for now, so that every 1 ra there must be 1 ct
-        return 79228162514264337593543950336;
-    }
-
     // MUST be called on every new DS issuance
     function onNewIssuance(
         State storage self,
@@ -150,7 +139,7 @@ library VaultLibrary {
         }
 
         if (!self.vault.lpLiquidated.get(prevDsId)) {
-            _liquidatedLp(self, prevDsId);
+            _liquidatedLp(self, prevDsId, ammRouter, flashSwapRouter);
         }
 
         provideAmmLiquidityFromPool(
@@ -287,7 +276,36 @@ library VaultLibrary {
         self.vault.pool.withdrawEligible[from] -= amount;
     }
 
-    function _liquidatedLp(State storage self, uint256 dsId) internal {
+    function __liquidateUnchecked(
+        State storage self,
+        address raAddress,
+        address ctAddress,
+        IUniswapV2Router02 ammRouter,
+        IUniswapV2Pair ammPair
+    ) internal returns (uint256 raReceived, uint256 ctReceived) {
+        uint256 lp = self.vault.config.lpBalance;
+        ammPair.approve(address(ammRouter), lp);
+
+        (raReceived, ctReceived) = ammRouter.removeLiquidity(
+            raAddress,
+            ctAddress,
+            lp,
+            // 100% tolerance
+            0,
+            // 100% tolerance
+            0,
+            address(this),
+            block.timestamp
+        );
+    }
+
+    function _liquidatedLp(
+        State storage self,
+        uint256 dsId,
+        IUniswapV2Router02 ammRouter,
+        RouterState flashSwapRouter
+    ) internal {
+        DepegSwap storage ds = self.ds[dsId];
         // TODO : placeholder
         // the following things should happen here(taken directly from the whitepaper) :
         // 1. The AMM LP is redeemed to receive CT + RA
@@ -302,18 +320,42 @@ library VaultLibrary {
         // but that means we won't receive any pegged asset from the PSM yet
         // since the number of CT and DS in LV will always be the same
         // due to not having an actual AMM.
-        uint256 ammCtBalance = self.vault.config.lpCtBalance;
-        uint256 totalRa = self.vault.config.lpRaBalance + ammCtBalance;
-        PsmLibrary.lvRedeemRaWithCtDs(self, ammCtBalance, dsId);
+        (uint256 raAmm, uint256 ctAmm) = __liquidateUnchecked(
+            self,
+            self.info.pair1,
+            self.ds[dsId].ct,
+            ammRouter,
+            IUniswapV2Pair(ds.ammPair)
+        );
 
-        // static values for PA for now.
-        uint256 ctAttributedToPa = 0;
-        uint256 pa = PsmLibrary.lvRedeemRaPaWithCt(self, ctAttributedToPa);
+        uint256 reservedDs = flashSwapRouter.emptyReserve(
+            self.info.toId(),
+            dsId
+        );
 
-        self.vault.pool.reserve(self.vault.lv.totalIssued(), totalRa, pa);
+        uint256 redeemAmount = reservedDs > ctAmm ? ctAmm : reservedDs;
+        PsmLibrary.lvRedeemRaWithCtDs(self, redeemAmount, dsId);
 
-        self.vault.config.lpRaBalance = 0;
-        self.vault.config.lpCtBalance = 0;
+        // if the reserved DS is more than the CT that's available from liquidating the AMM LP
+        // then there's no CT we can use to effectively redeem RA + PA from the PSM
+        uint256 ctAttributedToPa = reservedDs > ctAmm ? 0 : ctAmm - reservedDs;
+
+        uint256 psmPa;
+        uint256 psmRa;
+
+        if (ctAttributedToPa != 0) {
+            (psmPa, psmRa) = PsmLibrary.lvRedeemRaPaWithCt(
+                self,
+                ctAttributedToPa,
+                dsId
+            );
+        }
+
+        self.vault.pool.reserve(
+            self.vault.lv.totalIssued(),
+            raAmm + psmRa,
+            psmPa
+        );
     }
 
     function reservedForWithdrawal(
@@ -356,7 +398,9 @@ library VaultLibrary {
         State storage self,
         address owner,
         address receiver,
-        uint256 amount
+        uint256 amount,
+        IUniswapV2Router02 ammRouter,
+        RouterState flashSwapRouter
     ) internal returns (uint256 attributedRa, uint256 attributedPa) {
         uint256 dsId = self.globalAssetIdx;
         DepegSwap storage ds = self.ds[dsId];
@@ -374,14 +418,13 @@ library VaultLibrary {
         }
 
         if (ds.isExpired() && !self.vault.lpLiquidated.get(dsId)) {
-            _liquidatedLp(self, dsId);
+            _liquidatedLp(self, dsId, ammRouter, flashSwapRouter);
             assert(self.vault.balances.ra.locked == 0);
         }
 
-        ERC20Burnable lv = ERC20Burnable(self.vault.lv._address);
-
         uint256 burnUserAmount;
         uint256 burnSelfAmount;
+
         (attributedRa, attributedPa, burnUserAmount, burnSelfAmount) = self
             .vault
             .pool
@@ -397,7 +440,10 @@ library VaultLibrary {
         self.vault.lv.burnSelf(burnSelfAmount);
 
         if (burnUserAmount != 0) {
-            lv.burnFrom(owner, burnUserAmount);
+            ERC20Burnable(self.vault.lv._address).burnFrom(
+                owner,
+                burnUserAmount
+            );
         }
     }
 
