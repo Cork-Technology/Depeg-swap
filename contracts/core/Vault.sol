@@ -63,7 +63,9 @@ abstract contract VaultCore is ModuleState, Context, IVault {
         (uint256 attributedRa, uint256 attributedPa) = state.redeemExpired(
             _msgSender(),
             receiver,
-            amount
+            amount,
+            getAmmRouter(),
+            getRouterCore()
         );
         emit LvRedeemExpired(id, receiver, attributedRa, attributedPa);
     }

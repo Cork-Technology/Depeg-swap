@@ -78,12 +78,11 @@ contract ModuleCore is PsmCore, Initialize, VaultCore {
     ) external override onlyInitialized(id) {
         State storage state = states[id];
 
-        address pa = state.info.pair0;
         address ra = state.info.pair1;
 
         (address ct, address ds) = getSwapAssetFactory().deploySwapAssets(
             ra,
-            pa,
+            state.info.pair0,
             address(this),
             expiry,
             exchangeRates
@@ -92,18 +91,17 @@ contract ModuleCore is PsmCore, Initialize, VaultCore {
         uint256 prevIdx = state.globalAssetIdx++;
         uint256 idx = state.globalAssetIdx;
 
+        address ammPair = getAmmFactory().createPair(ra, ct);
+
         PsmLibrary.onNewIssuance(
             state,
             ct,
             ds,
+            ammPair,
             idx,
             prevIdx,
             repurchaseFeePrecentage
         );
-
-        IUniswapV2Factory ammFactory = getAmmFactory();
-
-        address ammPair = ammFactory.createPair(ra, ct);
 
         // TODO : 0 for initial reserve for now, will be calculated later when rollover stragegy is implemented
         getRouterCore().onNewIssuance(id, idx, ds, ammPair, 0);
