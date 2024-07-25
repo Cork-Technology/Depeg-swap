@@ -8,6 +8,8 @@ struct DepegSwap {
     bool expiredEventEmitted;
     address _address;
     address ct;
+    /// @dev right now this the RA:CT AMM pair address
+    address ammPair;
     uint256 dsRedeemed;
     uint256 ctRedeemed;
 }
@@ -43,12 +45,14 @@ library DepegSwapLibrary {
 
     function initialize(
         address _address,
-        address ct
+        address ct,
+        address ammPair
     ) internal pure returns (DepegSwap memory) {
         return
             DepegSwap({
                 expiredEventEmitted: false,
                 _address: _address,
+                ammPair: ammPair,
                 ct: ct,
                 dsRedeemed: 0,
                 ctRedeemed: 0
