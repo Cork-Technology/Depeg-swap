@@ -18,8 +18,22 @@ import "../interfaces/Init.sol";
 contract ModuleCore is PsmCore, Initialize, VaultCore {
     using PsmLibrary for State;
     using PairLibrary for Pair;
+    address public config;
 
-    constructor(address factory) ModuleState(factory) {}
+    error OnlyConfigAllowed();
+
+    constructor(address factory, address _config) ModuleState(factory) {
+        config = _config;
+    }
+
+    /** @dev checks if caller is config contract or not
+     */
+    modifier onlyConfig() {
+        if (msg.sender != config) {
+            revert OnlyConfigAllowed();
+        }
+        _;
+    }
 
     function getId(address pa, address ra) external pure returns (Id) {
         return PairLibrary.initalize(pa, ra).toId();
@@ -35,7 +49,7 @@ contract ModuleCore is PsmCore, Initialize, VaultCore {
         // TODO : maybe remove this threshold
         uint256 lvAmmWaDepositThreshold,
         uint256 lvAmmCtDepositThreshold
-    ) external override {
+    ) external override onlyConfig {
         Pair memory key = PairLibrary.initalize(pa, ra);
         Id id = key.toId();
 
@@ -68,7 +82,7 @@ contract ModuleCore is PsmCore, Initialize, VaultCore {
         uint256 expiry,
         uint256 exchangeRates,
         uint256 repurchaseFeePrecentage
-    ) external override onlyInitialized(id) {
+    ) external override onlyConfig onlyInitialized(id) {
         State storage state = states[id];
 
         address pa = state.info.pair0;
