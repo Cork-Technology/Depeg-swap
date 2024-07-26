@@ -21,6 +21,7 @@ describe("LvCore", function () {
     await helper.issueNewSwapAssets({
       expiry: helper.expiry(1000000),
       factory: fixture.factory.contract.address,
+      config: fixture.config.contract.address,
       moduleCore: fixture.moduleCore.contract.address,
       pa: fixture.pa.address,
       ra: fixture.ra.address,
@@ -77,6 +78,7 @@ describe("LvCore", function () {
       expiry,
       factory: fixture.factory.contract.address,
       moduleCore: fixture.moduleCore.contract.address,
+      config: fixture.config.contract.address,
       pa: fixture.pa.address,
       ra: fixture.ra.address,
     });
@@ -163,6 +165,7 @@ describe("LvCore", function () {
       expiry,
       factory: fixture.factory.contract.address,
       moduleCore: fixture.moduleCore.contract.address,
+      config: fixture.config.contract.address,
       pa: fixture.pa.address,
       ra: fixture.ra.address,
     });
@@ -198,6 +201,7 @@ describe("LvCore", function () {
       expiry: helper.expiry(1 * 1e18),
       factory: fixture.factory.contract.address,
       moduleCore: fixture.moduleCore.contract.address,
+      config: fixture.config.contract.address,
       pa: fixture.pa.address,
       ra: fixture.ra.address,
     });
@@ -264,6 +268,7 @@ describe("LvCore", function () {
       expiry,
       factory: fixture.factory.contract.address,
       moduleCore: fixture.moduleCore.contract.address,
+      config: fixture.config.contract.address,
       pa: fixture.pa.address,
       ra: fixture.ra.address,
     });
@@ -329,6 +334,7 @@ describe("LvCore", function () {
       expiry,
       factory: fixture.factory.contract.address,
       moduleCore: fixture.moduleCore.contract.address,
+      config: fixture.config.contract.address,
       pa: fixture.pa.address,
       ra: fixture.ra.address,
     });
@@ -375,6 +381,7 @@ describe("LvCore", function () {
       expiry,
       factory: fixture.factory.contract.address,
       moduleCore: fixture.moduleCore.contract.address,
+      config: fixture.config.contract.address,
       pa: fixture.pa.address,
       ra: fixture.ra.address,
     });
@@ -431,6 +438,7 @@ describe("LvCore", function () {
       expiry,
       factory: fixture.factory.contract.address,
       moduleCore: fixture.moduleCore.contract.address,
+      config: fixture.config.contract.address,
       pa: fixture.pa.address,
       ra: fixture.ra.address,
     });
@@ -500,6 +508,7 @@ describe("LvCore", function () {
       expiry,
       factory: fixture.factory.contract.address,
       moduleCore: fixture.moduleCore.contract.address,
+      config: fixture.config.contract.address,
       pa: fixture.pa.address,
       ra: fixture.ra.address,
     });
@@ -548,6 +557,7 @@ describe("LvCore", function () {
       expiry,
       factory: fixture.factory.contract.address,
       moduleCore: fixture.moduleCore.contract.address,
+      config: fixture.config.contract.address,
       pa: fixture.pa.address,
       ra: fixture.ra.address,
     });
@@ -634,6 +644,7 @@ describe("LvCore", function () {
       expiry,
       factory: fixture.factory.contract.address,
       moduleCore: fixture.moduleCore.contract.address,
+      config: fixture.config.contract.address,
       pa: fixture.pa.address,
       ra: fixture.ra.address,
     });
@@ -668,6 +679,7 @@ describe("LvCore", function () {
       expiry: helper.expiry(1 * 1e18),
       factory: fixture.factory.contract.address,
       moduleCore: fixture.moduleCore.contract.address,
+      config: fixture.config.contract.address,
       pa: fixture.pa.address,
       ra: fixture.ra.address,
     });

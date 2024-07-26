@@ -18,7 +18,7 @@ contract CorkConfig is AccessControl, Pausable {
     event ModuleCoreSet(address moduleCore);
 
     modifier onlyManager() {
-        if (!hasRole(MANAGER_ROLE, msg.sender)) {
+        if (!hasRole(MANAGER_ROLE, msg.sender) && !hasRole(DEFAULT_ADMIN_ROLE, msg.sender)) {
             revert CallerNotManager();
         }
         _;

@@ -22,12 +22,17 @@ describe("PSM core", function () {
         psmFixture.moduleCore.contract.address
       );
 
+      const configContract = await hre.viem.getContractAt(
+        "CorkConfig",
+        psmFixture.config.contract.address
+      );
+
       const Id = await contract.read.getId([
         psmFixture.pa.address,
         psmFixture.ra.address,
       ]);
 
-      await contract.write.issueNewDs(
+      await configContract.write.issueNewDs(
         [Id, BigInt(expiry), parseEther("1"), parseEther("10")],
         {
           account: defaultSigner.account,
@@ -68,6 +73,7 @@ describe("PSM core", function () {
       const { dsId } = await helper.issueNewSwapAssets({
         expiry: helper.nowTimestampInSeconds() + 10000,
         moduleCore: fixture.moduleCore.contract.address,
+        config: fixture.config.contract.address,
         pa: fixture.pa.address,
         ra: fixture.ra.address,
         factory: fixture.factory.contract.address,
@@ -116,6 +122,7 @@ describe("PSM core", function () {
       const { dsId, ds, ct } = await helper.issueNewSwapAssets({
         expiry: helper.nowTimestampInSeconds() + 1000,
         moduleCore: fixture.moduleCore.contract.address,
+        config: fixture.config.contract.address,
         pa: fixture.pa.address,
         ra: fixture.ra.address,
         factory: fixture.factory.contract.address,
@@ -204,6 +211,7 @@ describe("PSM core", function () {
       const { dsId, ds, ct, expiry } = await helper.issueNewSwapAssets({
         expiry: helper.nowTimestampInSeconds() + 10000,
         moduleCore: fixture.moduleCore.contract.address,
+        config: fixture.config.contract.address,
         pa: fixture.pa.address,
         ra: fixture.ra.address,
         factory: fixture.factory.contract.address,
@@ -277,6 +285,7 @@ describe("PSM core", function () {
       const { dsId } = await helper.issueNewSwapAssets({
         expiry: helper.nowTimestampInSeconds() + 10000,
         moduleCore: fixture.moduleCore.contract.address,
+        config: fixture.config.contract.address,
         pa: fixture.pa.address,
         ra: fixture.ra.address,
         factory: fixture.factory.contract.address,
@@ -330,6 +339,7 @@ describe("PSM core", function () {
       const { dsId, ds, ct } = await helper.issueNewSwapAssets({
         expiry: helper.nowTimestampInSeconds() + 1000,
         moduleCore: fixture.moduleCore.contract.address,
+        config: fixture.config.contract.address,
         pa: fixture.pa.address,
         ra: fixture.ra.address,
         factory: fixture.factory.contract.address,
@@ -417,6 +427,7 @@ describe("PSM core", function () {
       const { dsId, ds, ct } = await helper.issueNewSwapAssets({
         expiry: helper.nowTimestampInSeconds() + 1000,
         moduleCore: fixture.moduleCore.contract.address,
+        config: fixture.config.contract.address,
         pa: fixture.pa.address,
         ra: fixture.ra.address,
         factory: fixture.factory.contract.address,
@@ -472,6 +483,7 @@ describe("PSM core", function () {
       const { dsId, ds, ct } = await helper.issueNewSwapAssets({
         expiry: helper.nowTimestampInSeconds() + 10000,
         moduleCore: fixture.moduleCore.contract.address,
+        config: fixture.config.contract.address,
         pa: fixture.pa.address,
         ra: fixture.ra.address,
         factory: fixture.factory.contract.address,
@@ -572,6 +584,7 @@ describe("PSM core", function () {
       const { dsId, ds, ct } = await helper.issueNewSwapAssets({
         expiry: helper.nowTimestampInSeconds() + 10000,
         moduleCore: fixture.moduleCore.contract.address,
+        config: fixture.config.contract.address,
         pa: fixture.pa.address,
         ra: fixture.ra.address,
         factory: fixture.factory.contract.address,
@@ -620,6 +633,7 @@ describe("PSM core", function () {
       const { dsId, ds, ct } = await helper.issueNewSwapAssets({
         expiry: helper.nowTimestampInSeconds() + 1000,
         moduleCore: fixture.moduleCore.contract.address,
+        config: fixture.config.contract.address,
         pa: fixture.pa.address,
         ra: fixture.ra.address,
         factory: fixture.factory.contract.address,
@@ -732,6 +746,7 @@ describe("PSM core", function () {
       const { dsId, ds, ct } = await helper.issueNewSwapAssets({
         expiry: helper.nowTimestampInSeconds() + 1000,
         moduleCore: fixture.moduleCore.contract.address,
+        config: fixture.config.contract.address,
         pa: fixture.pa.address,
         ra: fixture.ra.address,
         factory: fixture.factory.contract.address,
@@ -824,6 +839,7 @@ describe("PSM core", function () {
       const { dsId, ds, ct } = await helper.issueNewSwapAssets({
         expiry: helper.nowTimestampInSeconds() + 1000,
         moduleCore: fixture.moduleCore.contract.address,
+        config: fixture.config.contract.address,
         pa: fixture.pa.address,
         ra: fixture.ra.address,
         factory: fixture.factory.contract.address,
@@ -951,7 +967,7 @@ describe("PSM core", function () {
     let expiry = helper.expiry(expiryInterval);
 
     for (let i = 0; i < 10; i++) {
-      await fixture.moduleCore.contract.write.issueNewDs(
+      await fixture.config.contract.write.issueNewDs(
         [Id, BigInt(expiry), parseEther("1"), parseEther("10")],
         {
           account: defaultSigner.account,
@@ -1010,6 +1026,7 @@ describe("PSM core", function () {
     await helper.issueNewSwapAssets({
       expiry,
       moduleCore: fixture.moduleCore.contract.address,
+      config: fixture.config.contract.address,
       pa: fixture.pa.address,
       ra: fixture.ra.address,
       factory: fixture.factory.contract.address,
@@ -1028,6 +1045,7 @@ describe("PSM core", function () {
     const { dsId, ct } = await helper.issueNewSwapAssets({
       expiry: newExpiry,
       moduleCore: fixture.moduleCore.contract.address,
+      config: fixture.config.contract.address,
       pa: fixture.pa.address,
       ra: fixture.ra.address,
       factory: fixture.factory.contract.address,
