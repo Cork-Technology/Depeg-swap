@@ -54,7 +54,7 @@ describe("Math Helper", function () {
 
       const contract = await loadFixture(deployMathHelper);
 
-      const converted = await contract.read.calculatePriceRatio([
+      const converted = await contract.read.calculatePriceRatioUniV4([
         sqrtpricex96,
         18,
       ]);
@@ -89,7 +89,7 @@ describe("Math Helper", function () {
 
       const contract = await loadFixture(deployMathHelper);
 
-      const ratio = await contract.read.calculatePriceRatio([sqrtpricex96, 18]);
+      const ratio = await contract.read.calculatePriceRatioUniV4([sqrtpricex96, 18]);
 
       expect(ratio).to.equal(expectedRatio);
 
