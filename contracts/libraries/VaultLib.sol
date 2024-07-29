@@ -27,6 +27,9 @@ library VaultLibrary {
     using DepegSwapLibrary for DepegSwap;
     using VaultPoolLibrary for VaultPool;
 
+    // TODO : for now a static ratio deposit value used to provide liquidity for the first time, this should be changed later
+    uint256 constant DEFAULT_AMM_DEPOSIT_RATIO = 1e18;
+
     /// @notice caller is not authorized to perform the action, e.g transfering
     /// redemption rights to another address while not having the rights
     error Unauthorized(address caller);
@@ -173,10 +176,15 @@ library VaultLibrary {
         IUniswapV2Router02 ammRouter
     ) internal returns (uint256 ra, uint256 ct) {
         uint256 dsId = self.globalAssetIdx;
-        (uint256 raRatio, ) = flashSwapRouter.getCurrentPriceRatio(
-            self.info.toId(),
-            dsId
-        );
+
+        // This basically means that if the reserve is empty, then we use the default ratio
+        uint256 raRatio = DEFAULT_AMM_DEPOSIT_RATIO;
+        try
+            // will always fail for the first deposit
+            flashSwapRouter.getCurrentPriceRatio(self.info.toId(), dsId)
+        returns (uint256 _raRatio, uint256) {
+            raRatio = _raRatio;
+        } catch {}
 
         (ra, ct) = MathHelper.calculateAmounts(amount, raRatio);
         __addLiquidityToAmmUnchecked(

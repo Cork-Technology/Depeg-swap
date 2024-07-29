@@ -15,7 +15,7 @@ library SwapperMathLibrary {
         uint112 raReserve,
         uint112 ctReserve
     ) public pure returns (uint256 raPriceRatio, uint256 ctPriceRatio) {
-        if (raReserve > 0 || ctReserve > 0) {
+        if (raReserve <= 0 || ctReserve <= 0) {
             revert ZeroReserve();
         }
 

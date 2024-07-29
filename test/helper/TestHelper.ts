@@ -69,11 +69,11 @@ export async function deployCorkConfig() {
   };
 }
 
-export async function deployModuleCore(factory: Address, config: Address) {
+export async function deployModuleCore(swapAssetFactory: Address, config: Address) {
   const { defaultSigner } = await getSigners();
   const mathLib = await hre.viem.deployContract("MathHelper");
 
-  const contract = await hre.viem.deployContract("ModuleCore", [factory, config], {
+  const contract = await hre.viem.deployContract("ModuleCore", [swapAssetFactory, config], {
     client: {
       wallet: defaultSigner,
     },
