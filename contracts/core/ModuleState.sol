@@ -11,18 +11,25 @@ abstract contract ModuleState is ICommon {
     using PsmLibrary for State;
 
     mapping(Id => State) internal states;
-    address _factory;
+    address public factoryAddress;
+    address public configAddress;
 
-    function factory() external view returns (address) {
-        return _factory;
+    /** @dev checks if caller is config contract or not
+     */
+    modifier onlyConfig() {
+        if (msg.sender != configAddress) {
+            revert OnlyConfigAllowed();
+        }
+        _;
     }
 
-    constructor(address factoryAddress) {
-        _factory = factoryAddress;
+    constructor(address _factory, address _config) {
+        factoryAddress = _factory;
+        configAddress = _config;
     }
 
     function getFactory() internal view returns (IAssetFactory) {
-        return IAssetFactory(_factory);
+        return IAssetFactory(factoryAddress);
     }
 
     modifier onlyInitialized(Id id) {
