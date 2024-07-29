@@ -3,6 +3,10 @@ pragma solidity ^0.8.0;
 import "../libraries/Pair.sol";
 
 interface ICommon {
+
+    /// @notice only config contract is allowed to call this function
+    error OnlyConfigAllowed();
+
     /// @notice module is not initialized, i.e thrown when interacting with uninitialized module
     error Uinitialized();
 

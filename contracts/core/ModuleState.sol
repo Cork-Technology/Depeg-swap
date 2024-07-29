@@ -28,6 +28,9 @@ abstract contract ModuleState is ICommon {
         return swapAssetFactory;
     }
 
+    constructor(address _factory, address _config) {
+        factoryAddress = _factory;
+        configAddress = _config;
     constructor(
         address _swapAssetFactory,
         address _ammFactory,

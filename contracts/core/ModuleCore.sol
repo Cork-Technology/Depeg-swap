@@ -20,27 +20,15 @@ import "./flash-swaps/RouterState.sol";
 contract ModuleCore is PsmCore, Initialize, VaultCore {
     using PsmLibrary for State;
     using PairLibrary for Pair;
-    address public config;
 
-    error OnlyConfigAllowed();
 
     constructor(
         address swapAssetFactory,
         address ammFactory,
         address flashSwapRouter,
         address ammRouter
-    , address _config) ModuleState(swapAssetFactory, ammFactory, flashSwapRouter, ammRouter) {
-        config = _config;
-    }
+    , address config) ModuleState(swapAssetFactory, ammFactory, flashSwapRouter, ammRouter, config) {}
 
-    /** @dev checks if caller is config contract or not
-     */
-    modifier onlyConfig() {
-        if (msg.sender != config) {
-            revert OnlyConfigAllowed();
-        }
-        _;
-    }
 
     function getId(address pa, address ra) external pure returns (Id) {
         return PairLibrary.initalize(pa, ra).toId();
@@ -66,7 +54,7 @@ contract ModuleCore is PsmCore, Initialize, VaultCore {
             revert AlreadyInitialized();
         }
 
-        IAssetFactory factory = getSwapAssetFactory();
+        IAssetFactory factory = IAssetFactory(_factory);
 
         address lv = factory.deployLv(ra, pa, address(this));
 
@@ -94,7 +82,7 @@ contract ModuleCore is PsmCore, Initialize, VaultCore {
 
         address ra = state.info.pair1;
 
-        (address ct, address ds) = getSwapAssetFactory().deploySwapAssets(
+        (address _ct, address _ds) = IAssetFactory(_factory).deploySwapAssets(
             ra,
             state.info.pair0,
             address(this),
