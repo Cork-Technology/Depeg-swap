@@ -24,22 +24,33 @@ abstract contract ModuleState is ICommon {
     /// @dev in this case is uni v2
     address ammRouter;
 
+    address config;
+
+    /** @dev checks if caller is config contract or not
+     */
+    modifier onlyConfig() {
+        if (msg.sender != config) {
+            revert OnlyConfigAllowed();
+        }
+        _;
+    }
+
     function factory() external view returns (address) {
         return swapAssetFactory;
     }
 
-    constructor(address _factory, address _config) {
-        factoryAddress = _factory;
-        configAddress = _config;
     constructor(
         address _swapAssetFactory,
         address _ammFactory,
         address _dsFlashSwapRouter,
-        address _ammRouter
+        address _ammRouter,
+        address _config
     ) {
         swapAssetFactory = _swapAssetFactory;
         ammFactory = _ammFactory;
         dsFlashSwapRouter = _dsFlashSwapRouter;
+        _ammRouter = _ammRouter;
+        config = _config;
     }
 
     function getSwapAssetFactory() internal view returns (IAssetFactory) {

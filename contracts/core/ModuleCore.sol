@@ -21,14 +21,21 @@ contract ModuleCore is PsmCore, Initialize, VaultCore {
     using PsmLibrary for State;
     using PairLibrary for Pair;
 
-
     constructor(
         address swapAssetFactory,
         address ammFactory,
         address flashSwapRouter,
-        address ammRouter
-    , address config) ModuleState(swapAssetFactory, ammFactory, flashSwapRouter, ammRouter, config) {}
-
+        address ammRouter,
+        address config
+    )
+        ModuleState(
+            swapAssetFactory,
+            ammFactory,
+            flashSwapRouter,
+            ammRouter,
+            config
+        )
+    {}
 
     function getId(address pa, address ra) external pure returns (Id) {
         return PairLibrary.initalize(pa, ra).toId();
@@ -54,7 +61,7 @@ contract ModuleCore is PsmCore, Initialize, VaultCore {
             revert AlreadyInitialized();
         }
 
-        IAssetFactory factory = IAssetFactory(_factory);
+        IAssetFactory factory = IAssetFactory(swapAssetFactory);
 
         address lv = factory.deployLv(ra, pa, address(this));
 
@@ -82,7 +89,7 @@ contract ModuleCore is PsmCore, Initialize, VaultCore {
 
         address ra = state.info.pair1;
 
-        (address _ct, address _ds) = IAssetFactory(_factory).deploySwapAssets(
+        (address ct, address ds) = IAssetFactory(swapAssetFactory).deploySwapAssets(
             ra,
             state.info.pair0,
             address(this),
