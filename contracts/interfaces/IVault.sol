@@ -67,6 +67,14 @@ interface IVault {
         uint256 amount
     );
 
+    /// @notice Emitted when a early redemption fee is updated for a given Vault
+    /// @param Id The State id
+    /// @param newEarlyRedemptionFee The new early redemption rate
+    event EarlyRedemptionFeeUpdated(
+        Id indexed Id,
+        uint256 indexed newEarlyRedemptionFee
+    );
+
     /**
      * @notice Deposit a wrapped asset into a given vault
      * @param id The Module id that is used to reference both psm and lv of a given pair
