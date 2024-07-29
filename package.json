@@ -5,7 +5,9 @@
   "author": "ziankork <zian@cork.technology>",
   "license": "MIT",
   "scripts": {
-    "test": "npx hardhat test"
+    "test": "npx hardhat test",
+    "lint:contract":"npx solhint 'contracts/**/*.sol'",
+    "lint:contract:fix":"npx solhint 'contracts/**/*.sol' --fix"
   },
   "devDependencies": {
     "@nomicfoundation/hardhat-chai-matchers": "^2.0.7",
