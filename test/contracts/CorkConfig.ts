@@ -6,10 +6,10 @@ import hre from "hardhat";
 import * as helper from "../helper/TestHelper";
 
 describe("CorkConfig", function () {
-  var primarySigner: any;
-  var secondSigner: any;
+  let primarySigner: any;
+  let secondSigner: any;
 
-  var corkConfigContract: any;
+  let corkConfig: any;
 
   before(async () => {
     const { defaultSigner, signers } = await helper.getSigners();
@@ -18,44 +18,44 @@ describe("CorkConfig", function () {
   });
 
   beforeEach(async () => {
-    const corkConfig = await loadFixture(
+    const corkConfigInstance = await loadFixture(
       helper.deployCorkConfig
     );
-    corkConfigContract = await hre.viem.getContractAt(
+    corkConfig = await hre.viem.getContractAt(
       "CorkConfig",
-      corkConfig.contract.address
+      corkConfigInstance.contract.address
     );
   });
 
   it("should deploy correctly", async function () {
-    corkConfigContract = await hre.viem.deployContract("CorkConfig", [],
+    corkConfig = await hre.viem.deployContract("CorkConfig", [],
       {
         client: {
           wallet: primarySigner,
         }
       }
     );
-    expect(corkConfigContract).to.be.ok;
-    expect(await corkConfigContract.read.hasRole([await corkConfigContract.read.DEFAULT_ADMIN_ROLE(),
+    expect(corkConfig).to.be.ok;
+    expect(await corkConfig.read.hasRole([await corkConfig.read.DEFAULT_ADMIN_ROLE(),
     primarySigner.account.address]
     )).to.be.equals(true);
-    expect(await corkConfigContract.read.hasRole([await corkConfigContract.read.MANAGER_ROLE(),
+    expect(await corkConfig.read.hasRole([await corkConfig.read.MANAGER_ROLE(),
     primarySigner.account.address]
     )).to.be.equals(false);
-    expect(await corkConfigContract.read.paused()).to.be.equals(false);
+    expect(await corkConfig.read.paused()).to.be.equals(false);
   });
 
   describe("SetModuleCore", function () {
     it("setModuleCore should work correctly", async function () {
-      expect(await corkConfigContract.read.moduleCore()).to.not.be.equals(primarySigner.account.address);
-      await expect(await corkConfigContract.write.setModuleCore([secondSigner.account.address], {
+      expect(await corkConfig.read.moduleCore()).to.not.be.equals(primarySigner.account.address);
+      await expect(await corkConfig.write.setModuleCore([secondSigner.account.address], {
         account: primarySigner.account,
       })).to.be.ok;
-      expect(await (await corkConfigContract.read.moduleCore()).toLowerCase()).to.be.equals(secondSigner.account.address);
+      expect(await (await corkConfig.read.moduleCore()).toLowerCase()).to.be.equals(secondSigner.account.address);
     })
 
     it("Revert when non MANAGER call setModuleCore", async function () {
-      await expect(corkConfigContract.write.setModuleCore([primarySigner.account.address], {
+      await expect(corkConfig.write.setModuleCore([primarySigner.account.address], {
         account: secondSigner.account,
       })).to.be.rejectedWith('CallerNotManager()');
     })
@@ -63,17 +63,17 @@ describe("CorkConfig", function () {
 
   describe("Pause", function () {
     it("pause should work correctly", async function () {
-      expect(await corkConfigContract.read.paused()).to.be.equals(false);
+      expect(await corkConfig.read.paused()).to.be.equals(false);
 
-      await expect(await corkConfigContract.write.pause({
+      await expect(await corkConfig.write.pause({
         account: primarySigner.account,
       })).to.be.ok;
 
-      expect(await corkConfigContract.read.paused()).to.be.equals(true);
+      expect(await corkConfig.read.paused()).to.be.equals(true);
     })
 
     it("Revert when non MANAGER call pause", async function () {
-      await expect(corkConfigContract.write.pause({
+      await expect(corkConfig.write.pause({
         account: secondSigner.account,
       })).to.be.rejectedWith('CallerNotManager()');
     })
@@ -81,19 +81,19 @@ describe("CorkConfig", function () {
 
   describe("Unpause", function () {
     it("unpause should work correctly", async function () {
-      await corkConfigContract.write.pause();
+      await corkConfig.write.pause();
 
-      expect(await corkConfigContract.read.paused()).to.be.equals(true);
+      expect(await corkConfig.read.paused()).to.be.equals(true);
 
-      await expect(await corkConfigContract.write.unpause({
+      await expect(await corkConfig.write.unpause({
         account: primarySigner.account,
       })).to.be.ok;
 
-      expect(await corkConfigContract.read.paused()).to.be.equals(false);
+      expect(await corkConfig.read.paused()).to.be.equals(false);
     })
 
     it("Revert when non MANAGER call pause", async function () {
-      await expect(corkConfigContract.write.unpause({
+      await expect(corkConfig.write.unpause({
         account: secondSigner.account,
       })).to.be.rejectedWith('CallerNotManager()');
     })
