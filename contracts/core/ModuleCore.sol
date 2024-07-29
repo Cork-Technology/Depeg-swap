@@ -18,22 +18,10 @@ import "../interfaces/Init.sol";
 contract ModuleCore is PsmCore, Initialize, VaultCore {
     using PsmLibrary for State;
     using PairLibrary for Pair;
-    address public config;
 
-    error OnlyConfigAllowed();
 
-    constructor(address factory, address _config) ModuleState(factory) {
-        config = _config;
-    }
+    constructor(address factory, address config) ModuleState(factory, config) {}
 
-    /** @dev checks if caller is config contract or not
-     */
-    modifier onlyConfig() {
-        if (msg.sender != config) {
-            revert OnlyConfigAllowed();
-        }
-        _;
-    }
 
     function getId(address pa, address ra) external pure returns (Id) {
         return PairLibrary.initalize(pa, ra).toId();
@@ -59,7 +47,7 @@ contract ModuleCore is PsmCore, Initialize, VaultCore {
             revert AlreadyInitialized();
         }
 
-        IAssetFactory factory = IAssetFactory(_factory);
+        IAssetFactory factory = IAssetFactory(factoryAddress);
 
         address lv = factory.deployLv(ra, pa, address(this));
 
@@ -88,7 +76,7 @@ contract ModuleCore is PsmCore, Initialize, VaultCore {
         address pa = state.info.pair0;
         address ra = state.info.pair1;
 
-        (address _ct, address _ds) = IAssetFactory(_factory).deploySwapAssets(
+        (address _ct, address _ds) = IAssetFactory(factoryAddress).deploySwapAssets(
             ra,
             pa,
             address(this),
