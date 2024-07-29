@@ -25,6 +25,14 @@ interface IRepurchase {
         uint256 exchangeRates
     );
 
+    /// @notice Emitted when a repurchaseFee is updated for a given PSM
+    /// @param Id The PSM id
+    /// @param repurchaseFeeRate The new repurchaseFee rate
+    event RepurchaseFeeRateUpdated(
+        Id indexed Id,
+        uint256 indexed repurchaseFeeRate
+    );
+
     /**
      * @notice thrown when the user tries to repurchase more than the available PA + DSliquidity
      * @param available the amount of available PA + DS
