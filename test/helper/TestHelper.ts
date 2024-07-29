@@ -56,11 +56,24 @@ export async function deployAssetFactory() {
   };
 }
 
-export async function deployModuleCore(factory: Address) {
+export async function deployCorkConfig() {
+  const { defaultSigner } = await getSigners();
+  const contract = await hre.viem.deployContract("CorkConfig", [], {
+    client: {
+      wallet: defaultSigner,
+    },
+  });
+
+  return {
+    contract,
+  };
+}
+
+export async function deployModuleCore(factory: Address, config: Address) {
   const { defaultSigner } = await getSigners();
   const mathLib = await hre.viem.deployContract("MathHelper");
 
-  const contract = await hre.viem.deployContract("ModuleCore", [factory], {
+  const contract = await hre.viem.deployContract("ModuleCore", [factory, config], {
     client: {
       wallet: defaultSigner,
     },
@@ -76,6 +89,7 @@ export async function deployModuleCore(factory: Address) {
 
 export type InitializeNewPsmArg = {
   moduleCore: Address;
+  config: Address;
   pa: Address;
   ra: Address;
   lvFee: bigint;
@@ -86,8 +100,15 @@ export type InitializeNewPsmArg = {
 export async function initializeNewPsmLv(arg: InitializeNewPsmArg) {
   const { defaultSigner } = await getSigners();
   const contract = await hre.viem.getContractAt("ModuleCore", arg.moduleCore);
+  const configContract = await hre.viem.getContractAt("CorkConfig", arg.config);
 
-  await contract.write.initialize(
+  await configContract.write.setModuleCore([arg.moduleCore],
+    {
+      account: defaultSigner.account,
+    }
+  );
+
+  await configContract.write.initializeModuleCore(
     [
       arg.pa,
       arg.ra,
@@ -113,6 +134,7 @@ export async function initializeNewPsmLv(arg: InitializeNewPsmArg) {
 
 export type IssueNewSwapAssetsArg = {
   moduleCore: Address;
+  config: Address;
   ra: Address;
   pa: Address;
   expiry: number;
@@ -135,7 +157,9 @@ export async function issueNewSwapAssets(arg: IssueNewSwapAssetsArg) {
 
   const contract = await hre.viem.getContractAt("ModuleCore", arg.moduleCore);
   const Id = await contract.read.getId([arg.pa, arg.ra]);
-  await contract.write.issueNewDs(
+
+  const configContract = await hre.viem.getContractAt("CorkConfig", arg.config);
+  await configContract.write.issueNewDs(
     [Id, BigInt(arg.expiry), rate, repurchaseFeePercent],
     {
       account: defaultSigner.account,
@@ -293,18 +317,19 @@ export async function permit(arg: PermitArg) {
 
 export async function onlymoduleCoreWithFactory() {
   const factory = await deployAssetFactory();
-  const moduleCore = await deployModuleCore(factory.contract.address);
-
+  const config = await deployCorkConfig();
+  const moduleCore = await deployModuleCore(factory.contract.address, config.contract.address);
   await factory.contract.write.initialize([moduleCore.contract.address]);
 
   return {
     factory,
     moduleCore,
+    config
   };
 }
 
 export async function ModuleCoreWithInitializedPsmLv() {
-  const { factory, moduleCore: moduleCore } = await onlymoduleCoreWithFactory();
+  const { factory, moduleCore: moduleCore, config } = await onlymoduleCoreWithFactory();
   const { pa, ra } = await backedAssets();
 
   const fee = parseEther("10");
@@ -313,6 +338,7 @@ export async function ModuleCoreWithInitializedPsmLv() {
 
   const { Id, lv } = await initializeNewPsmLv({
     moduleCore: moduleCore.contract.address,
+    config: config.contract.address,
     pa: pa.address,
     ra: ra.address,
     lvFee: fee,
@@ -323,6 +349,7 @@ export async function ModuleCoreWithInitializedPsmLv() {
   return {
     factory,
     moduleCore,
+    config,
     lv: await hre.viem.getContractAt("Asset", lv!),
     pa,
     ra,

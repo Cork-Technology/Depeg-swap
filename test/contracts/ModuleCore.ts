@@ -15,7 +15,7 @@ describe("ModuleCore", function () {
 
     const contract = await hre.viem.deployContract(
       "ModuleCore",
-      [defaultSigner.account.address],
+      [defaultSigner.account.address, defaultSigner.account.address],
 
       {
         client: {
