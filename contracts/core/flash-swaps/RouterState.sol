@@ -4,16 +4,29 @@ pragma solidity ^0.8.0;
 import "../../libraries/DsFlashSwap.sol";
 import "../../libraries/Pair.sol";
 import "../../interfaces/IDsFlashSwapRouter.sol";
-import "@openzeppelin/contracts/access/Ownable.sol";
+import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
+import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 
-abstract contract RouterState is
+contract RouterState is
     IDsFlashSwapUtility,
     IDsFlashSwapCore,
-    Ownable
+    OwnableUpgradeable,
+    UUPSUpgradeable
 {
     using DsFlashSwaplibrary for ReserveState;
 
+    constructor() {}
+
+    function initialize(address moduleCore) external initializer notDelegated {
+        __Ownable_init(moduleCore);
+        __UUPSUpgradeable_init();
+    }
+
     mapping(Id => ReserveState) reserves;
+
+    function _authorizeUpgrade(
+        address newImplementation
+    ) internal override onlyOwner notDelegated {}
 
     function onNewIssuance(
         Id reserveId,
