@@ -15,8 +15,6 @@ import "../interfaces/IDsFlashSwapRouter.sol";
 import "../core/flash-swaps/RouterState.sol";
 import "../interfaces/uniswap-v2/RouterV2.sol";
 
-import "hardhat/console.sol";
-
 library VaultLibrary {
     using VaultConfigLibrary for VaultConfig;
     using PairLibrary for Pair;
