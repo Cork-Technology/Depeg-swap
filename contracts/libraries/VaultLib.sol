@@ -193,6 +193,11 @@ library VaultLibrary {
         IUniswapV2Router02 ammRouter,
         uint256 dsId
     ) internal {
+        // no need to provide liquidity if the amount is 0
+        if (raAmount == 0 && ctAmount == 0) {
+            return;
+        }
+
         PsmLibrary.unsafeIssueToLv(self, ctAmount);
 
         __addLiquidityToAmmUnchecked(
@@ -339,6 +344,8 @@ library VaultLibrary {
             address(this),
             block.timestamp
         );
+
+        self.vault.config.lpBalance = 0;
     }
 
     function _liquidatedLp(
@@ -348,6 +355,12 @@ library VaultLibrary {
         RouterState flashSwapRouter
     ) internal {
         DepegSwap storage ds = self.ds[dsId];
+
+        // if there's no LP, then there's nothing to liquidate
+        if (self.vault.config.lpBalance == 0) {
+            return;
+        }
+
         // TODO : placeholder
         // the following things should happen here(taken directly from the whitepaper) :
         // 1. The AMM LP is redeemed to receive CT + RA
