@@ -947,7 +947,7 @@ describe("PSM core", function () {
   });
 
   // @yusak found this, cannot issue new DS on the third time while depositing to LV
-  // caused by not actually mint CT + DS at issun
+  // caused by not actually mint CT + DS at issuance
   it("should be able to issue DS for the third time", async function () {
     const { defaultSigner } = await helper.getSigners();
     const fixture = await loadFixture(helper.ModuleCoreWithInitializedPsmLv);
@@ -967,6 +967,8 @@ describe("PSM core", function () {
     let expiry = helper.expiry(expiryInterval);
 
     for (let i = 0; i < 10; i++) {
+      console.log("Issuing DS for the", i + 1, "time");
+      
       await fixture.config.contract.write.issueNewDs(
         [Id, BigInt(expiry), parseEther("1"), parseEther("10")],
         {
@@ -979,7 +981,7 @@ describe("PSM core", function () {
         expiry: BigInt(expiry),
       });
 
-      await fixture.moduleCore.contract.write.depositLv([Id, parseEther("5")]);
+      await fixture.moduleCore.contract.write.depositLv([Id, parseEther("10")]);
 
       await fixture.lv.write.approve([
         fixture.moduleCore.contract.address,

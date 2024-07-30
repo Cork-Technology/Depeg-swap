@@ -603,7 +603,7 @@ describe("LvCore", function () {
 
     expect(event.length).to.be.equal(1);
 
-    expect(event[0].args.ra).to.be.equal(depositAmount);
+    expect(event[0].args.ra).to.be.equal(helper.calculateMinimumLiquidity(depositAmount));
     expect(event[0].args.pa).to.be.equal(BigInt(0));
   });
 
