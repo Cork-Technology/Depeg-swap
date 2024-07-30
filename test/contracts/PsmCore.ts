@@ -9,39 +9,85 @@ import * as helper from "../helper/TestHelper";
 import exp from "constants";
 
 describe("PSM core", function () {
+  let defaultSigner: any;
+  let secondSigner: any;
+  let signers: any;
+
+  let expiryTime: any;
+  let mintAmount: any;
+
+  let fixture: any;
+
+  let moduleCore: any;
+  let corkConfig: any;
+  let pa: any;
+
+  before(async () => {
+    ({ defaultSigner, signers } = await helper.getSigners());
+    secondSigner = signers[1];
+  });
+
+  beforeEach(async () => {
+    fixture = await loadFixture(
+      helper.ModuleCoreWithInitializedPsmLv
+    );
+
+    moduleCore = await hre.viem.getContractAt(
+      "ModuleCore",
+      fixture.moduleCore.contract.address
+    );
+    corkConfig = await hre.viem.getContractAt(
+      "CorkConfig",
+      fixture.config.contract.address
+    );
+
+    expiryTime = 10000;
+    mintAmount = parseEther("1000");
+
+    await fixture.ra.write.approve([
+      fixture.moduleCore.contract.address,
+      mintAmount,
+    ]);
+
+    await helper.mintRa(
+      fixture.ra.address,
+      defaultSigner.account.address,
+      mintAmount
+    );
+
+    pa = await hre.viem.getContractAt("ERC20", fixture.pa.address);
+  });
+
+  async function issueNewSwapAssets(expiry: any, options = {}) {
+    return await helper.issueNewSwapAssets({
+      expiry: expiry,
+      moduleCore: fixture.moduleCore.contract.address,
+      config: fixture.config.contract.address,
+      pa: fixture.pa.address,
+      ra: fixture.ra.address,
+      factory: fixture.factory.contract.address,
+      ...options
+    });
+  }
+
   describe("issue pair", function () {
     it("should issue new ds", async function () {
-      const { defaultSigner } = await helper.getSigners();
-      const psmFixture = await loadFixture(
-        helper.ModuleCoreWithInitializedPsmLv
-      );
-      const expiry = helper.expiry(1e18 * 1000);
-
-      const contract = await hre.viem.getContractAt(
-        "ModuleCore",
-        psmFixture.moduleCore.contract.address
-      );
-
-      const configContract = await hre.viem.getContractAt(
-        "CorkConfig",
-        psmFixture.config.contract.address
-      );
-
-      const Id = await contract.read.getId([
-        psmFixture.pa.address,
-        psmFixture.ra.address,
+      expiryTime = helper.expiry(1e18 * 1000);
+      const Id = await moduleCore.read.getId([
+        fixture.pa.address,
+        fixture.ra.address,
       ]);
 
-      await configContract.write.issueNewDs(
-        [Id, BigInt(expiry), parseEther("1"), parseEther("10")],
+      await corkConfig.write.issueNewDs(
+        [Id, BigInt(expiryTime), parseEther("1"), parseEther("10")],
         {
           account: defaultSigner.account,
         }
       );
 
-      const events = await contract.getEvents.Issued({
+      const events = await moduleCore.getEvents.Issued({
         Id,
-        expiry: BigInt(expiry),
+        expiry: BigInt(expiryTime),
       });
 
       expect(events.length).to.equal(1);
@@ -50,34 +96,11 @@ describe("PSM core", function () {
 
   describe("commons", function () {
     it("should deposit", async function () {
-      const { defaultSigner } = await helper.getSigners();
-      const fixture = await loadFixture(helper.ModuleCoreWithInitializedPsmLv);
-      const mintAmount = parseEther("1000");
-      const expTime = 10000;
-
-      await fixture.ra.write.approve([
-        fixture.moduleCore.contract.address,
-        mintAmount,
-      ]);
-
-      await helper.mintRa(
-        fixture.ra.address,
-        defaultSigner.account.address,
-        mintAmount
-      );
-
-      (await hre.viem.getContractAt("ERC20", fixture.pa.address)).write.approve(
+      pa.write.approve(
         [fixture.moduleCore.contract.address, parseEther("10")]
       );
 
-      const { dsId } = await helper.issueNewSwapAssets({
-        expiry: helper.nowTimestampInSeconds() + 10000,
-        moduleCore: fixture.moduleCore.contract.address,
-        config: fixture.config.contract.address,
-        pa: fixture.pa.address,
-        ra: fixture.ra.address,
-        factory: fixture.factory.contract.address,
-      });
+      const { dsId } = await issueNewSwapAssets(helper.nowTimestampInSeconds() + 10000);
 
       await fixture.moduleCore.contract.write.depositPsm(
         [fixture.Id, parseEther("10")],
@@ -96,37 +119,14 @@ describe("PSM core", function () {
     });
 
     it("should redeem DS", async function () {
-      const { defaultSigner } = await helper.getSigners();
-      const fixture = await loadFixture(helper.ModuleCoreWithInitializedPsmLv);
-      const mintAmount = parseEther("1000");
-      const expTime = 10000;
-
-      await fixture.ra.write.approve([
-        fixture.moduleCore.contract.address,
-        mintAmount,
-      ]);
-
-      await helper.mintRa(
-        fixture.ra.address,
-        defaultSigner.account.address,
-        mintAmount
-      );
-
       // just to buffer
-      const deadline = BigInt(helper.expiry(expTime));
+      const deadline = BigInt(helper.expiry(expiryTime));
 
-      (await hre.viem.getContractAt("ERC20", fixture.pa.address)).write.approve(
+      pa.write.approve(
         [fixture.moduleCore.contract.address, parseEther("10")]
       );
 
-      const { dsId, ds, ct } = await helper.issueNewSwapAssets({
-        expiry: helper.nowTimestampInSeconds() + 1000,
-        moduleCore: fixture.moduleCore.contract.address,
-        config: fixture.config.contract.address,
-        pa: fixture.pa.address,
-        ra: fixture.ra.address,
-        factory: fixture.factory.contract.address,
-      });
+      const { dsId, ds, ct } = await issueNewSwapAssets(helper.nowTimestampInSeconds() + 1000);
 
       await fixture.moduleCore.contract.write.depositPsm(
         [fixture.Id, parseEther("10")],
@@ -183,39 +183,18 @@ describe("PSM core", function () {
     });
 
     it("should redeem CT", async function () {
-      const { defaultSigner } = await helper.getSigners();
-      const fixture = await loadFixture(helper.ModuleCoreWithInitializedPsmLv);
-      const mintAmount = parseEther("1000");
       const redeemAmount = parseEther("5");
       const depositAmount = parseEther("10");
-      const expTime = 100000;
-
-      await fixture.ra.write.approve([
-        fixture.moduleCore.contract.address,
-        mintAmount,
-      ]);
-
-      await helper.mintRa(
-        fixture.ra.address,
-        defaultSigner.account.address,
-        mintAmount
-      );
+      expiryTime = 100000;
 
       // just to buffer
-      const deadline = BigInt(helper.expiry(expTime));
+      const deadline = BigInt(helper.expiry(expiryTime));
 
-      (await hre.viem.getContractAt("ERC20", fixture.pa.address)).write.approve(
+      pa.write.approve(
         [fixture.moduleCore.contract.address, depositAmount]
       );
 
-      const { dsId, ds, ct, expiry } = await helper.issueNewSwapAssets({
-        expiry: helper.nowTimestampInSeconds() + 10000,
-        moduleCore: fixture.moduleCore.contract.address,
-        config: fixture.config.contract.address,
-        pa: fixture.pa.address,
-        ra: fixture.ra.address,
-        factory: fixture.factory.contract.address,
-      });
+      const { dsId, ds, ct, expiry } = await issueNewSwapAssets(helper.nowTimestampInSeconds() + 10000);
 
       await fixture.moduleCore.contract.write.depositPsm(
         [fixture.Id, depositAmount],
@@ -262,36 +241,11 @@ describe("PSM core", function () {
 
   describe("with exchange rate", function () {
     it("should deposit with correct exchange rate", async function () {
-      const { defaultSigner } = await helper.getSigners();
-      const fixture = await loadFixture(helper.ModuleCoreWithInitializedPsmLv);
-      const mintAmount = parseEther("1000");
-      const expTime = 10000;
-
-      await fixture.ra.write.approve([
-        fixture.moduleCore.contract.address,
-        mintAmount,
-      ]);
-
-      await helper.mintRa(
-        fixture.ra.address,
-        defaultSigner.account.address,
-        mintAmount
-      );
-
-      (await hre.viem.getContractAt("ERC20", fixture.pa.address)).write.approve(
+      pa.write.approve(
         [fixture.moduleCore.contract.address, parseEther("10")]
       );
 
-      const { dsId } = await helper.issueNewSwapAssets({
-        expiry: helper.nowTimestampInSeconds() + 10000,
-        moduleCore: fixture.moduleCore.contract.address,
-        config: fixture.config.contract.address,
-        pa: fixture.pa.address,
-        ra: fixture.ra.address,
-        factory: fixture.factory.contract.address,
-
-        // rates: parseEther(),
-      });
+      const { dsId } = await issueNewSwapAssets(helper.nowTimestampInSeconds() + 10000);
 
       await fixture.moduleCore.contract.write.depositPsm(
         [fixture.Id, parseEther("10")],
@@ -310,41 +264,17 @@ describe("PSM core", function () {
     });
 
     it("should redeem DS with correct exchange rate", async function () {
-      const { defaultSigner } = await helper.getSigners();
-      const fixture = await loadFixture(helper.ModuleCoreWithInitializedPsmLv);
-      const mintAmount = parseEther("1000");
-      const expTime = 10000;
-
-      await fixture.ra.write.approve([
-        fixture.moduleCore.contract.address,
-        mintAmount,
-      ]);
-
-      await helper.mintRa(
-        fixture.ra.address,
-        defaultSigner.account.address,
-        mintAmount
-      );
-
       // just to buffer
-      const deadline = BigInt(helper.expiry(expTime));
+      const deadline = BigInt(helper.expiry(expiryTime));
 
-      (await hre.viem.getContractAt("ERC20", fixture.pa.address)).write.approve(
+      pa.write.approve(
         [fixture.moduleCore.contract.address, parseEther("10")]
       );
 
       // 2 RA
       const rates = parseEther("2");
 
-      const { dsId, ds, ct } = await helper.issueNewSwapAssets({
-        expiry: helper.nowTimestampInSeconds() + 1000,
-        moduleCore: fixture.moduleCore.contract.address,
-        config: fixture.config.contract.address,
-        pa: fixture.pa.address,
-        ra: fixture.ra.address,
-        factory: fixture.factory.contract.address,
-        rates: rates,
-      });
+      const { dsId, ds, ct } = await issueNewSwapAssets(helper.nowTimestampInSeconds() + 1000, { rates: rates });
       const depositAmount = parseEther("10");
       const expectedAMount = parseEther("5");
 
@@ -398,41 +328,17 @@ describe("PSM core", function () {
     });
 
     it("should get correct preview output", async function () {
-      const { defaultSigner } = await helper.getSigners();
-      const fixture = await loadFixture(helper.ModuleCoreWithInitializedPsmLv);
-      const mintAmount = parseEther("1000");
-      const expTime = 10000;
-
-      await fixture.ra.write.approve([
-        fixture.moduleCore.contract.address,
-        mintAmount,
-      ]);
-
-      await helper.mintRa(
-        fixture.ra.address,
-        defaultSigner.account.address,
-        mintAmount
-      );
-
       // just to buffer
-      const deadline = BigInt(helper.expiry(expTime));
+      const deadline = BigInt(helper.expiry(expiryTime));
 
-      (await hre.viem.getContractAt("ERC20", fixture.pa.address)).write.approve(
+      pa.write.approve(
         [fixture.moduleCore.contract.address, parseEther("10")]
       );
 
       // 2 RA
       const rates = parseEther("2");
 
-      const { dsId, ds, ct } = await helper.issueNewSwapAssets({
-        expiry: helper.nowTimestampInSeconds() + 1000,
-        moduleCore: fixture.moduleCore.contract.address,
-        config: fixture.config.contract.address,
-        pa: fixture.pa.address,
-        ra: fixture.ra.address,
-        factory: fixture.factory.contract.address,
-        rates: rates,
-      });
+      const { dsId, ds, ct } = await issueNewSwapAssets(helper.nowTimestampInSeconds() + 1000, { rates: rates });
       const depositAmount = parseEther("10");
       const expectedAMount = parseEther("5");
 
@@ -460,36 +366,12 @@ describe("PSM core", function () {
 
   describe("cancel position", function () {
     it("should cancel position", async function () {
-      const { defaultSigner } = await helper.getSigners();
-      const fixture = await loadFixture(helper.ModuleCoreWithInitializedPsmLv);
-      const mintAmount = parseEther("1");
-      const expTime = 10000;
-
-      await fixture.ra.write.approve([
-        fixture.moduleCore.contract.address,
-        mintAmount,
-      ]);
-
-      await helper.mintRa(
-        fixture.ra.address,
-        defaultSigner.account.address,
-        mintAmount
-      );
-
-      (await hre.viem.getContractAt("ERC20", fixture.pa.address)).write.approve(
+      mintAmount = parseEther("1");
+      pa.write.approve(
         [fixture.moduleCore.contract.address, parseEther("10")]
       );
 
-      const { dsId, ds, ct } = await helper.issueNewSwapAssets({
-        expiry: helper.nowTimestampInSeconds() + 10000,
-        moduleCore: fixture.moduleCore.contract.address,
-        config: fixture.config.contract.address,
-        pa: fixture.pa.address,
-        ra: fixture.ra.address,
-        factory: fixture.factory.contract.address,
-
-        rates: parseEther("0.5"),
-      });
+      const { dsId, ds, ct } = await issueNewSwapAssets(helper.nowTimestampInSeconds() + 10000, { rates: parseEther("0.5") });
 
       await fixture.moduleCore.contract.write.depositPsm(
         [fixture.Id, parseEther("1")],
@@ -545,7 +427,7 @@ describe("PSM core", function () {
         defaultSigner.account.address,
       ]);
 
-      expect(raBalance).to.equal(parseEther("1"));
+      expect(raBalance).to.equal(parseEther("1000"));
 
       const afterDsBalance = await dsContract.read.balanceOf([
         defaultSigner.account.address,
@@ -561,36 +443,11 @@ describe("PSM core", function () {
     });
 
     it("should preview cancel position", async function () {
-      const { defaultSigner } = await helper.getSigners();
-      const fixture = await loadFixture(helper.ModuleCoreWithInitializedPsmLv);
-      const mintAmount = parseEther("1");
-      const expTime = 10000;
-
-      await fixture.ra.write.approve([
-        fixture.moduleCore.contract.address,
-        mintAmount,
-      ]);
-
-      await helper.mintRa(
-        fixture.ra.address,
-        defaultSigner.account.address,
-        mintAmount
-      );
-
-      (await hre.viem.getContractAt("ERC20", fixture.pa.address)).write.approve(
+      pa.write.approve(
         [fixture.moduleCore.contract.address, parseEther("10")]
       );
 
-      const { dsId, ds, ct } = await helper.issueNewSwapAssets({
-        expiry: helper.nowTimestampInSeconds() + 10000,
-        moduleCore: fixture.moduleCore.contract.address,
-        config: fixture.config.contract.address,
-        pa: fixture.pa.address,
-        ra: fixture.ra.address,
-        factory: fixture.factory.contract.address,
-
-        rates: parseEther("0.5"),
-      });
+      const { dsId, ds, ct } = await issueNewSwapAssets(helper.nowTimestampInSeconds() + 10000, { rates: parseEther("0.5") });
 
       const [raAmount, rates] =
         await fixture.moduleCore.contract.read.previewRedeemRaWithCtDs([
@@ -605,40 +462,16 @@ describe("PSM core", function () {
 
   describe("repurchase", function () {
     it("should repurchase", async function () {
-      const { defaultSigner } = await helper.getSigners();
-      const fixture = await loadFixture(helper.ModuleCoreWithInitializedPsmLv);
-      const mintAmount = parseEther("1000");
-      const expTime = 10000;
-
-      await fixture.ra.write.approve([
-        fixture.moduleCore.contract.address,
-        mintAmount,
-      ]);
-
-      await helper.mintRa(
-        fixture.ra.address,
-        defaultSigner.account.address,
-        mintAmount
-      );
-
       // just to buffer
-      const deadline = BigInt(helper.expiry(expTime));
+      const deadline = BigInt(helper.expiry(expiryTime));
 
-      (await hre.viem.getContractAt("ERC20", fixture.pa.address)).write.approve(
+      pa.write.approve(
         [fixture.moduleCore.contract.address, parseEther("100")]
       );
 
       // 2 RA for every DS
       const rates = parseEther("2");
-      const { dsId, ds, ct } = await helper.issueNewSwapAssets({
-        expiry: helper.nowTimestampInSeconds() + 1000,
-        moduleCore: fixture.moduleCore.contract.address,
-        config: fixture.config.contract.address,
-        pa: fixture.pa.address,
-        ra: fixture.ra.address,
-        factory: fixture.factory.contract.address,
-        rates,
-      });
+      const { dsId, ds, ct } = await issueNewSwapAssets(helper.nowTimestampInSeconds() + 1000, { rates: rates });
 
       await fixture.moduleCore.contract.write.depositPsm(
         [fixture.Id, parseEther("100")],
@@ -718,40 +551,16 @@ describe("PSM core", function () {
     });
 
     it("shouldn't be able to repurchase after expired", async function () {
-      const { defaultSigner } = await helper.getSigners();
-      const fixture = await loadFixture(helper.ModuleCoreWithInitializedPsmLv);
-      const mintAmount = parseEther("1000");
-      const expTime = 10000;
-
-      await fixture.ra.write.approve([
-        fixture.moduleCore.contract.address,
-        mintAmount,
-      ]);
-
-      await helper.mintRa(
-        fixture.ra.address,
-        defaultSigner.account.address,
-        mintAmount
-      );
-
       // just to buffer
-      const deadline = BigInt(helper.expiry(expTime));
+      const deadline = BigInt(helper.expiry(expiryTime));
 
-      (await hre.viem.getContractAt("ERC20", fixture.pa.address)).write.approve(
+      pa.write.approve(
         [fixture.moduleCore.contract.address, parseEther("100")]
       );
 
       // 2 RA for every DS
       const rates = parseEther("2");
-      const { dsId, ds, ct } = await helper.issueNewSwapAssets({
-        expiry: helper.nowTimestampInSeconds() + 1000,
-        moduleCore: fixture.moduleCore.contract.address,
-        config: fixture.config.contract.address,
-        pa: fixture.pa.address,
-        ra: fixture.ra.address,
-        factory: fixture.factory.contract.address,
-        rates,
-      });
+      const { dsId, ds, ct } = await issueNewSwapAssets(helper.nowTimestampInSeconds() + 1000, { rates: rates });
 
       await fixture.moduleCore.contract.write.depositPsm(
         [fixture.Id, parseEther("100")],
@@ -800,7 +609,7 @@ describe("PSM core", function () {
       expect(availablePa).to.equal(parseEther("10"));
       expect(availableDs).to.equal(parseEther("10"));
 
-      time.increaseTo(helper.expiry(expTime) + 1);
+      time.increaseTo(helper.expiry(expiryTime) + 1);
 
       await expect(
         fixture.moduleCore.contract.write.repurchase([
@@ -811,40 +620,16 @@ describe("PSM core", function () {
     });
 
     it("should allocate PA for CT wthdrawal correctly after repurchase", async function () {
-      const { defaultSigner } = await helper.getSigners();
-      const fixture = await loadFixture(helper.ModuleCoreWithInitializedPsmLv);
-      const mintAmount = parseEther("1000");
-      const expTime = 10000;
-
-      await fixture.ra.write.approve([
-        fixture.moduleCore.contract.address,
-        mintAmount,
-      ]);
-
-      await helper.mintRa(
-        fixture.ra.address,
-        defaultSigner.account.address,
-        mintAmount
-      );
-
       // just to buffer
-      const deadline = BigInt(helper.expiry(expTime));
+      const deadline = BigInt(helper.expiry(expiryTime));
 
-      (await hre.viem.getContractAt("ERC20", fixture.pa.address)).write.approve(
+      pa.write.approve(
         [fixture.moduleCore.contract.address, parseEther("100")]
       );
 
       // 1 RA for every DS
       const rates = parseEther("1");
-      const { dsId, ds, ct } = await helper.issueNewSwapAssets({
-        expiry: helper.nowTimestampInSeconds() + 1000,
-        moduleCore: fixture.moduleCore.contract.address,
-        config: fixture.config.contract.address,
-        pa: fixture.pa.address,
-        ra: fixture.ra.address,
-        factory: fixture.factory.contract.address,
-        rates,
-      });
+      const { dsId, ds, ct } = await issueNewSwapAssets(helper.nowTimestampInSeconds() + 1000, { rates: rates });
 
       await fixture.moduleCore.contract.write.depositPsm(
         [fixture.Id, parseEther("100")],
@@ -890,7 +675,7 @@ describe("PSM core", function () {
         parseEther("25"),
       ]);
 
-      await time.increaseTo(helper.expiry(expTime) + 1);
+      await time.increaseTo(helper.expiry(expiryTime) + 1);
 
       const [paReceivedPreview, raReceivedPreview] =
         await fixture.moduleCore.contract.read.previewRedeemWithCt([
@@ -949,9 +734,7 @@ describe("PSM core", function () {
   // @yusak found this, cannot issue new DS on the third time while depositing to LV
   // caused by not actually mint CT + DS at issuance
   it("should be able to issue DS for the third time", async function () {
-    const { defaultSigner } = await helper.getSigners();
-    const fixture = await loadFixture(helper.ModuleCoreWithInitializedPsmLv);
-    const mintAmount = parseEther("1000000");
+    mintAmount = parseEther("1000000");
 
     await fixture.ra.write.mint([defaultSigner.account.address, mintAmount]);
     await fixture.ra.write.approve([
@@ -1002,10 +785,7 @@ describe("PSM core", function () {
   });
 
   it("should separate liquidity", async function () {
-    const { defaultSigner } = await helper.getSigners();
-    const fixture = await loadFixture(helper.ModuleCoreWithInitializedPsmLv);
-    const mintAmount = parseEther("10000");
-    const expTime = 10000;
+    mintAmount = parseEther("10000");
 
     await fixture.ra.write.approve([
       fixture.moduleCore.contract.address,
@@ -1018,21 +798,14 @@ describe("PSM core", function () {
       mintAmount
     );
 
-    (await hre.viem.getContractAt("ERC20", fixture.pa.address)).write.approve([
+    pa.write.approve([
       fixture.moduleCore.contract.address,
       parseEther("10000"),
     ]);
 
-    const expiry = helper.expiry(expTime);
+    const expiry = helper.expiry(expiryTime);
 
-    await helper.issueNewSwapAssets({
-      expiry,
-      moduleCore: fixture.moduleCore.contract.address,
-      config: fixture.config.contract.address,
-      pa: fixture.pa.address,
-      ra: fixture.ra.address,
-      factory: fixture.factory.contract.address,
-    });
+    await issueNewSwapAssets(expiry);
 
     await fixture.moduleCore.contract.write.depositPsm(
       [fixture.Id, parseEther("1000")],

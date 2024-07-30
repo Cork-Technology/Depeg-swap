@@ -24,7 +24,7 @@ describe("ModuleCore", function () {
     const swapAssetFactory = await helper.deployAssetFactory();
     const config = await helper.deployCorkConfig();
 
-    const contract = await hre.viem.deployContract(
+    moduleCore = await hre.viem.deployContract(
       "ModuleCore",
       [
         swapAssetFactory.contract.address,
@@ -42,7 +42,9 @@ describe("ModuleCore", function () {
         },
       }
     );
+  });
 
-    expect(contract).to.be.ok;
+  it("should deploy", async function () {
+    expect(moduleCore).to.be.ok;
   });
 });

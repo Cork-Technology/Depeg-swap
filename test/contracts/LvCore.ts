@@ -7,25 +7,55 @@ import { Address, formatEther, parseEther, WalletClient } from "viem";
 import * as helper from "../helper/TestHelper";
 
 describe("LvCore", function () {
-  it("should deposit", async function () {
-    const depositAmount = parseEther("10");
-    const fixture = await loadFixture(helper.ModuleCoreWithInitializedPsmLv);
-    const { defaultSigner } = await helper.getSigners();
+  let defaultSigner: any;
+  let secondSigner: any;
+  let signers: any;
+
+  let depositAmount: any;
+  let expiry :any;
+
+  let fixture: any;
+
+  before(async () => {
+    ({ defaultSigner, signers } = await helper.getSigners());
+    secondSigner = signers[1];
+  });
+
+  beforeEach(async () => {
+    fixture = await loadFixture(helper.ModuleCoreWithInitializedPsmLv);
+
+    depositAmount = parseEther("10");
+    expiry = helper.expiry(1000000);    
 
     await fixture.ra.write.mint([defaultSigner.account.address, depositAmount]);
+    await fixture.ra.write.mint([secondSigner.account.address, depositAmount]);
+
     await fixture.ra.write.approve([
       fixture.moduleCore.contract.address,
       depositAmount,
     ]);
+    await fixture.ra.write.approve(
+      [fixture.moduleCore.contract.address, depositAmount],
+      {
+        account: secondSigner.account,
+      }
+    );
+  });
 
-    await helper.issueNewSwapAssets({
-      expiry: helper.expiry(1000000),
-      factory: fixture.factory.contract.address,
-      config: fixture.config.contract.address,
+  async function issueNewSwapAssets(expiry: any, options = {}) {
+    return await helper.issueNewSwapAssets({
+      expiry: expiry,
       moduleCore: fixture.moduleCore.contract.address,
+      config: fixture.config.contract.address,
       pa: fixture.pa.address,
       ra: fixture.ra.address,
+      factory: fixture.factory.contract.address,
+      ...options
     });
+  }
+
+  it("should deposit", async function () {
+    await issueNewSwapAssets(helper.expiry(1000000));
 
     const lv = fixture.Id;
     const result = await fixture.moduleCore.contract.write.depositLv([
@@ -53,35 +83,7 @@ describe("LvCore", function () {
   });
 
   it("should redeem expired", async function () {
-    const expiry = helper.expiry(1000000);
-    const depositAmount = parseEther("10");
-    const fixture = await loadFixture(helper.ModuleCoreWithInitializedPsmLv);
-    const { defaultSigner, signers } = await helper.getSigners();
-    const secondSigner = signers[1];
-
-    await fixture.ra.write.mint([defaultSigner.account.address, depositAmount]);
-    await fixture.ra.write.mint([secondSigner.account.address, depositAmount]);
-
-    await fixture.ra.write.approve([
-      fixture.moduleCore.contract.address,
-      depositAmount,
-    ]);
-
-    await fixture.ra.write.approve(
-      [fixture.moduleCore.contract.address, depositAmount],
-      {
-        account: secondSigner.account,
-      }
-    );
-
-    const { Id, dsId } = await helper.issueNewSwapAssets({
-      expiry,
-      factory: fixture.factory.contract.address,
-      moduleCore: fixture.moduleCore.contract.address,
-      config: fixture.config.contract.address,
-      pa: fixture.pa.address,
-      ra: fixture.ra.address,
-    });
+    const { Id, dsId } = await issueNewSwapAssets(expiry);
 
     const lv = fixture.Id;
     await fixture.moduleCore.contract.write.depositLv([lv, depositAmount]);
@@ -127,36 +129,7 @@ describe("LvCore", function () {
   });
 
   it("should still be able to redeem after new issuance", async function () {
-    const expiry = helper.expiry(1000000);
-    const depositAmount = parseEther("10");
-    const fixture = await loadFixture(helper.ModuleCoreWithInitializedPsmLv);
-    const { defaultSigner, signers } = await helper.getSigners();
-    const secondSigner = signers[1];
-
-    await fixture.ra.write.mint([defaultSigner.account.address, depositAmount]);
-    await fixture.ra.write.mint([secondSigner.account.address, depositAmount]);
-
-    await fixture.ra.write.approve([
-      fixture.moduleCore.contract.address,
-      depositAmount,
-    ]);
-
-    await fixture.ra.write.approve(
-      [fixture.moduleCore.contract.address, depositAmount],
-      {
-        account: secondSigner.account,
-      }
-    );
-
-    const { Id, dsId } = await helper.issueNewSwapAssets({
-      expiry,
-      factory: fixture.factory.contract.address,
-      moduleCore: fixture.moduleCore.contract.address,
-      config: fixture.config.contract.address,
-      pa: fixture.pa.address,
-      ra: fixture.ra.address,
-    });
-
+    const { Id, dsId } = await issueNewSwapAssets(expiry);
     const lv = fixture.Id;
 
     await fixture.moduleCore.contract.write.depositLv([lv, depositAmount]);
@@ -232,35 +205,9 @@ describe("LvCore", function () {
   });
 
   it("should redeem after transferring right", async function () {
-    const expiry = helper.expiry(1000000000000);
-    const depositAmount = parseEther("10");
-    const fixture = await loadFixture(helper.ModuleCoreWithInitializedPsmLv);
-    const { defaultSigner, signers } = await helper.getSigners();
-    const secondSigner = signers[1];
+    expiry = helper.expiry(1000000000000);
 
-    await fixture.ra.write.mint([defaultSigner.account.address, depositAmount]);
-    await fixture.ra.write.mint([secondSigner.account.address, depositAmount]);
-
-    await fixture.ra.write.approve([
-      fixture.moduleCore.contract.address,
-      depositAmount,
-    ]);
-
-    await fixture.ra.write.approve(
-      [fixture.moduleCore.contract.address, depositAmount],
-      {
-        account: secondSigner.account,
-      }
-    );
-
-    const { Id, dsId } = await helper.issueNewSwapAssets({
-      expiry,
-      factory: fixture.factory.contract.address,
-      moduleCore: fixture.moduleCore.contract.address,
-      config: fixture.config.contract.address,
-      pa: fixture.pa.address,
-      ra: fixture.ra.address,
-    });
+    const { Id, dsId } = await issueNewSwapAssets(expiry);
 
     const lv = fixture.Id;
     await fixture.moduleCore.contract.write.depositLv([lv, depositAmount]);
@@ -307,26 +254,7 @@ describe("LvCore", function () {
   });
 
   it("should redeem early", async function () {
-    const expiry = helper.expiry(1000000);
-    const depositAmount = parseEther("10");
-    const fixture = await loadFixture(helper.ModuleCoreWithInitializedPsmLv);
-    const { defaultSigner, signers } = await helper.getSigners();
-
-    await fixture.ra.write.mint([defaultSigner.account.address, depositAmount]);
-
-    await fixture.ra.write.approve([
-      fixture.moduleCore.contract.address,
-      depositAmount,
-    ]);
-
-    const { Id } = await helper.issueNewSwapAssets({
-      expiry,
-      factory: fixture.factory.contract.address,
-      moduleCore: fixture.moduleCore.contract.address,
-      config: fixture.config.contract.address,
-      pa: fixture.pa.address,
-      ra: fixture.ra.address,
-    });
+    const { Id } = await issueNewSwapAssets(expiry);
 
     const lv = fixture.Id;
     await fixture.moduleCore.contract.write.depositLv([lv, depositAmount]);
@@ -354,26 +282,7 @@ describe("LvCore", function () {
 
   // @yusak found this bug, cannot withdraw early if there's only 1 WA left in the pool
   it("should redeem early", async function () {
-    const expiry = helper.expiry(1000000);
-    const depositAmount = parseEther("1");
-    const fixture = await loadFixture(helper.ModuleCoreWithInitializedPsmLv);
-    const { defaultSigner, signers } = await helper.getSigners();
-
-    await fixture.ra.write.mint([defaultSigner.account.address, depositAmount]);
-
-    await fixture.ra.write.approve([
-      fixture.moduleCore.contract.address,
-      depositAmount,
-    ]);
-
-    const { Id } = await helper.issueNewSwapAssets({
-      expiry,
-      factory: fixture.factory.contract.address,
-      moduleCore: fixture.moduleCore.contract.address,
-      config: fixture.config.contract.address,
-      pa: fixture.pa.address,
-      ra: fixture.ra.address,
-    });
+    const { Id } = await issueNewSwapAssets(expiry);
 
     const lv = fixture.Id;
     await fixture.moduleCore.contract.write.depositLv([lv, depositAmount]);
@@ -402,35 +311,7 @@ describe("LvCore", function () {
   });
 
   it("should return correct preview expired redeem", async function () {
-    const expiry = helper.expiry(1000000);
-    const depositAmount = parseEther("10");
-    const fixture = await loadFixture(helper.ModuleCoreWithInitializedPsmLv);
-    const { defaultSigner, signers } = await helper.getSigners();
-    const secondSigner = signers[1];
-
-    await fixture.ra.write.mint([defaultSigner.account.address, depositAmount]);
-    await fixture.ra.write.mint([secondSigner.account.address, depositAmount]);
-
-    await fixture.ra.write.approve([
-      fixture.moduleCore.contract.address,
-      depositAmount,
-    ]);
-
-    await fixture.ra.write.approve(
-      [fixture.moduleCore.contract.address, depositAmount],
-      {
-        account: secondSigner.account,
-      }
-    );
-
-    const { Id, dsId } = await helper.issueNewSwapAssets({
-      expiry,
-      factory: fixture.factory.contract.address,
-      moduleCore: fixture.moduleCore.contract.address,
-      config: fixture.config.contract.address,
-      pa: fixture.pa.address,
-      ra: fixture.ra.address,
-    });
+    const { Id, dsId } = await issueNewSwapAssets(expiry);
 
     const lv = fixture.Id;
     await fixture.moduleCore.contract.write.depositLv([lv, depositAmount]);
@@ -481,26 +362,7 @@ describe("LvCore", function () {
   });
 
   it("should return correct preview early redeem", async function () {
-    const expiry = helper.expiry(1000000);
-    const depositAmount = parseEther("10");
-    const fixture = await loadFixture(helper.ModuleCoreWithInitializedPsmLv);
-    const { defaultSigner, signers } = await helper.getSigners();
-
-    await fixture.ra.write.mint([defaultSigner.account.address, depositAmount]);
-
-    await fixture.ra.write.approve([
-      fixture.moduleCore.contract.address,
-      depositAmount,
-    ]);
-
-    const { Id } = await helper.issueNewSwapAssets({
-      expiry,
-      factory: fixture.factory.contract.address,
-      moduleCore: fixture.moduleCore.contract.address,
-      config: fixture.config.contract.address,
-      pa: fixture.pa.address,
-      ra: fixture.ra.address,
-    });
+    const { Id } = await issueNewSwapAssets(expiry);
 
     const lv = fixture.Id;
     await fixture.moduleCore.contract.write.depositLv([lv, depositAmount]);
@@ -521,35 +383,7 @@ describe("LvCore", function () {
   });
 
   it("should be able to redeem without a cap when there's no new DS issuance", async function () {
-    const expiry = helper.expiry(1000000);
-    const depositAmount = parseEther("10");
-    const fixture = await loadFixture(helper.ModuleCoreWithInitializedPsmLv);
-    const { defaultSigner, signers } = await helper.getSigners();
-    const secondSigner = signers[1];
-
-    await fixture.ra.write.mint([defaultSigner.account.address, depositAmount]);
-    await fixture.ra.write.mint([secondSigner.account.address, depositAmount]);
-
-    await fixture.ra.write.approve([
-      fixture.moduleCore.contract.address,
-      depositAmount,
-    ]);
-
-    await fixture.ra.write.approve(
-      [fixture.moduleCore.contract.address, depositAmount],
-      {
-        account: secondSigner.account,
-      }
-    );
-
-    const { Id, dsId } = await helper.issueNewSwapAssets({
-      expiry,
-      factory: fixture.factory.contract.address,
-      moduleCore: fixture.moduleCore.contract.address,
-      config: fixture.config.contract.address,
-      pa: fixture.pa.address,
-      ra: fixture.ra.address,
-    });
+    const { Id, dsId } = await issueNewSwapAssets(expiry);
 
     const lv = fixture.Id;
     await fixture.moduleCore.contract.write.depositLv([lv, depositAmount]);
@@ -608,35 +442,7 @@ describe("LvCore", function () {
   });
 
   it("should separate liquidity correctly at new issuance", async function () {
-    const expiry = helper.expiry(1000000);
-    const depositAmount = parseEther("10");
-    const fixture = await loadFixture(helper.ModuleCoreWithInitializedPsmLv);
-    const { defaultSigner, signers } = await helper.getSigners();
-    const secondSigner = signers[1];
-
-    await fixture.ra.write.mint([defaultSigner.account.address, depositAmount]);
-    await fixture.ra.write.mint([secondSigner.account.address, depositAmount]);
-
-    await fixture.ra.write.approve([
-      fixture.moduleCore.contract.address,
-      depositAmount,
-    ]);
-
-    await fixture.ra.write.approve(
-      [fixture.moduleCore.contract.address, depositAmount],
-      {
-        account: secondSigner.account,
-      }
-    );
-
-    const { Id, dsId } = await helper.issueNewSwapAssets({
-      expiry,
-      factory: fixture.factory.contract.address,
-      moduleCore: fixture.moduleCore.contract.address,
-      config: fixture.config.contract.address,
-      pa: fixture.pa.address,
-      ra: fixture.ra.address,
-    });
+    const { Id, dsId } = await issueNewSwapAssets(expiry);
 
     const lv = fixture.Id;
     await fixture.moduleCore.contract.write.depositLv([lv, depositAmount]);
@@ -688,10 +494,7 @@ describe("LvCore", function () {
   });
 
   it("cannot issue expired", async function () {
-    const expiry = helper.expiry(1000000) - helper.nowTimestampInSeconds();
-    const depositAmount = parseEther("10");
-    const fixture = await loadFixture(helper.ModuleCoreWithInitializedPsmLv);
-    const { defaultSigner, signers } = await helper.getSigners();
+    expiry = helper.expiry(1000000) - helper.nowTimestampInSeconds();
 
     const Id = await fixture.moduleCore.contract.read.getId([
       fixture.pa.address,

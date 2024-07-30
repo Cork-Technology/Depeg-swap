@@ -6,58 +6,56 @@ import hre from "hardhat";
 import * as helper from "../helper/TestHelper";
 
 describe("CorkConfig", function () {
-  it("should deploy correctly", async function () {
-    const { defaultSigner } = await helper.getSigners();
+  let defaultSigner: any;
+  let secondSigner: any;
+  let signers: any;
 
-    const contract = await hre.viem.deployContract("CorkConfig", [],
+  let corkConfig: any;
+
+  before(async () => {
+    ({ defaultSigner, signers } = await helper.getSigners());
+    secondSigner = signers[1];
+  });
+
+  beforeEach(async () => {
+    const corkConfigInstance = await loadFixture(
+      helper.deployCorkConfig
+    );
+    corkConfig = await hre.viem.getContractAt(
+      "CorkConfig",
+      corkConfigInstance.contract.address
+    );
+  });
+
+  it("should deploy correctly", async function () {
+    corkConfig = await hre.viem.deployContract("CorkConfig", [],
       {
         client: {
           wallet: defaultSigner,
         }
       }
     );
-
-    expect(contract).to.be.ok;
-    expect(await contract.read.hasRole([await contract.read.DEFAULT_ADMIN_ROLE(),
+    expect(corkConfig).to.be.ok;
+    expect(await corkConfig.read.hasRole([await corkConfig.read.DEFAULT_ADMIN_ROLE(),
     defaultSigner.account.address]
     )).to.be.equals(true);
-    expect(await contract.read.hasRole([await contract.read.MANAGER_ROLE(),
+    expect(await corkConfig.read.hasRole([await corkConfig.read.MANAGER_ROLE(),
     defaultSigner.account.address]
     )).to.be.equals(false);
-    expect(await contract.read.paused()).to.be.equals(false);
+    expect(await corkConfig.read.paused()).to.be.equals(false);
   });
 
   describe("SetModuleCore", function () {
     it("setModuleCore should work correctly", async function () {
-      const { defaultSigner, signers } = await helper.getSigners();
-      const secondSigner = signers[1];
-      const corkConfig = await loadFixture(
-        helper.deployCorkConfig
-      );
-
-      const configContract = await hre.viem.getContractAt(
-        "CorkConfig",
-        corkConfig.contract.address
-      );
-      expect(await configContract.read.moduleCore()).to.not.be.equals(defaultSigner.account.address);
-      await expect(await configContract.write.setModuleCore([secondSigner.account.address], {
+      expect(await corkConfig.read.moduleCore()).to.not.be.equals(defaultSigner.account.address);
+      await expect(await corkConfig.write.setModuleCore([secondSigner.account.address], {
         account: defaultSigner.account,
       })).to.be.ok;
-      expect(await (await configContract.read.moduleCore()).toLowerCase()).to.be.equals(secondSigner.account.address);
+      expect(await (await corkConfig.read.moduleCore()).toLowerCase()).to.be.equals(secondSigner.account.address);
     })
 
     it("Revert when non MANAGER call setModuleCore", async function () {
-      const { defaultSigner, signers } = await helper.getSigners();
-      const secondSigner = signers[1];
-      const corkConfig = await loadFixture(
-        helper.deployCorkConfig
-      );
-
-      const configContract = await hre.viem.getContractAt(
-        "CorkConfig",
-        corkConfig.contract.address
-      );
-      await expect(configContract.write.setModuleCore([defaultSigner.account.address], {
+      await expect(corkConfig.write.setModuleCore([defaultSigner.account.address], {
         account: secondSigner.account,
       })).to.be.rejectedWith('CallerNotManager()');
     })
@@ -65,36 +63,17 @@ describe("CorkConfig", function () {
 
   describe("Pause", function () {
     it("pause should work correctly", async function () {
-      const { defaultSigner } = await helper.getSigners();
-      const corkConfig = await loadFixture(
-        helper.deployCorkConfig
-      );
+      expect(await corkConfig.read.paused()).to.be.equals(false);
 
-      const configContract = await hre.viem.getContractAt(
-        "CorkConfig",
-        corkConfig.contract.address
-      );
-      expect(await configContract.read.paused()).to.be.equals(false);
-
-      await expect(await configContract.write.pause({
+      await expect(await corkConfig.write.pause({
         account: defaultSigner.account,
       })).to.be.ok;
 
-      expect(await configContract.read.paused()).to.be.equals(true);
+      expect(await corkConfig.read.paused()).to.be.equals(true);
     })
 
     it("Revert when non MANAGER call pause", async function () {
-      const { defaultSigner, signers } = await helper.getSigners();
-      const secondSigner = signers[1];
-      const corkConfig = await loadFixture(
-        helper.deployCorkConfig
-      );
-
-      const configContract = await hre.viem.getContractAt(
-        "CorkConfig",
-        corkConfig.contract.address
-      );
-      await expect(configContract.write.pause({
+      await expect(corkConfig.write.pause({
         account: secondSigner.account,
       })).to.be.rejectedWith('CallerNotManager()');
     })
@@ -102,38 +81,19 @@ describe("CorkConfig", function () {
 
   describe("Unpause", function () {
     it("unpause should work correctly", async function () {
-      const { defaultSigner } = await helper.getSigners();
-      const corkConfig = await loadFixture(
-        helper.deployCorkConfig
-      );
+      await corkConfig.write.pause();
 
-      const configContract = await hre.viem.getContractAt(
-        "CorkConfig",
-        corkConfig.contract.address
-      );
-      await configContract.write.pause();
+      expect(await corkConfig.read.paused()).to.be.equals(true);
 
-      expect(await configContract.read.paused()).to.be.equals(true);
-
-      await expect(await configContract.write.unpause({
+      await expect(await corkConfig.write.unpause({
         account: defaultSigner.account,
       })).to.be.ok;
 
-      expect(await configContract.read.paused()).to.be.equals(false);
+      expect(await corkConfig.read.paused()).to.be.equals(false);
     })
 
     it("Revert when non MANAGER call pause", async function () {
-      const { defaultSigner, signers } = await helper.getSigners();
-      const secondSigner = signers[1];
-      const corkConfig = await loadFixture(
-        helper.deployCorkConfig
-      );
-
-      const configContract = await hre.viem.getContractAt(
-        "CorkConfig",
-        corkConfig.contract.address
-      );
-      await expect(configContract.write.unpause({
+      await expect(corkConfig.write.unpause({
         account: secondSigner.account,
       })).to.be.rejectedWith('CallerNotManager()');
     })
