@@ -25,7 +25,6 @@ library VaultLibrary {
     using PsmLibrary for State;
     using RedemptionAssetManagerLibrary for PsmRedemptionAssetManager;
     using BitMaps for BitMaps.BitMap;
-    using VaultLibrary for VaultState;
     using DepegSwapLibrary for DepegSwap;
     using VaultPoolLibrary for VaultPool;
 

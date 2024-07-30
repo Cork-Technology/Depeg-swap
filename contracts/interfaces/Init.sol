@@ -17,4 +17,14 @@ interface Initialize {
         uint256 exchangeRates,
         uint256 repurchaseFeePrecentage
     ) external;
+
+    function updateRepurchaseFeeRate(
+        Id id,
+        uint256 newRepurchaseFeePrecentage        
+    ) external;
+
+    function updateEarlyRedemptionFeeRate(
+        Id id,
+        uint256 newEarlyRedemptionFeeRate        
+    ) external;
 }

@@ -125,6 +125,26 @@ contract ModuleCore is PsmCore, Initialize, VaultCore {
         emit Issued(id, idx, expiry, ds, ct, ammPair);
     }
 
+    function updateRepurchaseFeeRate(
+        Id id,
+        uint256 newRepurchaseFeePrecentage        
+    ) external onlyConfig {
+        State storage state = states[id];
+        state.psm.repurchaseFeePrecentage = newRepurchaseFeePrecentage;
+
+        emit RepurchaseFeeRateUpdated(id, newRepurchaseFeePrecentage);
+    }
+
+    function updateEarlyRedemptionFeeRate(
+        Id id,
+        uint256 newEarlyRedemptionFeeRate        
+    ) external onlyConfig {
+        State storage state = states[id];
+        VaultConfigLibrary.updateFee(state.vault.config, newEarlyRedemptionFeeRate);
+
+        emit RepurchaseFeeRateUpdated(id, newEarlyRedemptionFeeRate);
+    }
+
     function lastDsId(Id id) external view override returns (uint256 dsId) {
         return states[id].globalAssetIdx;
     }

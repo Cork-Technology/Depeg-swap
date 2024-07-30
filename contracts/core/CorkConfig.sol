@@ -15,6 +15,8 @@ contract CorkConfig is AccessControl, Pausable {
     error CallerNotManager();
     error InvalidAddress();
 
+    /// @notice Emitted when a moduleCore variable set 
+    /// @param moduleCore Address of Modulecore contract
     event ModuleCoreSet(address moduleCore);
 
     modifier onlyManager() {
@@ -62,6 +64,26 @@ contract CorkConfig is AccessControl, Pausable {
         onlyManager
     {
         moduleCore.issueNewDs(id, expiry, exchangeRates, repurchaseFeePrecentage);
+    }
+
+    /**
+     * @dev Updates fee rates for psm repurchase
+     */
+    function updateRepurchaseFeeRate(
+        Id id,
+        uint256 newRepurchaseFeePrecentage        
+    ) external onlyManager {
+        moduleCore.updateRepurchaseFeeRate(id, newRepurchaseFeePrecentage);
+    }
+
+    /**
+     * @dev Updates earlyFeeRedemption rates 
+     */
+    function updateEarlyRedemptionFeeRate(
+        Id id,
+        uint256 newEarlyRedemptionFeeRate        
+    ) external onlyManager {
+        moduleCore.updateEarlyRedemptionFeeRate(id, newEarlyRedemptionFeeRate);
     }
 
     /**
