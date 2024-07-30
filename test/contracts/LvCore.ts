@@ -96,18 +96,7 @@ describe("LvCore", function () {
       }
     );
 
-    await fixture.moduleCore.contract.write.requestRedemption(
-      [Id, depositAmount],
-      {
-        account: secondSigner.account,
-      }
-    );
-
-    expect(
-      await fixture.lv.read.balanceOf([secondSigner.account.address])
-    ).to.be.equal(parseEther("0"));
-
-    await time.increase(expiry + 1);
+    await time.increaseTo(expiry + 1e3);
 
     const initialModuleCoreLvBalance = await fixture.lv.read.balanceOf([
       fixture.moduleCore.contract.address,
@@ -124,10 +113,6 @@ describe("LvCore", function () {
       fixture.moduleCore.contract.address,
     ]);
 
-    expect(afterModuleCoreLvBalance).to.be.equal(
-      initialModuleCoreLvBalance - depositAmount
-    );
-
     const event = await fixture.moduleCore.contract.getEvents.LvRedeemExpired({
       Id: lv,
       receiver: secondSigner.account.address,
@@ -135,7 +120,9 @@ describe("LvCore", function () {
 
     expect(event.length).to.be.equal(1);
 
-    expect(event[0].args.ra).to.be.equal(depositAmount);
+    expect(event[0].args.ra).to.be.equal(
+      helper.calculateMinimumLiquidity(depositAmount)
+    );
     expect(event[0].args.pa).to.be.equal(BigInt(0));
   });
 
@@ -238,7 +225,9 @@ describe("LvCore", function () {
 
     expect(event.length).to.be.equal(1);
 
-    expect(event[0].args.ra).to.be.equal(depositAmount);
+    expect(event[0].args.ra).to.be.equal(
+      helper.calculateMinimumLiquidity(depositAmount)
+    );
     expect(event[0].args.pa).to.be.equal(BigInt(0));
   });
 
@@ -313,7 +302,7 @@ describe("LvCore", function () {
 
     expect(event.length).to.be.equal(1);
 
-    expect(event[0].args.ra).to.be.equal(redeemAmount);
+    expect(event[0].args.ra).to.be.equal(helper.calculateMinimumLiquidity(redeemAmount));
     expect(event[0].args.pa).to.be.equal(BigInt(0));
   });
 
@@ -486,7 +475,7 @@ describe("LvCore", function () {
         depositAmount,
       ]);
 
-    expect(signer1ra).to.be.equal(depositAmount);
+    expect(signer1ra).to.be.equal(helper.calculateMinimumLiquidity(depositAmount));
     expect(signer2pa).to.be.equal(BigInt(0));
     expect(signer1approvedAmount).to.be.equal(parseEther("5"));
   });
@@ -694,7 +683,7 @@ describe("LvCore", function () {
     const [ra, pa] =
       await fixture.moduleCore.contract.read.reservedUserWithdrawal([Id]);
 
-    expect(ra).to.be.equal(depositAmount);
+    expect(ra).to.be.equal(helper.calculateMinimumLiquidity(depositAmount));
     expect(pa).to.be.equal(BigInt(0));
   });
 

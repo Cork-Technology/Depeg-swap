@@ -18,6 +18,13 @@ import UNIV2ROUTER from "./ext-abi/uni-v2-router.json";
 
 const DEVISOR = BigInt(1e18);
 
+export function calculateMinimumLiquidity(amount: bigint) {
+  // 1e16 is the minimum liquidity(10e3)
+  const minLiquidity = amount / BigInt(1e16);
+  
+  return amount - minLiquidity;
+}
+
 export function nowTimestampInSeconds() {
   return Math.floor(Date.now() / 1000);
 }
