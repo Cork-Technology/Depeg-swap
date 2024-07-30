@@ -15,6 +15,8 @@ import "../interfaces/IDsFlashSwapRouter.sol";
 import "../core/flash-swaps/RouterState.sol";
 import "../interfaces/uniswap-v2/RouterV2.sol";
 
+import "hardhat/console.sol";
+
 library VaultLibrary {
     using VaultConfigLibrary for VaultConfig;
     using PairLibrary for Pair;
@@ -59,33 +61,6 @@ library VaultLibrary {
         self.balances.ra = RedemptionAssetManagerLibrary.initialize(ra);
     }
 
-    function provideAmmLiquidityFromPool(
-        State storage self,
-        RouterState flashSwapRouter,
-        address ctAddress,
-        IUniswapV2Router02 ammRouter
-    ) internal {
-        (uint256 raRatio, ) = flashSwapRouter.getCurrentPriceRatio(
-            self.info.toId(),
-            self.globalAssetIdx
-        );
-
-        (uint256 ra, uint256 ct) = self.vault.pool.rationedToAmm(raRatio);
-
-        __addLiquidityToAmmUnchecked(
-            self,
-            ra,
-            ct,
-            self.info.redemptionAsset(),
-            ctAddress,
-            ammRouter
-        );
-
-        PsmLibrary.unsafeIssueToLv(self, ct);
-
-        self.vault.pool.resetAmmPool();
-    }
-
     function __addLiquidityToAmmUnchecked(
         State storage self,
         uint256 raAmount,
@@ -101,6 +76,28 @@ library VaultLibrary {
                 MathHelper.UNIV2_STATIC_TOLERANCE
             );
 
+        ERC20(raAddress).approve(address(ammRouter), raAmount);
+        console.log(
+            "Approving RA               : %s to %s",
+            raAmount,
+            address(ammRouter)
+        );
+        console.log(
+            "Contract RA balance        : %s",
+            ERC20(raAddress).balanceOf(address(this))
+        );
+
+        ERC20(ctAddress).approve(address(ammRouter), ctAmount);
+        console.log(
+            "Approving CT           : %s to %s",
+            ctAmount,
+            address(ammRouter)
+        );
+        console.log(
+            "Contract CT balance    : %s",
+            ERC20(ctAddress).balanceOf(address(this))
+        );
+
         // TODO : what do we do if there's leftover deposit due to the tolerance level? for now will just ignore it.
         (uint256 raDeposited, uint256 ctDeposited, uint256 lp) = ammRouter
             .addLiquidity(
@@ -114,7 +111,7 @@ library VaultLibrary {
                 block.timestamp
             );
 
-        self.vault.config.lpRaBalance += lp;
+        self.vault.config.lpBalance += lp;
     }
 
     function _addFlashSwapReserve(
@@ -147,7 +144,7 @@ library VaultLibrary {
             _liquidatedLp(self, prevDsId, ammRouter, flashSwapRouter);
         }
 
-        provideAmmLiquidityFromPool(
+        __provideAmmLiquidityFromPool(
             self,
             flashSwapRouter,
             self.ds[self.globalAssetIdx].ct,
@@ -177,28 +174,83 @@ library VaultLibrary {
     ) internal returns (uint256 ra, uint256 ct) {
         uint256 dsId = self.globalAssetIdx;
 
+        uint256 raRatio = __getAmmRaPriceRatio(self, flashSwapRouter, dsId);
+
+        (ra, ct) = MathHelper.calculateAmounts(amount, raRatio);
+
+        __provideLiquidity(
+            self,
+            ra,
+            ct,
+            flashSwapRouter,
+            ctAddress,
+            ammRouter,
+            dsId
+        );
+    }
+
+    function __getAmmRaPriceRatio(
+        State storage self,
+        RouterState flashSwapRouter,
+        uint256 dsId
+    ) internal view returns (uint256 ratio) {
         // This basically means that if the reserve is empty, then we use the default ratio
-        uint256 raRatio = DEFAULT_AMM_DEPOSIT_RATIO;
+        ratio = DEFAULT_AMM_DEPOSIT_RATIO;
+
         try
             // will always fail for the first deposit
             flashSwapRouter.getCurrentPriceRatio(self.info.toId(), dsId)
         returns (uint256 _raRatio, uint256) {
-            raRatio = _raRatio;
+            ratio = _raRatio;
         } catch {}
+    }
 
-        (ra, ct) = MathHelper.calculateAmounts(amount, raRatio);
+    function __provideLiquidity(
+        State storage self,
+        uint256 raAmount,
+        uint256 ctAmount,
+        RouterState flashSwapRouter,
+        address ctAddress,
+        IUniswapV2Router02 ammRouter,
+        uint256 dsId
+    ) internal {
+        PsmLibrary.unsafeIssueToLv(self, ctAmount);
+
         __addLiquidityToAmmUnchecked(
             self,
-            ra,
-            ct,
+            raAmount,
+            ctAmount,
             self.info.redemptionAsset(),
             ctAddress,
             ammRouter
         );
 
-        PsmLibrary.unsafeIssueToLv(self, ct);
+        _addFlashSwapReserve(self, flashSwapRouter, self.ds[dsId], ctAmount);
+    }
 
-        _addFlashSwapReserve(self, flashSwapRouter, self.ds[dsId], amount);
+    function __provideAmmLiquidityFromPool(
+        State storage self,
+        RouterState flashSwapRouter,
+        address ctAddress,
+        IUniswapV2Router02 ammRouter
+    ) internal {
+        uint256 dsId = self.globalAssetIdx;
+
+        uint256 raRatio = __getAmmRaPriceRatio(self, flashSwapRouter, dsId);
+
+        (uint256 ra, uint256 ct) = self.vault.pool.rationedToAmm(raRatio);
+
+        __provideLiquidity(
+            self,
+            ra,
+            ct,
+            flashSwapRouter,
+            ctAddress,
+            ammRouter,
+            dsId
+        );
+
+        self.vault.pool.resetAmmPool();
     }
 
     function deposit(
@@ -539,6 +591,7 @@ library VaultLibrary {
     //
     // final amount(Fa) :
     // Fa = rA - fee(rA)
+    // TODO : fix this
     function redeemEarly(
         State storage self,
         address owner,

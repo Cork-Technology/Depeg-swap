@@ -11,6 +11,7 @@ library SwapperMathLibrary {
     error InsufficientLiquidity();
     error InsufficientOtuputAmount();
 
+    // Calculate price ratio of two tokens in a uniswap v2 pair, will return ratio on 18 decimals precision
     function getPriceRatioUniv2(
         uint112 raReserve,
         uint112 ctReserve
@@ -28,8 +29,9 @@ library SwapperMathLibrary {
         uint224 ctPriceRatioUQ = encodedRaReserve.uqdiv(ctReserve);
 
         // Convert UQ112x112 to regular uint (divide by 2**112)
-        raPriceRatio = uint256(raPriceRatioUQ) / UQ112x112.Q112;
-        ctPriceRatio = uint256(ctPriceRatioUQ) / UQ112x112.Q112;
+        // we time by 18 to have 18 decimals precision
+        raPriceRatio = (uint256(raPriceRatioUQ) * 1e18) / UQ112x112.Q112;
+        ctPriceRatio = (uint256(ctPriceRatioUQ) * 1e18) / UQ112x112.Q112;
     }
 
     function calculateDsPrice(

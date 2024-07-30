@@ -49,7 +49,7 @@ abstract contract ModuleState is ICommon {
         swapAssetFactory = _swapAssetFactory;
         ammFactory = _ammFactory;
         dsFlashSwapRouter = _dsFlashSwapRouter;
-        _ammRouter = _ammRouter;
+        ammRouter = _ammRouter;
         config = _config;
     }
 
