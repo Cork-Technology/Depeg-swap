@@ -8,15 +8,15 @@ import { Address, formatEther, parseEther, WalletClient } from "viem";
 import * as helper from "../helper/TestHelper";
 
 describe("ModuleCore", function () {
-  let primarySigner: any;
+  let defaultSigner: any;
   let secondSigner: any;
+  let signers: any;
 
   let mathLib: any;
   let moduleCore: any;
 
   before(async () => {
-    const { defaultSigner, signers } = await helper.getSigners();
-    primarySigner = defaultSigner;
+    ({ defaultSigner, signers } = await helper.getSigners());
     secondSigner = signers[1];
   });
 
@@ -25,10 +25,10 @@ describe("ModuleCore", function () {
 
     moduleCore = await hre.viem.deployContract(
       "ModuleCore",
-      [primarySigner.account.address, primarySigner.account.address],
+      [defaultSigner.account.address, defaultSigner.account.address],
       {
         client: {
-          wallet: primarySigner,
+          wallet: defaultSigner,
         },
         libraries: {
           MathHelper: mathLib.address,

@@ -9,25 +9,25 @@ import { Address, formatEther, parseEther, WalletClient } from "viem";
 import * as helper from "../helper/TestHelper";
 
 describe("Asset Factory", function () {
-  let primarySigner: any;
+  let defaultSigner: any;
   let secondSigner: any;
+  let signers: any;
 
   let assetFactory: any;
 
   before(async () => {
-    const { defaultSigner, signers } = await helper.getSigners();
-    primarySigner = defaultSigner;
+    ({ defaultSigner, signers } = await helper.getSigners());
     secondSigner = signers[1];
   });
 
   beforeEach(async () => {
     assetFactory = await hre.viem.deployContract("AssetFactory", [], {
       client: {
-        wallet: primarySigner,
+        wallet: defaultSigner,
       },
     });
-    await assetFactory.write.initialize([primarySigner.account.address], {
-      account: primarySigner.account,
+    await assetFactory.write.initialize([defaultSigner.account.address], {
+      account: defaultSigner.account,
     });
   });
 
@@ -42,13 +42,13 @@ describe("Asset Factory", function () {
     await assetFactory.write.deployLv([
       ra.address,
       pa.address,
-      primarySigner.account.address,
+      defaultSigner.account.address,
     ]);
 
     await assetFactory.write.deploySwapAssets([
       ra.address,
       pa.address,
-      primarySigner.account.address,
+      defaultSigner.account.address,
       BigInt(helper.expiry(100000)),
       parseEther("1"),
     ]);
@@ -67,7 +67,7 @@ describe("Asset Factory", function () {
     await assetFactory.write.deployLv([
       ra.address,
       pa.address,
-      primarySigner.account.address,
+      defaultSigner.account.address,
     ]);
 
     for (let i = 0; i < 100; i++) {
@@ -75,7 +75,7 @@ describe("Asset Factory", function () {
         ra.address,
         pa.address,
 
-        primarySigner.account.address,
+        defaultSigner.account.address,
         BigInt(helper.expiry(100000)),
         parseEther("1"),
       ]);
@@ -95,14 +95,14 @@ describe("Asset Factory", function () {
     await assetFactory.write.deployLv([
       ra.address,
       pa.address,
-      primarySigner.account.address,
+      defaultSigner.account.address,
     ]);
 
     for (let i = 0; i < 20; i++) {
       await assetFactory.write.deploySwapAssets([
         ra.address,
         pa.address,
-        primarySigner.account.address,
+        defaultSigner.account.address,
         BigInt(helper.expiry(100000)),
         parseEther("1"),
       ]);
@@ -139,14 +139,14 @@ describe("Asset Factory", function () {
     await assetFactory.write.deployLv([
       ra.address,
       pa.address,
-      primarySigner.account.address,
+      defaultSigner.account.address,
     ]);
 
     for (let i = 0; i < 10; i++) {
       await assetFactory.write.deploySwapAssets([
         ra.address,
         pa.address,
-        primarySigner.account.address,
+        defaultSigner.account.address,
         BigInt(helper.expiry(100000)),
         parseEther("1"),
       ]);

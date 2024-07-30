@@ -6,14 +6,14 @@ import hre from "hardhat";
 import * as helper from "../helper/TestHelper";
 
 describe("CorkConfig", function () {
-  let primarySigner: any;
+  let defaultSigner: any;
   let secondSigner: any;
+  let signers: any;
 
   let corkConfig: any;
 
   before(async () => {
-    const { defaultSigner, signers } = await helper.getSigners();
-    primarySigner = defaultSigner;
+    ({ defaultSigner, signers } = await helper.getSigners());
     secondSigner = signers[1];
   });
 
@@ -31,31 +31,31 @@ describe("CorkConfig", function () {
     corkConfig = await hre.viem.deployContract("CorkConfig", [],
       {
         client: {
-          wallet: primarySigner,
+          wallet: defaultSigner,
         }
       }
     );
     expect(corkConfig).to.be.ok;
     expect(await corkConfig.read.hasRole([await corkConfig.read.DEFAULT_ADMIN_ROLE(),
-    primarySigner.account.address]
+    defaultSigner.account.address]
     )).to.be.equals(true);
     expect(await corkConfig.read.hasRole([await corkConfig.read.MANAGER_ROLE(),
-    primarySigner.account.address]
+    defaultSigner.account.address]
     )).to.be.equals(false);
     expect(await corkConfig.read.paused()).to.be.equals(false);
   });
 
   describe("SetModuleCore", function () {
     it("setModuleCore should work correctly", async function () {
-      expect(await corkConfig.read.moduleCore()).to.not.be.equals(primarySigner.account.address);
+      expect(await corkConfig.read.moduleCore()).to.not.be.equals(defaultSigner.account.address);
       await expect(await corkConfig.write.setModuleCore([secondSigner.account.address], {
-        account: primarySigner.account,
+        account: defaultSigner.account,
       })).to.be.ok;
       expect(await (await corkConfig.read.moduleCore()).toLowerCase()).to.be.equals(secondSigner.account.address);
     })
 
     it("Revert when non MANAGER call setModuleCore", async function () {
-      await expect(corkConfig.write.setModuleCore([primarySigner.account.address], {
+      await expect(corkConfig.write.setModuleCore([defaultSigner.account.address], {
         account: secondSigner.account,
       })).to.be.rejectedWith('CallerNotManager()');
     })
@@ -66,7 +66,7 @@ describe("CorkConfig", function () {
       expect(await corkConfig.read.paused()).to.be.equals(false);
 
       await expect(await corkConfig.write.pause({
-        account: primarySigner.account,
+        account: defaultSigner.account,
       })).to.be.ok;
 
       expect(await corkConfig.read.paused()).to.be.equals(true);
@@ -86,7 +86,7 @@ describe("CorkConfig", function () {
       expect(await corkConfig.read.paused()).to.be.equals(true);
 
       await expect(await corkConfig.write.unpause({
-        account: primarySigner.account,
+        account: defaultSigner.account,
       })).to.be.ok;
 
       expect(await corkConfig.read.paused()).to.be.equals(false);
