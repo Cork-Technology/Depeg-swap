@@ -76,26 +76,8 @@ library VaultLibrary {
             );
 
         ERC20(raAddress).approve(address(ammRouter), raAmount);
-        console.log(
-            "Approving RA               : %s to %s",
-            raAmount,
-            address(ammRouter)
-        );
-        console.log(
-            "Contract RA balance        : %s",
-            ERC20(raAddress).balanceOf(address(this))
-        );
 
         ERC20(ctAddress).approve(address(ammRouter), ctAmount);
-        console.log(
-            "Approving CT           : %s to %s",
-            ctAmount,
-            address(ammRouter)
-        );
-        console.log(
-            "Contract CT balance    : %s",
-            ERC20(ctAddress).balanceOf(address(this))
-        );
 
         // TODO : what do we do if there's leftover deposit due to the tolerance level? for now will just ignore it.
         (uint256 raDeposited, uint256 ctDeposited, uint256 lp) = ammRouter
@@ -403,7 +385,7 @@ library VaultLibrary {
         uint256 ctAttributedToPa = reservedDs > ctAmm ? 0 : ctAmm - reservedDs;
 
         uint256 psmPa;
-        uint256 psmRa;
+        uint256 psmRa = redeemAmount;
 
         if (ctAttributedToPa != 0) {
             (psmPa, psmRa) = PsmLibrary.lvRedeemRaPaWithCt(
