@@ -9,39 +9,43 @@ import { Address, formatEther, parseEther, WalletClient } from "viem";
 import * as helper from "../helper/TestHelper";
 
 describe("Asset Factory", function () {
-  it("should deploy AssetFactory", async function () {
-    const { defaultSigner } = await helper.getSigners();
-    const contract = await hre.viem.deployContract("AssetFactory", [], {
+  let defaultSigner: any;
+  let secondSigner: any;
+  let signers: any;
+
+  let assetFactory: any;
+
+  before(async () => {
+    ({ defaultSigner, signers } = await helper.getSigners());
+    secondSigner = signers[1];
+  });
+
+  beforeEach(async () => {
+    assetFactory = await hre.viem.deployContract("AssetFactory", [], {
       client: {
         wallet: defaultSigner,
       },
     });
+    await assetFactory.write.initialize([defaultSigner.account.address], {
+      account: defaultSigner.account,
+    });
+  });
 
-    expect(contract).to.be.ok;
+  it("should deploy AssetFactory", async function () {
+    expect(assetFactory).to.be.ok;
   });
 
   it("should deploy swap assets", async function () {
-    const { defaultSigner } = await helper.getSigners();
-    const contract = await hre.viem.deployContract("AssetFactory", [], {
-      client: {
-        wallet: defaultSigner,
-      },
-    });
-
-    await contract.write.initialize([defaultSigner.account.address], {
-      account: defaultSigner.account,
-    });
-
     const { ra, pa } = await helper.backedAssets();
 
     // deploy lv to signal that a pair exist
-    await contract.write.deployLv([
+    await assetFactory.write.deployLv([
       ra.address,
       pa.address,
       defaultSigner.account.address,
     ]);
 
-    await contract.write.deploySwapAssets([
+    await assetFactory.write.deploySwapAssets([
       ra.address,
       pa.address,
       defaultSigner.account.address,
@@ -49,7 +53,7 @@ describe("Asset Factory", function () {
       parseEther("1"),
     ]);
 
-    const events = await contract.getEvents.AssetDeployed({
+    const events = await assetFactory.getEvents.AssetDeployed({
       ra: ra.address,
     });
 
@@ -57,28 +61,17 @@ describe("Asset Factory", function () {
   });
 
   it("should deploy swap sassets 100x", async function () {
-    const { defaultSigner } = await helper.getSigners();
-    const contract = await hre.viem.deployContract("AssetFactory", [], {
-      client: {
-        wallet: defaultSigner,
-      },
-    });
-
-    await contract.write.initialize([defaultSigner.account.address], {
-      account: defaultSigner.account,
-    });
-
     const { ra, pa } = await helper.backedAssets();
 
     // deploy lv to signal that a pair exist
-    await contract.write.deployLv([
+    await assetFactory.write.deployLv([
       ra.address,
       pa.address,
       defaultSigner.account.address,
     ]);
 
     for (let i = 0; i < 100; i++) {
-      await contract.write.deploySwapAssets([
+      await assetFactory.write.deploySwapAssets([
         ra.address,
         pa.address,
 
@@ -88,7 +81,7 @@ describe("Asset Factory", function () {
       ]);
     }
 
-    const events = await contract.getEvents.AssetDeployed({
+    const events = await assetFactory.getEvents.AssetDeployed({
       ra: ra.address,
     });
 
@@ -96,28 +89,17 @@ describe("Asset Factory", function () {
   });
 
   it("shoud get deployed swap assets paged", async function () {
-    const { defaultSigner } = await helper.getSigners();
-    const contract = await hre.viem.deployContract("AssetFactory", [], {
-      client: {
-        wallet: defaultSigner,
-      },
-    });
-
-    await contract.write.initialize([defaultSigner.account.address], {
-      account: defaultSigner.account,
-    });
-
     const { ra, pa } = await helper.backedAssets();
 
     // deploy lv to signal that a pair exist
-    await contract.write.deployLv([
+    await assetFactory.write.deployLv([
       ra.address,
       pa.address,
       defaultSigner.account.address,
     ]);
 
     for (let i = 0; i < 20; i++) {
-      await contract.write.deploySwapAssets([
+      await assetFactory.write.deploySwapAssets([
         ra.address,
         pa.address,
         defaultSigner.account.address,
@@ -126,7 +108,7 @@ describe("Asset Factory", function () {
       ]);
     }
 
-    const assets = await contract.read.getDeployedSwapAssets([
+    const assets = await assetFactory.read.getDeployedSwapAssets([
       ra.address,
       0,
       10,
@@ -135,7 +117,7 @@ describe("Asset Factory", function () {
     expect(assets[0].length).to.equal(10);
     expect(assets[1].length).to.equal(10);
 
-    const noAsset = await contract.read.getDeployedSwapAssets([
+    const noAsset = await assetFactory.read.getDeployedSwapAssets([
       ra.address,
       7,
       10,
@@ -151,28 +133,17 @@ describe("Asset Factory", function () {
   });
 
   it("should issue check is deployed swap assets", async function () {
-    const { defaultSigner } = await helper.getSigners();
-    const contract = await hre.viem.deployContract("AssetFactory", [], {
-      client: {
-        wallet: defaultSigner,
-      },
-    });
-
-    await contract.write.initialize([defaultSigner.account.address], {
-      account: defaultSigner.account,
-    });
-
     const { ra, pa } = await helper.backedAssets();
 
     // deploy lv to signal that a pair exist
-    await contract.write.deployLv([
+    await assetFactory.write.deployLv([
       ra.address,
       pa.address,
       defaultSigner.account.address,
     ]);
 
     for (let i = 0; i < 10; i++) {
-      await contract.write.deploySwapAssets([
+      await assetFactory.write.deploySwapAssets([
         ra.address,
         pa.address,
         defaultSigner.account.address,
@@ -181,7 +152,7 @@ describe("Asset Factory", function () {
       ]);
     }
 
-    const assets = await contract.read.getDeployedSwapAssets([
+    const assets = await assetFactory.read.getDeployedSwapAssets([
       ra.address,
       0,
       10,
@@ -191,7 +162,7 @@ describe("Asset Factory", function () {
     expect(assets[1].length).to.equal(10);
 
     for (const asset of assets[1]) {
-      const isDeployed = await contract.read.isDeployed([asset]);
+      const isDeployed = await assetFactory.read.isDeployed([asset]);
       expect(isDeployed).to.be.true;
     }
   });

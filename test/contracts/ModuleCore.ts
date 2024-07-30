@@ -8,15 +8,24 @@ import { Address, formatEther, parseEther, WalletClient } from "viem";
 import * as helper from "../helper/TestHelper";
 
 describe("ModuleCore", function () {
-  it("should deploy", async function () {
-    const { defaultSigner } = await helper.getSigners();
+  let defaultSigner: any;
+  let secondSigner: any;
+  let signers: any;
 
-    const mathLib = await hre.viem.deployContract("MathHelper");
+  let mathLib: any;
+  let moduleCore: any;
 
-    const contract = await hre.viem.deployContract(
+  before(async () => {
+    ({ defaultSigner, signers } = await helper.getSigners());
+    secondSigner = signers[1];
+  });
+
+  beforeEach(async () => {
+    mathLib = await hre.viem.deployContract("MathHelper");
+
+    moduleCore = await hre.viem.deployContract(
       "ModuleCore",
       [defaultSigner.account.address, defaultSigner.account.address],
-
       {
         client: {
           wallet: defaultSigner,
@@ -26,7 +35,9 @@ describe("ModuleCore", function () {
         },
       }
     );
+  });
 
-    expect(contract).to.be.ok;
+  it("should deploy", async function () {
+    expect(moduleCore).to.be.ok;
   });
 });
