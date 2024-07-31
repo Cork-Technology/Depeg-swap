@@ -222,6 +222,13 @@ library PsmLibrary {
         rates = self.psm.repurchaseFeePrecentage;
     }
 
+    function updateRepurchaseFeePercentage(
+        State storage self,
+        uint256 newFees
+    ) internal {
+        self.psm.repurchaseFeePrecentage = newFees;
+    }
+
     function previewRepurchase(
         State storage self,
         uint256 amount
