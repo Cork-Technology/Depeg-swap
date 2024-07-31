@@ -2,6 +2,8 @@
 pragma solidity ^0.8.0;
 
 library MathHelper {
+    uint224 constant Q112 = 2 ** 112;
+
     /// @dev default decimals for now to calculate price ratio
     uint8 internal constant DEFAULT_DECIMAL = 18;
 
@@ -147,7 +149,6 @@ library MathHelper {
             return (0, totalAmount, ratePerLv);
         }
 
-        
         attributedWithdrawal = (ratePerLv * totalLvWithdrawn) / 1e18;
         attributedAmm = totalAmount - attributedWithdrawal;
 
@@ -163,8 +164,43 @@ library MathHelper {
         ctTolerance = (ct * tolerance) / 1e18;
     }
 
-    function name() external pure returns (string memory) {
-        return "MathHelper";
-        
+    function calculateUniV2LpValue(
+        uint256 totalLpSupply,
+        uint256 totalRaReserve,
+        uint256 totalCtReserve
+    ) public pure returns (uint256 valueRaPerLp, uint256 valueCtPerLp) {
+        valueRaPerLp = (uint256(totalRaReserve) * 1e18) / totalLpSupply;
+        valueCtPerLp = (uint256(totalCtReserve) * 1e18) / totalLpSupply;
+    }
+
+    function calculateLvValueFromUniV2Lp(
+        uint256 totalLpSupply,
+        uint256 totalLpOwned,
+        uint256 totalRaReserve,
+        uint256 totalCtReserve,
+        uint256 totalLvIssued
+    )
+        external
+        pure
+        returns (
+            uint256 raValuePerLv,
+            uint256 ctValuePerLv,
+            uint256 valueRaPerLp,
+            uint256 valueCtPerLp
+        )
+    {
+        (valueRaPerLp, valueCtPerLp) = calculateUniV2LpValue(
+            totalLpSupply,
+            totalRaReserve,
+            totalCtReserve
+        );
+
+        uint256 cumulatedLptotalLvOwnedRa = (totalLpOwned * valueRaPerLp) /
+            1e18;
+        uint256 cumulatedLptotalLvOwnedCt = (totalLpOwned * valueCtPerLp) /
+            1e18;
+
+        raValuePerLv = (cumulatedLptotalLvOwnedRa * 1e18) / totalLvIssued;
+        ctValuePerLv = (cumulatedLptotalLvOwnedCt * 1e18) / totalLvIssued;
     }
 }

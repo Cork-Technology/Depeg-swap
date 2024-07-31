@@ -21,8 +21,16 @@ const DEVISOR = BigInt(1e18);
 export function calculateMinimumLiquidity(amount: bigint) {
   // 1e16 is the minimum liquidity(10e3)
   const minLiquidity = amount / BigInt(1e16);
-  
+
   return amount - minLiquidity;
+}
+
+export function encodeAsUQ112x112(amount: bigint) {
+  return amount * BigInt(2 ** 112);
+}
+
+export function decodeUQ112x112(amount: bigint) {
+  return amount / BigInt(2 ** 112);
 }
 
 export function nowTimestampInSeconds() {
