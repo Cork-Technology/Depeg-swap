@@ -205,8 +205,8 @@ library MathHelper {
         raValuePerLv = (cumulatedLptotalLvOwnedRa * 1e18) / totalLvIssued;
         ctValuePerLv = (cumulatedLptotalLvOwnedCt * 1e18) / totalLvIssued;
 
-        totalLvRaValue = raValuePerLv * totalLvIssued;
-        totalLvCtValue = ctValuePerLv * totalLvIssued;
+        totalLvRaValue = (raValuePerLv * totalLvIssued) / 1e18;
+        totalLvCtValue = (ctValuePerLv * totalLvIssued) / 1e18;
     }
 
     function convertToLp(
