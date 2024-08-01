@@ -333,7 +333,7 @@ library PsmLibrary {
         IERC20(ds._address).transfer(buyer, received);
 
         // Provide liquidity
-        VaultLibrary.provideLiquidityWithPsmRepurchase(
+        VaultLibrary.provideLiquidityWithFee(
             self,
             fee,
             flashSwapRouter,
