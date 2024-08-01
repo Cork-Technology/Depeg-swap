@@ -85,7 +85,7 @@ abstract contract VaultCore is ModuleState, Context, IVault {
     {
         State storage state = states[id];
         (attributedRa, attributedPa, approvedAmount) = state
-            .previewRedeemExpired(amount, _msgSender());
+            .previewRedeemExpired(amount, _msgSender(), getRouterCore());
     }
 
     function redeemEarlyLv(
@@ -95,7 +95,13 @@ abstract contract VaultCore is ModuleState, Context, IVault {
     ) external override {
         State storage state = states[id];
         (uint256 received, uint256 fee, uint256 feePrecentage) = state
-            .redeemEarly(_msgSender(), receiver, amount, getRouterCore());
+            .redeemEarly(
+                _msgSender(),
+                receiver,
+                amount,
+                getRouterCore(),
+                getAmmRouter()
+            );
 
         emit LvRedeemEarly(
             id,
@@ -117,6 +123,9 @@ abstract contract VaultCore is ModuleState, Context, IVault {
         returns (uint256 received, uint256 fee, uint256 feePrecentage)
     {
         State storage state = states[id];
-        (received, fee, feePrecentage) = state.previewRedeemEarly(amount);
+        (received, fee, feePrecentage) = state.previewRedeemEarly(
+            amount,
+            getRouterCore()
+        );
     }
 }
