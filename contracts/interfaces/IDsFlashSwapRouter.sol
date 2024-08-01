@@ -25,9 +25,24 @@ interface IDsFlashSwapUtility {
         Id id,
         uint256 dsId
     ) external view returns (uint256 raPriceRatio, uint256 ctPriceRatio);
+
+    function getAmmReserve(
+        Id id,
+        uint256 dsId
+    ) external view returns (uint112 raReserve, uint112 ctReserve);
+
+    function getLvReserve(
+        Id id,
+        uint256 dsId
+    ) external view returns (uint256 lvReserve);
+
+    function getUniV2pair(
+        Id id,
+        uint256 dsId
+    ) external view returns (IUniswapV2Pair pair);
 }
 
-interface IDsFlashSwapCore {
+interface IDsFlashSwapCore is IDsFlashSwapUtility {
     function onNewIssuance(
         Id reserveId,
         uint256 dsId,
@@ -42,4 +57,10 @@ interface IDsFlashSwapCore {
         Id reserveId,
         uint256 dsId
     ) external returns (uint256 amount);
+
+    function emptyReservePartial(
+        Id reserveId,
+        uint256 dsId,
+        uint256 amount
+    ) external returns (uint256 reserve);
 }

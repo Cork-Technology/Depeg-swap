@@ -38,11 +38,40 @@ contract RouterState is
         reserves[reserveId].onNewIssuance(dsId, ds, pair, initialReserve);
     }
 
+    function getAmmReserve(
+        Id id,
+        uint256 dsId
+    ) external view override returns (uint112 raReserve, uint112 ctReserve) {
+        (raReserve, ctReserve) = reserves[id].getReserve(dsId);
+    }
+
+    function getLvReserve(
+        Id id,
+        uint256 dsId
+    ) external view override returns (uint256 lvReserve) {
+        return reserves[id].ds[dsId].reserve;
+    }
+
+    function getUniV2pair(
+        Id id,
+        uint256 dsId
+    ) external view override returns (IUniswapV2Pair pair) {
+        return reserves[id].getPair(dsId);
+    }
+
     function emptyReserve(
         Id reserveId,
         uint256 dsId
-    ) external returns (uint256 amount) {
+    ) external override onlyOwner returns (uint256 amount) {
         return reserves[reserveId].emptyReserve(dsId, owner());
+    }
+
+    function emptyReservePartial(
+        Id reserveId,
+        uint256 dsId,
+        uint256 amount
+    ) external override onlyOwner returns (uint256 reserve) {
+        return reserves[reserveId].emptyReservePartial(dsId, amount, owner());
     }
 
     function getCurrentPriceRatio(
