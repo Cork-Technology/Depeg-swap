@@ -16,6 +16,8 @@ import "../interfaces/IDsFlashSwapRouter.sol";
 import "../interfaces/IDsFlashSwapRouter.sol";
 import "../interfaces/uniswap-v2/RouterV2.sol";
 
+import "hardhat/console.sol";
+
 library VaultLibrary {
     using VaultConfigLibrary for VaultConfig;
     using PairLibrary for Pair;
@@ -374,10 +376,16 @@ library VaultLibrary {
             MathHelper.convertToLp(raPerLv, raPerLp, lvRedeemed)
         );
 
-        ra += _sellCt(self, dsId, ammRouter, flashSwapRouter, ammCtBalance);
+        ra += _redeemCtDsAndSellExcessCt(
+            self,
+            dsId,
+            ammRouter,
+            flashSwapRouter,
+            ammCtBalance
+        );
     }
 
-    function _sellCt(
+    function _redeemCtDsAndSellExcessCt(
         State storage self,
         uint256 dsId,
         IUniswapV2Router02 ammRouter,
@@ -399,6 +407,7 @@ library VaultLibrary {
             redeemAmount
         );
 
+        ra += redeemAmount;
         PsmLibrary.lvRedeemRaWithCtDs(self, redeemAmount, dsId);
 
         uint256 ctSellAmount = reservedDs >= ammCtBalance
@@ -412,14 +421,16 @@ library VaultLibrary {
 
         ERC20(ds.ct).approve(address(ammRouter), ctSellAmount);
 
-        ra = ammRouter.swapExactTokensForTokens(
-            ctSellAmount,
-            // 100 % tolerance, to ensure this not fail
-            0,
-            path,
-            address(this),
-            block.timestamp
-        )[1];
+        if (ctSellAmount != 0) {
+            // 100% tolerance, to ensure this not fail
+            ra += ammRouter.swapExactTokensForTokens(
+                ctSellAmount,
+                0,
+                path,
+                address(this),
+                block.timestamp
+            )[1];
+        }
     }
 
     function _liquidatedLp(
@@ -733,6 +744,22 @@ library VaultLibrary {
             );
     }
 
+    // IMPORTANT : only psm and early redeem can call this function
+    function provideLiquidityWithFee(
+        State storage self,
+        uint256 amount,
+        IDsFlashSwapCore flashSwapRouter,
+        IUniswapV2Router02 ammRouter
+    ) public {
+        __provideLiquidityWithRatio(
+            self,
+            amount,
+            flashSwapRouter,
+            self.ds[self.globalAssetIdx].ct,
+            ammRouter
+        );
+    }
+
     // taken directly from spec document, technically below is what should happen in this function
     //
     // '#' refers to the total circulation supply of that token.
@@ -788,26 +815,12 @@ library VaultLibrary {
             amount
         );
 
-        (uint256 raRatio, ) = flashSwapRouter.getCurrentPriceRatio(
-            self.info.toId(),
-            self.globalAssetIdx
-        );
-        // calculate substracted LP liquidity in respect to the price ratio
-        // this is done to minimize price impact
-        (uint256 ra, uint256 ct) = MathHelper.calculateAmounts(
-            received,
-            raRatio
-        );
-
-        // TODO : change this into pool function
-        self.vault.config.lpRaBalance -= ra;
-        self.vault.config.lpCtBalance -= ct;
-
         fee = MathHelper.calculatePrecentageFee(
             received,
             self.vault.config.fee
         );
-        self.vault.config.accmulatedFee += fee;
+
+        provideLiquidityWithFee(self, fee, flashSwapRouter, ammRouter);
         received = received - fee;
 
         // IMPORTANT: ideally, the source of the WA that's used to fulfill
@@ -862,21 +875,5 @@ library VaultLibrary {
         );
 
         received = received - fee;
-    }
-
-    // IMPORTANT : only psm can call this function
-    function provideLiquidityWithPsmRepurchase(
-        State storage self,
-        uint256 amount,
-        IDsFlashSwapCore flashSwapRouter,
-        IUniswapV2Router02 ammRouter
-    ) external {
-        __provideLiquidityWithRatio(
-            self,
-            amount,
-            flashSwapRouter,
-            self.ds[self.globalAssetIdx].ct,
-            ammRouter
-        );
     }
 }
