@@ -214,6 +214,6 @@ library MathHelper {
         uint256 rateRaPerLp,
         uint256 redeemedLv
     ) external pure returns (uint256 lpLiquidated) {
-        lpLiquidated = ((redeemedLv * rateRaPerLv) * 1e18) / rateRaPerLp;
+        lpLiquidated = ((redeemedLv * rateRaPerLv) * 1e18) / rateRaPerLp / 1e18;
     }
 }
