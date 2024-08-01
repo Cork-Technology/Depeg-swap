@@ -11,6 +11,7 @@ import "./State.sol";
 import "./Guard.sol";
 import "./MathHelper.sol";
 import "../interfaces/IRepurchase.sol";
+import "../interfaces/IDsFlashSwapRouter.sol";
 import "./VaultLib.sol";
 import "@openzeppelin/contracts/token/ERC20/extensions/ERC20Burnable.sol";
 
@@ -69,7 +70,6 @@ library PsmLibrary {
         DepegSwap storage ds = self.ds[prevIdx];
         Guard.safeAfterExpired(ds);
 
-        uint256 totalCtIssued = IERC20(ds.ct).totalSupply();
         uint256 availableRa = self.psm.balances.ra.convertAllToFree();
         uint256 availablePa = self.psm.balances.paBalance;
 
@@ -148,7 +148,6 @@ library PsmLibrary {
         PsmPoolArchive storage archive = self.psm.poolArchive[dsId];
 
         (accruedPa, accruedRa) = _calcRedeemAmount(
-            self,
             amount,
             totalCtIssued,
             archive.raAccrued,
@@ -294,7 +293,7 @@ library PsmLibrary {
         State storage self,
         address buyer,
         uint256 amount,
-        RouterState flashSwapRouter,
+        IDsFlashSwapCore flashSwapRouter,
         IUniswapV2Router02 ammRouter
     )
         internal
@@ -462,12 +461,11 @@ library PsmLibrary {
     }
 
     function _calcRedeemAmount(
-        State storage self,
         uint256 amount,
         uint256 totalCtIssued,
         uint256 availableRa,
         uint256 availablePa
-    ) internal view returns (uint256 accruedPa, uint256 accruedRa) {
+    ) internal pure returns (uint256 accruedPa, uint256 accruedRa) {
         accruedPa = MathHelper.calculateAccrued(
             amount,
             availablePa,
@@ -540,7 +538,6 @@ library PsmLibrary {
         PsmPoolArchive storage archive = self.psm.poolArchive[dsId];
 
         (accruedPa, accruedRa) = _calcRedeemAmount(
-            self,
             amount,
             totalCtIssued,
             archive.raAccrued,
@@ -584,7 +581,6 @@ library PsmLibrary {
         }
 
         (accruedPa, accruedRa) = _calcRedeemAmount(
-            self,
             amount,
             totalCtIssued,
             availableRa,
