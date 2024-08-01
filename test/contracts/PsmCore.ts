@@ -4,26 +4,41 @@ import {
 } from "@nomicfoundation/hardhat-toolbox-viem/network-helpers";
 import { expect } from "chai";
 import hre from "hardhat";
-import { Address, formatEther, parseEther, WalletClient } from "viem";
+import {
+  Address,
+  formatEther,
+  GetContractReturnType,
+  parseEther,
+  WalletClient,
+} from "viem";
 import * as helper from "../helper/TestHelper";
-import exp from "constants";
+import { ArtifactsMap } from "hardhat/types/artifacts";
 
 describe("PSM core", function () {
-  let defaultSigner: any;
-  let secondSigner: any;
-  let signers: any;
+  let {
+    defaultSigner,
+    secondSigner,
+    signers,
+  }: ReturnType<typeof helper.getSigners> = {} as any;
 
-  let expiryTime: any;
-  let mintAmount: any;
+  let mintAmount: bigint;
+  let expiryTime: number;
 
-  let fixture: any;
+  let fixture: Awaited<
+    ReturnType<typeof helper.ModuleCoreWithInitializedPsmLv>
+  >;
 
-  let moduleCore: any;
+  let moduleCore: Awaited<ReturnType<typeof getModuleCore>>;
   let corkConfig: any;
   let pa: any;
 
+  const getModuleCore = async (address: Address) => {
+    return await hre.viem.getContractAt("ModuleCore", address);
+  };
+
   before(async () => {
-    ({ defaultSigner, signers } = await helper.getSigners());
+    const __signers = await hre.viem.getWalletClients();
+    ({ defaultSigner, signers } = helper.getSigners(__signers));
     secondSigner = signers[1];
   });
 
@@ -34,6 +49,7 @@ describe("PSM core", function () {
       "ModuleCore",
       fixture.moduleCore.contract.address
     );
+
     corkConfig = await hre.viem.getContractAt(
       "CorkConfig",
       fixture.config.contract.address
@@ -71,6 +87,7 @@ describe("PSM core", function () {
   describe("issue pair", function () {
     it("should issue new ds", async function () {
       expiryTime = helper.expiry(1e18 * 1000);
+
       const Id = await moduleCore.read.getId([
         fixture.pa.address,
         fixture.ra.address,

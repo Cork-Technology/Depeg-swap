@@ -9,9 +9,14 @@ import * as helper from "../helper/TestHelper";
 
 describe("ModuleCore", function () {
   it("should deploy", async function () {
-    const { defaultSigner } = await helper.getSigners();
+    const { defaultSigner } =  helper.getSigners(await hre.viem.getWalletClients());
 
     const mathLib = await hre.viem.deployContract("MathHelper");
+    const vault = await hre.viem.deployContract("VaultLibrary", [], {
+      libraries: {
+        MathHelper: mathLib.address,
+      },
+    });
 
     const dsFlashSwapRouter = await helper.deployFlashSwapRouter();
     const univ2Factory = await helper.deployUniV2Factory();
@@ -39,6 +44,7 @@ describe("ModuleCore", function () {
         },
         libraries: {
           MathHelper: mathLib.address,
+          VaultLibrary: vault.address,
         },
       }
     );

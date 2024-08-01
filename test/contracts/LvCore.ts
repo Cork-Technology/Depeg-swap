@@ -4,20 +4,26 @@ import {
 } from "@nomicfoundation/hardhat-toolbox-viem/network-helpers";
 import { expect } from "chai";
 import { Address, formatEther, parseEther, WalletClient } from "viem";
+import hre from "hardhat";
 import * as helper from "../helper/TestHelper";
 
 describe("LvCore", function () {
-  let defaultSigner: any;
-  let secondSigner: any;
-  let signers: any;
+  let {
+    defaultSigner,
+    secondSigner,
+    signers,
+  }: ReturnType<typeof helper.getSigners> = {} as any;
 
-  let depositAmount: any;
-  let expiry :any;
+  let depositAmount: bigint;
+  let expiry: number;
 
-  let fixture: any;
+  let fixture: Awaited<
+    ReturnType<typeof helper.ModuleCoreWithInitializedPsmLv>
+  >;
 
   before(async () => {
-    ({ defaultSigner, signers } = await helper.getSigners());
+    const __signers = await hre.viem.getWalletClients();
+    ({ defaultSigner, signers } = helper.getSigners(__signers));
     secondSigner = signers[1];
   });
 
@@ -25,7 +31,7 @@ describe("LvCore", function () {
     fixture = await loadFixture(helper.ModuleCoreWithInitializedPsmLv);
 
     depositAmount = parseEther("10");
-    expiry = helper.expiry(1000000);    
+    expiry = helper.expiry(1000000);
 
     await fixture.ra.write.mint([defaultSigner.account.address, depositAmount]);
     await fixture.ra.write.mint([secondSigner.account.address, depositAmount]);
@@ -50,7 +56,7 @@ describe("LvCore", function () {
       pa: fixture.pa.address,
       ra: fixture.ra.address,
       factory: fixture.factory.contract.address,
-      ...options
+      ...options,
     });
   }
 
@@ -249,7 +255,9 @@ describe("LvCore", function () {
 
     expect(event.length).to.be.equal(1);
 
-    expect(event[0].args.ra).to.be.equal(helper.calculateMinimumLiquidity(redeemAmount));
+    expect(event[0].args.ra).to.be.equal(
+      helper.calculateMinimumLiquidity(redeemAmount)
+    );
     expect(event[0].args.pa).to.be.equal(BigInt(0));
   });
 
@@ -356,7 +364,9 @@ describe("LvCore", function () {
         depositAmount,
       ]);
 
-    expect(signer1ra).to.be.equal(helper.calculateMinimumLiquidity(depositAmount));
+    expect(signer1ra).to.be.equal(
+      helper.calculateMinimumLiquidity(depositAmount)
+    );
     expect(signer2pa).to.be.equal(BigInt(0));
     expect(signer1approvedAmount).to.be.equal(parseEther("5"));
   });
@@ -437,7 +447,9 @@ describe("LvCore", function () {
 
     expect(event.length).to.be.equal(1);
 
-    expect(event[0].args.ra).to.be.equal(helper.calculateMinimumLiquidity(depositAmount));
+    expect(event[0].args.ra).to.be.equal(
+      helper.calculateMinimumLiquidity(depositAmount)
+    );
     expect(event[0].args.pa).to.be.equal(BigInt(0));
   });
 

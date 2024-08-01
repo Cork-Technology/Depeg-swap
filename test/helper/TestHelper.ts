@@ -51,18 +51,22 @@ export function expiry(withinSeconds: number) {
   return nowTimestampInSeconds() + withinSeconds;
 }
 
-export async function getSigners() {
-  const signers = await hre.viem.getWalletClients();
+export function getSigners(
+  signers: Awaited<ReturnType<typeof hre.viem.getWalletClients>>
+) {
   const defaultSigner = signers.shift()!;
+  const secondSigner = signers.shift()!;
 
   return {
     signers,
     defaultSigner,
+    secondSigner,
   };
 }
 
 export async function deployAssetFactory() {
-  const { defaultSigner } = await getSigners();
+  const signers = await hre.viem.getWalletClients();
+  const { defaultSigner } = getSigners(signers);
   const contract = await hre.viem.deployContract("AssetFactory", [], {
     client: {
       wallet: defaultSigner,
@@ -75,7 +79,8 @@ export async function deployAssetFactory() {
 }
 
 export async function deployCorkConfig() {
-  const { defaultSigner } = await getSigners();
+  const signers = await hre.viem.getWalletClients();
+  const { defaultSigner } = getSigners(signers);
   const contract = await hre.viem.deployContract("CorkConfig", [], {
     client: {
       wallet: defaultSigner,
@@ -110,9 +115,8 @@ export async function deployFlashSwapRouter() {
 
 // will default use the first wallet client
 export async function deployUniV2Factory() {
-  const defaultSigner = await getSigners().then(
-    (signers) => signers.defaultSigner
-  );
+  const signers = await hre.viem.getWalletClients();
+  const { defaultSigner } = getSigners(signers);
 
   const hash = await defaultSigner.deployContract({
     abi: UNIV2FACTORY.abi,
@@ -134,9 +138,8 @@ export async function deployUniV2Router(
   univ2Factory: Address,
   router: Address
 ) {
-  const defaultSigner = await getSigners().then(
-    (signers) => signers.defaultSigner
-  );
+  const signers = await hre.viem.getWalletClients();
+  const { defaultSigner } = getSigners(signers);
 
   const hash = await defaultSigner.deployContract({
     abi: UNIV2ROUTER.abi,
@@ -157,8 +160,16 @@ export async function deployModuleCore(
   swapAssetFactory: Address,
   config: Address
 ) {
-  const { defaultSigner } = await getSigners();
+  const signers = await hre.viem.getWalletClients();
+  const { defaultSigner } = getSigners(signers);
+
   const mathLib = await hre.viem.deployContract("MathHelper");
+  const vault = await hre.viem.deployContract("VaultLibrary", [], {
+    libraries: {
+      MathHelper: mathLib.address,
+    },
+  });
+
   const dsFlashSwapRouter = await deployFlashSwapRouter();
   const univ2Factory = await deployUniV2Factory();
   const weth = await deployWeth();
@@ -183,6 +194,7 @@ export async function deployModuleCore(
       },
       libraries: {
         MathHelper: mathLib.address,
+        VaultLibrary: vault.address,
       },
     }
   );
@@ -209,7 +221,8 @@ export type InitializeNewPsmArg = {
 };
 
 export async function initializeNewPsmLv(arg: InitializeNewPsmArg) {
-  const { defaultSigner } = await getSigners();
+  const signers = await hre.viem.getWalletClients();
+  const { defaultSigner } = getSigners(signers);
   const contract = await hre.viem.getContractAt("ModuleCore", arg.moduleCore);
   const configContract = await hre.viem.getContractAt("CorkConfig", arg.config);
 
@@ -258,7 +271,8 @@ export async function mintRa(ra: Address, to: Address, amount: bigint) {
 }
 
 export async function issueNewSwapAssets(arg: IssueNewSwapAssetsArg) {
-  const { defaultSigner } = await getSigners();
+  const signers = await hre.viem.getWalletClients();
+  const { defaultSigner } = getSigners(signers);
 
   const rate = arg.rates ?? parseEther("1");
   // 10% by default
@@ -298,7 +312,8 @@ export const DUMMY_RA_TOKEN = "RTKN";
  * deploy pa and ra
  */
 export async function deployBackedAssets() {
-  const { defaultSigner } = await getSigners();
+  const signers = await hre.viem.getWalletClients();
+  const { defaultSigner } = getSigners(signers);
 
   const pa = await hre.viem.deployContract(
     "DummyERCWithMetadata",
@@ -339,7 +354,8 @@ export type CreateLvArg = {
 };
 
 export async function createLv(arg: CreateLvArg) {
-  const { defaultSigner } = await getSigners();
+  const signers = await hre.viem.getWalletClients();
+  const { defaultSigner } = getSigners(signers);
   const contract = await hre.viem.getContractAt("AssetFactory", arg.factory);
 
   await contract.write.deployLv([arg.ra, arg.pa, arg.moduleCore], {
