@@ -15,7 +15,7 @@ library VaultConfigLibrary {
                 lpRaBalance: 0,
                 lpCtBalance: 0,
                 ammCtDepositThreshold: ammCtDepositThreshold,
-                accmulatedFee: 0
+                lpBalance: 0
             });
     }
 

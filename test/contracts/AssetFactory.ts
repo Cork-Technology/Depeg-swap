@@ -9,23 +9,31 @@ import { Address, formatEther, parseEther, WalletClient } from "viem";
 import * as helper from "../helper/TestHelper";
 
 describe("Asset Factory", function () {
-  let defaultSigner: any;
-  let secondSigner: any;
-  let signers: any;
+  let {
+    defaultSigner,
+    secondSigner,
+    signers,
+  }: ReturnType<typeof helper.getSigners> = {} as any;
 
-  let assetFactory: any;
-
-  before(async () => {
-    ({ defaultSigner, signers } = await helper.getSigners());
-    secondSigner = signers[1];
-  });
-
-  beforeEach(async () => {
-    assetFactory = await hre.viem.deployContract("AssetFactory", [], {
+  let assetFactory: Awaited<ReturnType<typeof deployFactory>>;
+  
+  const deployFactory = async () => {
+    return await hre.viem.deployContract("AssetFactory", [], {
       client: {
         wallet: defaultSigner,
       },
     });
+  };
+
+  before(async () => {
+    const __signers = await hre.viem.getWalletClients();
+    ({ defaultSigner, signers } = helper.getSigners(__signers));
+    secondSigner = signers[1];
+  });
+
+  beforeEach(async () => {
+    assetFactory = await loadFixture(deployFactory);
+
     await assetFactory.write.initialize([defaultSigner.account.address], {
       account: defaultSigner.account,
     });

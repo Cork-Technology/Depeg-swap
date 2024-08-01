@@ -13,15 +13,29 @@ import "../interfaces/ICommon.sol";
 import "./Psm.sol";
 import "./Vault.sol";
 import "../interfaces/Init.sol";
+import "../interfaces/uniswap-v2/factory.sol";
+import "./flash-swaps/RouterState.sol";
 
 // TODO : make entrypoint that do not rely on permit with function overloading or different function altogether
 contract ModuleCore is PsmCore, Initialize, VaultCore {
     using PsmLibrary for State;
     using PairLibrary for Pair;
 
-
-    constructor(address factory, address config) ModuleState(factory, config) {}
-
+    constructor(
+        address swapAssetFactory,
+        address ammFactory,
+        address flashSwapRouter,
+        address ammRouter,
+        address config
+    )
+        ModuleState(
+            swapAssetFactory,
+            ammFactory,
+            flashSwapRouter,
+            ammRouter,
+            config
+        )
+    {}
 
     function getId(address pa, address ra) external pure returns (Id) {
         return PairLibrary.initalize(pa, ra).toId();
@@ -47,7 +61,7 @@ contract ModuleCore is PsmCore, Initialize, VaultCore {
             revert AlreadyInitialized();
         }
 
-        IAssetFactory factory = IAssetFactory(factoryAddress);
+        IAssetFactory factory = IAssetFactory(swapAssetFactory);
 
         address lv = factory.deployLv(ra, pa, address(this));
 
@@ -73,12 +87,11 @@ contract ModuleCore is PsmCore, Initialize, VaultCore {
     ) external override onlyConfig onlyInitialized(id) {
         State storage state = states[id];
 
-        address pa = state.info.pair0;
         address ra = state.info.pair1;
 
-        (address _ct, address _ds) = IAssetFactory(factoryAddress).deploySwapAssets(
+        (address ct, address ds) = IAssetFactory(swapAssetFactory).deploySwapAssets(
             ra,
-            pa,
+            state.info.pair0,
             address(this),
             expiry,
             exchangeRates
@@ -87,17 +100,29 @@ contract ModuleCore is PsmCore, Initialize, VaultCore {
         uint256 prevIdx = state.globalAssetIdx++;
         uint256 idx = state.globalAssetIdx;
 
+        address ammPair = getAmmFactory().createPair(ra, ct);
+
         PsmLibrary.onNewIssuance(
             state,
-            _ct,
-            _ds,
+            ct,
+            ds,
+            ammPair,
             idx,
             prevIdx,
             repurchaseFeePrecentage
         );
-        VaultLibrary.onNewIssuance(state, prevIdx);
 
-        emit Issued(id, idx, expiry, _ds, _ct);
+        // TODO : 0 for initial reserve for now, will be calculated later when rollover stragegy is implemented
+        getRouterCore().onNewIssuance(id, idx, ds, ammPair, 0);
+
+        VaultLibrary.onNewIssuance(
+            state,
+            prevIdx,
+            getRouterCore(),
+            getAmmRouter()
+        );
+
+        emit Issued(id, idx, expiry, ds, ct, ammPair);
     }
 
     function updateRepurchaseFeeRate(

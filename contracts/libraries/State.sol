@@ -81,5 +81,6 @@ struct VaultConfig {
     //
     uint256 ammCtDepositThreshold;
     uint256 lpCtBalance;
-    uint256 accmulatedFee;
+    // 
+    uint256 lpBalance;
 }

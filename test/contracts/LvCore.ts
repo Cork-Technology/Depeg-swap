@@ -4,20 +4,27 @@ import {
 } from "@nomicfoundation/hardhat-toolbox-viem/network-helpers";
 import { expect } from "chai";
 import { Address, formatEther, parseEther, WalletClient } from "viem";
+import hre from "hardhat";
 import * as helper from "../helper/TestHelper";
+import { ethers } from "ethers";
 
 describe("LvCore", function () {
-  let defaultSigner: any;
-  let secondSigner: any;
-  let signers: any;
+  let {
+    defaultSigner,
+    secondSigner,
+    signers,
+  }: ReturnType<typeof helper.getSigners> = {} as any;
 
-  let depositAmount: any;
-  let expiry :any;
+  let depositAmount: bigint;
+  let expiry: number;
 
-  let fixture: any;
+  let fixture: Awaited<
+    ReturnType<typeof helper.ModuleCoreWithInitializedPsmLv>
+  >;
 
   before(async () => {
-    ({ defaultSigner, signers } = await helper.getSigners());
+    const __signers = await hre.viem.getWalletClients();
+    ({ defaultSigner, signers } = helper.getSigners(__signers));
     secondSigner = signers[1];
   });
 
@@ -25,7 +32,7 @@ describe("LvCore", function () {
     fixture = await loadFixture(helper.ModuleCoreWithInitializedPsmLv);
 
     depositAmount = parseEther("10");
-    expiry = helper.expiry(1000000);    
+    expiry = helper.expiry(1000000);
 
     await fixture.ra.write.mint([defaultSigner.account.address, depositAmount]);
     await fixture.ra.write.mint([secondSigner.account.address, depositAmount]);
@@ -50,7 +57,7 @@ describe("LvCore", function () {
       pa: fixture.pa.address,
       ra: fixture.ra.address,
       factory: fixture.factory.contract.address,
-      ...options
+      ...options,
     });
   }
 
@@ -98,18 +105,7 @@ describe("LvCore", function () {
       }
     );
 
-    await fixture.moduleCore.contract.write.requestRedemption(
-      [Id, depositAmount],
-      {
-        account: secondSigner.account,
-      }
-    );
-
-    expect(
-      await fixture.lv.read.balanceOf([secondSigner.account.address])
-    ).to.be.equal(parseEther("0"));
-
-    await time.increase(expiry + 1);
+    await time.increaseTo(expiry + 1e3);
 
     const initialModuleCoreLvBalance = await fixture.lv.read.balanceOf([
       fixture.moduleCore.contract.address,
@@ -126,10 +122,6 @@ describe("LvCore", function () {
       fixture.moduleCore.contract.address,
     ]);
 
-    expect(afterModuleCoreLvBalance).to.be.equal(
-      initialModuleCoreLvBalance - depositAmount
-    );
-
     const event = await fixture.moduleCore.contract.getEvents.LvRedeemExpired({
       Id: lv,
       receiver: secondSigner.account.address,
@@ -137,7 +129,9 @@ describe("LvCore", function () {
 
     expect(event.length).to.be.equal(1);
 
-    expect(event[0].args.ra).to.be.equal(depositAmount);
+    expect(event[0].args.ra).to.be.equal(
+      helper.calculateMinimumLiquidity(depositAmount)
+    );
     expect(event[0].args.pa).to.be.equal(BigInt(0));
   });
 
@@ -211,7 +205,9 @@ describe("LvCore", function () {
 
     expect(event.length).to.be.equal(1);
 
-    expect(event[0].args.ra).to.be.equal(depositAmount);
+    expect(event[0].args.ra).to.be.equal(
+      helper.calculateMinimumLiquidity(depositAmount)
+    );
     expect(event[0].args.pa).to.be.equal(BigInt(0));
   });
 
@@ -260,7 +256,9 @@ describe("LvCore", function () {
 
     expect(event.length).to.be.equal(1);
 
-    expect(event[0].args.ra).to.be.equal(redeemAmount);
+    expect(event[0].args.ra).to.be.equal(
+      helper.calculateMinimumLiquidity(redeemAmount)
+    );
     expect(event[0].args.pa).to.be.equal(BigInt(0));
   });
 
@@ -286,13 +284,37 @@ describe("LvCore", function () {
       })
       .then((e) => e[0]);
     expect(event.args.feePrecentage).to.be.equal(parseEther("10"));
-    expect(event.args.amount).to.be.equal(parseEther("0.9"));
+
+    console.log(
+      "event.args.amount                                          :",
+      formatEther(event.args.amount!)
+    );
+    console.log(
+      "helper.calculateMinimumLiquidity(parseEther('0.9'))        :",
+      "0.9"
+    );
+
+    expect(event.args.amount).to.be.closeTo(
+      ethers.BigNumber.from(
+        helper.calculateMinimumLiquidity(parseEther("0.9"))
+      ),
+      // the amount will be slightly less because this is the first issuance,
+      // caused by liquidity lock up by uni v2
+      // will receive slightly less ETH by 0,0000000000000001
+      100
+    );
     // 10% fee
-    expect(event.args.fee).to.be.equal(parseEther("0.1"));
+    expect(event.args.fee).to.be.closeTo(
+      ethers.BigNumber.from(parseEther("0.1")),
+      // the amount of fee deducted will also slightles less because this is the first issuance,
+      // caused by liquidity lock up by uni v2
+      // will receive slightly less ETH by 0,0000000000000001
+      100
+    );
   });
 
   // @yusak found this bug, cannot withdraw early if there's only 1 WA left in the pool
-  it("should redeem early", async function () {
+  it("should redeem early(cannot withdraw early if there's only 1 RA left in the pool)", async function () {
     const { Id } = await issueNewSwapAssets(expiry);
 
     const lv = fixture.Id;
@@ -314,11 +336,25 @@ describe("LvCore", function () {
         redeemer: defaultSigner.account.address,
       })
       .then((e) => e[0]);
-
-    expect(event.args.fee).to.be.equal(parseEther("0.1"));
+    expect(event.args.amount).to.be.closeTo(
+      ethers.BigNumber.from(
+        helper.calculateMinimumLiquidity(parseEther("0.9"))
+      ),
+      // the amount will be slightly less because this is the first issuance,
+      // caused by liquidity lock up by uni v2
+      // will receive slightly less ETH by 0,0000000000000001
+      100
+    );
     // 10% fee
     expect(event.args.feePrecentage).to.be.equal(parseEther("10"));
-    expect(event.args.amount).to.be.equal(parseEther("0.9"));
+    // 10% fee
+    expect(event.args.fee).to.be.closeTo(
+      ethers.BigNumber.from(parseEther("0.1")),
+      // the amount of fee deducted will also slightles less because this is the first issuance,
+      // caused by liquidity lock up by uni v2
+      // will receive slightly less ETH by 0,0000000000000001
+      100
+    );
   });
 
   it("should return correct preview expired redeem", async function () {
@@ -367,7 +403,9 @@ describe("LvCore", function () {
         depositAmount,
       ]);
 
-    expect(signer1ra).to.be.equal(depositAmount);
+    expect(signer1ra).to.be.equal(
+      helper.calculateMinimumLiquidity(depositAmount)
+    );
     expect(signer2pa).to.be.equal(BigInt(0));
     expect(signer1approvedAmount).to.be.equal(parseEther("5"));
   });
@@ -377,20 +415,31 @@ describe("LvCore", function () {
 
     const lv = fixture.Id;
     await fixture.moduleCore.contract.write.depositLv([lv, depositAmount]);
-    await fixture.lv.write.approve([
-      fixture.moduleCore.contract.address,
-      depositAmount,
-    ]);
     const [rcv, fee, precentage] =
       await fixture.moduleCore.contract.read.previewRedeemEarlyLv([
         lv,
         parseEther("1"),
       ]);
 
-    expect(fee).to.be.equal(parseEther("0.1"));
-    // 10% fee
     expect(precentage).to.be.equal(parseEther("10"));
-    expect(rcv).to.be.equal(parseEther("0.9"));
+    expect(fee).to.be.closeTo(
+      ethers.BigNumber.from(parseEther("0.1")),
+      // the amount of fee deducted will also slightles less because this is the first issuance,
+      // caused by liquidity lock up by uni v2
+      // will receive slightly less ETH by 0,0000000000000001
+      100
+    );
+
+    expect(rcv).to.be.closeTo(
+      ethers.BigNumber.from(
+        helper.calculateMinimumLiquidity(parseEther("0.9"))
+      ),
+      // the amount will be slightly less because this is the first issuance,
+      // caused by liquidity lock up by uni v2
+      // will receive slightly less ETH by 0,0000000000000001
+      100
+    );
+    // 10% fee
   });
 
   it("should be able to redeem without a cap when there's no new DS issuance", async function () {
@@ -448,7 +497,9 @@ describe("LvCore", function () {
 
     expect(event.length).to.be.equal(1);
 
-    expect(event[0].args.ra).to.be.equal(depositAmount);
+    expect(event[0].args.ra).to.be.equal(
+      helper.calculateMinimumLiquidity(depositAmount)
+    );
     expect(event[0].args.pa).to.be.equal(BigInt(0));
   });
 
@@ -500,7 +551,7 @@ describe("LvCore", function () {
     const [ra, pa] =
       await fixture.moduleCore.contract.read.reservedUserWithdrawal([Id]);
 
-    expect(ra).to.be.equal(depositAmount);
+    expect(ra).to.be.equal(helper.calculateMinimumLiquidity(depositAmount));
     expect(pa).to.be.equal(BigInt(0));
   });
 

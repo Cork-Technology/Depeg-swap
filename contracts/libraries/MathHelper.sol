@@ -2,8 +2,15 @@
 pragma solidity ^0.8.0;
 
 library MathHelper {
+    uint224 constant Q112 = 2 ** 112;
+
     /// @dev default decimals for now to calculate price ratio
     uint8 internal constant DEFAULT_DECIMAL = 18;
+
+    // TODO : discuss what value of this should be set to. currently set to 1% tolerance.
+    // this is used to calculate tolerance level when adding liqudity to AMM pair
+    /// @dev 1e18 == 1%.
+    uint256 internal constant UNIV2_STATIC_TOLERANCE = 1000000000000000000;
 
     /**
      * @dev calculate the amount of ra and ct needed to provide AMM with liquidity in respect to the price ratio
@@ -27,7 +34,7 @@ library MathHelper {
     // using ra and ct, which both has 18 decimals so will default into that one for now
     /// @dev should only pass ERC20.decimals() onto the decimal field
     /// @dev will output price ratio in 18 decimal precision.
-    function calculatePriceRatio(
+    function calculatePriceRatioUniV4(
         uint160 sqrtPriceX96,
         uint8 decimal
     ) external pure returns (uint256) {
@@ -107,7 +114,6 @@ library MathHelper {
         _amount = (amount * exchangeRate) / 1e18;
     }
 
-    // TODO : unit test this, just move here from psm
     /// @notice calculate the accrued PA & RA
     /// @dev this function follow below equation :
     /// '#' refers to the total circulation supply of that token.
@@ -135,16 +141,79 @@ library MathHelper {
             uint256 ratePerLv
         )
     {
-        // attribute all to AMM if no lv issued or withdrawn
-        if (totalLvIssued == 0 || totalLvWithdrawn == 0) {
-            return (0, totalAmount, 0);
-        }
-
         // with 1e18 precision
         ratePerLv = ((totalAmount * 1e18) / totalLvIssued);
+
+        // attribute all to AMM if no lv issued or withdrawn
+        if (totalLvIssued == 0 || totalLvWithdrawn == 0) {
+            return (0, totalAmount, ratePerLv);
+        }
+
         attributedWithdrawal = (ratePerLv * totalLvWithdrawn) / 1e18;
         attributedAmm = totalAmount - attributedWithdrawal;
 
         assert((attributedWithdrawal + attributedAmm) == totalAmount);
+    }
+
+    function calculateWithTolreance(
+        uint256 ra,
+        uint256 ct,
+        uint256 tolerance
+    ) external pure returns (uint256 raTolerance, uint256 ctTolerance) {
+        raTolerance = (ra * tolerance) / 1e18;
+        ctTolerance = (ct * tolerance) / 1e18;
+    }
+
+    function calculateUniV2LpValue(
+        uint256 totalLpSupply,
+        uint256 totalRaReserve,
+        uint256 totalCtReserve
+    ) public pure returns (uint256 valueRaPerLp, uint256 valueCtPerLp) {
+        valueRaPerLp = (uint256(totalRaReserve) * 1e18) / totalLpSupply;
+        valueCtPerLp = (uint256(totalCtReserve) * 1e18) / totalLpSupply;
+    }
+
+    function calculateLvValueFromUniV2Lp(
+        uint256 totalLpSupply,
+        uint256 totalLpOwned,
+        uint256 totalRaReserve,
+        uint256 totalCtReserve,
+        uint256 totalLvIssued
+    )
+        external
+        pure
+        returns (
+            uint256 raValuePerLv,
+            uint256 ctValuePerLv,
+            uint256 valueRaPerLp,
+            uint256 valueCtPerLp,
+            uint256 totalLvRaValue,
+            uint256 totalLvCtValue
+        )
+    {
+        (valueRaPerLp, valueCtPerLp) = calculateUniV2LpValue(
+            totalLpSupply,
+            totalRaReserve,
+            totalCtReserve
+        );
+
+        uint256 cumulatedLptotalLvOwnedRa = (totalLpOwned * valueRaPerLp) /
+            1e18;
+        uint256 cumulatedLptotalLvOwnedCt = (totalLpOwned * valueCtPerLp) /
+            1e18;
+
+        raValuePerLv = (cumulatedLptotalLvOwnedRa * 1e18) / totalLvIssued;
+        ctValuePerLv = (cumulatedLptotalLvOwnedCt * 1e18) / totalLvIssued;
+
+        totalLvRaValue = (raValuePerLv * totalLvIssued) / 1e18;
+        totalLvCtValue = (ctValuePerLv * totalLvIssued) / 1e18;
+    }
+
+    function convertToLp(
+        uint256 rateRaPerLv,
+        uint256 rateRaPerLp,
+        uint256 redeemedLv
+    ) external pure returns (uint256 lpLiquidated) {
+        lpLiquidated = ((redeemedLv * rateRaPerLv) * 1e18) / rateRaPerLp / 1e18;
     }
 }

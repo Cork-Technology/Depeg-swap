@@ -1,9 +1,14 @@
 import { HardhatUserConfig } from "hardhat/config";
+
 import "@nomicfoundation/hardhat-toolbox-viem";
 import "hardhat-gas-reporter";
 import "@nomicfoundation/hardhat-viem";
 import loadEnv from "dotenv";
 import "hardhat-contract-sizer";
+import chai from "chai";
+import { solidity } from "ethereum-waffle";
+
+chai.use(solidity);
 // import "@nomicfoundation/hardhat-chai-matchers";
 
 loadEnv.config();
@@ -16,6 +21,7 @@ const config: HardhatUserConfig = {
         enabled: true,
         runs: 200,
       },
+      evmVersion: "cancun",
     },
   },
   networks: {
@@ -36,7 +42,13 @@ const config: HardhatUserConfig = {
   },
   contractSizer: {
     runOnCompile: true,
-    only: ["ModuleCore", "AssetFactory", "MathHelper"],
+    only: [
+      "ModuleCore",
+      "AssetFactory",
+      "MathHelper",
+      "VaultLibrary",
+      "PsmLibrary",
+    ],
   },
 };
 

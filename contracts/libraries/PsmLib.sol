@@ -11,6 +11,7 @@ import "./State.sol";
 import "./Guard.sol";
 import "./MathHelper.sol";
 import "../interfaces/IRepurchase.sol";
+import "../interfaces/IDsFlashSwapRouter.sol";
 import "./VaultLib.sol";
 import "@openzeppelin/contracts/token/ERC20/extensions/ERC20Burnable.sol";
 
@@ -43,6 +44,7 @@ library PsmLibrary {
         State storage self,
         address ct,
         address ds,
+        address ammPair,
         uint256 idx,
         uint256 prevIdx,
         uint256 repurchaseFeePercent
@@ -57,7 +59,7 @@ library PsmLibrary {
         self.psm.balances.dsBalance = 0;
 
         self.psm.repurchaseFeePrecentage = repurchaseFeePercent;
-        self.ds[idx] = DepegSwapLibrary.initialize(ds, ct);
+        self.ds[idx] = DepegSwapLibrary.initialize(ds, ct, ammPair);
     }
 
     function _separateLiquidity(State storage self, uint256 prevIdx) internal {
@@ -68,7 +70,6 @@ library PsmLibrary {
         DepegSwap storage ds = self.ds[prevIdx];
         Guard.safeAfterExpired(ds);
 
-        uint256 totalCtIssued = IERC20(ds.ct).totalSupply();
         uint256 availableRa = self.psm.balances.ra.convertAllToFree();
         uint256 availablePa = self.psm.balances.paBalance;
 
@@ -118,6 +119,7 @@ library PsmLibrary {
     function unsafeIssueToLv(State storage self, uint256 amount) internal {
         uint256 dsId = self.globalAssetIdx;
 
+        // TODO : handle rebasing token exchange rate
         DepegSwap storage ds = self.ds[dsId];
 
         self.psm.balances.ra.incLocked(amount);
@@ -136,9 +138,30 @@ library PsmLibrary {
 
     function lvRedeemRaPaWithCt(
         State storage self,
-        uint256 amount
-    ) internal returns (uint256 pa) {
-        // just for semantics for now.
+        uint256 amount,
+        uint256 dsId
+    ) internal returns (uint256 accruedPa, uint256 accruedRa) {
+        // we separate the liquidity here, that means, LP liquidation on the LV also triggers
+        _separateLiquidity(self, dsId);
+
+        uint256 totalCtIssued = self.psm.poolArchive[dsId].ctAttributed;
+        PsmPoolArchive storage archive = self.psm.poolArchive[dsId];
+
+        (accruedPa, accruedRa) = _calcRedeemAmount(
+            amount,
+            totalCtIssued,
+            archive.raAccrued,
+            archive.paAccrued
+        );
+
+        _beforeCtRedeem(
+            self,
+            self.ds[dsId],
+            dsId,
+            amount,
+            accruedPa,
+            accruedRa
+        );
     }
 
     /// @notice preview deposit
@@ -269,7 +292,9 @@ library PsmLibrary {
     function repurchase(
         State storage self,
         address buyer,
-        uint256 amount
+        uint256 amount,
+        IDsFlashSwapCore flashSwapRouter,
+        IUniswapV2Router02 ammRouter
     )
         internal
         returns (
@@ -308,7 +333,12 @@ library PsmLibrary {
         IERC20(ds._address).transfer(buyer, received);
 
         // Provide liquidity
-        VaultLibrary.provideLiquidityWithPsmRepurchase(self, fee);
+        VaultLibrary.provideLiquidityWithFee(
+            self,
+            fee,
+            flashSwapRouter,
+            ammRouter
+        );
     }
 
     function _redeemDs(
@@ -431,12 +461,11 @@ library PsmLibrary {
     }
 
     function _calcRedeemAmount(
-        State storage self,
         uint256 amount,
         uint256 totalCtIssued,
         uint256 availableRa,
         uint256 availablePa
-    ) internal view returns (uint256 accruedPa, uint256 accruedRa) {
+    ) internal pure returns (uint256 accruedPa, uint256 accruedRa) {
         accruedPa = MathHelper.calculateAccrued(
             amount,
             availablePa,
@@ -509,22 +538,14 @@ library PsmLibrary {
         PsmPoolArchive storage archive = self.psm.poolArchive[dsId];
 
         (accruedPa, accruedRa) = _calcRedeemAmount(
-            self,
             amount,
             totalCtIssued,
             archive.raAccrued,
             archive.paAccrued
         );
 
-        _beforeCtRedeem(
-            self,
-            ds,
-            dsId,
-            amount,
-            accruedPa,
-            accruedRa
-        );
-        
+        _beforeCtRedeem(self, ds, dsId, amount, accruedPa, accruedRa);
+
         _afterCtRedeem(
             self,
             ds,
@@ -560,7 +581,6 @@ library PsmLibrary {
         }
 
         (accruedPa, accruedRa) = _calcRedeemAmount(
-            self,
             amount,
             totalCtIssued,
             availableRa,

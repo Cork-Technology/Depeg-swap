@@ -5,6 +5,7 @@ import {
 import { expect } from "chai";
 import hre from "hardhat";
 import { formatEther, parseEther } from "viem";
+import * as helper from "../helper/TestHelper";
 
 describe("Math Helper", function () {
   async function deployMathHelper() {
@@ -54,7 +55,7 @@ describe("Math Helper", function () {
 
       const contract = await loadFixture(deployMathHelper);
 
-      const converted = await contract.read.calculatePriceRatio([
+      const converted = await contract.read.calculatePriceRatioUniV4([
         sqrtpricex96,
         18,
       ]);
@@ -89,7 +90,10 @@ describe("Math Helper", function () {
 
       const contract = await loadFixture(deployMathHelper);
 
-      const ratio = await contract.read.calculatePriceRatio([sqrtpricex96, 18]);
+      const ratio = await contract.read.calculatePriceRatioUniV4([
+        sqrtpricex96,
+        18,
+      ]);
 
       expect(ratio).to.equal(expectedRatio);
 
@@ -142,6 +146,84 @@ describe("Math Helper", function () {
 
       expect(withdraw).to.equal(parseEther("0.3"));
       expect(amm).to.equal(parseEther("0.7"));
+    });
+
+    it("should calculate Uniswap v2 LP value correctly(simple round math)", async function () {
+      const contract = await loadFixture(deployMathHelper);
+
+      const totalLpSupply = parseEther("10");
+      const raReserve = parseEther("10");
+      const ctReserve = parseEther("10");
+
+      const [ra, ct] = await contract.read.calculateUniV2LpValue([
+        totalLpSupply,
+        raReserve,
+        ctReserve,
+      ]);
+
+      expect(ra).to.equal(parseEther("1"));
+      expect(ct).to.equal(parseEther("1"));
+    });
+
+    it("should calculate Uniswap v2 LP value correctly(float math)", async function () {
+      const contract = await loadFixture(deployMathHelper);
+
+      const totalLpSupply = parseEther("10");
+      const raReserve = parseEther("0.5");
+      const ctReserve = parseEther("0.2");
+
+      const [ra, ct] = await contract.read.calculateUniV2LpValue([
+        totalLpSupply,
+        raReserve,
+        ctReserve,
+      ]);
+
+      expect(ra).to.equal(parseEther("0.05"));
+      expect(ct).to.equal(parseEther("0.02"));
+    });
+
+    it("should calculate LV token value relative to uni v2 LP(simple round math)", async function () {
+      const contract = await loadFixture(deployMathHelper);
+
+      const totalLpSupply = parseEther("100");
+      const totalLpOwned = parseEther("10");
+      const raReserve = parseEther("10");
+      const ctReserve = parseEther("10");
+      const lvSupply = parseEther("10");
+
+      const [raValuePerLv, ctValuePerLV] =
+        await contract.read.calculateLvValueFromUniV2Lp([
+          totalLpSupply,
+          totalLpOwned,
+          raReserve,
+          ctReserve,
+          lvSupply,
+        ]);
+
+      expect(raValuePerLv).to.equal(parseEther("0.1"));
+      expect(ctValuePerLV).to.equal(parseEther("0.1"));
+    });
+
+    it("should calculate LV token value relative to uni v2 LP(float math)", async function () {
+      const contract = await loadFixture(deployMathHelper);
+
+      const totalLpSupply = parseEther("100");
+      const totalLpOwned = parseEther("5");
+      const raReserve = parseEther("0.8");
+      const ctReserve = parseEther("0.8");
+      const lvSupply = parseEther("100");
+
+      const [raValuePerLv, ctValuePerLV] =
+        await contract.read.calculateLvValueFromUniV2Lp([
+          totalLpSupply,
+          totalLpOwned,
+          raReserve,
+          ctReserve,
+          lvSupply,
+        ]);
+
+      expect(raValuePerLv).to.equal(parseEther("0.0004"));
+      expect(ctValuePerLV).to.equal(parseEther("0.0004"));
     });
   });
 
@@ -262,16 +344,9 @@ describe("Math Helper", function () {
           rate3,
         ]);
 
-      console.log(`got ${formatEther(deposit3)} DS from deposit`);
-      console.log(
-        `redeeeming ${formatEther(deposit3)} DS with rate ${formatEther(rate3)}`
-      );
-
       const redeem3 = await contract.read.calculateRedeemAmountWithExchangeRate(
         [deposit3, rate3]
       );
-
-      console.log(`redeemed ${formatEther(redeem3)} RA`);
 
       expect(redeem3).to.equal(amount);
     });

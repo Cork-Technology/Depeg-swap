@@ -8,6 +8,10 @@ struct AssetPair {
     Asset ds;
     /// @dev [RA, CT]
     IUniswapV2Pair pair;
+    /// @dev this represent the amount of DS that the LV has in reserve
+    /// will be used to fullfill buy DS orders based on the LV DS selling strategy
+    // (i.e 50:50 for first expiry, and 80:20 on subsequent expiries. note that it's represented as LV:AMM)
+    uint256 reserve;
 }
 struct ReserveState {
     /// @dev dsId => [RA, CT, DS]
@@ -19,9 +23,75 @@ library DsFlashSwaplibrary {
         ReserveState storage self,
         uint256 dsId,
         address ds,
-        address pair
+        address pair,
+        uint256 initialReserve
     ) internal {
-        self.ds[dsId] = AssetPair(Asset(ds), IUniswapV2Pair(pair));
+        self.ds[dsId] = AssetPair(
+            Asset(ds),
+            IUniswapV2Pair(pair),
+            initialReserve
+        );
+    }
+
+    function getPair(
+        ReserveState storage self,
+        uint256 dsId
+    ) internal view returns (IUniswapV2Pair) {
+        return self.ds[dsId].pair;
+    }
+
+    function emptyReserve(
+        ReserveState storage self,
+        uint256 dsId,
+        address to
+    ) internal returns (uint256 reserve) {
+        reserve = emptyReservePartial(self, dsId, self.ds[dsId].reserve, to);
+    }
+
+    function emptyReservePartial(
+        ReserveState storage self,
+        uint256 dsId,
+        uint256 amount,
+        address to
+    ) internal returns (uint256 reserve) {
+        self.ds[dsId].ds.transfer(to, amount);
+
+        self.ds[dsId].reserve -= amount;
+        reserve = self.ds[dsId].reserve;
+    }
+
+    function getPriceRatio(
+        ReserveState storage self,
+        uint256 dsId
+    ) internal view returns (uint256 raPriceRatio, uint256 ctPriceRatio) {
+        (uint112 raReserve, uint112 ctReserve, ) = self
+            .ds[dsId]
+            .pair
+            .getReserves();
+
+        (raPriceRatio, ctPriceRatio) = SwapperMathLibrary.getPriceRatioUniv2(
+            raReserve,
+            ctReserve
+        );
+    }
+
+    function getReserve(
+        ReserveState storage self,
+        uint256 dsId
+    ) internal view returns (uint112 raReserve, uint112 ctReserve) {
+        (raReserve, ctReserve, ) = self.ds[dsId].pair.getReserves();
+    }
+
+    function addReserve(
+        ReserveState storage self,
+        uint256 dsId,
+        uint256 amount,
+        address from
+    ) internal returns (uint256 reserve) {
+        self.ds[dsId].ds.transferFrom(from, address(this), amount);
+
+        self.ds[dsId].reserve += amount;
+        reserve = self.ds[dsId].reserve;
     }
 
     function getCurrentDsPrice(

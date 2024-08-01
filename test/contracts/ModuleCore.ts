@@ -8,36 +8,46 @@ import { Address, formatEther, parseEther, WalletClient } from "viem";
 import * as helper from "../helper/TestHelper";
 
 describe("ModuleCore", function () {
-  let defaultSigner: any;
-  let secondSigner: any;
-  let signers: any;
+  it("should deploy", async function () {
+    const { defaultSigner } =  helper.getSigners(await hre.viem.getWalletClients());
 
-  let mathLib: any;
-  let moduleCore: any;
+    const mathLib = await hre.viem.deployContract("MathHelper");
+    const vault = await hre.viem.deployContract("VaultLibrary", [], {
+      libraries: {
+        MathHelper: mathLib.address,
+      },
+    });
 
-  before(async () => {
-    ({ defaultSigner, signers } = await helper.getSigners());
-    secondSigner = signers[1];
-  });
+    const dsFlashSwapRouter = await helper.deployFlashSwapRouter();
+    const univ2Factory = await helper.deployUniV2Factory();
+    const weth = await helper.deployWeth();
+    const univ2Router = await helper.deployUniV2Router(
+      weth.contract.address,
+      univ2Factory,
+      dsFlashSwapRouter.contract.address
+    );
+    const swapAssetFactory = await helper.deployAssetFactory();
+    const config = await helper.deployCorkConfig();
 
-  beforeEach(async () => {
-    mathLib = await hre.viem.deployContract("MathHelper");
-
-    moduleCore = await hre.viem.deployContract(
+    const moduleCore = await hre.viem.deployContract(
       "ModuleCore",
-      [defaultSigner.account.address, defaultSigner.account.address],
+      [
+        swapAssetFactory.contract.address,
+        univ2Factory,
+        dsFlashSwapRouter.contract.address,
+        univ2Router,
+        config.contract.address,
+      ],
       {
         client: {
           wallet: defaultSigner,
         },
         libraries: {
           MathHelper: mathLib.address,
+          VaultLibrary: vault.address,
         },
       }
     );
-  });
-
-  it("should deploy", async function () {
     expect(moduleCore).to.be.ok;
   });
 });
