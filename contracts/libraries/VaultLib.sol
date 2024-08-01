@@ -47,7 +47,7 @@ library VaultLibrary {
         uint256 ammWaDepositThreshold,
         uint256 ammCtDepositThreshold,
         address ra
-    ) internal {
+    ) external {
         self.config = VaultConfigLibrary.initialize(
             fee,
             ammWaDepositThreshold,
@@ -111,7 +111,7 @@ library VaultLibrary {
         uint256 prevDsId,
         IDsFlashSwapCore flashSwapRouter,
         IUniswapV2Router02 ammRouter
-    ) internal {
+    ) external {
         // do nothing at first issuance
         if (prevDsId == 0) {
             return;
@@ -136,7 +136,7 @@ library VaultLibrary {
         Guard.safeBeforeExpired(ds);
     }
 
-    function safeAfterExpired(State storage self) internal view {
+    function safeAfterExpired(State storage self) external view {
         uint256 dsId = self.globalAssetIdx;
         DepegSwap storage ds = self.ds[dsId];
         Guard.safeAfterExpired(ds);
@@ -241,7 +241,7 @@ library VaultLibrary {
         uint256 amount,
         IDsFlashSwapCore flashSwapRouter,
         IUniswapV2Router02 ammRouter
-    ) internal {
+    ) external {
         safeBeforeExpired(self);
         self.vault.balances.ra.lockUnchecked(amount, from);
         __provideLiquidityWithRatio(
@@ -258,7 +258,7 @@ library VaultLibrary {
     // returns the amount of shares(share pool token) that user will receive
     function previewDeposit(
         uint256 amount
-    ) internal pure returns (uint256 lvReceived) {
+    ) external pure returns (uint256 lvReceived) {
         lvReceived = amount;
     }
 
@@ -266,7 +266,7 @@ library VaultLibrary {
         State storage self,
         address owner,
         uint256 amount
-    ) internal {
+    ) external {
         safeBeforeExpired(self);
         self.vault.pool.withdrawEligible[owner] += amount;
         self.vault.pool.withdrawalPool.atrributedLv += amount;
@@ -276,7 +276,7 @@ library VaultLibrary {
     function lvLockedFor(
         State storage self,
         address owner
-    ) internal view returns (uint256) {
+    ) external view returns (uint256) {
         return self.vault.pool.withdrawEligible[owner];
     }
 
@@ -284,7 +284,7 @@ library VaultLibrary {
         State storage self,
         address owner,
         uint256 amount
-    ) internal {
+    ) external {
         safeBeforeExpired(self);
         uint256 userEligible = self.vault.pool.withdrawEligible[owner];
 
@@ -306,7 +306,7 @@ library VaultLibrary {
         address from,
         address to,
         uint256 amount
-    ) internal {
+    ) external {
         uint256 initialOwneramount = self.vault.pool.withdrawEligible[from];
 
         if (initialOwneramount == 0) {
@@ -492,7 +492,7 @@ library VaultLibrary {
 
     function reservedForWithdrawal(
         State storage self
-    ) internal view returns (uint256 ra, uint256 pa) {
+    ) external view returns (uint256 ra, uint256 pa) {
         ra = self.vault.pool.withdrawalPool.raBalance;
         pa = self.vault.pool.withdrawalPool.paBalance;
     }
@@ -617,7 +617,7 @@ library VaultLibrary {
         uint256 amount,
         IUniswapV2Router02 ammRouter,
         IDsFlashSwapCore flashSwapRouter
-    ) internal returns (uint256 attributedRa, uint256 attributedPa) {
+    ) external returns (uint256 attributedRa, uint256 attributedPa) {
         uint256 dsId = self.globalAssetIdx;
         DepegSwap storage ds = self.ds[dsId];
 
@@ -669,7 +669,7 @@ library VaultLibrary {
         address owner,
         IDsFlashSwapCore flashSwapRouter
     )
-        internal
+        external
         view
         returns (
             uint256 attributedRa,
@@ -769,7 +769,7 @@ library VaultLibrary {
         uint256 amount,
         IDsFlashSwapCore flashSwapRouter,
         IUniswapV2Router02 ammRouter
-    ) internal returns (uint256 received, uint256 fee, uint256 feePrecentage) {
+    ) external returns (uint256 received, uint256 fee, uint256 feePrecentage) {
         safeBeforeExpired(self);
 
         feePrecentage = self.vault.config.fee;
@@ -835,7 +835,7 @@ library VaultLibrary {
         uint256 amount,
         IDsFlashSwapCore flashSwapRouter
     )
-        internal
+        external
         view
         returns (uint256 received, uint256 fee, uint256 feePrecentage)
     {
@@ -870,7 +870,7 @@ library VaultLibrary {
         uint256 amount,
         IDsFlashSwapCore flashSwapRouter,
         IUniswapV2Router02 ammRouter
-    ) internal {
+    ) external {
         __provideLiquidityWithRatio(
             self,
             amount,
