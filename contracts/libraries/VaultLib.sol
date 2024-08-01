@@ -16,8 +16,6 @@ import "../interfaces/IDsFlashSwapRouter.sol";
 import "../interfaces/IDsFlashSwapRouter.sol";
 import "../interfaces/uniswap-v2/RouterV2.sol";
 
-import "hardhat/console.sol";
-
 library VaultLibrary {
     using VaultConfigLibrary for VaultConfig;
     using PairLibrary for Pair;
@@ -640,7 +638,6 @@ library VaultLibrary {
 
         totalRa = (raPerLv * lvRedeemed) / 1e18;
         uint256 ammCtBalance = (ctPerLv * lvRedeemed) / 1e18;
-        console.log("totalRa", totalRa);
 
         lpLiquidated = MathHelper.convertToLp(raPerLv, raPerLp, lvRedeemed);
 
@@ -649,7 +646,6 @@ library VaultLibrary {
             ammCtBalance
             ? ammCtBalance
             : flashSwapRouter.getLvReserve(self.info.toId(), dsId);
-        console.log("totalRa", totalRa);
 
         uint256 excessCt = flashSwapRouter.getLvReserve(
             self.info.toId(),
@@ -666,7 +662,6 @@ library VaultLibrary {
             excessCt,
             ctPerLp
         );
-        console.log("totalRa", totalRa);
     }
 
     function _trySellCtToAmm(
