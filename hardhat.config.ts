@@ -37,7 +37,7 @@ const config: HardhatUserConfig = {
   },
   contractSizer: {
     runOnCompile: true,
-    only: ["ModuleCore", "AssetFactory", "MathHelper"],
+    only: ["ModuleCore", "AssetFactory", "MathHelper", "VaultLibrary", "PsmLibrary"],
   },
 };
 
