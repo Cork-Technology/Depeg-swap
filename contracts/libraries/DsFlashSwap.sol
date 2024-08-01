@@ -33,15 +33,31 @@ library DsFlashSwaplibrary {
         );
     }
 
+    function getPair(
+        ReserveState storage self,
+        uint256 dsId
+    ) internal view returns (IUniswapV2Pair) {
+        return self.ds[dsId].pair;
+    }
+
     function emptyReserve(
         ReserveState storage self,
         uint256 dsId,
         address to
     ) internal returns (uint256 reserve) {
-        self.ds[dsId].ds.transfer(to, self.ds[dsId].reserve);
+        reserve = emptyReservePartial(self, dsId, self.ds[dsId].reserve, to);
+    }
 
+    function emptyReservePartial(
+        ReserveState storage self,
+        uint256 dsId,
+        uint256 amount,
+        address to
+    ) internal returns (uint256 reserve) {
+        self.ds[dsId].ds.transfer(to, amount);
+
+        self.ds[dsId].reserve -= amount;
         reserve = self.ds[dsId].reserve;
-        self.ds[dsId].reserve = 0;
     }
 
     function getPriceRatio(
@@ -59,6 +75,13 @@ library DsFlashSwaplibrary {
         );
     }
 
+    function getReserve(
+        ReserveState storage self,
+        uint256 dsId
+    ) internal view returns (uint112 raReserve, uint112 ctReserve) {
+        (raReserve, ctReserve, ) = self.ds[dsId].pair.getReserves();
+    }
+
     function addReserve(
         ReserveState storage self,
         uint256 dsId,
@@ -66,7 +89,7 @@ library DsFlashSwaplibrary {
         address from
     ) internal returns (uint256 reserve) {
         self.ds[dsId].ds.transferFrom(from, address(this), amount);
-        
+
         self.ds[dsId].reserve += amount;
         reserve = self.ds[dsId].reserve;
     }
