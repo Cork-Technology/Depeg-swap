@@ -186,7 +186,9 @@ library MathHelper {
             uint256 raValuePerLv,
             uint256 ctValuePerLv,
             uint256 valueRaPerLp,
-            uint256 valueCtPerLp
+            uint256 valueCtPerLp,
+            uint256 totalLvRaValue,
+            uint256 totalLvCtValue
         )
     {
         (valueRaPerLp, valueCtPerLp) = calculateUniV2LpValue(
@@ -202,5 +204,16 @@ library MathHelper {
 
         raValuePerLv = (cumulatedLptotalLvOwnedRa * 1e18) / totalLvIssued;
         ctValuePerLv = (cumulatedLptotalLvOwnedCt * 1e18) / totalLvIssued;
+
+        totalLvRaValue = raValuePerLv * totalLvIssued;
+        totalLvCtValue = ctValuePerLv * totalLvIssued;
+    }
+
+    function convertToLp(
+        uint256 rateRaPerLv,
+        uint256 rateRaPerLp,
+        uint256 redeemedLv
+    ) external pure returns (uint256 lpLiquidated) {
+        lpLiquidated = ((redeemedLv * rateRaPerLv) * 1e18) / rateRaPerLp;
     }
 }
