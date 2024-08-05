@@ -14,7 +14,7 @@ import "./Psm.sol";
 import "./Vault.sol";
 import "../interfaces/Init.sol";
 import "../interfaces/uniswap-v2/factory.sol";
-import "./flash-swaps/RouterState.sol";
+import "./flash-swaps/FlashSwapRouter.sol";
 
 // TODO : make entrypoint that do not rely on permit with function overloading or different function altogether
 contract ModuleCore is PsmCore, Initialize, VaultCore {

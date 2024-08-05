@@ -36,6 +36,7 @@ contract RouterState is
         uint256 initialReserve
     ) external override onlyOwner {
         reserves[reserveId].onNewIssuance(dsId, ds, pair, initialReserve);
+        emit NewIssuance(reserveId, dsId, ds, pair, initialReserve);
     }
 
     function getAmmReserve(
@@ -63,7 +64,8 @@ contract RouterState is
         Id reserveId,
         uint256 dsId
     ) external override onlyOwner returns (uint256 amount) {
-        return reserves[reserveId].emptyReserve(dsId, owner());
+        amount = reserves[reserveId].emptyReserve(dsId, owner());
+        emit ReserveEmptied(reserveId, dsId, amount);
     }
 
     function emptyReservePartial(
@@ -71,7 +73,12 @@ contract RouterState is
         uint256 dsId,
         uint256 amount
     ) external override onlyOwner returns (uint256 reserve) {
-        return reserves[reserveId].emptyReservePartial(dsId, amount, owner());
+        reserve = reserves[reserveId].emptyReservePartial(
+            dsId,
+            amount,
+            owner()
+        );
+        emit ReserveEmptied(reserveId, dsId, amount);
     }
 
     function getCurrentPriceRatio(
@@ -92,6 +99,7 @@ contract RouterState is
         uint256 amount
     ) external override onlyOwner {
         reserves[id].addReserve(dsId, amount, owner());
+        emit ReserveAdded(id, dsId, amount);
     }
 
     function getState(
