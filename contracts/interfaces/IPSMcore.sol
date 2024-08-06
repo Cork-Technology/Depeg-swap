@@ -68,7 +68,10 @@ interface IPSMcore is IRepurchase {
         uint256 dSexchangeRates
     );
 
-    function depositPsm(Id id, uint256 amount) external;
+    function depositPsm(
+        Id id,
+        uint256 amount
+    ) external returns (uint256 received, uint256 exchangeRate);
 
     /**
      * This determines the rate of how much the user will receive for the amount of asset they want to deposit.
@@ -113,7 +116,10 @@ interface IPSMcore is IRepurchase {
         uint256 amount
     ) external view returns (uint256 paReceived, uint256 raReceived);
 
-    function redeemRaWithCtDs(Id id, uint256 amount) external;
+    function redeemRaWithCtDs(
+        Id id,
+        uint256 amount
+    ) external returns (uint256 ra, uint256 rates);
 
     function previewRedeemRaWithCtDs(
         Id id,
