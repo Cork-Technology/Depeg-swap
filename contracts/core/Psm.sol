@@ -80,12 +80,15 @@ abstract contract PsmCore is IPSMcore, ModuleState, Context {
     function depositPsm(
         Id id,
         uint256 amount
-    ) external override onlyInitialized(id) {
+    )
+        external
+        override
+        onlyInitialized(id)
+        returns (uint256 received, uint256 _exchangeRate)
+    {
         State storage state = states[id];
-        (uint256 dsId, uint256 received, uint256 _exchangeRate) = state.deposit(
-            _msgSender(),
-            amount
-        );
+        uint256 dsId;
+        (dsId, received, _exchangeRate) = state.deposit(_msgSender(), amount);
         emit PsmDeposited(
             id,
             dsId,
@@ -193,12 +196,15 @@ abstract contract PsmCore is IPSMcore, ModuleState, Context {
         return state.valueLocked();
     }
 
-    function redeemRaWithCtDs(Id id, uint256 amount) external override {
+    function redeemRaWithCtDs(
+        Id id,
+        uint256 amount
+    ) external override returns (uint256 ra, uint256 rates) {
         State storage state = states[id];
-        (uint256 ra, uint256 dsId, uint256 rates) = state.redeemRaWithCtDs(
-            _msgSender(),
-            amount
-        );
+
+        uint256 dsId;
+
+        (ra, dsId, rates) = state.redeemRaWithCtDs(_msgSender(), amount);
 
         emit Cancelled(id, dsId, _msgSender(), ra, amount, rates);
     }
