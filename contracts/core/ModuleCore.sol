@@ -89,13 +89,14 @@ contract ModuleCore is PsmCore, Initialize, VaultCore {
 
         address ra = state.info.pair1;
 
-        (address ct, address ds) = IAssetFactory(swapAssetFactory).deploySwapAssets(
-            ra,
-            state.info.pair0,
-            address(this),
-            expiry,
-            exchangeRates
-        );
+        (address ct, address ds) = IAssetFactory(swapAssetFactory)
+            .deploySwapAssets(
+                ra,
+                state.info.pair0,
+                address(this),
+                expiry,
+                exchangeRates
+            );
 
         uint256 prevIdx = state.globalAssetIdx++;
         uint256 idx = state.globalAssetIdx;
@@ -113,7 +114,7 @@ contract ModuleCore is PsmCore, Initialize, VaultCore {
         );
 
         // TODO : 0 for initial reserve for now, will be calculated later when rollover stragegy is implemented
-        getRouterCore().onNewIssuance(id, idx, ds, ammPair, 0);
+        getRouterCore().onNewIssuance(id, idx, ds, ammPair, 0, ra, ct);
 
         VaultLibrary.onNewIssuance(
             state,
@@ -127,7 +128,7 @@ contract ModuleCore is PsmCore, Initialize, VaultCore {
 
     function updateRepurchaseFeeRate(
         Id id,
-        uint256 newRepurchaseFeePrecentage        
+        uint256 newRepurchaseFeePrecentage
     ) external onlyConfig {
         State storage state = states[id];
         state.psm.repurchaseFeePrecentage = newRepurchaseFeePrecentage;
@@ -137,10 +138,13 @@ contract ModuleCore is PsmCore, Initialize, VaultCore {
 
     function updateEarlyRedemptionFeeRate(
         Id id,
-        uint256 newEarlyRedemptionFeeRate        
+        uint256 newEarlyRedemptionFeeRate
     ) external onlyConfig {
         State storage state = states[id];
-        VaultConfigLibrary.updateFee(state.vault.config, newEarlyRedemptionFeeRate);
+        VaultConfigLibrary.updateFee(
+            state.vault.config,
+            newEarlyRedemptionFeeRate
+        );
 
         emit RepurchaseFeeRateUpdated(id, newEarlyRedemptionFeeRate);
     }
