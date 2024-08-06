@@ -3,7 +3,7 @@ import {
   loadFixture,
 } from "@nomicfoundation/hardhat-toolbox-viem/network-helpers";
 import { expect } from "chai";
-import hre from "hardhat";
+import hre, { viem } from "hardhat";
 import {
   Address,
   formatEther,
@@ -33,18 +33,22 @@ export function expiry(withinSeconds: number) {
   return nowTimestampInSeconds() + withinSeconds;
 }
 
-export async function getSigners() {
-  const signers = await hre.viem.getWalletClients();
+export function getSigners(
+  signers: Awaited<ReturnType<typeof hre.viem.getWalletClients>>
+) {
   const defaultSigner = signers.shift()!;
+  const secondSigner = signers.shift()!;
 
   return {
     signers,
     defaultSigner,
+    secondSigner,
   };
 }
 
 export async function deployAssetFactory() {
-  const { defaultSigner } = await getSigners();
+  const signers = await hre.viem.getWalletClients();
+  const { defaultSigner } = getSigners(signers);
   const contract = await hre.viem.deployContract("AssetFactory", [], {
     client: {
       wallet: defaultSigner,
@@ -57,7 +61,8 @@ export async function deployAssetFactory() {
 }
 
 export async function deployCorkConfig() {
-  const { defaultSigner } = await getSigners();
+  const signers = await hre.viem.getWalletClients();
+  const { defaultSigner } = getSigners(signers);
   const contract = await hre.viem.deployContract("CorkConfig", [], {
     client: {
       wallet: defaultSigner,
@@ -70,17 +75,22 @@ export async function deployCorkConfig() {
 }
 
 export async function deployModuleCore(factory: Address, config: Address) {
-  const { defaultSigner } = await getSigners();
+  const signers = await hre.viem.getWalletClients();
+  const { defaultSigner } = getSigners(signers);
   const mathLib = await hre.viem.deployContract("MathHelper");
 
-  const contract = await hre.viem.deployContract("ModuleCore", [factory, config], {
-    client: {
-      wallet: defaultSigner,
-    },
-    libraries: {
-      MathHelper: mathLib.address,
-    },
-  });
+  const contract = await hre.viem.deployContract(
+    "ModuleCore",
+    [factory, config],
+    {
+      client: {
+        wallet: defaultSigner,
+      },
+      libraries: {
+        MathHelper: mathLib.address,
+      },
+    }
+  );
 
   return {
     contract,
@@ -98,15 +108,14 @@ export type InitializeNewPsmArg = {
 };
 
 export async function initializeNewPsmLv(arg: InitializeNewPsmArg) {
-  const { defaultSigner } = await getSigners();
+  const signers = await hre.viem.getWalletClients();
+  const { defaultSigner } = getSigners(signers);
   const contract = await hre.viem.getContractAt("ModuleCore", arg.moduleCore);
   const configContract = await hre.viem.getContractAt("CorkConfig", arg.config);
 
-  await configContract.write.setModuleCore([arg.moduleCore],
-    {
-      account: defaultSigner.account,
-    }
-  );
+  await configContract.write.setModuleCore([arg.moduleCore], {
+    account: defaultSigner.account,
+  });
 
   await configContract.write.initializeModuleCore(
     [
@@ -149,7 +158,8 @@ export async function mintRa(ra: Address, to: Address, amount: bigint) {
 }
 
 export async function issueNewSwapAssets(arg: IssueNewSwapAssetsArg) {
-  const { defaultSigner } = await getSigners();
+  const signers = await hre.viem.getWalletClients();
+  const { defaultSigner } = getSigners(signers);
 
   const rate = arg.rates ?? parseEther("1");
   // 10% by default
@@ -189,7 +199,8 @@ export const DUMMY_RA_TOKEN = "RTKN";
  * deploy pa and ra
  */
 export async function deployBackedAssets() {
-  const { defaultSigner } = await getSigners();
+  const signers = await hre.viem.getWalletClients();
+  const { defaultSigner } = getSigners(signers);
 
   const pa = await hre.viem.deployContract(
     "DummyERCWithMetadata",
@@ -230,7 +241,8 @@ export type CreateLvArg = {
 };
 
 export async function createLv(arg: CreateLvArg) {
-  const { defaultSigner } = await getSigners();
+  const signers = await hre.viem.getWalletClients();
+  const { defaultSigner } = getSigners(signers);
   const contract = await hre.viem.getContractAt("AssetFactory", arg.factory);
 
   await contract.write.deployLv([arg.ra, arg.pa, arg.moduleCore], {
@@ -318,18 +330,25 @@ export async function permit(arg: PermitArg) {
 export async function onlymoduleCoreWithFactory() {
   const factory = await deployAssetFactory();
   const config = await deployCorkConfig();
-  const moduleCore = await deployModuleCore(factory.contract.address, config.contract.address);
+  const moduleCore = await deployModuleCore(
+    factory.contract.address,
+    config.contract.address
+  );
   await factory.contract.write.initialize([moduleCore.contract.address]);
 
   return {
     factory,
     moduleCore,
-    config
+    config,
   };
 }
 
 export async function ModuleCoreWithInitializedPsmLv() {
-  const { factory, moduleCore: moduleCore, config } = await onlymoduleCoreWithFactory();
+  const {
+    factory,
+    moduleCore: moduleCore,
+    config,
+  } = await onlymoduleCoreWithFactory();
   const { pa, ra } = await backedAssets();
 
   const fee = parseEther("10");

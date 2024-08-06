@@ -7,25 +7,29 @@ import { Address, formatEther, parseEther, WalletClient } from "viem";
 import * as helper from "../helper/TestHelper";
 
 describe("LvCore", function () {
-  let defaultSigner: any;
-  let secondSigner: any;
-  let signers: any;
+  let {
+    defaultSigner,
+    secondSigner,
+    signers,
+  }: ReturnType<typeof helper.getSigners> = {} as any;
 
-  let depositAmount: any;
-  let expiry :any;
+  let depositAmount: bigint;
+  let expiry: number;
 
-  let fixture: any;
+  let fixture: Awaited<
+    ReturnType<typeof helper.ModuleCoreWithInitializedPsmLv>
+  >;
 
   before(async () => {
-    ({ defaultSigner, signers } = await helper.getSigners());
-    secondSigner = signers[1];
+    const __signers = await hre.viem.getWalletClients();
+    ({ defaultSigner, secondSigner, signers } = helper.getSigners(__signers));
   });
 
   beforeEach(async () => {
     fixture = await loadFixture(helper.ModuleCoreWithInitializedPsmLv);
 
     depositAmount = parseEther("10");
-    expiry = helper.expiry(1000000);    
+    expiry = helper.expiry(1000000);
 
     await fixture.ra.write.mint([defaultSigner.account.address, depositAmount]);
     await fixture.ra.write.mint([secondSigner.account.address, depositAmount]);
@@ -50,7 +54,7 @@ describe("LvCore", function () {
       pa: fixture.pa.address,
       ra: fixture.ra.address,
       factory: fixture.factory.contract.address,
-      ...options
+      ...options,
     });
   }
 
