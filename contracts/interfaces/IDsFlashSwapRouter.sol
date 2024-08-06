@@ -43,6 +43,8 @@ interface IDsFlashSwapUtility {
 }
 
 interface IDsFlashSwapCore is IDsFlashSwapUtility {
+    error InsufficientOutputAmount();
+
     /**
      * @notice Emitted when DS is swapped for RA
      * @param reserveId the reserve id same as the id on PSM and LV
@@ -77,11 +79,11 @@ interface IDsFlashSwapCore is IDsFlashSwapUtility {
 
     /**
      * @notice Emitted when a new issuance is made
-     * @param reserveId the reserve id same as the id on PSM and LV 
-     * @param dsId the ds id of the pair, the same as the DS id on PSM and LV 
+     * @param reserveId the reserve id same as the id on PSM and LV
+     * @param dsId the ds id of the pair, the same as the DS id on PSM and LV
      * @param ds the new DS address
-     * @param pair the RA:CT pair address 
-     * @param initialReserve the initial reserve of the DS, deposited by LV 
+     * @param pair the RA:CT pair address
+     * @param initialReserve the initial reserve of the DS, deposited by LV
      */
     event NewIssuance(
         Id indexed reserveId,
@@ -92,10 +94,10 @@ interface IDsFlashSwapCore is IDsFlashSwapUtility {
     );
 
     /**
-     * @notice Emitted when a reserve is added 
-     * @param reserveId the reserve id same as the id on PSM and LV 
-     * @param dsId the ds id of the pair, the same as the DS id on PSM and LV 
-     * @param amount the amount of DS that's added to the reserve 
+     * @notice Emitted when a reserve is added
+     * @param reserveId the reserve id same as the id on PSM and LV
+     * @param dsId the ds id of the pair, the same as the DS id on PSM and LV
+     * @param amount the amount of DS that's added to the reserve
      */
     event ReserveAdded(
         Id indexed reserveId,
@@ -104,10 +106,10 @@ interface IDsFlashSwapCore is IDsFlashSwapUtility {
     );
 
     /**
-     * @notice Emitted when a reserve is emptied 
-     * @param reserveId the reserve id same as the id on PSM and LV 
-     * @param dsId the ds id of the pair, the same as the DS id on PSM and LV 
-     * @param amount the amount of DS that's emptied from the reserve 
+     * @notice Emitted when a reserve is emptied
+     * @param reserveId the reserve id same as the id on PSM and LV
+     * @param dsId the ds id of the pair, the same as the DS id on PSM and LV
+     * @param amount the amount of DS that's emptied from the reserve
      */
     event ReserveEmptied(
         Id indexed reserveId,
@@ -120,7 +122,9 @@ interface IDsFlashSwapCore is IDsFlashSwapUtility {
         uint256 dsId,
         address ds,
         address pair,
-        uint256 initialReserve
+        uint256 initialReserve,
+        address ra,
+        address ct
     ) external;
 
     function addReserve(Id id, uint256 dsId, uint256 amount) external;
