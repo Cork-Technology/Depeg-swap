@@ -5,6 +5,8 @@ import "../core/assets/Asset.sol";
 import "./DsSwapperMathLib.sol";
 
 struct AssetPair {
+    Asset ra;
+    Asset ct;
     Asset ds;
     /// @dev [RA, CT]
     IUniswapV2Pair pair;
@@ -16,21 +18,38 @@ struct AssetPair {
 struct ReserveState {
     /// @dev dsId => [RA, CT, DS]
     mapping(uint256 => AssetPair) ds;
+    uint256 reserveSellPressurePrecentage;
 }
 
 library DsFlashSwaplibrary {
+    /// @dev the precentage amount of reserve that will be used to fill buy orders
+    /// the router will sell in respect to this ratio on first issuance
+    uint256 public constant INITIAL_RESERVE_SELL_PRESSURE_PRECENTAGE = 501e8;
+
+    /// @dev the precentage amount of reserve that will be used to fill buy orders
+    /// the router will sell in respect to this ratio on subsequent issuances
+    uint256 public constant SUBSEQUENT_RESERVE_SELL_PRESSURE_PRECENTAGE = 801e8;
+
     function onNewIssuance(
         ReserveState storage self,
         uint256 dsId,
         address ds,
         address pair,
-        uint256 initialReserve
+        uint256 initialReserve,
+        address ra,
+        address ct
     ) internal {
         self.ds[dsId] = AssetPair(
+            Asset(ra),
+            Asset(ct),
             Asset(ds),
             IUniswapV2Pair(pair),
             initialReserve
         );
+
+        self.reserveSellPressurePrecentage = dsId == 1
+            ? INITIAL_RESERVE_SELL_PRESSURE_PRECENTAGE
+            : SUBSEQUENT_RESERVE_SELL_PRESSURE_PRECENTAGE;
     }
 
     function getPair(
