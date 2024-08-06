@@ -6,6 +6,29 @@ library MinimalUniswapV2Library {
     // 0%
     uint public constant NO_FEE = 1000;
 
+    // returns sorted token addresses, used to handle return values from pairs sorted in this order
+    function sortTokensUnsafeWithAmount(
+        address ra,
+        address ct,
+        uint256 raAmount,
+        uint256 ctAmount
+    )
+        internal
+        pure
+        returns (
+            address token0,
+            address token1,
+            uint256 amount0,
+            uint256 amount1
+        )
+    {
+        assert(ra != ct);
+        (token0, amount0, token1, amount1) = ra < ct
+            ? (ra, raAmount, ct, ctAmount)
+            : (ct, ctAmount, ra, raAmount);
+        assert(token0 != address(0));
+    }
+
     // given an input amount of an asset and pair reserves, returns the maximum output amount of the other asset
     // WARNING: won't apply fee since we don't take fee from user right now
     function getAmountOut(
