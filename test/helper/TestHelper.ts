@@ -447,16 +447,19 @@ export async function permit(arg: PermitArg) {
 export async function onlymoduleCoreWithFactory() {
   const factory = await deployAssetFactory();
   const config = await deployCorkConfig();
-  const moduleCore = await deployModuleCore(
-    factory.contract.address,
-    config.contract.address
-  );
-  await factory.contract.write.initialize([moduleCore.contract.address]);
+  const { contract, dsFlashSwapRouter, univ2Factory, univ2Router, weth } =
+    await deployModuleCore(factory.contract.address, config.contract.address);
+  const moduleCore = contract;
+  await factory.contract.write.initialize([moduleCore.address]);
 
   return {
     factory,
     moduleCore,
     config,
+    dsFlashSwapRouter,
+    univ2Factory,
+    univ2Router,
+    weth,
   };
 }
 
@@ -465,6 +468,10 @@ export async function ModuleCoreWithInitializedPsmLv() {
     factory,
     moduleCore: moduleCore,
     config,
+    dsFlashSwapRouter,
+    univ2Factory,
+    univ2Router,
+    weth,
   } = await onlymoduleCoreWithFactory();
   const { pa, ra } = await backedAssets();
 
@@ -473,7 +480,7 @@ export async function ModuleCoreWithInitializedPsmLv() {
   const depositThreshold = parseEther("0");
 
   const { Id, lv } = await initializeNewPsmLv({
-    moduleCore: moduleCore.contract.address,
+    moduleCore: moduleCore.address,
     config: config.contract.address,
     pa: pa.address,
     ra: ra.address,
@@ -493,6 +500,10 @@ export async function ModuleCoreWithInitializedPsmLv() {
     lvFee: fee,
     lvAmmWaDepositThreshold: depositThreshold,
     lvAmmCtDepositThreshold: depositThreshold,
+    dsFlashSwapRouter,
+    univ2Factory,
+    univ2Router,
+    weth,
   };
 }
 
