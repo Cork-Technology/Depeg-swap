@@ -68,6 +68,20 @@ interface IPSMcore is IRepurchase {
         uint256 dSexchangeRates
     );
 
+    /// @notice Emitted when a Admin updates status of Deposit/Withdraw in the PSM / LV
+    /// @param Id The PSM id
+    /// @param isPSMDepositPaused The new value saying if Deposit allowed in PSM or not
+    /// @param isPSMWithdrawalPaused The new value saying if Withdrawal allowed in PSM or not
+    /// @param isLVDepositPaused The new value saying if Deposit allowed in LV or not
+    /// @param isLVWithdrawalPaused The new value saying if Withdrawal allowed in LV or not
+    event PoolsStatusUpdated(
+        Id indexed Id,
+        bool isPSMDepositPaused,
+        bool isPSMWithdrawalPaused,
+        bool isLVDepositPaused,
+        bool isLVWithdrawalPaused
+    );
+
     function depositPsm(
         Id id,
         uint256 amount

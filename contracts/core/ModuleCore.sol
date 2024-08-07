@@ -149,6 +149,31 @@ contract ModuleCore is PsmCore, Initialize, VaultCore {
         emit RepurchaseFeeRateUpdated(id, newEarlyRedemptionFeeRate);
     }
 
+    function updatePoolsStatus(
+        Id id,
+        bool isPSMDepositPaused,
+        bool isPSMWithdrawalPaused,
+        bool isLVDepositPaused,
+        bool isLVWithdrawalPaused
+    ) external onlyConfig {
+        State storage state = states[id];
+        PsmLibrary.updatePoolsStatus(
+            state,          
+            isPSMDepositPaused,
+            isPSMWithdrawalPaused,
+            isLVDepositPaused,
+            isLVWithdrawalPaused
+        );
+
+        emit PoolsStatusUpdated(
+            id,
+            isPSMDepositPaused,
+            isPSMWithdrawalPaused,
+            isLVDepositPaused,
+            isLVWithdrawalPaused
+        );
+    }
+
     function lastDsId(Id id) external view override returns (uint256 dsId) {
         return states[id].globalAssetIdx;
     }

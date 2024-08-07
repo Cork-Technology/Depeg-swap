@@ -16,6 +16,18 @@ interface ICommon {
     /// @notice invalid asset, thrown when trying to do something with an asset not deployed with asset factory
     error InvalidAsset(address asset);
 
+    /// @notice PSM Deposit is paused, i.e thrown when deposit is paused for PSM
+    error PSMDepositPaused();
+
+    /// @notice PSM Withdrawal is paused, i.e thrown when withdrawal is paused for PSM
+    error PSMWithdrawalPaused();
+
+    /// @notice LV Deposit is paused, i.e thrown when deposit is paused for LV
+    error LVDepositPaused();
+
+    /// @notice LV Withdrawal is paused, i.e thrown when withdrawal is paused for LV
+    error LVWithdrawalPaused();
+
     /// @notice Emitted when a new LV and PSM is initialized with a given pair
     /// @param id The PSM id
     /// @param pa The address of the pegged asset
