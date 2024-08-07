@@ -18,7 +18,7 @@ describe("ModuleCore", function () {
       },
     });
 
-    const dsFlashSwapRouter = await helper.deployFlashSwapRouter();
+    const dsFlashSwapRouter = await helper.deployFlashSwapRouter(mathLib.address);
     const univ2Factory = await helper.deployUniV2Factory();
     const weth = await helper.deployWeth();
     const univ2Router = await helper.deployUniV2Router(

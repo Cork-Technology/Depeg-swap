@@ -100,11 +100,12 @@ export async function deployWeth() {
   };
 }
 
-export async function deployFlashSwapRouter() {
+export async function deployFlashSwapRouter(mathHelper: Address) {
   const mathLib = await hre.viem.deployContract("SwapperMathLibrary");
   const contract = await hre.viem.deployContract("RouterState", [], {
     libraries: {
       SwapperMathLibrary: mathLib.address,
+      MathHelper: mathHelper,
     },
   });
 
@@ -170,7 +171,7 @@ export async function deployModuleCore(
     },
   });
 
-  const dsFlashSwapRouter = await deployFlashSwapRouter();
+  const dsFlashSwapRouter = await deployFlashSwapRouter(mathLib.address);
   const univ2Factory = await deployUniV2Factory();
   const weth = await deployWeth();
   const univ2Router = await deployUniV2Router(
@@ -199,7 +200,10 @@ export async function deployModuleCore(
     }
   );
 
-  await dsFlashSwapRouter.contract.write.initialize([contract.address]);
+  await dsFlashSwapRouter.contract.write.initialize([
+    contract.address,
+    univ2Router,
+  ]);
 
   return {
     contract,
