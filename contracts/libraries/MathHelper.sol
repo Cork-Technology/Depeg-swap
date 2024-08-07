@@ -10,7 +10,7 @@ library MathHelper {
     // TODO : discuss what value of this should be set to. currently set to 1% tolerance.
     // this is used to calculate tolerance level when adding liqudity to AMM pair
     /// @dev 1e18 == 1%.
-    uint256 internal constant UNIV2_STATIC_TOLERANCE = 1000000000000000000;
+    uint256 internal constant UNIV2_STATIC_TOLERANCE = 1e18;
 
     /**
      * @dev calculate the amount of ra and ct needed to provide AMM with liquidity in respect to the price ratio
@@ -20,12 +20,12 @@ library MathHelper {
      * @return ra the amount of ra needed to provide AMM with liquidity
      * @return ct the amount of ct needed to provide AMM with liquidity, also the amount of how much ra should be converted to ct
      */
-    function calculateAmounts(
+    function calculateProvideLiquidityAmountBasedOnCtRatio(
         uint256 amountra,
         uint256 priceRatio
     ) external pure returns (uint256 ra, uint256 ct) {
-        ct = (amountra * 1e18) / (priceRatio + 1e18);
-        ra = (amountra - ct);
+        ra = (amountra * 1e18) / (priceRatio + 1e18);
+        ct = (amountra - ra);
 
         assert((ct + ra) == amountra);
     }
@@ -155,13 +155,13 @@ library MathHelper {
         assert((attributedWithdrawal + attributedAmm) == totalAmount);
     }
 
-    function calculateWithTolreance(
+    function calculateWithTolerance(
         uint256 ra,
         uint256 ct,
         uint256 tolerance
     ) external pure returns (uint256 raTolerance, uint256 ctTolerance) {
-        raTolerance = (ra * tolerance) / 1e18;
-        ctTolerance = (ct * tolerance) / 1e18;
+        raTolerance = ra - ((ra * 1e18 * tolerance) / (100 * 1e18) / 1e18);
+        ctTolerance = ct - ((ct * 1e18 * tolerance) / (100 * 1e18) / 1e18);
     }
 
     function calculateUniV2LpValue(

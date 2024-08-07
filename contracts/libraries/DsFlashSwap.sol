@@ -3,6 +3,7 @@ pragma solidity ^0.8.20;
 import "../interfaces/uniswap-v2/pair.sol";
 import "../core/assets/Asset.sol";
 import "./DsSwapperMathLib.sol";
+import "./uni-v2/UniswapV2Library.sol";
 
 struct AssetPair {
     Asset ra;
@@ -83,10 +84,25 @@ library DsFlashSwaplibrary {
         ReserveState storage self,
         uint256 dsId
     ) internal view returns (uint256 raPriceRatio, uint256 ctPriceRatio) {
-        (uint112 raReserve, uint112 ctReserve, ) = self
+        AssetPair storage asset = self.ds[dsId];
+
+        address token0 = asset.pair.token0();
+        address token1 = asset.pair.token1();
+
+        (uint112 token0Reserve, uint112 token1Reserve, ) = self
             .ds[dsId]
             .pair
             .getReserves();
+
+        (uint112 raReserve, uint112 ctReserve) = MinimalUniswapV2Library
+            .reverseSortWithAmount(
+                token0,
+                token1,
+                address(asset.ra),
+                address(asset.ct),
+                token0Reserve,
+                token1Reserve
+            );
 
         (raPriceRatio, ctPriceRatio) = SwapperMathLibrary.getPriceRatioUniv2(
             raReserve,

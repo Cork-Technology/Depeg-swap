@@ -767,7 +767,7 @@ describe("PSM core", function () {
 
     await fixture.ra.write.mint([defaultSigner.account.address, mintAmount]);
     await fixture.ra.write.approve([
-      fixture.moduleCore.contract.address,
+    fixture.moduleCore.contract.address,
       mintAmount,
     ]);
 

@@ -1,6 +1,8 @@
 pragma solidity ^0.8.0;
 
 library MinimalUniswapV2Library {
+    error InvalidToken();
+
     // 0.3%
     uint public constant FEE = 997;
     // 0%
@@ -27,6 +29,25 @@ library MinimalUniswapV2Library {
             ? (ra, raAmount, ct, ctAmount)
             : (ct, ctAmount, ra, raAmount);
         assert(token0 != address(0));
+    }
+
+    function reverseSortWithAmount(
+        address token0,
+        address token1,
+        address ra,
+        address ct,
+        uint112 token0Amount,
+        uint112 token1Amount
+    ) internal pure returns (uint112 raAmountOut, uint112 ctAmountOut) {
+        if (token0 == ra && token1 == ct) {
+            raAmountOut = token0Amount;
+            ctAmountOut = token1Amount;
+        } else if (token0 == ct && token1 == ra) {
+            raAmountOut = token1Amount;
+            ctAmountOut = token0Amount;
+        } else {
+            revert InvalidToken();
+        }
     }
 
     // given an input amount of an asset and pair reserves, returns the maximum output amount of the other asset
