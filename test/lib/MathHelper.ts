@@ -15,12 +15,12 @@ describe("Math Helper", function () {
     it("should calculate provided liquidity correctly on the LV (WA:CT = 0.5)", async function () {
       const contract = await loadFixture(deployMathHelper);
 
-      // every ct costs 0.5 wa
+      // ct price
       const ratio = parseEther("0.5");
       const amount = parseEther("10");
 
       const [wa, ct] =
-        await contract.read.calculateProvideLiquidityAmountBasedOnCtRatio([
+        await contract.read.calculateProvideLiquidityAmountBasedOnCtPrice([
           amount,
           ratio,
         ]);
@@ -29,8 +29,8 @@ describe("Math Helper", function () {
 
       // since it costs a half of whatever ct here, it essentially boils down
       // 6666666666666666666 / 2 = 3333333333333333333 + 1
-      const expectedWa = BigInt("6666666666666666666");
-      const expectedCt = BigInt("3333333333333333334");
+      const expectedCt = BigInt("6666666666666666666");
+      const expectedWa = BigInt("3333333333333333334");
 
       expect(ct).to.equal(expectedCt);
       expect(wa).to.equal(expectedWa);
@@ -39,19 +39,19 @@ describe("Math Helper", function () {
     it("should calculate provided liquidity correctly on the LV (WA:CT = 2)", async function () {
       const contract = await loadFixture(deployMathHelper);
 
-      // every 2 ct there must be 1 ra
+      // ct price
       const ratio = parseEther("2");
       const amount = parseEther("10");
 
       const [wa, ct] =
-        await contract.read.calculateProvideLiquidityAmountBasedOnCtRatio([
+        await contract.read.calculateProvideLiquidityAmountBasedOnCtPrice([
           amount,
           ratio,
         ]);
 
       // this is just basically a reverse from the above with some imprecision of ~0,000000000000000001
-      const expectedCt = BigInt("6666666666666666667");
-      const expectedWa = BigInt("3333333333333333333");
+      const expectedWa = BigInt("6666666666666666667");
+      const expectedCt = BigInt("3333333333333333333");
 
       expect(wa).to.equal(expectedWa);
       expect(ct).to.equal(expectedCt);
@@ -108,13 +108,13 @@ describe("Math Helper", function () {
       const amount = parseEther("10");
 
       const [wa, ct] =
-        await contract.read.calculateProvideLiquidityAmountBasedOnCtRatio([
+        await contract.read.calculateProvideLiquidityAmountBasedOnCtPrice([
           amount,
           ratio,
         ]);
 
-      expect(wa).to.equal(parseEther("2"));
-      expect(ct).to.equal(parseEther("8"));
+      expect(ct).to.equal(parseEther("2"));
+      expect(wa).to.equal(parseEther("8"));
     });
 
     it("should calculate early lv", async function () {

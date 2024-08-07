@@ -5,6 +5,8 @@ import "./UQ112x112.sol";
 // library function for handling math operations for DS swap contract
 // TODO : separately test this
 
+import "hardhat/console.sol";
+
 library SwapperMathLibrary {
     using UQ112x112 for uint224;
     error ZeroReserve();
@@ -26,13 +28,17 @@ library SwapperMathLibrary {
         uint224 encodedCtReserve = UQ112x112.encode(ctReserve);
 
         // Calculate price ratios using uqdiv
-        uint224 ctPriceRatioUQ = encodedCtReserve.uqdiv(raReserve);
-        uint224 raPriceRatioUQ = encodedRaReserve.uqdiv(ctReserve);
+        uint224 raPriceRatioUQ = encodedCtReserve.uqdiv(raReserve);
+        uint224 ctPriceRatioUQ = encodedRaReserve.uqdiv(ctReserve);
 
         // Convert UQ112x112 to regular uint (divide by 2**112)
         // we time by 18 to have 18 decimals precision
         raPriceRatio = (uint256(raPriceRatioUQ) * 1e18) / UQ112x112.Q112;
         ctPriceRatio = (uint256(ctPriceRatioUQ) * 1e18) / UQ112x112.Q112;
+
+        console.log(raPriceRatio, ctPriceRatio);
+
+
     }
 
     function calculateDsPrice(
@@ -65,7 +71,7 @@ library SwapperMathLibrary {
             dsExchangeRate
         );
 
-        amountIn = amountOut * dsPrice;
+        amountIn = amountOut * dsPrice / 1e18;
     }
 
     function getAmountOut(

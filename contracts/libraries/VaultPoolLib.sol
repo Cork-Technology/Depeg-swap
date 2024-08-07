@@ -225,7 +225,7 @@ library VaultPoolLibrary {
     ) internal view returns (uint256 ra, uint256 ct) {
         uint256 amount = self.ammLiquidityPool.balance;
 
-        (ra, ct) = MathHelper.calculateProvideLiquidityAmountBasedOnCtRatio(amount, ratio);
+        (ra, ct) = MathHelper.calculateProvideLiquidityAmountBasedOnCtPrice(amount, ratio);
     }
 
     function resetAmmPool(VaultPool storage self) internal {

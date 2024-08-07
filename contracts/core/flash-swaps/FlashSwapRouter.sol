@@ -12,6 +12,8 @@ import "../../interfaces/uniswap-v2/RouterV2.sol";
 import "../../libraries/uni-v2/UniswapV2Library.sol";
 import "../../interfaces/IPSMcore.sol";
 
+import "hardhat/console.sol";
+
 contract RouterState is
     IDsFlashSwapUtility,
     IDsFlashSwapCore,
@@ -138,22 +140,6 @@ contract RouterState is
         return reserves[id].getCurrentDsPrice(dsId);
     }
 
-    function getAmountIn(
-        Id id,
-        uint256 dsId,
-        uint256 amountOut
-    ) external view returns (uint256 amountIn) {
-        return reserves[id].getAmountIn(dsId, amountOut);
-    }
-
-    function getAmountOut(
-        Id id,
-        uint256 dsId,
-        uint256 amountIn
-    ) external view returns (uint256 amountOut) {
-        return reserves[id].getAmountOut(dsId, amountIn);
-    }
-
     function swapRaforDs(
         Id reserveId,
         uint256 dsId,
@@ -231,6 +217,8 @@ contract RouterState is
         // calculate the amount of DS tokens attributed
         amountOut = ((amount * 1e18) / dsPrice);
 
+        console.log("dsPrice after before sell", dsPrice);
+
         // calculate the amount of DS tokens that will be sold from LV reserve
         uint256 amountSellFromReserve = amountOut -
             MathHelper.calculatePrecentageFee(
@@ -256,6 +244,8 @@ contract RouterState is
                 raAdded,
                 ctSubstracted
             );
+
+            console.log("dsPrice after reserve sell", dsPrice);
 
             amountOut = (dsPrice * amount) / 1e18;
         }
@@ -418,7 +408,7 @@ contract RouterState is
         // send caller their DS
         assetPair.ds.transfer(caller, dsAttributed);
         // repay flash loan
-        assetPair.ds.transfer(address(self.getPair(dsId)), received);
+        assetPair.ds.transfer(msg.sender, received);
     }
 
     function __afterFlashswapSell(
@@ -443,6 +433,6 @@ contract RouterState is
         // send caller their RA
         ra.transfer(caller, raAttributed);
         // repay flash loan
-        ra.transfer(address(self.getPair(dsId)), repaymentAmount);
+        ra.transfer(msg.sender, repaymentAmount);
     }
 }

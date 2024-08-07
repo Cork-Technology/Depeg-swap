@@ -155,7 +155,7 @@ library VaultLibrary {
 
         uint256 ctRatio = __getAmmCtPriceRatio(self, flashSwapRouter, dsId);
 
-        (ra, ct) = MathHelper.calculateProvideLiquidityAmountBasedOnCtRatio(
+        (ra, ct) = MathHelper.calculateProvideLiquidityAmountBasedOnCtPrice(
             amount,
             ctRatio
         );
