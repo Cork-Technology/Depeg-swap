@@ -129,8 +129,10 @@ describe("LvCore", function () {
 
     expect(event.length).to.be.equal(1);
 
-    expect(event[0].args.ra).to.be.equal(
-      helper.calculateMinimumLiquidity(depositAmount)
+    expect(event[0].args.ra).to.be.closeTo(
+      ethers.BigNumber.from(helper.calculateMinimumLiquidity(depositAmount)),
+      // 1k delta, as the default ratio is 0.9
+      1000
     );
     expect(event[0].args.pa).to.be.equal(BigInt(0));
   });
@@ -205,8 +207,10 @@ describe("LvCore", function () {
 
     expect(event.length).to.be.equal(1);
 
-    expect(event[0].args.ra).to.be.equal(
-      helper.calculateMinimumLiquidity(depositAmount)
+    expect(event[0].args.ra).to.be.closeTo(
+      ethers.BigNumber.from(helper.calculateMinimumLiquidity(depositAmount)),
+      // 1k delta, as the default ratio is 0.9
+      1000
     );
     expect(event[0].args.pa).to.be.equal(BigInt(0));
   });
@@ -256,8 +260,10 @@ describe("LvCore", function () {
 
     expect(event.length).to.be.equal(1);
 
-    expect(event[0].args.ra).to.be.equal(
-      helper.calculateMinimumLiquidity(redeemAmount)
+    expect(event[0].args.ra).to.be.closeTo(
+      ethers.BigNumber.from(helper.calculateMinimumLiquidity(redeemAmount)),
+      // 1k delta, as the default ratio is 0.9
+      1000
     );
     expect(event[0].args.pa).to.be.equal(BigInt(0));
   });
@@ -284,15 +290,6 @@ describe("LvCore", function () {
       })
       .then((e) => e[0]);
     expect(event.args.feePrecentage).to.be.equal(parseEther("10"));
-
-    console.log(
-      "event.args.amount                                          :",
-      formatEther(event.args.amount!)
-    );
-    console.log(
-      "helper.calculateMinimumLiquidity(parseEther('0.9'))        :",
-      "0.9"
-    );
 
     expect(event.args.amount).to.be.closeTo(
       ethers.BigNumber.from(
@@ -403,8 +400,10 @@ describe("LvCore", function () {
         depositAmount,
       ]);
 
-    expect(signer1ra).to.be.equal(
-      helper.calculateMinimumLiquidity(depositAmount)
+    expect(signer1ra).to.be.closeTo(
+      ethers.BigNumber.from(helper.calculateMinimumLiquidity(depositAmount)),
+      // 1k delta, as the default ratio is 0.9
+      1000
     );
     expect(signer2pa).to.be.equal(BigInt(0));
     expect(signer1approvedAmount).to.be.equal(parseEther("5"));
@@ -427,7 +426,9 @@ describe("LvCore", function () {
       // the amount of fee deducted will also slightles less because this is the first issuance,
       // caused by liquidity lock up by uni v2
       // will receive slightly less ETH by 0,0000000000000001
-      100
+
+      // 0.06 to take into account 0.9 initial ratio of the pool, which means we receive more RA compared to if the ratio is 1
+      ethers.utils.parseEther("0.06")
     );
 
     expect(rcv).to.be.closeTo(
@@ -437,9 +438,10 @@ describe("LvCore", function () {
       // the amount will be slightly less because this is the first issuance,
       // caused by liquidity lock up by uni v2
       // will receive slightly less ETH by 0,0000000000000001
-      100
+
+      // 0.06 to take into account 0.9 initial ratio of the pool, which means we receive more RA compared to if the ratio is 1
+      ethers.utils.parseEther("0.06")
     );
-    // 10% fee
   });
 
   it("should be able to redeem without a cap when there's no new DS issuance", async function () {
@@ -497,8 +499,10 @@ describe("LvCore", function () {
 
     expect(event.length).to.be.equal(1);
 
-    expect(event[0].args.ra).to.be.equal(
-      helper.calculateMinimumLiquidity(depositAmount)
+    expect(event[0].args.ra).to.be.closeTo(
+      ethers.BigNumber.from(helper.calculateMinimumLiquidity(depositAmount)),
+      // 1k delta, as the default ratio is 0.9
+      1000
     );
     expect(event[0].args.pa).to.be.equal(BigInt(0));
   });
@@ -551,7 +555,11 @@ describe("LvCore", function () {
     const [ra, pa] =
       await fixture.moduleCore.contract.read.reservedUserWithdrawal([Id]);
 
-    expect(ra).to.be.equal(helper.calculateMinimumLiquidity(depositAmount));
+    expect(ra).to.be.closeTo(
+      ethers.BigNumber.from(helper.calculateMinimumLiquidity(depositAmount)),
+      // 1k delta, as the default ratio is 0.9
+      1000
+    );
     expect(pa).to.be.equal(BigInt(0));
   });
 

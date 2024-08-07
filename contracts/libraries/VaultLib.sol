@@ -15,7 +15,6 @@ import "./uni-v2/UniswapV2Library.sol";
 import "../interfaces/IDsFlashSwapRouter.sol";
 import "../interfaces/IDsFlashSwapRouter.sol";
 import "../interfaces/uniswap-v2/RouterV2.sol";
-import "hardhat/console.sol";
 
 library VaultLibrary {
     using VaultConfigLibrary for VaultConfig;
@@ -78,8 +77,6 @@ library VaultLibrary {
         ERC20(raAddress).approve(address(ammRouter), raAmount);
         ERC20(ctAddress).approve(address(ammRouter), ctAmount);
 
-        console.log("raAmount    %s, ctAmount    %s", raAmount, ctAmount);
-        console.log("raTolerance %s, ctTolerance %s", raTolerance, ctTolerance);
 
         // TODO : what do we do if there's leftover deposit due to the tolerance level? for now will just ignore it.
         (, , uint256 lp) = ammRouter.addLiquidity(
@@ -158,8 +155,6 @@ library VaultLibrary {
 
         uint256 ctRatio = __getAmmCtPriceRatio(self, flashSwapRouter, dsId);
 
-        console.log("ctRatio %s", ctRatio);
-
         (ra, ct) = MathHelper.calculateProvideLiquidityAmountBasedOnCtRatio(
             amount,
             ctRatio
@@ -188,7 +183,6 @@ library VaultLibrary {
             // will always fail for the first deposit
             flashSwapRouter.getCurrentPriceRatio(self.info.toId(), dsId)
         returns (uint256 raRatio, uint256 _ctRatio) {
-            console.log("raRatio %s, ctRatio %s", raRatio, _ctRatio);
             ratio = _ctRatio;
         } catch {}
     }
@@ -232,7 +226,6 @@ library VaultLibrary {
         uint256 ctRatio = __getAmmCtPriceRatio(self, flashSwapRouter, dsId);
 
         (uint256 ra, uint256 ct) = self.vault.pool.rationedToAmm(ctRatio);
-        console.log("ra %s, ct %s", ra, ct);
 
         __provideLiquidity(
             self,
