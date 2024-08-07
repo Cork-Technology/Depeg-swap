@@ -6,30 +6,67 @@ import "../libraries/State.sol";
 import "../interfaces/IAssetFactory.sol";
 import "../interfaces/ICommon.sol";
 import "../libraries/PsmLib.sol";
+import "../interfaces/uniswap-v2/factory.sol";
+import "./flash-swaps/RouterState.sol";
+import "../interfaces/uniswap-v2/RouterV2.sol";
 
 abstract contract ModuleState is ICommon {
     using PsmLibrary for State;
 
     mapping(Id => State) internal states;
-    address public factoryAddress;
-    address public configAddress;
+    address swapAssetFactory;
+
+    /// @dev in this case is uni v2
+    address ammFactory;
+
+    address dsFlashSwapRouter;
+
+    /// @dev in this case is uni v2
+    address ammRouter;
+
+    address config;
 
     /** @dev checks if caller is config contract or not
      */
     modifier onlyConfig() {
-        if (msg.sender != configAddress) {
+        if (msg.sender != config) {
             revert OnlyConfigAllowed();
         }
         _;
     }
 
-    constructor(address _factory, address _config) {
-        factoryAddress = _factory;
-        configAddress = _config;
+    function factory() external view returns (address) {
+        return swapAssetFactory;
     }
 
-    function getFactory() internal view returns (IAssetFactory) {
-        return IAssetFactory(factoryAddress);
+    constructor(
+        address _swapAssetFactory,
+        address _ammFactory,
+        address _dsFlashSwapRouter,
+        address _ammRouter,
+        address _config
+    ) {
+        swapAssetFactory = _swapAssetFactory;
+        ammFactory = _ammFactory;
+        dsFlashSwapRouter = _dsFlashSwapRouter;
+        ammRouter = _ammRouter;
+        config = _config;
+    }
+
+    function getSwapAssetFactory() internal view returns (IAssetFactory) {
+        return IAssetFactory(swapAssetFactory);
+    }
+
+    function getRouterCore() internal view returns (RouterState) {
+        return RouterState(dsFlashSwapRouter);
+    }
+
+    function getAmmFactory() internal view returns (IUniswapV2Factory) {
+        return IUniswapV2Factory(ammFactory);
+    }
+
+    function getAmmRouter() internal view returns (IUniswapV2Router02) {
+        return IUniswapV2Router02(ammRouter);
     }
 
     modifier onlyInitialized(Id id) {
@@ -40,7 +77,7 @@ abstract contract ModuleState is ICommon {
     }
 
     function _onlyValidAsset(address asset) internal view {
-        if (getFactory().isDeployed(asset) == false) {
+        if (getSwapAssetFactory().isDeployed(asset) == false) {
             revert InvalidAsset(asset);
         }
     }

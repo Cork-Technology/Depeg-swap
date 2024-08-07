@@ -3,6 +3,7 @@ pragma solidity ^0.8.0;
 import "./UQ112x112.sol";
 
 // library function for handling math operations for DS swap contract
+// TODO : separately test this
 library SwapperMathLibrary {
     using UQ112x112 for uint224;
     error ZeroReserve();
@@ -10,11 +11,12 @@ library SwapperMathLibrary {
     error InsufficientLiquidity();
     error InsufficientOtuputAmount();
 
-    function getPriceRatios(
+    // Calculate price ratio of two tokens in a uniswap v2 pair, will return ratio on 18 decimals precision
+    function getPriceRatioUniv2(
         uint112 raReserve,
         uint112 ctReserve
     ) public pure returns (uint256 raPriceRatio, uint256 ctPriceRatio) {
-        if (raReserve > 0 || ctReserve > 0) {
+        if (raReserve <= 0 || ctReserve <= 0) {
             revert ZeroReserve();
         }
 
@@ -27,8 +29,9 @@ library SwapperMathLibrary {
         uint224 ctPriceRatioUQ = encodedRaReserve.uqdiv(ctReserve);
 
         // Convert UQ112x112 to regular uint (divide by 2**112)
-        raPriceRatio = uint256(raPriceRatioUQ) / UQ112x112.Q112;
-        ctPriceRatio = uint256(ctPriceRatioUQ) / UQ112x112.Q112;
+        // we time by 18 to have 18 decimals precision
+        raPriceRatio = (uint256(raPriceRatioUQ) * 1e18) / UQ112x112.Q112;
+        ctPriceRatio = (uint256(ctPriceRatioUQ) * 1e18) / UQ112x112.Q112;
     }
 
     function calculateDsPrice(
@@ -36,7 +39,7 @@ library SwapperMathLibrary {
         uint112 ctReserve,
         uint256 dsExchangeRate
     ) public pure returns (uint256 price) {
-        (, uint256 ctPriceRatio) = getPriceRatios(raReserve, ctReserve);
+        (, uint256 ctPriceRatio) = getPriceRatioUniv2(raReserve, ctReserve);
 
         price = dsExchangeRate - ctPriceRatio;
     }

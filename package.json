@@ -6,8 +6,8 @@
   "license": "MIT",
   "scripts": {
     "test": "npx hardhat test",
-    "lint:contract":"npx solhint 'contracts/**/*.sol'",
-    "lint:contract:fix":"npx solhint 'contracts/**/*.sol' --fix"
+    "lint:contract": "npx solhint 'contracts/**/*.sol'",
+    "lint:contract:fix": "npx solhint 'contracts/**/*.sol' --fix"
   },
   "devDependencies": {
     "@nomicfoundation/hardhat-chai-matchers": "^2.0.7",
@@ -22,6 +22,7 @@
     "@types/mocha": ">=9.1.0",
     "@types/node": ">=18.0.0",
     "chai": "^4.2.0",
+    "ethereum-waffle": "^4.0.10",
     "hardhat": "^2.22.3",
     "hardhat-gas-reporter": "^2.1.1",
     "solidity-coverage": "^0.8.0",
@@ -37,6 +38,7 @@
     "@uniswap/lib": "4.0.1-alpha",
     "@uniswap/v2-core": "1.0.0",
     "dotenv": "^16.4.5",
+    "ethers": "5.6.2",
     "hardhat-contract-sizer": "^2.10.0",
     "solhint": "^5.0.2"
   }

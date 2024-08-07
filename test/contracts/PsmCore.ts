@@ -4,9 +4,15 @@ import {
 } from "@nomicfoundation/hardhat-toolbox-viem/network-helpers";
 import { expect } from "chai";
 import hre from "hardhat";
-import { Address, formatEther, parseEther, WalletClient } from "viem";
+import {
+  Address,
+  formatEther,
+  GetContractReturnType,
+  parseEther,
+  WalletClient,
+} from "viem";
 import * as helper from "../helper/TestHelper";
-import exp from "constants";
+import { ArtifactsMap } from "hardhat/types/artifacts";
 
 describe("PSM core", function () {
   let {
@@ -15,8 +21,8 @@ describe("PSM core", function () {
     signers,
   }: ReturnType<typeof helper.getSigners> = {} as any;
 
-  let expiryTime: number;
   let mintAmount: bigint;
+  let expiryTime: number;
 
   let fixture: Awaited<
     ReturnType<typeof helper.ModuleCoreWithInitializedPsmLv>
@@ -81,6 +87,7 @@ describe("PSM core", function () {
   describe("issue pair", function () {
     it("should issue new ds", async function () {
       expiryTime = helper.expiry(1e18 * 1000);
+
       const Id = await moduleCore.read.getId([
         fixture.pa.address,
         fixture.ra.address,
@@ -171,8 +178,6 @@ describe("PSM core", function () {
       const lockedBalance = await fixture.moduleCore.contract.read.valueLocked([
         fixture.Id,
       ]);
-
-      console.log("locked balance", formatEther(lockedBalance));
 
       await fixture.moduleCore.contract.write.redeemRaWithDs(
         [fixture.Id, dsId!, parseEther("10"), permitmsg, deadline],
@@ -756,7 +761,7 @@ describe("PSM core", function () {
   });
 
   // @yusak found this, cannot issue new DS on the third time while depositing to LV
-  // caused by not actually mint CT + DS at issun
+  // caused by not actually mint CT + DS at issuance
   it("should be able to issue DS for the third time", async function () {
     mintAmount = parseEther("1000000");
 
@@ -786,7 +791,7 @@ describe("PSM core", function () {
         expiry: BigInt(expiry),
       });
 
-      await fixture.moduleCore.contract.write.depositLv([Id, parseEther("5")]);
+      await fixture.moduleCore.contract.write.depositLv([Id, parseEther("10")]);
 
       await fixture.lv.write.approve([
         fixture.moduleCore.contract.address,

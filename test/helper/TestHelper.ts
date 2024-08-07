@@ -7,13 +7,31 @@ import hre, { viem } from "hardhat";
 import {
   Address,
   formatEther,
+  GetContractReturnType,
   keccak256,
   parseEther,
   verifyTypedData,
   WalletClient,
 } from "viem";
+import UNIV2FACTORY from "@uniswap/v2-core/build/UniswapV2Factory.json";
+import UNIV2ROUTER from "./ext-abi/uni-v2-router.json";
 
 const DEVISOR = BigInt(1e18);
+
+export function calculateMinimumLiquidity(amount: bigint) {
+  // 1e16 is the minimum liquidity(10e3)
+  const minLiquidity = amount / BigInt(1e16);
+
+  return amount - minLiquidity;
+}
+
+export function encodeAsUQ112x112(amount: bigint) {
+  return amount * BigInt(2 ** 112);
+}
+
+export function decodeUQ112x112(amount: bigint) {
+  return amount / BigInt(2 ** 112);
+}
 
 export function nowTimestampInSeconds() {
   return Math.floor(Date.now() / 1000);
@@ -74,26 +92,121 @@ export async function deployCorkConfig() {
   };
 }
 
-export async function deployModuleCore(factory: Address, config: Address) {
+export async function deployWeth() {
+  const contract = await hre.viem.deployContract("DummyWETH");
+
+  return {
+    contract,
+  };
+}
+
+export async function deployFlashSwapRouter() {
+  const mathLib = await hre.viem.deployContract("SwapperMathLibrary");
+  const contract = await hre.viem.deployContract("RouterState", [], {
+    libraries: {
+      SwapperMathLibrary: mathLib.address,
+    },
+  });
+
+  return {
+    contract,
+  };
+}
+
+// will default use the first wallet client
+export async function deployUniV2Factory() {
   const signers = await hre.viem.getWalletClients();
   const { defaultSigner } = getSigners(signers);
+
+  const hash = await defaultSigner.deployContract({
+    abi: UNIV2FACTORY.abi,
+    bytecode: `0x${UNIV2FACTORY.bytecode}`,
+    account: defaultSigner.account,
+    args: [defaultSigner.account.address],
+  });
+
+  const client = await hre.viem.getPublicClient();
+  const receipt = await client.waitForTransactionReceipt({
+    hash,
+  });
+
+  return receipt.contractAddress!;
+}
+
+export async function deployUniV2Router(
+  weth: Address,
+  univ2Factory: Address,
+  router: Address
+) {
+  const signers = await hre.viem.getWalletClients();
+  const { defaultSigner } = getSigners(signers);
+
+  const hash = await defaultSigner.deployContract({
+    abi: UNIV2ROUTER.abi,
+    bytecode: `0x${UNIV2ROUTER.bytecode}`,
+    account: defaultSigner.account,
+    args: [univ2Factory, weth, router],
+  });
+
+  const client = await hre.viem.getPublicClient();
+  const receipt = await client.waitForTransactionReceipt({
+    hash,
+  });
+
+  return receipt.contractAddress!;
+}
+
+export async function deployModuleCore(
+  swapAssetFactory: Address,
+  config: Address
+) {
+  const signers = await hre.viem.getWalletClients();
+  const { defaultSigner } = getSigners(signers);
+
   const mathLib = await hre.viem.deployContract("MathHelper");
+  const vault = await hre.viem.deployContract("VaultLibrary", [], {
+    libraries: {
+      MathHelper: mathLib.address,
+    },
+  });
+
+  const dsFlashSwapRouter = await deployFlashSwapRouter();
+  const univ2Factory = await deployUniV2Factory();
+  const weth = await deployWeth();
+  const univ2Router = await deployUniV2Router(
+    weth.contract.address,
+    univ2Factory,
+    dsFlashSwapRouter.contract.address
+  );
 
   const contract = await hre.viem.deployContract(
     "ModuleCore",
-    [factory, config],
+    [
+      swapAssetFactory,
+      univ2Factory,
+      dsFlashSwapRouter.contract.address,
+      univ2Router,
+      config,
+    ],
     {
       client: {
         wallet: defaultSigner,
       },
       libraries: {
         MathHelper: mathLib.address,
+        VaultLibrary: vault.address,
       },
     }
   );
 
+  await dsFlashSwapRouter.contract.write.initialize([contract.address]);
+
   return {
     contract,
+    univ2Factory,
+    univ2Router,
+    dsFlashSwapRouter,
+    weth,
   };
 }
 

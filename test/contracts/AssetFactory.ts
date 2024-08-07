@@ -16,7 +16,7 @@ describe("Asset Factory", function () {
   }: ReturnType<typeof helper.getSigners> = {} as any;
 
   let assetFactory: Awaited<ReturnType<typeof deployFactory>>;
-
+  
   const deployFactory = async () => {
     return await hre.viem.deployContract("AssetFactory", [], {
       client: {
@@ -31,11 +31,8 @@ describe("Asset Factory", function () {
   });
 
   beforeEach(async () => {
-    assetFactory = await hre.viem.deployContract("AssetFactory", [], {
-      client: {
-        wallet: defaultSigner,
-      },
-    });
+    assetFactory = await loadFixture(deployFactory);
+
     await assetFactory.write.initialize([defaultSigner.account.address], {
       account: defaultSigner.account,
     });
