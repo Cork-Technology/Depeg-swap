@@ -18,7 +18,11 @@ abstract contract VaultCore is ModuleState, Context, IVault {
         (reservedRa, reservedPa) = state.reservedForWithdrawal();
     }
 
-    function depositLv(Id id, uint256 amount) external override {
+    function depositLv(Id id, uint256 amount) 
+        external 
+        override 
+        LVDepositNotPaused(id) 
+    {
         State storage state = states[id];
         state.deposit(_msgSender(), amount, getRouterCore(), getAmmRouter());
         emit LvDeposited(id, _msgSender(), amount);
@@ -32,13 +36,17 @@ abstract contract VaultCore is ModuleState, Context, IVault {
         locked = state.lvLockedFor(user);
     }
 
-    function previewLvDeposit(
-        uint256 amount
-    ) external pure override returns (uint256 lv) {
+    function previewLvDeposit(Id id, uint256 amount) 
+        external 
+        view 
+        override 
+        LVDepositNotPaused(id) 
+        returns (uint256 lv) 
+    {
         lv = VaultLibrary.previewDeposit(amount);
     }
 
-    function requestRedemption(Id id, uint256 amount) external override {
+    function requestRedemption(Id id, uint256 amount) external override LVWithdrawalNotPaused(id) {
         State storage state = states[id];
         state.requestRedemption(_msgSender(), amount);
         emit RedemptionRequested(id, _msgSender(), amount);
@@ -58,7 +66,7 @@ abstract contract VaultCore is ModuleState, Context, IVault {
         Id id,
         address receiver,
         uint256 amount
-    ) external override {
+    ) external override LVWithdrawalNotPaused(id) {
         State storage state = states[id];
         (uint256 attributedRa, uint256 attributedPa) = state.redeemExpired(
             _msgSender(),
@@ -77,6 +85,7 @@ abstract contract VaultCore is ModuleState, Context, IVault {
         external
         view
         override
+        LVWithdrawalNotPaused(id) 
         returns (
             uint256 attributedRa,
             uint256 attributedPa,
@@ -92,7 +101,7 @@ abstract contract VaultCore is ModuleState, Context, IVault {
         Id id,
         address receiver,
         uint256 amount
-    ) external override {
+    ) external override LVWithdrawalNotPaused(id) {
         State storage state = states[id];
         (uint256 received, uint256 fee, uint256 feePrecentage) = state
             .redeemEarly(
@@ -120,6 +129,7 @@ abstract contract VaultCore is ModuleState, Context, IVault {
         external
         view
         override
+        LVWithdrawalNotPaused(id) 
         returns (uint256 received, uint256 fee, uint256 feePrecentage)
     {
         State storage state = states[id];

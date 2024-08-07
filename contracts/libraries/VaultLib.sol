@@ -47,7 +47,7 @@ library VaultLibrary {
         uint256 ammWaDepositThreshold,
         uint256 ammCtDepositThreshold,
         address ra
-    ) external {
+    ) internal {
         self.config = VaultConfigLibrary.initialize(
             fee,
             ammWaDepositThreshold,
@@ -111,7 +111,7 @@ library VaultLibrary {
         uint256 prevDsId,
         IDsFlashSwapCore flashSwapRouter,
         IUniswapV2Router02 ammRouter
-    ) external {
+    ) internal {
         // do nothing at first issuance
         if (prevDsId == 0) {
             return;
@@ -241,7 +241,7 @@ library VaultLibrary {
         uint256 amount,
         IDsFlashSwapCore flashSwapRouter,
         IUniswapV2Router02 ammRouter
-    ) external {
+    ) internal {
         safeBeforeExpired(self);
         self.vault.balances.ra.lockUnchecked(amount, from);
         __provideLiquidityWithRatio(
@@ -266,7 +266,7 @@ library VaultLibrary {
         State storage self,
         address owner,
         uint256 amount
-    ) external {
+    ) internal {
         safeBeforeExpired(self);
         self.vault.pool.withdrawEligible[owner] += amount;
         self.vault.pool.withdrawalPool.atrributedLv += amount;
@@ -284,7 +284,7 @@ library VaultLibrary {
         State storage self,
         address owner,
         uint256 amount
-    ) external {
+    ) internal {
         safeBeforeExpired(self);
         uint256 userEligible = self.vault.pool.withdrawEligible[owner];
 
@@ -306,7 +306,7 @@ library VaultLibrary {
         address from,
         address to,
         uint256 amount
-    ) external {
+    ) internal {
         uint256 initialOwneramount = self.vault.pool.withdrawEligible[from];
 
         if (initialOwneramount == 0) {
@@ -689,7 +689,7 @@ library VaultLibrary {
         uint256 amount,
         IUniswapV2Router02 ammRouter,
         IDsFlashSwapCore flashSwapRouter
-    ) external returns (uint256 attributedRa, uint256 attributedPa) {
+    ) internal returns (uint256 attributedRa, uint256 attributedPa) {
         uint256 dsId = self.globalAssetIdx;
         DepegSwap storage ds = self.ds[dsId];
 
@@ -857,7 +857,7 @@ library VaultLibrary {
         uint256 amount,
         IDsFlashSwapCore flashSwapRouter,
         IUniswapV2Router02 ammRouter
-    ) external returns (uint256 received, uint256 fee, uint256 feePrecentage) {
+    ) internal returns (uint256 received, uint256 fee, uint256 feePrecentage) {
         safeBeforeExpired(self);
 
         feePrecentage = self.vault.config.fee;
