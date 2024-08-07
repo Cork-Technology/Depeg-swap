@@ -76,6 +76,34 @@ abstract contract ModuleState is ICommon {
         _;
     }
 
+    modifier PSMDepositNotPaused(Id id) {
+        if (states[id].psm.isDepositPaused) {
+            revert PSMDepositPaused();
+        }
+        _;
+    }
+
+    modifier PSMWithdrawalNotPaused(Id id) {
+        if (states[id].psm.isWithdrawalPaused) {
+            revert PSMWithdrawalPaused();
+        }
+        _;
+    }
+
+    modifier LVDepositNotPaused(Id id) {
+        if (states[id].vault.config.isWithdrawalPaused) {
+            revert LVDepositPaused();
+        }
+        _;
+    }
+
+    modifier LVWithdrawalNotPaused(Id id) {
+        if (states[id].vault.config.isWithdrawalPaused) {
+            revert LVWithdrawalPaused();
+        }
+        _;
+    }
+
     function _onlyValidAsset(address asset) internal view {
         if (getSwapAssetFactory().isDeployed(asset) == false) {
             revert InvalidAsset(asset);

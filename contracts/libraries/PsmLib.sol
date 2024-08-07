@@ -245,6 +245,26 @@ library PsmLibrary {
         rates = self.psm.repurchaseFeePrecentage;
     }
 
+    function updateRepurchaseFeePercentage(
+        State storage self,
+        uint256 newFees
+    ) internal {
+        self.psm.repurchaseFeePrecentage = newFees;
+    }
+
+    function updatePoolsStatus(
+        State storage self,
+        bool isPSMDepositPaused,
+        bool isPSMWithdrawalPaused,
+        bool isLVDepositPaused,
+        bool isLVWithdrawalPaused
+    ) internal {
+        self.psm.isDepositPaused = isPSMDepositPaused;
+        self.psm.isWithdrawalPaused = isPSMWithdrawalPaused;
+        self.vault.config.isDepositPaused = isLVDepositPaused;
+        self.vault.config.isWithdrawalPaused = isLVWithdrawalPaused;
+    }
+
     function previewRepurchase(
         State storage self,
         uint256 amount
