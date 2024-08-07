@@ -87,8 +87,9 @@ interface IVault {
      * @param amount The amount of the redemption asset(ra) to be deposited
      */
     function previewLvDeposit(
+        Id id, 
         uint256 amount
-    ) external pure returns (uint256 lv);
+    ) external view returns (uint256 lv);
 
     /**
      * @notice Request redemption of a given vault at expiry

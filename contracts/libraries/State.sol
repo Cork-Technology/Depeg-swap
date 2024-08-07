@@ -25,6 +25,8 @@ struct PsmState {
     BitMaps.BitMap liquiditySeparated;
     /// @dev dsId => PsmPoolArchive
     mapping(uint256 => PsmPoolArchive) poolArchive;
+    bool isDepositPaused;
+    bool isWithdrawalPaused;
 }
 
 struct PsmPoolArchive {
@@ -83,4 +85,6 @@ struct VaultConfig {
     uint256 lpCtBalance;
     // 
     uint256 lpBalance;
+    bool isDepositPaused;
+    bool isWithdrawalPaused;
 }
