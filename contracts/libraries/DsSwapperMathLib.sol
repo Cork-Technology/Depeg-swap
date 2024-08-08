@@ -23,6 +23,9 @@ library SwapperMathLibrary {
             revert ZeroReserve();
         }
 
+        console.log("ra reserve", raReserve);
+        console.log("ct reserve", ctReserve);
+
         // Encode uni v2 reserves to UQ112x112 format
         uint224 encodedRaReserve = UQ112x112.encode(raReserve);
         uint224 encodedCtReserve = UQ112x112.encode(ctReserve);
@@ -43,6 +46,7 @@ library SwapperMathLibrary {
         uint256 dsExchangeRate
     ) public pure returns (uint256 price) {
         (, uint256 ctPriceRatio) = getPriceRatioUniv2(raReserve, ctReserve);
+        console.log("ctPriceRatio", ctPriceRatio);
 
         price = dsExchangeRate - ctPriceRatio;
     }

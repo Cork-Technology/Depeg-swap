@@ -22,6 +22,7 @@ contract RouterState is
     IUniswapV2Callee
 {
     using DsFlashSwaplibrary for ReserveState;
+    using DsFlashSwaplibrary for AssetPair;
 
     constructor() {}
 
@@ -237,10 +238,15 @@ contract RouterState is
             uint256 raAdded = amountSellFromReserve -
                 ((dsPrice * amountSellFromReserve) / 1e18);
 
+            (uint112 raReserve, uint112 ctReserve, ) = assetPair
+                .pair
+                .getReserves();
+
             dsPrice = self.getCurrentDsPriceAfterSellDs(
                 dsId,
-                raAdded,
-                ctSubstracted
+                ctSubstracted,
+                raReserve,
+                ctReserve
             );
 
             amountOut = (dsPrice * amount) / 1e18;
@@ -278,36 +284,13 @@ contract RouterState is
         uint256 amount,
         uint256 amountOutMin
     ) internal returns (uint256 amountOut) {
-        (uint112 raReserve, uint112 ctReserve, ) = assetPair.pair.getReserves();
+        amountOut = self.getAmountOut(assetPair, dsId, amount);
 
-        (raReserve, ctReserve) = MinimalUniswapV2Library.reverseSortWithAmount112(
-            assetPair.pair.token0(),
-            assetPair.pair.token1(),
-            address(assetPair.ra),
-            address(assetPair.ct),
-            raReserve,
-            ctReserve
-        );
+        console.log("amountout", amountOut);
 
-        uint256 subtractedCt = amount;
-
-        uint256 addedRa = MinimalUniswapV2Library.getAmountIn(
-            amount,
-            ctReserve,
-            raReserve
-        );
-
-        uint256 attributed = self.getCurrentDsPriceAfterSellDs(
-            dsId,
-            addedRa,
-            subtractedCt
-        );
-
-        if (attributed < amountOutMin) {
+        if (amountOut < amountOutMin) {
             revert InsufficientOutputAmount();
         }
-
-        amountOut = attributed;
 
         __flashSwap(
             assetPair,
@@ -317,7 +300,7 @@ contract RouterState is
             dsId,
             reserveId,
             false,
-            attributed
+            amountOut
         );
     }
 
@@ -446,11 +429,16 @@ contract RouterState is
 
         (uint256 received, ) = psm.redeemRaWithCtDs(reserveId, ctAmount);
 
-        uint256 repaymentAmount = received - raAttributed;
+        console.log("raAttributed       :", raAttributed);
+
+        uint256 repaymentAmount = received - (raAttributed - 1);
+        console.log("repaymentAmount    :", repaymentAmount);
         Asset ra = assetPair.ra;
 
+        assert(repaymentAmount + raAttributed >= received);
+
         // send caller their RA
-        ra.transfer(caller, raAttributed);
+        ra.transfer(caller, raAttributed - 1);
         // repay flash loan
         ra.transfer(msg.sender, repaymentAmount);
     }

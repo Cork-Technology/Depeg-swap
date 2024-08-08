@@ -4,6 +4,7 @@ import "../interfaces/uniswap-v2/pair.sol";
 import "../core/assets/Asset.sol";
 import "./DsSwapperMathLib.sol";
 import "./uni-v2/UniswapV2Library.sol";
+import "./MathHelper.sol";
 
 struct AssetPair {
     Asset ra;
@@ -148,15 +149,10 @@ library DsFlashSwaplibrary {
     function getCurrentDsPriceAfterSellDs(
         ReserveState storage self,
         uint256 dsId,
-        uint256 addedRa,
-        uint256 subtractedCt
+        uint256 subtractedCt,
+        uint112 raReserve,
+        uint112 ctReserve
     ) internal view returns (uint256 price) {
-        (uint112 raReserve, uint112 ctReserve, ) = self
-            .ds[dsId]
-            .pair
-            .getReserves();
-
-        raReserve += uint112(addedRa);
         ctReserve -= uint112(subtractedCt);
 
         price = SwapperMathLibrary.calculateDsPrice(
@@ -164,6 +160,21 @@ library DsFlashSwaplibrary {
             ctReserve,
             self.ds[dsId].ds.exchangeRate()
         );
+    }
+
+    function getReservesSorted(
+        AssetPair storage self
+    ) internal view returns (uint112 raReserve, uint112 ctReserve) {
+        (raReserve, ctReserve, ) = self.pair.getReserves();
+        (raReserve, ctReserve) = MinimalUniswapV2Library
+            .reverseSortWithAmount112(
+                self.pair.token0(),
+                self.pair.token1(),
+                address(self.ra),
+                address(self.ct),
+                raReserve,
+                ctReserve
+            );
     }
 
     function getAmountIn(
@@ -186,19 +197,31 @@ library DsFlashSwaplibrary {
 
     function getAmountOut(
         ReserveState storage self,
+        AssetPair storage assetPair,
         uint256 dsId,
-        uint256 amountIn
+        uint256 amount
     ) internal view returns (uint256 amountOut) {
-        (uint112 raReserve, uint112 ctReserve, ) = self
-            .ds[dsId]
-            .pair
-            .getReserves();
-
-        amountOut = SwapperMathLibrary.getAmountOut(
-            amountIn,
+        (uint112 raReserve, uint112 ctReserve) = getReservesSorted(assetPair);
+        uint256 price = getCurrentDsPriceAfterSellDs(
+            self,
+            dsId,
+            amount,
             raReserve,
-            ctReserve,
-            self.ds[dsId].ds.exchangeRate()
+            ctReserve
         );
+
+        console.log("price", price);
+        amountOut = MathHelper.calculateRedeemAmountWithExchangeRate(
+            amount,
+            price
+        );
+
+        uint256 repaymentAmount = MinimalUniswapV2Library.getAmountIn(
+            amount,
+            raReserve,
+            ctReserve - amount
+        );
+
+        console.log("repaymentAmount calculated", repaymentAmount);
     }
 }
