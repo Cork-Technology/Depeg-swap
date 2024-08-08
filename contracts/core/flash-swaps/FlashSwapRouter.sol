@@ -217,8 +217,6 @@ contract RouterState is
         // calculate the amount of DS tokens attributed
         amountOut = ((amount * 1e18) / dsPrice);
 
-        console.log("dsPrice after before sell", dsPrice);
-
         // calculate the amount of DS tokens that will be sold from LV reserve
         uint256 amountSellFromReserve = amountOut -
             MathHelper.calculatePrecentageFee(
@@ -244,8 +242,6 @@ contract RouterState is
                 raAdded,
                 ctSubstracted
             );
-
-            console.log("dsPrice after reserve sell", dsPrice);
 
             amountOut = (dsPrice * amount) / 1e18;
         }
@@ -282,7 +278,30 @@ contract RouterState is
         uint256 amount,
         uint256 amountOutMin
     ) internal returns (uint256 amountOut) {
-        uint256 attributed = (self.getCurrentDsPrice(dsId) * amount) / 1e18;
+        (uint112 raReserve, uint112 ctReserve, ) = assetPair.pair.getReserves();
+
+        (raReserve, ctReserve) = MinimalUniswapV2Library.reverseSortWithAmount112(
+            assetPair.pair.token0(),
+            assetPair.pair.token1(),
+            address(assetPair.ra),
+            address(assetPair.ct),
+            raReserve,
+            ctReserve
+        );
+
+        uint256 subtractedCt = amount;
+
+        uint256 addedRa = MinimalUniswapV2Library.getAmountIn(
+            amount,
+            ctReserve,
+            raReserve
+        );
+
+        uint256 attributed = self.getCurrentDsPriceAfterSellDs(
+            dsId,
+            addedRa,
+            subtractedCt
+        );
 
         if (attributed < amountOutMin) {
             revert InsufficientOutputAmount();

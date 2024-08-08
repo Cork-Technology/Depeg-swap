@@ -31,7 +31,7 @@ library MinimalUniswapV2Library {
         assert(token0 != address(0));
     }
 
-    function reverseSortWithAmount(
+    function reverseSortWithAmount112(
         address token0,
         address token1,
         address ra,
@@ -39,6 +39,25 @@ library MinimalUniswapV2Library {
         uint112 token0Amount,
         uint112 token1Amount
     ) internal pure returns (uint112 raAmountOut, uint112 ctAmountOut) {
+        if (token0 == ra && token1 == ct) {
+            raAmountOut = token0Amount;
+            ctAmountOut = token1Amount;
+        } else if (token0 == ct && token1 == ra) {
+            raAmountOut = token1Amount;
+            ctAmountOut = token0Amount;
+        } else {
+            revert InvalidToken();
+        }
+    }
+
+    function reverseSortWithAmount224(
+        address token0,
+        address token1,
+        address ra,
+        address ct,
+        uint256 token0Amount,
+        uint256 token1Amount
+    ) internal pure returns (uint256 raAmountOut, uint256 ctAmountOut) {
         if (token0 == ra && token1 == ct) {
             raAmountOut = token0Amount;
             ctAmountOut = token1Amount;

@@ -35,10 +35,6 @@ library SwapperMathLibrary {
         // we time by 18 to have 18 decimals precision
         raPriceRatio = (uint256(raPriceRatioUQ) * 1e18) / UQ112x112.Q112;
         ctPriceRatio = (uint256(ctPriceRatioUQ) * 1e18) / UQ112x112.Q112;
-
-        console.log(raPriceRatio, ctPriceRatio);
-
-
     }
 
     function calculateDsPrice(
@@ -71,7 +67,7 @@ library SwapperMathLibrary {
             dsExchangeRate
         );
 
-        amountIn = amountOut * dsPrice / 1e18;
+        amountIn = (amountOut * dsPrice) / 1e18;
     }
 
     function getAmountOut(

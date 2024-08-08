@@ -7,6 +7,7 @@ import hre from "hardhat";
 
 import { Address, formatEther, parseEther, WalletClient } from "viem";
 import * as helper from "../helper/TestHelper";
+import { ethers } from "ethers";
 
 describe("FlashSwapRouter", function () {
   let {
@@ -115,8 +116,7 @@ describe("FlashSwapRouter", function () {
     await fixture.moduleCore.write.depositPsm([pool.Id, raDepositAmount]);
 
     // sell ds
-
-    const dsAmount = parseEther("2.5");
+    const dsAmount = parseEther("5");
 
     const ds = await hre.viem.getContractAt("ERC20", pool.ds!);
     await ds.write.approve([
@@ -139,6 +139,9 @@ describe("FlashSwapRouter", function () {
       })
       .then((e) => e[0]);
 
-    expect(event.args.amountOut).to.be.equal(dsAmount);
+    expect(event.args.amountOut).to.be.closeTo(
+      helper.toEthersBigNumer("0.26"),
+      helper.toEthersBigNumer("0.001")
+    );
   });
 });

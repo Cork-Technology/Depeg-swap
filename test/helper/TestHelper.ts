@@ -15,6 +15,7 @@ import {
 } from "viem";
 import UNIV2FACTORY from "@uniswap/v2-core/build/UniswapV2Factory.json";
 import UNIV2ROUTER from "./ext-abi/uni-v2-router.json";
+import { ethers } from "ethers";
 
 const DEVISOR = BigInt(1e18);
 
@@ -31,6 +32,16 @@ export function encodeAsUQ112x112(amount: bigint) {
 
 export function decodeUQ112x112(amount: bigint) {
   return amount / BigInt(2 ** 112);
+}
+
+export function toEthersBigNumer(v: bigint | string) {
+  if (typeof v == "bigint") {
+    return ethers.BigNumber.from(v);
+  }
+
+  if (typeof v == "string") {
+    return ethers.BigNumber.from(parseEther(v));
+  }
 }
 
 export function nowTimestampInSeconds() {

@@ -77,15 +77,33 @@ library VaultLibrary {
         ERC20(raAddress).approve(address(ammRouter), raAmount);
         ERC20(ctAddress).approve(address(ammRouter), ctAmount);
 
+        (
+            address token0,
+            address token1,
+            uint256 token0Amount,
+            uint256 token1Amount
+        ) = MinimalUniswapV2Library.sortTokensUnsafeWithAmount(
+                raAddress,
+                ctAddress,
+                raAmount,
+                ctAmount
+            );
+        (, , uint256 token0Tolerance, uint256 token1Tolerance) = MinimalUniswapV2Library
+            .sortTokensUnsafeWithAmount(
+                raAddress,
+                ctAddress,
+                raTolerance,
+                ctTolerance
+            );
 
         // TODO : what do we do if there's leftover deposit due to the tolerance level? for now will just ignore it.
         (, , uint256 lp) = ammRouter.addLiquidity(
-            raAddress,
-            ctAddress,
-            raAmount,
-            ctAmount,
-            raTolerance,
-            ctTolerance,
+            token0,
+            token1,
+            token0Amount,
+            token1Amount,
+            token0Tolerance,
+            token1Tolerance,
             address(this),
             block.timestamp
         );
@@ -182,7 +200,7 @@ library VaultLibrary {
         try
             // will always fail for the first deposit
             flashSwapRouter.getCurrentPriceRatio(self.info.toId(), dsId)
-        returns (uint256 raRatio, uint256 _ctRatio) {
+        returns (uint256, uint256 _ctRatio) {
             ratio = _ctRatio;
         } catch {}
     }
@@ -347,6 +365,16 @@ library VaultLibrary {
             address(this),
             block.timestamp
         );
+
+        (raReceived, ctReceived) = MinimalUniswapV2Library
+            .reverseSortWithAmount224(
+                ammPair.token0(),
+                ammPair.token1(),
+                raAddress,
+                ctAddress,
+                raReceived,
+                ctReceived
+            );
 
         self.vault.config.lpBalance -= lp;
     }

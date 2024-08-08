@@ -95,7 +95,7 @@ library DsFlashSwaplibrary {
             .getReserves();
 
         (uint112 raReserve, uint112 ctReserve) = MinimalUniswapV2Library
-            .reverseSortWithAmount(
+            .reverseSortWithAmount112(
                 token0,
                 token1,
                 address(asset.ra),
