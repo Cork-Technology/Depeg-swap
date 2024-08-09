@@ -33,7 +33,7 @@ describe("FlashSwapRouter", function () {
   beforeEach("router", async () => {
     fixture = await loadFixture(helper.ModuleCoreWithInitializedPsmLv);
 
-    depositAmount = parseEther("10000000");
+    depositAmount = parseEther("1900");
     expiry = helper.expiry(1000000);
 
     await fixture.ra.write.mint([defaultSigner.account.address, depositAmount]);

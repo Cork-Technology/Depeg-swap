@@ -210,18 +210,38 @@ library DsFlashSwaplibrary {
             ctReserve
         );
 
-        console.log("price", price);
         amountOut = MathHelper.calculateRedeemAmountWithExchangeRate(
             amount,
             price
         );
 
+        console.log("amount", amount);
+
         uint256 repaymentAmount = MinimalUniswapV2Library.getAmountIn(
+            amount,
+            raReserve,
+            ctReserve
+        );
+
+        console.log("repaymentAmount calculateds :", repaymentAmount);
+        console.log("attributed calculated amount: ", amount - repaymentAmount);
+
+        repaymentAmount = MinimalUniswapV2Library.getAmountIn(
             amount,
             raReserve,
             ctReserve - amount
         );
 
-        console.log("repaymentAmount calculated", repaymentAmount);
+        console.log("repaymentAmount calculateds :", repaymentAmount);
+        console.log("attributed calculated amount: ", amount - repaymentAmount);
+
+        repaymentAmount = MinimalUniswapV2Library.getAmountIn(
+            amount,
+            raReserve + repaymentAmount,
+            ctReserve - amount
+        );
+
+        console.log("repaymentAmount calculateds :", repaymentAmount);
+        console.log("attributed calculated amount: ", amount - repaymentAmount);
     }
 }

@@ -14,10 +14,14 @@ import {
   WalletClient,
 } from "viem";
 import UNIV2FACTORY from "@uniswap/v2-core/build/UniswapV2Factory.json";
+import UNIV2FACTORYLOCAL from "./ext-abi/uni-v2-factory.json";
 import UNIV2ROUTER from "./ext-abi/uni-v2-router.json";
 import { ethers } from "ethers";
 
 const DEVISOR = BigInt(1e18);
+
+const UNI_V2_FACTORY_INIT_HASH =
+  "6fcf2fff89676353f1f40336d0b92ffb3809e5dc26e3b253b9edf607e296560a";
 
 export function calculateMinimumLiquidity(amount: bigint) {
   // 1e16 is the minimum liquidity(10e3)

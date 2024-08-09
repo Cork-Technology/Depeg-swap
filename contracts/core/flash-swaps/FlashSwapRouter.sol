@@ -421,6 +421,7 @@ contract RouterState is
         address caller,
         uint256 raAttributed
     ) internal {
+        console.log("ctAmount           :", ctAmount);
         AssetPair storage assetPair = self.ds[dsId];
         assetPair.ds.approve(owner(), ctAmount);
         assetPair.ct.approve(owner(), ctAmount);
@@ -438,7 +439,7 @@ contract RouterState is
         assert(repaymentAmount + raAttributed >= received);
 
         // send caller their RA
-        ra.transfer(caller, raAttributed - 1);
+        // ra.transfer(caller, raAttributed - 1);
         // repay flash loan
         ra.transfer(msg.sender, repaymentAmount);
     }
