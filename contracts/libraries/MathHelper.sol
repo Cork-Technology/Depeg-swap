@@ -10,7 +10,7 @@ library MathHelper {
     // TODO : discuss what value of this should be set to. currently set to 1% tolerance.
     // this is used to calculate tolerance level when adding liqudity to AMM pair
     /// @dev 1e18 == 1%.
-    uint256 internal constant UNIV2_STATIC_TOLERANCE = 1000000000000000000;
+    uint256 internal constant UNIV2_STATIC_TOLERANCE = 1e18;
 
     /**
      * @dev calculate the amount of ra and ct needed to provide AMM with liquidity in respect to the price ratio
@@ -20,7 +20,7 @@ library MathHelper {
      * @return ra the amount of ra needed to provide AMM with liquidity
      * @return ct the amount of ct needed to provide AMM with liquidity, also the amount of how much ra should be converted to ct
      */
-    function calculateAmounts(
+    function calculateProvideLiquidityAmountBasedOnCtPrice(
         uint256 amountra,
         uint256 priceRatio
     ) external pure returns (uint256 ra, uint256 ct) {
@@ -80,14 +80,14 @@ library MathHelper {
 
     /**
      * @dev calculate the fee in respect to the amount given
-     * @param fee1e8 the fee in 1e8
+     * @param fee1e18 the fee in 1e18
      * @param amount the amount of lv user want to withdraw
      */
     function calculatePrecentageFee(
-        uint256 fee1e8,
+        uint256 fee1e18,
         uint256 amount
     ) external pure returns (uint256 precentage) {
-        precentage = (((amount * 1e18) * fee1e8) / (100 * 1e18)) / 1e18;
+        precentage = (((amount * 1e18) * fee1e18) / (100 * 1e18)) / 1e18;
     }
 
     /**
@@ -155,13 +155,13 @@ library MathHelper {
         assert((attributedWithdrawal + attributedAmm) == totalAmount);
     }
 
-    function calculateWithTolreance(
+    function calculateWithTolerance(
         uint256 ra,
         uint256 ct,
         uint256 tolerance
     ) external pure returns (uint256 raTolerance, uint256 ctTolerance) {
-        raTolerance = (ra * tolerance) / 1e18;
-        ctTolerance = (ct * tolerance) / 1e18;
+        raTolerance = ra - ((ra * 1e18 * tolerance) / (100 * 1e18) / 1e18);
+        ctTolerance = ct - ((ct * 1e18 * tolerance) / (100 * 1e18) / 1e18);
     }
 
     function calculateUniV2LpValue(

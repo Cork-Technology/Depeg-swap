@@ -38,11 +38,11 @@ describe("LvCore", function () {
     await fixture.ra.write.mint([secondSigner.account.address, depositAmount]);
 
     await fixture.ra.write.approve([
-      fixture.moduleCore.contract.address,
+      fixture.moduleCore.address,
       depositAmount,
     ]);
     await fixture.ra.write.approve(
-      [fixture.moduleCore.contract.address, depositAmount],
+      [fixture.moduleCore.address, depositAmount],
       {
         account: secondSigner.account,
       }
@@ -52,7 +52,7 @@ describe("LvCore", function () {
   async function issueNewSwapAssets(expiry: any, options = {}) {
     return await helper.issueNewSwapAssets({
       expiry: expiry,
-      moduleCore: fixture.moduleCore.contract.address,
+      moduleCore: fixture.moduleCore.address,
       config: fixture.config.contract.address,
       pa: fixture.pa.address,
       ra: fixture.ra.address,
@@ -65,7 +65,7 @@ describe("LvCore", function () {
     await issueNewSwapAssets(helper.expiry(1000000));
 
     const lv = fixture.Id;
-    const result = await fixture.moduleCore.contract.write.depositLv([
+    const result = await fixture.moduleCore.write.depositLv([
       lv,
       depositAmount,
     ]);
@@ -74,13 +74,13 @@ describe("LvCore", function () {
 
     const afterAllowance = await fixture.ra.read.allowance([
       defaultSigner.account.address,
-      fixture.moduleCore.contract.address,
+      fixture.moduleCore.address,
     ]);
 
     expect(afterAllowance).to.be.equal(BigInt(0));
 
     const depositEvent =
-      await fixture.moduleCore.contract.getEvents.LvDeposited({
+      await fixture.moduleCore.getEvents.LvDeposited({
         id: lv,
         depositor: defaultSigner.account.address,
       });
@@ -93,13 +93,13 @@ describe("LvCore", function () {
     const { Id, dsId } = await issueNewSwapAssets(expiry);
 
     const lv = fixture.Id;
-    await fixture.moduleCore.contract.write.depositLv([lv, depositAmount]);
-    await fixture.moduleCore.contract.write.depositLv([lv, depositAmount], {
+    await fixture.moduleCore.write.depositLv([lv, depositAmount]);
+    await fixture.moduleCore.write.depositLv([lv, depositAmount], {
       account: secondSigner.account,
     });
 
     await fixture.lv.write.approve(
-      [fixture.moduleCore.contract.address, depositAmount],
+      [fixture.moduleCore.address, depositAmount],
       {
         account: secondSigner.account,
       }
@@ -108,10 +108,10 @@ describe("LvCore", function () {
     await time.increaseTo(expiry + 1e3);
 
     const initialModuleCoreLvBalance = await fixture.lv.read.balanceOf([
-      fixture.moduleCore.contract.address,
+      fixture.moduleCore.address,
     ]);
 
-    await fixture.moduleCore.contract.write.redeemExpiredLv(
+    await fixture.moduleCore.write.redeemExpiredLv(
       [lv, secondSigner.account.address, depositAmount],
       {
         account: secondSigner.account,
@@ -119,18 +119,20 @@ describe("LvCore", function () {
     );
 
     const afterModuleCoreLvBalance = await fixture.lv.read.balanceOf([
-      fixture.moduleCore.contract.address,
+      fixture.moduleCore.address,
     ]);
 
-    const event = await fixture.moduleCore.contract.getEvents.LvRedeemExpired({
+    const event = await fixture.moduleCore.getEvents.LvRedeemExpired({
       Id: lv,
       receiver: secondSigner.account.address,
     });
 
     expect(event.length).to.be.equal(1);
 
-    expect(event[0].args.ra).to.be.equal(
-      helper.calculateMinimumLiquidity(depositAmount)
+    expect(event[0].args.ra).to.be.closeTo(
+      ethers.BigNumber.from(helper.calculateMinimumLiquidity(depositAmount)),
+      // 1k delta, as the default ratio is 0.9
+      1000
     );
     expect(event[0].args.pa).to.be.equal(BigInt(0));
   });
@@ -139,19 +141,19 @@ describe("LvCore", function () {
     const { Id, dsId } = await issueNewSwapAssets(expiry);
     const lv = fixture.Id;
 
-    await fixture.moduleCore.contract.write.depositLv([lv, depositAmount]);
-    await fixture.moduleCore.contract.write.depositLv([lv, depositAmount], {
+    await fixture.moduleCore.write.depositLv([lv, depositAmount]);
+    await fixture.moduleCore.write.depositLv([lv, depositAmount], {
       account: secondSigner.account,
     });
 
     await fixture.lv.write.approve(
-      [fixture.moduleCore.contract.address, depositAmount],
+      [fixture.moduleCore.address, depositAmount],
       {
         account: secondSigner.account,
       }
     );
 
-    await fixture.moduleCore.contract.write.requestRedemption(
+    await fixture.moduleCore.write.requestRedemption(
       [Id, depositAmount],
       {
         account: secondSigner.account,
@@ -161,13 +163,13 @@ describe("LvCore", function () {
     await time.increase(expiry + 1);
 
     const initialModuleCoreLvBalance = await fixture.lv.read.balanceOf([
-      fixture.moduleCore.contract.address,
+      fixture.moduleCore.address,
     ]);
 
     const _ = await helper.issueNewSwapAssets({
       expiry: helper.expiry(1 * 1e18),
       factory: fixture.factory.contract.address,
-      moduleCore: fixture.moduleCore.contract.address,
+      moduleCore: fixture.moduleCore.address,
       config: fixture.config.contract.address,
       pa: fixture.pa.address,
       ra: fixture.ra.address,
@@ -175,7 +177,7 @@ describe("LvCore", function () {
 
     // should revert if we specified higher amount than requested
     await expect(
-      fixture.moduleCore.contract.write.redeemExpiredLv(
+      fixture.moduleCore.write.redeemExpiredLv(
         [lv, secondSigner.account.address, depositAmount + BigInt(1)],
         {
           account: secondSigner.account,
@@ -183,7 +185,7 @@ describe("LvCore", function () {
       )
     ).to.be.rejected;
 
-    await fixture.moduleCore.contract.write.redeemExpiredLv(
+    await fixture.moduleCore.write.redeemExpiredLv(
       [lv, secondSigner.account.address, depositAmount],
       {
         account: secondSigner.account,
@@ -191,22 +193,24 @@ describe("LvCore", function () {
     );
 
     const afterModuleCoreLvBalance = await fixture.lv.read.balanceOf([
-      fixture.moduleCore.contract.address,
+      fixture.moduleCore.address,
     ]);
 
     expect(afterModuleCoreLvBalance).to.be.equal(
       initialModuleCoreLvBalance - depositAmount
     );
 
-    const event = await fixture.moduleCore.contract.getEvents.LvRedeemExpired({
+    const event = await fixture.moduleCore.getEvents.LvRedeemExpired({
       Id: lv,
       receiver: secondSigner.account.address,
     });
 
     expect(event.length).to.be.equal(1);
 
-    expect(event[0].args.ra).to.be.equal(
-      helper.calculateMinimumLiquidity(depositAmount)
+    expect(event[0].args.ra).to.be.closeTo(
+      ethers.BigNumber.from(helper.calculateMinimumLiquidity(depositAmount)),
+      // 1k delta, as the default ratio is 0.9
+      1000
     );
     expect(event[0].args.pa).to.be.equal(BigInt(0));
   });
@@ -217,17 +221,17 @@ describe("LvCore", function () {
     const { Id, dsId } = await issueNewSwapAssets(expiry);
 
     const lv = fixture.Id;
-    await fixture.moduleCore.contract.write.depositLv([lv, depositAmount]);
-    await fixture.moduleCore.contract.write.depositLv([lv, depositAmount], {
+    await fixture.moduleCore.write.depositLv([lv, depositAmount]);
+    await fixture.moduleCore.write.depositLv([lv, depositAmount], {
       account: secondSigner.account,
     });
 
     await fixture.lv.write.approve([
-      fixture.moduleCore.contract.address,
+      fixture.moduleCore.address,
       depositAmount,
     ]);
 
-    await fixture.moduleCore.contract.write.requestRedemption([
+    await fixture.moduleCore.write.requestRedemption([
       Id,
       depositAmount,
     ]);
@@ -236,28 +240,30 @@ describe("LvCore", function () {
 
     const redeemAmount = depositAmount / BigInt(2);
 
-    await fixture.moduleCore.contract.write.transferRedemptionRights([
+    await fixture.moduleCore.write.transferRedemptionRights([
       lv,
       secondSigner.account.address,
       depositAmount,
     ]);
 
-    await fixture.moduleCore.contract.write.redeemExpiredLv(
+    await fixture.moduleCore.write.redeemExpiredLv(
       [lv, secondSigner.account.address, redeemAmount],
       {
         account: secondSigner.account,
       }
     );
 
-    const event = await fixture.moduleCore.contract.getEvents.LvRedeemExpired({
+    const event = await fixture.moduleCore.getEvents.LvRedeemExpired({
       Id: lv,
       receiver: secondSigner.account.address,
     });
 
     expect(event.length).to.be.equal(1);
 
-    expect(event[0].args.ra).to.be.equal(
-      helper.calculateMinimumLiquidity(redeemAmount)
+    expect(event[0].args.ra).to.be.closeTo(
+      ethers.BigNumber.from(helper.calculateMinimumLiquidity(redeemAmount)),
+      // 1k delta, as the default ratio is 0.9
+      1000
     );
     expect(event[0].args.pa).to.be.equal(BigInt(0));
   });
@@ -266,17 +272,17 @@ describe("LvCore", function () {
     const { Id } = await issueNewSwapAssets(expiry);
 
     const lv = fixture.Id;
-    await fixture.moduleCore.contract.write.depositLv([lv, depositAmount]);
+    await fixture.moduleCore.write.depositLv([lv, depositAmount]);
     await fixture.lv.write.approve([
-      fixture.moduleCore.contract.address,
+      fixture.moduleCore.address,
       depositAmount,
     ]);
-    await fixture.moduleCore.contract.write.redeemEarlyLv([
+    await fixture.moduleCore.write.redeemEarlyLv([
       lv,
       defaultSigner.account.address,
       parseEther("1"),
     ]);
-    const event = await fixture.moduleCore.contract.getEvents
+    const event = await fixture.moduleCore.getEvents
       .LvRedeemEarly({
         Id: lv,
         receiver: defaultSigner.account.address,
@@ -284,15 +290,6 @@ describe("LvCore", function () {
       })
       .then((e) => e[0]);
     expect(event.args.feePrecentage).to.be.equal(parseEther("10"));
-
-    console.log(
-      "event.args.amount                                          :",
-      formatEther(event.args.amount!)
-    );
-    console.log(
-      "helper.calculateMinimumLiquidity(parseEther('0.9'))        :",
-      "0.9"
-    );
 
     expect(event.args.amount).to.be.closeTo(
       ethers.BigNumber.from(
@@ -318,18 +315,18 @@ describe("LvCore", function () {
     const { Id } = await issueNewSwapAssets(expiry);
 
     const lv = fixture.Id;
-    await fixture.moduleCore.contract.write.depositLv([lv, depositAmount]);
+    await fixture.moduleCore.write.depositLv([lv, depositAmount]);
     await fixture.lv.write.approve([
-      fixture.moduleCore.contract.address,
+      fixture.moduleCore.address,
       depositAmount,
     ]);
-    await fixture.moduleCore.contract.write.redeemEarlyLv([
+    await fixture.moduleCore.write.redeemEarlyLv([
       lv,
       defaultSigner.account.address,
       parseEther("1"),
     ]);
 
-    const event = await fixture.moduleCore.contract.getEvents
+    const event = await fixture.moduleCore.getEvents
       .LvRedeemEarly({
         Id: lv,
         receiver: defaultSigner.account.address,
@@ -361,27 +358,27 @@ describe("LvCore", function () {
     const { Id, dsId } = await issueNewSwapAssets(expiry);
 
     const lv = fixture.Id;
-    await fixture.moduleCore.contract.write.depositLv([lv, depositAmount]);
-    await fixture.moduleCore.contract.write.depositLv([lv, depositAmount], {
+    await fixture.moduleCore.write.depositLv([lv, depositAmount]);
+    await fixture.moduleCore.write.depositLv([lv, depositAmount], {
       account: secondSigner.account,
     });
 
     await fixture.lv.write.approve([
-      fixture.moduleCore.contract.address,
+      fixture.moduleCore.address,
       depositAmount,
     ]);
-    await fixture.moduleCore.contract.write.requestRedemption([
+    await fixture.moduleCore.write.requestRedemption([
       Id,
       parseEther("5"),
     ]);
 
     await fixture.lv.write.approve(
-      [fixture.moduleCore.contract.address, depositAmount],
+      [fixture.moduleCore.address, depositAmount],
       {
         account: secondSigner.account,
       }
     );
-    await fixture.moduleCore.contract.write.requestRedemption(
+    await fixture.moduleCore.write.requestRedemption(
       [Id, depositAmount],
       {
         account: secondSigner.account,
@@ -390,7 +387,7 @@ describe("LvCore", function () {
 
     await time.increase(expiry + 1);
 
-    await fixture.moduleCore.contract.write.redeemExpiredLv(
+    await fixture.moduleCore.write.redeemExpiredLv(
       [lv, secondSigner.account.address, depositAmount],
       {
         account: secondSigner.account,
@@ -398,13 +395,15 @@ describe("LvCore", function () {
     );
 
     const [signer1ra, signer2pa, signer1approvedAmount] =
-      await fixture.moduleCore.contract.read.previewRedeemExpiredLv([
+      await fixture.moduleCore.read.previewRedeemExpiredLv([
         lv,
         depositAmount,
       ]);
 
-    expect(signer1ra).to.be.equal(
-      helper.calculateMinimumLiquidity(depositAmount)
+    expect(signer1ra).to.be.closeTo(
+      ethers.BigNumber.from(helper.calculateMinimumLiquidity(depositAmount)),
+      // 1k delta, as the default ratio is 0.9
+      1000
     );
     expect(signer2pa).to.be.equal(BigInt(0));
     expect(signer1approvedAmount).to.be.equal(parseEther("5"));
@@ -414,9 +413,9 @@ describe("LvCore", function () {
     const { Id } = await issueNewSwapAssets(expiry);
 
     const lv = fixture.Id;
-    await fixture.moduleCore.contract.write.depositLv([lv, depositAmount]);
+    await fixture.moduleCore.write.depositLv([lv, depositAmount]);
     const [rcv, fee, precentage] =
-      await fixture.moduleCore.contract.read.previewRedeemEarlyLv([
+      await fixture.moduleCore.read.previewRedeemEarlyLv([
         lv,
         parseEther("1"),
       ]);
@@ -427,7 +426,9 @@ describe("LvCore", function () {
       // the amount of fee deducted will also slightles less because this is the first issuance,
       // caused by liquidity lock up by uni v2
       // will receive slightly less ETH by 0,0000000000000001
-      100
+
+      // 0.06 to take into account 0.9 initial ratio of the pool, which means we receive more RA compared to if the ratio is 1
+      ethers.utils.parseEther("0.06")
     );
 
     expect(rcv).to.be.closeTo(
@@ -437,22 +438,23 @@ describe("LvCore", function () {
       // the amount will be slightly less because this is the first issuance,
       // caused by liquidity lock up by uni v2
       // will receive slightly less ETH by 0,0000000000000001
-      100
+
+      // 0.06 to take into account 0.9 initial ratio of the pool, which means we receive more RA compared to if the ratio is 1
+      ethers.utils.parseEther("0.06")
     );
-    // 10% fee
   });
 
   it("should be able to redeem without a cap when there's no new DS issuance", async function () {
     const { Id, dsId } = await issueNewSwapAssets(expiry);
 
     const lv = fixture.Id;
-    await fixture.moduleCore.contract.write.depositLv([lv, depositAmount]);
-    await fixture.moduleCore.contract.write.depositLv([lv, depositAmount], {
+    await fixture.moduleCore.write.depositLv([lv, depositAmount]);
+    await fixture.moduleCore.write.depositLv([lv, depositAmount], {
       account: secondSigner.account,
     });
 
     await fixture.lv.write.approve(
-      [fixture.moduleCore.contract.address, depositAmount],
+      [fixture.moduleCore.address, depositAmount],
       {
         account: secondSigner.account,
       }
@@ -460,7 +462,7 @@ describe("LvCore", function () {
 
     // we intentionally request less than the deposit amount to test if it's possible to redeem without a cap
     const lessThanDepositAmount = parseEther("5");
-    await fixture.moduleCore.contract.write.requestRedemption(
+    await fixture.moduleCore.write.requestRedemption(
       [Id, lessThanDepositAmount],
       {
         account: secondSigner.account,
@@ -474,10 +476,10 @@ describe("LvCore", function () {
     await time.increase(expiry + 1);
 
     const initialModuleCoreLvBalance = await fixture.lv.read.balanceOf([
-      fixture.moduleCore.contract.address,
+      fixture.moduleCore.address,
     ]);
 
-    await fixture.moduleCore.contract.write.redeemExpiredLv(
+    await fixture.moduleCore.write.redeemExpiredLv(
       [lv, secondSigner.account.address, depositAmount],
       {
         account: secondSigner.account,
@@ -485,20 +487,22 @@ describe("LvCore", function () {
     );
 
     const afterModuleCoreLvBalance = await fixture.lv.read.balanceOf([
-      fixture.moduleCore.contract.address,
+      fixture.moduleCore.address,
     ]);
 
     expect(afterModuleCoreLvBalance).to.be.equal(parseEther("0"));
 
-    const event = await fixture.moduleCore.contract.getEvents.LvRedeemExpired({
+    const event = await fixture.moduleCore.getEvents.LvRedeemExpired({
       Id: lv,
       receiver: secondSigner.account.address,
     });
 
     expect(event.length).to.be.equal(1);
 
-    expect(event[0].args.ra).to.be.equal(
-      helper.calculateMinimumLiquidity(depositAmount)
+    expect(event[0].args.ra).to.be.closeTo(
+      ethers.BigNumber.from(helper.calculateMinimumLiquidity(depositAmount)),
+      // 1k delta, as the default ratio is 0.9
+      1000
     );
     expect(event[0].args.pa).to.be.equal(BigInt(0));
   });
@@ -507,19 +511,19 @@ describe("LvCore", function () {
     const { Id, dsId } = await issueNewSwapAssets(expiry);
 
     const lv = fixture.Id;
-    await fixture.moduleCore.contract.write.depositLv([lv, depositAmount]);
-    await fixture.moduleCore.contract.write.depositLv([lv, depositAmount], {
+    await fixture.moduleCore.write.depositLv([lv, depositAmount]);
+    await fixture.moduleCore.write.depositLv([lv, depositAmount], {
       account: secondSigner.account,
     });
 
     await fixture.lv.write.approve(
-      [fixture.moduleCore.contract.address, depositAmount],
+      [fixture.moduleCore.address, depositAmount],
       {
         account: secondSigner.account,
       }
     );
 
-    await fixture.moduleCore.contract.write.requestRedemption(
+    await fixture.moduleCore.write.requestRedemption(
       [Id, depositAmount],
       {
         account: secondSigner.account,
@@ -535,13 +539,13 @@ describe("LvCore", function () {
     await helper.issueNewSwapAssets({
       expiry: helper.expiry(1 * 1e18),
       factory: fixture.factory.contract.address,
-      moduleCore: fixture.moduleCore.contract.address,
+      moduleCore: fixture.moduleCore.address,
       config: fixture.config.contract.address,
       pa: fixture.pa.address,
       ra: fixture.ra.address,
     });
 
-    const raLocked = await fixture.moduleCore.contract.read.lockedLvfor([
+    const raLocked = await fixture.moduleCore.read.lockedLvfor([
       Id,
       secondSigner.account.address,
     ]);
@@ -549,22 +553,26 @@ describe("LvCore", function () {
     expect(raLocked).to.be.equal(depositAmount);
 
     const [ra, pa] =
-      await fixture.moduleCore.contract.read.reservedUserWithdrawal([Id]);
+      await fixture.moduleCore.read.reservedUserWithdrawal([Id]);
 
-    expect(ra).to.be.equal(helper.calculateMinimumLiquidity(depositAmount));
+    expect(ra).to.be.closeTo(
+      ethers.BigNumber.from(helper.calculateMinimumLiquidity(depositAmount)),
+      // 1k delta, as the default ratio is 0.9
+      1000
+    );
     expect(pa).to.be.equal(BigInt(0));
   });
 
   it("cannot issue expired", async function () {
     expiry = helper.expiry(1000000) - helper.nowTimestampInSeconds();
 
-    const Id = await fixture.moduleCore.contract.read.getId([
+    const Id = await fixture.moduleCore.read.getId([
       fixture.pa.address,
       fixture.ra.address,
     ]);
 
     await expect(
-      fixture.moduleCore.contract.write.issueNewDs(
+      fixture.moduleCore.write.issueNewDs(
         [Id, BigInt(expiry), parseEther("1"), parseEther("1")],
         {
           account: defaultSigner.account,

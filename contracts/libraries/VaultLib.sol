@@ -27,7 +27,8 @@ library VaultLibrary {
     using VaultPoolLibrary for VaultPool;
 
     // TODO : for now a static ratio deposit value used to provide liquidity for the first time, this should be changed later
-    uint256 constant DEFAULT_AMM_DEPOSIT_RATIO = 1e18;
+    /// @notice this will set the initial CT price to 0.9 RA, thus also making the initial price of DS to be 0.1 RA
+    uint256 constant DEFAULT_AMM_DEPOSIT_RATIO = 9e17;
 
     /// @notice caller is not authorized to perform the action, e.g transfering
     /// redemption rights to another address while not having the rights
@@ -67,7 +68,7 @@ library VaultLibrary {
         IUniswapV2Router02 ammRouter
     ) internal {
         (uint256 raTolerance, uint256 ctTolerance) = MathHelper
-            .calculateWithTolreance(
+            .calculateWithTolerance(
                 raAmount,
                 ctAmount,
                 MathHelper.UNIV2_STATIC_TOLERANCE
@@ -76,14 +77,33 @@ library VaultLibrary {
         ERC20(raAddress).approve(address(ammRouter), raAmount);
         ERC20(ctAddress).approve(address(ammRouter), ctAmount);
 
+        (
+            address token0,
+            address token1,
+            uint256 token0Amount,
+            uint256 token1Amount
+        ) = MinimalUniswapV2Library.sortTokensUnsafeWithAmount(
+                raAddress,
+                ctAddress,
+                raAmount,
+                ctAmount
+            );
+        (, , uint256 token0Tolerance, uint256 token1Tolerance) = MinimalUniswapV2Library
+            .sortTokensUnsafeWithAmount(
+                raAddress,
+                ctAddress,
+                raTolerance,
+                ctTolerance
+            );
+
         // TODO : what do we do if there's leftover deposit due to the tolerance level? for now will just ignore it.
         (, , uint256 lp) = ammRouter.addLiquidity(
-            raAddress,
-            ctAddress,
-            raAmount,
-            ctAmount,
-            raTolerance,
-            ctTolerance,
+            token0,
+            token1,
+            token0Amount,
+            token1Amount,
+            token0Tolerance,
+            token1Tolerance,
             address(this),
             block.timestamp
         );
@@ -151,9 +171,12 @@ library VaultLibrary {
     ) internal returns (uint256 ra, uint256 ct) {
         uint256 dsId = self.globalAssetIdx;
 
-        uint256 raRatio = __getAmmRaPriceRatio(self, flashSwapRouter, dsId);
+        uint256 ctRatio = __getAmmCtPriceRatio(self, flashSwapRouter, dsId);
 
-        (ra, ct) = MathHelper.calculateAmounts(amount, raRatio);
+        (ra, ct) = MathHelper.calculateProvideLiquidityAmountBasedOnCtPrice(
+            amount,
+            ctRatio
+        );
 
         __provideLiquidity(
             self,
@@ -166,7 +189,7 @@ library VaultLibrary {
         );
     }
 
-    function __getAmmRaPriceRatio(
+    function __getAmmCtPriceRatio(
         State storage self,
         IDsFlashSwapCore flashSwapRouter,
         uint256 dsId
@@ -177,8 +200,8 @@ library VaultLibrary {
         try
             // will always fail for the first deposit
             flashSwapRouter.getCurrentPriceRatio(self.info.toId(), dsId)
-        returns (uint256 _raRatio, uint256) {
-            ratio = _raRatio;
+        returns (uint256, uint256 _ctRatio) {
+            ratio = _ctRatio;
         } catch {}
     }
 
@@ -218,9 +241,9 @@ library VaultLibrary {
     ) internal {
         uint256 dsId = self.globalAssetIdx;
 
-        uint256 raRatio = __getAmmRaPriceRatio(self, flashSwapRouter, dsId);
+        uint256 ctRatio = __getAmmCtPriceRatio(self, flashSwapRouter, dsId);
 
-        (uint256 ra, uint256 ct) = self.vault.pool.rationedToAmm(raRatio);
+        (uint256 ra, uint256 ct) = self.vault.pool.rationedToAmm(ctRatio);
 
         __provideLiquidity(
             self,
@@ -342,6 +365,16 @@ library VaultLibrary {
             address(this),
             block.timestamp
         );
+
+        (raReceived, ctReceived) = MinimalUniswapV2Library
+            .reverseSortWithAmount224(
+                ammPair.token0(),
+                ammPair.token1(),
+                raAddress,
+                ctAddress,
+                raReceived,
+                ctReceived
+            );
 
         self.vault.config.lpBalance -= lp;
     }
