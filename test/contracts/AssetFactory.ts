@@ -27,8 +27,7 @@ describe("Asset Factory", function () {
 
   before(async () => {
     const __signers = await hre.viem.getWalletClients();
-    ({ defaultSigner, signers } = helper.getSigners(__signers));
-    secondSigner = signers[1];
+    ({ defaultSigner, secondSigner, signers } = helper.getSigners(__signers));
   });
 
   beforeEach(async () => {

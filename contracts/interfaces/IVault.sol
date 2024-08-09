@@ -176,4 +176,14 @@ interface IVault {
     function reservedUserWithdrawal(
         Id id
     ) external view returns (uint256 reservedRa, uint256 reservedPa);
+
+    
+    /**
+     * Returns the early redemption fee percentage
+     * @param id The Module id that is used to reference both psm and lv of a given pair
+     */
+    function earlyRedemptionFee(
+        Id id
+    ) external view returns (uint256);
+
 }
