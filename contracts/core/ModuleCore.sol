@@ -131,7 +131,7 @@ contract ModuleCore is PsmCore, Initialize, VaultCore {
         uint256 newRepurchaseFeePrecentage
     ) external onlyConfig {
         State storage state = states[id];
-        state.psm.repurchaseFeePrecentage = newRepurchaseFeePrecentage;
+        PsmLibrary.updateRepurchaseFeePercentage(state, newRepurchaseFeePrecentage);
 
         emit RepurchaseFeeRateUpdated(id, newRepurchaseFeePrecentage);
     }

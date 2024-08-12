@@ -29,14 +29,17 @@ library VaultConfigLibrary {
             (self.lpCtBalance > self.ammCtDepositThreshold);
     }
 
-    function updateFee(VaultConfig memory self, uint256 fee) internal pure {
+    function updateFee(
+        VaultConfig storage self,
+        uint256 fee
+    ) internal {
         self.fee = fee;
     }
 
     function updateAmmDepositThreshold(
-        VaultConfig memory self,
+        VaultConfig storage self,
         uint256 ammDepositThreshold
-    ) internal pure {
+    ) internal {
         self.ammRaDepositThreshold = ammDepositThreshold;
     }
 

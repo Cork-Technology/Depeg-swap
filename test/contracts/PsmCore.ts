@@ -29,31 +29,31 @@ describe("PSM core", function () {
   >;
 
   let moduleCore: Awaited<ReturnType<typeof getModuleCore>>;
-  let corkConfig: any;
-  let pa: any;
+  let corkConfig: Awaited<ReturnType<typeof getCorkConfig>>;
+  let pa: Awaited<ReturnType<typeof getPA>>;
 
   const getModuleCore = async (address: Address) => {
     return await hre.viem.getContractAt("ModuleCore", address);
   };
 
+  const getCorkConfig = async (address: Address) => {
+    return await hre.viem.getContractAt("CorkConfig", address);
+  };
+
+  const getPA = async (address: Address) => {
+    return await hre.viem.getContractAt("ERC20", address);
+  };
+
   before(async () => {
     const __signers = await hre.viem.getWalletClients();
-    ({ defaultSigner, signers } = helper.getSigners(__signers));
-    secondSigner = signers[1];
+    ({ defaultSigner, secondSigner, signers } = helper.getSigners(__signers));
   });
 
   beforeEach(async () => {
     fixture = await loadFixture(helper.ModuleCoreWithInitializedPsmLv);
 
-    moduleCore = await hre.viem.getContractAt(
-      "ModuleCore",
-      fixture.moduleCore.address
-    );
-
-    corkConfig = await hre.viem.getContractAt(
-      "CorkConfig",
-      fixture.config.contract.address
-    );
+    moduleCore = await getModuleCore(fixture.moduleCore.contract.address);
+    corkConfig = await getCorkConfig(fixture.config.contract.address);
 
     expiryTime = 10000;
     mintAmount = parseEther("1000");
@@ -69,7 +69,7 @@ describe("PSM core", function () {
       mintAmount
     );
 
-    pa = await hre.viem.getContractAt("ERC20", fixture.pa.address);
+    pa = await getPA(fixture.pa.address);
   });
 
   async function issueNewSwapAssets(expiry: any, options = {}) {

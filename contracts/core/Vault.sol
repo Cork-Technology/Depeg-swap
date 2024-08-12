@@ -138,4 +138,11 @@ abstract contract VaultCore is ModuleState, Context, IVault {
             getRouterCore()
         );
     }
+
+    function earlyRedemptionFee(
+        Id id
+    ) external view override returns (uint256) {
+        State storage state = states[id];
+        return state.vault.config.fee;
+    }
 }
