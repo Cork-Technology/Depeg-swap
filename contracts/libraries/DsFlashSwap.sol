@@ -130,22 +130,6 @@ library DsFlashSwaplibrary {
         reserve = self.ds[dsId].reserve;
     }
 
-    function getCurrentDsPrice(
-        ReserveState storage self,
-        uint256 dsId
-    ) internal view returns (uint256 price) {
-        (uint112 raReserve, uint112 ctReserve, ) = self
-            .ds[dsId]
-            .pair
-            .getReserves();
-
-        price = SwapperMathLibrary.calculateDsPrice(
-            raReserve,
-            ctReserve,
-            self.ds[dsId].ds.exchangeRate()
-        );
-    }
-
     function getCurrentDsPriceAfterSellDs(
         ReserveState storage self,
         uint256 dsId,
@@ -196,52 +180,21 @@ library DsFlashSwaplibrary {
     }
 
     function getAmountOut(
-        ReserveState storage self,
         AssetPair storage assetPair,
-        uint256 dsId,
         uint256 amount
     ) internal view returns (uint256 amountOut) {
         (uint112 raReserve, uint112 ctReserve) = getReservesSorted(assetPair);
-        uint256 price = getCurrentDsPriceAfterSellDs(
-            self,
-            dsId,
-            amount,
-            raReserve,
-            ctReserve
-        );
-
-        amountOut = MathHelper.calculateRedeemAmountWithExchangeRate(
-            amount,
-            price
-        );
-
-        console.log("amount", amount);
-
+        // we calculate the repayment amount based on the imbalanced ct reserve since we borrow CT from the AMM
         uint256 repaymentAmount = MinimalUniswapV2Library.getAmountIn(
             amount,
             raReserve,
-            ctReserve
-        );
-
-        console.log("repaymentAmount calculateds :", repaymentAmount);
-        console.log("attributed calculated amount: ", amount - repaymentAmount);
-
-        repaymentAmount = MinimalUniswapV2Library.getAmountIn(
-            amount,
-            raReserve,
             ctReserve - amount
         );
 
-        console.log("repaymentAmount calculateds :", repaymentAmount);
-        console.log("attributed calculated amount: ", amount - repaymentAmount);
-
-        repaymentAmount = MinimalUniswapV2Library.getAmountIn(
-            amount,
-            raReserve + repaymentAmount,
-            ctReserve - amount
-        );
-
-        console.log("repaymentAmount calculateds :", repaymentAmount);
-        console.log("attributed calculated amount: ", amount - repaymentAmount);
+        // the amountOut is essentially what the user receive, we can calculate this by simply subtracting the repayment amount
+        // from the amount, since we're getting back the same RA amount as DS user buy, this works. to get the effective price per DS,
+        // you would devide this by the DS amount user bought.
+        // note that we subtract 1 to enforce uni v2 rules
+        amountOut = amount - repaymentAmount - 1;
     }
 }

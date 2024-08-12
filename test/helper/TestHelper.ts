@@ -13,15 +13,11 @@ import {
   verifyTypedData,
   WalletClient,
 } from "viem";
-import UNIV2FACTORY from "@uniswap/v2-core/build/UniswapV2Factory.json";
-import UNIV2FACTORYLOCAL from "./ext-abi/uni-v2-factory.json";
+import UNIV2FACTORY from "./ext-abi/uni-v2-factory.json";
 import UNIV2ROUTER from "./ext-abi/uni-v2-router.json";
 import { ethers } from "ethers";
 
 const DEVISOR = BigInt(1e18);
-
-const UNI_V2_FACTORY_INIT_HASH =
-  "6fcf2fff89676353f1f40336d0b92ffb3809e5dc26e3b253b9edf607e296560a";
 
 export function calculateMinimumLiquidity(amount: bigint) {
   // 1e16 is the minimum liquidity(10e3)
@@ -130,7 +126,7 @@ export async function deployFlashSwapRouter(mathHelper: Address) {
 }
 
 // will default use the first wallet client
-export async function deployUniV2Factory() {
+export async function deployUniV2Factory(flashswap: Address) {
   const signers = await hre.viem.getWalletClients();
   const { defaultSigner } = getSigners(signers);
 
@@ -138,7 +134,7 @@ export async function deployUniV2Factory() {
     abi: UNIV2FACTORY.abi,
     bytecode: `0x${UNIV2FACTORY.bytecode}`,
     account: defaultSigner.account,
-    args: [defaultSigner.account.address],
+    args: [defaultSigner.account.address, flashswap],
   });
 
   const client = await hre.viem.getPublicClient();
@@ -187,7 +183,9 @@ export async function deployModuleCore(
   });
 
   const dsFlashSwapRouter = await deployFlashSwapRouter(mathLib.address);
-  const univ2Factory = await deployUniV2Factory();
+  const univ2Factory = await deployUniV2Factory(
+    dsFlashSwapRouter.contract.address
+  );
   const weth = await deployWeth();
   const univ2Router = await deployUniV2Router(
     weth.contract.address,

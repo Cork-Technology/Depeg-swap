@@ -12,8 +12,6 @@ import "../../interfaces/uniswap-v2/RouterV2.sol";
 import "../../libraries/uni-v2/UniswapV2Library.sol";
 import "../../interfaces/IPSMcore.sol";
 
-import "hardhat/console.sol";
-
 contract RouterState is
     IDsFlashSwapUtility,
     IDsFlashSwapCore,
@@ -134,13 +132,6 @@ contract RouterState is
         return reserves[id];
     }
 
-    function getCurrentDsPrice(
-        Id id,
-        uint256 dsId
-    ) external view returns (uint256 price) {
-        return reserves[id].getCurrentDsPrice(dsId);
-    }
-
     function swapRaforDs(
         Id reserveId,
         uint256 dsId,
@@ -173,14 +164,7 @@ contract RouterState is
             assetPair.reserve -= amountSellFromReserve;
 
             // sell the DS tokens from the reserve
-            __swapDsforRa(
-                self,
-                assetPair,
-                reserveId,
-                dsId,
-                amountSellFromReserve,
-                0
-            );
+            __swapDsforRa(assetPair, reserveId, dsId, amountSellFromReserve, 0);
 
             // recalculate the amount of DS tokens attributed, since we sold some from the reserve
             amountOut = (self.getCurrentDsPrice(dsId) * amount) / 1e18;
@@ -259,13 +243,11 @@ contract RouterState is
         uint256 amount,
         uint256 amountOutMin
     ) external returns (uint256 amountOut) {
-        ReserveState storage self = reserves[reserveId];
-        AssetPair storage assetPair = self.ds[dsId];
+        AssetPair storage assetPair = reserves[reserveId].ds[dsId];
 
         assetPair.ds.transferFrom(msg.sender, address(this), amount);
 
         amountOut = __swapDsforRa(
-            self,
             assetPair,
             reserveId,
             dsId,
@@ -277,14 +259,13 @@ contract RouterState is
     }
 
     function __swapDsforRa(
-        ReserveState storage self,
         AssetPair storage assetPair,
         Id reserveId,
         uint256 dsId,
         uint256 amount,
         uint256 amountOutMin
     ) internal returns (uint256 amountOut) {
-        amountOut = self.getAmountOut(assetPair, dsId, amount);
+        amountOut = assetPair.getAmountOut(amount);
 
         console.log("amountout", amountOut);
 
@@ -421,7 +402,6 @@ contract RouterState is
         address caller,
         uint256 raAttributed
     ) internal {
-        console.log("ctAmount           :", ctAmount);
         AssetPair storage assetPair = self.ds[dsId];
         assetPair.ds.approve(owner(), ctAmount);
         assetPair.ct.approve(owner(), ctAmount);
@@ -430,16 +410,15 @@ contract RouterState is
 
         (uint256 received, ) = psm.redeemRaWithCtDs(reserveId, ctAmount);
 
-        console.log("raAttributed       :", raAttributed);
+        // for rounding error and to satisfy uni v2 liquidity rules(it forces us to repay 1 wei higher to prevent liquidity stealing)
+        uint256 repaymentAmount = received - raAttributed;
 
-        uint256 repaymentAmount = received - (raAttributed - 1);
-        console.log("repaymentAmount    :", repaymentAmount);
         Asset ra = assetPair.ra;
 
         assert(repaymentAmount + raAttributed >= received);
 
         // send caller their RA
-        // ra.transfer(caller, raAttributed - 1);
+        ra.transfer(caller, raAttributed);
         // repay flash loan
         ra.transfer(msg.sender, repaymentAmount);
     }

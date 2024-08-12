@@ -61,44 +61,6 @@ describe("FlashSwapRouter", function () {
   //   expect(dsPrice).to.be.equal(parseEther("0.1"));
   // });
 
-  // it("should return correct RA amount in", async function () {
-  //   const dsAmount = parseEther("2.5");
-  //   // as the default price of the ds is 0.1 RA
-  //   const expectedRaAmount = parseEther("0.25");
-  //   const ra = await fixture.dsFlashSwapRouter.contract.read.previewSwapDsforRa(
-  //     [pool.Id, pool.dsId!, dsAmount]
-  //   );
-
-  //   expect(ra).to.be.equal(expectedRaAmount);
-  // });
-
-  // it("should return correct DS amount out", async function () {
-  //   const raAmount = parseEther("1");
-
-  //   // for first issuance
-  //   //
-  //   // initialDsPrice = dsExchangeRate - ctReserve  / raReserve
-  //   // targetDs = raAmount / initialDsPrice
-  //   //
-  //   // calculating new dsPrce after selling reserve from LV, essentially increasing the ra reserve and decreasing the ct reserve on the AMM since we repay with RA and borrow CT
-  //   // dsPrice = dsExchangeRate - (ctReserve - (targetDs - (targetDS x 50%))) / raReserve + ((targetDs x 50%) - (initialDsPrice x (targetDs x 50%)))
-  //   //
-  //   // for subsequent issuance
-  //   //
-  //   // initialDsPrice = dsExchangeRate - ctReserve  / raReserve
-  //   // targetDs = raAmount / initialDsPrice
-  //   //
-  //   // calculating new dsPrce after selling reserve from LV, essentially increasing the ra reserve and decreasing the ct reserve on the AMM since we repay with RA and borrow CT
-  //   //
-  //   // dsPrice = dsExchangeRate - (ctReserve - targetDs - (targetDS x 80%)) / raReserve + targetDs - (initialDsPrice x (targetDs x 80%))
-  //   const expectedDsAmountOut = parseEther("10");
-  //   const ds = await fixture.dsFlashSwapRouter.contract.read.previewSwapRaforDs(
-  //     [pool.Id, pool.dsId!, raAmount]
-  //   );
-
-  //   expect(ds).to.be.equal(expectedDsAmountOut);
-  // });
-
   it("should sell DS", async function () {
     const raDepositAmount = parseEther("10");
 
@@ -124,6 +86,10 @@ describe("FlashSwapRouter", function () {
       dsAmount,
     ]);
 
+    const beforeBalance = await fixture.ra.read.balanceOf([
+      defaultSigner.account.address,
+    ]);
+
     await fixture.dsFlashSwapRouter.contract.write.swapDsforRa([
       pool.Id,
       pool.dsId!,
@@ -140,8 +106,20 @@ describe("FlashSwapRouter", function () {
       .then((e) => e[0]);
 
     expect(event.args.amountOut).to.be.closeTo(
-      helper.toEthersBigNumer("0.26"),
+      helper.toEthersBigNumer("0.477"),
       helper.toEthersBigNumer("0.001")
     );
+
+    const afterBalance = await fixture.ra.read.balanceOf([
+      defaultSigner.account.address,
+    ]);
+
+    expect(afterBalance).to.be.equal(beforeBalance + event.args.amountOut!);
   });
+
+  it("should return correct preview of selling DS", async function () { });
+  
+  it("should buy DS", async function () { });
+  
+  it("", async function () {});
 });
