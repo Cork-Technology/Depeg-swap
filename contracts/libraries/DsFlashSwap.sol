@@ -196,5 +196,7 @@ library DsFlashSwaplibrary {
         // you would devide this by the DS amount user bought.
         // note that we subtract 1 to enforce uni v2 rules
         amountOut = amount - repaymentAmount - 1;
+
+        assert(amountOut + repaymentAmount + 1 == amount);
     }
 }

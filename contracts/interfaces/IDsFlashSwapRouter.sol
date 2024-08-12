@@ -4,11 +4,6 @@ import "../libraries/Pair.sol";
 import "../libraries/DsFlashSwap.sol";
 
 interface IDsFlashSwapUtility {
-    function getCurrentDsPrice(
-        Id id,
-        uint256 dsId
-    ) external view returns (uint256 price);
-
     function getCurrentPriceRatio(
         Id id,
         uint256 dsId
