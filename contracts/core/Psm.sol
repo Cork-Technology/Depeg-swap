@@ -138,6 +138,29 @@ abstract contract PsmCore is IPSMcore, ModuleState, Context {
         );
     }
 
+    function redeemRaWithDs(
+        Id id,
+        uint256 dsId,
+        uint256 amount
+    ) external override onlyInitialized(id) PSMWithdrawalNotPaused(id) {
+        State storage state = states[id];
+
+        (uint256 received, uint256 _exchangeRate) = state.redeemWithDs(
+            _msgSender(),
+            amount,
+            dsId
+        );
+
+        emit DsRedeemed(
+            id,
+            dsId,
+            _msgSender(),
+            amount,
+            received,
+            _exchangeRate
+        );
+    }
+
     function exchangeRate(
         Id id
     ) external view override returns (uint256 rates) {
@@ -181,6 +204,22 @@ abstract contract PsmCore is IPSMcore, ModuleState, Context {
         emit CtRedeemed(id, dsId, _msgSender(), amount, accruedPa, accruedRa);
     }
 
+    function redeemWithCT(
+        Id id,
+        uint256 dsId,
+        uint256 amount
+    ) external override onlyInitialized(id) PSMWithdrawalNotPaused(id) {
+        State storage state = states[id];
+
+        (uint256 accruedPa, uint256 accruedRa) = state.redeemWithCt(
+            _msgSender(),
+            amount,
+            dsId
+        );
+
+        emit CtRedeemed(id, dsId, _msgSender(), amount, accruedPa, accruedRa);
+    }
+
     function previewRedeemWithCt(
         Id id,
         uint256 dsId,
@@ -200,6 +239,27 @@ abstract contract PsmCore is IPSMcore, ModuleState, Context {
     function valueLocked(Id id) external view override returns (uint256) {
         State storage state = states[id];
         return state.valueLocked();
+    }
+
+    function redeemRaWithCtDs(
+        Id id,
+        uint256 amount,
+        bytes memory rawDsPermitSig,
+        uint256 dsDeadline,
+        bytes memory rawCtPermitSig,
+        uint256 ctDeadline
+    ) external override PSMWithdrawalNotPaused(id) {
+        State storage state = states[id];
+        (uint256 ra, uint256 dsId, uint256 rates) = state.redeemRaWithCtDs(
+            _msgSender(),
+            amount,
+            rawDsPermitSig,
+            dsDeadline,
+            rawCtPermitSig,
+            ctDeadline
+        );
+
+        emit Cancelled(id, dsId, _msgSender(), ra, amount, rates);
     }
 
     function redeemRaWithCtDs(Id id, uint256 amount) external override PSMWithdrawalNotPaused(id) {
