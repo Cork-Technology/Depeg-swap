@@ -28,6 +28,9 @@ interface ICommon {
     /// @notice LV Withdrawal is paused, i.e thrown when withdrawal is paused for LV
     error LVWithdrawalPaused();
 
+    /// @notice When transaction is mutex locked for ensuring non-reentrancy 
+    error StateLocked();
+
     /// @notice Emitted when a new LV and PSM is initialized with a given pair
     /// @param id The PSM id
     /// @param pa The address of the pegged asset

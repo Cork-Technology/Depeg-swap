@@ -79,7 +79,7 @@ abstract contract VaultCore is ModuleState, Context, IVault {
         uint256 amount,
         bytes memory rawLvPermitSig,
         uint256 deadline
-    ) external override LVWithdrawalNotPaused(id) {
+    ) external override nonReentrant LVWithdrawalNotPaused(id) {
         State storage state = states[id];
         (uint256 attributedRa, uint256 attributedPa) = state.redeemExpired(
             _msgSender(),
@@ -97,7 +97,7 @@ abstract contract VaultCore is ModuleState, Context, IVault {
         Id id,
         address receiver,
         uint256 amount
-    ) external override LVWithdrawalNotPaused(id) {
+    ) external override nonReentrant LVWithdrawalNotPaused(id) {
         State storage state = states[id];
         (uint256 attributedRa, uint256 attributedPa) = state.redeemExpired(
             _msgSender(),
@@ -134,7 +134,7 @@ abstract contract VaultCore is ModuleState, Context, IVault {
         uint256 amount,
         bytes memory rawLvPermitSig,
         uint256 deadline
-    ) external override LVWithdrawalNotPaused(id) {
+    ) external override nonReentrant LVWithdrawalNotPaused(id) {
         State storage state = states[id];
         (uint256 received, uint256 fee, uint256 feePrecentage) = state
             .redeemEarly(
@@ -161,7 +161,7 @@ abstract contract VaultCore is ModuleState, Context, IVault {
         Id id,
         address receiver,
         uint256 amount
-    ) external override LVWithdrawalNotPaused(id) {
+    ) external override nonReentrant LVWithdrawalNotPaused(id) {
         State storage state = states[id];
         (uint256 received, uint256 fee, uint256 feePrecentage) = state
             .redeemEarly(
