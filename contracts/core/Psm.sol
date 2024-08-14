@@ -121,7 +121,13 @@ abstract contract PsmCore is IPSMcore, ModuleState, Context {
         uint256 amount,
         bytes memory rawDsPermitSig,
         uint256 deadline
-    ) external override nonReentrant onlyInitialized(id) PSMWithdrawalNotPaused(id) {
+    )
+        external
+        override
+        nonReentrant
+        onlyInitialized(id)
+        PSMWithdrawalNotPaused(id)
+    {
         State storage state = states[id];
 
         (uint256 received, uint256 _exchangeRate) = state.redeemWithDs(
@@ -146,7 +152,13 @@ abstract contract PsmCore is IPSMcore, ModuleState, Context {
         Id id,
         uint256 dsId,
         uint256 amount
-    ) external override nonReentrant onlyInitialized(id) PSMWithdrawalNotPaused(id) {
+    )
+        external
+        override
+        nonReentrant
+        onlyInitialized(id)
+        PSMWithdrawalNotPaused(id)
+    {
         State storage state = states[id];
 
         (uint256 received, uint256 _exchangeRate) = state.redeemWithDs(
@@ -194,7 +206,13 @@ abstract contract PsmCore is IPSMcore, ModuleState, Context {
         uint256 amount,
         bytes memory rawCtPermitSig,
         uint256 deadline
-    ) external override nonReentrant onlyInitialized(id) PSMWithdrawalNotPaused(id) {
+    )
+        external
+        override
+        nonReentrant
+        onlyInitialized(id)
+        PSMWithdrawalNotPaused(id)
+    {
         State storage state = states[id];
 
         (uint256 accruedPa, uint256 accruedRa) = state.redeemWithCt(
@@ -212,7 +230,13 @@ abstract contract PsmCore is IPSMcore, ModuleState, Context {
         Id id,
         uint256 dsId,
         uint256 amount
-    ) external override nonReentrant onlyInitialized(id) PSMWithdrawalNotPaused(id) {
+    )
+        external
+        override
+        nonReentrant
+        onlyInitialized(id)
+        PSMWithdrawalNotPaused(id)
+    {
         State storage state = states[id];
 
         (uint256 accruedPa, uint256 accruedRa) = state.redeemWithCt(
@@ -267,16 +291,21 @@ abstract contract PsmCore is IPSMcore, ModuleState, Context {
     }
 
     function redeemRaWithCtDs(
-        Id id, 
+        Id id,
         uint256 amount
-    ) external override nonReentrant PSMWithdrawalNotPaused(id) {
+    )
+        external
+        override
+        nonReentrant
+        PSMWithdrawalNotPaused(id)
+        returns (uint256 received, uint256 rates)
+    {
         State storage state = states[id];
-
         uint256 dsId;
 
-        (ra, dsId, rates) = state.redeemRaWithCtDs(_msgSender(), amount);
+        (received, dsId, rates) = state.redeemRaWithCtDs(_msgSender(), amount);
 
-        emit Cancelled(id, dsId, _msgSender(), ra, amount, rates);
+        emit Cancelled(id, dsId, _msgSender(), received, amount, rates);
     }
 
     function previewRedeemRaWithCtDs(
