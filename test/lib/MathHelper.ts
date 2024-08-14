@@ -25,7 +25,6 @@ describe("Math Helper", function () {
           ratio,
         ]);
 
-      console.log("wa: ", formatEther(wa), "ct: ", formatEther(ct));
 
       // since it costs a half of whatever ct here, it essentially boils down
       // 6666666666666666666 / 2 = 3333333333333333333 + 1
@@ -346,9 +345,6 @@ describe("Math Helper", function () {
 
       const rate3 = parseEther("0.5");
 
-      console.log(
-        `depositing ${formatEther(amount)} RA with rate ${formatEther(rate3)}`
-      );
 
       const deposit3 =
         await contract.read.calculateDepositAmountWithExchangeRate([

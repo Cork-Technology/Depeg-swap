@@ -30,8 +30,12 @@ describe("FlashSwapRouter", function () {
     secondSigner = signers[1];
   });
 
+  async function localFixture() {
+    return await helper.ModuleCoreWithInitializedPsmLv();
+   }
+
   beforeEach(async () => {
-    fixture = await loadFixture(helper.ModuleCoreWithInitializedPsmLv);
+    fixture = await loadFixture(localFixture);
 
     depositAmount = parseEther("1900");
     expiry = helper.expiry(1000000);
@@ -136,5 +140,92 @@ describe("FlashSwapRouter", function () {
     });
   });
 
-  it("should buy DS", async function () {});
+  describe("Buy DS", function () {
+    beforeEach(async () => {
+      const raDepositAmount = parseEther("10");
+
+      //deposit psm
+      await fixture.ra.write.mint([
+        defaultSigner.account.address,
+        raDepositAmount,
+      ]);
+
+      await fixture.ra.write.approve([
+        fixture.moduleCore.address,
+        raDepositAmount,
+      ]);
+
+      await fixture.moduleCore.write.depositPsm([pool.Id, raDepositAmount]);
+    });
+
+    it("should buy DS", async function () {
+      
+      const raProvided = parseEther("0.1009");
+      await fixture.ra.write.mint([defaultSigner.account.address, raProvided]);
+
+      await fixture.ra.write.approve([
+        fixture.dsFlashSwapRouter.contract.address,
+        raProvided,
+      ]);
+
+      await fixture.dsFlashSwapRouter.contract.write.swapRaforDs([
+        pool.Id,
+        pool.dsId!,
+        raProvided,
+        BigInt(0),
+      ]);
+
+      const event = await fixture.dsFlashSwapRouter.contract.getEvents
+        .RaSwapped({
+          dsId: pool.dsId!,
+          reserveId: pool.Id,
+          user: defaultSigner.account.address,
+        })
+        .then((e) => e[0]);
+
+      expect(event.args.amountOut).to.be.closeTo(
+        helper.toEthersBigNumer("1.01"),
+        helper.toEthersBigNumer("0.01")
+      );
+    });
+
+    it("should give correct buy DS preview", async function () {
+      const raProvided = parseEther("0.1009");
+      await fixture.ra.write.mint([defaultSigner.account.address, raProvided]);
+
+      await fixture.ra.write.approve([
+        fixture.dsFlashSwapRouter.contract.address,
+        raProvided,
+      ]);
+
+      const amountOutPreview =await
+        fixture.dsFlashSwapRouter.contract.read.previewSwapRaforDs([
+          pool.Id,
+          pool.dsId!,
+          raProvided,
+        ]);
+
+      expect(amountOutPreview).to.be.closeTo(
+        helper.toEthersBigNumer("1.01"),
+        helper.toEthersBigNumer("0.01")
+      );
+
+      await fixture.dsFlashSwapRouter.contract.write.swapRaforDs([
+        pool.Id,
+        pool.dsId!,
+        raProvided,
+        BigInt(0),
+      ]);
+
+      const event = await fixture.dsFlashSwapRouter.contract.getEvents
+        .RaSwapped({
+          dsId: pool.dsId!,
+          reserveId: pool.Id,
+          user: defaultSigner.account.address,
+        })
+        .then((e) => e[0]);
+
+      expect(event.args.amountOut).to.be.equal(amountOutPreview);
+    });
+  });
 });

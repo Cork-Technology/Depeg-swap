@@ -116,7 +116,7 @@ export async function deployFlashSwapRouter(mathHelper: Address) {
   const contract = await hre.viem.deployContract("RouterState", [], {
     libraries: {
       SwapperMathLibrary: mathLib.address,
-      // MathHelper: mathHelper,
+      MathHelper: mathHelper,
     },
   });
 
