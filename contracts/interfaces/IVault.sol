@@ -94,6 +94,19 @@ interface IVault {
     /**
      * @notice Request redemption of a given vault at expiry
      * @param id The Module id that is used to reference both psm and lv of a given pair
+     * @param rawLvPermitSig  The signature for Lv transfer permitted by user
+     * @param deadline  The deadline timestamp os signature expiry
+     */
+    function requestRedemption(
+        Id id, 
+        uint256 amount,
+        bytes memory rawLvPermitSig,
+        uint256 deadline
+    ) external;
+
+    /**
+     * @notice Request redemption of a given vault at expiry
+     * @param id The Module id that is used to reference both psm and lv of a given pair
      */
     function requestRedemption(Id id, uint256 amount) external;
 
@@ -107,6 +120,22 @@ interface IVault {
         Id id,
         address to,
         uint256 amount
+    ) external;
+
+    /**
+     * @notice Redeem expired lv, when there's no active DS issuance, there's no cap on the amount of lv that can be redeemed.
+     * @param id The Module id that is used to reference both psm and lv of a given pair
+     * @param receiver  The address of the receiver
+     * @param amount The amount of the asset to be redeemed
+     * @param rawLvPermitSig  The signature for Lv transfer permitted by user
+     * @param deadline  The deadline timestamp os signature expiry
+     */
+    function redeemExpiredLv(
+        Id id,
+        address receiver,
+        uint256 amount,
+        bytes memory rawLvPermitSig,
+        uint256 deadline
     ) external;
 
     /**
@@ -137,6 +166,20 @@ interface IVault {
             uint256 attributedPa,
             uint256 approvedAmount
         );
+
+    /**
+     * @notice Redeem lv before expiry
+     * @param id The Module id that is used to reference both psm and lv of a given pair
+     * @param receiver The address of the receiver
+     * @param amount The amount of the asset to be redeemed
+     */
+    function redeemEarlyLv(
+        Id id,
+        address receiver,
+        uint256 amount,
+        bytes memory rawLvPermitSig,
+        uint256 deadline
+    ) external;
 
     /**
      * @notice Redeem lv before expiry

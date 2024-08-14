@@ -9,6 +9,7 @@ import "../libraries/PsmLib.sol";
 import "../interfaces/uniswap-v2/factory.sol";
 import "./flash-swaps/FlashSwapRouter.sol";
 import "../interfaces/uniswap-v2/RouterV2.sol";
+import "../libraries/MutexLock.sol";
 
 abstract contract ModuleState is ICommon {
     using PsmLibrary for State;
@@ -108,5 +109,13 @@ abstract contract ModuleState is ICommon {
         if (getSwapAssetFactory().isDeployed(asset) == false) {
             revert InvalidAsset(asset);
         }
+    }
+
+    /// @notice This will revert if the contract is locked
+    modifier nonReentrant() {
+        if (MutexLock.isLocked()) revert StateLocked();
+        MutexLock.lock();
+        _;
+        MutexLock.unlock();
     }
 }

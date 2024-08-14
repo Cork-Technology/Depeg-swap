@@ -46,6 +46,17 @@ abstract contract VaultCore is ModuleState, Context, IVault {
         lv = VaultLibrary.previewDeposit(amount);
     }
 
+    function requestRedemption(
+        Id id, 
+        uint256 amount,
+        bytes memory rawLvPermitSig,
+        uint256 deadline
+    ) external override LVWithdrawalNotPaused(id) {
+        State storage state = states[id];
+        state.requestRedemption(_msgSender(), amount, rawLvPermitSig, deadline);
+        emit RedemptionRequested(id, _msgSender(), amount);
+    }
+
     function requestRedemption(Id id, uint256 amount) external override LVWithdrawalNotPaused(id) {
         State storage state = states[id];
         state.requestRedemption(_msgSender(), amount);
@@ -65,8 +76,28 @@ abstract contract VaultCore is ModuleState, Context, IVault {
     function redeemExpiredLv(
         Id id,
         address receiver,
+        uint256 amount,
+        bytes memory rawLvPermitSig,
+        uint256 deadline
+    ) external override nonReentrant LVWithdrawalNotPaused(id) {
+        State storage state = states[id];
+        (uint256 attributedRa, uint256 attributedPa) = state.redeemExpired(
+            _msgSender(),
+            receiver,
+            amount,
+            getAmmRouter(),
+            getRouterCore(),
+            rawLvPermitSig,
+            deadline
+        );
+        emit LvRedeemExpired(id, receiver, attributedRa, attributedPa);
+    }
+
+    function redeemExpiredLv(
+        Id id,
+        address receiver,
         uint256 amount
-    ) external override LVWithdrawalNotPaused(id) {
+    ) external override nonReentrant LVWithdrawalNotPaused(id) {
         State storage state = states[id];
         (uint256 attributedRa, uint256 attributedPa) = state.redeemExpired(
             _msgSender(),
@@ -100,8 +131,37 @@ abstract contract VaultCore is ModuleState, Context, IVault {
     function redeemEarlyLv(
         Id id,
         address receiver,
+        uint256 amount,
+        bytes memory rawLvPermitSig,
+        uint256 deadline
+    ) external override nonReentrant LVWithdrawalNotPaused(id) {
+        State storage state = states[id];
+        (uint256 received, uint256 fee, uint256 feePrecentage) = state
+            .redeemEarly(
+                _msgSender(),
+                receiver,
+                amount,
+                getRouterCore(),
+                getAmmRouter(),
+                rawLvPermitSig,
+                deadline        
+            );
+
+        emit LvRedeemEarly(
+            id,
+            _msgSender(),
+            receiver,
+            received,
+            fee,
+            feePrecentage
+        );
+    }
+
+    function redeemEarlyLv(
+        Id id,
+        address receiver,
         uint256 amount
-    ) external override LVWithdrawalNotPaused(id) {
+    ) external override nonReentrant LVWithdrawalNotPaused(id) {
         State storage state = states[id];
         (uint256 received, uint256 fee, uint256 feePrecentage) = state
             .redeemEarly(
