@@ -111,6 +111,41 @@ library DsFlashSwaplibrary {
         );
     }
 
+    function tryGetPriceRatioAfterSellDs(
+        ReserveState storage self,
+        uint256 dsId,
+        uint256 ctSubstracted,
+        uint256 raAdded
+    ) internal view returns (uint256 raPriceRatio, uint256 ctPriceRatio) {
+        AssetPair storage asset = self.ds[dsId];
+
+        address token0 = asset.pair.token0();
+        address token1 = asset.pair.token1();
+
+        (uint112 token0Reserve, uint112 token1Reserve, ) = self
+            .ds[dsId]
+            .pair
+            .getReserves();
+
+        (uint112 raReserve, uint112 ctReserve) = MinimalUniswapV2Library
+            .reverseSortWithAmount112(
+                token0,
+                token1,
+                address(asset.ra),
+                address(asset.ct),
+                token0Reserve,
+                token1Reserve
+            );
+
+        raReserve += uint112(raAdded);
+        ctReserve -= uint112(ctSubstracted);
+
+        (raPriceRatio, ctPriceRatio) = SwapperMathLibrary.getPriceRatioUniv2(
+            raReserve,
+            ctReserve
+        );
+    }
+
     function getReserve(
         ReserveState storage self,
         uint256 dsId
