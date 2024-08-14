@@ -1,6 +1,5 @@
 pragma solidity ^0.8.0;
 
-import "hardhat/console.sol";
 
 library MinimalUniswapV2Library {
     error InvalidToken();
@@ -45,7 +44,6 @@ library MinimalUniswapV2Library {
             raAmountOut = token0Amount;
             ctAmountOut = token1Amount;
         } else if (token0 == ct && token1 == ra) {
-            console.log("sort success");
             raAmountOut = token1Amount;
             ctAmountOut = token0Amount;
         } else {
