@@ -138,45 +138,56 @@ contract RouterState is
         uint256 amount,
         uint256 amountOutMin
     ) external returns (uint256 amountOut) {
-        // ReserveState storage self = reserves[reserveId];
-        // AssetPair storage assetPair = self.ds[dsId];
-        // assetPair.ra.transferFrom(msg.sender, address(this), amount);
-        // // calculate the amount of DS tokens attributed
-        // amountOut = ((amount * 1e18) / self.getCurrentDsPrice(dsId));
-        // // calculate the amount of DS tokens that will be sold from LV reserve
-        // uint256 amountSellFromReserve = amountOut -
-        //     MathHelper.calculatePrecentageFee(
-        //         self.reserveSellPressurePrecentage,
-        //         amountOut
-        //     );
-        // // sell all tokens if the sell amount is higher than the available reserve
-        // amountSellFromReserve = assetPair.reserve < amountSellFromReserve
-        //     ? assetPair.reserve
-        //     : amountSellFromReserve;
-        // // sell the DS tokens from the reserve if there's any
-        // if (amountSellFromReserve != 0) {
-        //     // decrement reserve
-        //     assetPair.reserve -= amountSellFromReserve;
-        //     // sell the DS tokens from the reserve
-        //     __swapDsforRa(assetPair, reserveId, dsId, amountSellFromReserve, 0);
-        //     // recalculate the amount of DS tokens attributed, since we sold some from the reserve
-        //     amountOut = (self.getCurrentDsPrice(dsId) * amount) / 1e18;
-        // }
-        // if (amountOut < amountOutMin) {
-        //     revert InsufficientOutputAmount();
-        // }
-        // // trigger flash swaps and send the attributed DS tokens to the user
-        // __flashSwap(
-        //     assetPair,
-        //     assetPair.pair,
-        //     amount,
-        //     0,
-        //     dsId,
-        //     reserveId,
-        //     true,
-        //     amountOut
-        // );
-        // emit RaSwapped(reserveId, dsId, msg.sender, amount, amountOut);
+        ReserveState storage self = reserves[reserveId];
+        AssetPair storage assetPair = self.ds[dsId];
+
+        assetPair.ra.transferFrom(msg.sender, address(this), amount);
+
+        uint256 borrowedAmount;
+
+        // calculate the amount of DS tokens attributed
+        (amountOut, borrowedAmount, ) = assetPair.getAmountOutBuyDS(amount);
+
+        // calculate the amount of DS tokens that will be sold from LV reserve
+        uint256 amountSellFromReserve = amountOut -
+            MathHelper.calculatePrecentageFee(
+                self.reserveSellPressurePrecentage,
+                amountOut
+            );
+
+        // sell all tokens if the sell amount is higher than the available reserve
+        amountSellFromReserve = assetPair.reserve < amountSellFromReserve
+            ? assetPair.reserve
+            : amountSellFromReserve;
+
+        // sell the DS tokens from the reserve if there's any
+        if (amountSellFromReserve != 0) {
+            // decrement reserve
+            assetPair.reserve -= amountSellFromReserve;
+            // sell the DS tokens from the reserve
+            __swapDsforRa(assetPair, reserveId, dsId, amountSellFromReserve, 0);
+            // recalculate the amount of DS tokens attributed, since we sold some from the reserve
+            (amountOut, borrowedAmount, ) = assetPair.getAmountOutBuyDS(amount);
+        }
+
+        if (amountOut < amountOutMin) {
+            revert InsufficientOutputAmount();
+        }
+
+        // trigger flash swaps and send the attributed DS tokens to the user
+
+        __flashSwap(
+            assetPair,
+            assetPair.pair,
+            borrowedAmount,
+            0,
+            dsId,
+            reserveId,
+            true,
+            amountOut
+        );
+
+        emit RaSwapped(reserveId, dsId, msg.sender, amount, amountOut);
     }
 
     function previewSwapRaforDs(
@@ -184,39 +195,46 @@ contract RouterState is
         uint256 dsId,
         uint256 amount
     ) external view returns (uint256 amountOut) {
-        // ReserveState storage self = reserves[reserveId];
-        // AssetPair storage assetPair = self.ds[dsId];
-        // uint256 dsPrice = self.getCurrentDsPrice(dsId);
-        // // calculate the amount of DS tokens attributed
-        // amountOut = ((amount * 1e18) / dsPrice);
-        // // calculate the amount of DS tokens that will be sold from LV reserve
-        // uint256 amountSellFromReserve = amountOut -
-        //     MathHelper.calculatePrecentageFee(
-        //         self.reserveSellPressurePrecentage,
-        //         amountOut
-        //     );
-        // // sell all tokens if the sell amount is higher than the available reserve
-        // amountSellFromReserve = assetPair.reserve < amountSellFromReserve
-        //     ? assetPair.reserve
-        //     : amountSellFromReserve;
-        // // sell the DS tokens from the reserve if there's any
-        // if (amountSellFromReserve != 0) {
-        //     // we borrow the same amount of CT tokens from the reserve
-        //     uint256 ctSubstracted = amountSellFromReserve;
-        //     // this the amount to repay the flash swaps
-        //     uint256 raAdded = amountSellFromReserve -
-        //         ((dsPrice * amountSellFromReserve) / 1e18);
-        //     (uint112 raReserve, uint112 ctReserve, ) = assetPair
-        //         .pair
-        //         .getReserves();
-        //     dsPrice = self.getCurrentDsPriceAfterSellDs(
-        //         dsId,
-        //         ctSubstracted,
-        //         raReserve,
-        //         ctReserve
-        //     );
-        //     amountOut = (dsPrice * amount) / 1e18;
-        // }
+        ReserveState storage self = reserves[reserveId];
+        AssetPair storage assetPair = self.ds[dsId];
+
+        uint256 borrowedAmount;
+        (amountOut, borrowedAmount, ) = assetPair.getAmountOutBuyDS(amount);
+
+        // calculate the amount of DS tokens that will be sold from LV reserve
+        uint256 amountSellFromReserve = amountOut -
+            MathHelper.calculatePrecentageFee(
+                self.reserveSellPressurePrecentage,
+                amountOut
+            );
+
+        // sell all tokens if the sell amount is higher than the available reserve
+        amountSellFromReserve = assetPair.reserve < amountSellFromReserve
+            ? assetPair.reserve
+            : amountSellFromReserve;
+
+        // sell the DS tokens from the reserve if there's any
+        if (amountSellFromReserve != 0) {
+            // we borrow the same amount of CT tokens from the reserve
+            uint256 ctSubstracted = amountSellFromReserve;
+
+            (uint112 raReserve, uint112 ctReserve, ) = assetPair
+                .pair
+                .getReserves();
+
+            (, uint256 raAdded) = assetPair.getAmountOutSellDS(
+                amountSellFromReserve
+            );
+
+            raReserve += uint112(raAdded);
+            ctReserve -= uint112(ctSubstracted);
+
+            (borrowedAmount, amountOut) = SwapperMathLibrary.getAmountOutDs(
+                int256(uint256(raReserve)),
+                int256(uint256(ctReserve)),
+                int256(amount)
+            );
+        }
     }
 
     function swapDsforRa(
@@ -247,9 +265,7 @@ contract RouterState is
         uint256 amount,
         uint256 amountOutMin
     ) internal returns (uint256 amountOut) {
-        amountOut = assetPair.getAmountOut(amount);
-
-        console.log("amountout", amountOut);
+        (amountOut, ) = assetPair.getAmountOutSellDS(amount);
 
         if (amountOut < amountOutMin) {
             revert InsufficientOutputAmount();
@@ -273,7 +289,7 @@ contract RouterState is
         uint256 amount
     ) external view returns (uint256 amountOut) {
         AssetPair storage assetPair = reserves[reserveId].ds[dsId];
-        amountOut = assetPair.getAmountOut(amount);
+        (amountOut, ) = assetPair.getAmountOutSellDS(amount);
     }
 
     function __flashSwap(
@@ -328,18 +344,11 @@ contract RouterState is
         assert(msg.sender == address(pair));
         assert(sender == address(this));
 
-        uint256 amount = amount0 == 0 ? amount1 : amount0;
-
         if (buyDs) {
-            __afterFlashswapBuy(
-                self,
-                amount,
-                reserveId,
-                dsId,
-                caller,
-                extraData
-            );
+            __afterFlashswapBuy(self, reserveId, dsId, caller, extraData);
         } else {
+            uint256 amount = amount0 == 0 ? amount1 : amount0;
+
             __afterFlashswapSell(
                 self,
                 amount,
@@ -353,26 +362,25 @@ contract RouterState is
 
     function __afterFlashswapBuy(
         ReserveState storage self,
-        uint256 raAmount,
         Id reserveId,
         uint256 dsId,
         address caller,
         uint256 dsAttributed
     ) internal {
         AssetPair storage assetPair = self.ds[dsId];
-        assetPair.ra.approve(owner(), raAmount);
+        assetPair.ra.approve(owner(), dsAttributed);
 
         IPSMcore psm = IPSMcore(owner());
-        (uint256 received, ) = psm.depositPsm(reserveId, raAmount);
+        psm.depositPsm(reserveId, dsAttributed);
+
         // should be the same, we don't compare with the RA amount since we maybe dealing
         // with a non-rebasing token, in which case the amount deposited and the amount received will always be different
         // so we simply enforce that the amount received is equal to the amount attributed to the user
-        assert(received == dsAttributed);
 
         // send caller their DS
         assetPair.ds.transfer(caller, dsAttributed);
         // repay flash loan
-        assetPair.ds.transfer(msg.sender, received);
+        assetPair.ct.transfer(msg.sender, dsAttributed);
     }
 
     function __afterFlashswapSell(
