@@ -84,6 +84,13 @@ abstract contract ModuleState is ICommon {
         _;
     }
 
+    modifier onlyFlashSwapRouter() {
+        if (msg.sender != dsFlashSwapRouter) {
+            revert OnlyFlashSwapRouterAllowed();
+        }
+        _;
+    }
+
     modifier PSMWithdrawalNotPaused(Id id) {
         if (states[id].psm.isWithdrawalPaused) {
             revert PSMWithdrawalPaused();
