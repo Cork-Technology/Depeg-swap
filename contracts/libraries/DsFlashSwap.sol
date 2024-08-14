@@ -179,13 +179,13 @@ library DsFlashSwaplibrary {
         );
     }
 
-    function getAmountOut(
+    function getAmountOutSellDS(
         AssetPair storage assetPair,
         uint256 amount
-    ) internal view returns (uint256 amountOut) {
+    ) internal view returns (uint256 amountOut, uint256 repaymentAmount) {
         (uint112 raReserve, uint112 ctReserve) = getReservesSorted(assetPair);
         // we calculate the repayment amount based on the imbalanced ct reserve since we borrow CT from the AMM
-        uint256 repaymentAmount = MinimalUniswapV2Library.getAmountIn(
+        repaymentAmount = MinimalUniswapV2Library.getAmountIn(
             amount,
             raReserve,
             ctReserve - amount
@@ -195,8 +195,39 @@ library DsFlashSwaplibrary {
         // from the amount, since we're getting back the same RA amount as DS user buy, this works. to get the effective price per DS,
         // you would devide this by the DS amount user bought.
         // note that we subtract 1 to enforce uni v2 rules
-        amountOut = amount - repaymentAmount - 1;
+        amountOut = amount - repaymentAmount;
 
-        assert(amountOut + repaymentAmount + 1 == amount);
+        // enforce uni v2 rules, pay 1 wei more
+        amountOut -= 1;
+        repaymentAmount += 1;
+
+        assert(amountOut + repaymentAmount == amount);
+    }
+
+    function getAmountOutBuyDS(
+        AssetPair storage assetPair,
+        uint256 amount
+    )
+        internal
+        view
+        returns (
+            uint256 amountOut,
+            uint256 borrowedAmount,
+            uint256 repaymentAmount
+        )
+    {
+        (uint112 raReserve, uint112 ctReserve) = getReservesSorted(assetPair);
+
+        (borrowedAmount, amountOut) = SwapperMathLibrary.getAmountOutDs(
+            int256(uint256(raReserve)),
+            int256(uint256(ctReserve)),
+            int256(amount)
+        );
+
+        repaymentAmount = MinimalUniswapV2Library.getAmountIn(
+            borrowedAmount,
+            ctReserve,
+            raReserve - borrowedAmount
+        );
     }
 }
