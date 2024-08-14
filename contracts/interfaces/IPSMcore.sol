@@ -110,11 +110,7 @@ interface IPSMcore is IRepurchase {
         uint256 deadline
     ) external;
 
-    function redeemRaWithDs(
-        Id id,
-        uint256 dsId,
-        uint256 amount
-    ) external;
+    function redeemRaWithDs(Id id, uint256 dsId, uint256 amount) external;
 
     function previewRedeemRaWithDs(
         Id id,
@@ -130,11 +126,7 @@ interface IPSMcore is IRepurchase {
         uint256 deadline
     ) external;
 
-    function redeemWithCT(
-        Id id,
-        uint256 dsId,
-        uint256 amount
-    ) external;
+    function redeemWithCT(Id id, uint256 dsId, uint256 amount) external;
 
     function previewRedeemWithCt(
         Id id,
@@ -151,7 +143,10 @@ interface IPSMcore is IRepurchase {
         uint256 ctDeadline
     ) external;
 
-    function redeemRaWithCtDs(Id id, uint256 amount) external;
+    function redeemRaWithCtDs(
+        Id id,
+        uint256 amount
+    ) external returns (uint256 received, uint256 rates);
 
     function previewRedeemRaWithCtDs(
         Id id,
