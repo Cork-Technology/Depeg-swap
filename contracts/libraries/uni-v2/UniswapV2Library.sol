@@ -1,10 +1,74 @@
 pragma solidity ^0.8.0;
 
+
 library MinimalUniswapV2Library {
+    error InvalidToken();
+
     // 0.3%
     uint public constant FEE = 997;
     // 0%
     uint public constant NO_FEE = 1000;
+
+    // returns sorted token addresses, used to handle return values from pairs sorted in this order
+    function sortTokensUnsafeWithAmount(
+        address ra,
+        address ct,
+        uint256 raAmount,
+        uint256 ctAmount
+    )
+        internal
+        pure
+        returns (
+            address token0,
+            address token1,
+            uint256 amount0,
+            uint256 amount1
+        )
+    {
+        assert(ra != ct);
+        (token0, amount0, token1, amount1) = ra < ct
+            ? (ra, raAmount, ct, ctAmount)
+            : (ct, ctAmount, ra, raAmount);
+        assert(token0 != address(0));
+    }
+
+    function reverseSortWithAmount112(
+        address token0,
+        address token1,
+        address ra,
+        address ct,
+        uint112 token0Amount,
+        uint112 token1Amount
+    ) internal pure returns (uint112 raAmountOut, uint112 ctAmountOut) {
+        if (token0 == ra && token1 == ct) {
+            raAmountOut = token0Amount;
+            ctAmountOut = token1Amount;
+        } else if (token0 == ct && token1 == ra) {
+            raAmountOut = token1Amount;
+            ctAmountOut = token0Amount;
+        } else {
+            revert InvalidToken();
+        }
+    }
+
+    function reverseSortWithAmount224(
+        address token0,
+        address token1,
+        address ra,
+        address ct,
+        uint256 token0Amount,
+        uint256 token1Amount
+    ) internal pure returns (uint256 raAmountOut, uint256 ctAmountOut) {
+        if (token0 == ra && token1 == ct) {
+            raAmountOut = token0Amount;
+            ctAmountOut = token1Amount;
+        } else if (token0 == ct && token1 == ra) {
+            raAmountOut = token1Amount;
+            ctAmountOut = token0Amount;
+        } else {
+            revert InvalidToken();
+        }
+    }
 
     // given an input amount of an asset and pair reserves, returns the maximum output amount of the other asset
     // WARNING: won't apply fee since we don't take fee from user right now

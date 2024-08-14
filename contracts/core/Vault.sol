@@ -18,11 +18,10 @@ abstract contract VaultCore is ModuleState, Context, IVault {
         (reservedRa, reservedPa) = state.reservedForWithdrawal();
     }
 
-    function depositLv(Id id, uint256 amount) 
-        external 
-        override 
-        LVDepositNotPaused(id) 
-    {
+    function depositLv(
+        Id id,
+        uint256 amount
+    ) external override LVDepositNotPaused(id) {
         State storage state = states[id];
         state.deposit(_msgSender(), amount, getRouterCore(), getAmmRouter());
         emit LvDeposited(id, _msgSender(), amount);
@@ -36,18 +35,15 @@ abstract contract VaultCore is ModuleState, Context, IVault {
         locked = state.lvLockedFor(user);
     }
 
-    function previewLvDeposit(Id id, uint256 amount) 
-        external 
-        view 
-        override 
-        LVDepositNotPaused(id) 
-        returns (uint256 lv) 
-    {
+    function previewLvDeposit(
+        Id id,
+        uint256 amount
+    ) external view override LVDepositNotPaused(id) returns (uint256 lv) {
         lv = VaultLibrary.previewDeposit(amount);
     }
 
     function requestRedemption(
-        Id id, 
+        Id id,
         uint256 amount,
         bytes memory rawLvPermitSig,
         uint256 deadline
@@ -57,7 +53,10 @@ abstract contract VaultCore is ModuleState, Context, IVault {
         emit RedemptionRequested(id, _msgSender(), amount);
     }
 
-    function requestRedemption(Id id, uint256 amount) external override LVWithdrawalNotPaused(id) {
+    function requestRedemption(
+        Id id,
+        uint256 amount
+    ) external override LVWithdrawalNotPaused(id) {
         State storage state = states[id];
         state.requestRedemption(_msgSender(), amount);
         emit RedemptionRequested(id, _msgSender(), amount);
@@ -116,7 +115,7 @@ abstract contract VaultCore is ModuleState, Context, IVault {
         external
         view
         override
-        LVWithdrawalNotPaused(id) 
+        LVWithdrawalNotPaused(id)
         returns (
             uint256 attributedRa,
             uint256 attributedPa,
@@ -144,7 +143,7 @@ abstract contract VaultCore is ModuleState, Context, IVault {
                 getRouterCore(),
                 getAmmRouter(),
                 rawLvPermitSig,
-                deadline        
+                deadline
             );
 
         emit LvRedeemEarly(
@@ -189,7 +188,7 @@ abstract contract VaultCore is ModuleState, Context, IVault {
         external
         view
         override
-        LVWithdrawalNotPaused(id) 
+        LVWithdrawalNotPaused(id)
         returns (uint256 received, uint256 fee, uint256 feePrecentage)
     {
         State storage state = states[id];
@@ -204,5 +203,18 @@ abstract contract VaultCore is ModuleState, Context, IVault {
     ) external view override returns (uint256) {
         State storage state = states[id];
         return state.vault.config.fee;
+    }
+
+    /// @dev assumes that `amount` is already transferred to the vault
+    function provideLiquidityWithFlashSwapFee(
+        Id id,
+        uint256 amount
+    ) external onlyFlashSwapRouter {
+        State storage state = states[id];
+        state.provideLiquidityWithFee(
+            amount,
+            getRouterCore(),
+            getAmmRouter()
+        );
     }
 }
