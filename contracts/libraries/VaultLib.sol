@@ -504,7 +504,6 @@ library VaultLibrary {
             return;
         }
 
-        // TODO : placeholder
         // the following things should happen here(taken directly from the whitepaper) :
         // 1. The AMM LP is redeemed to receive CT + RA
         // 2. Any excess DS in the LV is paired with CT to redeem RA
@@ -512,12 +511,7 @@ library VaultLibrary {
         // 4. End state: Only RA + redeemed PA remains
 
         self.vault.lpLiquidated.set(dsId);
-        // IMPORTANT : for now, we only unlock the wa to ourself
-        // since we don't have the AMM LP yet
-        // since the ds isn't sold right now so it's safe to do this
-        // but that means we won't receive any pegged asset from the PSM yet
-        // since the number of CT and DS in LV will always be the same
-        // due to not having an actual AMM.
+
         (uint256 raAmm, uint256 ctAmm) = __liquidateUnchecked(
             self,
             self.info.pair1,
@@ -991,22 +985,6 @@ library VaultLibrary {
 
         provideLiquidityWithFee(self, fee, flashSwapRouter, ammRouter);
         received = received - fee;
-
-        // IMPORTANT: ideally, the source of the WA that's used to fulfill
-        // early redemption should be calculated in a way that respect the
-        // current price ratio of the asset in the AMM and then an algorithm should
-        // decide how much LP WA is used, how much CT is paired with existing DS in the LV
-        // to turned into WA for user redemption, it should look like this :
-        //
-        // if the price ratio is 2:1, then for every 2 WA, there should be 1 CT
-        // assuming the DS is not sold yet, then it should use ~66% of WA and ~33% of CT to be paired with DS
-        // for user withdrawal
-        //
-        // but for now, as we don't currently have a good general grip on AMM mechanics,
-        // we calculate the rate in as if all the CT can be readyily paired with DS and turned into WA, but we
-        // but we source everything from the LP WA which will most likely has a worse side effect on price than the ideal one.
-        // you could say we currently use the "dumb" algorithm for now.
-        //
 
         ERC20Burnable(self.vault.lv._address).burnFrom(owner, amount);
         self.vault.balances.ra.unlockToUnchecked(received, receiver);
