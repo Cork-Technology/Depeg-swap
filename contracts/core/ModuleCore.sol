@@ -16,7 +16,6 @@ import "../interfaces/Init.sol";
 import "../interfaces/uniswap-v2/factory.sol";
 import "./flash-swaps/FlashSwapRouter.sol";
 
-// TODO : make entrypoint that do not rely on permit with function overloading or different function altogether
 contract ModuleCore is PsmCore, Initialize, VaultCore {
     using PsmLibrary for State;
     using PairLibrary for Pair;
@@ -41,7 +40,6 @@ contract ModuleCore is PsmCore, Initialize, VaultCore {
         return PairLibrary.initalize(pa, ra).toId();
     }
 
-    // TODO : only allow to call this from config contract later or router
     // TODO : make a pair id associated with it's interval.
     // TODO : auto issue.
     function initialize(
@@ -78,7 +76,6 @@ contract ModuleCore is PsmCore, Initialize, VaultCore {
         emit Initialized(id, pa, ra, lv);
     }
 
-    // TODO : only allow to call this from config contract later or router
     function issueNewDs(
         Id id,
         uint256 expiry,
