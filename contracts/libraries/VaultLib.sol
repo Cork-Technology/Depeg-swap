@@ -88,8 +88,12 @@ library VaultLibrary {
                 raAmount,
                 ctAmount
             );
-        (, , uint256 token0Tolerance, uint256 token1Tolerance) = MinimalUniswapV2Library
-            .sortTokensUnsafeWithAmount(
+        (
+            ,
+            ,
+            uint256 token0Tolerance,
+            uint256 token1Tolerance
+        ) = MinimalUniswapV2Library.sortTokensUnsafeWithAmount(
                 raAddress,
                 ctAddress,
                 raTolerance,
@@ -744,7 +748,7 @@ library VaultLibrary {
         IUniswapV2Router02 ammRouter,
         IDsFlashSwapCore flashSwapRouter,
         uint256 dsId
-    ) internal{
+    ) internal {
         uint256 userEligible = self.vault.pool.withdrawEligible[owner];
 
         if (userEligible == 0 && !ds.isExpired()) {
@@ -801,7 +805,15 @@ library VaultLibrary {
             uint256 dsId = self.globalAssetIdx;
             DepegSwap storage ds = self.ds[dsId];
 
-            _redeemExpired(self, ds, owner, amount, ammRouter, flashSwapRouter, dsId);
+            _redeemExpired(
+                self,
+                ds,
+                owner,
+                amount,
+                ammRouter,
+                flashSwapRouter,
+                dsId
+            );
         }
 
         uint256 burnUserAmount;
@@ -821,7 +833,15 @@ library VaultLibrary {
             burnUserAmount,
             deadline
         );
-        _processRedeemExpired(self, owner, receiver, attributedRa, attributedPa, burnUserAmount, burnSelfAmount);
+        _processRedeemExpired(
+            self,
+            owner,
+            receiver,
+            attributedRa,
+            attributedPa,
+            burnUserAmount,
+            burnSelfAmount
+        );
     }
 
     function redeemExpired(
@@ -835,7 +855,15 @@ library VaultLibrary {
         uint256 dsId = self.globalAssetIdx;
         DepegSwap storage ds = self.ds[dsId];
 
-        _redeemExpired(self, ds, owner, amount, ammRouter, flashSwapRouter, dsId);
+        _redeemExpired(
+            self,
+            ds,
+            owner,
+            amount,
+            ammRouter,
+            flashSwapRouter,
+            dsId
+        );
         uint256 burnUserAmount;
         uint256 burnSelfAmount;
 
@@ -845,7 +873,15 @@ library VaultLibrary {
             .redeem(amount, owner);
         assert(burnSelfAmount + burnUserAmount == amount);
 
-        _processRedeemExpired(self, owner, receiver, attributedRa, attributedPa, burnUserAmount, burnSelfAmount);
+        _processRedeemExpired(
+            self,
+            owner,
+            receiver,
+            attributedRa,
+            attributedPa,
+            burnUserAmount,
+            burnSelfAmount
+        );
     }
 
     function previewRedeemExpired(
@@ -918,7 +954,7 @@ library VaultLibrary {
             );
     }
 
-    // IMPORTANT : only psm and early redeem can call this function
+    // IMPORTANT : only psm, flash swap router and early redeem LV can call this function
     function provideLiquidityWithFee(
         State storage self,
         uint256 amount,
@@ -1009,7 +1045,15 @@ library VaultLibrary {
             amount,
             deadline
         );
-        return _redeemEarly(self, owner, receiver, amount, flashSwapRouter, ammRouter);
+        return
+            _redeemEarly(
+                self,
+                owner,
+                receiver,
+                amount,
+                flashSwapRouter,
+                ammRouter
+            );
     }
 
     function redeemEarly(
@@ -1021,7 +1065,15 @@ library VaultLibrary {
         IUniswapV2Router02 ammRouter
     ) external returns (uint256 received, uint256 fee, uint256 feePrecentage) {
         safeBeforeExpired(self);
-        return _redeemEarly(self, owner, receiver, amount, flashSwapRouter, ammRouter);
+        return
+            _redeemEarly(
+                self,
+                owner,
+                receiver,
+                amount,
+                flashSwapRouter,
+                ammRouter
+            );
     }
 
     function previewRedeemEarly(
