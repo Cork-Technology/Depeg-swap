@@ -11,6 +11,7 @@ import "../../interfaces/uniswap-v2/callee.sol";
 import "../../interfaces/uniswap-v2/RouterV2.sol";
 import "../../libraries/uni-v2/UniswapV2Library.sol";
 import "../../interfaces/IPSMcore.sol";
+import "../../interfaces/IVault.sol";
 
 contract RouterState is
     IDsFlashSwapUtility,
@@ -164,8 +165,20 @@ contract RouterState is
         if (amountSellFromReserve != 0) {
             // decrement reserve
             assetPair.reserve -= amountSellFromReserve;
-            // sell the DS tokens from the reserve
-            __swapDsforRa(assetPair, reserveId, dsId, amountSellFromReserve, 0);
+
+            // sell the DS tokens from the reserve and accrue value to LV holders
+            uint256 vaultRa = __swapDsforRa(
+                assetPair,
+                reserveId,
+                dsId,
+                amountSellFromReserve,
+                0
+            );
+            IVault(owner()).provideLiquidityWithFlashSwapFee(
+                reserveId,
+                vaultRa
+            );
+
             // recalculate the amount of DS tokens attributed, since we sold some from the reserve
             (amountOut, borrowedAmount, ) = assetPair.getAmountOutBuyDS(amount);
         }
@@ -215,21 +228,32 @@ contract RouterState is
 
         // sell the DS tokens from the reserve if there's any
         if (amountSellFromReserve != 0) {
+            (uint112 raReserve, uint112 ctReserve) = assetPair
+                .getReservesSorted();
+
             // we borrow the same amount of CT tokens from the reserve
-            uint256 ctSubstracted = amountSellFromReserve;
+            ctReserve -= uint112(amountSellFromReserve);
 
-            (uint112 raReserve, uint112 ctReserve, ) = assetPair
-                .pair
-                .getReserves();
-
-            (, uint256 raAdded) = assetPair.getAmountOutSellDS(
+            (uint256 vaultRa, uint256 raAdded) = assetPair.getAmountOutSellDS(
                 amountSellFromReserve
             );
+            raReserve += uint112(raAdded);
+
+            // emulate Vault way of adding liquidity using RA from selling DS reserve
+            (, uint256 ratio) = self.tryGetPriceRatioAfterSellDs(
+                dsId,
+                amountSellFromReserve,
+                raAdded
+            );
+            uint256 ctAdded;
+            (raAdded, ctAdded) = MathHelper
+                .calculateProvideLiquidityAmountBasedOnCtPrice(vaultRa, ratio);
 
             raReserve += uint112(raAdded);
-            ctReserve -= uint112(ctSubstracted);
+            ctReserve += uint112(ctAdded);
 
-            (borrowedAmount, amountOut) = SwapperMathLibrary.getAmountOutDs(
+            // update amountOut since we sold some from the reserve
+            (, amountOut) = SwapperMathLibrary.getAmountOutDs(
                 int256(uint256(raReserve)),
                 int256(uint256(ctReserve)),
                 int256(amount)
