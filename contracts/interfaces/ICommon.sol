@@ -4,6 +4,9 @@ import "../libraries/Pair.sol";
 
 interface ICommon {
 
+    /// @notice only flash swap router is allowed to call this function
+    error OnlyFlashSwapRouterAllowed();
+
     /// @notice only config contract is allowed to call this function
     error OnlyConfigAllowed();
 
