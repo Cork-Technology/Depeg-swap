@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.0;
 
-import "../../interfaces/IAssetFactory.sol";
-import "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
-import "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
-import "../../libraries/Pair.sol";
-import "./Asset.sol";
+import {IAssetFactory} from "../../interfaces/IAssetFactory.sol";
+import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
+import {UUPSUpgradeable} from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
+import {Id,Pair,PairLibrary} from "../../libraries/Pair.sol";
+import {Asset} from "./Asset.sol";
 
 contract AssetFactory is IAssetFactory, OwnableUpgradeable, UUPSUpgradeable {
     using PairLibrary for Pair;

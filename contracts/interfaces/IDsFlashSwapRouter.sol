@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.20;
-import "../libraries/Pair.sol";
-import "../libraries/DsFlashSwap.sol";
+import {Id} from "../libraries/Pair.sol";
+import {IUniswapV2Pair} from "./uniswap-v2/pair.sol";
 
 interface IDsFlashSwapUtility {
     function getCurrentPriceRatio(

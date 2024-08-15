@@ -4,7 +4,7 @@ pragma solidity ^0.8.0;
 import {AssetPair,ReserveState,DsFlashSwaplibrary} from "../../libraries/DsFlashSwap.sol";
 import {SwapperMathLibrary} from "../../libraries/DsSwapperMathLib.sol";
 import {MathHelper} from "../../libraries/MathHelper.sol";
-import {Id,Pair} from "../../libraries/Pair.sol";
+import {Id} from "../../libraries/Pair.sol";
 import {IDsFlashSwapCore, IDsFlashSwapUtility} from "../../interfaces/IDsFlashSwapRouter.sol";
 import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import {UUPSUpgradeable} from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";

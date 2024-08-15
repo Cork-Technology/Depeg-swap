@@ -1,6 +1,6 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.0;
-import "../libraries/Pair.sol";
+import {Id} from "../libraries/Pair.sol";
 
 interface Initialize {
     function initialize(
