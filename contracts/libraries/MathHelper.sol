@@ -2,7 +2,7 @@
 pragma solidity ^0.8.0;
 
 library MathHelper {
-    uint224 constant Q112 = 2 ** 112;
+    uint224 internal constant Q112 = 2 ** 112;
 
     /// @dev default decimals for now to calculate price ratio
     uint8 internal constant DEFAULT_DECIMAL = 18;

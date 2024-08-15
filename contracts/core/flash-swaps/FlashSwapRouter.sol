@@ -26,9 +26,7 @@ contract RouterState is
     using DsFlashSwaplibrary for ReserveState;
     using DsFlashSwaplibrary for AssetPair;
 
-    constructor() {}
-
-    IUniswapV2Router02 univ2Router;
+    IUniswapV2Router02 internal univ2Router;
 
     function initialize(
         address moduleCore,
@@ -40,7 +38,7 @@ contract RouterState is
         univ2Router = IUniswapV2Router02(_univ2Router);
     }
 
-    mapping(Id => ReserveState) reserves;
+    mapping(Id => ReserveState) internal reserves;
 
     function _authorizeUpgrade(
         address newImplementation

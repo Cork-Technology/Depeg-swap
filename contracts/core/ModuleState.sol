@@ -15,17 +15,17 @@ abstract contract ModuleState is ICommon {
     using PsmLibrary for State;
 
     mapping(Id => State) internal states;
-    address swapAssetFactory;
+    address internal swapAssetFactory;
 
     /// @dev in this case is uni v2
-    address ammFactory;
+    address internal ammFactory;
 
-    address dsFlashSwapRouter;
+    address internal dsFlashSwapRouter;
 
     /// @dev in this case is uni v2
-    address ammRouter;
+    address internal ammRouter;
 
-    address config;
+    address internal config;
 
     /** @dev checks if caller is config contract or not
      */

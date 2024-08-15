@@ -32,7 +32,7 @@ library VaultLibrary {
 
     // TODO : for now a static ratio deposit value used to provide liquidity for the first time, this should be changed later
     /// @notice this will set the initial CT price to 0.9 RA, thus also making the initial price of DS to be 0.1 RA
-    uint256 constant DEFAULT_AMM_DEPOSIT_RATIO = 9e17;
+    uint256 internal constant DEFAULT_AMM_DEPOSIT_RATIO = 9e17;
 
     /// @notice caller is not authorized to perform the action, e.g transfering
     /// redemption rights to another address while not having the rights
