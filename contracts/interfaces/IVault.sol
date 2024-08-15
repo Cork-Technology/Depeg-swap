@@ -87,7 +87,7 @@ interface IVault {
      * @param amount The amount of the redemption asset(ra) to be deposited
      */
     function previewLvDeposit(
-        Id id, 
+        Id id,
         uint256 amount
     ) external view returns (uint256 lv);
 
@@ -98,7 +98,7 @@ interface IVault {
      * @param deadline  The deadline timestamp os signature expiry
      */
     function requestRedemption(
-        Id id, 
+        Id id,
         uint256 amount,
         bytes memory rawLvPermitSig,
         uint256 deadline
@@ -220,13 +220,19 @@ interface IVault {
         Id id
     ) external view returns (uint256 reservedRa, uint256 reservedPa);
 
-    
     /**
      * Returns the early redemption fee percentage
      * @param id The Module id that is used to reference both psm and lv of a given pair
      */
-    function earlyRedemptionFee(
-        Id id
-    ) external view returns (uint256);
+    function earlyRedemptionFee(Id id) external view returns (uint256);
 
+    /**
+     * This will accure value for LV holders by providing liquidity to the AMM using the RA received from selling DS when a users buys DS
+     * @param id the id of the pair
+     * @param amount the amount of RA received from selling DS
+     */
+    function provideLiquidityWithFlashSwapFee(
+        Id id,
+        uint256 amount
+    ) external;
 }

@@ -7,7 +7,7 @@ import "../interfaces/IAssetFactory.sol";
 import "../interfaces/ICommon.sol";
 import "../libraries/PsmLib.sol";
 import "../interfaces/uniswap-v2/factory.sol";
-import "./flash-swaps/RouterState.sol";
+import "./flash-swaps/FlashSwapRouter.sol";
 import "../interfaces/uniswap-v2/RouterV2.sol";
 import "../libraries/MutexLock.sol";
 
@@ -80,6 +80,13 @@ abstract contract ModuleState is ICommon {
     modifier PSMDepositNotPaused(Id id) {
         if (states[id].psm.isDepositPaused) {
             revert PSMDepositPaused();
+        }
+        _;
+    }
+
+    modifier onlyFlashSwapRouter() {
+        if (msg.sender != dsFlashSwapRouter) {
+            revert OnlyFlashSwapRouterAllowed();
         }
         _;
     }
