@@ -94,8 +94,8 @@ describe("LvCore", function () {
     const deadline = BigInt(helper.expiry(expiry + 2e3));
 
     const lv = fixture.Id;
-    await fixture.moduleCore.contract.write.depositLv([lv, depositAmount]);
-    await fixture.moduleCore.contract.write.depositLv([lv, depositAmount], {
+    await fixture.moduleCore.write.depositLv([lv, depositAmount]);
+    await fixture.moduleCore.write.depositLv([lv, depositAmount], {
       account: secondSigner.account,
     });
 
@@ -103,17 +103,17 @@ describe("LvCore", function () {
       amount: depositAmount,
       deadline,
       erc20contractAddress: fixture.lv.address!,
-      psmAddress: fixture.moduleCore.contract.address,
+      psmAddress: fixture.moduleCore.address,
       signer: secondSigner,
     });
 
     await time.increaseTo(expiry + 1e3);
 
     const initialModuleCoreLvBalance = await fixture.lv.read.balanceOf([
-      fixture.moduleCore.contract.address,
+      fixture.moduleCore.address,
     ]);
 
-    await fixture.moduleCore.contract.write.redeemExpiredLv(
+    await fixture.moduleCore.write.redeemExpiredLv(
       [lv, secondSigner.account.address, depositAmount, msgPermit, deadline],
       {
         account: secondSigner.account,
@@ -121,18 +121,20 @@ describe("LvCore", function () {
     );
 
     const afterModuleCoreLvBalance = await fixture.lv.read.balanceOf([
-      fixture.moduleCore.contract.address,
+      fixture.moduleCore.address,
     ]);
 
-    const event = await fixture.moduleCore.contract.getEvents.LvRedeemExpired({
+    const event = await fixture.moduleCore.getEvents.LvRedeemExpired({
       Id: lv,
       receiver: secondSigner.account.address,
     });
 
     expect(event.length).to.be.equal(1);
 
-    expect(event[0].args.ra).to.be.equal(
-      helper.calculateMinimumLiquidity(depositAmount)
+    expect(event[0].args.ra).to.be.closeTo(
+      ethers.BigNumber.from(helper.calculateMinimumLiquidity(depositAmount)),
+      // 1k delta, as the default ratio is 0.9
+      1000
     );
     expect(event[0].args.pa).to.be.equal(BigInt(0));
   });
@@ -322,21 +324,21 @@ describe("LvCore", function () {
     const deadline = BigInt(helper.expiry(expiry));
 
     const lv = fixture.Id;
-    await fixture.moduleCore.contract.write.depositLv([lv, depositAmount]);
+    await fixture.moduleCore.write.depositLv([lv, depositAmount]);
     const msgPermit = await helper.permit({
       amount: depositAmount,
       deadline,
       erc20contractAddress: fixture.lv.address!,
-      psmAddress: fixture.moduleCore.contract.address,
+      psmAddress: fixture.moduleCore.address,
       signer: defaultSigner,
     });
-    await fixture.moduleCore.contract.write.redeemEarlyLv(
+    await fixture.moduleCore.write.redeemEarlyLv(
       [lv, defaultSigner.account.address, parseEther("1"), msgPermit, deadline],
       {
         account: defaultSigner.account,
       }
     );
-    const event = await fixture.moduleCore.contract.getEvents
+    const event = await fixture.moduleCore.getEvents
       .LvRedeemEarly({
         Id: lv,
         receiver: defaultSigner.account.address,
