@@ -88,7 +88,56 @@ describe("LvCore", function () {
     expect(depositEvent[0].args.amount).to.be.equal(depositAmount);
   });
 
-  it("should redeem expired", async function () {
+  it("should redeem expired : Permit", async function () {
+    const { Id, dsId } = await issueNewSwapAssets(expiry);
+    // just to buffer
+    const deadline = BigInt(helper.expiry(expiry + 2e3));
+
+    const lv = fixture.Id;
+    await fixture.moduleCore.contract.write.depositLv([lv, depositAmount]);
+    await fixture.moduleCore.contract.write.depositLv([lv, depositAmount], {
+      account: secondSigner.account,
+    });
+
+    const msgPermit = await helper.permit({
+      amount: depositAmount,
+      deadline,
+      erc20contractAddress: fixture.lv.address!,
+      psmAddress: fixture.moduleCore.contract.address,
+      signer: secondSigner,
+    });
+
+    await time.increaseTo(expiry + 1e3);
+
+    const initialModuleCoreLvBalance = await fixture.lv.read.balanceOf([
+      fixture.moduleCore.contract.address,
+    ]);
+
+    await fixture.moduleCore.contract.write.redeemExpiredLv(
+      [lv, secondSigner.account.address, depositAmount, msgPermit, deadline],
+      {
+        account: secondSigner.account,
+      }
+    );
+
+    const afterModuleCoreLvBalance = await fixture.lv.read.balanceOf([
+      fixture.moduleCore.contract.address,
+    ]);
+
+    const event = await fixture.moduleCore.contract.getEvents.LvRedeemExpired({
+      Id: lv,
+      receiver: secondSigner.account.address,
+    });
+
+    expect(event.length).to.be.equal(1);
+
+    expect(event[0].args.ra).to.be.equal(
+      helper.calculateMinimumLiquidity(depositAmount)
+    );
+    expect(event[0].args.pa).to.be.equal(BigInt(0));
+  });
+
+  it("should redeem expired : Approval", async function () {
     const { Id, dsId } = await issueNewSwapAssets(expiry);
 
     const lv = fixture.Id;
@@ -261,7 +310,64 @@ describe("LvCore", function () {
     expect(event[0].args.pa).to.be.equal(BigInt(0));
   });
 
-  it("should redeem early", async function () {
+  it("should redeem early : Permit", async function () {
+    const { Id } = await issueNewSwapAssets(expiry);
+    // just to buffer
+    const deadline = BigInt(helper.expiry(expiry));
+
+    const lv = fixture.Id;
+    await fixture.moduleCore.contract.write.depositLv([lv, depositAmount]);
+    const msgPermit = await helper.permit({
+      amount: depositAmount,
+      deadline,
+      erc20contractAddress: fixture.lv.address!,
+      psmAddress: fixture.moduleCore.contract.address,
+      signer: defaultSigner,
+    });
+    await fixture.moduleCore.contract.write.redeemEarlyLv(
+      [lv, defaultSigner.account.address, parseEther("1"), msgPermit, deadline],
+      {
+        account: defaultSigner.account,
+      }
+    );
+    const event = await fixture.moduleCore.contract.getEvents
+      .LvRedeemEarly({
+        Id: lv,
+        receiver: defaultSigner.account.address,
+        redeemer: defaultSigner.account.address,
+      })
+      .then((e) => e[0]);
+    expect(event.args.feePrecentage).to.be.equal(parseEther("10"));
+
+    console.log(
+      "event.args.amount                                          :",
+      formatEther(event.args.amount!)
+    );
+    console.log(
+      "helper.calculateMinimumLiquidity(parseEther('0.9'))        :",
+      "0.9"
+    );
+
+    expect(event.args.amount).to.be.closeTo(
+      ethers.BigNumber.from(
+        helper.calculateMinimumLiquidity(parseEther("0.9"))
+      ),
+      // the amount will be slightly less because this is the first issuance,
+      // caused by liquidity lock up by uni v2
+      // will receive slightly less ETH by 0,0000000000000001
+      100
+    );
+    // 10% fee
+    expect(event.args.fee).to.be.closeTo(
+      ethers.BigNumber.from(parseEther("0.1")),
+      // the amount of fee deducted will also slightles less because this is the first issuance,
+      // caused by liquidity lock up by uni v2
+      // will receive slightly less ETH by 0,0000000000000001
+      100
+    );
+  });
+
+  it("should redeem early : Approval", async function () {
     const { Id } = await issueNewSwapAssets(expiry);
 
     const lv = fixture.Id;
