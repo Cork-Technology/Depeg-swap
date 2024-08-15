@@ -1,9 +1,8 @@
 // taken directly from forked repo
 pragma solidity ^0.8.0;
-import "./UQ112x112.sol";
-import "@openzeppelin/contracts/utils/math/SignedMath.sol";
-import "@openzeppelin/contracts/utils/math/Math.sol";
-import "./uni-v2/UniswapV2Library.sol";
+import {UQ112x112} from "./UQ112x112.sol";
+import {SignedMath} from "@openzeppelin/contracts/utils/math/SignedMath.sol";
+import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 
 // library function for handling math operations for DS swap contract
 // TODO : separately test this
