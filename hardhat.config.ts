@@ -30,6 +30,8 @@ const config: HardhatUserConfig = {
       url: "https://rpc.sepolia.org	",
       chainId: 1337,
       accounts: [process.env.PRIVATE_KEY!],
+      enableTransientStorage: true,
+      loggingEnabled: true,
     },
   },
   gasReporter: {
