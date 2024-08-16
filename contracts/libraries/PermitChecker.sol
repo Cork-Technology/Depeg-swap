@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.24;
 
-import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Permit.sol";
+import {IERC20Permit} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Permit.sol";
 
 library PermitChecker {
     function supportsPermit(address token) internal view returns (bool) {
