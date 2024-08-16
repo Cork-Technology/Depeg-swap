@@ -3,6 +3,7 @@ import {
   loadFixture,
 } from "@nomicfoundation/hardhat-toolbox-viem/network-helpers";
 import { expect } from "chai";
+import { ethers } from "ethers";
 import hre from "hardhat";
 
 import { Address, formatEther, parseEther, WalletClient } from "viem";
@@ -16,6 +17,7 @@ describe("Asset Factory", function () {
   }: ReturnType<typeof helper.getSigners> = {} as any;
 
   let assetFactory: Awaited<ReturnType<typeof deployFactory>>;
+  let checksummedSecondSigner: Address;
 
   const deployFactory = async () => {
     return await hre.viem.deployContract("AssetFactory", [], {
@@ -31,6 +33,9 @@ describe("Asset Factory", function () {
   });
 
   beforeEach(async () => {
+    checksummedSecondSigner = ethers.utils.getAddress(
+      secondSigner.account.address
+    ) as Address;
     assetFactory = await loadFixture(deployFactory);
 
     await assetFactory.write.initialize([defaultSigner.account.address], {
@@ -40,6 +45,61 @@ describe("Asset Factory", function () {
 
   it("should deploy AssetFactory", async function () {
     expect(assetFactory).to.be.ok;
+  });
+
+  describe("deploySwapAssets", function () {
+    it("Revert deploySwapAssets when called by non owner", async function () {
+      const { ra, pa } = await helper.backedAssets();
+      await expect(
+        assetFactory.write.deploySwapAssets(
+          [
+            ra.address,
+            pa.address,
+            defaultSigner.account.address,
+            BigInt(helper.expiry(100000)),
+            parseEther("1"),
+          ],
+          {
+            account: secondSigner.account,
+          }
+        )
+      ).to.be.rejectedWith(
+        `OwnableUnauthorizedAccount("${checksummedSecondSigner}")`
+      );
+    });
+  });
+
+  describe("deployLv", function () {
+    it("Revert deployLv when called by non owner", async function () {
+      const { ra, pa } = await helper.backedAssets();
+      await expect(
+        assetFactory.write.deployLv(
+          [ra.address, pa.address, defaultSigner.account.address],
+          {
+            account: secondSigner.account,
+          }
+        )
+      ).to.be.rejectedWith(
+        `OwnableUnauthorizedAccount("${checksummedSecondSigner}")`
+      );
+    });
+  });
+
+  describe("getDeployedAssets", function () {
+    it("Revert getDeployedAssets when passed limit is more than max allowed value", async function () {
+      await expect(
+        assetFactory.read.getDeployedAssets([1, 11])
+      ).to.be.rejectedWith(`LimitTooLong(10, 11)`);
+    });
+  });
+
+  describe("getDeployedSwapAssets", function () {
+    it("Revert getDeployedSwapAssets when passed limit is more than max allowed value", async function () {
+      const { ra, pa } = await helper.backedAssets();
+      await expect(
+        assetFactory.read.getDeployedSwapAssets([ra.address, 1, 11])
+      ).to.be.rejectedWith(`LimitTooLong(10, 11)`);
+    });
   });
 
   it("should deploy swap assets", async function () {
