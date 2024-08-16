@@ -56,16 +56,13 @@ describe("CorkConfig", function () {
   beforeEach(async () => {
     fixture = await loadFixture(helper.ModuleCoreWithInitializedPsmLv);
 
-    moduleCore = await getModuleCore(fixture.moduleCore.contract.address);
+    moduleCore = await getModuleCore(fixture.moduleCore.address);
     corkConfig = await getCorkConfig(fixture.config.contract.address);
 
     expiryTime = helper.expiry(1e18 * 1000);
     mintAmount = parseEther("1000");
 
-    await fixture.ra.write.approve([
-      fixture.moduleCore.contract.address,
-      mintAmount,
-    ]);
+    await fixture.ra.write.approve([fixture.moduleCore.address, mintAmount]);
 
     await helper.mintRa(
       fixture.ra.address,
@@ -224,7 +221,7 @@ describe("CorkConfig", function () {
 
     it("Revert when non MANAGER call updateRepurchaseFeeRate", async function () {
       await expect(
-        corkConfig.write.updateRepurchaseFeeRate([Id, 1000], {
+        corkConfig.write.updateRepurchaseFeeRate([Id, 1000n], {
           account: secondSigner.account,
         })
       ).to.be.rejectedWith("CallerNotManager()");
@@ -248,7 +245,7 @@ describe("CorkConfig", function () {
 
     it("Revert when non MANAGER call updateEarlyRedemptionFeeRate", async function () {
       await expect(
-        corkConfig.write.updateEarlyRedemptionFeeRate([Id, 1000], {
+        corkConfig.write.updateEarlyRedemptionFeeRate([Id, 1000n], {
           account: secondSigner.account,
         })
       ).to.be.rejectedWith("CallerNotManager()");

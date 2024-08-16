@@ -4,6 +4,9 @@ import "../libraries/Pair.sol";
 
 interface ICommon {
 
+    /// @notice only flash swap router is allowed to call this function
+    error OnlyFlashSwapRouterAllowed();
+
     /// @notice only config contract is allowed to call this function
     error OnlyConfigAllowed();
 
@@ -27,6 +30,9 @@ interface ICommon {
 
     /// @notice LV Withdrawal is paused, i.e thrown when withdrawal is paused for LV
     error LVWithdrawalPaused();
+
+    /// @notice When transaction is mutex locked for ensuring non-reentrancy 
+    error StateLocked();
 
     /// @notice Emitted when a new LV and PSM is initialized with a given pair
     /// @param id The PSM id

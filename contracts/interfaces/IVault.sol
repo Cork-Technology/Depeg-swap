@@ -87,9 +87,22 @@ interface IVault {
      * @param amount The amount of the redemption asset(ra) to be deposited
      */
     function previewLvDeposit(
-        Id id, 
+        Id id,
         uint256 amount
     ) external view returns (uint256 lv);
+
+    /**
+     * @notice Request redemption of a given vault at expiry
+     * @param id The Module id that is used to reference both psm and lv of a given pair
+     * @param rawLvPermitSig  The signature for Lv transfer permitted by user
+     * @param deadline  The deadline timestamp os signature expiry
+     */
+    function requestRedemption(
+        Id id,
+        uint256 amount,
+        bytes memory rawLvPermitSig,
+        uint256 deadline
+    ) external;
 
     /**
      * @notice Request redemption of a given vault at expiry
@@ -107,6 +120,22 @@ interface IVault {
         Id id,
         address to,
         uint256 amount
+    ) external;
+
+    /**
+     * @notice Redeem expired lv, when there's no active DS issuance, there's no cap on the amount of lv that can be redeemed.
+     * @param id The Module id that is used to reference both psm and lv of a given pair
+     * @param receiver  The address of the receiver
+     * @param amount The amount of the asset to be redeemed
+     * @param rawLvPermitSig  The signature for Lv transfer permitted by user
+     * @param deadline  The deadline timestamp os signature expiry
+     */
+    function redeemExpiredLv(
+        Id id,
+        address receiver,
+        uint256 amount,
+        bytes memory rawLvPermitSig,
+        uint256 deadline
     ) external;
 
     /**
@@ -137,6 +166,20 @@ interface IVault {
             uint256 attributedPa,
             uint256 approvedAmount
         );
+
+    /**
+     * @notice Redeem lv before expiry
+     * @param id The Module id that is used to reference both psm and lv of a given pair
+     * @param receiver The address of the receiver
+     * @param amount The amount of the asset to be redeemed
+     */
+    function redeemEarlyLv(
+        Id id,
+        address receiver,
+        uint256 amount,
+        bytes memory rawLvPermitSig,
+        uint256 deadline
+    ) external;
 
     /**
      * @notice Redeem lv before expiry
@@ -177,13 +220,19 @@ interface IVault {
         Id id
     ) external view returns (uint256 reservedRa, uint256 reservedPa);
 
-    
     /**
      * Returns the early redemption fee percentage
      * @param id The Module id that is used to reference both psm and lv of a given pair
      */
-    function earlyRedemptionFee(
-        Id id
-    ) external view returns (uint256);
+    function earlyRedemptionFee(Id id) external view returns (uint256);
 
+    /**
+     * This will accure value for LV holders by providing liquidity to the AMM using the RA received from selling DS when a users buys DS
+     * @param id the id of the pair
+     * @param amount the amount of RA received from selling DS
+     */
+    function provideLiquidityWithFlashSwapFee(
+        Id id,
+        uint256 amount
+    ) external;
 }

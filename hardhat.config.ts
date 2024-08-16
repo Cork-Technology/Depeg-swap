@@ -48,6 +48,7 @@ const config: HardhatUserConfig = {
       "MathHelper",
       "VaultLibrary",
       "PsmLibrary",
+      "RouterState",
     ],
   },
 };

@@ -7,8 +7,9 @@ import "../interfaces/IAssetFactory.sol";
 import "../interfaces/ICommon.sol";
 import "../libraries/PsmLib.sol";
 import "../interfaces/uniswap-v2/factory.sol";
-import "./flash-swaps/RouterState.sol";
+import "./flash-swaps/FlashSwapRouter.sol";
 import "../interfaces/uniswap-v2/RouterV2.sol";
+import "../libraries/MutexLock.sol";
 
 abstract contract ModuleState is ICommon {
     using PsmLibrary for State;
@@ -83,6 +84,13 @@ abstract contract ModuleState is ICommon {
         _;
     }
 
+    modifier onlyFlashSwapRouter() {
+        if (msg.sender != dsFlashSwapRouter) {
+            revert OnlyFlashSwapRouterAllowed();
+        }
+        _;
+    }
+
     modifier PSMWithdrawalNotPaused(Id id) {
         if (states[id].psm.isWithdrawalPaused) {
             revert PSMWithdrawalPaused();
@@ -108,5 +116,13 @@ abstract contract ModuleState is ICommon {
         if (getSwapAssetFactory().isDeployed(asset) == false) {
             revert InvalidAsset(asset);
         }
+    }
+
+    /// @notice This will revert if the contract is locked
+    modifier nonReentrant() {
+        if (MutexLock.isLocked()) revert StateLocked();
+        MutexLock.lock();
+        _;
+        MutexLock.unlock();
     }
 }
