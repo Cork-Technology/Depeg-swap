@@ -87,6 +87,19 @@ contract CorkConfig is AccessControl, Pausable {
     }
 
     /**
+     * @dev Updates pausing status of PSM and LV pools
+     */
+    function updatePoolsStatus(
+        Id id,
+        bool isPSMDepositPaused,
+        bool isPSMWithdrawalPaused,
+        bool isLVDepositPaused,
+        bool isLVWithdrawalPaused
+    ) external onlyManager {
+        moduleCore.updatePoolsStatus(id, isPSMDepositPaused, isPSMWithdrawalPaused, isLVDepositPaused, isLVWithdrawalPaused);
+    }
+
+    /**
      * @dev Pause this contract
      */
     function pause() external onlyManager {
