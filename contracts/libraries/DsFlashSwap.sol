@@ -4,6 +4,7 @@ import {IUniswapV2Pair} from "../interfaces/uniswap-v2/pair.sol";
 import {Asset} from "../core/assets/Asset.sol";
 import {SwapperMathLibrary} from "./DsSwapperMathLib.sol";
 import {MinimalUniswapV2Library} from "./uni-v2/UniswapV2Library.sol";
+import {PermitChecker} from "./PermitChecker.sol";
 
 struct AssetPair {
     Asset ra;
@@ -263,5 +264,11 @@ library DsFlashSwaplibrary {
             ctReserve,
             raReserve - borrowedAmount
         );
+    }
+
+    function isRAsupportsPermit(
+        address token
+    ) internal view returns (bool) {
+        return PermitChecker.supportsPermit(token);
     }
 }

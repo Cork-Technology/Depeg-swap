@@ -137,7 +137,7 @@ contract ModuleCore is PsmCore, Initialize, VaultCore {
             newEarlyRedemptionFeeRate
         );
 
-        emit RepurchaseFeeRateUpdated(id, newEarlyRedemptionFeeRate);
+        emit EarlyRedemptionFeeRateUpdated(id, newEarlyRedemptionFeeRate);
     }
 
     function updatePoolsStatus(

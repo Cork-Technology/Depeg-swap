@@ -231,8 +231,11 @@ interface IVault {
      * @param id the id of the pair
      * @param amount the amount of RA received from selling DS
      */
-    function provideLiquidityWithFlashSwapFee(
-        Id id,
-        uint256 amount
-    ) external;
+    function provideLiquidityWithFlashSwapFee(Id id, uint256 amount) external;
+
+    /**
+     * Returns the amount of AMM LP tokens that the vault holds
+     * @param id The Module id that is used to reference both psm and lv of a given pair
+     */
+    function vaultLp(Id id) external view returns (uint256);
 }

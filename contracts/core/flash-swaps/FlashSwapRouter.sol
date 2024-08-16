@@ -15,6 +15,7 @@ import {MinimalUniswapV2Library} from "../../libraries/uni-v2/UniswapV2Library.s
 import {IPSMcore} from "../../interfaces/IPSMcore.sol";
 import {IVault} from "../../interfaces/IVault.sol";
 import {Asset} from "../assets/Asset.sol";
+import {DepegSwapLibrary} from "../../libraries/DepegSwapLib.sol";
 
 contract RouterState is
     IDsFlashSwapUtility,
@@ -134,17 +135,14 @@ contract RouterState is
         return reserves[id];
     }
 
-    function swapRaforDs(
+    function _swapRaforDs(
+        ReserveState storage self,
+        AssetPair storage assetPair,
         Id reserveId,
         uint256 dsId,
         uint256 amount,
         uint256 amountOutMin
-    ) external returns (uint256 amountOut) {
-        ReserveState storage self = reserves[reserveId];
-        AssetPair storage assetPair = self.ds[dsId];
-
-        assetPair.ra.transferFrom(msg.sender, address(this), amount);
-
+    ) internal returns (uint256 amountOut) {
         uint256 borrowedAmount;
 
         // calculate the amount of DS tokens attributed
@@ -200,6 +198,48 @@ contract RouterState is
             true,
             amountOut
         );
+    }
+
+    function swapRaforDs(
+        Id reserveId,
+        uint256 dsId,
+        uint256 amount,
+        uint256 amountOutMin,
+        bytes memory rawRaPermitSig,
+        uint256 deadline
+    ) external returns (uint256 amountOut) {
+        ReserveState storage self = reserves[reserveId];
+        AssetPair storage assetPair = self.ds[dsId];
+        if(!DsFlashSwaplibrary.isRAsupportsPermit(address(assetPair.ra))){
+            revert PermitNotSupported();
+        }
+
+        DepegSwapLibrary.permit(
+            address(assetPair.ra),
+            rawRaPermitSig,
+            msg.sender,
+            address(this),
+            amount,
+            deadline
+        );
+        assetPair.ra.transferFrom(msg.sender, address(this), amount);
+
+        amountOut = _swapRaforDs(self, assetPair, reserveId, dsId, amount, amountOutMin);
+
+        emit RaSwapped(reserveId, dsId, msg.sender, amount, amountOut);
+    }
+
+    function swapRaforDs(
+        Id reserveId,
+        uint256 dsId,
+        uint256 amount,
+        uint256 amountOutMin
+    ) external returns (uint256 amountOut) {
+        ReserveState storage self = reserves[reserveId];
+        AssetPair storage assetPair = self.ds[dsId];
+        assetPair.ra.transferFrom(msg.sender, address(this), amount);
+
+        amountOut = _swapRaforDs(self, assetPair, reserveId, dsId, amount, amountOutMin);
 
         emit RaSwapped(reserveId, dsId, msg.sender, amount, amountOut);
     }
@@ -260,6 +300,37 @@ contract RouterState is
                 int256(amount)
             );
         }
+    }
+
+    function swapDsforRa(
+        Id reserveId,
+        uint256 dsId,
+        uint256 amount,
+        uint256 amountOutMin,
+        bytes memory rawDsPermitSig,
+        uint256 deadline
+    ) external returns (uint256 amountOut) {
+        AssetPair storage assetPair = reserves[reserveId].ds[dsId];
+
+        DepegSwapLibrary.permit(
+            address(assetPair.ds),
+            rawDsPermitSig,
+            msg.sender,
+            address(this),
+            amount,
+            deadline
+        );
+        assetPair.ds.transferFrom(msg.sender, address(this), amount);
+
+        amountOut = __swapDsforRa(
+            assetPair,
+            reserveId,
+            dsId,
+            amount,
+            amountOutMin
+        );
+
+        emit DsSwapped(reserveId, dsId, msg.sender, amount, amountOut);
     }
 
     function swapDsforRa(

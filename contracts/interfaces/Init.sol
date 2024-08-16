@@ -27,4 +27,12 @@ interface Initialize {
         Id id,
         uint256 newEarlyRedemptionFeeRate        
     ) external;
+
+    function updatePoolsStatus(
+        Id id,
+        bool isPSMDepositPaused,
+        bool isPSMWithdrawalPaused,
+        bool isLVDepositPaused,
+        bool isLVWithdrawalPaused
+    ) external;
 }

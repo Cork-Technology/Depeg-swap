@@ -27,6 +27,7 @@ interface IDsFlashSwapUtility {
 
 interface IDsFlashSwapCore is IDsFlashSwapUtility {
     error InsufficientOutputAmount();
+    error PermitNotSupported();
 
     /**
      * @notice Emitted when DS is swapped for RA
