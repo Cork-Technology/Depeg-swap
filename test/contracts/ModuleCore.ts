@@ -30,7 +30,6 @@ describe("Module Core", function () {
 
   let moduleCore: Awaited<ReturnType<typeof getModuleCore>>;
   let corkConfig: Awaited<ReturnType<typeof getCorkConfig>>;
-  let pa: Awaited<ReturnType<typeof getPA>>;
 
   const getModuleCore = async (address: Address) => {
     return await hre.viem.getContractAt("ModuleCore", address);
@@ -38,10 +37,6 @@ describe("Module Core", function () {
 
   const getCorkConfig = async (address: Address) => {
     return await hre.viem.getContractAt("CorkConfig", address);
-  };
-
-  const getPA = async (address: Address) => {
-    return await hre.viem.getContractAt("ERC20", address);
   };
 
   before(async () => {
@@ -65,8 +60,6 @@ describe("Module Core", function () {
       defaultSigner.account.address,
       mintAmount
     );
-
-    pa = await getPA(fixture.pa.address);
   });
 
   async function issueNewSwapAssets(expiry: any, options = {}) {

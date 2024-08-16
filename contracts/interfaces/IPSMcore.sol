@@ -82,7 +82,7 @@ interface IPSMcore is IRepurchase {
         bool isLVWithdrawalPaused
     );
 
-    /// @notice Emitted when a Admin updates status of Deposit/Withdraw in the PSM / LV
+    /// @notice Emitted when a Admin updates fee rates for early redemption
     /// @param Id The PSM id
     /// @param earlyRedemptionFeeRate The new value of early redemption fee rate
     event EarlyRedemptionFeeRateUpdated(
