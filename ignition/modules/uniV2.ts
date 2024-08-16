@@ -6,6 +6,12 @@ import { Artifact } from "hardhat/types";
 import { flashSwapRouter } from "./core";
 
 export const uniV2router = buildModule("UniV2Router", (m) => {
+  const flashSwap = m.getParameter("flashSwapRouter");
+  const factory = m.getParameter("uniV2Factory");
+
+  // we insert this dynamically since, it can be a live contract
+  const weth = m.getParameter("weth");
+
   const routerArtifact: Artifact = {
     _format: "hh-sol-artifact-1",
     abi: UNIV2ROUTER.abi,
@@ -17,16 +23,17 @@ export const uniV2router = buildModule("UniV2Router", (m) => {
     sourceName: "UniV2Router.sol",
   };
 
-  const contract = m.contract<typeof UNIV2FACTORY.abi>(
+  const contract = m.contract<typeof UNIV2ROUTER.abi>(
     "UniV2Router",
-    routerArtifact
+    routerArtifact,
+    [factory, weth, flashSwap]
   );
 
   return { UniV2Router: contract };
 });
 
 export const uniV2Factory = buildModule("uniV2Factory", (m) => {
-  const flashSwap = m.useModule(flashSwapRouter);
+  const flashSwap = m.getParameter("flashSwapRouter");
   const feeToSetter = m.getAccount(0);
 
   const routerArtifact: Artifact = {
@@ -46,7 +53,7 @@ export const uniV2Factory = buildModule("uniV2Factory", (m) => {
     [feeToSetter, flashSwap]
   );
 
-  return { UniV2Router: contract };
+  return { UniV2Factory: contract };
 });
 
 export const dummyWETH = buildModule("DummyWETH", (m) => {
