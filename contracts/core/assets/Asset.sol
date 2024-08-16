@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.0;
 
-import "@openzeppelin/contracts/access/Ownable.sol";
+import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/token/ERC20/extensions/ERC20Permit.sol";
 import "@openzeppelin/contracts/token/ERC20/extensions/ERC20FlashMint.sol";
 import "@openzeppelin/contracts/token/ERC20/extensions/ERC20Burnable.sol";
-import "../../interfaces/IExpiry.sol";
-import "../../interfaces/IRates.sol";
+import {IExpiry} from "../../interfaces/IExpiry.sol";
+import {IRates} from "../../interfaces/IRates.sol";
 
 contract ExchangeRate is IRates {
     uint256 internal rate;

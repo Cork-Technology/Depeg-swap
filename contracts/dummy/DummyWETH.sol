@@ -9,7 +9,7 @@ contract DummyWETH is ERC20Burnable {
     event Deposit(address indexed dst, uint wad);
     event Withdrawal(address indexed src, uint wad);
 
-    constructor() ERC20("Wrapped ETH", "WETH") {}
+    constructor() ERC20("Dummy Wrapped ETH", "DWETH") {}
 
     fallback() external payable {
         deposit();
