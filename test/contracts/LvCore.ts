@@ -187,6 +187,105 @@ describe("LvCore", function () {
     expect(event[0].args.pa).to.be.equal(BigInt(0));
   });
 
+  it("requestRedemption should work correctly - permit ", async function () {
+    const { Id, dsId } = await issueNewSwapAssets(expiry);
+    // just to buffer
+    const deadline = BigInt(helper.expiry(expiry));
+    const lv = fixture.Id;
+
+    await fixture.moduleCore.write.depositLv([lv, depositAmount]);
+    await fixture.moduleCore.write.depositLv([lv, depositAmount], {
+      account: secondSigner.account,
+    });
+
+    const msgPermit = await helper.permit({
+      amount: depositAmount,
+      deadline,
+      erc20contractAddress: fixture.lv.address!,
+      psmAddress: fixture.moduleCore.address,
+      signer: secondSigner,
+    });
+
+    const lvLockedBefore = await fixture.moduleCore.read.lockedLvfor(
+      [Id, secondSigner.account.address],
+      {
+        account: secondSigner.account,
+      }
+    );
+    const lvBalanceBefore = await fixture.lv.read.balanceOf(
+      [secondSigner.account.address]);
+
+    await fixture.moduleCore.write.requestRedemption(
+      [Id, depositAmount, msgPermit, deadline],
+      {
+        account: secondSigner.account,
+      }
+    );
+
+    const lvLockedAfter = await fixture.moduleCore.read.lockedLvfor(
+      [Id, secondSigner.account.address],
+      {
+        account: secondSigner.account,
+      }
+    );
+    const lvBalanceAfter = await fixture.lv.read.balanceOf(
+      [secondSigner.account.address]);
+    expect(depositAmount).to.be.equal(
+      lvLockedAfter - lvLockedBefore
+    );
+    expect(depositAmount).to.be.equal(
+      lvBalanceBefore - lvBalanceAfter 
+    );
+  })
+
+  it("requestRedemption should work correctly - Approval ", async function () {
+    const { Id, dsId } = await issueNewSwapAssets(expiry);
+    const lv = fixture.Id;
+
+    await fixture.moduleCore.write.depositLv([lv, depositAmount]);
+    await fixture.moduleCore.write.depositLv([lv, depositAmount], {
+      account: secondSigner.account,
+    });
+
+    await fixture.lv.write.approve(
+      [fixture.moduleCore.address, depositAmount],
+      {
+        account: secondSigner.account,
+      }
+    );
+
+    const lvLockedBefore = await fixture.moduleCore.read.lockedLvfor(
+      [Id, secondSigner.account.address],
+      {
+        account: secondSigner.account,
+      }
+    );
+    const lvBalanceBefore = await fixture.lv.read.balanceOf(
+      [secondSigner.account.address]);
+
+    await fixture.moduleCore.write.requestRedemption(
+      [Id, depositAmount],
+      {
+        account: secondSigner.account,
+      }
+    );
+
+    const lvLockedAfter = await fixture.moduleCore.read.lockedLvfor(
+      [Id, secondSigner.account.address],
+      {
+        account: secondSigner.account,
+      }
+    );
+    const lvBalanceAfter = await fixture.lv.read.balanceOf(
+      [secondSigner.account.address]);
+    expect(depositAmount).to.be.equal(
+      lvLockedAfter - lvLockedBefore
+    );
+    expect(depositAmount).to.be.equal(
+      lvBalanceBefore - lvBalanceAfter 
+    );
+  })
+
   it("should still be able to redeem after new issuance", async function () {
     const { Id, dsId } = await issueNewSwapAssets(expiry);
     const lv = fixture.Id;
