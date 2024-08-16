@@ -130,7 +130,7 @@ describe("PSM core", function () {
       expect(event.length).to.equal(1);
     });
 
-    it("should redeem DS", async function () {
+    it("should redeem DS : Permit", async function () {
       // just to buffer
       const deadline = BigInt(helper.expiry(expiryTime));
 
@@ -188,7 +188,64 @@ describe("PSM core", function () {
       expect(event.length).to.equal(1);
     });
 
-    it("should redeem CT", async function () {
+    it("should redeem DS : Approval", async function () {
+      pa.write.approve([fixture.moduleCore.address, parseEther("10")]);
+
+      const { dsId, ds, ct } = await issueNewSwapAssets(
+        helper.nowTimestampInSeconds() + 1000
+      );
+
+      await fixture.moduleCore.write.depositPsm(
+        [fixture.Id, parseEther("10")],
+        {
+          account: defaultSigner.account,
+        }
+      );
+
+      const depositEvents =
+        await fixture.moduleCore.getEvents.PsmDeposited({
+          Id: fixture.Id,
+          dsId,
+          depositor: defaultSigner.account.address,
+        });
+
+      expect(depositEvents.length).to.equal(1);
+
+      // prepare pa
+      await fixture.pa.write.mint([defaultSigner.account.address, mintAmount]);
+
+      await fixture.pa.write.approve([
+        fixture.moduleCore.address,
+        mintAmount,
+      ]);
+
+      const dsContract = await hre.viem.getContractAt("ERC20", ds!);
+      await dsContract.write.approve([
+        fixture.moduleCore.address,
+        parseEther("10"),
+      ]);
+
+      const lockedBalance = await fixture.moduleCore.read.valueLocked([
+        fixture.Id,
+      ]);
+
+      await fixture.moduleCore.write.redeemRaWithDs(
+        [fixture.Id, dsId!, parseEther("10")],
+        {
+          account: defaultSigner.account,
+        }
+      );
+
+      const event = await fixture.moduleCore.getEvents.DsRedeemed({
+        dsId: dsId,
+        Id: fixture.Id,
+        redeemer: defaultSigner.account.address,
+      });
+
+      expect(event.length).to.equal(1);
+    });
+
+    it("should redeem CT : Permit", async function () {
       const redeemAmount = parseEther("5");
       const depositAmount = parseEther("10");
       expiryTime = 100000;
@@ -227,6 +284,56 @@ describe("PSM core", function () {
 
       await fixture.moduleCore.write.redeemWithCT(
         [fixture.Id, dsId!, redeemAmount, msgPermit, deadline],
+        {
+          account: defaultSigner.account,
+        }
+      );
+
+      const event = await fixture.moduleCore.getEvents.CtRedeemed({
+        Id: fixture.Id,
+        redeemer: defaultSigner.account.address,
+      });
+
+      expect(event[0].args.amount!).to.equal(redeemAmount);
+      expect(event[0].args.raReceived!).to.equal(redeemAmount);
+    });
+
+    it("should redeem CT : Approval", async function () {
+      const redeemAmount = parseEther("5");
+      const depositAmount = parseEther("10");
+      expiryTime = 100000;
+
+      pa.write.approve([fixture.moduleCore.address, depositAmount]);
+
+      const { dsId, ds, ct, expiry } = await issueNewSwapAssets(
+        helper.nowTimestampInSeconds() + 10000
+      );
+
+      await fixture.moduleCore.write.depositPsm(
+        [fixture.Id, depositAmount],
+        {
+          account: defaultSigner.account,
+        }
+      );
+
+      await time.increaseTo(expiry);
+
+      const ctContract = await hre.viem.getContractAt("ERC20", ct!);
+      await ctContract.write.approve([
+        fixture.moduleCore.address,
+        redeemAmount,
+      ]);
+      const [_, raReceivedPreview] =
+        await fixture.moduleCore.read.previewRedeemWithCt([
+          fixture.Id,
+          dsId!,
+          redeemAmount,
+        ]);
+
+      expect(raReceivedPreview).to.equal(redeemAmount);
+
+      await fixture.moduleCore.write.redeemWithCT(
+        [fixture.Id, dsId!, redeemAmount],
         {
           account: defaultSigner.account,
         }
@@ -359,7 +466,93 @@ describe("PSM core", function () {
   });
 
   describe("cancel position", function () {
-    it("should cancel position", async function () {
+    it("should cancel position : Permit", async function () {
+      // just to buffer
+      const deadline = BigInt(helper.expiry(expiryTime));
+
+      mintAmount = parseEther("1");
+      pa.write.approve([fixture.moduleCore.address, parseEther("10")]);
+
+      const { dsId, ds, ct } = await issueNewSwapAssets(
+        helper.nowTimestampInSeconds() + 10000,
+        { rates: parseEther("0.5") }
+      );
+
+      await fixture.moduleCore.write.depositPsm(
+        [fixture.Id, parseEther("1")],
+        {
+          account: defaultSigner.account,
+        }
+      );
+
+      const dsContract = await hre.viem.getContractAt("ERC20", ds!);
+      const dsBalance = await dsContract.read.balanceOf([
+        defaultSigner.account.address,
+      ]);
+
+      expect(dsBalance).to.equal(parseEther("2"));
+
+      const ctContract = await hre.viem.getContractAt("ERC20", ct!);
+      const ctBalance = await ctContract.read.balanceOf([
+        defaultSigner.account.address,
+      ]);
+
+      expect(ctBalance).to.equal(parseEther("2"));
+
+      const msgPermit1 = await helper.permit({
+        amount: parseEther("2"),
+        deadline,
+        erc20contractAddress: ds!,
+        psmAddress: fixture.moduleCore.address,
+        signer: defaultSigner,
+      });
+      const msgPermit2 = await helper.permit({
+        amount: parseEther("2"),
+        deadline,
+        erc20contractAddress: ct!,
+        psmAddress: fixture.moduleCore.address,
+        signer: defaultSigner,
+      });
+
+      await fixture.moduleCore.write.redeemRaWithCtDs(
+        [fixture.Id, parseEther("2"), msgPermit1, deadline, msgPermit2, deadline],
+        {
+          account: defaultSigner.account,
+        }
+      );
+
+      const events = await fixture.moduleCore.getEvents.Cancelled({
+        Id: fixture.Id,
+        redeemer: defaultSigner.account.address,
+        dsId,
+      });
+
+      const event = events[0];
+
+      expect(event.args.dSexchangeRates).to.equal(parseEther("0.5"));
+      expect(event.args.swapAmount).to.equal(parseEther("2"));
+      expect(event.args.raAmount).to.equal(parseEther("1"));
+
+      const raBalance = await fixture.ra.read.balanceOf([
+        defaultSigner.account.address,
+      ]);
+
+      expect(raBalance).to.equal(parseEther("1000"));
+
+      const afterDsBalance = await dsContract.read.balanceOf([
+        defaultSigner.account.address,
+      ]);
+
+      expect(afterDsBalance).to.equal(parseEther("0"));
+
+      const afterCtBalance = await ctContract.read.balanceOf([
+        defaultSigner.account.address,
+      ]);
+
+      expect(afterCtBalance).to.equal(parseEther("0"));
+    });
+
+    it("should cancel position : Approval", async function () {
       mintAmount = parseEther("1");
       pa.write.approve([fixture.moduleCore.address, parseEther("10")]);
 

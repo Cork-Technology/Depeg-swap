@@ -311,7 +311,7 @@ library VaultLibrary {
             self.vault.lv._address,
             rawLvPermitSig,
             owner,
-            self.vault.lv._address,
+            address(this),
             amount,
             deadline
         );

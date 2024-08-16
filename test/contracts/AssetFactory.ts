@@ -16,7 +16,7 @@ describe("Asset Factory", function () {
   }: ReturnType<typeof helper.getSigners> = {} as any;
 
   let assetFactory: Awaited<ReturnType<typeof deployFactory>>;
-  
+
   const deployFactory = async () => {
     return await hre.viem.deployContract("AssetFactory", [], {
       client: {

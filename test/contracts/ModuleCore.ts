@@ -9,7 +9,9 @@ import * as helper from "../helper/TestHelper";
 
 describe("ModuleCore", function () {
   it("should deploy", async function () {
-    const { defaultSigner } =  helper.getSigners(await hre.viem.getWalletClients());
+    const { defaultSigner } = helper.getSigners(
+      await hre.viem.getWalletClients()
+    );
 
     const mathLib = await hre.viem.deployContract("MathHelper");
     const vault = await hre.viem.deployContract("VaultLibrary", [], {

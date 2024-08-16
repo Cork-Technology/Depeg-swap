@@ -24,6 +24,10 @@ describe("FlashSwapRouter", function () {
   >;
   let pool: Awaited<ReturnType<typeof helper.issueNewSwapAssets>>;
 
+  const getDs = async (address: Address) => {
+    return await hre.viem.getContractAt("ERC20", address);
+  };
+
   before(async () => {
     const __signers = await hre.viem.getWalletClients();
     ({ defaultSigner, signers } = helper.getSigners(__signers));
@@ -57,6 +61,7 @@ describe("FlashSwapRouter", function () {
 
   describe("Sell DS", function () {
     const dsAmount = parseEther("5");
+    let dsContract:Awaited<ReturnType<typeof getDs>>;
 
     beforeEach(async () => {
       const raDepositAmount = parseEther("10");
@@ -74,11 +79,7 @@ describe("FlashSwapRouter", function () {
 
       await fixture.moduleCore.write.depositPsm([pool.Id, raDepositAmount]);
 
-      const ds = await hre.viem.getContractAt("ERC20", pool.ds!);
-      await ds.write.approve([
-        fixture.dsFlashSwapRouter.contract.address,
-        dsAmount,
-      ]);
+      dsContract = await getDs(pool.ds!);
     });
 
     it("should return correct preview of selling DS", async function () {
@@ -88,6 +89,11 @@ describe("FlashSwapRouter", function () {
           pool.dsId!,
           dsAmount,
         ]);
+
+      await dsContract.write.approve([
+        fixture.dsFlashSwapRouter.contract.address,
+        dsAmount,
+      ]);
 
       await fixture.dsFlashSwapRouter.contract.write.swapDsforRa([
         pool.Id,
@@ -107,7 +113,56 @@ describe("FlashSwapRouter", function () {
       expect(event.args.amountOut).to.be.equal(previewAmountOut);
     });
 
-    it("should sell DS", async function () {
+    it("should sell DS : Permit", async function () {
+      // just to buffer
+      const deadline = BigInt(helper.expiry(expiry));
+      const permitmsg = await helper.permit({
+        amount: dsAmount,
+        deadline,
+        erc20contractAddress: dsContract.address!,
+        psmAddress: fixture.dsFlashSwapRouter.contract.address,
+        signer: defaultSigner,
+      });
+
+      const beforeBalance = await fixture.ra.read.balanceOf([
+        defaultSigner.account.address,
+      ]);
+
+      await fixture.dsFlashSwapRouter.contract.write.swapDsforRa([
+        pool.Id,
+        pool.dsId!,
+        dsAmount,
+        BigInt(0),
+        permitmsg,
+        deadline
+      ]);
+
+      const event = await fixture.dsFlashSwapRouter.contract.getEvents
+        .DsSwapped({
+          dsId: pool.dsId!,
+          reserveId: pool.Id,
+          user: defaultSigner.account.address,
+        })
+        .then((e) => e[0]);
+
+      expect(event.args.amountOut).to.be.closeTo(
+        helper.toEthersBigNumer("0.477"),
+        helper.toEthersBigNumer("0.001")
+      );
+
+      const afterBalance = await fixture.ra.read.balanceOf([
+        defaultSigner.account.address,
+      ]);
+
+      expect(afterBalance).to.be.equal(beforeBalance + event.args.amountOut!);
+    });
+
+    it("should sell DS : Approval", async function () {
+      await dsContract.write.approve([
+        fixture.dsFlashSwapRouter.contract.address,
+        dsAmount,
+      ]);
+
       const beforeBalance = await fixture.ra.read.balanceOf([
         defaultSigner.account.address,
       ]);
@@ -158,8 +213,44 @@ describe("FlashSwapRouter", function () {
       await fixture.moduleCore.write.depositPsm([pool.Id, raDepositAmount]);
     });
 
-    it("should buy DS", async function () {
-      
+    it("should buy DS : Permit", async function () {
+      // just to buffer
+      const deadline = BigInt(helper.expiry(expiry));
+      const raProvided = parseEther("0.1009");
+      await fixture.ra.write.mint([defaultSigner.account.address, raProvided]);
+
+      const permitmsg = await helper.permit({
+        amount: raProvided,
+        deadline,
+        erc20contractAddress: fixture.ra.address!,
+        psmAddress: fixture.dsFlashSwapRouter.contract.address,
+        signer: defaultSigner,
+      });
+
+      await fixture.dsFlashSwapRouter.contract.write.swapRaforDs([
+        pool.Id,
+        pool.dsId!,
+        raProvided,
+        BigInt(0),
+        permitmsg,
+        deadline
+      ]);
+
+      const event = await fixture.dsFlashSwapRouter.contract.getEvents
+        .RaSwapped({
+          dsId: pool.dsId!,
+          reserveId: pool.Id,
+          user: defaultSigner.account.address,
+        })
+        .then((e) => e[0]);
+
+      expect(event.args.amountOut).to.be.closeTo(
+        helper.toEthersBigNumer("1.01"),
+        helper.toEthersBigNumer("0.01")
+      );
+    });
+
+    it("should buy DS : Approval", async function () {
       const raProvided = parseEther("0.1009");
       await fixture.ra.write.mint([defaultSigner.account.address, raProvided]);
 
