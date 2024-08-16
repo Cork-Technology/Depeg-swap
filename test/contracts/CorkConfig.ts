@@ -36,6 +36,18 @@ describe("CorkConfig", function () {
     return await hre.viem.getContractAt("ERC20", address);
   };
 
+  async function issueNewSwapAssets(expiry: any, options = {}) {
+    return await helper.issueNewSwapAssets({
+      expiry: expiry,
+      moduleCore: fixture.moduleCore.address,
+      config: fixture.config.contract.address,
+      pa: fixture.pa.address,
+      ra: fixture.ra.address,
+      factory: fixture.factory.contract.address,
+      ...options,
+    });
+  }
+
   before(async () => {
     const __signers = await hre.viem.getWalletClients();
     ({ defaultSigner, secondSigner, signers } = helper.getSigners(__signers));
@@ -200,8 +212,8 @@ describe("CorkConfig", function () {
       expect(await moduleCore.read.repurchaseFee([Id])).to.be.equals(
         parseUnits("0", 1)
       );
-      await expect(
-        await corkConfig.write.updateRepurchaseFeeRate([Id, 1000], {
+      expect(
+        await corkConfig.write.updateRepurchaseFeeRate([Id, 1000n], {
           account: defaultSigner.account,
         })
       ).to.be.ok;
@@ -224,8 +236,8 @@ describe("CorkConfig", function () {
       expect(await moduleCore.read.earlyRedemptionFee([Id])).to.be.equals(
         parseEther("10")
       );
-      await expect(
-        await corkConfig.write.updateEarlyRedemptionFeeRate([Id, 1000], {
+      expect(
+        await corkConfig.write.updateEarlyRedemptionFeeRate([Id, 1000n], {
           account: defaultSigner.account,
         })
       ).to.be.ok;
@@ -237,6 +249,73 @@ describe("CorkConfig", function () {
     it("Revert when non MANAGER call updateEarlyRedemptionFeeRate", async function () {
       await expect(
         corkConfig.write.updateEarlyRedemptionFeeRate([Id, 1000], {
+          account: secondSigner.account,
+        })
+      ).to.be.rejectedWith("CallerNotManager()");
+    });
+  });
+
+  describe("updatePoolsStatus", function () {
+    it("updatePoolsStatus should work correctly", async function () {
+      const depositAmount = parseEther("10");
+      pa.write.approve([fixture.moduleCore.address, depositAmount]);
+      const { dsId } = await issueNewSwapAssets(
+        helper.nowTimestampInSeconds() + 10000
+      );
+      await fixture.moduleCore.write.depositPsm([fixture.Id, depositAmount]);
+
+      expect(
+        await corkConfig.write.updatePoolsStatus([Id, true, true, true, true], {
+          account: defaultSigner.account,
+        })
+      ).to.be.ok;
+
+      await expect(
+        fixture.moduleCore.write.depositPsm([fixture.Id, depositAmount])
+      ).to.be.rejectedWith("PSMDepositPaused()");
+
+      await expect(
+        fixture.moduleCore.write.redeemRaWithDs([
+          fixture.Id,
+          dsId!,
+          depositAmount,
+        ])
+      ).to.be.rejectedWith("PSMWithdrawalPaused()");
+
+      await expect(
+        fixture.moduleCore.write.redeemWithCT([
+          fixture.Id,
+          dsId!,
+          depositAmount,
+        ])
+      ).to.be.rejectedWith("PSMWithdrawalPaused()");
+
+      await expect(
+        fixture.moduleCore.write.redeemRaWithCtDs([fixture.Id, parseEther("2")])
+      ).to.be.rejectedWith("PSMWithdrawalPaused()");
+
+      await expect(
+        fixture.moduleCore.write.depositLv([fixture.Id, parseEther("2")])
+      ).to.be.rejectedWith("LVDepositPaused()");
+
+      await expect(
+        fixture.moduleCore.write.requestRedemption([Id, depositAmount])
+      ).to.be.rejectedWith("LVWithdrawalPaused()");
+  
+      await expect(
+        fixture.moduleCore.write.redeemExpiredLv(
+          [fixture.Id, secondSigner.account.address, depositAmount + BigInt(1)])
+      ).to.be.rejectedWith("LVWithdrawalPaused()");
+
+      await expect(
+        fixture.moduleCore.write.redeemEarlyLv(
+          [fixture.Id, defaultSigner.account.address, parseEther("1")])
+      ).to.be.rejectedWith("LVWithdrawalPaused()");
+    });
+
+    it("Revert when non MANAGER call updatePoolsStatus", async function () {
+      await expect(
+        corkConfig.write.updatePoolsStatus([Id, false, false, false, false], {
           account: secondSigner.account,
         })
       ).to.be.rejectedWith("CallerNotManager()");
