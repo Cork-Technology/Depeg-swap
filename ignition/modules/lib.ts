@@ -1,7 +1,13 @@
 import { buildModule } from "@nomicfoundation/hardhat-ignition/modules";
 
 export const vaultLib = buildModule("VaultLib", (m) => {
-  const contract = m.library("VaultLibrary");
+  const mathHelper = m.library("MathHelper");
+
+  const contract = m.library("VaultLibrary", {
+    libraries: {
+      MathHelper: mathHelper,
+    },
+  });
 
   return { VaultLibrary: contract };
 });
