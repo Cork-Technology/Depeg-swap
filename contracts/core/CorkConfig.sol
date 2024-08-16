@@ -98,7 +98,7 @@ contract CorkConfig is AccessControl, Pausable {
     ) external onlyManager {
         moduleCore.updatePoolsStatus(id, isPSMDepositPaused, isPSMWithdrawalPaused, isLVDepositPaused, isLVWithdrawalPaused);
     }
-
+    
     /**
      * @dev Pause this contract
      */
