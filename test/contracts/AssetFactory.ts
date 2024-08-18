@@ -30,6 +30,7 @@ describe("Asset Factory", function () {
   async function getCheckSummedAdrress(address: Address) {
     return ethers.utils.getAddress(address) as Address;
   }
+
   before(async () => {
     const __signers = await hre.viem.getWalletClients();
     ({ defaultSigner, secondSigner, signers } = helper.getSigners(__signers));

@@ -162,4 +162,10 @@ interface IPSMcore is IRepurchase {
     ) external view returns (uint256 ra, uint256 rates);
 
     function valueLocked(Id id) external view returns (uint256);
+
+    function redeemed(
+        Id id,
+        uint256 dsId
+    ) external view returns (uint256 amount);
+
 }

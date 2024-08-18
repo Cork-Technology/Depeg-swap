@@ -1016,6 +1016,38 @@ describe("PSM core", function () {
     // we deposited on this DS ID, we can consider this a success
     expect(event.args.raReceived!).to.equal(parseEther("100"));
   });
+
+  describe("redeemed", function () {
+    it("redeemed should work correctly", async function () {
+      pa.write.approve([fixture.moduleCore.address, parseEther("10")]);
+
+      const { dsId, ds, ct } = await issueNewSwapAssets(
+        helper.nowTimestampInSeconds() + 1000
+      );
+
+      await fixture.moduleCore.write.depositPsm([fixture.Id, parseEther("10")]);
+
+      // prepare pa
+      await fixture.pa.write.mint([defaultSigner.account.address, mintAmount]);
+      await fixture.pa.write.approve([fixture.moduleCore.address, mintAmount]);
+
+      const dsContract = await hre.viem.getContractAt("ERC20", ds!);
+      await dsContract.write.approve([
+        fixture.moduleCore.address,
+        parseEther("10"),
+      ]);
+
+      await fixture.moduleCore.write.redeemRaWithDs(
+        [fixture.Id, dsId!, parseEther("9.99")],
+        {
+          account: defaultSigner.account,
+        }
+      );
+      expect(
+        await fixture.moduleCore.read.redeemed([fixture.Id, dsId])
+      ).to.equal(parseEther("9.99"));
+    });
+  });
 });
 
 // TODO : test redeem ct + ds in 1 scenario, verify the amount is correct!

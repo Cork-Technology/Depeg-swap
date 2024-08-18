@@ -522,7 +522,7 @@ library PsmLibrary {
     function redeemed(
         State storage self,
         uint256 dsId
-    ) external view returns (uint256 amount) {
+    ) internal view returns (uint256 amount) {
         amount = self.ds[dsId].dsRedeemed;
     }
 

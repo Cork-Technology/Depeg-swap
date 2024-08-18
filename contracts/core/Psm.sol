@@ -226,6 +226,14 @@ abstract contract PsmCore is IPSMcore, ModuleState, Context {
         emit CtRedeemed(id, dsId, _msgSender(), amount, accruedPa, accruedRa);
     }
 
+    function redeemed(
+        Id id,
+        uint256 dsId
+    ) external override view returns (uint256 amount) {
+        State storage state = states[id];
+        return state.redeemed(dsId);
+    }
+
     function redeemWithCT(
         Id id,
         uint256 dsId,
