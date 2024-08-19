@@ -37,11 +37,19 @@ export const ModuleCore = buildModule("ModuleCore", (m) => {
   const _flashSwapRouter = m.getParameter("flashSwapRouter");
   const _uniV2Router = m.getParameter("uniV2Router");
   const _corkConfig = m.getParameter("corkConfig");
+  const _baseFee = m.getParameter("psmBaseFeeRedemption");
 
   const contract = m.contract(
     "ModuleCore",
     moduleCore,
-    [_assetFactory, _uniV2Factory, _flashSwapRouter, _uniV2Router, _corkConfig],
+    [
+      _assetFactory,
+      _uniV2Factory,
+      _flashSwapRouter,
+      _uniV2Router,
+      _corkConfig,
+      _baseFee,
+    ],
     {
       libraries: {
         MathHelper: MathHelper,

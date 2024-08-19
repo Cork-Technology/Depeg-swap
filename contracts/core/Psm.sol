@@ -129,13 +129,24 @@ abstract contract PsmCore is IPSMcore, ModuleState, Context {
         PSMWithdrawalNotPaused(id)
     {
         State storage state = states[id];
+        // gas savings
+        uint256 feePrecentage = psmBaseRedemptionFeePrecentage;
 
-        (uint256 received, uint256 _exchangeRate) = state.redeemWithDs(
-            _msgSender(),
-            amount,
-            dsId,
-            rawDsPermitSig,
-            deadline
+        (uint256 received, uint256 _exchangeRate, uint256 fee) = state
+            .redeemWithDs(
+                _msgSender(),
+                amount,
+                dsId,
+                rawDsPermitSig,
+                deadline,
+                feePrecentage
+            );
+
+        VaultLibrary.provideLiquidityWithFee(
+            state,
+            fee,
+            getRouterCore(),
+            getAmmRouter()
         );
 
         emit DsRedeemed(
@@ -144,7 +155,9 @@ abstract contract PsmCore is IPSMcore, ModuleState, Context {
             _msgSender(),
             amount,
             received,
-            _exchangeRate
+            _exchangeRate,
+            feePrecentage,
+            fee
         );
     }
 
@@ -160,11 +173,17 @@ abstract contract PsmCore is IPSMcore, ModuleState, Context {
         PSMWithdrawalNotPaused(id)
     {
         State storage state = states[id];
+        // gas savings
+        uint256 feePrecentage = psmBaseRedemptionFeePrecentage;
 
-        (uint256 received, uint256 _exchangeRate) = state.redeemWithDs(
-            _msgSender(),
-            amount,
-            dsId
+        (uint256 received, uint256 _exchangeRate, uint256 fee) = state
+            .redeemWithDs(_msgSender(), amount, dsId, feePrecentage);
+
+        VaultLibrary.provideLiquidityWithFee(
+            state,
+            fee,
+            getRouterCore(),
+            getAmmRouter()
         );
 
         emit DsRedeemed(
@@ -173,7 +192,9 @@ abstract contract PsmCore is IPSMcore, ModuleState, Context {
             _msgSender(),
             amount,
             received,
-            _exchangeRate
+            _exchangeRate,
+            feePrecentage,
+            fee
         );
     }
 
@@ -320,5 +341,9 @@ abstract contract PsmCore is IPSMcore, ModuleState, Context {
     {
         State storage state = states[id];
         (ra, , rates) = state.previewRedeemRaWithCtDs(amount);
+    }
+
+    function baseRedemptionFee() external view override returns (uint256) {
+        return psmBaseRedemptionFeePrecentage;
     }
 }

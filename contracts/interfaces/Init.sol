@@ -20,12 +20,12 @@ interface Initialize {
 
     function updateRepurchaseFeeRate(
         Id id,
-        uint256 newRepurchaseFeePrecentage        
+        uint256 newRepurchaseFeePrecentage
     ) external;
 
     function updateEarlyRedemptionFeeRate(
         Id id,
-        uint256 newEarlyRedemptionFeeRate        
+        uint256 newEarlyRedemptionFeeRate
     ) external;
 
     function updatePoolsStatus(
@@ -34,5 +34,9 @@ interface Initialize {
         bool isPSMWithdrawalPaused,
         bool isLVDepositPaused,
         bool isLVWithdrawalPaused
+    ) external;
+
+    function updatePsmBaseRedemptionFeePrecentage(
+        uint256 newPsmBaseRedemptionFeePrecentage
     ) external;
 }

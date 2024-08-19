@@ -160,8 +160,9 @@ describe("PSM core", function () {
 
       await fixture.pa.write.approve([fixture.moduleCore.address, mintAmount]);
 
+      const redeemAmount = parseEther("10");
       const permitmsg = await helper.permit({
-        amount: parseEther("10"),
+        amount: redeemAmount,
         deadline,
         erc20contractAddress: ds!,
         psmAddress: fixture.moduleCore.address,
@@ -173,19 +174,24 @@ describe("PSM core", function () {
       ]);
 
       await fixture.moduleCore.write.redeemRaWithDs(
-        [fixture.Id, dsId!, parseEther("10"), permitmsg, deadline],
+        [fixture.Id, dsId!, redeemAmount, permitmsg, deadline],
         {
           account: defaultSigner.account,
         }
       );
 
-      const event = await fixture.moduleCore.getEvents.DsRedeemed({
-        dsId: dsId,
-        Id: fixture.Id,
-        redeemer: defaultSigner.account.address,
-      });
+      const event = await fixture.moduleCore.getEvents
+        .DsRedeemed({
+          dsId: dsId,
+          Id: fixture.Id,
+          redeemer: defaultSigner.account.address,
+        })
+        .then((e) => e[0]);
 
-      expect(event.length).to.equal(1);
+      expect(event.args.received!).to.equal(
+        redeemAmount - helper.calculatePrecentage(redeemAmount)
+      );
+      expect(event.args.fee).to.equal(helper.calculatePrecentage(redeemAmount));
     });
 
     it("should redeem DS : Approval", async function () {
@@ -202,22 +208,18 @@ describe("PSM core", function () {
         }
       );
 
-      const depositEvents =
-        await fixture.moduleCore.getEvents.PsmDeposited({
-          Id: fixture.Id,
-          dsId,
-          depositor: defaultSigner.account.address,
-        });
+      const depositEvents = await fixture.moduleCore.getEvents.PsmDeposited({
+        Id: fixture.Id,
+        dsId,
+        depositor: defaultSigner.account.address,
+      });
 
       expect(depositEvents.length).to.equal(1);
 
       // prepare pa
       await fixture.pa.write.mint([defaultSigner.account.address, mintAmount]);
 
-      await fixture.pa.write.approve([
-        fixture.moduleCore.address,
-        mintAmount,
-      ]);
+      await fixture.pa.write.approve([fixture.moduleCore.address, mintAmount]);
 
       const dsContract = await hre.viem.getContractAt("ERC20", ds!);
       await dsContract.write.approve([
@@ -309,12 +311,9 @@ describe("PSM core", function () {
         helper.nowTimestampInSeconds() + 10000
       );
 
-      await fixture.moduleCore.write.depositPsm(
-        [fixture.Id, depositAmount],
-        {
-          account: defaultSigner.account,
-        }
-      );
+      await fixture.moduleCore.write.depositPsm([fixture.Id, depositAmount], {
+        account: defaultSigner.account,
+      });
 
       await time.increaseTo(expiry);
 
@@ -428,7 +427,9 @@ describe("PSM core", function () {
       });
 
       expect(event[0].args.dsExchangeRate).to.equal(rates);
-      expect(event[0].args.received).to.equal(depositAmount);
+      expect(event[0].args.received).to.equal(
+        depositAmount - helper.calculatePrecentage(depositAmount)
+      );
     });
 
     it("should get correct preview output", async function () {
@@ -478,12 +479,9 @@ describe("PSM core", function () {
         { rates: parseEther("0.5") }
       );
 
-      await fixture.moduleCore.write.depositPsm(
-        [fixture.Id, parseEther("1")],
-        {
-          account: defaultSigner.account,
-        }
-      );
+      await fixture.moduleCore.write.depositPsm([fixture.Id, parseEther("1")], {
+        account: defaultSigner.account,
+      });
 
       const dsContract = await hre.viem.getContractAt("ERC20", ds!);
       const dsBalance = await dsContract.read.balanceOf([
@@ -515,7 +513,14 @@ describe("PSM core", function () {
       });
 
       await fixture.moduleCore.write.redeemRaWithCtDs(
-        [fixture.Id, parseEther("2"), msgPermit1, deadline, msgPermit2, deadline],
+        [
+          fixture.Id,
+          parseEther("2"),
+          msgPermit1,
+          deadline,
+          msgPermit2,
+          deadline,
+        ],
         {
           account: defaultSigner.account,
         }

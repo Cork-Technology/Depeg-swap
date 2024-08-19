@@ -416,19 +416,24 @@ library PsmLibrary {
         State storage self,
         DepegSwap storage ds,
         address owner,
-        uint256 amount
-    ) internal returns (uint256 received, uint256 _exchangeRate) {
+        uint256 amount,
+        uint256 feePrecentage
+    ) internal returns (uint256 received, uint256 _exchangeRate, uint256 fee) {
         IERC20(ds._address).transferFrom(owner, address(this), amount);
-        self.info.peggedAsset().asErc20().transferFrom(
-            owner,
-            address(this),
-            amount
-        );
 
         _exchangeRate = ds.exchangeRate();
         received = MathHelper.calculateRedeemAmountWithExchangeRate(
             amount,
             _exchangeRate
+        );
+
+        fee = MathHelper.calculatePrecentageFee(received, feePrecentage);
+        received -= fee;
+
+        self.info.peggedAsset().asErc20().transferFrom(
+            owner,
+            address(this),
+            amount
         );
 
         self.psm.balances.ra.unlockTo(owner, received);
@@ -450,14 +455,16 @@ library PsmLibrary {
         State storage self,
         DepegSwap storage ds,
         address owner,
-        uint256 amount
-    ) internal returns (uint256 received, uint256 _exchangeRate) {
+        uint256 amount,
+        uint256 feePrecentage
+    ) internal returns (uint256 received, uint256 _exchangeRate, uint256 fee) {
         _redeemDs(self.psm.balances, ds, amount);
-        (received, _exchangeRate) = _afterRedeemWithDs(
+        (received, _exchangeRate, fee) = _afterRedeemWithDs(
             self,
             ds,
             owner,
-            amount
+            amount,
+            feePrecentage
         );
     }
 
@@ -472,8 +479,9 @@ library PsmLibrary {
         uint256 amount,
         uint256 dsId,
         bytes memory rawDsPermitSig,
-        uint256 deadline
-    ) internal returns (uint256, uint256) {
+        uint256 deadline,
+        uint256 feePrecentage
+    ) internal returns (uint256 received, uint256 _exchangeRate, uint256 fee) {
         DepegSwap storage ds = self.ds[dsId];
         Guard.safeBeforeExpired(ds);
         DepegSwapLibrary.permit(
@@ -484,7 +492,13 @@ library PsmLibrary {
             amount,
             deadline
         );
-        return _redeemWithDs(self, ds, owner, amount);
+        (received, _exchangeRate, fee) = _redeemWithDs(
+            self,
+            ds,
+            owner,
+            amount,
+            feePrecentage
+        );
     }
 
     /// @notice redeem an RA with DS + PA
@@ -492,11 +506,18 @@ library PsmLibrary {
         State storage self,
         address owner,
         uint256 amount,
-        uint256 dsId
-    ) internal returns (uint256 received, uint256 _exchangeRate) {
+        uint256 dsId,
+        uint256 feePrecentage
+    ) internal returns (uint256 received, uint256 _exchangeRate, uint256 fee) {
         DepegSwap storage ds = self.ds[dsId];
         Guard.safeBeforeExpired(ds);
-        return _redeemWithDs(self, ds, owner, amount);
+        (received, _exchangeRate, fee) = _redeemWithDs(
+            self,
+            ds,
+            owner,
+            amount,
+            feePrecentage
+        );
     }
 
     /// @notice simulate a ds redeem.
@@ -604,14 +625,7 @@ library PsmLibrary {
 
         _beforeCtRedeem(self, ds, dsId, amount, accruedPa, accruedRa);
 
-        _afterCtRedeem(
-            self,
-            ds,
-            owner,
-            amount,
-            accruedPa,
-            accruedRa
-        );
+        _afterCtRedeem(self, ds, owner, amount, accruedPa, accruedRa);
     }
 
     /// @notice redeem accrued RA + PA with CT on expiry
