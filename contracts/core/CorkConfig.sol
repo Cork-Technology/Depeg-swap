@@ -4,7 +4,7 @@ pragma solidity ^0.8.0;
 import {AccessControl} from "@openzeppelin/contracts/access/AccessControl.sol";
 import {Pausable} from "@openzeppelin/contracts/utils/Pausable.sol";
 import {Initialize} from "../interfaces/Init.sol";
-import {Pair, Id} from "../libraries/Pair.sol";
+import {Id} from "../libraries/Pair.sol";
 
 /// @title CorkConfig - Cork Config Contract
 /// @notice Handles configurations

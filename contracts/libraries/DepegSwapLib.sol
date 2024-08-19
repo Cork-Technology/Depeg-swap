@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.20;
-import "../core/assets/Asset.sol";
-import "./SignatureHelperLib.sol";
-import "../interfaces/IRates.sol";
+import {Asset} from "../core/assets/Asset.sol";
+import {Signature,MinimalSignatureHelper} from "./SignatureHelperLib.sol";
+import {IRates} from "../interfaces/IRates.sol";
 
 struct DepegSwap {
     bool expiredEventEmitted;

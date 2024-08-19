@@ -1,20 +1,24 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.0;
 
-import "./VaultConfig.sol";
-import "./Pair.sol";
-import "./LvAssetLib.sol";
-import "./PsmLib.sol";
-import "./RedemptionAssetManagerLib.sol";
-import "./MathHelper.sol";
-import "./Guard.sol";
-import "@openzeppelin/contracts/token/ERC20/extensions/ERC20Burnable.sol";
-import "@openzeppelin/contracts/utils/structs/BitMaps.sol";
-import "./VaultPoolLib.sol";
-import "./uni-v2/UniswapV2Library.sol";
-import "../interfaces/IDsFlashSwapRouter.sol";
-import "../interfaces/IDsFlashSwapRouter.sol";
-import "../interfaces/uniswap-v2/RouterV2.sol";
+import {State,VaultState,VaultConfig,VaultWithdrawalPool,VaultAmmLiquidityPool} from "./State.sol";
+import {VaultConfigLibrary} from "./VaultConfig.sol";
+import {Pair,PairLibrary} from "./Pair.sol";
+import {LvAsset,LvAssetLibrary} from "./LvAssetLib.sol";
+import {PsmLibrary} from "./PsmLib.sol";
+import {PsmRedemptionAssetManager,RedemptionAssetManagerLibrary} from "./RedemptionAssetManagerLib.sol";
+import {MathHelper} from "./MathHelper.sol";
+import {Guard} from "./Guard.sol";
+import {ERC20,ERC20Burnable} from "@openzeppelin/contracts/token/ERC20/extensions/ERC20Burnable.sol";
+import {BitMaps} from "@openzeppelin/contracts/utils/structs/BitMaps.sol";
+import {VaultPool,VaultPoolLibrary} from "./VaultPoolLib.sol";
+import {MinimalUniswapV2Library} from "./uni-v2/UniswapV2Library.sol";
+import {IDsFlashSwapCore} from "../interfaces/IDsFlashSwapRouter.sol";
+import {IUniswapV2Router02} from "../interfaces/uniswap-v2/RouterV2.sol";
+import {IUniswapV2Pair} from "../interfaces/uniswap-v2/pair.sol";
+import {DepegSwap,DepegSwapLibrary} from "./DepegSwapLib.sol";
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {Asset} from "../core/assets/Asset.sol";
 
 library VaultLibrary {
     using VaultConfigLibrary for VaultConfig;
@@ -28,7 +32,7 @@ library VaultLibrary {
 
     // TODO : for now a static ratio deposit value used to provide liquidity for the first time, this should be changed later
     /// @notice this will set the initial CT price to 0.9 RA, thus also making the initial price of DS to be 0.1 RA
-    uint256 constant DEFAULT_AMM_DEPOSIT_RATIO = 9e17;
+    uint256 internal constant DEFAULT_AMM_DEPOSIT_RATIO = 9e17;
 
     /// @notice caller is not authorized to perform the action, e.g transfering
     /// redemption rights to another address while not having the rights

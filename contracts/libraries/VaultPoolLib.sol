@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.20;
-import "./State.sol";
-import "./MathHelper.sol";
+import {VaultPool,VaultWithdrawalPool,VaultAmmLiquidityPool} from "./State.sol";
+import {MathHelper} from "./MathHelper.sol";
 
 library VaultPoolLibrary {
     function reserve(

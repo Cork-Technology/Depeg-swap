@@ -4,7 +4,7 @@ pragma solidity ^0.8.0;
 import {AssetPair,ReserveState,DsFlashSwaplibrary} from "../../libraries/DsFlashSwap.sol";
 import {SwapperMathLibrary} from "../../libraries/DsSwapperMathLib.sol";
 import {MathHelper} from "../../libraries/MathHelper.sol";
-import {Id,Pair} from "../../libraries/Pair.sol";
+import {Id} from "../../libraries/Pair.sol";
 import {IDsFlashSwapCore, IDsFlashSwapUtility} from "../../interfaces/IDsFlashSwapRouter.sol";
 import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import {UUPSUpgradeable} from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
@@ -27,9 +27,7 @@ contract RouterState is
     using DsFlashSwaplibrary for ReserveState;
     using DsFlashSwaplibrary for AssetPair;
 
-    constructor() {}
-
-    IUniswapV2Router02 univ2Router;
+    IUniswapV2Router02 internal univ2Router;
 
     function initialize(
         address moduleCore,
@@ -41,7 +39,7 @@ contract RouterState is
         univ2Router = IUniswapV2Router02(_univ2Router);
     }
 
-    mapping(Id => ReserveState) reserves;
+    mapping(Id => ReserveState) internal reserves;
 
     function _authorizeUpgrade(
         address newImplementation
