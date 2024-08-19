@@ -113,10 +113,20 @@ describe("LvCore", function () {
   });
 
   describe("previewLvDeposit", function () {
+    it("previewLvDeposit should work correctly", async function () {
+      await issueNewSwapAssets(helper.expiry(1000000));
+
+      const result = await moduleCore.read.previewLvDeposit([
+        Id,
+        depositAmount,
+      ]);
+      expect(result).to.be.equal(depositAmount);
+    });
+
     it("Revert previewLvDeposit when deposits paused", async function () {
       await pauseAllPools();
       await expect(
-        moduleCore.write.previewLvDeposit([Id, depositAmount])
+        moduleCore.read.previewLvDeposit([Id, depositAmount])
       ).to.be.rejectedWith("LVDepositPaused()");
     });
   });
@@ -717,7 +727,7 @@ describe("LvCore", function () {
       );
     });
 
-    it("Revert previewLvDeposit when withdrawals paused", async function () {
+    it("Revert previewRedeemEarlyLv when withdrawals paused", async function () {
       await pauseAllPools();
       await expect(
         moduleCore.read.previewRedeemEarlyLv([Id, depositAmount])
@@ -855,6 +865,12 @@ describe("LvCore", function () {
     it("earlyRedemptionFee should work correctly", async function () {
       let fees = await moduleCore.read.earlyRedemptionFee([Id]);
       expect(fees).to.equal(parseEther("10"));
+    });
+  });
+
+  describe("vaultLp", function () {
+    it("vaultLp should work correctly", async function () {
+      expect(await moduleCore.read.vaultLp([fixture.Id])).to.equal(0n);
     });
   });
 });
