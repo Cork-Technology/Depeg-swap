@@ -58,16 +58,24 @@ async function main() {
   const baseRedemptionFee = inferBaseRedemptionFee();
 
   const { assetFactory } = await hre.ignition.deploy(core.assetFactory);
+  console.log("AssetFactory deployed to     :", assetFactory.address);
+
   const { CorkConfig } = await hre.ignition.deploy(core.corkConfig);
+  console.log("CorkConfig deployed to       :", CorkConfig.address);
+
   const { FlashSwapRouter } = await hre.ignition.deploy(core.flashSwapRouter);
+  console.log("FlashSwapRouter deployed to  :", FlashSwapRouter.address);
+
   const { UniV2Factory } = await hre.ignition.deploy(uniV2.uniV2Factory, {
     parameters: {
       uniV2Factory: {
         flashSwapRouter: FlashSwapRouter.address,
-        feeToSetter: deployer.account.address
+        feeToSetter: deployer.account.address,
       },
     },
   });
+  console.log("UniV2Factory deployed to     :", UniV2Factory.address);
+
   const { UniV2Router } = await hre.ignition.deploy(uniV2.uniV2router, {
     parameters: {
       UniV2Router: {
@@ -77,6 +85,7 @@ async function main() {
       },
     },
   });
+  console.log("UniV2Router deployed to      :", UniV2Router.address);
 
   const { ModuleCore } = await hre.ignition.deploy(core.ModuleCore, {
     parameters: {
@@ -94,11 +103,6 @@ async function main() {
   await assetFactory.write.initialize([ModuleCore.address]);
 
   console.log("ModuleCore deployed to       :", ModuleCore.address);
-  console.log("AssetFactory deployed to     :", assetFactory.address);
-  console.log("CorkConfig deployed to       :", CorkConfig.address);
-  console.log("FlashSwapRouter deployed to  :", FlashSwapRouter.address);
-  console.log("UniV2Factory deployed to     :", UniV2Factory.address);
-  console.log("UniV2Router deployed to      :", UniV2Router.address);
 }
 
 main()
