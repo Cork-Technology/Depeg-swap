@@ -6,8 +6,8 @@ import "@openzeppelin/contracts/interfaces/IERC20Metadata.sol";
 
 // dummy contract for RA and PA
 contract DummyWETH is ERC20Burnable {
-    event Deposit(address indexed dst, uint wad);
-    event Withdrawal(address indexed src, uint wad);
+    event Deposit(address indexed dst, uint256 wad);
+    event Withdrawal(address indexed src, uint256 wad);
 
     constructor() ERC20("Dummy Wrapped ETH", "DWETH") {}
 
@@ -24,7 +24,7 @@ contract DummyWETH is ERC20Burnable {
         emit Deposit(msg.sender, msg.value);
     }
 
-    function withdraw(uint wad) public {
+    function withdraw(uint256 wad) public {
         _burn(msg.sender, wad);
 
         payable(msg.sender).transfer(wad);

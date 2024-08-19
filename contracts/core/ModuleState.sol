@@ -27,6 +27,8 @@ abstract contract ModuleState is ICommon {
 
     address config;
 
+    uint256 psmBaseRedemptionFeePrecentage;
+
     /** @dev checks if caller is config contract or not
      */
     modifier onlyConfig() {
@@ -45,13 +47,15 @@ abstract contract ModuleState is ICommon {
         address _ammFactory,
         address _dsFlashSwapRouter,
         address _ammRouter,
-        address _config
+        address _config,
+        uint256 _psmBaseRedemptionFeePrecentage
     ) {
         swapAssetFactory = _swapAssetFactory;
         ammFactory = _ammFactory;
         dsFlashSwapRouter = _dsFlashSwapRouter;
         ammRouter = _ammRouter;
         config = _config;
+        psmBaseRedemptionFeePrecentage = _psmBaseRedemptionFeePrecentage;
     }
 
     function getSwapAssetFactory() internal view returns (IAssetFactory) {

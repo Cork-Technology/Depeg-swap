@@ -83,7 +83,7 @@ struct VaultConfig {
     //
     uint256 ammCtDepositThreshold;
     uint256 lpCtBalance;
-    // 
+    //
     uint256 lpBalance;
     bool isDepositPaused;
     bool isWithdrawalPaused;
