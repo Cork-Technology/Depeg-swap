@@ -34,7 +34,7 @@ export const uniV2router = buildModule("UniV2Router", (m) => {
 
 export const uniV2Factory = buildModule("uniV2Factory", (m) => {
   const flashSwap = m.getParameter("flashSwapRouter");
-  const feeToSetter = m.getAccount(0);
+  const feeToSetter = m.getParameter("feeToSetter");
 
   const routerArtifact: Artifact = {
     _format: "hh-sol-artifact-1",

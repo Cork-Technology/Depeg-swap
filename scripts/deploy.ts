@@ -38,10 +38,18 @@ function inferBaseRedemptionFee() {
   return fee;
 }
 
+async function inferDeployer() {
+  const deployer = await hre.viem.getWalletClients();
+  return deployer[0];
+}
+
 async function main() {
+  const deployer = await inferDeployer();
+
   console.log("PRODUCTION                   :", process.env.PRODUCTION);
   console.log("Network                      :", hre.network.name);
   console.log("Chain Id                     :", hre.network.config.chainId);
+  console.log("Deployer                     :", deployer.account.address);
   console.log("");
 
   const weth =
@@ -54,7 +62,10 @@ async function main() {
   const { FlashSwapRouter } = await hre.ignition.deploy(core.flashSwapRouter);
   const { UniV2Factory } = await hre.ignition.deploy(uniV2.uniV2Factory, {
     parameters: {
-      uniV2Factory: { flashSwapRouter: FlashSwapRouter.address },
+      uniV2Factory: {
+        flashSwapRouter: FlashSwapRouter.address,
+        feeToSetter: deployer.account.address
+      },
     },
   });
   const { UniV2Router } = await hre.ignition.deploy(uniV2.uniV2router, {
