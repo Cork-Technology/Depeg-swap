@@ -5,7 +5,13 @@ import {
 import { expect } from "chai";
 import hre from "hardhat";
 
-import { Address, formatEther, parseEther, WalletClient } from "viem";
+import {
+  Address,
+  formatEther,
+  parseEther,
+  WalletClient,
+  zeroAddress,
+} from "viem";
 import * as helper from "../helper/TestHelper";
 import { ethers } from "ethers";
 
@@ -18,6 +24,7 @@ describe("FlashSwapRouter", function () {
 
   let depositAmount: bigint;
   let expiry: number;
+  let checksummedDefaultSigner: Address;
 
   let fixture: Awaited<
     ReturnType<typeof helper.ModuleCoreWithInitializedPsmLv>
@@ -36,9 +43,12 @@ describe("FlashSwapRouter", function () {
 
   async function localFixture() {
     return await helper.ModuleCoreWithInitializedPsmLv();
-   }
+  }
 
   beforeEach(async () => {
+    checksummedDefaultSigner = ethers.utils.getAddress(
+      defaultSigner.account.address
+    ) as Address;
     fixture = await loadFixture(localFixture);
 
     depositAmount = parseEther("1900");
@@ -59,9 +69,68 @@ describe("FlashSwapRouter", function () {
     await fixture.moduleCore.write.depositLv([pool.Id, depositAmount]);
   });
 
+  describe("onNewIssuance", function () {
+    it("Revert onNewIssuance when called by non owner", async function () {
+      await expect(
+        fixture.dsFlashSwapRouter.contract.write.onNewIssuance([
+          pool.Id,
+          pool.dsId,
+          zeroAddress,
+          zeroAddress,
+          depositAmount,
+          zeroAddress,
+          zeroAddress,
+        ])
+      ).to.be.rejectedWith(
+        `OwnableUnauthorizedAccount("${checksummedDefaultSigner}")`
+      );
+    });
+  });
+
+  describe("emptyReserve", function () {
+    it("Revert emptyReserve when called by non owner", async function () {
+      await expect(
+        fixture.dsFlashSwapRouter.contract.write.emptyReserve([
+          pool.Id,
+          pool.dsId,
+        ])
+      ).to.be.rejectedWith(
+        `OwnableUnauthorizedAccount("${checksummedDefaultSigner}")`
+      );
+    });
+  });
+
+  describe("emptyReservePartial", function () {
+    it("Revert emptyReservePartial when called by non owner", async function () {
+      await expect(
+        fixture.dsFlashSwapRouter.contract.write.emptyReservePartial([
+          pool.Id,
+          pool.dsId,
+          10n
+        ])
+      ).to.be.rejectedWith(
+        `OwnableUnauthorizedAccount("${checksummedDefaultSigner}")`
+      );
+    });
+  });
+
+  describe("addReserve", function () {
+    it("Revert addReserve when called by non owner", async function () {
+      await expect(
+        fixture.dsFlashSwapRouter.contract.write.emptyReservePartial([
+          pool.Id,
+          pool.dsId,
+          10n
+        ])
+      ).to.be.rejectedWith(
+        `OwnableUnauthorizedAccount("${checksummedDefaultSigner}")`
+      );
+    });
+  });
+
   describe("Sell DS", function () {
     const dsAmount = parseEther("5");
-    let dsContract:Awaited<ReturnType<typeof getDs>>;
+    let dsContract: Awaited<ReturnType<typeof getDs>>;
 
     beforeEach(async () => {
       const raDepositAmount = parseEther("10");
@@ -134,7 +203,7 @@ describe("FlashSwapRouter", function () {
         dsAmount,
         BigInt(0),
         permitmsg,
-        deadline
+        deadline,
       ]);
 
       const event = await fixture.dsFlashSwapRouter.contract.getEvents
@@ -233,7 +302,7 @@ describe("FlashSwapRouter", function () {
         raProvided,
         BigInt(0),
         permitmsg,
-        deadline
+        deadline,
       ]);
 
       const event = await fixture.dsFlashSwapRouter.contract.getEvents
@@ -289,8 +358,8 @@ describe("FlashSwapRouter", function () {
         raProvided,
       ]);
 
-      const amountOutPreview =await
-        fixture.dsFlashSwapRouter.contract.read.previewSwapRaforDs([
+      const amountOutPreview =
+        await fixture.dsFlashSwapRouter.contract.read.previewSwapRaforDs([
           pool.Id,
           pool.dsId!,
           raProvided,

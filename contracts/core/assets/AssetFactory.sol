@@ -68,7 +68,7 @@ contract AssetFactory is IAssetFactory, OwnableUpgradeable, UUPSUpgradeable {
             Pair storage asset = pairs[i];
             uint8 _idx = uint8(i - start);
 
-            ra[_idx] = asset.pair0;
+            ra[_idx] = asset.pair1;
             lv[_idx] = lvs[asset.toId()];
         }
     }
@@ -92,6 +92,10 @@ contract AssetFactory is IAssetFactory, OwnableUpgradeable, UUPSUpgradeable {
 
         if (end > _assets.length) {
             end = _assets.length;
+        }
+
+        if (start > _assets.length) {
+            return (ct, ds);
         }
 
         ct = new address[](arrLen);

@@ -105,7 +105,7 @@ describe("Module Core", function () {
         dsFlashSwapRouter.contract.address,
         univ2Router,
         config.contract.address,
-        helper.DEFAULT_BASE_REDEMPTION_PRECENTAGE
+        helper.DEFAULT_BASE_REDEMPTION_PRECENTAGE,
       ],
       {
         client: {
@@ -373,6 +373,24 @@ describe("Module Core", function () {
       let assets = await moduleCore.read.swapAsset([fixture.Id, dsId!]);
       expect(assets[0].toUpperCase()).to.equal(ct!.toUpperCase());
       expect(assets[1].toUpperCase()).to.equal(ds!.toUpperCase());
+    });
+  });
+
+  describe("updatePsmBaseRedemptionFeePrecentage", function () {
+    it("updatePsmBaseRedemptionFeePrecentage should work correctly", async function () {
+      expect(await moduleCore.read.baseRedemptionFee()).to.equal(
+        parseEther("10")
+      );
+      await corkConfig.write.updatePsmBaseRedemptionFeePrecentage([500n]);
+      expect(await moduleCore.read.baseRedemptionFee()).to.equal(500n);
+    });
+
+    it("updatePsmBaseRedemptionFeePrecentage should revert when not called by Config contract", async function () {
+      await expect(
+        moduleCore.write.updatePsmBaseRedemptionFeePrecentage([500n], {
+          account: secondSigner.account,
+        })
+      ).to.be.rejectedWith("OnlyConfigAllowed()");
     });
   });
 });
