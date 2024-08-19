@@ -28,15 +28,26 @@ function inferWeth() {
   return weth;
 }
 
+function inferBaseRedemptionFee() {
+  const fee = process.env.PSM_BASE_REDEMPTION_FEE_PRECENTAGE;
+
+  if (fee == undefined || fee == "") {
+    throw new Error("PSM_BASE_REDEMPTION_FEE_PRECENTAGE not provided");
+  }
+
+  return fee;
+}
+
 async function main() {
   console.log("PRODUCTION                   :", process.env.PRODUCTION);
   console.log("Network                      :", hre.network.name);
   console.log("Chain Id                     :", hre.network.config.chainId);
-  console.log("")
+  console.log("");
 
   const weth =
     inferWeth() ??
     (await hre.ignition.deploy(uniV2.dummyWETH)).DummyWETH.address;
+  const baseRedemptionFee = inferBaseRedemptionFee();
 
   const { assetFactory } = await hre.ignition.deploy(core.assetFactory);
   const { CorkConfig } = await hre.ignition.deploy(core.corkConfig);
@@ -64,6 +75,7 @@ async function main() {
         flashSwapRouter: FlashSwapRouter.address,
         uniV2Router: UniV2Router.address,
         corkConfig: CorkConfig.address,
+        psmBaseFeeRedemption: baseRedemptionFee,
       },
     },
   });
