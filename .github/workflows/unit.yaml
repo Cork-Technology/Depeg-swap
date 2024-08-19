@@ -1,11 +1,10 @@
 name: unit test
 on:
   pull_request:
-    paths:
-      - "contracts/**"
-      - "test/**"
     types:
       - synchronize
+      - opened
+      - edited
     branches:
       - main
 
