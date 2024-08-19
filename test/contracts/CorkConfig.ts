@@ -252,6 +252,30 @@ describe("CorkConfig", function () {
     });
   });
 
+  describe("updatePsmBaseRedemptionFeePrecentage", function () {
+    it("updatePsmBaseRedemptionFeePrecentage should work correctly", async function () {
+      expect(await moduleCore.read.earlyRedemptionFee([Id])).to.be.equals(
+        parseEther("10")
+      );
+      expect(
+        await corkConfig.write.updatePsmBaseRedemptionFeePrecentage([1000n], {
+          account: defaultSigner.account,
+        })
+      ).to.be.ok;
+      expect(await moduleCore.read.baseRedemptionFee()).to.be.equals(
+        parseUnits("1000", 0)
+      );
+    });
+
+    it("Revert when non MANAGER call updatePsmBaseRedemptionFeePrecentage", async function () {
+      await expect(
+        corkConfig.write.updatePsmBaseRedemptionFeePrecentage([1000n], {
+          account: secondSigner.account,
+        })
+      ).to.be.rejectedWith("CallerNotManager()");
+    });
+  });
+
   describe("updatePoolsStatus", function () {
     it("updatePoolsStatus should work correctly", async function () {
       const depositAmount = parseEther("10");
@@ -298,15 +322,21 @@ describe("CorkConfig", function () {
       await expect(
         fixture.moduleCore.write.requestRedemption([Id, depositAmount])
       ).to.be.rejectedWith("LVWithdrawalPaused()");
-  
+
       await expect(
-        fixture.moduleCore.write.redeemExpiredLv(
-          [fixture.Id, secondSigner.account.address, depositAmount + BigInt(1)])
+        fixture.moduleCore.write.redeemExpiredLv([
+          fixture.Id,
+          secondSigner.account.address,
+          depositAmount + BigInt(1),
+        ])
       ).to.be.rejectedWith("LVWithdrawalPaused()");
 
       await expect(
-        fixture.moduleCore.write.redeemEarlyLv(
-          [fixture.Id, defaultSigner.account.address, parseEther("1")])
+        fixture.moduleCore.write.redeemEarlyLv([
+          fixture.Id,
+          defaultSigner.account.address,
+          parseEther("1"),
+        ])
       ).to.be.rejectedWith("LVWithdrawalPaused()");
     });
 
