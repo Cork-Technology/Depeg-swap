@@ -18,6 +18,14 @@ import UNIV2ROUTER from "./ext-abi/uni-v2-router.json";
 import { ethers } from "ethers";
 
 const DEVISOR = BigInt(1e18);
+export const DEFAULT_BASE_REDEMPTION_PRECENTAGE = parseEther("10");
+
+export function calculatePrecentage(
+  number: bigint,
+  percent: bigint = DEFAULT_BASE_REDEMPTION_PRECENTAGE
+) {
+  return (number * DEVISOR * percent) / parseEther("100") / DEVISOR;
+}
 
 export function calculateMinimumLiquidity(amount: bigint) {
   // 1e16 is the minimum liquidity(10e3)
@@ -170,7 +178,8 @@ export async function deployUniV2Router(
 
 export async function deployModuleCore(
   swapAssetFactory: Address,
-  config: Address
+  config: Address,
+  basePsmRedemptionFee: bigint
 ) {
   const signers = await hre.viem.getWalletClients();
   const { defaultSigner } = getSigners(signers);
@@ -201,6 +210,7 @@ export async function deployModuleCore(
       dsFlashSwapRouter.contract.address,
       univ2Router,
       config,
+      basePsmRedemptionFee,
     ],
     {
       client: {
@@ -457,11 +467,15 @@ export async function permit(arg: PermitArg) {
   return sig;
 }
 
-export async function onlymoduleCoreWithFactory() {
+export async function onlymoduleCoreWithFactory(basePsmRedemptionFee: bigint) {
   const factory = await deployAssetFactory();
   const config = await deployCorkConfig();
   const { contract, dsFlashSwapRouter, univ2Factory, univ2Router, weth } =
-    await deployModuleCore(factory.contract.address, config.contract.address);
+    await deployModuleCore(
+      factory.contract.address,
+      config.contract.address,
+      basePsmRedemptionFee
+    );
   const moduleCore = contract;
   await factory.contract.write.initialize([moduleCore.address]);
 
@@ -476,7 +490,9 @@ export async function onlymoduleCoreWithFactory() {
   };
 }
 
-export async function ModuleCoreWithInitializedPsmLv() {
+export async function ModuleCoreWithInitializedPsmLv(
+  basePsmRedemptionFee: bigint = DEFAULT_BASE_REDEMPTION_PRECENTAGE
+) {
   const {
     factory,
     moduleCore: moduleCore,
@@ -485,7 +501,7 @@ export async function ModuleCoreWithInitializedPsmLv() {
     univ2Factory,
     univ2Router,
     weth,
-  } = await onlymoduleCoreWithFactory();
+  } = await onlymoduleCoreWithFactory(basePsmRedemptionFee);
   const { pa, ra } = await backedAssets();
 
   const fee = parseEther("10");
