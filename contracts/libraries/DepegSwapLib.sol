@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity ^0.8.20;
+pragma solidity 0.8.24;
+
 import {Asset} from "../core/assets/Asset.sol";
 import {Signature,MinimalSignatureHelper} from "./SignatureHelperLib.sol";
 import {IRates} from "../interfaces/IRates.sol";
