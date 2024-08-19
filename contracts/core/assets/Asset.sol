@@ -10,7 +10,7 @@ import {IExpiry} from "../../interfaces/IExpiry.sol";
 import {IRates} from "../../interfaces/IRates.sol";
 
 contract ExchangeRate is IRates {
-    uint256 internal rate;
+    uint256 internal immutable rate;
 
     constructor(uint256 _rate) {
         rate = _rate;
@@ -22,7 +22,7 @@ contract ExchangeRate is IRates {
 }
 
 contract Expiry is IExpiry {
-    uint256 internal timestamp;
+    uint256 internal immutable timestamp;
 
     constructor(uint256 _expiry) {
         if (_expiry != 0 && _expiry < block.timestamp) {

@@ -25,8 +25,8 @@ contract DummyWETH is ERC20Burnable {
 
     function withdraw(uint256 wad) public {
         _burn(msg.sender, wad);
+        emit Withdrawal(msg.sender, wad);
 
         payable(msg.sender).transfer(wad);
-        emit Withdrawal(msg.sender, wad);
     }
 }
