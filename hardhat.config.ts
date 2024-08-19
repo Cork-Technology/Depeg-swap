@@ -1,5 +1,7 @@
 import { HardhatUserConfig } from "hardhat/config";
-
+import "@nomicfoundation/hardhat-ethers";
+import "hardhat-deploy";
+import "hardhat-deploy-ethers";
 import "@nomicfoundation/hardhat-toolbox-viem";
 import "hardhat-gas-reporter";
 import "@nomicfoundation/hardhat-viem";
@@ -27,12 +29,15 @@ const config: HardhatUserConfig = {
   networks: {
     hardhat: {},
     sepolia: {
-      url: "https://rpc.sepolia.org	",
+      url: "https://eth-sepolia.api.onfinality.io/public",
       chainId: 11155111,
       accounts: [process.env.PRIVATE_KEY!],
       enableTransientStorage: true,
       loggingEnabled: true,
     },
+  },
+  ignition: {
+    requiredConfirmations: 0, 
   },
   gasReporter: {
     enabled: process.env.REPORT_GAS === "true" ? true : false,

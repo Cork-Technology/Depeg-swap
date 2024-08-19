@@ -33,8 +33,8 @@ export const uniV2router = buildModule("UniV2Router", (m) => {
 });
 
 export const uniV2Factory = buildModule("uniV2Factory", (m) => {
-  const flashSwap = m.getParameter("flashSwapRouter");
-  const feeToSetter = m.getParameter("feeToSetter");
+  // const flashSwap = m.getParameter("flashSwapRouter");
+  // const feeToSetter = m.getParameter("feeToSetter");
 
   const routerArtifact: Artifact = {
     _format: "hh-sol-artifact-1",
@@ -50,7 +50,10 @@ export const uniV2Factory = buildModule("uniV2Factory", (m) => {
   const contract = m.contract<typeof UNIV2FACTORY.abi>(
     "UniV2Factory",
     routerArtifact,
-    [feeToSetter, flashSwap]
+    [
+      "0x3E995c17172eA3E23505Adfe5630df395A738e51",
+      "0x3E995c17172eA3E23505Adfe5630df395A738e51",
+    ]
   );
 
   return { UniV2Factory: contract };
@@ -60,3 +63,5 @@ export const dummyWETH = buildModule("DummyWETH", (m) => {
   const contract = m.contract("DummyWETH");
   return { DummyWETH: contract };
 });
+
+export default uniV2Factory;
