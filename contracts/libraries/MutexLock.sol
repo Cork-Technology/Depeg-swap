@@ -9,19 +9,19 @@ library MutexLock {
     function unlock() internal {
         assembly ("memory-safe") {
             // unlock
-            sstore(IS_LOCKED_SLOT, false)
+            tstore(IS_LOCKED_SLOT, false)
         }
     }
 
     function lock() internal {
         assembly ("memory-safe") {
-            sstore(IS_LOCKED_SLOT, true)
+            tstore(IS_LOCKED_SLOT, true)
         }
     }
 
     function isLocked() internal view returns (bool unlocked) {
         assembly ("memory-safe") {
-            unlocked := sload(IS_LOCKED_SLOT)
+            unlocked := tload(IS_LOCKED_SLOT)
         }
     }
 }
