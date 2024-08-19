@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.0;
 import {PsmLibrary} from "../libraries/PsmLib.sol";
+import {VaultLibrary} from "../libraries/VaultLib.sol";
 import {Id,Pair,PairLibrary} from "../libraries/Pair.sol";
 import {IPSMcore} from "../interfaces/IPSMcore.sol";
 import {State} from "../libraries/State.sol";
