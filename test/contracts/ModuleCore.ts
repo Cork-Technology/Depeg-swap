@@ -105,6 +105,7 @@ describe("Module Core", function () {
         dsFlashSwapRouter.contract.address,
         univ2Router,
         config.contract.address,
+        helper.DEFAULT_BASE_REDEMPTION_PRECENTAGE
       ],
       {
         client: {
@@ -156,13 +157,13 @@ describe("Module Core", function () {
       });
       expect(events.length).to.equal(1);
       expect(events[0].args.id).to.equal(expectedId);
-      expect(events[0].args.pa.toUpperCase()).to.equal(
+      expect(events[0].args.pa!.toUpperCase()).to.equal(
         pa.address.toUpperCase()
       );
-      expect(events[0].args.ra.toUpperCase()).to.equal(
+      expect(events[0].args.ra!.toUpperCase()).to.equal(
         ra.address.toUpperCase()
       );
-      expect(events[0].args.lv.toUpperCase()).not.equal(
+      expect(events[0].args.lv!.toUpperCase()).not.equal(
         zeroAddress.toUpperCase()
       );
     });
@@ -369,9 +370,9 @@ describe("Module Core", function () {
       const { dsId, ds, ct } = await issueNewSwapAssets(
         helper.nowTimestampInSeconds() + 1000
       );
-      let assets = await moduleCore.read.swapAsset([fixture.Id, dsId]);
-      expect(assets[0].toUpperCase()).to.equal(ct.toUpperCase());
-      expect(assets[1].toUpperCase()).to.equal(ds.toUpperCase());
+      let assets = await moduleCore.read.swapAsset([fixture.Id, dsId!]);
+      expect(assets[0].toUpperCase()).to.equal(ct!.toUpperCase());
+      expect(assets[1].toUpperCase()).to.equal(ds!.toUpperCase());
     });
   });
 });

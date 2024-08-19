@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.0;
 import {PsmLibrary} from "../libraries/PsmLib.sol";
-import {VaultLibrary,VaultConfigLibrary} from "../libraries/VaultLib.sol";
-import {Id,Pair,PairLibrary} from "../libraries/Pair.sol";
+import {VaultLibrary, VaultConfigLibrary} from "../libraries/VaultLib.sol";
+import {Id, Pair, PairLibrary} from "../libraries/Pair.sol";
 import {IAssetFactory} from "../interfaces/IAssetFactory.sol";
 import {State} from "../libraries/State.sol";
 import {ModuleState} from "./ModuleState.sol";
@@ -19,14 +19,16 @@ contract ModuleCore is PsmCore, Initialize, VaultCore {
         address ammFactory,
         address flashSwapRouter,
         address ammRouter,
-        address config
+        address config,
+        uint256 psmBaseRedemptionFeePrecentage
     )
         ModuleState(
             swapAssetFactory,
             ammFactory,
             flashSwapRouter,
             ammRouter,
-            config
+            config,
+            psmBaseRedemptionFeePrecentage
         )
     {}
 
@@ -122,7 +124,10 @@ contract ModuleCore is PsmCore, Initialize, VaultCore {
         uint256 newRepurchaseFeePrecentage
     ) external onlyConfig {
         State storage state = states[id];
-        PsmLibrary.updateRepurchaseFeePercentage(state, newRepurchaseFeePrecentage);
+        PsmLibrary.updateRepurchaseFeePercentage(
+            state,
+            newRepurchaseFeePrecentage
+        );
 
         emit RepurchaseFeeRateUpdated(id, newRepurchaseFeePrecentage);
     }
@@ -149,7 +154,7 @@ contract ModuleCore is PsmCore, Initialize, VaultCore {
     ) external onlyConfig {
         State storage state = states[id];
         PsmLibrary.updatePoolsStatus(
-            state,          
+            state,
             isPSMDepositPaused,
             isPSMWithdrawalPaused,
             isLVDepositPaused,
@@ -181,5 +186,11 @@ contract ModuleCore is PsmCore, Initialize, VaultCore {
     ) external view override returns (address ct, address ds) {
         ct = states[id].ds[dsId].ct;
         ds = states[id].ds[dsId]._address;
+    }
+
+    function updatePsmBaseRedemptionFeePrecentage(
+        uint256 newPsmBaseRedemptionFeePrecentage
+    ) external onlyConfig {
+        psmBaseRedemptionFeePrecentage = newPsmBaseRedemptionFeePrecentage;
     }
 }

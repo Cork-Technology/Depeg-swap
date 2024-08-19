@@ -27,13 +27,17 @@ interface IPSMcore is IRepurchase {
     /// @param amount The amount of the DS redeemed
     /// @param received The amount of  asset received
     /// @param dsExchangeRate The exchange rate of DS at the time of redeem
+    /// @param feePrecentage The fee precentage charged for redemption
+    /// @param fee The fee charged for redemption
     event DsRedeemed(
         Id indexed Id,
         uint256 indexed dsId,
         address indexed redeemer,
         uint256 amount,
         uint256 received,
-        uint256 dsExchangeRate
+        uint256 dsExchangeRate,
+        uint256 feePrecentage,
+        uint256 fee
     );
 
     /// @notice Emitted when a user redeems a CT for a given PSM
@@ -162,4 +166,6 @@ interface IPSMcore is IRepurchase {
     ) external view returns (uint256 ra, uint256 rates);
 
     function valueLocked(Id id) external view returns (uint256);
+
+    function baseRedemptionFee() view external returns (uint256);
 }
