@@ -5,7 +5,7 @@ import {
 import { expect } from "chai";
 import { ethers } from "ethers";
 import hre from "hardhat";
-import { Address } from "viem";
+import { Address, parseEther } from "viem";
 
 import * as helper from "../helper/TestHelper";
 
@@ -15,6 +15,8 @@ describe("Asset", function () {
     secondSigner,
     signers,
   }: ReturnType<typeof helper.getSigners> = {} as any;
+
+  let asset: Awaited<ReturnType<typeof deployAsset>>;
 
   async function getCheckSummedAdrress(address: Address) {
     return ethers.utils.getAddress(address) as Address;
@@ -43,6 +45,10 @@ describe("Asset", function () {
   before(async () => {
     const __signers = await hre.viem.getWalletClients();
     ({ defaultSigner, secondSigner, signers } = helper.getSigners(__signers));
+  });
+
+  beforeEach(async () => {
+    asset = await loadFixture(deployAsset);
   });
 
   describe("ExchangeRate", function () {
@@ -98,7 +104,6 @@ describe("Asset", function () {
 
   describe("Asset", function () {
     it("should deploy Asset correctly", async function () {
-      let asset = await loadFixture(deployAsset);
       expect(asset).to.be.ok;
       expect(await asset.read.owner()).to.equal(
         await getCheckSummedAdrress(defaultSigner.account.address)
@@ -110,6 +115,28 @@ describe("Asset", function () {
       expect(await asset.read.exchangeRate()).to.equal(100n);
       expect(await asset.read.name()).to.equal("Demo-Prefix-Demo-Pair");
       expect(await asset.read.symbol()).to.equal("Demo-Prefix-Demo-Pair");
+    });
+
+    it("mint should work correctly", async function () {
+      expect(
+        await asset.read.balanceOf([secondSigner.account.address])
+      ).to.equal(0n);
+      await asset.write.mint([secondSigner.account.address, parseEther("10")]);
+      expect(
+        await asset.read.balanceOf([secondSigner.account.address])
+      ).to.equal(parseEther("10"));
+    });
+
+    it("mint should revert when called by non-owner", async function () {
+      await expect(
+        asset.write.mint([secondSigner.account.address, parseEther("10")], {
+          account: secondSigner.account,
+        })
+      ).to.be.rejectedWith(
+        `OwnableUnauthorizedAccount("${await getCheckSummedAdrress(
+          secondSigner.account.address
+        )}")`
+      );
     });
   });
 });
