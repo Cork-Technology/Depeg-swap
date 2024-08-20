@@ -3,6 +3,7 @@ pragma solidity 0.8.24;
 
 import {Signature,MinimalSignatureHelper} from "./SignatureHelperLib.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 struct PsmRedemptionAssetManager {
     address _address;
@@ -12,6 +13,7 @@ struct PsmRedemptionAssetManager {
 
 library RedemptionAssetManagerLibrary {
     using MinimalSignatureHelper for Signature;
+    using SafeERC20 for IERC20;
 
     function initialize(
         address ra
@@ -95,7 +97,7 @@ library RedemptionAssetManagerLibrary {
         uint256 amount,
         address from
     ) internal {
-        IERC20(self._address).transferFrom(from, address(this), amount);
+        IERC20(self._address).safeTransferFrom(from, address(this), amount);
     }
 
     function unlockTo(
@@ -112,6 +114,6 @@ library RedemptionAssetManagerLibrary {
         uint256 amount,
         address to
     ) internal {
-        IERC20(self._address).transfer(to, amount);
+        IERC20(self._address).safeTransfer(to, amount);
     }
 }

@@ -16,6 +16,7 @@ import {IPSMcore} from "../../interfaces/IPSMcore.sol";
 import {IVault} from "../../interfaces/IVault.sol";
 import {Asset} from "../assets/Asset.sol";
 import {DepegSwapLibrary} from "../../libraries/DepegSwapLib.sol";
+import {SafeERC20, IERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 contract RouterState is
     IDsFlashSwapUtility,
@@ -26,6 +27,7 @@ contract RouterState is
 {
     using DsFlashSwaplibrary for ReserveState;
     using DsFlashSwaplibrary for AssetPair;
+    using SafeERC20 for IERC20;
 
     IUniswapV2Router02 internal univ2Router;
 
@@ -222,7 +224,7 @@ contract RouterState is
             amount,
             deadline
         );
-        assetPair.ra.transferFrom(msg.sender, address(this), amount);
+        IERC20(assetPair.ra).safeTransferFrom(msg.sender, address(this), amount);
 
         amountOut = _swapRaforDs(self, assetPair, reserveId, dsId, amount, amountOutMin);
 
@@ -237,7 +239,7 @@ contract RouterState is
     ) external returns (uint256 amountOut) {
         ReserveState storage self = reserves[reserveId];
         AssetPair storage assetPair = self.ds[dsId];
-        assetPair.ra.transferFrom(msg.sender, address(this), amount);
+        IERC20(assetPair.ra).safeTransferFrom(msg.sender, address(this), amount);
 
         amountOut = _swapRaforDs(self, assetPair, reserveId, dsId, amount, amountOutMin);
 
@@ -503,8 +505,8 @@ contract RouterState is
         assert(repaymentAmount + raAttributed >= received);
 
         // send caller their RA
-        ra.transfer(caller, raAttributed);
+        IERC20(ra).safeTransfer(caller, raAttributed);
         // repay flash loan
-        ra.transfer(msg.sender, repaymentAmount);
+        IERC20(ra).safeTransfer(msg.sender, repaymentAmount);
     }
 }

@@ -20,6 +20,7 @@ import {DepegSwap, DepegSwapLibrary} from "./DepegSwapLib.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {Asset} from "../core/assets/Asset.sol";
 import {ICommon} from "../interfaces/ICommon.sol";
+import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 library VaultLibrary {
     using VaultConfigLibrary for VaultConfig;
@@ -30,6 +31,7 @@ library VaultLibrary {
     using BitMaps for BitMaps.BitMap;
     using DepegSwapLibrary for DepegSwap;
     using VaultPoolLibrary for VaultPool;
+    using SafeERC20 for IERC20;
 
     // TODO : for now a static ratio deposit value used to provide liquidity for the first time, this should be changed later
     /// @notice this will set the initial CT price to 0.9 RA, thus also making the initial price of DS to be 0.1 RA
@@ -790,9 +792,9 @@ library VaultLibrary {
         uint256 burnSelfAmount
     ) internal {
         //ra
-        IERC20(self.info.pair1).transfer(receiver, attributedRa);
+        IERC20(self.info.pair1).safeTransfer(receiver, attributedRa);
         //pa
-        IERC20(self.info.pair0).transfer(receiver, attributedPa);
+        IERC20(self.info.pair0).safeTransfer(receiver, attributedPa);
 
         self.vault.lv.burnSelf(burnSelfAmount);
 
