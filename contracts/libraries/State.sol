@@ -20,7 +20,6 @@ struct State {
 
 struct PsmState {
     Balances balances;
-    // TODO : make a function to update this
     uint256 repurchaseFeePrecentage;
     BitMaps.BitMap liquiditySeparated;
     /// @dev dsId => PsmPoolArchive
@@ -35,7 +34,6 @@ struct PsmPoolArchive {
     uint256 ctAttributed;
 }
 
-// TODO : to PSM balance
 struct Balances {
     PsmRedemptionAssetManager ra;
     uint256 dsBalance;
@@ -75,7 +73,6 @@ struct VaultState {
     VaultPool pool;
 }
 
-// TODO : remove all threshold
 struct VaultConfig {
     // 1 % = 1e18
     uint256 fee;

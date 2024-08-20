@@ -102,7 +102,7 @@ abstract contract PsmCore is IPSMcore, ModuleState, Context {
         uint256 feePrecentage = psmBaseRedemptionFeePrecentage;
 
         (uint256 received, uint256 _exchangeRate, uint256 fee) =
-            state.redeemWithDs(_msgSender(), amount, dsId, feePrecentage);
+            state.redeemWithDs(_msgSender(), amount, dsId, bytes(""), 0, feePrecentage);
 
         VaultLibrary.provideLiquidityWithFee(state, fee, getRouterCore(), getAmmRouter());
 
@@ -155,7 +155,7 @@ abstract contract PsmCore is IPSMcore, ModuleState, Context {
     {
         State storage state = states[id];
 
-        (uint256 accruedPa, uint256 accruedRa) = state.redeemWithCt(_msgSender(), amount, dsId);
+        (uint256 accruedPa, uint256 accruedRa) = state.redeemWithCt(_msgSender(), amount, dsId, bytes(""), 0);
 
         emit CtRedeemed(id, dsId, _msgSender(), amount, accruedPa, accruedRa);
     }
@@ -202,7 +202,7 @@ abstract contract PsmCore is IPSMcore, ModuleState, Context {
         State storage state = states[id];
         uint256 dsId;
 
-        (received, dsId, rates) = state.redeemRaWithCtDs(_msgSender(), amount);
+        (received, dsId, rates) = state.redeemRaWithCtDs(_msgSender(), amount, bytes(""), 0, bytes(""), 0);
 
         emit Cancelled(id, dsId, _msgSender(), received, amount, rates);
     }

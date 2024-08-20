@@ -2,7 +2,7 @@
 pragma solidity 0.8.24;
 
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
-import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import {IERC20, ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import {ERC20Permit} from "@openzeppelin/contracts/token/ERC20/extensions/ERC20Permit.sol";
 import {ERC20FlashMint} from "@openzeppelin/contracts/token/ERC20/extensions/ERC20FlashMint.sol";
 import {ERC20Burnable} from "@openzeppelin/contracts/token/ERC20/extensions/ERC20Burnable.sol";
@@ -10,38 +10,38 @@ import {IExpiry} from "../../interfaces/IExpiry.sol";
 import {IRates} from "../../interfaces/IRates.sol";
 
 contract ExchangeRate is IRates {
-    uint256 internal immutable rate;
+    uint256 internal immutable RATE;
 
     constructor(uint256 _rate) {
-        rate = _rate;
+        RATE = _rate;
     }
 
     function exchangeRate() external view override returns (uint256) {
-        return rate;
+        return RATE;
     }
 }
 
 contract Expiry is IExpiry {
-    uint256 internal immutable timestamp;
+    uint256 internal immutable TIMESTAMP;
 
     constructor(uint256 _expiry) {
         if (_expiry != 0 && _expiry < block.timestamp) {
             revert Expired();
         }
 
-        timestamp = _expiry;
+        TIMESTAMP = _expiry;
     }
 
     function isExpired() external view virtual returns (bool) {
-        if (timestamp == 0) {
+        if (TIMESTAMP == 0) {
             return false;
         }
 
-        return block.timestamp >= timestamp;
+        return block.timestamp >= TIMESTAMP;
     }
 
     function expiry() external view virtual returns (uint256) {
-        return timestamp;
+        return TIMESTAMP;
     }
 }
 

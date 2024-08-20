@@ -7,7 +7,6 @@ library MathHelper {
     /// @dev default decimals for now to calculate price ratio
     uint8 internal constant DEFAULT_DECIMAL = 18;
 
-    // TODO : discuss what value of this should be set to. currently set to 1% tolerance.
     // this is used to calculate tolerance level when adding liqudity to AMM pair
     /// @dev 1e18 == 1%.
     uint256 internal constant UNIV2_STATIC_TOLERANCE = 1e18;
@@ -31,8 +30,6 @@ library MathHelper {
         assert((ct + ra) == amountra);
     }
 
-    // TODO: add support for 2 different decimals token? but since we're
-    // using ra and ct, which both has 18 decimals so will default into that one for now
     /// @dev should only pass ERC20.decimals() onto the decimal field
     /// @dev will output price ratio in 18 decimal precision.
     function calculatePriceRatioUniV4(uint160 sqrtPriceX96, uint8 decimal) external pure returns (uint256) {

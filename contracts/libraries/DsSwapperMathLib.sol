@@ -6,7 +6,6 @@ import {SignedMath} from "@openzeppelin/contracts/utils/math/SignedMath.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 
 // library function for handling math operations for DS swap contract
-// TODO : separately test this
 
 library SwapperMathLibrary {
     using UQ112x112 for uint224;
