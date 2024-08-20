@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity ^0.8.20;
+pragma solidity 0.8.24;
 
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {Asset} from "../core/assets/Asset.sol";
@@ -17,6 +17,7 @@ import {IDsFlashSwapCore} from "../interfaces/IDsFlashSwapRouter.sol";
 import {VaultLibrary} from "./VaultLib.sol";
 import {ERC20Burnable} from "@openzeppelin/contracts/token/ERC20/extensions/ERC20Burnable.sol";
 import {IUniswapV2Router02} from "../interfaces/uniswap-v2/RouterV2.sol";
+import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 // TODO : support native token
 // TODO : make an entrypoint that does not depend on permit
@@ -28,6 +29,7 @@ library PsmLibrary {
     using RedemptionAssetManagerLibrary for PsmRedemptionAssetManager;
     using PeggedAssetLibrary for PeggedAsset;
     using BitMaps for BitMaps.BitMap;
+    using SafeERC20 for IERC20;
 
     function isInitialized(
         State storage self
@@ -399,7 +401,7 @@ library PsmLibrary {
         // transfer user attrubuted DS + PA
         // PA
         (, address pa) = self.info.underlyingAsset();
-        IERC20(pa).transfer(buyer, received);
+        IERC20(pa).safeTransfer(buyer, received);
 
         // DS
         IERC20(ds._address).transfer(buyer, received);
@@ -441,7 +443,7 @@ library PsmLibrary {
         fee = MathHelper.calculatePrecentageFee(received, feePrecentage);
         received -= fee;
 
-        self.info.peggedAsset().asErc20().transferFrom(
+        IERC20(self.info.peggedAsset().asErc20()).safeTransferFrom(
             owner,
             address(this),
             amount
@@ -611,8 +613,8 @@ library PsmLibrary {
         uint256 accruedRa
     ) internal {
         IERC20(ds.ct).transferFrom(owner, address(this), ctRedeemedAmount);
-        self.info.peggedAsset().asErc20().transfer(owner, accruedPa);
-        IERC20(self.info.redemptionAsset()).transfer(owner, accruedRa);
+        IERC20(self.info.peggedAsset().asErc20()).safeTransfer(owner, accruedPa);
+        IERC20(self.info.redemptionAsset()).safeTransfer(owner, accruedRa);
     }
 
     function _redeemWithCt(

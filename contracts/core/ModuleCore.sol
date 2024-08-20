@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity ^0.8.0;
+pragma solidity 0.8.24;
+
 import {PsmLibrary} from "../libraries/PsmLib.sol";
 import {VaultLibrary, VaultConfigLibrary} from "../libraries/VaultLib.sol";
 import {Id, Pair, PairLibrary} from "../libraries/Pair.sol";
@@ -15,20 +16,20 @@ contract ModuleCore is PsmCore, Initialize, VaultCore {
     using PairLibrary for Pair;
 
     constructor(
-        address swapAssetFactory,
-        address ammFactory,
-        address flashSwapRouter,
-        address ammRouter,
-        address config,
-        uint256 psmBaseRedemptionFeePrecentage
+        address _swapAssetFactory,
+        address _ammFactory,
+        address _flashSwapRouter,
+        address _ammRouter,
+        address _config,
+        uint256 _psmBaseRedemptionFeePrecentage
     )
         ModuleState(
-            swapAssetFactory,
-            ammFactory,
-            flashSwapRouter,
-            ammRouter,
-            config,
-            psmBaseRedemptionFeePrecentage
+            _swapAssetFactory,
+            _ammFactory,
+            _flashSwapRouter,
+            _ammRouter,
+            _config,
+            _psmBaseRedemptionFeePrecentage
         )
     {}
 
@@ -55,9 +56,9 @@ contract ModuleCore is PsmCore, Initialize, VaultCore {
             revert AlreadyInitialized();
         }
 
-        IAssetFactory factory = IAssetFactory(swapAssetFactory);
+        IAssetFactory assetsFactory = IAssetFactory(swapAssetFactory);
 
-        address lv = factory.deployLv(ra, pa, address(this));
+        address lv = assetsFactory.deployLv(ra, pa, address(this));
 
         PsmLibrary.initialize(state, key);
         VaultLibrary.initialize(
@@ -82,6 +83,9 @@ contract ModuleCore is PsmCore, Initialize, VaultCore {
 
         address ra = state.info.pair1;
 
+        uint256 prevIdx = state.globalAssetIdx++;
+        uint256 idx = state.globalAssetIdx;
+
         (address ct, address ds) = IAssetFactory(swapAssetFactory)
             .deploySwapAssets(
                 ra,
@@ -90,9 +94,6 @@ contract ModuleCore is PsmCore, Initialize, VaultCore {
                 expiry,
                 exchangeRates
             );
-
-        uint256 prevIdx = state.globalAssetIdx++;
-        uint256 idx = state.globalAssetIdx;
 
         address ammPair = getAmmFactory().createPair(ra, ct);
 

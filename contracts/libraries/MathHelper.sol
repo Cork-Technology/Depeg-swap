@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity ^0.8.0;
+pragma solidity 0.8.24;
 
 library MathHelper {
     uint224 internal constant Q112 = 2 ** 112;
@@ -60,8 +60,8 @@ library MathHelper {
         uint256 accruedPa,
         uint256 amount
     ) external pure returns (uint256 ra, uint256 pa) {
-        ra = (amount * ((accruedRa * 1e18) / totalLv)) / 1e18;
-        pa = (amount * ((accruedPa * 1e18) / totalLv)) / 1e18;
+        ra = (amount * (accruedRa * 1e18) / totalLv) / 1e18;
+        pa = (amount * (accruedPa * 1e18) / totalLv) / 1e18;
     }
 
     /**
@@ -75,7 +75,7 @@ library MathHelper {
         uint256 totalLv,
         uint256 amount
     ) external pure returns (uint256 received) {
-        received = (amount * ((lvRaBalance * 1e18) / totalLv)) / 1e18;
+        received = (amount * (lvRaBalance * 1e18) / totalLv) / 1e18;
     }
 
     /**
@@ -125,7 +125,7 @@ library MathHelper {
         uint256 available,
         uint256 totalCtIssued
     ) internal pure returns (uint256 accrued) {
-        accrued = (amount * ((available * 1e18) / totalCtIssued)) / 1e18;
+        accrued = (amount * (available * 1e18) / totalCtIssued) / 1e18;
     }
 
     function separateLiquidity(

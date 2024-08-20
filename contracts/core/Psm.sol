@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity ^0.8.0;
+pragma solidity 0.8.24;
+
 import {PsmLibrary} from "../libraries/PsmLib.sol";
 import {VaultLibrary} from "../libraries/VaultLib.sol";
 import {Id,Pair,PairLibrary} from "../libraries/Pair.sol";

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity ^0.8.0;
+pragma solidity 0.8.24;
 
 import {Id} from "../libraries/Pair.sol";
 import {State} from "../libraries/State.sol";
@@ -15,17 +15,17 @@ abstract contract ModuleState is ICommon {
     using PsmLibrary for State;
 
     mapping(Id => State) internal states;
-    address internal swapAssetFactory;
+    address internal immutable swapAssetFactory;
 
     /// @dev in this case is uni v2
-    address internal ammFactory;
+    address internal immutable ammFactory;
 
-    address internal dsFlashSwapRouter;
+    address internal immutable dsFlashSwapRouter;
 
     /// @dev in this case is uni v2
-    address internal ammRouter;
+    address internal immutable ammRouter;
 
-    address internal config;
+    address internal immutable config;
 
     uint256 psmBaseRedemptionFeePrecentage;
 
@@ -56,10 +56,6 @@ abstract contract ModuleState is ICommon {
         ammRouter = _ammRouter;
         config = _config;
         psmBaseRedemptionFeePrecentage = _psmBaseRedemptionFeePrecentage;
-    }
-
-    function getSwapAssetFactory() internal view returns (IAssetFactory) {
-        return IAssetFactory(swapAssetFactory);
     }
 
     function getRouterCore() internal view returns (RouterState) {
@@ -114,12 +110,6 @@ abstract contract ModuleState is ICommon {
             revert LVWithdrawalPaused();
         }
         _;
-    }
-
-    function _onlyValidAsset(address asset) internal view {
-        if (getSwapAssetFactory().isDeployed(asset) == false) {
-            revert InvalidAsset(asset);
-        }
     }
 
     /// @notice This will revert if the contract is locked
