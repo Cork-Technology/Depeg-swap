@@ -23,14 +23,7 @@ contract ModuleCore is PsmCore, Initialize, VaultCore {
         address _config,
         uint256 _psmBaseRedemptionFeePrecentage
     )
-        ModuleState(
-            _swapAssetFactory,
-            _ammFactory,
-            _flashSwapRouter,
-            _ammRouter,
-            _config,
-            _psmBaseRedemptionFeePrecentage
-        )
+        ModuleState(_swapAssetFactory, _ammFactory, _flashSwapRouter, _ammRouter, _config, _psmBaseRedemptionFeePrecentage)
     {}
 
     function getId(address pa, address ra) external pure returns (Id) {
@@ -61,24 +54,17 @@ contract ModuleCore is PsmCore, Initialize, VaultCore {
         address lv = assetsFactory.deployLv(ra, pa, address(this));
 
         PsmLibrary.initialize(state, key);
-        VaultLibrary.initialize(
-            state.vault,
-            lv,
-            lvFee,
-            lvAmmWaDepositThreshold,
-            lvAmmCtDepositThreshold,
-            ra
-        );
+        VaultLibrary.initialize(state.vault, lv, lvFee, lvAmmWaDepositThreshold, lvAmmCtDepositThreshold, ra);
 
         emit Initialized(id, pa, ra, lv);
     }
 
-    function issueNewDs(
-        Id id,
-        uint256 expiry,
-        uint256 exchangeRates,
-        uint256 repurchaseFeePrecentage
-    ) external override onlyConfig onlyInitialized(id) {
+    function issueNewDs(Id id, uint256 expiry, uint256 exchangeRates, uint256 repurchaseFeePrecentage)
+        external
+        override
+        onlyConfig
+        onlyInitialized(id)
+    {
         State storage state = states[id];
 
         address ra = state.info.pair1;
@@ -86,62 +72,31 @@ contract ModuleCore is PsmCore, Initialize, VaultCore {
         uint256 prevIdx = state.globalAssetIdx++;
         uint256 idx = state.globalAssetIdx;
 
-        (address ct, address ds) = IAssetFactory(swapAssetFactory)
-            .deploySwapAssets(
-                ra,
-                state.info.pair0,
-                address(this),
-                expiry,
-                exchangeRates
-            );
+        (address ct, address ds) =
+            IAssetFactory(swapAssetFactory).deploySwapAssets(ra, state.info.pair0, address(this), expiry, exchangeRates);
 
         address ammPair = getAmmFactory().createPair(ra, ct);
 
-        PsmLibrary.onNewIssuance(
-            state,
-            ct,
-            ds,
-            ammPair,
-            idx,
-            prevIdx,
-            repurchaseFeePrecentage
-        );
+        PsmLibrary.onNewIssuance(state, ct, ds, ammPair, idx, prevIdx, repurchaseFeePrecentage);
 
         // TODO : 0 for initial reserve for now, will be calculated later when rollover stragegy is implemented
         getRouterCore().onNewIssuance(id, idx, ds, ammPair, 0, ra, ct);
 
-        VaultLibrary.onNewIssuance(
-            state,
-            prevIdx,
-            getRouterCore(),
-            getAmmRouter()
-        );
+        VaultLibrary.onNewIssuance(state, prevIdx, getRouterCore(), getAmmRouter());
 
         emit Issued(id, idx, expiry, ds, ct, ammPair);
     }
 
-    function updateRepurchaseFeeRate(
-        Id id,
-        uint256 newRepurchaseFeePrecentage
-    ) external onlyConfig {
+    function updateRepurchaseFeeRate(Id id, uint256 newRepurchaseFeePrecentage) external onlyConfig {
         State storage state = states[id];
-        PsmLibrary.updateRepurchaseFeePercentage(
-            state,
-            newRepurchaseFeePrecentage
-        );
+        PsmLibrary.updateRepurchaseFeePercentage(state, newRepurchaseFeePrecentage);
 
         emit RepurchaseFeeRateUpdated(id, newRepurchaseFeePrecentage);
     }
 
-    function updateEarlyRedemptionFeeRate(
-        Id id,
-        uint256 newEarlyRedemptionFeeRate
-    ) external onlyConfig {
+    function updateEarlyRedemptionFeeRate(Id id, uint256 newEarlyRedemptionFeeRate) external onlyConfig {
         State storage state = states[id];
-        VaultConfigLibrary.updateFee(
-            state.vault.config,
-            newEarlyRedemptionFeeRate
-        );
+        VaultConfigLibrary.updateFee(state.vault.config, newEarlyRedemptionFeeRate);
 
         emit EarlyRedemptionFeeRateUpdated(id, newEarlyRedemptionFeeRate);
     }
@@ -155,43 +110,26 @@ contract ModuleCore is PsmCore, Initialize, VaultCore {
     ) external onlyConfig {
         State storage state = states[id];
         PsmLibrary.updatePoolsStatus(
-            state,
-            isPSMDepositPaused,
-            isPSMWithdrawalPaused,
-            isLVDepositPaused,
-            isLVWithdrawalPaused
+            state, isPSMDepositPaused, isPSMWithdrawalPaused, isLVDepositPaused, isLVWithdrawalPaused
         );
 
-        emit PoolsStatusUpdated(
-            id,
-            isPSMDepositPaused,
-            isPSMWithdrawalPaused,
-            isLVDepositPaused,
-            isLVWithdrawalPaused
-        );
+        emit PoolsStatusUpdated(id, isPSMDepositPaused, isPSMWithdrawalPaused, isLVDepositPaused, isLVWithdrawalPaused);
     }
 
     function lastDsId(Id id) external view override returns (uint256 dsId) {
         return states[id].globalAssetIdx;
     }
 
-    function underlyingAsset(
-        Id id
-    ) external view override returns (address ra, address pa) {
+    function underlyingAsset(Id id) external view override returns (address ra, address pa) {
         (ra, pa) = states[id].info.underlyingAsset();
     }
 
-    function swapAsset(
-        Id id,
-        uint256 dsId
-    ) external view override returns (address ct, address ds) {
+    function swapAsset(Id id, uint256 dsId) external view override returns (address ct, address ds) {
         ct = states[id].ds[dsId].ct;
         ds = states[id].ds[dsId]._address;
     }
 
-    function updatePsmBaseRedemptionFeePrecentage(
-        uint256 newPsmBaseRedemptionFeePrecentage
-    ) external onlyConfig {
+    function updatePsmBaseRedemptionFeePrecentage(uint256 newPsmBaseRedemptionFeePrecentage) external onlyConfig {
         psmBaseRedemptionFeePrecentage = newPsmBaseRedemptionFeePrecentage;
     }
 }

@@ -1,6 +1,6 @@
 pragma solidity 0.8.24;
 
-import {IUniswapV2Router01} from './RouterV1.sol';
+import {IUniswapV2Router01} from "./RouterV1.sol";
 
 interface IUniswapV2Router02 is IUniswapV2Router01 {
     function removeLiquidityETHSupportingFeeOnTransferTokens(
@@ -11,6 +11,7 @@ interface IUniswapV2Router02 is IUniswapV2Router01 {
         address to,
         uint256 deadline
     ) external returns (uint256 amountETH);
+
     function removeLiquidityETHWithPermitSupportingFeeOnTransferTokens(
         address token,
         uint256 liquidity,
@@ -18,7 +19,10 @@ interface IUniswapV2Router02 is IUniswapV2Router01 {
         uint256 amountETHMin,
         address to,
         uint256 deadline,
-        bool approveMax, uint8 v, bytes32 r, bytes32 s
+        bool approveMax,
+        uint8 v,
+        bytes32 r,
+        bytes32 s
     ) external returns (uint256 amountETH);
 
     function swapExactTokensForTokensSupportingFeeOnTransferTokens(

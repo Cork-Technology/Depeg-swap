@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity 0.8.24;
 
-import {Signature,MinimalSignatureHelper} from "./SignatureHelperLib.sol";
+import {Signature, MinimalSignatureHelper} from "./SignatureHelperLib.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
@@ -15,9 +15,7 @@ library RedemptionAssetManagerLibrary {
     using MinimalSignatureHelper for Signature;
     using SafeERC20 for IERC20;
 
-    function initialize(
-        address ra
-    ) internal pure returns (PsmRedemptionAssetManager memory) {
+    function initialize(address ra) internal pure returns (PsmRedemptionAssetManager memory) {
         return PsmRedemptionAssetManager(ra, 0, 0);
     }
 
@@ -26,30 +24,19 @@ library RedemptionAssetManagerLibrary {
         self.free = 0;
     }
 
-    function incLocked(
-        PsmRedemptionAssetManager storage self,
-        uint256 amount
-    ) internal {
+    function incLocked(PsmRedemptionAssetManager storage self, uint256 amount) internal {
         self.locked = self.locked + amount;
     }
 
-    function incFree(
-        PsmRedemptionAssetManager storage self,
-        uint256 amount
-    ) internal {
+    function incFree(PsmRedemptionAssetManager storage self, uint256 amount) internal {
         self.free = self.free + amount;
     }
 
-    function decFree(
-        PsmRedemptionAssetManager storage self,
-        uint256 amount
-    ) internal {
+    function decFree(PsmRedemptionAssetManager storage self, uint256 amount) internal {
         self.free = self.free - amount;
     }
 
-    function convertAllToFree(
-        PsmRedemptionAssetManager storage self
-    ) internal returns (uint256) {
+    function convertAllToFree(PsmRedemptionAssetManager storage self) internal returns (uint256) {
         if (self.locked == 0) {
             return self.free;
         }
@@ -60,9 +47,7 @@ library RedemptionAssetManagerLibrary {
         return self.free;
     }
 
-    function tryConvertAllToFree(
-        PsmRedemptionAssetManager storage self
-    ) internal view returns (uint256) {
+    function tryConvertAllToFree(PsmRedemptionAssetManager storage self) internal view returns (uint256) {
         if (self.locked == 0) {
             return self.free;
         }
@@ -70,50 +55,29 @@ library RedemptionAssetManagerLibrary {
         return self.free + self.locked;
     }
 
-    function decLocked(
-        PsmRedemptionAssetManager storage self,
-        uint256 amount
-    ) internal {
+    function decLocked(PsmRedemptionAssetManager storage self, uint256 amount) internal {
         self.locked = self.locked - amount;
     }
 
-    function circulatingSupply(
-        PsmRedemptionAssetManager memory self
-    ) internal view returns (uint256) {
+    function circulatingSupply(PsmRedemptionAssetManager memory self) internal view returns (uint256) {
         return IERC20(self._address).totalSupply() - self.locked;
     }
 
-    function lockFrom(
-        PsmRedemptionAssetManager storage self,
-        uint256 amount,
-        address from
-    ) internal {
+    function lockFrom(PsmRedemptionAssetManager storage self, uint256 amount, address from) internal {
         incLocked(self, amount);
         lockUnchecked(self, amount, from);
     }
 
-    function lockUnchecked(
-        PsmRedemptionAssetManager storage self,
-        uint256 amount,
-        address from
-    ) internal {
+    function lockUnchecked(PsmRedemptionAssetManager storage self, uint256 amount, address from) internal {
         IERC20(self._address).safeTransferFrom(from, address(this), amount);
     }
 
-    function unlockTo(
-        PsmRedemptionAssetManager storage self,
-        address to,
-        uint256 amount
-    ) internal {
+    function unlockTo(PsmRedemptionAssetManager storage self, address to, uint256 amount) internal {
         decLocked(self, amount);
         unlockToUnchecked(self, amount, to);
     }
 
-    function unlockToUnchecked(
-        PsmRedemptionAssetManager storage self,
-        uint256 amount,
-        address to
-    ) internal {
+    function unlockToUnchecked(PsmRedemptionAssetManager storage self, uint256 amount, address to) internal {
         IERC20(self._address).safeTransfer(to, amount);
     }
 }

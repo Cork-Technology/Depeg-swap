@@ -1,30 +1,18 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity 0.8.24;
 
-import {VaultPool,VaultWithdrawalPool,VaultAmmLiquidityPool} from "./State.sol";
+import {VaultPool, VaultWithdrawalPool, VaultAmmLiquidityPool} from "./State.sol";
 import {MathHelper} from "./MathHelper.sol";
 
 library VaultPoolLibrary {
-    function reserve(
-        VaultPool storage self,
-        uint256 totalLvIssued,
-        uint256 addedRa,
-        uint256 addedPa
-    ) internal {
+    function reserve(VaultPool storage self, uint256 totalLvIssued, uint256 addedRa, uint256 addedPa) internal {
         uint256 totalLvWithdrawn = self.withdrawalPool.atrributedLv;
         self.withdrawalPool.atrributedLv = totalLvWithdrawn;
 
         // RA
         uint256 totalRa = self.withdrawalPool.raBalance + addedRa;
-        (
-            uint256 attributedToWithdraw,
-            uint256 attributedToAmm,
-            uint256 ratePerLv
-        ) = MathHelper.separateLiquidity(
-                totalRa,
-                totalLvIssued,
-                totalLvWithdrawn
-            );
+        (uint256 attributedToWithdraw, uint256 attributedToAmm, uint256 ratePerLv) =
+            MathHelper.separateLiquidity(totalRa, totalLvIssued, totalLvWithdrawn);
 
         self.withdrawalPool.raBalance = attributedToWithdraw;
         self.ammLiquidityPool.balance = attributedToAmm;
@@ -32,17 +20,14 @@ library VaultPoolLibrary {
 
         // PA
         uint256 totalPa = self.withdrawalPool.paBalance + addedPa;
-        (attributedToWithdraw, attributedToAmm, ratePerLv) = MathHelper
-            .separateLiquidity(totalPa, totalLvIssued, totalLvWithdrawn);
+        (attributedToWithdraw, attributedToAmm, ratePerLv) =
+            MathHelper.separateLiquidity(totalPa, totalLvIssued, totalLvWithdrawn);
 
         self.withdrawalPool.paBalance = attributedToWithdraw;
         self.withdrawalPool.stagnatedPaBalance = attributedToWithdraw;
         self.withdrawalPool.paExchangeRate = ratePerLv;
 
-        assert(
-            totalRa ==
-                self.withdrawalPool.raBalance + self.ammLiquidityPool.balance
-        );
+        assert(totalRa == self.withdrawalPool.raBalance + self.ammLiquidityPool.balance);
     }
 
     function tryReserve(
@@ -57,15 +42,8 @@ library VaultPoolLibrary {
 
         // RA
         uint256 totalRa = withdrawalPool.raBalance + addedRa;
-        (
-            uint256 attributedToWithdraw,
-            uint256 attributedToAmm,
-            uint256 ratePerLv
-        ) = MathHelper.separateLiquidity(
-                totalRa,
-                totalLvIssued,
-                totalLvWithdrawn
-            );
+        (uint256 attributedToWithdraw, uint256 attributedToAmm, uint256 ratePerLv) =
+            MathHelper.separateLiquidity(totalRa, totalLvIssued, totalLvWithdrawn);
 
         withdrawalPool.raBalance = attributedToWithdraw;
         ammLiquidityPool.balance = attributedToAmm;
@@ -73,8 +51,8 @@ library VaultPoolLibrary {
 
         // PA
         uint256 totalPa = withdrawalPool.paBalance + addedPa;
-        (attributedToWithdraw, attributedToAmm, ratePerLv) = MathHelper
-            .separateLiquidity(totalPa, totalLvIssued, totalLvWithdrawn);
+        (attributedToWithdraw, attributedToAmm, ratePerLv) =
+            MathHelper.separateLiquidity(totalPa, totalLvIssued, totalLvWithdrawn);
 
         withdrawalPool.paBalance = attributedToWithdraw;
         withdrawalPool.stagnatedPaBalance = attributedToWithdraw;
@@ -83,19 +61,11 @@ library VaultPoolLibrary {
         assert(totalRa == withdrawalPool.raBalance + ammLiquidityPool.balance);
     }
 
-    function __decreaseUserAttributed(
-        VaultPool storage self,
-        uint256 amount,
-        address owner
-    ) internal {
+    function __decreaseUserAttributed(VaultPool storage self, uint256 amount, address owner) internal {
         self.withdrawEligible[owner] -= amount;
     }
 
-    function redeem(
-        VaultPool storage self,
-        uint256 amount,
-        address owner
-    )
+    function redeem(VaultPool storage self, uint256 amount, address owner)
         internal
         returns (uint256 ra, uint256 pa, uint256 excess, uint256 attributed)
     {
@@ -127,36 +97,21 @@ library VaultPoolLibrary {
         uint256 userEligible = withdrawEligible[owner];
 
         if (userEligible >= amount) {
-            ra = MathHelper.calculateRedeemAmountWithExchangeRate(
-                amount,
-                withdrawalPool.raExchangeRate
-            );
+            ra = MathHelper.calculateRedeemAmountWithExchangeRate(amount, withdrawalPool.raExchangeRate);
 
-            pa = MathHelper.calculateRedeemAmountWithExchangeRate(
-                amount,
-                withdrawalPool.paExchangeRate
-            );
+            pa = MathHelper.calculateRedeemAmountWithExchangeRate(amount, withdrawalPool.paExchangeRate);
         } else {
             uint256 attributed = userEligible;
             excess = amount - userEligible;
 
             assert(excess + attributed == amount);
 
-            ra = MathHelper.calculateRedeemAmountWithExchangeRate(
-                attributed,
-                withdrawalPool.raExchangeRate
-            );
+            ra = MathHelper.calculateRedeemAmountWithExchangeRate(attributed, withdrawalPool.raExchangeRate);
 
-            pa = MathHelper.calculateRedeemAmountWithExchangeRate(
-                attributed,
-                withdrawalPool.paExchangeRate
-            );
+            pa = MathHelper.calculateRedeemAmountWithExchangeRate(attributed, withdrawalPool.paExchangeRate);
 
-            uint256 withdrawnFromAmm = MathHelper
-                .calculateRedeemAmountWithExchangeRate(
-                    excess,
-                    withdrawalPool.raExchangeRate
-                );
+            uint256 withdrawnFromAmm =
+                MathHelper.calculateRedeemAmountWithExchangeRate(excess, withdrawalPool.raExchangeRate);
 
             ra += withdrawnFromAmm;
 
@@ -164,10 +119,10 @@ library VaultPoolLibrary {
         }
     }
 
-    function __redeemfromWithdrawalPool(
-        VaultPool storage self,
-        uint256 amount
-    ) internal returns (uint256 ra, uint256 pa) {
+    function __redeemfromWithdrawalPool(VaultPool storage self, uint256 amount)
+        internal
+        returns (uint256 ra, uint256 pa)
+    {
         self.withdrawalPool.atrributedLv -= amount;
         (ra, pa) = __tryRedeemfromWithdrawalPool(self, amount);
 
@@ -175,55 +130,40 @@ library VaultPoolLibrary {
         self.withdrawalPool.paBalance -= pa;
     }
 
-    function __tryRedeemfromWithdrawalPool(
-        VaultPool storage self,
-        uint256 amount
-    ) internal view returns (uint256 ra, uint256 pa) {
-        ra = MathHelper.calculateRedeemAmountWithExchangeRate(
-            amount,
-            self.withdrawalPool.raExchangeRate
-        );
+    function __tryRedeemfromWithdrawalPool(VaultPool storage self, uint256 amount)
+        internal
+        view
+        returns (uint256 ra, uint256 pa)
+    {
+        ra = MathHelper.calculateRedeemAmountWithExchangeRate(amount, self.withdrawalPool.raExchangeRate);
 
-        pa = MathHelper.calculateRedeemAmountWithExchangeRate(
-            amount,
-            self.withdrawalPool.paExchangeRate
-        );
+        pa = MathHelper.calculateRedeemAmountWithExchangeRate(amount, self.withdrawalPool.paExchangeRate);
     }
 
-    function __tryRedeemExcessFromAmmPool(
-        VaultPool storage self,
-        uint256 amountAttributed,
-        uint256 excessAmount
-    ) internal view returns (uint256 ra, uint256 pa, uint256 withdrawnFromAmm) {
+    function __tryRedeemExcessFromAmmPool(VaultPool storage self, uint256 amountAttributed, uint256 excessAmount)
+        internal
+        view
+        returns (uint256 ra, uint256 pa, uint256 withdrawnFromAmm)
+    {
         (ra, pa) = __tryRedeemfromWithdrawalPool(self, amountAttributed);
 
-        withdrawnFromAmm = MathHelper.calculateRedeemAmountWithExchangeRate(
-            excessAmount,
-            self.withdrawalPool.raExchangeRate
-        );
+        withdrawnFromAmm =
+            MathHelper.calculateRedeemAmountWithExchangeRate(excessAmount, self.withdrawalPool.raExchangeRate);
 
         ra += withdrawnFromAmm;
     }
 
-    function __redeemExcessFromAmmPool(
-        VaultPool storage self,
-        uint256 amountAttributed,
-        uint256 excessAmount
-    ) internal returns (uint256 ra, uint256 pa) {
+    function __redeemExcessFromAmmPool(VaultPool storage self, uint256 amountAttributed, uint256 excessAmount)
+        internal
+        returns (uint256 ra, uint256 pa)
+    {
         uint256 withdrawnFromAmm;
-        (ra, pa, withdrawnFromAmm) = __tryRedeemExcessFromAmmPool(
-            self,
-            amountAttributed,
-            excessAmount
-        );
+        (ra, pa, withdrawnFromAmm) = __tryRedeemExcessFromAmmPool(self, amountAttributed, excessAmount);
 
         self.ammLiquidityPool.balance -= withdrawnFromAmm;
     }
 
-    function rationedToAmm(
-        VaultPool storage self,
-        uint256 ratio
-    ) internal view returns (uint256 ra, uint256 ct) {
+    function rationedToAmm(VaultPool storage self, uint256 ratio) internal view returns (uint256 ra, uint256 ct) {
         uint256 amount = self.ammLiquidityPool.balance;
 
         (ra, ct) = MathHelper.calculateProvideLiquidityAmountBasedOnCtPrice(amount, ratio);

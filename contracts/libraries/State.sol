@@ -49,6 +49,7 @@ struct VaultPool {
     /// @dev user => (dsId => amount)
     mapping(address => uint256) withdrawEligible;
 }
+
 struct VaultWithdrawalPool {
     uint256 atrributedLv;
     uint256 raExchangeRate;
@@ -61,6 +62,7 @@ struct VaultWithdrawalPool {
     // and for now will just sit there until rationed again at next expiry.
     uint256 stagnatedPaBalance;
 }
+
 struct VaultAmmLiquidityPool {
     uint256 balance;
 }
