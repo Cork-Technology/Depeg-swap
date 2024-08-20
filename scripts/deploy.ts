@@ -80,6 +80,7 @@ async function main() {
       deployedBytecode: UNIV2FACTORY.evm.deployedBytecode.object,
       metadata: UNIV2FACTORY.metadata,
     },
+    gasLimit: 10_000_000,
   });
 
   console.log("UniV2Factory deployed to     :", UniV2Factory.address);
@@ -93,11 +94,10 @@ async function main() {
       deployedBytecode: UNIV2ROUTER.evm.deployedBytecode.object,
       metadata: UNIV2ROUTER.metadata,
     },
+    gasLimit: 10_000_000,
   });
 
   console.log("UniV2Router deployed to      :", UniV2Router.address);
-  // hre.network.provider.on
-
 
   const { ModuleCore } = await hre.ignition.deploy(core.ModuleCore, {
     parameters: {
