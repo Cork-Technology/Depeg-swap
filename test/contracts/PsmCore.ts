@@ -157,6 +157,14 @@ describe("PSM core", function () {
       expect(event.length).to.equal(1);
     });
 
+    it("should revert when depositing 0", async function () {
+      await expect(
+        fixture.moduleCore.write.depositPsm([fixture.Id, parseEther("0")], {
+          account: defaultSigner.account,
+        })
+      ).to.be.reverted;
+    });
+
     it("should redeem DS : Permit", async function () {
       // just to buffer
       const deadline = BigInt(helper.expiry(expiryTime));
@@ -1058,7 +1066,7 @@ describe("PSM core", function () {
         }
       );
       expect(
-        await fixture.moduleCore.read.redeemed([fixture.Id, dsId])
+        await fixture.moduleCore.read.redeemed([fixture.Id, dsId!])
       ).to.equal(parseEther("9.99"));
     });
   });

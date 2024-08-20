@@ -3,15 +3,16 @@ pragma solidity ^0.8.20;
 
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {Asset} from "../core/assets/Asset.sol";
-import {Pair,PairLibrary} from "./Pair.sol";
-import {DepegSwap,DepegSwapLibrary} from "./DepegSwapLib.sol";
-import {PsmRedemptionAssetManager,RedemptionAssetManagerLibrary} from "./RedemptionAssetManagerLib.sol";
-import {Signature,MinimalSignatureHelper} from "./SignatureHelperLib.sol";
-import {PeggedAsset,PeggedAssetLibrary} from "./PeggedAssetLib.sol";
-import {State,BitMaps,Balances,PsmPoolArchive} from "./State.sol";
+import {Pair, PairLibrary} from "./Pair.sol";
+import {DepegSwap, DepegSwapLibrary} from "./DepegSwapLib.sol";
+import {PsmRedemptionAssetManager, RedemptionAssetManagerLibrary} from "./RedemptionAssetManagerLib.sol";
+import {Signature, MinimalSignatureHelper} from "./SignatureHelperLib.sol";
+import {PeggedAsset, PeggedAssetLibrary} from "./PeggedAssetLib.sol";
+import {State, BitMaps, Balances, PsmPoolArchive} from "./State.sol";
 import {Guard} from "./Guard.sol";
 import {MathHelper} from "./MathHelper.sol";
 import {IRepurchase} from "../interfaces/IRepurchase.sol";
+import {ICommon} from "../interfaces/ICommon.sol";
 import {IDsFlashSwapCore} from "../interfaces/IDsFlashSwapRouter.sol";
 import {VaultLibrary} from "./VaultLib.sol";
 import {ERC20Burnable} from "@openzeppelin/contracts/token/ERC20/extensions/ERC20Burnable.sol";
@@ -95,6 +96,10 @@ library PsmLibrary {
         address depositor,
         uint256 amount
     ) internal returns (uint256 dsId, uint256 received, uint256 _exchangeRate) {
+        if (amount == 0) {
+            revert ICommon.ZeroDeposit();
+        }
+
         dsId = self.globalAssetIdx;
 
         DepegSwap storage ds = self.ds[dsId];
@@ -178,6 +183,10 @@ library PsmLibrary {
         view
         returns (uint256 ctReceived, uint256 dsReceived, uint256 dsId)
     {
+        if (amount == 0) {
+            revert ICommon.ZeroDeposit();
+        }
+
         dsId = self.globalAssetIdx;
         DepegSwap storage ds = self.ds[dsId];
 

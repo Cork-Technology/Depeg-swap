@@ -1,24 +1,25 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.0;
 
-import {State,VaultState,VaultConfig,VaultWithdrawalPool,VaultAmmLiquidityPool} from "./State.sol";
+import {State, VaultState, VaultConfig, VaultWithdrawalPool, VaultAmmLiquidityPool} from "./State.sol";
 import {VaultConfigLibrary} from "./VaultConfig.sol";
-import {Pair,PairLibrary} from "./Pair.sol";
-import {LvAsset,LvAssetLibrary} from "./LvAssetLib.sol";
+import {Pair, PairLibrary} from "./Pair.sol";
+import {LvAsset, LvAssetLibrary} from "./LvAssetLib.sol";
 import {PsmLibrary} from "./PsmLib.sol";
-import {PsmRedemptionAssetManager,RedemptionAssetManagerLibrary} from "./RedemptionAssetManagerLib.sol";
+import {PsmRedemptionAssetManager, RedemptionAssetManagerLibrary} from "./RedemptionAssetManagerLib.sol";
 import {MathHelper} from "./MathHelper.sol";
 import {Guard} from "./Guard.sol";
-import {ERC20,ERC20Burnable} from "@openzeppelin/contracts/token/ERC20/extensions/ERC20Burnable.sol";
+import {ERC20, ERC20Burnable} from "@openzeppelin/contracts/token/ERC20/extensions/ERC20Burnable.sol";
 import {BitMaps} from "@openzeppelin/contracts/utils/structs/BitMaps.sol";
-import {VaultPool,VaultPoolLibrary} from "./VaultPoolLib.sol";
+import {VaultPool, VaultPoolLibrary} from "./VaultPoolLib.sol";
 import {MinimalUniswapV2Library} from "./uni-v2/UniswapV2Library.sol";
 import {IDsFlashSwapCore} from "../interfaces/IDsFlashSwapRouter.sol";
 import {IUniswapV2Router02} from "../interfaces/uniswap-v2/RouterV2.sol";
 import {IUniswapV2Pair} from "../interfaces/uniswap-v2/pair.sol";
-import {DepegSwap,DepegSwapLibrary} from "./DepegSwapLib.sol";
+import {DepegSwap, DepegSwapLibrary} from "./DepegSwapLib.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {Asset} from "../core/assets/Asset.sol";
+import {ICommon} from "../interfaces/ICommon.sol";
 
 library VaultLibrary {
     using VaultConfigLibrary for VaultConfig;
@@ -273,6 +274,10 @@ library VaultLibrary {
         IDsFlashSwapCore flashSwapRouter,
         IUniswapV2Router02 ammRouter
     ) external {
+        if (amount == 0) {
+            revert ICommon.ZeroDeposit();
+        }
+
         safeBeforeExpired(self);
         self.vault.balances.ra.lockUnchecked(amount, from);
         __provideLiquidityWithRatio(
@@ -290,6 +295,10 @@ library VaultLibrary {
     function previewDeposit(
         uint256 amount
     ) external pure returns (uint256 lvReceived) {
+        if (amount == 0) {
+            revert ICommon.ZeroDeposit();
+        }
+        
         lvReceived = amount;
     }
 

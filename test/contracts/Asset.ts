@@ -108,8 +108,11 @@ describe("Asset", function () {
       expect(await asset.read.owner()).to.equal(
         await getCheckSummedAdrress(defaultSigner.account.address)
       );
-      expect(await asset.read.expiry()).to.equal(
-        BigInt(helper.expiry(100) + 1000)
+      // 
+      expect(await asset.read.expiry()).to.closeTo(
+        helper.toEthersBigNumer(BigInt(helper.expiry(100) + 1000)),
+        // workaround for hardhat test, it never has exact value
+        helper.toEthersBigNumer(1n)
       );
       expect(await asset.read.isExpired()).to.equal(false);
       expect(await asset.read.exchangeRate()).to.equal(100n);
