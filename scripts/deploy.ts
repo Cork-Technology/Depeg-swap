@@ -7,7 +7,7 @@ import * as uniV2 from "../ignition/modules/uniV2";
 import UNIV2FACTORY from "../test/helper/ext-abi/uni-v2-factory.json";
 import UNIV2ROUTER from "../test/helper/ext-abi/uni-v2-router.json";
 
-import { isAddress } from "viem";
+import { Address, isAddress } from "viem";
 
 dotenv.config();
 
@@ -113,6 +113,10 @@ async function main() {
   });
 
   await assetFactory.write.initialize([ModuleCore.address]);
+  await FlashSwapRouter.write.initialize([
+    ModuleCore.address,
+    UniV2Factory.address as Address,
+  ]);
 
   console.log("ModuleCore deployed to       :", ModuleCore.address);
 }
