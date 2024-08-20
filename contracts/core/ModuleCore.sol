@@ -30,13 +30,10 @@ contract ModuleCore is PsmCore, Initialize, VaultCore {
         return PairLibrary.initalize(pa, ra).toId();
     }
 
-    // TODO : make a pair id associated with it's interval.
-    // TODO : auto issue.
     function initialize(
         address pa,
         address ra,
         uint256 lvFee,
-        // TODO : maybe remove this threshold
         uint256 lvAmmWaDepositThreshold,
         uint256 lvAmmCtDepositThreshold
     ) external override onlyConfig {
@@ -79,7 +76,6 @@ contract ModuleCore is PsmCore, Initialize, VaultCore {
 
         PsmLibrary.onNewIssuance(state, ct, ds, ammPair, idx, prevIdx, repurchaseFeePrecentage);
 
-        // TODO : 0 for initial reserve for now, will be calculated later when rollover stragegy is implemented
         getRouterCore().onNewIssuance(id, idx, ds, ammPair, 0, ra, ct);
 
         VaultLibrary.onNewIssuance(state, prevIdx, getRouterCore(), getAmmRouter());

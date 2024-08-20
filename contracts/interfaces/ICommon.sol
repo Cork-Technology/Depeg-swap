@@ -71,7 +71,6 @@ interface ICommon {
      */
     function underlyingAsset(Id id) external view returns (address ra, address pa);
 
-    // TODO : add issuance interval/expiry interval after it's integrated
     /**
      * @notice returns the address of CT and DS associated with a certain DS id
      * @param id the id of PSM

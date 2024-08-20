@@ -1,8 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity 0.8.24;
 
-import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import {Asset} from "../core/assets/Asset.sol";
+import {Asset, ERC20Burnable} from "../core/assets/Asset.sol";
 import {Pair, PairLibrary} from "./Pair.sol";
 import {DepegSwap, DepegSwapLibrary} from "./DepegSwapLib.sol";
 import {PsmRedemptionAssetManager, RedemptionAssetManagerLibrary} from "./RedemptionAssetManagerLib.sol";
@@ -15,13 +14,9 @@ import {IRepurchase} from "../interfaces/IRepurchase.sol";
 import {ICommon} from "../interfaces/ICommon.sol";
 import {IDsFlashSwapCore} from "../interfaces/IDsFlashSwapRouter.sol";
 import {VaultLibrary} from "./VaultLib.sol";
-import {ERC20Burnable} from "@openzeppelin/contracts/token/ERC20/extensions/ERC20Burnable.sol";
 import {IUniswapV2Router02} from "../interfaces/uniswap-v2/RouterV2.sol";
-import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import {SafeERC20, IERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
-// TODO : support native token
-// TODO : make an entrypoint that does not depend on permit
-// TODO : make every redeem have receiver address
 library PsmLibrary {
     using MinimalSignatureHelper for Signature;
     using PairLibrary for Pair;
@@ -116,7 +111,6 @@ library PsmLibrary {
     function unsafeIssueToLv(State storage self, uint256 amount) internal {
         uint256 dsId = self.globalAssetIdx;
 
-        // TODO : handle rebasing token exchange rate
         DepegSwap storage ds = self.ds[dsId];
 
         self.psm.balances.ra.incLocked(amount);
@@ -147,7 +141,6 @@ library PsmLibrary {
     /// @notice preview deposit
     /// @dev since we mint 1:1, we return the same amount,
     /// since rate only effective when redeeming with CT
-    // TODO: test this
     function previewDeposit(State storage self, uint256 amount)
         internal
         view
@@ -409,7 +402,6 @@ library PsmLibrary {
 
     /// @notice simulate a ds redeem.
     /// @return assets how much RA the user would receive
-    // TODO: test this
     function previewRedeemWithDs(State storage self, uint256 dsId, uint256 amount)
         internal
         view

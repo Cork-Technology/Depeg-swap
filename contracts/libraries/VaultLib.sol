@@ -9,7 +9,6 @@ import {PsmLibrary} from "./PsmLib.sol";
 import {PsmRedemptionAssetManager, RedemptionAssetManagerLibrary} from "./RedemptionAssetManagerLib.sol";
 import {MathHelper} from "./MathHelper.sol";
 import {Guard} from "./Guard.sol";
-import {ERC20, ERC20Burnable} from "@openzeppelin/contracts/token/ERC20/extensions/ERC20Burnable.sol";
 import {BitMaps} from "@openzeppelin/contracts/utils/structs/BitMaps.sol";
 import {VaultPool, VaultPoolLibrary} from "./VaultPoolLib.sol";
 import {MinimalUniswapV2Library} from "./uni-v2/UniswapV2Library.sol";
@@ -17,10 +16,9 @@ import {IDsFlashSwapCore} from "../interfaces/IDsFlashSwapRouter.sol";
 import {IUniswapV2Router02} from "../interfaces/uniswap-v2/RouterV2.sol";
 import {IUniswapV2Pair} from "../interfaces/uniswap-v2/pair.sol";
 import {DepegSwap, DepegSwapLibrary} from "./DepegSwapLib.sol";
-import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import {Asset} from "../core/assets/Asset.sol";
+import {Asset, ERC20, ERC20Burnable} from "../core/assets/Asset.sol";
 import {ICommon} from "../interfaces/ICommon.sol";
-import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import {SafeERC20, IERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 library VaultLibrary {
     using VaultConfigLibrary for VaultConfig;
@@ -33,7 +31,6 @@ library VaultLibrary {
     using VaultPoolLibrary for VaultPool;
     using SafeERC20 for IERC20;
 
-    // TODO : for now a static ratio deposit value used to provide liquidity for the first time, this should be changed later
     /// @notice this will set the initial CT price to 0.9 RA, thus also making the initial price of DS to be 0.1 RA
     uint256 internal constant DEFAULT_AMM_DEPOSIT_RATIO = 9e17;
 
@@ -77,7 +74,6 @@ library VaultLibrary {
         (,, uint256 token0Tolerance, uint256 token1Tolerance) =
             MinimalUniswapV2Library.sortTokensUnsafeWithAmount(raAddress, ctAddress, raTolerance, ctTolerance);
 
-        // TODO : what do we do if there's leftover deposit due to the tolerance level? for now will just ignore it.
         (,, uint256 lp) = ammRouter.addLiquidity(
             token0, token1, token0Amount, token1Amount, token0Tolerance, token1Tolerance, address(this), block.timestamp
         );
@@ -691,7 +687,6 @@ library VaultLibrary {
     //
     // final amount(Fa) :
     // Fa = rA - fee(rA)
-    // TODO : fix this
     function _redeemEarly(
         State storage self,
         address owner,

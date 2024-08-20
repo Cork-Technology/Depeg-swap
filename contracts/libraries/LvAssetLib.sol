@@ -1,8 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity 0.8.24;
 
-import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import {Asset, ERC20, ERC20Burnable} from "../core/assets/Asset.sol";
+import {IERC20, Asset, ERC20, ERC20Burnable} from "../core/assets/Asset.sol";
 
 struct LvAsset {
     address _address;
