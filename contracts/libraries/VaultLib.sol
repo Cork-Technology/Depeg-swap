@@ -151,9 +151,8 @@ library VaultLibrary {
         // This basically means that if the reserve is empty, then we use the default ratio
         ratio = DEFAULT_AMM_DEPOSIT_RATIO;
 
-        try flashSwapRouter
-            // will always fail for the first deposit
-            .getCurrentPriceRatio(self.info.toId(), dsId) returns (uint256, uint256 _ctRatio) {
+        // will always fail for the first deposit
+        try flashSwapRouter.getCurrentPriceRatio(self.info.toId(), dsId) returns (uint256, uint256 _ctRatio) {
             ratio = _ctRatio;
         } catch {}
     }
@@ -292,17 +291,9 @@ library VaultLibrary {
     ) internal returns (uint256 raReceived, uint256 ctReceived) {
         ammPair.approve(address(ammRouter), lp);
 
-        (raReceived, ctReceived) = ammRouter.removeLiquidity(
-            raAddress,
-            ctAddress,
-            lp,
-            // 100% tolerance
-            0,
-            // 100% tolerance
-            0,
-            address(this),
-            block.timestamp
-        );
+        // amountAMin & amountBMin = 0 for 100% tolerence
+        (raReceived, ctReceived) =
+            ammRouter.removeLiquidity(raAddress, ctAddress, lp, 0, 0, address(this), block.timestamp);
 
         (raReceived, ctReceived) = MinimalUniswapV2Library.reverseSortWithAmount224(
             ammPair.token0(), ammPair.token1(), raAddress, ctAddress, raReceived, ctReceived

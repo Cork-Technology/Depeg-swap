@@ -49,7 +49,7 @@ contract ModuleCore is PsmCore, Initialize, VaultCore {
             revert AlreadyInitialized();
         }
 
-        IAssetFactory assetsFactory = IAssetFactory(swapAssetFactory);
+        IAssetFactory assetsFactory = IAssetFactory(SWAP_ASSET_FACTORY);
 
         address lv = assetsFactory.deployLv(ra, pa, address(this));
 
@@ -73,7 +73,7 @@ contract ModuleCore is PsmCore, Initialize, VaultCore {
         uint256 idx = state.globalAssetIdx;
 
         (address ct, address ds) =
-            IAssetFactory(swapAssetFactory).deploySwapAssets(ra, state.info.pair0, address(this), expiry, exchangeRates);
+            IAssetFactory(SWAP_ASSET_FACTORY).deploySwapAssets(ra, state.info.pair0, address(this), expiry, exchangeRates);
 
         address ammPair = getAmmFactory().createPair(ra, ct);
 
