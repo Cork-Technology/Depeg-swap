@@ -4,7 +4,6 @@ pragma solidity 0.8.24;
 import {Id} from "../libraries/Pair.sol";
 
 interface ICommon {
-
     /// @notice only flash swap router is allowed to call this function
     error OnlyFlashSwapRouterAllowed();
 
@@ -32,8 +31,11 @@ interface ICommon {
     /// @notice LV Withdrawal is paused, i.e thrown when withdrawal is paused for LV
     error LVWithdrawalPaused();
 
-    /// @notice When transaction is mutex locked for ensuring non-reentrancy 
+    /// @notice When transaction is mutex locked for ensuring non-reentrancy
     error StateLocked();
+
+    /// @notice Thrown when user deposit with 0 amount
+    error ZeroDeposit();
 
     /// @notice Emitted when a new LV and PSM is initialized with a given pair
     /// @param id The PSM id

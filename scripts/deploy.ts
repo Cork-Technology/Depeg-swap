@@ -4,6 +4,9 @@ import dotenv from "dotenv";
 import * as core from "../ignition/modules/core";
 import * as lib from "../ignition/modules/lib";
 import * as uniV2 from "../ignition/modules/uniV2";
+import UNIV2FACTORY from "../test/helper/ext-abi/uni-v2-factory.json";
+import UNIV2ROUTER from "../test/helper/ext-abi/uni-v2-router.json";
+
 import { isAddress } from "viem";
 
 dotenv.config();
@@ -40,11 +43,13 @@ function inferBaseRedemptionFee() {
 
 async function inferDeployer() {
   const deployer = await hre.viem.getWalletClients();
-  return deployer[0];
+  const pk = process.env.PRIVATE_KEY!;
+
+  return { deployer: deployer[0], pk };
 }
 
 async function main() {
-  const deployer = await inferDeployer();
+  const { deployer, pk } = await inferDeployer();
 
   console.log("PRODUCTION                   :", process.env.PRODUCTION);
   console.log("Network                      :", hre.network.name);
@@ -66,25 +71,32 @@ async function main() {
   const { FlashSwapRouter } = await hre.ignition.deploy(core.flashSwapRouter);
   console.log("FlashSwapRouter deployed to  :", FlashSwapRouter.address);
 
-  const { UniV2Factory } = await hre.ignition.deploy(uniV2.uniV2Factory, {
-    parameters: {
-      uniV2Factory: {
-        flashSwapRouter: FlashSwapRouter.address,
-        feeToSetter: deployer.account.address,
-      },
+  const UniV2Factory = await hre.deployments.deploy("uniV2Factory", {
+    from: pk,
+    args: [deployer.account.address, FlashSwapRouter.address],
+    contract: {
+      abi: UNIV2FACTORY.abi,
+      bytecode: UNIV2FACTORY.evm.bytecode.object,
+      deployedBytecode: UNIV2FACTORY.evm.deployedBytecode.object,
+      metadata: UNIV2FACTORY.metadata,
     },
+    gasLimit: 10_000_000,
   });
+
   console.log("UniV2Factory deployed to     :", UniV2Factory.address);
 
-  const { UniV2Router } = await hre.ignition.deploy(uniV2.uniV2router, {
-    parameters: {
-      UniV2Router: {
-        weth,
-        flashSwapRouter: FlashSwapRouter.address,
-        uniV2Factory: UniV2Factory.address,
-      },
+  const UniV2Router = await hre.deployments.deploy("uniV2Router", {
+    from: pk,
+    args: [UniV2Factory.address, weth, FlashSwapRouter.address],
+    contract: {
+      abi: UNIV2ROUTER.abi,
+      bytecode: UNIV2ROUTER.evm.bytecode.object,
+      deployedBytecode: UNIV2ROUTER.evm.deployedBytecode.object,
+      metadata: UNIV2ROUTER.metadata,
     },
+    gasLimit: 10_000_000,
   });
+
   console.log("UniV2Router deployed to      :", UniV2Router.address);
 
   const { ModuleCore } = await hre.ignition.deploy(core.ModuleCore, {
@@ -105,6 +117,11 @@ async function main() {
   console.log("ModuleCore deployed to       :", ModuleCore.address);
 }
 
+function sleep(ms: number) {
+  return new Promise((resolve) => {
+    setTimeout(resolve, ms);
+  });
+}
 main()
   .then(() => process.exit(0))
   .catch((error) => {
