@@ -9,43 +9,26 @@ interface IAssetFactory {
     error NotExist(address ra, address pa);
 
     /// @notice emitted when a new CT + DS assets is deployed
-    event AssetDeployed(
-        address indexed ra,
-        address indexed ct,
-        address indexed ds
-    );
+    event AssetDeployed(address indexed ra, address indexed ct, address indexed ds);
 
     /// @notice emitted when a new LvAsset is deployed
-    event LvAssetDeployed(
-        address indexed ra,
-        address indexed pa,
-        address indexed lv
-    );
+    event LvAssetDeployed(address indexed ra, address indexed pa, address indexed lv);
 
-    function getDeployedAssets(
-        uint8 page,
-        uint8 limit
-    ) external view returns (address[] memory ra, address[] memory lv);
+    function getDeployedAssets(uint8 page, uint8 limit)
+        external
+        view
+        returns (address[] memory ra, address[] memory lv);
 
     function isDeployed(address asset) external view returns (bool);
 
-    function getDeployedSwapAssets(
-        address ra,
-        uint8 page,
-        uint8 limit
-    ) external view returns (address[] memory ct, address[] memory ds);
+    function getDeployedSwapAssets(address ra, uint8 page, uint8 limit)
+        external
+        view
+        returns (address[] memory ct, address[] memory ds);
 
-    function deploySwapAssets(
-        address ra,
-        address pa,
-        address owner,
-        uint256 expiry,
-        uint256 psmExchangeRate
-    ) external returns (address ct, address ds);
+    function deploySwapAssets(address ra, address pa, address owner, uint256 expiry, uint256 psmExchangeRate)
+        external
+        returns (address ct, address ds);
 
-    function deployLv(
-        address ra,
-        address pa,
-        address owner
-    ) external returns (address lv);
+    function deployLv(address ra, address pa, address owner) external returns (address lv);
 }

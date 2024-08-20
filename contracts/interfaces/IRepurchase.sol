@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.0;
+
 import {Id} from "../libraries/Pair.sol";
 
 interface IRepurchase {
@@ -28,10 +29,7 @@ interface IRepurchase {
     /// @notice Emitted when a repurchaseFee is updated for a given PSM
     /// @param Id The PSM id
     /// @param repurchaseFeeRate The new repurchaseFee rate
-    event RepurchaseFeeRateUpdated(
-        Id indexed Id,
-        uint256 indexed repurchaseFeeRate
-    );
+    event RepurchaseFeeRateUpdated(Id indexed Id, uint256 indexed repurchaseFeeRate);
 
     /**
      * @notice thrown when the user tries to repurchase more than the available PA + DSliquidity
@@ -63,19 +61,10 @@ interface IRepurchase {
      * @return fee the fee charged
      * @return exchangeRates the effective DS exchange rate at the time of repurchase
      */
-    function previewRepurchase(
-        Id id,
-        uint256 amount
-    )
+    function previewRepurchase(Id id, uint256 amount)
         external
         view
-        returns (
-            uint256 dsId,
-            uint256 received,
-            uint256 feePrecentage,
-            uint256 fee,
-            uint256 exchangeRates
-        );
+        returns (uint256 dsId, uint256 received, uint256 feePrecentage, uint256 fee, uint256 exchangeRates);
 
     /**
      * @notice return the amount of available PA and DS to purchase.
@@ -84,9 +73,7 @@ interface IRepurchase {
      * @return ds the amount of DS available
      * @return dsId the id of the DS available
      */
-    function availableForRepurchase(
-        Id id
-    ) external view returns (uint256 pa, uint256 ds, uint256 dsId);
+    function availableForRepurchase(Id id) external view returns (uint256 pa, uint256 ds, uint256 dsId);
 
     /**
      * @notice returns the repurchase rates for a given DS

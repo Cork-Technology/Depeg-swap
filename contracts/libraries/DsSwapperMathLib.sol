@@ -1,5 +1,6 @@
 // taken directly from forked repo
 pragma solidity ^0.8.0;
+
 import {UQ112x112} from "./UQ112x112.sol";
 import {SignedMath} from "@openzeppelin/contracts/utils/math/SignedMath.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
@@ -9,16 +10,18 @@ import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 
 library SwapperMathLibrary {
     using UQ112x112 for uint224;
+
     error ZeroReserve();
     error InsufficientInputAmount();
     error InsufficientLiquidity();
     error InsufficientOtuputAmount();
 
     // Calculate price ratio of two tokens in a uniswap v2 pair, will return ratio on 18 decimals precision
-    function getPriceRatioUniv2(
-        uint112 raReserve,
-        uint112 ctReserve
-    ) public pure returns (uint256 raPriceRatio, uint256 ctPriceRatio) {
+    function getPriceRatioUniv2(uint112 raReserve, uint112 ctReserve)
+        public
+        pure
+        returns (uint256 raPriceRatio, uint256 ctPriceRatio)
+    {
         if (raReserve <= 0 || ctReserve <= 0) {
             revert ZeroReserve();
         }
@@ -37,11 +40,11 @@ library SwapperMathLibrary {
         ctPriceRatio = (uint256(ctPriceRatioUQ) * 1e18) / UQ112x112.Q112;
     }
 
-    function calculateDsPrice(
-        uint112 raReserve,
-        uint112 ctReserve,
-        uint256 dsExchangeRate
-    ) public pure returns (uint256 price) {
+    function calculateDsPrice(uint112 raReserve, uint112 ctReserve, uint256 dsExchangeRate)
+        public
+        pure
+        returns (uint256 price)
+    {
         (, uint256 ctPriceRatio) = getPriceRatioUniv2(raReserve, ctReserve);
 
         price = dsExchangeRate - ctPriceRatio;
@@ -61,11 +64,7 @@ library SwapperMathLibrary {
             revert InsufficientLiquidity();
         }
 
-        uint256 dsPrice = calculateDsPrice(
-            raReserve,
-            ctReserve,
-            dsExchangeRate
-        );
+        uint256 dsPrice = calculateDsPrice(raReserve, ctReserve, dsExchangeRate);
 
         amountIn = (amountOut * dsPrice) / 1e18;
     }
@@ -84,11 +83,7 @@ library SwapperMathLibrary {
             revert InsufficientLiquidity();
         }
 
-        uint256 dsPrice = calculateDsPrice(
-            reserveIn,
-            reserveOut,
-            dsExchangeRate
-        );
+        uint256 dsPrice = calculateDsPrice(reserveIn, reserveOut, dsExchangeRate);
 
         amountOut = amountIn / dsPrice;
     }
@@ -104,11 +99,7 @@ library SwapperMathLibrary {
      *   - r: RA needed to borrow from AMM
      *
      */
-    function getAmountOutDs(
-        int256 x,
-        int256 y,
-        int256 e
-    ) external pure returns (uint256 r, uint256 s) {
+    function getAmountOutDs(int256 x, int256 y, int256 e) external pure returns (uint256 r, uint256 s) {
         // first we solve the sqrt part of the equation first
 
         // E^2

@@ -10,9 +10,7 @@ struct Signature {
 library MinimalSignatureHelper {
     error InvalidSignatureLength(uint256 length);
 
-    function split(
-        bytes memory raw
-    ) internal pure returns (Signature memory sig) {
+    function split(bytes memory raw) internal pure returns (Signature memory sig) {
         if (raw.length != 65) {
             revert InvalidSignatureLength(raw.length);
         }
@@ -22,9 +20,7 @@ library MinimalSignatureHelper {
         sig = Signature({v: v, r: r, s: s});
     }
 
-    function splitUnchecked(
-        bytes memory sig
-    ) private pure returns (uint8 v, bytes32 r, bytes32 s) {
+    function splitUnchecked(bytes memory sig) private pure returns (uint8 v, bytes32 r, bytes32 s) {
         assembly {
             r := mload(add(sig, 32))
             s := mload(add(sig, 64))

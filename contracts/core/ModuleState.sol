@@ -29,7 +29,8 @@ abstract contract ModuleState is ICommon {
 
     uint256 psmBaseRedemptionFeePrecentage;
 
-    /** @dev checks if caller is config contract or not
+    /**
+     * @dev checks if caller is config contract or not
      */
     modifier onlyConfig() {
         if (msg.sender != config) {
