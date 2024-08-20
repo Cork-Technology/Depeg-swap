@@ -112,6 +112,12 @@ describe("LvCore", function () {
     });
   });
 
+  it("revert when depositing 0", async function () {
+    await issueNewSwapAssets(helper.expiry(1000000));
+
+    await expect(moduleCore.write.depositLv([Id, 0n])).to.be.reverted;
+  });
+
   describe("previewLvDeposit", function () {
     it("previewLvDeposit should work correctly", async function () {
       await issueNewSwapAssets(helper.expiry(1000000));
