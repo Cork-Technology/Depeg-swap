@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity 0.8.24;
 
-import {PeggedAsset,PeggedAssetLibrary} from "./PeggedAssetLib.sol";
+import {PeggedAsset, PeggedAssetLibrary} from "./PeggedAssetLib.sol";
 import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 
 type Id is bytes32;
@@ -26,46 +26,31 @@ library PairLibrary {
         }
     }
 
-    function toPairname(
-        Pair memory key
-    ) internal view returns (string memory pairname) {
-        (string memory _pa, string memory _ra) = (
-            IERC20Metadata(key.pair0).symbol(),
-            IERC20Metadata(key.pair1).symbol()
-        );
+    function toPairname(Pair memory key) internal view returns (string memory pairname) {
+        (string memory _pa, string memory _ra) =
+            (IERC20Metadata(key.pair0).symbol(), IERC20Metadata(key.pair1).symbol());
 
         pairname = string(abi.encodePacked(_pa, "-", _ra));
     }
 
-    function initalize(
-        address pa,
-        address ra
-    ) internal pure returns (Pair memory key) {
+    function initalize(address pa, address ra) internal pure returns (Pair memory key) {
         key = Pair({pair0: pa, pair1: ra});
     }
 
-    function peggedAsset(
-        Pair memory key
-    ) internal pure returns (PeggedAsset memory pa) {
+    function peggedAsset(Pair memory key) internal pure returns (PeggedAsset memory pa) {
         pa = PeggedAsset({_address: key.pair0});
     }
 
-    function underlyingAsset(
-        Pair memory key
-    ) internal pure returns (address ra, address pa) {
+    function underlyingAsset(Pair memory key) internal pure returns (address ra, address pa) {
         pa = key.pair0;
         ra = key.pair1;
     }
 
-    function redemptionAsset(
-        Pair memory key
-    ) internal pure returns (address ra) {
+    function redemptionAsset(Pair memory key) internal pure returns (address ra) {
         ra = key.pair1;
     }
 
-    function isInitialized(
-        Pair memory key
-    ) internal pure returns (bool status) {
+    function isInitialized(Pair memory key) internal pure returns (bool status) {
         status = key.pair0 != address(0) && key.pair1 != address(0);
     }
 }

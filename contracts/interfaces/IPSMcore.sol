@@ -90,15 +90,9 @@ interface IPSMcore is IRepurchase {
     /// @notice Emitted when a Admin updates fee rates for early redemption
     /// @param Id The PSM id
     /// @param earlyRedemptionFeeRate The new value of early redemption fee rate
-    event EarlyRedemptionFeeRateUpdated(
-        Id indexed Id,
-        uint256 earlyRedemptionFeeRate
-    );
+    event EarlyRedemptionFeeRateUpdated(Id indexed Id, uint256 earlyRedemptionFeeRate);
 
-    function depositPsm(
-        Id id,
-        uint256 amount
-    ) external returns (uint256 received, uint256 exchangeRate);
+    function depositPsm(Id id, uint256 amount) external returns (uint256 received, uint256 exchangeRate);
 
     /**
      * This determines the rate of how much the user will receive for the amount of asset they want to deposit.
@@ -107,45 +101,27 @@ interface IPSMcore is IRepurchase {
      */
     function exchangeRate(Id id) external view returns (uint256 rates);
 
-    function previewDepositPsm(
-        Id id,
-        uint256 amount
-    )
+    function previewDepositPsm(Id id, uint256 amount)
         external
         view
         returns (uint256 ctReceived, uint256 dsReceived, uint256 dsId);
 
-    function redeemRaWithDs(
-        Id id,
-        uint256 dsId,
-        uint256 amount,
-        bytes memory rawDsPermitSig,
-        uint256 deadline
-    ) external;
+    function redeemRaWithDs(Id id, uint256 dsId, uint256 amount, bytes memory rawDsPermitSig, uint256 deadline)
+        external;
 
     function redeemRaWithDs(Id id, uint256 dsId, uint256 amount) external;
 
-    function previewRedeemRaWithDs(
-        Id id,
-        uint256 dsId,
-        uint256 amount
-    ) external view returns (uint256 assets);
+    function previewRedeemRaWithDs(Id id, uint256 dsId, uint256 amount) external view returns (uint256 assets);
 
-    function redeemWithCT(
-        Id id,
-        uint256 dsId,
-        uint256 amount,
-        bytes memory rawCtPermitSig,
-        uint256 deadline
-    ) external;
+    function redeemWithCT(Id id, uint256 dsId, uint256 amount, bytes memory rawCtPermitSig, uint256 deadline)
+        external;
 
     function redeemWithCT(Id id, uint256 dsId, uint256 amount) external;
 
-    function previewRedeemWithCt(
-        Id id,
-        uint256 dsId,
-        uint256 amount
-    ) external view returns (uint256 paReceived, uint256 raReceived);
+    function previewRedeemWithCt(Id id, uint256 dsId, uint256 amount)
+        external
+        view
+        returns (uint256 paReceived, uint256 raReceived);
 
     function redeemRaWithCtDs(
         Id id,
@@ -156,22 +132,13 @@ interface IPSMcore is IRepurchase {
         uint256 ctDeadline
     ) external;
 
-    function redeemRaWithCtDs(
-        Id id,
-        uint256 amount
-    ) external returns (uint256 received, uint256 rates);
+    function redeemRaWithCtDs(Id id, uint256 amount) external returns (uint256 received, uint256 rates);
 
-    function previewRedeemRaWithCtDs(
-        Id id,
-        uint256 amount
-    ) external view returns (uint256 ra, uint256 rates);
+    function previewRedeemRaWithCtDs(Id id, uint256 amount) external view returns (uint256 ra, uint256 rates);
 
     function valueLocked(Id id) external view returns (uint256);
 
-    function redeemed(
-        Id id,
-        uint256 dsId
-    ) external view returns (uint256 amount);
+    function redeemed(Id id, uint256 dsId) external view returns (uint256 amount);
 
-    function baseRedemptionFee() view external returns (uint256);
+    function baseRedemptionFee() external view returns (uint256);
 }

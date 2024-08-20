@@ -20,10 +20,7 @@ contract CorkConfig is AccessControl, Pausable {
     event ModuleCoreSet(address moduleCore);
 
     modifier onlyManager() {
-        if (
-            !hasRole(MANAGER_ROLE, msg.sender) &&
-            !hasRole(DEFAULT_ADMIN_ROLE, msg.sender)
-        ) {
+        if (!hasRole(MANAGER_ROLE, msg.sender) && !hasRole(DEFAULT_ADMIN_ROLE, msg.sender)) {
             revert CallerNotManager();
         }
         _;
@@ -55,49 +52,31 @@ contract CorkConfig is AccessControl, Pausable {
         uint256 lvAmmWaDepositThreshold,
         uint256 lvAmmCtDepositThreshold
     ) external onlyManager {
-        moduleCore.initialize(
-            pa,
-            ra,
-            lvFee,
-            lvAmmWaDepositThreshold,
-            lvAmmCtDepositThreshold
-        );
+        moduleCore.initialize(pa, ra, lvFee, lvAmmWaDepositThreshold, lvAmmCtDepositThreshold);
     }
 
     /**
      * @dev Issues new assets
      */
-    function issueNewDs(
-        Id id,
-        uint256 expiry,
-        uint256 exchangeRates,
-        uint256 repurchaseFeePrecentage
-    ) external whenNotPaused onlyManager {
-        moduleCore.issueNewDs(
-            id,
-            expiry,
-            exchangeRates,
-            repurchaseFeePrecentage
-        );
+    function issueNewDs(Id id, uint256 expiry, uint256 exchangeRates, uint256 repurchaseFeePrecentage)
+        external
+        whenNotPaused
+        onlyManager
+    {
+        moduleCore.issueNewDs(id, expiry, exchangeRates, repurchaseFeePrecentage);
     }
 
     /**
      * @dev Updates fee rates for psm repurchase
      */
-    function updateRepurchaseFeeRate(
-        Id id,
-        uint256 newRepurchaseFeePrecentage
-    ) external onlyManager {
+    function updateRepurchaseFeeRate(Id id, uint256 newRepurchaseFeePrecentage) external onlyManager {
         moduleCore.updateRepurchaseFeeRate(id, newRepurchaseFeePrecentage);
     }
 
     /**
      * @dev Updates earlyFeeRedemption rates
      */
-    function updateEarlyRedemptionFeeRate(
-        Id id,
-        uint256 newEarlyRedemptionFeeRate
-    ) external onlyManager {
+    function updateEarlyRedemptionFeeRate(Id id, uint256 newEarlyRedemptionFeeRate) external onlyManager {
         moduleCore.updateEarlyRedemptionFeeRate(id, newEarlyRedemptionFeeRate);
     }
 
@@ -112,23 +91,15 @@ contract CorkConfig is AccessControl, Pausable {
         bool isLVWithdrawalPaused
     ) external onlyManager {
         moduleCore.updatePoolsStatus(
-            id,
-            isPSMDepositPaused,
-            isPSMWithdrawalPaused,
-            isLVDepositPaused,
-            isLVWithdrawalPaused
+            id, isPSMDepositPaused, isPSMWithdrawalPaused, isLVDepositPaused, isLVWithdrawalPaused
         );
     }
 
     /**
      * @dev Updates base redemption fee percentage
      */
-    function updatePsmBaseRedemptionFeePrecentage(
-        uint256 newPsmBaseRedemptionFeePrecentage
-    ) external onlyManager {
-        moduleCore.updatePsmBaseRedemptionFeePrecentage(
-            newPsmBaseRedemptionFeePrecentage
-        );
+    function updatePsmBaseRedemptionFeePrecentage(uint256 newPsmBaseRedemptionFeePrecentage) external onlyManager {
+        moduleCore.updatePsmBaseRedemptionFeePrecentage(newPsmBaseRedemptionFeePrecentage);
     }
 
     /**
