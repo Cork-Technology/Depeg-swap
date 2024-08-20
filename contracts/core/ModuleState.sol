@@ -58,10 +58,6 @@ abstract contract ModuleState is ICommon {
         psmBaseRedemptionFeePrecentage = _psmBaseRedemptionFeePrecentage;
     }
 
-    // function getSwapAssetFactory() internal view returns (IAssetFactory) {
-    //     return IAssetFactory(swapAssetFactory);
-    // }
-
     function getRouterCore() internal view returns (RouterState) {
         return RouterState(dsFlashSwapRouter);
     }
@@ -115,12 +111,6 @@ abstract contract ModuleState is ICommon {
         }
         _;
     }
-
-    // function _onlyValidAsset(address asset) internal view {
-    //     if (getSwapAssetFactory().isDeployed(asset) == false) {
-    //         revert InvalidAsset(asset);
-    //     }
-    // }
 
     /// @notice This will revert if the contract is locked
     modifier nonReentrant() {

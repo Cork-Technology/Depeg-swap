@@ -131,12 +131,6 @@ contract RouterState is
         emit ReserveAdded(id, dsId, amount);
     }
 
-    // function getState(
-    //     Id id
-    // ) internal view returns (ReserveState storage reserve) {
-    //     return reserves[id];
-    // }
-
     function _swapRaforDs(
         ReserveState storage self,
         AssetPair storage assetPair,
