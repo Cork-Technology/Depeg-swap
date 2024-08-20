@@ -50,7 +50,7 @@ abstract contract VaultCore is ModuleState, Context, IVault {
 
     function requestRedemption(Id id, uint256 amount) external override LVWithdrawalNotPaused(id) {
         State storage state = states[id];
-        state.requestRedemption(_msgSender(), amount);
+        state.requestRedemption(_msgSender(), amount, bytes(""), 0);
         emit RedemptionRequested(id, _msgSender(), amount);
     }
 
@@ -81,7 +81,7 @@ abstract contract VaultCore is ModuleState, Context, IVault {
     {
         State storage state = states[id];
         (uint256 attributedRa, uint256 attributedPa) =
-            state.redeemExpired(_msgSender(), receiver, amount, getAmmRouter(), getRouterCore());
+            state.redeemExpired(_msgSender(), receiver, amount, getAmmRouter(), getRouterCore(), bytes(""), 0);
         emit LvRedeemExpired(id, receiver, attributedRa, attributedPa);
     }
 
@@ -117,7 +117,7 @@ abstract contract VaultCore is ModuleState, Context, IVault {
     {
         State storage state = states[id];
         (uint256 received, uint256 fee, uint256 feePrecentage) =
-            state.redeemEarly(_msgSender(), receiver, amount, getRouterCore(), getAmmRouter());
+            state.redeemEarly(_msgSender(), receiver, amount, getRouterCore(), getAmmRouter(), bytes(""), 0);
 
         emit LvRedeemEarly(id, _msgSender(), receiver, received, fee, feePrecentage);
     }
