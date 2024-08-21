@@ -14,8 +14,4 @@ library PeggedAssetLibrary {
     function asErc20(PeggedAsset memory self) internal pure returns (IERC20) {
         return IERC20(self._address);
     }
-
-    function redeemUnchecked(PeggedAsset memory self, address from, uint256 amount) internal {
-        IERC20(self.asErc20()).safeTransferFrom(from, address(this), amount);
-    }
 }

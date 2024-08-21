@@ -2,7 +2,6 @@
 pragma solidity 0.8.24;
 
 import {PeggedAsset, PeggedAssetLibrary} from "./PeggedAssetLib.sol";
-import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 
 type Id is bytes32;
 
@@ -24,13 +23,6 @@ library PairLibrary {
         assembly {
             id := k
         }
-    }
-
-    function toPairname(Pair memory key) internal view returns (string memory pairname) {
-        (string memory _pa, string memory _ra) =
-            (IERC20Metadata(key.pair0).symbol(), IERC20Metadata(key.pair1).symbol());
-
-        pairname = string(abi.encodePacked(_pa, "-", _ra));
     }
 
     function initalize(address pa, address ra) internal pure returns (Pair memory key) {

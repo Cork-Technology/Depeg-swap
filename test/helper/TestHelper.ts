@@ -257,18 +257,9 @@ export async function initializeNewPsmLv(arg: InitializeNewPsmArg) {
     account: defaultSigner.account,
   });
 
-  await configContract.write.initializeModuleCore(
-    [
-      arg.pa,
-      arg.ra,
-      arg.lvFee,
-      arg.lvAmmWaDepositThreshold,
-      arg.lvAmmCtDepositThreshold,
-    ],
-    {
-      account: defaultSigner.account,
-    }
-  );
+  await configContract.write.initializeModuleCore([arg.pa, arg.ra, arg.lvFee], {
+    account: defaultSigner.account,
+  });
 
   const events = await contract.getEvents.Initialized({
     pa: arg.pa,

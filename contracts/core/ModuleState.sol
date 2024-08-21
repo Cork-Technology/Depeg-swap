@@ -3,7 +3,6 @@ pragma solidity 0.8.24;
 
 import {Id} from "../libraries/Pair.sol";
 import {State} from "../libraries/State.sol";
-import {IAssetFactory} from "../interfaces/IAssetFactory.sol";
 import {ICommon} from "../interfaces/ICommon.sol";
 import {PsmLibrary} from "../libraries/PsmLib.sol";
 import {IUniswapV2Factory} from "../interfaces/uniswap-v2/factory.sol";
@@ -27,7 +26,7 @@ abstract contract ModuleState is ICommon {
 
     address internal immutable CONFIG;
 
-    uint256 psmBaseRedemptionFeePrecentage;
+    uint256 internal psmBaseRedemptionFeePrecentage;
 
     /**
      * @dev checks if caller is config contract or not

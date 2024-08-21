@@ -3,7 +3,6 @@ pragma solidity 0.8.24;
 
 import {Asset} from "../core/assets/Asset.sol";
 import {Signature, MinimalSignatureHelper} from "./SignatureHelperLib.sol";
-import {IRates} from "../interfaces/IRates.sol";
 
 struct DepegSwap {
     bool expiredEventEmitted;
@@ -11,7 +10,6 @@ struct DepegSwap {
     address ct;
     /// @dev right now this the RA:CT AMM pair address
     address ammPair;
-    uint256 dsRedeemed;
     uint256 ctRedeemed;
 }
 
@@ -30,23 +28,8 @@ library DepegSwapLibrary {
         return Asset(self._address).exchangeRate();
     }
 
-    function rates(DepegSwap storage self) internal view returns (uint256 rate) {
-        uint256 dsRate = IRates(self._address).exchangeRate();
-        uint256 ctRate = IRates(self.ct).exchangeRate();
-
-        assert(dsRate == ctRate);
-        rate = dsRate;
-    }
-
     function initialize(address _address, address ct, address ammPair) internal pure returns (DepegSwap memory) {
-        return DepegSwap({
-            expiredEventEmitted: false,
-            _address: _address,
-            ammPair: ammPair,
-            ct: ct,
-            dsRedeemed: 0,
-            ctRedeemed: 0
-        });
+        return DepegSwap({expiredEventEmitted: false, _address: _address, ammPair: ammPair, ct: ct, ctRedeemed: 0});
     }
 
     function permit(

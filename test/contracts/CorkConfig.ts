@@ -133,13 +133,7 @@ describe("CorkConfig", function () {
       const { pa, ra } = await loadFixture(helper.backedAssets);
       await expect(
         await corkConfig.write.initializeModuleCore(
-          [
-            pa.address,
-            ra.address,
-            fixture.lvFee,
-            fixture.lvAmmWaDepositThreshold,
-            fixture.lvAmmCtDepositThreshold,
-          ],
+          [pa.address, ra.address, fixture.lvFee],
           {
             account: defaultSigner.account,
           }
@@ -150,13 +144,7 @@ describe("CorkConfig", function () {
     it("Revert when non MANAGER call initializeModuleCore", async function () {
       await expect(
         corkConfig.write.initializeModuleCore(
-          [
-            pa.address,
-            fixture.ra.address,
-            fixture.lvFee,
-            fixture.lvAmmWaDepositThreshold,
-            fixture.lvAmmCtDepositThreshold,
-          ],
+          [pa.address, fixture.ra.address, fixture.lvFee],
           {
             account: secondSigner.account,
           }

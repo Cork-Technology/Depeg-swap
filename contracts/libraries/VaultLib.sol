@@ -41,15 +41,8 @@ library VaultLibrary {
     /// @notice inssuficient balance to perform expiry redeem(e.g requesting 5 LV to redeem but trying to redeem 10)
     error InsufficientBalance(address caller, uint256 requested, uint256 balance);
 
-    function initialize(
-        VaultState storage self,
-        address lv,
-        uint256 fee,
-        uint256 ammWaDepositThreshold,
-        uint256 ammCtDepositThreshold,
-        address ra
-    ) external {
-        self.config = VaultConfigLibrary.initialize(fee, ammWaDepositThreshold, ammCtDepositThreshold);
+    function initialize(VaultState storage self, address lv, uint256 fee, address ra) external {
+        self.config = VaultConfigLibrary.initialize(fee);
 
         self.lv = LvAssetLibrary.initialize(lv);
         self.balances.ra = RedemptionAssetManagerLibrary.initialize(ra);
@@ -653,7 +646,7 @@ library VaultLibrary {
         if (deadline != 0) {
             DepegSwapLibrary.permit(self.vault.lv._address, rawLvPermitSig, owner, address(this), amount, deadline);
         }
-        
+
         feePrecentage = self.vault.config.fee;
 
         received = _liquidateLpPartial(self, self.globalAssetIdx, flashSwapRouter, ammRouter, amount);
