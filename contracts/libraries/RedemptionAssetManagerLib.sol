@@ -27,14 +27,6 @@ library RedemptionAssetManagerLibrary {
         self.locked = self.locked + amount;
     }
 
-    function incFree(PsmRedemptionAssetManager storage self, uint256 amount) internal {
-        self.free = self.free + amount;
-    }
-
-    function decFree(PsmRedemptionAssetManager storage self, uint256 amount) internal {
-        self.free = self.free - amount;
-    }
-
     function convertAllToFree(PsmRedemptionAssetManager storage self) internal returns (uint256) {
         if (self.locked == 0) {
             return self.free;
@@ -56,10 +48,6 @@ library RedemptionAssetManagerLibrary {
 
     function decLocked(PsmRedemptionAssetManager storage self, uint256 amount) internal {
         self.locked = self.locked - amount;
-    }
-
-    function circulatingSupply(PsmRedemptionAssetManager memory self) internal view returns (uint256) {
-        return IERC20(self._address).totalSupply() - self.locked;
     }
 
     function lockFrom(PsmRedemptionAssetManager storage self, uint256 amount, address from) internal {

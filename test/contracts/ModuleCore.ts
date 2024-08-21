@@ -149,8 +149,6 @@ describe("Module Core", function () {
         pa.address,
         ra.address,
         fixture.lvFee,
-        fixture.lvAmmWaDepositThreshold,
-        fixture.lvAmmCtDepositThreshold,
       ]);
       const events = await moduleCore.getEvents.Initialized({
         id: expectedId,
@@ -174,8 +172,6 @@ describe("Module Core", function () {
           fixture.pa.address,
           fixture.ra.address,
           fixture.lvFee,
-          fixture.lvAmmWaDepositThreshold,
-          fixture.lvAmmCtDepositThreshold,
         ])
       ).to.be.rejectedWith("AlreadyInitialized()");
     });
@@ -186,8 +182,6 @@ describe("Module Core", function () {
           fixture.pa.address,
           fixture.ra.address,
           fixture.lvFee,
-          fixture.lvAmmWaDepositThreshold,
-          fixture.lvAmmCtDepositThreshold,
         ])
       ).to.be.rejectedWith("OnlyConfigAllowed()");
     });

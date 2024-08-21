@@ -314,10 +314,9 @@ library PsmLibrary {
         VaultLibrary.provideLiquidityWithFee(self, fee, flashSwapRouter, ammRouter);
     }
 
-    function _redeemDs(Balances storage self, DepegSwap storage ds, uint256 amount) internal {
+    function _redeemDs(Balances storage self, uint256 amount) internal {
         self.dsBalance += amount;
         self.paBalance += amount;
-        ds.dsRedeemed += amount;
     }
 
     function _afterRedeemWithDs(
@@ -369,7 +368,7 @@ library PsmLibrary {
         if (deadline != 0) {
             DepegSwapLibrary.permit(ds._address, rawDsPermitSig, owner, address(this), amount, deadline);
         }
-        _redeemDs(self.psm.balances, ds, amount);
+        _redeemDs(self.psm.balances, amount);
         (received, _exchangeRate, fee) = _afterRedeemWithDs(self, ds, owner, amount, feePrecentage);
     }
 
@@ -386,13 +385,6 @@ library PsmLibrary {
         uint256 normalizedRateAmount = MathHelper.calculateRedeemAmountWithExchangeRate(amount, ds.exchangeRate());
 
         assets = normalizedRateAmount;
-    }
-
-    /// @notice return the number of redeemed RA for a particular DS
-    /// @param dsId the id of the DS
-    /// @return amount the number of redeemed RA
-    function redeemed(State storage self, uint256 dsId) internal view returns (uint256 amount) {
-        amount = self.ds[dsId].dsRedeemed;
     }
 
     /// @notice return the next depeg swap expiry

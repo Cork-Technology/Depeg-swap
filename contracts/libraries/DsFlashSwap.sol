@@ -127,18 +127,6 @@ library DsFlashSwaplibrary {
         reserve = self.ds[dsId].reserve;
     }
 
-    function getCurrentDsPriceAfterSellDs(
-        ReserveState storage self,
-        uint256 dsId,
-        uint256 subtractedCt,
-        uint112 raReserve,
-        uint112 ctReserve
-    ) internal view returns (uint256 price) {
-        ctReserve -= uint112(subtractedCt);
-
-        price = SwapperMathLibrary.calculateDsPrice(raReserve, ctReserve, self.ds[dsId].ds.exchangeRate());
-    }
-
     function getReservesSorted(AssetPair storage self) internal view returns (uint112 raReserve, uint112 ctReserve) {
         (raReserve, ctReserve,) = self.pair.getReserves();
         (raReserve, ctReserve) = MinimalUniswapV2Library.reverseSortWithAmount112(

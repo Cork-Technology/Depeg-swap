@@ -30,13 +30,7 @@ contract ModuleCore is PsmCore, Initialize, VaultCore {
         return PairLibrary.initalize(pa, ra).toId();
     }
 
-    function initialize(
-        address pa,
-        address ra,
-        uint256 lvFee,
-        uint256 lvAmmWaDepositThreshold,
-        uint256 lvAmmCtDepositThreshold
-    ) external override onlyConfig {
+    function initialize(address pa, address ra, uint256 lvFee) external override onlyConfig {
         Pair memory key = PairLibrary.initalize(pa, ra);
         Id id = key.toId();
 
@@ -51,7 +45,7 @@ contract ModuleCore is PsmCore, Initialize, VaultCore {
         address lv = assetsFactory.deployLv(ra, pa, address(this));
 
         PsmLibrary.initialize(state, key);
-        VaultLibrary.initialize(state.vault, lv, lvFee, lvAmmWaDepositThreshold, lvAmmCtDepositThreshold, ra);
+        VaultLibrary.initialize(state.vault, lv, lvFee, ra);
 
         emit Initialized(id, pa, ra, lv);
     }
@@ -69,8 +63,9 @@ contract ModuleCore is PsmCore, Initialize, VaultCore {
         uint256 prevIdx = state.globalAssetIdx++;
         uint256 idx = state.globalAssetIdx;
 
-        (address ct, address ds) =
-            IAssetFactory(SWAP_ASSET_FACTORY).deploySwapAssets(ra, state.info.pair0, address(this), expiry, exchangeRates);
+        (address ct, address ds) = IAssetFactory(SWAP_ASSET_FACTORY).deploySwapAssets(
+            ra, state.info.pair0, address(this), expiry, exchangeRates
+        );
 
         address ammPair = getAmmFactory().createPair(ra, ct);
 
