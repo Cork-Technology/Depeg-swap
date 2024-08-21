@@ -243,8 +243,6 @@ export type InitializeNewPsmArg = {
   pa: Address;
   ra: Address;
   lvFee: bigint;
-  lvAmmWaDepositThreshold: bigint;
-  lvAmmCtDepositThreshold: bigint;
 };
 
 export async function initializeNewPsmLv(arg: InitializeNewPsmArg) {
@@ -496,17 +494,12 @@ export async function ModuleCoreWithInitializedPsmLv(
   const { pa, ra } = await backedAssets();
 
   const fee = parseEther("10");
-  // 0 for now cause we dont have any amm
-  const depositThreshold = parseEther("0");
-
   const { Id, lv } = await initializeNewPsmLv({
     moduleCore: moduleCore.address,
     config: config.contract.address,
     pa: pa.address,
     ra: ra.address,
     lvFee: fee,
-    lvAmmWaDepositThreshold: depositThreshold,
-    lvAmmCtDepositThreshold: depositThreshold,
   });
 
   return {
@@ -518,8 +511,6 @@ export async function ModuleCoreWithInitializedPsmLv(
     ra,
     Id: Id!,
     lvFee: fee,
-    lvAmmWaDepositThreshold: depositThreshold,
-    lvAmmCtDepositThreshold: depositThreshold,
     dsFlashSwapRouter,
     univ2Factory,
     univ2Router,

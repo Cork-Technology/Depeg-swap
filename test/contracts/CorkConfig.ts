@@ -132,12 +132,11 @@ describe("CorkConfig", function () {
     it("initializeModuleCore should work correctly", async function () {
       const { pa, ra } = await loadFixture(helper.backedAssets);
       await expect(
-        await corkConfig.write.initializeModuleCore(
-          [pa.address, ra.address, fixture.lvFee],
-          {
-            account: defaultSigner.account,
-          }
-        )
+        await corkConfig.write.initializeModuleCore([
+          pa.address,
+          ra.address,
+          fixture.lvFee,
+        ])
       ).to.be.ok;
     });
 
@@ -156,12 +155,12 @@ describe("CorkConfig", function () {
   describe("issueNewDs", function () {
     it("issueNewDs should work correctly", async function () {
       await expect(
-        await corkConfig.write.issueNewDs(
-          [Id, BigInt(expiryTime), parseEther("1"), parseEther("10")],
-          {
-            account: defaultSigner.account,
-          }
-        )
+        await corkConfig.write.issueNewDs([
+          Id,
+          BigInt(expiryTime),
+          parseEther("1"),
+          parseEther("10"),
+        ])
       ).to.be.ok;
     });
 

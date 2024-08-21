@@ -106,7 +106,7 @@ describe("FlashSwapRouter", function () {
         fixture.dsFlashSwapRouter.contract.write.emptyReservePartial([
           pool.Id,
           pool.dsId,
-          10n
+          10n,
         ])
       ).to.be.rejectedWith(
         `OwnableUnauthorizedAccount("${checksummedDefaultSigner}")`
@@ -120,7 +120,7 @@ describe("FlashSwapRouter", function () {
         fixture.dsFlashSwapRouter.contract.write.emptyReservePartial([
           pool.Id,
           pool.dsId,
-          10n
+          10n,
         ])
       ).to.be.rejectedWith(
         `OwnableUnauthorizedAccount("${checksummedDefaultSigner}")`
@@ -386,6 +386,60 @@ describe("FlashSwapRouter", function () {
         .then((e) => e[0]);
 
       expect(event.args.amountOut).to.be.equal(amountOutPreview);
+    });
+
+    it("swapRaforDs(with permit) should revert when permit not allowed on RA", async function () {
+      const fixture1 = await helper.onlymoduleCoreWithFactory(
+        helper.DEFAULT_BASE_REDEMPTION_PRECENTAGE
+      );
+      const ra1 = await helper.deployWeth();
+      const pa1 = await helper.deployWeth();
+
+      const fee = parseEther("10");
+      const { Id, lv } = await helper.initializeNewPsmLv({
+        moduleCore: fixture1.moduleCore.address,
+        config: fixture1.config.contract.address,
+        pa: pa1.contract.address,
+        ra: ra1.contract.address,
+        lvFee: fee,
+      });
+      const deadline = BigInt(helper.expiry(expiry));
+      const raProvided = parseEther("0.1009");
+      await ra1.contract.write.deposit({ value: raProvided });
+      //Invalid Permit because RA1 don't have functions
+      const permitmsg = await helper.permit({
+        amount: raProvided,
+        deadline,
+        erc20contractAddress: fixture.ra.address!,
+        psmAddress: fixture1.dsFlashSwapRouter.contract.address,
+        signer: defaultSigner,
+      });
+
+      await ra1.contract.write.deposit({ value: depositAmount });
+      await ra1.contract.write.approve([
+        fixture1.moduleCore.address,
+        depositAmount,
+      ]);
+
+      pool = await helper.issueNewSwapAssets({
+        config: fixture1.config.contract.address,
+        moduleCore: fixture1.moduleCore.address,
+        ra: ra1.contract.address,
+        expiry,
+        factory: fixture1.factory.contract.address,
+        pa: pa1.contract.address,
+      });
+      await fixture1.moduleCore.write.depositLv([pool.Id, depositAmount]);
+      await expect(
+        fixture1.dsFlashSwapRouter.contract.write.swapRaforDs([
+          pool.Id,
+          pool.dsId!,
+          raProvided,
+          BigInt(0),
+          permitmsg,
+          deadline,
+        ])
+      ).to.be.rejectedWith("PermitNotSupported()");
     });
   });
 });

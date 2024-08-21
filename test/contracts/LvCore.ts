@@ -881,4 +881,28 @@ describe("LvCore", function () {
       expect(await moduleCore.read.vaultLp([fixture.Id])).to.equal(0n);
     });
   });
+
+  describe("provideLiquidityWithFlashSwapFee", function () {
+    it("Revert provideLiquidityWithFlashSwapFee when not called by FlashSwapRouter", async function () {
+      await expect(
+        moduleCore.write.provideLiquidityWithFlashSwapFee([Id, depositAmount])
+      ).to.be.rejectedWith("OnlyFlashSwapRouterAllowed()");
+    });
+  });
+
+  describe("SignatureLib", function () {
+    it("Permit should revert when passed Signature of Invalid length", async function () {
+      const { Id } = await issueNewSwapAssets(expiry);
+      await moduleCore.write.depositLv([Id, depositAmount]);
+      await expect(
+        moduleCore.write.redeemEarlyLv([
+          Id,
+          defaultSigner.account.address,
+          redeemAmount,
+          "0x010203",
+          deadline,
+        ])
+      ).to.be.rejectedWith("InvalidSignatureLength(3)");
+    });
+  });
 });
