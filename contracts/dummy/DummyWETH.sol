@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity ^0.8.0;
+pragma solidity 0.8.24;
 
-import {ERC20,ERC20Burnable} from "@openzeppelin/contracts/token/ERC20/extensions/ERC20Burnable.sol";
+import {ERC20, ERC20Burnable} from "@openzeppelin/contracts/token/ERC20/extensions/ERC20Burnable.sol";
 
 // dummy contract for RA and PA
 contract DummyWETH is ERC20Burnable {
@@ -25,8 +25,8 @@ contract DummyWETH is ERC20Burnable {
 
     function withdraw(uint256 wad) public {
         _burn(msg.sender, wad);
+        emit Withdrawal(msg.sender, wad);
 
         payable(msg.sender).transfer(wad);
-        emit Withdrawal(msg.sender, wad);
     }
 }

@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity ^0.8.0;
+pragma solidity 0.8.24;
 
 import {IAssetFactory} from "../../interfaces/IAssetFactory.sol";
 import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import {UUPSUpgradeable} from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
-import {Id,Pair,PairLibrary} from "../../libraries/Pair.sol";
+import {Id, Pair, PairLibrary} from "../../libraries/Pair.sol";
 import {Asset} from "./Asset.sol";
 
 contract AssetFactory is IAssetFactory, OwnableUpgradeable, UUPSUpgradeable {
@@ -39,10 +39,7 @@ contract AssetFactory is IAssetFactory, OwnableUpgradeable, UUPSUpgradeable {
         __UUPSUpgradeable_init();
     }
 
-    function getDeployedAssets(
-        uint8 page,
-        uint8 limit
-    )
+    function getDeployedAssets(uint8 page, uint8 limit)
         external
         view
         override
@@ -73,11 +70,7 @@ contract AssetFactory is IAssetFactory, OwnableUpgradeable, UUPSUpgradeable {
         }
     }
 
-    function getDeployedSwapAssets(
-        address ra,
-        uint8 page,
-        uint8 limit
-    )
+    function getDeployedSwapAssets(address ra, uint8 page, uint8 limit)
         external
         view
         override
@@ -107,13 +100,7 @@ contract AssetFactory is IAssetFactory, OwnableUpgradeable, UUPSUpgradeable {
         }
     }
 
-    function deploySwapAssets(
-        address ra,
-        address pa,
-        address owner,
-        uint256 expiry,
-        uint256 psmExchangeRate
-    )
+    function deploySwapAssets(address ra, address pa, address owner, uint256 expiry, uint256 psmExchangeRate)
         external
         override
         onlyOwner
@@ -121,23 +108,17 @@ contract AssetFactory is IAssetFactory, OwnableUpgradeable, UUPSUpgradeable {
         returns (address ct, address ds)
     {
         Pair memory asset = Pair(pa, ra);
-        
+
         // prevent deploying a swap asset of a non existent pair, logically won't ever happen
         // just to be safe
         if (lvs[asset.toId()] == address(0)) {
             revert NotExist(ra, pa);
         }
 
-        string memory pairname = string(
-            abi.encodePacked(Asset(ra).name(), "-", Asset(pa).name())
-        );
+        string memory pairname = string(abi.encodePacked(Asset(ra).name(), "-", Asset(pa).name()));
 
-        ct = address(
-            new Asset(CT_PREFIX, pairname, owner, expiry, psmExchangeRate)
-        );
-        ds = address(
-            new Asset(DS_PREFIX, pairname, owner, expiry, psmExchangeRate)
-        );
+        ct = address(new Asset(CT_PREFIX, pairname, owner, expiry, psmExchangeRate));
+        ds = address(new Asset(DS_PREFIX, pairname, owner, expiry, psmExchangeRate));
 
         swapAssets[ra].push(Pair(ct, ds));
 
@@ -147,33 +128,25 @@ contract AssetFactory is IAssetFactory, OwnableUpgradeable, UUPSUpgradeable {
         emit AssetDeployed(ra, ct, ds);
     }
 
-    function deployLv(
-        address ra,
-        address pa,
-        address owner
-    ) external override onlyOwner notDelegated returns (address lv) {
+    function deployLv(address ra, address pa, address owner)
+        external
+        override
+        onlyOwner
+        notDelegated
+        returns (address lv)
+    {
         lv = address(
-            new Asset(
-                LV_PREFIX,
-                string(
-                    abi.encodePacked(Asset(ra).name(), "-", Asset(pa).name())
-                ),
-                owner,
-                0,
-                0
-            )
+            new Asset(LV_PREFIX, string(abi.encodePacked(Asset(ra).name(), "-", Asset(pa).name())), owner, 0, 0)
         );
 
         // signal that a pair actually exists. Only after this it's possible to deploy a swap asset for this pair
         Pair memory pair = Pair(pa, ra);
         pairs[idx++] = pair;
-        
+
         lvs[pair.toId()] = lv;
 
         emit LvAssetDeployed(ra, pa, lv);
     }
 
-    function _authorizeUpgrade(
-        address newImplementation
-    ) internal override onlyOwner notDelegated {}
+    function _authorizeUpgrade(address newImplementation) internal override onlyOwner notDelegated {}
 }

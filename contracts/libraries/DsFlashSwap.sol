@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity ^0.8.20;
+pragma solidity 0.8.24;
+
 import {IUniswapV2Pair} from "../interfaces/uniswap-v2/pair.sol";
 import {Asset} from "../core/assets/Asset.sol";
 import {SwapperMathLibrary} from "./DsSwapperMathLib.sol";
@@ -17,6 +18,7 @@ struct AssetPair {
     // (i.e 50:50 for first expiry, and 80:20 on subsequent expiries. note that it's represented as LV:AMM)
     uint256 reserve;
 }
+
 struct ReserveState {
     /// @dev dsId => [RA, CT, DS]
     mapping(uint256 => AssetPair) ds;
@@ -41,74 +43,47 @@ library DsFlashSwaplibrary {
         address ra,
         address ct
     ) internal {
-        self.ds[dsId] = AssetPair(
-            Asset(ra),
-            Asset(ct),
-            Asset(ds),
-            IUniswapV2Pair(pair),
-            initialReserve
-        );
+        self.ds[dsId] = AssetPair(Asset(ra), Asset(ct), Asset(ds), IUniswapV2Pair(pair), initialReserve);
 
-        self.reserveSellPressurePrecentage = dsId == 1
-            ? INITIAL_RESERVE_SELL_PRESSURE_PRECENTAGE
-            : SUBSEQUENT_RESERVE_SELL_PRESSURE_PRECENTAGE;
+        self.reserveSellPressurePrecentage =
+            dsId == 1 ? INITIAL_RESERVE_SELL_PRESSURE_PRECENTAGE : SUBSEQUENT_RESERVE_SELL_PRESSURE_PRECENTAGE;
     }
 
-    function getPair(
-        ReserveState storage self,
-        uint256 dsId
-    ) internal view returns (IUniswapV2Pair) {
+    function getPair(ReserveState storage self, uint256 dsId) internal view returns (IUniswapV2Pair) {
         return self.ds[dsId].pair;
     }
 
-    function emptyReserve(
-        ReserveState storage self,
-        uint256 dsId,
-        address to
-    ) internal returns (uint256 reserve) {
+    function emptyReserve(ReserveState storage self, uint256 dsId, address to) internal returns (uint256 reserve) {
         reserve = emptyReservePartial(self, dsId, self.ds[dsId].reserve, to);
     }
 
-    function emptyReservePartial(
-        ReserveState storage self,
-        uint256 dsId,
-        uint256 amount,
-        address to
-    ) internal returns (uint256 reserve) {
+    function emptyReservePartial(ReserveState storage self, uint256 dsId, uint256 amount, address to)
+        internal
+        returns (uint256 reserve)
+    {
         self.ds[dsId].ds.transfer(to, amount);
 
         self.ds[dsId].reserve -= amount;
         reserve = self.ds[dsId].reserve;
     }
 
-    function getPriceRatio(
-        ReserveState storage self,
-        uint256 dsId
-    ) internal view returns (uint256 raPriceRatio, uint256 ctPriceRatio) {
+    function getPriceRatio(ReserveState storage self, uint256 dsId)
+        internal
+        view
+        returns (uint256 raPriceRatio, uint256 ctPriceRatio)
+    {
         AssetPair storage asset = self.ds[dsId];
 
         address token0 = asset.pair.token0();
         address token1 = asset.pair.token1();
 
-        (uint112 token0Reserve, uint112 token1Reserve, ) = self
-            .ds[dsId]
-            .pair
-            .getReserves();
+        (uint112 token0Reserve, uint112 token1Reserve,) = self.ds[dsId].pair.getReserves();
 
-        (uint112 raReserve, uint112 ctReserve) = MinimalUniswapV2Library
-            .reverseSortWithAmount112(
-                token0,
-                token1,
-                address(asset.ra),
-                address(asset.ct),
-                token0Reserve,
-                token1Reserve
-            );
-
-        (raPriceRatio, ctPriceRatio) = SwapperMathLibrary.getPriceRatioUniv2(
-            raReserve,
-            ctReserve
+        (uint112 raReserve, uint112 ctReserve) = MinimalUniswapV2Library.reverseSortWithAmount112(
+            token0, token1, address(asset.ra), address(asset.ct), token0Reserve, token1Reserve
         );
+
+        (raPriceRatio, ctPriceRatio) = SwapperMathLibrary.getPriceRatioUniv2(raReserve, ctReserve);
     }
 
     function tryGetPriceRatioAfterSellDs(
@@ -122,43 +97,30 @@ library DsFlashSwaplibrary {
         address token0 = asset.pair.token0();
         address token1 = asset.pair.token1();
 
-        (uint112 token0Reserve, uint112 token1Reserve, ) = self
-            .ds[dsId]
-            .pair
-            .getReserves();
+        (uint112 token0Reserve, uint112 token1Reserve,) = self.ds[dsId].pair.getReserves();
 
-        (uint112 raReserve, uint112 ctReserve) = MinimalUniswapV2Library
-            .reverseSortWithAmount112(
-                token0,
-                token1,
-                address(asset.ra),
-                address(asset.ct),
-                token0Reserve,
-                token1Reserve
-            );
+        (uint112 raReserve, uint112 ctReserve) = MinimalUniswapV2Library.reverseSortWithAmount112(
+            token0, token1, address(asset.ra), address(asset.ct), token0Reserve, token1Reserve
+        );
 
         raReserve += uint112(raAdded);
         ctReserve -= uint112(ctSubstracted);
 
-        (raPriceRatio, ctPriceRatio) = SwapperMathLibrary.getPriceRatioUniv2(
-            raReserve,
-            ctReserve
-        );
+        (raPriceRatio, ctPriceRatio) = SwapperMathLibrary.getPriceRatioUniv2(raReserve, ctReserve);
     }
 
-    function getReserve(
-        ReserveState storage self,
-        uint256 dsId
-    ) internal view returns (uint112 raReserve, uint112 ctReserve) {
-        (raReserve, ctReserve, ) = self.ds[dsId].pair.getReserves();
+    function getReserve(ReserveState storage self, uint256 dsId)
+        internal
+        view
+        returns (uint112 raReserve, uint112 ctReserve)
+    {
+        (raReserve, ctReserve,) = self.ds[dsId].pair.getReserves();
     }
 
-    function addReserve(
-        ReserveState storage self,
-        uint256 dsId,
-        uint256 amount,
-        address from
-    ) internal returns (uint256 reserve) {
+    function addReserve(ReserveState storage self, uint256 dsId, uint256 amount, address from)
+        internal
+        returns (uint256 reserve)
+    {
         self.ds[dsId].ds.transferFrom(from, address(this), amount);
 
         self.ds[dsId].reserve += amount;
@@ -174,57 +136,34 @@ library DsFlashSwaplibrary {
     ) internal view returns (uint256 price) {
         ctReserve -= uint112(subtractedCt);
 
-        price = SwapperMathLibrary.calculateDsPrice(
-            raReserve,
-            ctReserve,
-            self.ds[dsId].ds.exchangeRate()
+        price = SwapperMathLibrary.calculateDsPrice(raReserve, ctReserve, self.ds[dsId].ds.exchangeRate());
+    }
+
+    function getReservesSorted(AssetPair storage self) internal view returns (uint112 raReserve, uint112 ctReserve) {
+        (raReserve, ctReserve,) = self.pair.getReserves();
+        (raReserve, ctReserve) = MinimalUniswapV2Library.reverseSortWithAmount112(
+            self.pair.token0(), self.pair.token1(), address(self.ra), address(self.ct), raReserve, ctReserve
         );
     }
 
-    function getReservesSorted(
-        AssetPair storage self
-    ) internal view returns (uint112 raReserve, uint112 ctReserve) {
-        (raReserve, ctReserve, ) = self.pair.getReserves();
-        (raReserve, ctReserve) = MinimalUniswapV2Library
-            .reverseSortWithAmount112(
-                self.pair.token0(),
-                self.pair.token1(),
-                address(self.ra),
-                address(self.ct),
-                raReserve,
-                ctReserve
-            );
+    function getAmountIn(ReserveState storage self, uint256 dsId, uint256 amountOut)
+        internal
+        view
+        returns (uint256 amountIn)
+    {
+        (uint112 raReserve, uint112 ctReserve,) = self.ds[dsId].pair.getReserves();
+
+        amountIn = SwapperMathLibrary.getAmountIn(amountOut, raReserve, ctReserve, self.ds[dsId].ds.exchangeRate());
     }
 
-    function getAmountIn(
-        ReserveState storage self,
-        uint256 dsId,
-        uint256 amountOut
-    ) internal view returns (uint256 amountIn) {
-        (uint112 raReserve, uint112 ctReserve, ) = self
-            .ds[dsId]
-            .pair
-            .getReserves();
-
-        amountIn = SwapperMathLibrary.getAmountIn(
-            amountOut,
-            raReserve,
-            ctReserve,
-            self.ds[dsId].ds.exchangeRate()
-        );
-    }
-
-    function getAmountOutSellDS(
-        AssetPair storage assetPair,
-        uint256 amount
-    ) internal view returns (uint256 amountOut, uint256 repaymentAmount) {
+    function getAmountOutSellDS(AssetPair storage assetPair, uint256 amount)
+        internal
+        view
+        returns (uint256 amountOut, uint256 repaymentAmount)
+    {
         (uint112 raReserve, uint112 ctReserve) = getReservesSorted(assetPair);
         // we calculate the repayment amount based on the imbalanced ct reserve since we borrow CT from the AMM
-        repaymentAmount = MinimalUniswapV2Library.getAmountIn(
-            amount,
-            raReserve,
-            ctReserve - amount
-        );
+        repaymentAmount = MinimalUniswapV2Library.getAmountIn(amount, raReserve, ctReserve - amount);
 
         // the amountOut is essentially what the user receive, we can calculate this by simply subtracting the repayment amount
         // from the amount, since we're getting back the same RA amount as DS user buy, this works. to get the effective price per DS,
@@ -239,36 +178,20 @@ library DsFlashSwaplibrary {
         assert(amountOut + repaymentAmount == amount);
     }
 
-    function getAmountOutBuyDS(
-        AssetPair storage assetPair,
-        uint256 amount
-    )
+    function getAmountOutBuyDS(AssetPair storage assetPair, uint256 amount)
         internal
         view
-        returns (
-            uint256 amountOut,
-            uint256 borrowedAmount,
-            uint256 repaymentAmount
-        )
+        returns (uint256 amountOut, uint256 borrowedAmount, uint256 repaymentAmount)
     {
         (uint112 raReserve, uint112 ctReserve) = getReservesSorted(assetPair);
 
-        (borrowedAmount, amountOut) = SwapperMathLibrary.getAmountOutDs(
-            int256(uint256(raReserve)),
-            int256(uint256(ctReserve)),
-            int256(amount)
-        );
+        (borrowedAmount, amountOut) =
+            SwapperMathLibrary.getAmountOutDs(int256(uint256(raReserve)), int256(uint256(ctReserve)), int256(amount));
 
-        repaymentAmount = MinimalUniswapV2Library.getAmountIn(
-            borrowedAmount,
-            ctReserve,
-            raReserve - borrowedAmount
-        );
+        repaymentAmount = MinimalUniswapV2Library.getAmountIn(borrowedAmount, ctReserve, raReserve - borrowedAmount);
     }
 
-    function isRAsupportsPermit(
-        address token
-    ) internal view returns (bool) {
+    function isRAsupportsPermit(address token) internal view returns (bool) {
         return PermitChecker.supportsPermit(token);
     }
 }

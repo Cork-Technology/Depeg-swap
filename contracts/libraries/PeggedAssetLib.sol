@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity ^0.8.20;
-import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+pragma solidity 0.8.24;
+
+import {SafeERC20, IERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 struct PeggedAsset {
     address _address;
@@ -8,12 +9,13 @@ struct PeggedAsset {
 
 library PeggedAssetLibrary {
     using PeggedAssetLibrary for PeggedAsset;
+    using SafeERC20 for IERC20;
 
     function asErc20(PeggedAsset memory self) internal pure returns (IERC20) {
         return IERC20(self._address);
     }
 
     function redeemUnchecked(PeggedAsset memory self, address from, uint256 amount) internal {
-        self.asErc20().transferFrom(from, address(this), amount);
+        IERC20(self.asErc20()).safeTransferFrom(from, address(this), amount);
     }
 }

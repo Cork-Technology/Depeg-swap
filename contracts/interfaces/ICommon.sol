@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity ^0.8.0;
+pragma solidity 0.8.24;
+
 import {Id} from "../libraries/Pair.sol";
 
 interface ICommon {
@@ -41,12 +42,7 @@ interface ICommon {
     /// @param pa The address of the pegged asset
     /// @param ra The address of the redemption asset
     /// @param lv The address of the LV
-    event Initialized(
-        Id indexed id,
-        address indexed pa,
-        address indexed ra,
-        address lv
-    );
+    event Initialized(Id indexed id, address indexed pa, address indexed ra, address lv);
 
     /// @notice Emitted when a new DS is issued for a given PSM
     /// @param Id The PSM id
@@ -56,12 +52,7 @@ interface ICommon {
     /// @param ct The address of the CT token
     /// @param raCtUniPair The address of the uniswap-v2 pair between RA and CT
     event Issued(
-        Id indexed Id,
-        uint256 indexed dsId,
-        uint256 indexed expiry,
-        address ds,
-        address ct,
-        address raCtUniPair
+        Id indexed Id, uint256 indexed dsId, uint256 indexed expiry, address ds, address ct, address raCtUniPair
     );
 
     /**
@@ -78,11 +69,8 @@ interface ICommon {
      * @return ra address of the underlying RA token
      * @return pa address of the underlying PA token
      */
-    function underlyingAsset(
-        Id id
-    ) external view returns (address ra, address pa);
+    function underlyingAsset(Id id) external view returns (address ra, address pa);
 
-    // TODO : add issuance interval/expiry interval after it's integrated
     /**
      * @notice returns the address of CT and DS associated with a certain DS id
      * @param id the id of PSM
@@ -90,8 +78,5 @@ interface ICommon {
      * @return ct address of the CT token
      * @return ds address of the DS token
      */
-    function swapAsset(
-        Id id,
-        uint256 dsId
-    ) external view returns (address ct, address ds);
+    function swapAsset(Id id, uint256 dsId) external view returns (address ct, address ds);
 }

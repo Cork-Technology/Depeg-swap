@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity ^0.8.0;
+pragma solidity 0.8.24;
 
 import {Id} from "../libraries/Pair.sol";
 import {State} from "../libraries/State.sol";
@@ -15,31 +15,32 @@ abstract contract ModuleState is ICommon {
     using PsmLibrary for State;
 
     mapping(Id => State) internal states;
-    address internal swapAssetFactory;
+    address internal immutable SWAP_ASSET_FACTORY;
 
     /// @dev in this case is uni v2
-    address internal ammFactory;
+    address internal immutable AMM_FACTORY;
 
-    address internal dsFlashSwapRouter;
+    address internal immutable DS_FLASHSWAP_ROUTER;
 
     /// @dev in this case is uni v2
-    address internal ammRouter;
+    address internal immutable AMM_ROUTER;
 
-    address internal config;
+    address internal immutable CONFIG;
 
     uint256 psmBaseRedemptionFeePrecentage;
 
-    /** @dev checks if caller is config contract or not
+    /**
+     * @dev checks if caller is config contract or not
      */
     modifier onlyConfig() {
-        if (msg.sender != config) {
+        if (msg.sender != CONFIG) {
             revert OnlyConfigAllowed();
         }
         _;
     }
 
     function factory() external view returns (address) {
-        return swapAssetFactory;
+        return SWAP_ASSET_FACTORY;
     }
 
     constructor(
@@ -50,28 +51,24 @@ abstract contract ModuleState is ICommon {
         address _config,
         uint256 _psmBaseRedemptionFeePrecentage
     ) {
-        swapAssetFactory = _swapAssetFactory;
-        ammFactory = _ammFactory;
-        dsFlashSwapRouter = _dsFlashSwapRouter;
-        ammRouter = _ammRouter;
-        config = _config;
+        SWAP_ASSET_FACTORY = _swapAssetFactory;
+        AMM_FACTORY = _ammFactory;
+        DS_FLASHSWAP_ROUTER = _dsFlashSwapRouter;
+        AMM_ROUTER = _ammRouter;
+        CONFIG = _config;
         psmBaseRedemptionFeePrecentage = _psmBaseRedemptionFeePrecentage;
     }
 
-    function getSwapAssetFactory() internal view returns (IAssetFactory) {
-        return IAssetFactory(swapAssetFactory);
-    }
-
     function getRouterCore() internal view returns (RouterState) {
-        return RouterState(dsFlashSwapRouter);
+        return RouterState(DS_FLASHSWAP_ROUTER);
     }
 
     function getAmmFactory() internal view returns (IUniswapV2Factory) {
-        return IUniswapV2Factory(ammFactory);
+        return IUniswapV2Factory(AMM_FACTORY);
     }
 
     function getAmmRouter() internal view returns (IUniswapV2Router02) {
-        return IUniswapV2Router02(ammRouter);
+        return IUniswapV2Router02(AMM_ROUTER);
     }
 
     modifier onlyInitialized(Id id) {
@@ -89,7 +86,7 @@ abstract contract ModuleState is ICommon {
     }
 
     modifier onlyFlashSwapRouter() {
-        if (msg.sender != dsFlashSwapRouter) {
+        if (msg.sender != DS_FLASHSWAP_ROUTER) {
             revert OnlyFlashSwapRouterAllowed();
         }
         _;
@@ -114,12 +111,6 @@ abstract contract ModuleState is ICommon {
             revert LVWithdrawalPaused();
         }
         _;
-    }
-
-    function _onlyValidAsset(address asset) internal view {
-        if (getSwapAssetFactory().isDeployed(asset) == false) {
-            revert InvalidAsset(asset);
-        }
     }
 
     /// @notice This will revert if the contract is locked
