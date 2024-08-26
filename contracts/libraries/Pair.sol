@@ -18,11 +18,7 @@ library PairLibrary {
     using PeggedAssetLibrary for PeggedAsset;
 
     function toId(Pair memory key) internal pure returns (Id id) {
-        bytes32 k = keccak256(abi.encode(key));
-
-        assembly {
-            id := k
-        }
+        id = Id.wrap(keccak256(abi.encode(key)));
     }
 
     function initalize(address pa, address ra) internal pure returns (Pair memory key) {
