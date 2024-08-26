@@ -49,43 +49,6 @@ library SwapperMathLibrary {
         price = dsExchangeRate - ctPriceRatio;
     }
 
-    function getAmountIn(
-        uint256 amountOut, // Amount of DS tokens to buy
-        uint112 raReserve, // Reserve of the input token
-        uint112 ctReserve, // Reserve of the other token (needed for price ratio calculation)
-        uint256 dsExchangeRate // DS exchange rate
-    ) external pure returns (uint256 amountIn) {
-        if (amountOut == 0) {
-            revert InsufficientOtuputAmount();
-        }
-
-        if (raReserve == 0 || ctReserve == 0) {
-            revert InsufficientLiquidity();
-        }
-
-        uint256 dsPrice = calculateDsPrice(raReserve, ctReserve, dsExchangeRate);
-
-        amountIn = (amountOut * dsPrice) / 1e18;
-    }
-
-    function getAmountOut(
-        uint256 amountIn, // Amount of input tokens
-        uint112 reserveIn, // Reserve of the input token
-        uint112 reserveOut, // Reserve of the other token (needed for price ratio calculation)
-        uint256 dsExchangeRate // DS exchange rate
-    ) external pure returns (uint256 amountOut) {
-        if (amountIn == 0) {
-            revert InsufficientInputAmount();
-        }
-
-        if (reserveIn == 0 || reserveOut == 0) {
-            revert InsufficientLiquidity();
-        }
-
-        uint256 dsPrice = calculateDsPrice(reserveIn, reserveOut, dsExchangeRate);
-
-        amountOut = amountIn / dsPrice;
-    }
 
     /*
      * S = (E + x - y + sqrt(E^2 + 2E(x + y) + (x - y)^2)) / 2
@@ -98,15 +61,15 @@ library SwapperMathLibrary {
      *   - r: RA needed to borrow from AMM
      *
      */
-    function getAmountOutDs(int256 x, int256 y, int256 e) external pure returns (uint256 r, uint256 s) {
+    function getAmountOutDs(int256 raReserve, int256 ctReserve, int256 raProvided) external pure returns (uint256 raBorrowed, uint256 dsReceived) {
         // first we solve the sqrt part of the equation first
 
         // E^2
-        int256 q1 = e ** 2;
+        int256 q1 = raProvided ** 2;
         // 2E(x + y)
-        int256 q2 = 2 * e * (x + y);
+        int256 q2 = 2 * raProvided * (raReserve + ctReserve);
         // (x - y)^2
-        int256 q3 = (x - y) ** 2;
+        int256 q3 = (raReserve - ctReserve) ** 2;
 
         // q = sqrt(E^2 + 2E(x + y) + (x - y)^2)
         uint256 q = SignedMath.abs(q1 + q2 + q3);
@@ -116,16 +79,16 @@ library SwapperMathLibrary {
         // S = (E + x - y + q) / 2
 
         // r1 = x - y (to absolute, and we reverse the equation)
-        uint256 r1 = SignedMath.abs(x - y);
+        uint256 r1 = SignedMath.abs(raReserve - ctReserve);
         // r2 = -r1 + q  = q - r1
         uint256 r2 = q - r1;
         // E + r2
-        uint256 r3 = r2 + SignedMath.abs(e);
+        uint256 r3 = r2 + SignedMath.abs(raProvided);
 
         // S = r3/2 (we multiply by 1e18 to have 18 decimals precision)
-        s = (r3 * 1e18) / 2e18;
+        dsReceived = (r3 * 1e18) / 2e18;
 
         // R = s - e (should be fine with direct typecasting)
-        r = s - SignedMath.abs(e);
+        raBorrowed = dsReceived - SignedMath.abs(raProvided);
     }
 }
