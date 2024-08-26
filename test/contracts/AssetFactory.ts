@@ -253,6 +253,7 @@ describe("Asset Factory", function () {
 
       let assets = await assetFactory.read.getDeployedSwapAssets([
         ra.address,
+        pa.address,
         0,
         10,
       ]);
@@ -265,6 +266,7 @@ describe("Asset Factory", function () {
 
       assets = await assetFactory.read.getDeployedSwapAssets([
         ra.address,
+        pa.address,
         1,
         10,
       ]);
@@ -279,7 +281,7 @@ describe("Asset Factory", function () {
     it("should correctly return empty array when queried more than current assets", async function () {
       const { ra, pa } = await helper.backedAssets();
       const assets = await assetFactory.read.getDeployedSwapAssets([
-        ra.address,
+        ra.address,pa.address,
         7,
         10,
       ]);
@@ -290,7 +292,7 @@ describe("Asset Factory", function () {
     it("Revert getDeployedSwapAssets when passed limit is more than max allowed value", async function () {
       const { ra, pa } = await helper.backedAssets();
       await expect(
-        assetFactory.read.getDeployedSwapAssets([ra.address, 1, 11])
+        assetFactory.read.getDeployedSwapAssets([ra.address,pa.address, 1, 11])
       ).to.be.rejectedWith(`LimitTooLong(10, 11)`);
     });
   });
@@ -318,6 +320,7 @@ describe("Asset Factory", function () {
 
       const assets = await assetFactory.read.getDeployedSwapAssets([
         ra.address,
+        pa.address,
         0,
         10,
       ]);
