@@ -7,19 +7,19 @@ library NoReentrant {
 
     function acquire() internal {
         assembly ("memory-safe") {
-            tstore(TRANSIENT_SLOT, false)
+            tstore(TRANSIENT_SLOT, true)
         }
     }
 
     function release() internal {
         assembly ("memory-safe") {
-            tstore(TRANSIENT_SLOT, true)
+            tstore(TRANSIENT_SLOT, false)
         }
     }
 
-    function acquired() internal view returns (bool unlocked) {
+    function acquired() internal view returns (bool isAquired) {
         assembly ("memory-safe") {
-            unlocked := tload(TRANSIENT_SLOT)
+            isAquired := tload(TRANSIENT_SLOT)
         }
     }
 }
