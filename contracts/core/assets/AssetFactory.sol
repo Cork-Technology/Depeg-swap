@@ -19,7 +19,7 @@ contract AssetFactory is IAssetFactory, OwnableUpgradeable, UUPSUpgradeable {
 
     mapping(Id => address) internal lvs;
     mapping(uint256 => Pair) internal pairs;
-    mapping(address => Pair[]) internal swapAssets;
+    mapping(Id => Pair[]) internal swapAssets;
     mapping(address => bool) internal deployed;
 
     // for safety checks in psm core, also act as kind of like a registry
@@ -70,14 +70,14 @@ contract AssetFactory is IAssetFactory, OwnableUpgradeable, UUPSUpgradeable {
         }
     }
 
-    function getDeployedSwapAssets(address ra, uint8 page, uint8 limit)
+    function getDeployedSwapAssets(address ra, address pa,  uint8 page, uint8 limit)
         external
         view
         override
         withinLimit(limit)
         returns (address[] memory ct, address[] memory ds)
     {
-        Pair[] storage _assets = swapAssets[ra];
+        Pair[] storage _assets = swapAssets[Pair(pa, ra).toId()];
 
         uint256 start = uint256(page) * uint256(limit);
         uint256 end = start + uint256(limit);
@@ -120,7 +120,7 @@ contract AssetFactory is IAssetFactory, OwnableUpgradeable, UUPSUpgradeable {
         ct = address(new Asset(CT_PREFIX, pairname, owner, expiry, psmExchangeRate));
         ds = address(new Asset(DS_PREFIX, pairname, owner, expiry, psmExchangeRate));
 
-        swapAssets[ra].push(Pair(ct, ds));
+        swapAssets[Pair(pa,ra).toId()].push(Pair(ct, ds));
 
         deployed[ct] = true;
         deployed[ds] = true;
