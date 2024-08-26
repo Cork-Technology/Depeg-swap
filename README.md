@@ -1,22 +1,51 @@
 # Depeg Swap V1
+
 This repository contains core smart contracts of Depeg Swaps, for higher level specification and flows please see the design [documents](https://corkfi.notion.site/Smart-Contract-Flow-fc170aec36bc43579a7d0429c49e08ab) for now.
 
+# Build
+Install required dependencies :
+```bash
+yarn
+```
+
+To build & compile all contracts simply run :
+
+```bash
+yarn build
+```
+
+# Tests
+
+To run test, use this command :
+
+```bash
+yarn test
+```
+
 # Deployments
-- read `.env.example` variables and what it does
-- copy the contents, to your `.env` and fill it with your value
+
+- read `.env.example` variables descriptions
+- copy the contents to your `.env` and fill it with your value
 - run this command :
+
 ```bash
 npx hardhat run scripts/deploy.ts --network <network>
 ```
+
 in the first run you may see errors like :
+
 ```bash
 IgnitionError: IGN403: You have sent transactions from 0x3e995c17172ea3e23505adfe5630df395a738e51 and they interfere with Hardhat Ignition. Please wait until they get 5 confirmations before running Hardhat Ignition again.
 ```
+
 This is because we actualy don't use ignition when deploying uniswap v2 related contracts(e.g factory, router). Instead, we use ethers due to the fact that for some reason, deploying using ignition modules won't work with uniswap v2 contracts. To resolve this, simply run the command again. This usually takes 1-2 times, but don't worry, all of the previous deployments will be cached
+
 ```bash
 npx hardhat run scripts/deploy.ts --network <network>
 ```
+
 AFter that, you should see something like this on your terminal :
+
 ```bash
 PRODUCTION                   : undefined
 Network                      : sepolia
