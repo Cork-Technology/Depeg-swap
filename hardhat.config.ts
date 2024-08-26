@@ -9,6 +9,7 @@ import loadEnv from "dotenv";
 import "hardhat-contract-sizer";
 import chai from "chai";
 import { solidity } from "ethereum-waffle";
+import "solidity-coverage";
 
 chai.use(solidity);
 // import "@nomicfoundation/hardhat-chai-matchers";
@@ -58,6 +59,7 @@ const config: HardhatUserConfig = {
       "RouterState",
     ],
   },
+
 };
 
 export default config;
