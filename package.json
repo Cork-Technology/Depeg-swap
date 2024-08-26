@@ -6,6 +6,7 @@
   "license": "MIT",
   "scripts": {
     "test": "npx hardhat test",
+    "build": "npx hardhat compile",
     "lint:contract": "npx solhint 'contracts/**/*.sol'",
     "lint:contract:fix": "npx solhint 'contracts/**/*.sol' --fix"
   },
