@@ -70,7 +70,7 @@ contract AssetFactory is IAssetFactory, OwnableUpgradeable, UUPSUpgradeable {
         }
     }
 
-    function getDeployedSwapAssets(address ra, address pa,  uint8 page, uint8 limit)
+    function getDeployedSwapAssets(address ra, address pa, uint8 page, uint8 limit)
         external
         view
         override
@@ -120,7 +120,7 @@ contract AssetFactory is IAssetFactory, OwnableUpgradeable, UUPSUpgradeable {
         ct = address(new Asset(CT_PREFIX, pairname, owner, expiry, psmExchangeRate));
         ds = address(new Asset(DS_PREFIX, pairname, owner, expiry, psmExchangeRate));
 
-        swapAssets[Pair(pa,ra).toId()].push(Pair(ct, ds));
+        swapAssets[Pair(pa, ra).toId()].push(Pair(ct, ds));
 
         deployed[ct] = true;
         deployed[ds] = true;
