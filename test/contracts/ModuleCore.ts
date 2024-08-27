@@ -30,6 +30,7 @@ describe("Module Core", function () {
 
   let moduleCore: Awaited<ReturnType<typeof getModuleCore>>;
   let corkConfig: Awaited<ReturnType<typeof getCorkConfig>>;
+  const initialDsPrice = parseEther("0.1");
 
   const getModuleCore = async (address: Address) => {
     return await hre.viem.getContractAt("ModuleCore", address);
@@ -145,10 +146,12 @@ describe("Module Core", function () {
           [pa.address, ra.address]
         )
       ) as `0x${string}`;
+      
       await corkConfig.write.initializeModuleCore([
         pa.address,
         ra.address,
         fixture.lvFee,
+        initialDsPrice,
       ]);
       const events = await moduleCore.getEvents.Initialized({
         id: expectedId,
@@ -172,6 +175,7 @@ describe("Module Core", function () {
           fixture.pa.address,
           fixture.ra.address,
           fixture.lvFee,
+          initialDsPrice,
         ])
       ).to.be.rejectedWith("AlreadyInitialized()");
     });
@@ -182,6 +186,7 @@ describe("Module Core", function () {
           fixture.pa.address,
           fixture.ra.address,
           fixture.lvFee,
+          initialDsPrice,
         ])
       ).to.be.rejectedWith("OnlyConfigAllowed()");
     });

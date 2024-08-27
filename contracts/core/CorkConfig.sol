@@ -45,8 +45,8 @@ contract CorkConfig is AccessControl, Pausable {
     /**
      * @dev Initialize Module Core
      */
-    function initializeModuleCore(address pa, address ra, uint256 lvFee) external onlyManager {
-        moduleCore.initialize(pa, ra, lvFee);
+    function initializeModuleCore(address pa, address ra, uint256 lvFee, uint256 initialDsPrice) external onlyManager {
+        moduleCore.initialize(pa, ra, lvFee, initialDsPrice);
     }
 
     /**

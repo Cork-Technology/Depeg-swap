@@ -243,8 +243,7 @@ export type InitializeNewPsmArg = {
   pa: Address;
   ra: Address;
   lvFee: bigint;
-  lvAmmWaDepositThreshold: bigint;
-  lvAmmCtDepositThreshold: bigint;
+  initialDsPrice?: bigint;
 };
 
 export async function initializeNewPsmLv(arg: InitializeNewPsmArg) {
@@ -252,12 +251,13 @@ export async function initializeNewPsmLv(arg: InitializeNewPsmArg) {
   const { defaultSigner } = getSigners(signers);
   const contract = await hre.viem.getContractAt("ModuleCore", arg.moduleCore);
   const configContract = await hre.viem.getContractAt("CorkConfig", arg.config);
+  const dsPrice = arg.initialDsPrice ?? parseEther("0.1");
 
   await configContract.write.setModuleCore([arg.moduleCore], {
     account: defaultSigner.account,
   });
 
-  await configContract.write.initializeModuleCore([arg.pa, arg.ra, arg.lvFee], {
+  await configContract.write.initializeModuleCore([arg.pa, arg.ra, arg.lvFee, dsPrice], {
     account: defaultSigner.account,
   });
 
@@ -496,8 +496,6 @@ export async function ModuleCoreWithInitializedPsmLv(
   const { pa, ra } = await backedAssets();
 
   const fee = parseEther("5");
-  // 0 for now cause we dont have any amm
-  const depositThreshold = parseEther("0");
 
   const { Id, lv } = await initializeNewPsmLv({
     moduleCore: moduleCore.address,
@@ -505,8 +503,6 @@ export async function ModuleCoreWithInitializedPsmLv(
     pa: pa.address,
     ra: ra.address,
     lvFee: fee,
-    lvAmmWaDepositThreshold: depositThreshold,
-    lvAmmCtDepositThreshold: depositThreshold,
   });
 
   return {
@@ -518,8 +514,6 @@ export async function ModuleCoreWithInitializedPsmLv(
     ra,
     Id: Id!,
     lvFee: fee,
-    lvAmmWaDepositThreshold: depositThreshold,
-    lvAmmCtDepositThreshold: depositThreshold,
     dsFlashSwapRouter,
     univ2Factory,
     univ2Router,

@@ -4,7 +4,7 @@ pragma solidity 0.8.24;
 import {Id} from "../libraries/Pair.sol";
 
 interface Initialize {
-    function initialize(address pa, address ra, uint256 lvFee) external;
+    function initialize(address pa, address ra, uint256 lvFee, uint256 initialDsPrice) external;
 
     function issueNewDs(Id id, uint256 expiry, uint256 exchangeRates, uint256 repurchaseFeePrecentage) external;
 

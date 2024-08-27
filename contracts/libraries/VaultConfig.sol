@@ -9,14 +9,7 @@ library VaultConfigLibrary {
         if (fee > 5 ether) {
             revert ICommon.InvalidFees();
         }
-        return VaultConfig({
-            fee: fee,
-            lpRaBalance: 0,
-            lpCtBalance: 0,
-            lpBalance: 0,
-            isDepositPaused: false,
-            isWithdrawalPaused: false
-        });
+        return VaultConfig({fee: fee, lpBalance: 0, isDepositPaused: false, isWithdrawalPaused: false});
     }
 
     function updateFee(VaultConfig storage self, uint256 fee) internal {
