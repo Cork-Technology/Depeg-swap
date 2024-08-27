@@ -30,7 +30,7 @@ contract ModuleCore is PsmCore, Initialize, VaultCore {
         return PairLibrary.initalize(pa, ra).toId();
     }
 
-    function initialize(address pa, address ra, uint256 lvFee) external override onlyConfig {
+    function initialize(address pa, address ra, uint256 lvFee, uint256 initialDsPrice) external override onlyConfig {
         Pair memory key = PairLibrary.initalize(pa, ra);
         Id id = key.toId();
 
@@ -45,7 +45,7 @@ contract ModuleCore is PsmCore, Initialize, VaultCore {
         address lv = assetsFactory.deployLv(ra, pa, address(this));
 
         PsmLibrary.initialize(state, key);
-        VaultLibrary.initialize(state.vault, lv, lvFee, ra);
+        VaultLibrary.initialize(state.vault, lv, lvFee, ra, initialDsPrice);
 
         emit Initialized(id, pa, ra, lv);
     }
