@@ -50,6 +50,9 @@ abstract contract ModuleState is ICommon {
         address _config,
         uint256 _psmBaseRedemptionFeePrecentage
     ) {
+        if (psmBaseRedemptionFeePrecentage > 5 ether) {
+            revert InvalidFees();
+        }
         SWAP_ASSET_FACTORY = _swapAssetFactory;
         AMM_FACTORY = _ammFactory;
         DS_FLASHSWAP_ROUTER = _dsFlashSwapRouter;

@@ -56,6 +56,9 @@ contract ModuleCore is PsmCore, Initialize, VaultCore {
         onlyConfig
         onlyInitialized(id)
     {
+        if (repurchaseFeePrecentage > 5 ether) {
+            revert InvalidFees();
+        }
         State storage state = states[id];
 
         address ra = state.info.pair1;
@@ -121,6 +124,9 @@ contract ModuleCore is PsmCore, Initialize, VaultCore {
     }
 
     function updatePsmBaseRedemptionFeePrecentage(uint256 newPsmBaseRedemptionFeePrecentage) external onlyConfig {
+        if (newPsmBaseRedemptionFeePrecentage > 5 ether) {
+            revert InvalidFees();
+        }
         psmBaseRedemptionFeePrecentage = newPsmBaseRedemptionFeePrecentage;
     }
 }

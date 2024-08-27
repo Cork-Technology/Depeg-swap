@@ -229,6 +229,9 @@ library PsmLibrary {
     }
 
     function updateRepurchaseFeePercentage(State storage self, uint256 newFees) internal {
+        if (newFees > 5 ether) {
+            revert ICommon.InvalidFees();
+        }
         self.psm.repurchaseFeePrecentage = newFees;
     }
 

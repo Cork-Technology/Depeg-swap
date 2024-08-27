@@ -157,7 +157,7 @@ describe("CorkConfig", function () {
     it("issueNewDs should work correctly", async function () {
       await expect(
         await corkConfig.write.issueNewDs(
-          [Id, BigInt(expiryTime), parseEther("1"), parseEther("10")],
+          [Id, BigInt(expiryTime), parseEther("1"), parseEther("5")],
           {
             account: defaultSigner.account,
           }
@@ -178,6 +178,17 @@ describe("CorkConfig", function () {
           }
         )
       ).to.be.rejectedWith("EnforcedPause()");
+    });
+
+    it("Revert when repurchaseFeePercentage is more than 5%", async function () {
+      await expect(
+        corkConfig.write.issueNewDs([
+          Id,
+          BigInt(expiryTime),
+          parseEther("1"),
+          parseEther("5.00000001"),
+        ])
+      ).to.be.rejectedWith("InvalidFees()");
     });
 
     it("Revert when non MANAGER call issueNewDs", async function () {
@@ -219,7 +230,7 @@ describe("CorkConfig", function () {
   describe("updateEarlyRedemptionFeeRate", function () {
     it("updateEarlyRedemptionFeeRate should work correctly", async function () {
       expect(await moduleCore.read.earlyRedemptionFee([Id])).to.be.equals(
-        parseEther("10")
+        parseEther("5")
       );
       expect(
         await corkConfig.write.updateEarlyRedemptionFeeRate([Id, 1000n], {
@@ -242,8 +253,8 @@ describe("CorkConfig", function () {
 
   describe("updatePsmBaseRedemptionFeePrecentage", function () {
     it("updatePsmBaseRedemptionFeePrecentage should work correctly", async function () {
-      expect(await moduleCore.read.earlyRedemptionFee([Id])).to.be.equals(
-        parseEther("10")
+      expect(await moduleCore.read.baseRedemptionFee()).to.be.equals(
+        parseEther("5")
       );
       expect(
         await corkConfig.write.updatePsmBaseRedemptionFeePrecentage([1000n], {
