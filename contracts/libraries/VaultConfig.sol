@@ -7,8 +7,6 @@ library VaultConfigLibrary {
     function initialize(uint256 fee) internal pure returns (VaultConfig memory) {
         return VaultConfig({
             fee: fee,
-            lpRaBalance: 0,
-            lpCtBalance: 0,
             lpBalance: 0,
             isDepositPaused: false,
             isWithdrawalPaused: false
