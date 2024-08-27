@@ -198,7 +198,7 @@ describe("Module Core", function () {
         fixture.Id,
         BigInt(expiryTime),
         parseEther("1"),
-        parseEther("10"),
+        parseEther("5"),
       ]);
       const events = await moduleCore.getEvents.Issued({
         Id: fixture.Id,
@@ -228,6 +228,17 @@ describe("Module Core", function () {
           parseEther("10"),
         ])
       ).to.be.rejectedWith("Uinitialized()");
+    });
+
+    it("issueNewDs should revert when new repurchase fee are more than 5%", async function () {
+      await expect(
+        corkConfig.write.issueNewDs([
+          fixture.Id,
+          BigInt(expiryTime),
+          parseEther("1"),
+          parseEther("5.000000000001"),
+        ])
+      ).to.be.rejectedWith("InvalidFees()");
     });
 
     it("issueNewDs should revert when not called by Config contract", async function () {
@@ -261,6 +272,15 @@ describe("Module Core", function () {
       );
     });
 
+    it("updateRepurchaseFeeRate should revert when new value is more than 5%", async function () {
+      await expect(
+        corkConfig.write.updateRepurchaseFeeRate([
+          fixture.Id,
+          parseEther("5.0000000000001"),
+        ])
+      ).to.be.rejectedWith("InvalidFees()");
+    });
+
     it("updateRepurchaseFeeRate should revert when not called by Config contract", async function () {
       await expect(
         moduleCore.write.updateRepurchaseFeeRate([fixture.Id, 1000n], {
@@ -274,7 +294,7 @@ describe("Module Core", function () {
     it("updateEarlyRedemptionFeeRate should work correctly", async function () {
       expect(
         await moduleCore.read.earlyRedemptionFee([fixture.Id])
-      ).to.be.equals(parseEther("10"));
+      ).to.be.equals(parseEther("5"));
       await corkConfig.write.updateEarlyRedemptionFeeRate(
         [fixture.Id, 10011n],
         {
@@ -290,6 +310,15 @@ describe("Module Core", function () {
       expect(
         await moduleCore.read.earlyRedemptionFee([fixture.Id])
       ).to.be.equals(10011n);
+    });
+
+    it("updateEarlyRedemptionFeeRate should revert when new value is more than 5%", async function () {
+      await expect(
+        corkConfig.write.updateEarlyRedemptionFeeRate([
+          fixture.Id,
+          parseEther("5.00000000000001"),
+        ])
+      ).to.be.rejectedWith("InvalidFees()");
     });
 
     it("updateEarlyRedemptionFeeRate should revert when not called by Config contract", async function () {
@@ -340,7 +369,7 @@ describe("Module Core", function () {
         fixture.Id,
         BigInt(expiryTime),
         parseEther("1"),
-        parseEther("10"),
+        parseEther("5"),
       ]);
       expect(await moduleCore.read.lastDsId([fixture.Id])).to.equal(1n);
     });
@@ -378,10 +407,18 @@ describe("Module Core", function () {
   describe("updatePsmBaseRedemptionFeePrecentage", function () {
     it("updatePsmBaseRedemptionFeePrecentage should work correctly", async function () {
       expect(await moduleCore.read.baseRedemptionFee()).to.equal(
-        parseEther("10")
+        parseEther("5")
       );
       await corkConfig.write.updatePsmBaseRedemptionFeePrecentage([500n]);
       expect(await moduleCore.read.baseRedemptionFee()).to.equal(500n);
+    });
+
+    it("updatePsmBaseRedemptionFeePrecentage should revert when new value is more than 5%", async function () {
+      await expect(
+        corkConfig.write.updatePsmBaseRedemptionFeePrecentage([
+          parseEther("5.00000000000001"),
+        ])
+      ).to.be.rejectedWith("InvalidFees()");
     });
 
     it("updatePsmBaseRedemptionFeePrecentage should revert when not called by Config contract", async function () {

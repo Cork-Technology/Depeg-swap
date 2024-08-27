@@ -18,7 +18,7 @@ import UNIV2ROUTER from "./ext-abi/uni-v2-router.json";
 import { ethers } from "ethers";
 
 const DEVISOR = BigInt(1e18);
-export const DEFAULT_BASE_REDEMPTION_PRECENTAGE = parseEther("10");
+export const DEFAULT_BASE_REDEMPTION_PRECENTAGE = parseEther("5");
 
 export function calculatePrecentage(
   number: bigint,
@@ -294,7 +294,7 @@ export async function issueNewSwapAssets(arg: IssueNewSwapAssetsArg) {
 
   const rate = arg.rates ?? parseEther("1");
   // 10% by default
-  const repurchaseFeePercent = arg.repurhcaseFeePrecent ?? parseEther("10");
+  const repurchaseFeePercent = arg.repurhcaseFeePrecent ?? parseEther("5");
 
   const contract = await hre.viem.getContractAt("ModuleCore", arg.moduleCore);
   const Id = await contract.read.getId([arg.pa, arg.ra]);
@@ -495,7 +495,7 @@ export async function ModuleCoreWithInitializedPsmLv(
   } = await onlymoduleCoreWithFactory(basePsmRedemptionFee);
   const { pa, ra } = await backedAssets();
 
-  const fee = parseEther("10");
+  const fee = parseEther("5");
 
   const { Id, lv } = await initializeNewPsmLv({
     moduleCore: moduleCore.address,
