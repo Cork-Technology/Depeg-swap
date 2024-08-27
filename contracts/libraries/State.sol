@@ -71,13 +71,12 @@ struct VaultState {
     LvAsset lv;
     BitMaps.BitMap lpLiquidated;
     VaultPool pool;
+    uint256 initialDsPrice;
 }
 
 struct VaultConfig {
     // 1 % = 1e18
     uint256 fee;
-    uint256 lpRaBalance;
-    uint256 lpCtBalance;
     uint256 lpBalance;
     bool isDepositPaused;
     bool isWithdrawalPaused;
