@@ -21,6 +21,8 @@ describe("CorkConfig", function () {
   let moduleCore: Awaited<ReturnType<typeof getModuleCore>>;
   let corkConfig: Awaited<ReturnType<typeof getCorkConfig>>;
   let pa: Awaited<ReturnType<typeof getPA>>;
+  
+  const initialDsPrice = parseEther("0.1");
 
   let Id: Awaited<ReturnType<typeof moduleCore.read.getId>>;
 
@@ -133,7 +135,7 @@ describe("CorkConfig", function () {
       const { pa, ra } = await loadFixture(helper.backedAssets);
       await expect(
         await corkConfig.write.initializeModuleCore(
-          [pa.address, ra.address, fixture.lvFee],
+          [pa.address, ra.address, fixture.lvFee, initialDsPrice],
           {
             account: defaultSigner.account,
           }
@@ -144,7 +146,7 @@ describe("CorkConfig", function () {
     it("Revert when non MANAGER call initializeModuleCore", async function () {
       await expect(
         corkConfig.write.initializeModuleCore(
-          [pa.address, fixture.ra.address, fixture.lvFee],
+          [pa.address, fixture.ra.address, fixture.lvFee, initialDsPrice],
           {
             account: secondSigner.account,
           }
