@@ -121,7 +121,7 @@ describe("PSM core", function () {
         Id,
         BigInt(expiryTime),
         parseEther("1"),
-        parseEther("10"),
+        parseEther("5"),
       ]);
 
       const events = await moduleCore.getEvents.Issued({
@@ -713,9 +713,9 @@ describe("PSM core", function () {
           parseEther("2"),
         ]);
 
-      expect(received).to.equal(parseEther("0.9"));
-      expect(feePrecentage).to.equal(parseEther("10"));
-      expect(fee).to.equal(parseEther("0.2"));
+      expect(received).to.equal(parseEther("0.95"));
+      expect(feePrecentage).to.equal(parseEther("5"));
+      expect(fee).to.equal(parseEther("0.1"));
       expect(exchangeRate).to.equal(parseEther("2"));
 
       await fixture.moduleCore.write.repurchase([fixture.Id, parseEther("2")]);
@@ -913,7 +913,7 @@ describe("PSM core", function () {
       ]);
       await expect(
         moduleCore.write.repurchase([fixture.Id, parseEther("2")])
-      ).to.be.rejectedWith(`InsufficientLiquidity(0, ${parseEther("0.9")})`);
+      ).to.be.rejectedWith(`InsufficientLiquidity(0, ${parseEther("0.95")})`);
     });
   });
 
@@ -937,7 +937,7 @@ describe("PSM core", function () {
         Id,
         BigInt(expiry),
         parseEther("1"),
-        parseEther("10"),
+        parseEther("5"),
       ]);
 
       const events = await fixture.moduleCore.getEvents.Issued({
@@ -1126,9 +1126,9 @@ describe("PSM core", function () {
           parseEther("2"),
         ]);
 
-      expect(received).to.equal(parseEther("0.9"));
-      expect(feePrecentage).to.equal(parseEther("10"));
-      expect(fee).to.equal(parseEther("0.2"));
+      expect(received).to.equal(parseEther("0.95"));
+      expect(feePrecentage).to.equal(parseEther("5"));
+      expect(fee).to.equal(parseEther("0.1"));
       expect(exchangeRate).to.equal(parseEther("2"));
     });
 
@@ -1147,7 +1147,7 @@ describe("PSM core", function () {
       ]);
       await expect(
         moduleCore.read.previewRepurchase([fixture.Id, parseEther("2")])
-      ).to.be.rejectedWith(`InsufficientLiquidity(0, ${parseEther("0.9")})`);
+      ).to.be.rejectedWith(`InsufficientLiquidity(0, ${parseEther("0.95")})`);
     });
   });
 
