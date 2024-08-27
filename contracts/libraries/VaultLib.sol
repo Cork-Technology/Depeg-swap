@@ -38,7 +38,9 @@ library VaultLibrary {
     /// @notice inssuficient balance to perform expiry redeem(e.g requesting 5 LV to redeem but trying to redeem 10)
     error InsufficientBalance(address caller, uint256 requested, uint256 balance);
 
-    function initialize(VaultState storage self, address lv, uint256 fee, address ra, uint256 initialDsPrice) external {
+    function initialize(VaultState storage self, address lv, uint256 fee, address ra, uint256 initialDsPrice)
+        external
+    {
         self.config = VaultConfigLibrary.initialize(fee);
 
         self.lv = LvAssetLibrary.initialize(lv);
