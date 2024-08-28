@@ -133,7 +133,7 @@ interface IDsFlashSwapCore is IDsFlashSwapUtility {
         returns (uint256 amountOut);
 
     /**
-     *  @notice Preview the amount of RA that will be received from swapping DS
+     * @notice Preview the amount of RA that will be received from swapping DS
      * @param reserveId the reserve id same as the id on PSM and LV
      * @param dsId the ds id of the pair, the same as the DS id on PSM and LV
      * @param amount the amount of DS to swap

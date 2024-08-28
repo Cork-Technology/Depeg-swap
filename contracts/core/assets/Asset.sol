@@ -20,6 +20,9 @@ contract ExchangeRate is IRates {
         RATE = _rate;
     }
 
+    /**
+     * @notice returns the current exchange rate
+     */
     function exchangeRate() external view override returns (uint256) {
         return RATE;
     }
@@ -42,6 +45,9 @@ contract Expiry is IExpiry {
         TIMESTAMP = _expiry;
     }
 
+    /**
+     * @notice returns if contract is expired or not(if timestamp==0 then contract not having any expiry)
+     */
     function isExpired() external view virtual returns (bool) {
         if (TIMESTAMP == 0) {
             return false;
@@ -50,6 +56,9 @@ contract Expiry is IExpiry {
         return block.timestamp >= TIMESTAMP;
     }
 
+    /**
+     * @notice returns expiry timestamp of contract
+     */
     function expiry() external view virtual returns (uint256) {
         return TIMESTAMP;
     }
@@ -69,6 +78,11 @@ contract Asset is ERC20Burnable, ERC20Permit, Ownable, Expiry, ExchangeRate {
         Expiry(_expiry)
     {}
 
+    /**
+     * @notice mints `amount` number of tokens to `to` address
+     * @param to address of receiver
+     * @param amount number of tokens to be minted
+     */
     function mint(address to, uint256 amount) public onlyOwner {
         _mint(to, amount);
     }

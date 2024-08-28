@@ -132,6 +132,8 @@ interface IVault {
      * @param id The Module id that is used to reference both psm and lv of a given pair
      * @param receiver The address of the receiver
      * @param amount The amount of the asset to be redeemed
+     * @param rawLvPermitSig Raw signature for LV approval permit
+     * @param deadline deadline for Approval permit signature
      */
     function redeemEarlyLv(Id id, address receiver, uint256 amount, bytes memory rawLvPermitSig, uint256 deadline)
         external;
