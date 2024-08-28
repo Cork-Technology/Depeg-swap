@@ -125,22 +125,59 @@ interface IPSMcore is IRepurchase {
         view
         returns (uint256 ctReceived, uint256 dsReceived, uint256 dsId);
 
-    function redeemRaWithDs(Id id, uint256 dsId, uint256 amount, bytes memory rawDsPermitSig, uint256 deadline)
-        external;
+    /**
+     * @notice redeem RA with DS + PA
+     * @param id The pair id 
+     * @param dsId The DS id  
+     * @param amount The amount of DS + PA to redeem 
+     * @param rawDsPermitSig The raw signature for DS approval permit 
+     * @param deadline The deadline for DS approval permit signature 
+     */
+    function redeemRaWithDs(Id id, uint256 dsId, uint256 amount, bytes memory rawDsPermitSig, uint256 deadline) external;
 
+    /**
+     * @notice redeem RA with DS + PA
+     * @param id The pair id
+     * @param dsId The DS id
+     * @param amount The amount of DS + PA to redeem 
+     */
     function redeemRaWithDs(Id id, uint256 dsId, uint256 amount) external;
 
+    /**
+     * @notice preview the amount of RA user will get when Redeem RA with DS+PA 
+     * @param id The pair id
+     * @param dsId The DS id 
+     * @param amount The amount of DS + PA to redeem 
+     */
     function previewRedeemRaWithDs(Id id, uint256 dsId, uint256 amount) external view returns (uint256 assets);
 
-    function redeemWithCT(Id id, uint256 dsId, uint256 amount, bytes memory rawCtPermitSig, uint256 deadline)
-        external;
+    /**
+     * @notice redeem RA + PA with CT at expiry 
+     * @param id The pair id 
+     * @param dsId The DS id 
+     * @param amount The amount of CT to redeem 
+     * @param rawCtPermitSig The raw signature for CT approval permit
+     * @param deadline The deadline for CT approval permit signature 
+     */
+    function redeemWithCT(Id id, uint256 dsId, uint256 amount, bytes memory rawCtPermitSig, uint256 deadline) external;
 
+    /**
+     * @notice redeem RA + PA with CT at expiry 
+     * @param id The pair id 
+     * @param dsId The DS id 
+     * @param amount The amount of CT to redeem 
+     */
     function redeemWithCT(Id id, uint256 dsId, uint256 amount) external;
 
-    function previewRedeemWithCt(Id id, uint256 dsId, uint256 amount)
-        external
-        view
-        returns (uint256 paReceived, uint256 raReceived);
+    /**
+     * @notice preview the amount of RA user will get when Redeem RA with CT+DS 
+     * @param id The pair id 
+     * @param dsId The DS id 
+     * @param amount The amount of CT to redeem  
+     * @return paReceived The amount of PA user will get
+     * @return raReceived The amount of RA user will get 
+     */
+    function previewRedeemWithCt(Id id, uint256 dsId, uint256 amount) external view returns (uint256 paReceived, uint256 raReceived);
 
     /**
      * @notice returns amount of ra user will get when Redeem RA with CT+DS
