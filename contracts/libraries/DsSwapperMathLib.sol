@@ -1,4 +1,3 @@
-// taken directly from forked repo
 pragma solidity 0.8.24;
 
 import {UQ112x112} from "./UQ112x112.sol";
