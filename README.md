@@ -3,7 +3,9 @@
 This repository contains core smart contracts of Depeg Swaps, for higher level specification and flows please see the design [documents](https://corkfi.notion.site/Smart-Contract-Flow-fc170aec36bc43579a7d0429c49e08ab) for now.
 
 # Build
+
 Install required dependencies :
+
 ```bash
 yarn
 ```
@@ -58,4 +60,11 @@ FlashSwapRouter deployed to  : 0x071a4F363AAC0948BA92bb1af698Bf09B89E8Fc6
 UniV2Factory deployed to     : 0xc309a6A25B96D6aC843148ABF8100054c8644c38
 UniV2Router deployed to      : 0x7f4e645054966556983B21a5Fe5eE6A17C21171a
 ModuleCore deployed to       : 0xB2643D4b7Ee4aeb9f03CD0C18B971A141eC07f37
+
+TC Contracts
+CETH deployed to             : 0xDe6CCd057e10A5Fa5B33fd97031Afa806586db32
+bsETH deployed to            : 0x479B33663121678476d6e29F0C4ebA8f689cd955
+lbETH deployed to            : 0x8a519d5300aeeCDDFa62E8cDB734f0965d2d46ec
+wamuETH deployed to          : 0x3C9939C5066F9Ab6cE80e2D534a1f45b3b64302D
+mlETH deployed to            : 0xCC8a4898C999Aa8f449C3282b9D51cE81d68A944
 ```
