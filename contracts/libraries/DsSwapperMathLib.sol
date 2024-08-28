@@ -12,10 +12,17 @@ import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 library SwapperMathLibrary {
     using UQ112x112 for uint224;
 
+    /// @notice thrown when Reserve is Zero
     error ZeroReserve();
+
+    /// @notice thrown when Input amount is not sufficient
     error InsufficientInputAmount();
+
+    /// @notice thrown when not having sufficient Liquidity
     error InsufficientLiquidity();
-    error InsufficientOtuputAmount();
+
+    /// @notice thrown when Output amount is not sufficient
+    error InsufficientOutputAmount();
 
     // Calculate price ratio of two tokens in a uniswap v2 pair, will return ratio on 18 decimals precision
     function getPriceRatioUniv2(uint112 raReserve, uint112 ctReserve)
@@ -58,7 +65,7 @@ library SwapperMathLibrary {
         uint256 dsExchangeRate // DS exchange rate
     ) external pure returns (uint256 amountIn) {
         if (amountOut == 0) {
-            revert InsufficientOtuputAmount();
+            revert InsufficientOutputAmount();
         }
 
         if (raReserve == 0 || ctReserve == 0) {

@@ -27,7 +27,10 @@ interface IDsFlashSwapUtility {
  * @notice IDsFlashSwapCore interface for Flashswap Router contract
  */
 interface IDsFlashSwapCore is IDsFlashSwapUtility {
+    /// @notice thrown when output amount is not sufficient
     error InsufficientOutputAmount();
+
+    /// @notice thrown when Permit is not supported in Given ERC20 contract
     error PermitNotSupported();
 
     /**

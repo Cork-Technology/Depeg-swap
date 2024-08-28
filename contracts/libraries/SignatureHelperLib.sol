@@ -15,6 +15,7 @@ struct Signature {
  * @notice MinimalSignatureHelper Library implements signature related functions
  */
 library MinimalSignatureHelper {
+    /// @notice thrown when Signature length is not valid
     error InvalidSignatureLength(uint256 length);
 
     function split(bytes memory raw) internal pure returns (Signature memory sig) {

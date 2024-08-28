@@ -14,7 +14,10 @@ contract CorkConfig is AccessControl, Pausable {
     bytes32 public constant MANAGER_ROLE = keccak256("MANAGER_ROLE");
     Initialize public moduleCore;
 
+    /// @notice thrown when caller is not manager/Admin of Cork Protocol
     error CallerNotManager();
+
+    /// @notice thrown when passed Invalid/Zero Address
     error InvalidAddress();
 
     /// @notice Emitted when a moduleCore variable set

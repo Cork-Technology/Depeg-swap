@@ -21,6 +21,7 @@ interface ICommon {
     error AlreadyInitialized();
 
     /// @notice invalid asset, thrown when trying to do something with an asset not deployed with asset factory
+    /// @param asset Address of given Asset contract
     error InvalidAsset(address asset);
 
     /// @notice PSM Deposit is paused, i.e thrown when deposit is paused for PSM
