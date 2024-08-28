@@ -5,8 +5,11 @@ import {UQ112x112} from "./UQ112x112.sol";
 import {SignedMath} from "@openzeppelin/contracts/utils/math/SignedMath.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 
-// library function for handling math operations for DS swap contract
-
+/**
+ * @title SwapperMathLibrary Contract
+ * @author Cork Team
+ * @notice SwapperMath library which implements math operations for DS swap contract
+ */
 library SwapperMathLibrary {
     using UQ112x112 for uint224;
 

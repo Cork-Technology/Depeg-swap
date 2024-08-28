@@ -4,6 +4,11 @@ pragma solidity 0.8.24;
 import {Id} from "../libraries/Pair.sol";
 import {IRepurchase} from "./IRepurchase.sol";
 
+/**
+ * @title IPSMcore Interface
+ * @author Cork Team
+ * @notice IPSMcore interface for PSMCore contract
+ */
 interface IPSMcore is IRepurchase {
     /// @notice Emitted when a user deposits assets into a given PSM
     /// @param Id The PSM id

@@ -3,6 +3,11 @@ pragma solidity 0.8.24;
 
 import {Id} from "../libraries/Pair.sol";
 
+/**
+ * @title Initialize Interface
+ * @author Cork Team
+ * @notice Initialize interface for providing Initialization related functions through ModuleCore contract
+ */
 interface Initialize {
     function initialize(address pa, address ra, uint256 lvFee, uint256 initialDsPrice) external;
 

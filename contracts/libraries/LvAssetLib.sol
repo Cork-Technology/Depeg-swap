@@ -8,6 +8,11 @@ struct LvAsset {
     uint256 locked;
 }
 
+/**
+ * @title LvAssetLibrary Contract
+ * @author Cork Team
+ * @notice LvAsset Library which implements features related to Lv(liquidity vault) Asset contract
+ */
 library LvAssetLibrary {
     using LvAssetLibrary for LvAsset;
 

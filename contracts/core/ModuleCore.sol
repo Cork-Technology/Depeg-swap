@@ -11,6 +11,11 @@ import {PsmCore} from "./Psm.sol";
 import {VaultCore} from "./Vault.sol";
 import {Initialize} from "../interfaces/Init.sol";
 
+/**
+ * @title ModuleCore Contract
+ * @author Cork Team
+ * @notice Modulecore contract for integrating abstract modules like PSM and Vault contracts
+ */
 contract ModuleCore is PsmCore, Initialize, VaultCore {
     using PsmLibrary for State;
     using PairLibrary for Pair;

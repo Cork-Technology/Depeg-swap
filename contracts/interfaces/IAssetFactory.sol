@@ -1,6 +1,11 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity 0.8.24;
 
+/**
+ * @title IAssetFactory Interface
+ * @author Cork Team
+ * @notice Interface for AssetsFactory contract
+ */
 interface IAssetFactory {
     /// @notice limit too long when getting deployed assets
     error LimitTooLong(uint256 max, uint256 received);

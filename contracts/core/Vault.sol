@@ -8,6 +8,11 @@ import {ModuleState} from "./ModuleState.sol";
 import {Context} from "@openzeppelin/contracts/utils/Context.sol";
 import {IVault} from "../interfaces/IVault.sol";
 
+/**
+ * @title VaultCore Abstract Contract
+ * @author Cork Team
+ * @notice Abstract VaultCore contract which provides Vault related logics
+ */
 abstract contract VaultCore is ModuleState, Context, IVault {
     using PairLibrary for Pair;
     using VaultLibrary for State;

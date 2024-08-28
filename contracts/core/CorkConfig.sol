@@ -6,8 +6,11 @@ import {Pausable} from "@openzeppelin/contracts/utils/Pausable.sol";
 import {Initialize} from "../interfaces/Init.sol";
 import {Id} from "../libraries/Pair.sol";
 
-/// @title CorkConfig - Cork Config Contract
-/// @notice Handles configurations
+/**
+ * @title Config Contract
+ * @author Cork Team
+ * @notice Config contract for managing configurations of Cork protocol
+ */
 contract CorkConfig is AccessControl, Pausable {
     bytes32 public constant MANAGER_ROLE = keccak256("MANAGER_ROLE");
     Initialize public moduleCore;

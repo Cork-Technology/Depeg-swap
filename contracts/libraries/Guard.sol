@@ -4,6 +4,11 @@ pragma solidity 0.8.24;
 import {DepegSwap, DepegSwapLibrary} from "./DepegSwapLib.sol";
 import {LvAsset, LvAssetLibrary} from "./LvAssetLib.sol";
 
+/**
+ * @title Guard Library Contract
+ * @author Cork Team
+ * @notice Guard library which implements modifiers for DS related features
+ */
 library Guard {
     using DepegSwapLibrary for DepegSwap;
     using LvAssetLibrary for LvAsset;

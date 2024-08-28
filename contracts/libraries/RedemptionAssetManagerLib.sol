@@ -10,6 +10,11 @@ struct PsmRedemptionAssetManager {
     uint256 free;
 }
 
+/**
+ * @title RedemptionAssetManagerLibrary Contract
+ * @author Cork Team
+ * @notice RedemptionAssetManager Library implements functions for RA(Redemption Assets) contract
+ */
 library RedemptionAssetManagerLibrary {
     using MinimalSignatureHelper for Signature;
     using SafeERC20 for IERC20;

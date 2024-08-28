@@ -3,6 +3,11 @@ pragma solidity 0.8.24;
 
 import {Id} from "../libraries/Pair.sol";
 
+/**
+ * @title ICommon Interface
+ * @author Cork Team
+ * @notice Common Interface which provides common errors, events and functions
+ */
 interface ICommon {
     /// @notice only flash swap router is allowed to call this function
     error OnlyFlashSwapRouterAllowed();

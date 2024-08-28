@@ -7,6 +7,11 @@ struct PeggedAsset {
     address _address;
 }
 
+/**
+ * @title PeggedAssetLibrary Contract
+ * @author Cork Team
+ * @notice PeggedAsset Library which implements functions for Pegged assets
+ */
 library PeggedAssetLibrary {
     using PeggedAssetLibrary for PeggedAsset;
     using SafeERC20 for IERC20;

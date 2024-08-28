@@ -7,6 +7,11 @@ import {UUPSUpgradeable} from "@openzeppelin/contracts-upgradeable/proxy/utils/U
 import {Id, Pair, PairLibrary} from "../../libraries/Pair.sol";
 import {Asset} from "./Asset.sol";
 
+/**
+ * @title Factory contract for Assets
+ * @author Cork Team
+ * @notice Factory contract for deploying assets contracts
+ */
 contract AssetFactory is IAssetFactory, OwnableUpgradeable, UUPSUpgradeable {
     using PairLibrary for Pair;
 

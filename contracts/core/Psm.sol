@@ -9,6 +9,11 @@ import {State} from "../libraries/State.sol";
 import {ModuleState} from "./ModuleState.sol";
 import {Context} from "@openzeppelin/contracts/utils/Context.sol";
 
+/**
+ * @title PsmCore Abstract Contract
+ * @author Cork Team
+ * @notice Abstract PsmCore contract provides PSM related logics
+ */
 abstract contract PsmCore is IPSMcore, ModuleState, Context {
     using PsmLibrary for State;
     using PairLibrary for Pair;

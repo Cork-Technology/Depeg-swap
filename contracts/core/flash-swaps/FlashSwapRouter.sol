@@ -18,6 +18,11 @@ import {Asset} from "../assets/Asset.sol";
 import {DepegSwapLibrary} from "../../libraries/DepegSwapLib.sol";
 import {SafeERC20, IERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
+/**
+ * @title Router contract for Flashswap
+ * @author Cork Team
+ * @notice Router contract for implementing flashswaps for DS/CT
+ */
 contract RouterState is IDsFlashSwapUtility, IDsFlashSwapCore, OwnableUpgradeable, UUPSUpgradeable, IUniswapV2Callee {
     using DsFlashSwaplibrary for ReserveState;
     using DsFlashSwaplibrary for AssetPair;

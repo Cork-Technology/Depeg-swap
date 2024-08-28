@@ -4,6 +4,9 @@ pragma solidity 0.8.24;
 import {Asset} from "../core/assets/Asset.sol";
 import {Signature, MinimalSignatureHelper} from "./SignatureHelperLib.sol";
 
+/**
+ * @notice DepegSwap struct which provides structure for DS   
+ */
 struct DepegSwap {
     bool expiredEventEmitted;
     address _address;
@@ -13,6 +16,11 @@ struct DepegSwap {
     uint256 ctRedeemed;
 }
 
+/**
+ * @title DepegSwapLibrary Contract
+ * @author Cork Team
+ * @notice DepegSwapLibrary library which implements DepegSwap(DS) related features 
+ */
 library DepegSwapLibrary {
     using MinimalSignatureHelper for Signature;
 

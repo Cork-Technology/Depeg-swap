@@ -25,6 +25,11 @@ struct ReserveState {
     uint256 reserveSellPressurePrecentage;
 }
 
+/**
+ * @title DsFlashSwaplibrary Contract
+ * @author Cork Team
+ * @notice DsFlashSwap library which implements Flashswap related features for DS/CT 
+ */
 library DsFlashSwaplibrary {
     /// @dev the precentage amount of reserve that will be used to fill buy orders
     /// the router will sell in respect to this ratio on first issuance

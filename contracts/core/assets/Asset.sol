@@ -9,6 +9,11 @@ import {ERC20Burnable} from "@openzeppelin/contracts/token/ERC20/extensions/ERC2
 import {IExpiry} from "../../interfaces/IExpiry.sol";
 import {IRates} from "../../interfaces/IRates.sol";
 
+/**
+ * @title Contract for Adding Exchange Rate functionality
+ * @author Cork Team
+ * @notice Adds Exchange Rate functionality to Assets contracts
+ */
 contract ExchangeRate is IRates {
     uint256 internal immutable RATE;
 
@@ -21,6 +26,12 @@ contract ExchangeRate is IRates {
     }
 }
 
+/**
+ * @title Contract for Adding Expiry functionality to DS
+ * @author Cork Team
+ * @notice Adds Expiry functionality to Assets contracts
+ * @dev Used for adding Expiry functionality to contracts like DS
+ */
 contract Expiry is IExpiry {
     uint256 internal immutable TIMESTAMP;
 
@@ -45,6 +56,11 @@ contract Expiry is IExpiry {
     }
 }
 
+/**
+ * @title Assets Contract
+ * @author Cork Team
+ * @notice Contract for implementing assets like DS/CT etc
+ */
 contract Asset is ERC20Burnable, ERC20Permit, Ownable, Expiry, ExchangeRate {
     constructor(string memory prefix, string memory pairName, address _owner, uint256 _expiry, uint256 _rate)
         ExchangeRate(_rate)

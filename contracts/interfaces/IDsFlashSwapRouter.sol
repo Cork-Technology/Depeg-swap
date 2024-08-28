@@ -4,6 +4,11 @@ pragma solidity 0.8.24;
 import {Id} from "../libraries/Pair.sol";
 import {IUniswapV2Pair} from "./uniswap-v2/pair.sol";
 
+/**
+ * @title IDsFlashSwapUtility Interface
+ * @author Cork Team
+ * @notice Utility Interface for flashswap
+ */
 interface IDsFlashSwapUtility {
     function getCurrentPriceRatio(Id id, uint256 dsId)
         external
@@ -17,6 +22,11 @@ interface IDsFlashSwapUtility {
     function getUniV2pair(Id id, uint256 dsId) external view returns (IUniswapV2Pair pair);
 }
 
+/**
+ * @title IDsFlashSwapCore Interface
+ * @author Cork Team
+ * @notice IDsFlashSwapCore interface for Flashswap Router contract
+ */
 interface IDsFlashSwapCore is IDsFlashSwapUtility {
     error InsufficientOutputAmount();
     error PermitNotSupported();

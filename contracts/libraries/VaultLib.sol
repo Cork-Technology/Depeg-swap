@@ -20,6 +20,11 @@ import {Asset, ERC20, ERC20Burnable} from "../core/assets/Asset.sol";
 import {ICommon} from "../interfaces/ICommon.sol";
 import {SafeERC20, IERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
+/**
+ * @title Vault Library Contract
+ * @author Cork Team
+ * @notice Vault Library implements features for  LVCore(liquidity Vault Core)
+ */
 library VaultLibrary {
     using VaultConfigLibrary for VaultConfig;
     using PairLibrary for Pair;

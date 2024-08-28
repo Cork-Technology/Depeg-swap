@@ -7,6 +7,11 @@ struct Signature {
     bytes32 s;
 }
 
+/**
+ * @title MinimalSignatureHelper Library Contract
+ * @author Cork Team
+ * @notice MinimalSignatureHelper Library implements signature related functions
+ */
 library MinimalSignatureHelper {
     error InvalidSignatureLength(uint256 length);
 

@@ -3,6 +3,11 @@ pragma solidity 0.8.24;
 
 import {Id} from "../libraries/Pair.sol";
 
+/**
+ * @title IVault Interface
+ * @author Cork Team
+ * @notice IVault interface for VaultCore contract
+ */
 interface IVault {
     /// @notice Emitted when a user deposits assets into a given Vault
     /// @param id The Module id that is used to reference both psm and lv of a given pair

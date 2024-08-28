@@ -17,6 +17,11 @@ import {VaultLibrary} from "./VaultLib.sol";
 import {IUniswapV2Router02} from "../interfaces/uniswap-v2/RouterV2.sol";
 import {SafeERC20, IERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
+/**
+ * @title Psm Library Contract
+ * @author Cork Team
+ * @notice Psm Library implements functions for PSM Core contract
+ */
 library PsmLibrary {
     using MinimalSignatureHelper for Signature;
     using PairLibrary for Pair;

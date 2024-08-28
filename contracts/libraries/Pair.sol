@@ -14,6 +14,11 @@ struct Pair {
     address pair1;
 }
 
+/**
+ * @title PairLibrary Contract
+ * @author Cork Team
+ * @notice Pair Library which implements functions for handling Pair operations
+ */
 library PairLibrary {
     using PeggedAssetLibrary for PeggedAsset;
 

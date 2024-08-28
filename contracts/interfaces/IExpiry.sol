@@ -1,6 +1,11 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity 0.8.24;
 
+/**
+ * @title IExpiry Interface
+ * @author Cork Team
+ * @notice IExpiry interface for Expiry contract
+ */
 interface IExpiry {
     /// @notice Trying to issue an expired asset
     error Expired();
