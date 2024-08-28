@@ -45,7 +45,7 @@ contract Expiry is IExpiry {
     }
 }
 
-contract Asset is ERC20Burnable, ERC20Permit, ERC20FlashMint, Ownable, Expiry, ExchangeRate {
+contract Asset is ERC20Burnable, ERC20Permit, Ownable, Expiry, ExchangeRate {
     constructor(string memory prefix, string memory pairName, address _owner, uint256 _expiry, uint256 _rate)
         ExchangeRate(_rate)
         ERC20(string(abi.encodePacked(prefix, "-", pairName)), string(abi.encodePacked(prefix, "-", pairName)))
