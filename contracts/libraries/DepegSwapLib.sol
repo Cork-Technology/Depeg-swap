@@ -4,7 +4,7 @@ import {Asset} from "../core/assets/Asset.sol";
 import {Signature, MinimalSignatureHelper} from "./SignatureHelperLib.sol";
 
 /**
- * @notice DepegSwap struct which provides structure for DS   
+ * @dev DepegSwap structure for DS(DepegSwap)   
  */
 struct DepegSwap {
     bool expiredEventEmitted;

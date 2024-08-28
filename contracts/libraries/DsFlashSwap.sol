@@ -6,6 +6,9 @@ import {SwapperMathLibrary} from "./DsSwapperMathLib.sol";
 import {MinimalUniswapV2Library} from "./uni-v2/UniswapV2Library.sol";
 import {PermitChecker} from "./PermitChecker.sol";
 
+/**
+ * @dev AssetPair structure for Asset Pairs   
+ */
 struct AssetPair {
     Asset ra;
     Asset ct;
@@ -18,6 +21,9 @@ struct AssetPair {
     uint256 reserve;
 }
 
+/**
+ * @dev ReserveState structure for Reserve    
+ */
 struct ReserveState {
     /// @dev dsId => [RA, CT, DS]
     mapping(uint256 => AssetPair) ds;

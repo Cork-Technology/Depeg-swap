@@ -2,6 +2,9 @@ pragma solidity 0.8.24;
 
 import {IERC20, Asset, ERC20, ERC20Burnable} from "../core/assets/Asset.sol";
 
+/**
+ * @dev LvAsset structure for Liquidity Vault Assets    
+ */
 struct LvAsset {
     address _address;
     uint256 locked;

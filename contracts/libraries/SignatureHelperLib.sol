@@ -1,5 +1,8 @@
 pragma solidity 0.8.24;
 
+/**
+ * @dev Signature structure    
+ */
 struct Signature {
     uint8 v;
     bytes32 r;
