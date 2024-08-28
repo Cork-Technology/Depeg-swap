@@ -80,6 +80,13 @@ abstract contract PsmCore is IPSMcore, ModuleState, Context {
         rates = state.repurchaseRates();
     }
 
+    /**
+     * @notice returns the amount of CT and DS tokens that will be received after deposit
+     * @param id the id of PSM
+     * @param amount the amount to be deposit
+     * @return received the amount of CT/DS received
+     * @return _exchangeRate effective exchange rate at time of deposit
+     */
     function depositPsm(Id id, uint256 amount)
         external
         override
@@ -93,6 +100,14 @@ abstract contract PsmCore is IPSMcore, ModuleState, Context {
         emit PsmDeposited(id, dsId, _msgSender(), amount, received, _exchangeRate);
     }
 
+    /**
+     * @notice returns the amount of CT and DS tokens that will be received after deposit
+     * @param id the id of PSM
+     * @param amount the amount to be deposit
+     * @return ctReceived the amount of CT will be received
+     * @return dsReceived the amount of DS will be received
+     * @return dsId Id of DS
+     */
     function previewDepositPsm(Id id, uint256 amount)
         external
         view
@@ -143,6 +158,11 @@ abstract contract PsmCore is IPSMcore, ModuleState, Context {
         emit DsRedeemed(id, dsId, _msgSender(), amount, received, _exchangeRate, feePrecentage, fee);
     }
 
+    /**
+     * This determines the rate of how much the user will receive for the amount of asset they want to deposit.
+     * for example, if the rate is 1.5, then the user will need to deposit 1.5 token to get 1 CT and DS.
+     * @param id the id of the PSM
+     */
     function exchangeRate(Id id) external view override returns (uint256 rates) {
         State storage state = states[id];
         rates = state.exchangeRate();
@@ -201,11 +221,24 @@ abstract contract PsmCore is IPSMcore, ModuleState, Context {
         (paReceived, raReceived) = state.previewRedeemWithCt(dsId, amount);
     }
 
+    /**
+     * @notice returns amount of value locked in LV
+     * @param id The PSM id
+     */
     function valueLocked(Id id) external view override returns (uint256) {
         State storage state = states[id];
         return state.valueLocked();
     }
 
+    /**
+     * @notice returns amount of ra user will get when Redeem RA with CT+DS
+     * @param id The PSM id
+     * @param amount amount user wants to redeem
+     * @param rawDsPermitSig raw signature for DS approval permit
+     * @param dsDeadline deadline for DS approval permit signature
+     * @param rawCtPermitSig raw signature for CT approval permit
+     * @param ctDeadline deadline for CT approval permit signature
+     */
     function redeemRaWithCtDs(
         Id id,
         uint256 amount,
@@ -221,6 +254,13 @@ abstract contract PsmCore is IPSMcore, ModuleState, Context {
         emit Cancelled(id, dsId, _msgSender(), ra, amount, rates);
     }
 
+    /**
+     * @notice returns amount of ra user will get when Redeem RA with CT+DS
+     * @param id The PSM id
+     * @param amount amount user wants to redeem
+     * @return received amount of RA user received
+     * @return rates the effective rate at the time of redemption
+     */
     function redeemRaWithCtDs(Id id, uint256 amount)
         external
         override
@@ -236,6 +276,13 @@ abstract contract PsmCore is IPSMcore, ModuleState, Context {
         emit Cancelled(id, dsId, _msgSender(), received, amount, rates);
     }
 
+    /**
+     * @notice returns amount of ra user will get when Redeem RA with CT+DS
+     * @param id The PSM id
+     * @param amount amount user wants to redeem
+     * @return ra amount of RA user will get
+     * @return rates the effective rate at the time of redemption
+     */
     function previewRedeemRaWithCtDs(Id id, uint256 amount)
         external
         view
@@ -247,6 +294,9 @@ abstract contract PsmCore is IPSMcore, ModuleState, Context {
         (ra,, rates) = state.previewRedeemRaWithCtDs(amount);
     }
 
+    /**
+     * @notice returns base redemption fees (1e18 = 1%)
+     */
     function baseRedemptionFee() external view override returns (uint256) {
         return psmBaseRedemptionFeePrecentage;
     }

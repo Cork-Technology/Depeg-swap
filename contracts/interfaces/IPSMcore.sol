@@ -96,6 +96,13 @@ interface IPSMcore is IRepurchase {
     /// @param earlyRedemptionFeeRate The new value of early redemption fee rate
     event EarlyRedemptionFeeRateUpdated(Id indexed Id, uint256 earlyRedemptionFeeRate);
 
+    /**
+     * @notice returns the amount of CT and DS tokens that will be received after deposit
+     * @param id the id of PSM
+     * @param amount the amount to be deposit
+     * @return received the amount of CT/DS received
+     * @return exchangeRate effective exchange rate at time of deposit
+     */
     function depositPsm(Id id, uint256 amount) external returns (uint256 received, uint256 exchangeRate);
 
     /**
@@ -105,6 +112,14 @@ interface IPSMcore is IRepurchase {
      */
     function exchangeRate(Id id) external view returns (uint256 rates);
 
+    /**
+     * @notice returns the amount of CT and DS tokens that will be received after deposit
+     * @param id the id of PSM
+     * @param amount the amount to be deposit
+     * @return ctReceived the amount of CT will be received
+     * @return dsReceived the amount of DS will be received
+     * @return dsId Id of DS
+     */
     function previewDepositPsm(Id id, uint256 amount)
         external
         view
@@ -127,6 +142,15 @@ interface IPSMcore is IRepurchase {
         view
         returns (uint256 paReceived, uint256 raReceived);
 
+    /**
+     * @notice returns amount of ra user will get when Redeem RA with CT+DS
+     * @param id The PSM id
+     * @param amount amount user wants to redeem
+     * @param rawDsPermitSig raw signature for DS approval permit
+     * @param dsDeadline deadline for DS approval permit signature
+     * @param rawCtPermitSig raw signature for CT approval permit
+     * @param ctDeadline deadline for CT approval permit signature
+     */
     function redeemRaWithCtDs(
         Id id,
         uint256 amount,
@@ -136,11 +160,32 @@ interface IPSMcore is IRepurchase {
         uint256 ctDeadline
     ) external;
 
+    /**
+     * @notice returns amount of ra user will get when Redeem RA with CT+DS
+     * @param id The PSM id
+     * @param amount amount user wants to redeem
+     * @return received amount of RA user received
+     * @return rates the effective rate at the time of redemption
+     */
     function redeemRaWithCtDs(Id id, uint256 amount) external returns (uint256 received, uint256 rates);
 
+    /**
+     * @notice returns amount of ra user will get when Redeem RA with CT+DS
+     * @param id The PSM id
+     * @param amount amount user wants to redeem
+     * @return ra amount of RA user will get
+     * @return rates the effective rate at the time of redemption
+     */
     function previewRedeemRaWithCtDs(Id id, uint256 amount) external view returns (uint256 ra, uint256 rates);
 
+    /**
+     * @notice returns amount of value locked in LV
+     * @param id The PSM id
+     */
     function valueLocked(Id id) external view returns (uint256);
 
+    /**
+     * @notice returns base redemption fees (1e18 = 1%)
+     */
     function baseRedemptionFee() external view returns (uint256);
 }
