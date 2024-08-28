@@ -1,4 +1,3 @@
-// SPDX-License-Identifier: UNLICENSED
 pragma solidity 0.8.24;
 
 import {Signature, MinimalSignatureHelper} from "./SignatureHelperLib.sol";
