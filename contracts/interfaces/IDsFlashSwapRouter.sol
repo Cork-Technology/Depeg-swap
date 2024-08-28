@@ -9,15 +9,37 @@ import {IUniswapV2Pair} from "./uniswap-v2/pair.sol";
  * @notice Utility Interface for flashswap
  */
 interface IDsFlashSwapUtility {
-    function getCurrentPriceRatio(Id id, uint256 dsId)
-        external
-        view
-        returns (uint256 raPriceRatio, uint256 ctPriceRatio);
+    /**
+     * @notice returns the current price ratio of the pair 
+     * @param id the id of the pair 
+     * @param dsId the ds id of the pair 
+     * @return raPriceRatio ratio of RA 
+     * @return ctPriceRatio ratio of CT 
+     */
+    function getCurrentPriceRatio(Id id, uint256 dsId) external view returns (uint256 raPriceRatio, uint256 ctPriceRatio); 
 
+    /**
+     * @notice returns the current reserve of the pair
+     * @param id the id of the pair 
+     * @param dsId the ds id of the pair 
+     * @return raReserve reserve of RA 
+     * @return ctReserve reserve of CT  
+     */
     function getAmmReserve(Id id, uint256 dsId) external view returns (uint112 raReserve, uint112 ctReserve);
 
+    /**
+     * @notice returns the current DS reserve that is owned by liquidity vault
+     * @param id the id of the pair 
+     * @param dsId the ds id of the pair
+     * @return lvReserve reserve of DS 
+     */
     function getLvReserve(Id id, uint256 dsId) external view returns (uint256 lvReserve);
 
+    /**
+     * @notice returns the underlying uniswap v2 pair address
+     * @param id the id of the pair 
+     * @param dsId the ds id of the pair 
+     */
     function getUniV2pair(Id id, uint256 dsId) external view returns (IUniswapV2Pair pair);
 }
 
@@ -83,6 +105,16 @@ interface IDsFlashSwapCore is IDsFlashSwapUtility {
      */
     event ReserveEmptied(Id indexed reserveId, uint256 indexed dsId, uint256 amount);
 
+    /**
+     * @notice trigger new issuance logic, can only be called my moduleCore
+     * @param reserveId the pair id 
+     * @param dsId the ds id of the pair 
+     * @param ds the address of the new issued DS 
+     * @param pair the address of the underlying uniswap v2 pair 
+     * @param initialReserve the initial reserve of the DS 
+     * @param ra the address of RA token 
+     * @param ct the address of CT token 
+     */
     function onNewIssuance(
         Id reserveId,
         uint256 dsId,
@@ -93,10 +125,29 @@ interface IDsFlashSwapCore is IDsFlashSwapUtility {
         address ct
     ) external;
 
+    /**
+     * @notice add more DS reserve from liquidity vault, can only be called by moduleCore
+     * @param id the pair id 
+     * @param dsId the ds id of the pair 
+     * @param amount the amount of DS to add  
+     */
     function addReserve(Id id, uint256 dsId, uint256 amount) external;
 
+    /**
+     * @notice empty all DS reserve to liquidity vault, can only be called by moduleCore 
+     * @param reserveId the pair id
+     * @param dsId the ds id of the pair
+     * @return amount the amount of DS that's emptied 
+     */
     function emptyReserve(Id reserveId, uint256 dsId) external returns (uint256 amount);
 
+    /**
+     * @notice empty some or all DS reserve to liquidity vault, can only be called by moduleCore 
+     * @param reserveId the pair id 
+     * @param dsId the ds id of the pair 
+     * @param amount the amount of DS to empty
+     * @return reserve the remaining reserve of DS 
+     */
     function emptyReservePartial(Id reserveId, uint256 dsId, uint256 amount) external returns (uint256 reserve);
 
     /**
