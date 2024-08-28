@@ -49,6 +49,10 @@ contract CorkConfig is AccessControl, Pausable {
 
     /**
      * @dev Initialize Module Core
+     * @param pa Address of PA
+     * @param ra Address of RA
+     * @param lvFee fees for LV
+     * @param initialDsPrice initial price of DS
      */
     function initializeModuleCore(address pa, address ra, uint256 lvFee, uint256 initialDsPrice) external onlyManager {
         moduleCore.initialize(pa, ra, lvFee, initialDsPrice);
@@ -66,21 +70,30 @@ contract CorkConfig is AccessControl, Pausable {
     }
 
     /**
-     * @dev Updates fee rates for psm repurchase
+     * @notice Updates fee rates for psm repurchase
+     * @param id id of PSM
+     * @param newRepurchaseFeePrecentage new value of repurchase fees
      */
     function updateRepurchaseFeeRate(Id id, uint256 newRepurchaseFeePrecentage) external onlyManager {
         moduleCore.updateRepurchaseFeeRate(id, newRepurchaseFeePrecentage);
     }
 
     /**
-     * @dev Updates earlyFeeRedemption rates
+     * @notice Updates earlyFeeRedemption rates
+     * @param id id of PSM
+     * @param newEarlyRedemptionFeeRate new value of earlyRedemptin fees
      */
     function updateEarlyRedemptionFeeRate(Id id, uint256 newEarlyRedemptionFeeRate) external onlyManager {
         moduleCore.updateEarlyRedemptionFeeRate(id, newEarlyRedemptionFeeRate);
     }
 
     /**
-     * @dev Updates pausing status of PSM and LV pools
+     * @notice Updates pausing status of PSM and LV pools
+     * @param id id of PSM
+     * @param isPSMDepositPaused new value of isPSMDepositPaused
+     * @param isPSMWithdrawalPaused new value of isPSMWithdrawalPaused
+     * @param isLVDepositPaused new value of isLVDepositPaused
+     * @param isLVWithdrawalPaused new value of isLVWithdrawalPaused
      */
     function updatePoolsStatus(
         Id id,
@@ -95,21 +108,22 @@ contract CorkConfig is AccessControl, Pausable {
     }
 
     /**
-     * @dev Updates base redemption fee percentage
+     * @notice Updates base redemption fee percentage
+     * @param newPsmBaseRedemptionFeePrecentage new value of fees
      */
     function updatePsmBaseRedemptionFeePrecentage(uint256 newPsmBaseRedemptionFeePrecentage) external onlyManager {
         moduleCore.updatePsmBaseRedemptionFeePrecentage(newPsmBaseRedemptionFeePrecentage);
     }
 
     /**
-     * @dev Pause this contract
+     * @notice Pause this contract
      */
     function pause() external onlyManager {
         _pause();
     }
 
     /**
-     * @dev Unpause this contract
+     * @notice Unpause this contract
      */
     function unpause() external onlyManager {
         _unpause();

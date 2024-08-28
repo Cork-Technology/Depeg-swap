@@ -28,21 +28,58 @@ interface IAssetFactory {
     /// @param lv Address of LV(Liquidity Vault) contract
     event LvAssetDeployed(address indexed ra, address indexed pa, address indexed lv);
 
+    /**
+     * @notice for getting list of deployed Assets with this factory
+     * @param page page number
+     * @param limit number of entries per page
+     * @return ra list of deployed RA assets
+     * @return lv list of deployed LV assets
+     */
     function getDeployedAssets(uint8 page, uint8 limit)
         external
         view
         returns (address[] memory ra, address[] memory lv);
 
+    /**
+     * @notice for safety checks in psm core, also act as kind of like a registry
+     * @param asset the address of Asset contract
+     */
     function isDeployed(address asset) external view returns (bool);
 
+    /**
+     * @notice for getting list of deployed SwapAssets with this factory
+     * @param ra Address of RA
+     * @param pa Address of PA
+     * @param page page number
+     * @param limit number of entries per page
+     * @return ct list of deployed CT assets
+     * @return ds list of deployed DS assets
+     */
     function getDeployedSwapAssets(address ra, address pa, uint8 page, uint8 limit)
         external
         view
         returns (address[] memory ct, address[] memory ds);
 
+    /**
+     * @notice deploys new Swap Assets for given RA & PA
+     * @param ra Address of RA
+     * @param pa Address of PA
+     * @param owner Address of asset owners
+     * @param expiry expiry timestamp
+     * @param psmExchangeRate exchange rate for this pair
+     * @return ct new CT contract address
+     * @return ds new DS contract address
+     */
     function deploySwapAssets(address ra, address pa, address owner, uint256 expiry, uint256 psmExchangeRate)
         external
         returns (address ct, address ds);
 
+    /**
+     * @notice deploys new LV Assets for given RA & PA
+     * @param ra Address of RA
+     * @param pa Address of PA
+     * @param owner Address of asset owners
+     * @return lv new LV contract address
+     */
     function deployLv(address ra, address pa, address owner) external returns (address lv);
 }
