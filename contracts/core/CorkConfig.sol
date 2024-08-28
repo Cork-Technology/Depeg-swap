@@ -1,10 +1,9 @@
-// SPDX-License-Identifier: UNLICENSED
-pragma solidity ^0.8.0;
+pragma solidity 0.8.24;
 
 import {AccessControl} from "@openzeppelin/contracts/access/AccessControl.sol";
 import {Pausable} from "@openzeppelin/contracts/utils/Pausable.sol";
 import {Initialize} from "../interfaces/Init.sol";
-import "../libraries/Pair.sol";
+import {Id} from "../libraries/Pair.sol";
 
 /// @title CorkConfig - Cork Config Contract
 /// @notice Handles configurations
@@ -15,7 +14,7 @@ contract CorkConfig is AccessControl, Pausable {
     error CallerNotManager();
     error InvalidAddress();
 
-    /// @notice Emitted when a moduleCore variable set 
+    /// @notice Emitted when a moduleCore variable set
     /// @param moduleCore Address of Modulecore contract
     event ModuleCoreSet(address moduleCore);
 
@@ -45,14 +44,8 @@ contract CorkConfig is AccessControl, Pausable {
     /**
      * @dev Initialize Module Core
      */
-    function initializeModuleCore(
-        address pa,
-        address ra,
-        uint256 lvFee,
-        uint256 lvAmmWaDepositThreshold,
-        uint256 lvAmmCtDepositThreshold
-    ) external onlyManager {
-        moduleCore.initialize(pa, ra, lvFee, lvAmmWaDepositThreshold, lvAmmCtDepositThreshold);
+    function initializeModuleCore(address pa, address ra, uint256 lvFee, uint256 initialDsPrice) external onlyManager {
+        moduleCore.initialize(pa, ra, lvFee, initialDsPrice);
     }
 
     /**
@@ -69,21 +62,37 @@ contract CorkConfig is AccessControl, Pausable {
     /**
      * @dev Updates fee rates for psm repurchase
      */
-    function updateRepurchaseFeeRate(
-        Id id,
-        uint256 newRepurchaseFeePrecentage        
-    ) external onlyManager {
+    function updateRepurchaseFeeRate(Id id, uint256 newRepurchaseFeePrecentage) external onlyManager {
         moduleCore.updateRepurchaseFeeRate(id, newRepurchaseFeePrecentage);
     }
 
     /**
-     * @dev Updates earlyFeeRedemption rates 
+     * @dev Updates earlyFeeRedemption rates
      */
-    function updateEarlyRedemptionFeeRate(
-        Id id,
-        uint256 newEarlyRedemptionFeeRate        
-    ) external onlyManager {
+    function updateEarlyRedemptionFeeRate(Id id, uint256 newEarlyRedemptionFeeRate) external onlyManager {
         moduleCore.updateEarlyRedemptionFeeRate(id, newEarlyRedemptionFeeRate);
+    }
+
+    /**
+     * @dev Updates pausing status of PSM and LV pools
+     */
+    function updatePoolsStatus(
+        Id id,
+        bool isPSMDepositPaused,
+        bool isPSMWithdrawalPaused,
+        bool isLVDepositPaused,
+        bool isLVWithdrawalPaused
+    ) external onlyManager {
+        moduleCore.updatePoolsStatus(
+            id, isPSMDepositPaused, isPSMWithdrawalPaused, isLVDepositPaused, isLVWithdrawalPaused
+        );
+    }
+
+    /**
+     * @dev Updates base redemption fee percentage
+     */
+    function updatePsmBaseRedemptionFeePrecentage(uint256 newPsmBaseRedemptionFeePrecentage) external onlyManager {
+        moduleCore.updatePsmBaseRedemptionFeePrecentage(newPsmBaseRedemptionFeePrecentage);
     }
 
     /**

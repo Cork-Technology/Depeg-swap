@@ -1,8 +1,7 @@
-// SPDX-License-Identifier: UNLICENSED
-pragma solidity ^0.8.20;
-import "../core/assets/Asset.sol";
-import "./SignatureHelperLib.sol";
-import "../interfaces/IRates.sol";
+pragma solidity 0.8.24;
+
+import {Asset} from "../core/assets/Asset.sol";
+import {Signature, MinimalSignatureHelper} from "./SignatureHelperLib.sol";
 
 struct DepegSwap {
     bool expiredEventEmitted;
@@ -10,7 +9,6 @@ struct DepegSwap {
     address ct;
     /// @dev right now this the RA:CT AMM pair address
     address ammPair;
-    uint256 dsRedeemed;
     uint256 ctRedeemed;
 }
 
@@ -21,42 +19,16 @@ library DepegSwapLibrary {
         return Asset(self._address).isExpired();
     }
 
-    function isInitialized(
-        DepegSwap storage self
-    ) internal view returns (bool) {
+    function isInitialized(DepegSwap storage self) internal view returns (bool) {
         return self._address != address(0) && self.ct != address(0);
     }
 
-    function exchangeRate(
-        DepegSwap storage self
-    ) internal view returns (uint256) {
+    function exchangeRate(DepegSwap storage self) internal view returns (uint256) {
         return Asset(self._address).exchangeRate();
     }
 
-    function rates(
-        DepegSwap storage self
-    ) internal view returns (uint256 rate) {
-        uint256 dsRate = IRates(self._address).exchangeRate();
-        uint256 ctRate = IRates(self.ct).exchangeRate();
-
-        assert(dsRate == ctRate);
-        rate = dsRate;
-    }
-
-    function initialize(
-        address _address,
-        address ct,
-        address ammPair
-    ) internal pure returns (DepegSwap memory) {
-        return
-            DepegSwap({
-                expiredEventEmitted: false,
-                _address: _address,
-                ammPair: ammPair,
-                ct: ct,
-                dsRedeemed: 0,
-                ctRedeemed: 0
-            });
+    function initialize(address _address, address ct, address ammPair) internal pure returns (DepegSwap memory) {
+        return DepegSwap({expiredEventEmitted: false, _address: _address, ammPair: ammPair, ct: ct, ctRedeemed: 0});
     }
 
     function permit(
@@ -69,15 +41,7 @@ library DepegSwapLibrary {
     ) internal {
         Signature memory sig = MinimalSignatureHelper.split(rawSig);
 
-        Asset(contract_).permit(
-            owner,
-            spender,
-            value,
-            deadline,
-            sig.v,
-            sig.r,
-            sig.s
-        );
+        Asset(contract_).permit(owner, spender, value, deadline, sig.v, sig.r, sig.s);
     }
 
     function issue(DepegSwap memory self, address to, uint256 amount) internal {

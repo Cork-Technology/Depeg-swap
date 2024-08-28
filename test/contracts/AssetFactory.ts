@@ -3,6 +3,7 @@ import {
   loadFixture,
 } from "@nomicfoundation/hardhat-toolbox-viem/network-helpers";
 import { expect } from "chai";
+import { ethers } from "ethers";
 import hre from "hardhat";
 
 import { Address, formatEther, parseEther, WalletClient } from "viem";
@@ -16,7 +17,8 @@ describe("Asset Factory", function () {
   }: ReturnType<typeof helper.getSigners> = {} as any;
 
   let assetFactory: Awaited<ReturnType<typeof deployFactory>>;
-  
+  let checksummedSecondSigner: Address;
+
   const deployFactory = async () => {
     return await hre.viem.deployContract("AssetFactory", [], {
       client: {
@@ -25,13 +27,19 @@ describe("Asset Factory", function () {
     });
   };
 
+  async function getCheckSummedAdrress(address: Address) {
+    return ethers.utils.getAddress(address) as Address;
+  }
+
   before(async () => {
     const __signers = await hre.viem.getWalletClients();
-    ({ defaultSigner, signers } = helper.getSigners(__signers));
-    secondSigner = signers[1];
+    ({ defaultSigner, secondSigner, signers } = helper.getSigners(__signers));
   });
 
   beforeEach(async () => {
+    checksummedSecondSigner = ethers.utils.getAddress(
+      secondSigner.account.address
+    ) as Address;
     assetFactory = await loadFixture(deployFactory);
 
     await assetFactory.write.initialize([defaultSigner.account.address], {
@@ -41,72 +49,97 @@ describe("Asset Factory", function () {
 
   it("should deploy AssetFactory", async function () {
     expect(assetFactory).to.be.ok;
+    expect(await assetFactory.read.MAX_LIMIT()).to.equal(10);
   });
 
-  it("should deploy swap assets", async function () {
-    const { ra, pa } = await helper.backedAssets();
+  describe("initialize", function () {
+    it("Revert initialize when Already initialized", async function () {
+      await expect(
+        assetFactory.write.initialize([defaultSigner.account.address], {
+          account: defaultSigner.account,
+        })
+      ).to.be.rejectedWith(`InvalidInitialization`);
+    });
+  });
 
-    // deploy lv to signal that a pair exist
-    await assetFactory.write.deployLv([
-      ra.address,
-      pa.address,
-      defaultSigner.account.address,
-    ]);
+  describe("deployLv", function () {
+    it("Revert deployLv when called by non owner", async function () {
+      const { ra, pa } = await helper.backedAssets();
+      await expect(
+        assetFactory.write.deployLv(
+          [ra.address, pa.address, defaultSigner.account.address],
+          {
+            account: secondSigner.account,
+          }
+        )
+      ).to.be.rejectedWith(
+        `OwnableUnauthorizedAccount("${checksummedSecondSigner}")`
+      );
+    });
+  });
 
-    await assetFactory.write.deploySwapAssets([
-      ra.address,
-      pa.address,
-      defaultSigner.account.address,
-      BigInt(helper.expiry(100000)),
-      parseEther("1"),
-    ]);
+  describe("getDeployedAssets", function () {
+    it("getDeployedAssets should work correctly", async function () {
+      let lv: Address[] = [];
+      let ra: Address[] = [];
+      let pa: Address[] = [];
+      for (let i = 0; i < 10; i++) {
+        const backedAssets = await helper.backedAssets();
+        pa.push(backedAssets.pa.address);
+        ra.push(backedAssets.ra.address);
+        await assetFactory.write.deployLv([
+          ra[i],
+          pa[i],
+          defaultSigner.account.address,
+        ]);
+        const event = await assetFactory.getEvents
+          .LvAssetDeployed({
+            ra: ra[i]!,
+          })
+          .then((e) => e[0]);
+        lv.push(event.args.lv!);
+      }
+      let assets = await assetFactory.read.getDeployedAssets([0, 5]);
+      expect(assets[0].length).to.equal(5);
+      expect(assets[1].length).to.equal(5);
+      for (let i = 0; i < 5; i++) {
+        expect(assets[0][i]).to.equal(await getCheckSummedAdrress(ra[i]));
+        expect(assets[1][i]).to.equal(lv[i]);
+      }
 
-    const events = await assetFactory.getEvents.AssetDeployed({
-      ra: ra.address,
+      assets = await assetFactory.read.getDeployedAssets([1, 5]);
+      expect(assets[0].length).to.equal(5);
+      expect(assets[1].length).to.equal(5);
+      for (let i = 0; i < 5; i++) {
+        expect(assets[0][i]).to.equal(await getCheckSummedAdrress(ra[i + 5]));
+        expect(assets[1][i]).to.equal(lv[i + 5]);
+      }
     });
 
-    expect(events.length).to.equal(1);
-  });
-
-  it("should deploy swap sassets 100x", async function () {
-    const { ra, pa } = await helper.backedAssets();
-
-    // deploy lv to signal that a pair exist
-    await assetFactory.write.deployLv([
-      ra.address,
-      pa.address,
-      defaultSigner.account.address,
-    ]);
-
-    for (let i = 0; i < 100; i++) {
-      await assetFactory.write.deploySwapAssets([
-        ra.address,
-        pa.address,
-
-        defaultSigner.account.address,
-        BigInt(helper.expiry(100000)),
-        parseEther("1"),
-      ]);
-    }
-
-    const events = await assetFactory.getEvents.AssetDeployed({
-      ra: ra.address,
+    it("should correctly return empty array when queried more than current assets", async function () {
+      const assets = await assetFactory.read.getDeployedAssets([7, 10]);
+      expect(assets[0].length).to.equal(0);
+      expect(assets[1].length).to.equal(0);
     });
 
-    expect(events.length).to.equal(1);
+    it("Revert getDeployedAssets when passed limit is more than max allowed value", async function () {
+      await expect(
+        assetFactory.read.getDeployedAssets([1, 11])
+      ).to.be.rejectedWith(`LimitTooLong(10, 11)`);
+    });
   });
 
-  it("shoud get deployed swap assets paged", async function () {
-    const { ra, pa } = await helper.backedAssets();
+  describe("deploySwapAssets", function () {
+    it("should deploy swap assets", async function () {
+      const { ra, pa } = await helper.backedAssets();
 
-    // deploy lv to signal that a pair exist
-    await assetFactory.write.deployLv([
-      ra.address,
-      pa.address,
-      defaultSigner.account.address,
-    ]);
+      // deploy lv to signal that a pair exist
+      await assetFactory.write.deployLv([
+        ra.address,
+        pa.address,
+        defaultSigner.account.address,
+      ]);
 
-    for (let i = 0; i < 20; i++) {
       await assetFactory.write.deploySwapAssets([
         ra.address,
         pa.address,
@@ -114,64 +147,191 @@ describe("Asset Factory", function () {
         BigInt(helper.expiry(100000)),
         parseEther("1"),
       ]);
-    }
 
-    const assets = await assetFactory.read.getDeployedSwapAssets([
-      ra.address,
-      0,
-      10,
-    ]);
+      const events = await assetFactory.getEvents.AssetDeployed({
+        ra: ra.address,
+      });
 
-    expect(assets[0].length).to.equal(10);
-    expect(assets[1].length).to.equal(10);
+      expect(events.length).to.equal(1);
+    });
 
-    const noAsset = await assetFactory.read.getDeployedSwapAssets([
-      ra.address,
-      7,
-      10,
-    ]);
+    it("should deploy swap sassets 100x", async function () {
+      const { ra, pa } = await helper.backedAssets();
 
-    for (const asset1 of noAsset[0]) {
-      expect(asset1).to.be.equal("0x0000000000000000000000000000000000000000");
-    }
-
-    for (const asset of noAsset[1]) {
-      expect(asset).to.be.equal("0x0000000000000000000000000000000000000000");
-    }
-  });
-
-  it("should issue check is deployed swap assets", async function () {
-    const { ra, pa } = await helper.backedAssets();
-
-    // deploy lv to signal that a pair exist
-    await assetFactory.write.deployLv([
-      ra.address,
-      pa.address,
-      defaultSigner.account.address,
-    ]);
-
-    for (let i = 0; i < 10; i++) {
-      await assetFactory.write.deploySwapAssets([
+      // deploy lv to signal that a pair exist
+      await assetFactory.write.deployLv([
         ra.address,
         pa.address,
         defaultSigner.account.address,
-        BigInt(helper.expiry(100000)),
-        parseEther("1"),
       ]);
-    }
 
-    const assets = await assetFactory.read.getDeployedSwapAssets([
-      ra.address,
-      0,
-      10,
-    ]);
+      for (let i = 0; i < 100; i++) {
+        await assetFactory.write.deploySwapAssets([
+          ra.address,
+          pa.address,
 
-    expect(assets[0].length).to.equal(10);
-    expect(assets[1].length).to.equal(10);
+          defaultSigner.account.address,
+          BigInt(helper.expiry(100000)),
+          parseEther("1"),
+        ]);
+      }
 
-    for (const asset of assets[1]) {
-      const isDeployed = await assetFactory.read.isDeployed([asset]);
-      expect(isDeployed).to.be.true;
-    }
+      const events = await assetFactory.getEvents.AssetDeployed({
+        ra: ra.address,
+      });
+
+      expect(events.length).to.equal(1);
+    });
+
+    it("Revert deploySwapAssets when called by non owner", async function () {
+      const { ra, pa } = await helper.backedAssets();
+      await expect(
+        assetFactory.write.deploySwapAssets(
+          [
+            ra.address,
+            pa.address,
+            defaultSigner.account.address,
+            BigInt(helper.expiry(100000)),
+            parseEther("1"),
+          ],
+          {
+            account: secondSigner.account,
+          }
+        )
+      ).to.be.rejectedWith(
+        `OwnableUnauthorizedAccount("${checksummedSecondSigner}")`
+      );
+    });
+
+    it("Revert deploySwapAssets when passed Invalid RA/PA", async function () {
+      const { ra, pa } = await helper.backedAssets();
+      await expect(
+        assetFactory.write.deploySwapAssets([
+          ra.address,
+          pa.address,
+          defaultSigner.account.address,
+          BigInt(helper.expiry(100000)),
+          parseEther("1"),
+        ])
+      ).to.be.rejectedWith(
+        `NotExist("${await getCheckSummedAdrress(
+          ra.address
+        )}", "${await getCheckSummedAdrress(pa.address)}")`
+      );
+    });
+  });
+
+  describe("getDeployedSwapAssets", function () {
+    it("getDeployedSwapAssets should get deployed swap assets paged correctly", async function () {
+      const { ra, pa } = await helper.backedAssets();
+
+      // deploy lv to signal that a pair exist
+      await assetFactory.write.deployLv([
+        ra.address,
+        pa.address,
+        defaultSigner.account.address,
+      ]);
+
+      let ct: Address[] = [];
+      let ds: Address[] = [];
+      for (let i = 0; i < 20; i++) {
+        await assetFactory.write.deploySwapAssets([
+          ra.address,
+          pa.address,
+          defaultSigner.account.address,
+          BigInt(helper.expiry(100000)),
+          parseEther("1"),
+        ]);
+        const event = await assetFactory.getEvents
+          .AssetDeployed({
+            ra: ra.address!,
+          })
+          .then((e) => e[0]);
+        ct.push(event.args.ct!);
+        ds.push(event.args.ds!);
+      }
+
+      let assets = await assetFactory.read.getDeployedSwapAssets([
+        ra.address,
+        pa.address,
+        0,
+        10,
+      ]);
+      expect(assets[0].length).to.equal(10);
+      expect(assets[1].length).to.equal(10);
+      for (let i = 0; i < 10; i++) {
+        expect(assets[0][i]).to.equal(ct[i]);
+        expect(assets[1][i]).to.equal(ds[i]);
+      }
+
+      assets = await assetFactory.read.getDeployedSwapAssets([
+        ra.address,
+        pa.address,
+        1,
+        10,
+      ]);
+      expect(assets[0].length).to.equal(10);
+      expect(assets[1].length).to.equal(10);
+      for (let i = 0; i < 10; i++) {
+        expect(assets[0][i]).to.equal(ct[i + 10]);
+        expect(assets[1][i]).to.equal(ds[i + 10]);
+      }
+    });
+
+    it("should correctly return empty array when queried more than current assets", async function () {
+      const { ra, pa } = await helper.backedAssets();
+      const assets = await assetFactory.read.getDeployedSwapAssets([
+        ra.address,pa.address,
+        7,
+        10,
+      ]);
+      expect(assets[0].length).to.equal(0);
+      expect(assets[1].length).to.equal(0);
+    });
+
+    it("Revert getDeployedSwapAssets when passed limit is more than max allowed value", async function () {
+      const { ra, pa } = await helper.backedAssets();
+      await expect(
+        assetFactory.read.getDeployedSwapAssets([ra.address,pa.address, 1, 11])
+      ).to.be.rejectedWith(`LimitTooLong(10, 11)`);
+    });
+  });
+
+  describe("isDeployed", function () {
+    it("isDeployed should correctly check if swap assets deployed", async function () {
+      const { ra, pa } = await helper.backedAssets();
+
+      // deploy lv to signal that a pair exist
+      await assetFactory.write.deployLv([
+        ra.address,
+        pa.address,
+        defaultSigner.account.address,
+      ]);
+
+      for (let i = 0; i < 10; i++) {
+        await assetFactory.write.deploySwapAssets([
+          ra.address,
+          pa.address,
+          defaultSigner.account.address,
+          BigInt(helper.expiry(100000)),
+          parseEther("1"),
+        ]);
+      }
+
+      const assets = await assetFactory.read.getDeployedSwapAssets([
+        ra.address,
+        pa.address,
+        0,
+        10,
+      ]);
+
+      expect(assets[0].length).to.equal(10);
+      expect(assets[1].length).to.equal(10);
+
+      for (const asset of assets[1]) {
+        const isDeployed = await assetFactory.read.isDeployed([asset]);
+        expect(isDeployed).to.be.true;
+      }
+    });
   });
 });

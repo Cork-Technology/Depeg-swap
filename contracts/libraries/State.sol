@@ -1,11 +1,10 @@
-// SPDX-License-Identifier: UNLICENSED
-pragma solidity ^0.8.20;
+pragma solidity 0.8.24;
 
-import "./Pair.sol";
-import "./RedemptionAssetManagerLib.sol";
-import "./VaultConfig.sol";
-import "./LvAssetLib.sol";
-import "@openzeppelin/contracts/utils/structs/BitMaps.sol";
+import {Pair} from "./Pair.sol";
+import {PsmRedemptionAssetManager} from "./RedemptionAssetManagerLib.sol";
+import {LvAsset} from "./LvAssetLib.sol";
+import {BitMaps} from "@openzeppelin/contracts/utils/structs/BitMaps.sol";
+import {DepegSwap} from "./DepegSwapLib.sol";
 
 // as there are some fields that are used in PSM but not in LV
 struct State {
@@ -20,11 +19,12 @@ struct State {
 
 struct PsmState {
     Balances balances;
-    // TODO : make a function to update this
     uint256 repurchaseFeePrecentage;
     BitMaps.BitMap liquiditySeparated;
     /// @dev dsId => PsmPoolArchive
     mapping(uint256 => PsmPoolArchive) poolArchive;
+    bool isDepositPaused;
+    bool isWithdrawalPaused;
 }
 
 struct PsmPoolArchive {
@@ -33,7 +33,6 @@ struct PsmPoolArchive {
     uint256 ctAttributed;
 }
 
-// TODO : to PSM balance
 struct Balances {
     PsmRedemptionAssetManager ra;
     uint256 dsBalance;
@@ -47,6 +46,7 @@ struct VaultPool {
     /// @dev user => (dsId => amount)
     mapping(address => uint256) withdrawEligible;
 }
+
 struct VaultWithdrawalPool {
     uint256 atrributedLv;
     uint256 raExchangeRate;
@@ -59,6 +59,7 @@ struct VaultWithdrawalPool {
     // and for now will just sit there until rationed again at next expiry.
     uint256 stagnatedPaBalance;
 }
+
 struct VaultAmmLiquidityPool {
     uint256 balance;
 }
@@ -69,18 +70,13 @@ struct VaultState {
     LvAsset lv;
     BitMaps.BitMap lpLiquidated;
     VaultPool pool;
+    uint256 initialDsPrice;
 }
 
-// TODO : remove all threshold
 struct VaultConfig {
     // 1 % = 1e18
     uint256 fee;
-    //
-    uint256 lpRaBalance;
-    uint256 ammRaDepositThreshold;
-    //
-    uint256 ammCtDepositThreshold;
-    uint256 lpCtBalance;
-    // 
     uint256 lpBalance;
+    bool isDepositPaused;
+    bool isWithdrawalPaused;
 }

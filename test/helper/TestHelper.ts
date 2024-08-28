@@ -13,10 +13,19 @@ import {
   verifyTypedData,
   WalletClient,
 } from "viem";
-import UNIV2FACTORY from "@uniswap/v2-core/build/UniswapV2Factory.json";
+import UNIV2FACTORY from "./ext-abi/uni-v2-factory.json";
 import UNIV2ROUTER from "./ext-abi/uni-v2-router.json";
+import { ethers } from "ethers";
 
 const DEVISOR = BigInt(1e18);
+export const DEFAULT_BASE_REDEMPTION_PRECENTAGE = parseEther("5");
+
+export function calculatePrecentage(
+  number: bigint,
+  percent: bigint = DEFAULT_BASE_REDEMPTION_PRECENTAGE
+) {
+  return (number * DEVISOR * percent) / parseEther("100") / DEVISOR;
+}
 
 export function calculateMinimumLiquidity(amount: bigint) {
   // 1e16 is the minimum liquidity(10e3)
@@ -31,6 +40,16 @@ export function encodeAsUQ112x112(amount: bigint) {
 
 export function decodeUQ112x112(amount: bigint) {
   return amount / BigInt(2 ** 112);
+}
+
+export function toEthersBigNumer(v: bigint | string) {
+  if (typeof v == "bigint") {
+    return ethers.BigNumber.from(v);
+  }
+
+  if (typeof v == "string") {
+    return ethers.BigNumber.from(parseEther(v));
+  }
 }
 
 export function nowTimestampInSeconds() {
@@ -100,11 +119,12 @@ export async function deployWeth() {
   };
 }
 
-export async function deployFlashSwapRouter() {
+export async function deployFlashSwapRouter(mathHelper: Address) {
   const mathLib = await hre.viem.deployContract("SwapperMathLibrary");
   const contract = await hre.viem.deployContract("RouterState", [], {
     libraries: {
       SwapperMathLibrary: mathLib.address,
+      MathHelper: mathHelper,
     },
   });
 
@@ -114,7 +134,7 @@ export async function deployFlashSwapRouter() {
 }
 
 // will default use the first wallet client
-export async function deployUniV2Factory() {
+export async function deployUniV2Factory(flashswap: Address) {
   const signers = await hre.viem.getWalletClients();
   const { defaultSigner } = getSigners(signers);
 
@@ -122,7 +142,7 @@ export async function deployUniV2Factory() {
     abi: UNIV2FACTORY.abi,
     bytecode: `0x${UNIV2FACTORY.bytecode}`,
     account: defaultSigner.account,
-    args: [defaultSigner.account.address],
+    args: [defaultSigner.account.address, flashswap],
   });
 
   const client = await hre.viem.getPublicClient();
@@ -158,7 +178,8 @@ export async function deployUniV2Router(
 
 export async function deployModuleCore(
   swapAssetFactory: Address,
-  config: Address
+  config: Address,
+  basePsmRedemptionFee: bigint
 ) {
   const signers = await hre.viem.getWalletClients();
   const { defaultSigner } = getSigners(signers);
@@ -170,8 +191,10 @@ export async function deployModuleCore(
     },
   });
 
-  const dsFlashSwapRouter = await deployFlashSwapRouter();
-  const univ2Factory = await deployUniV2Factory();
+  const dsFlashSwapRouter = await deployFlashSwapRouter(mathLib.address);
+  const univ2Factory = await deployUniV2Factory(
+    dsFlashSwapRouter.contract.address
+  );
   const weth = await deployWeth();
   const univ2Router = await deployUniV2Router(
     weth.contract.address,
@@ -187,6 +210,7 @@ export async function deployModuleCore(
       dsFlashSwapRouter.contract.address,
       univ2Router,
       config,
+      basePsmRedemptionFee,
     ],
     {
       client: {
@@ -199,7 +223,10 @@ export async function deployModuleCore(
     }
   );
 
-  await dsFlashSwapRouter.contract.write.initialize([contract.address]);
+  await dsFlashSwapRouter.contract.write.initialize([
+    contract.address,
+    univ2Router,
+  ]);
 
   return {
     contract,
@@ -216,8 +243,7 @@ export type InitializeNewPsmArg = {
   pa: Address;
   ra: Address;
   lvFee: bigint;
-  lvAmmWaDepositThreshold: bigint;
-  lvAmmCtDepositThreshold: bigint;
+  initialDsPrice?: bigint;
 };
 
 export async function initializeNewPsmLv(arg: InitializeNewPsmArg) {
@@ -225,23 +251,15 @@ export async function initializeNewPsmLv(arg: InitializeNewPsmArg) {
   const { defaultSigner } = getSigners(signers);
   const contract = await hre.viem.getContractAt("ModuleCore", arg.moduleCore);
   const configContract = await hre.viem.getContractAt("CorkConfig", arg.config);
+  const dsPrice = arg.initialDsPrice ?? parseEther("0.1");
 
   await configContract.write.setModuleCore([arg.moduleCore], {
     account: defaultSigner.account,
   });
 
-  await configContract.write.initializeModuleCore(
-    [
-      arg.pa,
-      arg.ra,
-      arg.lvFee,
-      arg.lvAmmWaDepositThreshold,
-      arg.lvAmmCtDepositThreshold,
-    ],
-    {
-      account: defaultSigner.account,
-    }
-  );
+  await configContract.write.initializeModuleCore([arg.pa, arg.ra, arg.lvFee, dsPrice], {
+    account: defaultSigner.account,
+  });
 
   const events = await contract.getEvents.Initialized({
     pa: arg.pa,
@@ -276,7 +294,7 @@ export async function issueNewSwapAssets(arg: IssueNewSwapAssetsArg) {
 
   const rate = arg.rates ?? parseEther("1");
   // 10% by default
-  const repurchaseFeePercent = arg.repurhcaseFeePrecent ?? parseEther("10");
+  const repurchaseFeePercent = arg.repurhcaseFeePrecent ?? parseEther("5");
 
   const contract = await hre.viem.getContractAt("ModuleCore", arg.moduleCore);
   const Id = await contract.read.getId([arg.pa, arg.ra]);
@@ -440,42 +458,51 @@ export async function permit(arg: PermitArg) {
   return sig;
 }
 
-export async function onlymoduleCoreWithFactory() {
+export async function onlymoduleCoreWithFactory(basePsmRedemptionFee: bigint) {
   const factory = await deployAssetFactory();
   const config = await deployCorkConfig();
-  const moduleCore = await deployModuleCore(
-    factory.contract.address,
-    config.contract.address
-  );
-  await factory.contract.write.initialize([moduleCore.contract.address]);
+  const { contract, dsFlashSwapRouter, univ2Factory, univ2Router, weth } =
+    await deployModuleCore(
+      factory.contract.address,
+      config.contract.address,
+      basePsmRedemptionFee
+    );
+  const moduleCore = contract;
+  await factory.contract.write.initialize([moduleCore.address]);
 
   return {
     factory,
     moduleCore,
     config,
+    dsFlashSwapRouter,
+    univ2Factory,
+    univ2Router,
+    weth,
   };
 }
 
-export async function ModuleCoreWithInitializedPsmLv() {
+export async function ModuleCoreWithInitializedPsmLv(
+  basePsmRedemptionFee: bigint = DEFAULT_BASE_REDEMPTION_PRECENTAGE
+) {
   const {
     factory,
     moduleCore: moduleCore,
     config,
-  } = await onlymoduleCoreWithFactory();
+    dsFlashSwapRouter,
+    univ2Factory,
+    univ2Router,
+    weth,
+  } = await onlymoduleCoreWithFactory(basePsmRedemptionFee);
   const { pa, ra } = await backedAssets();
 
-  const fee = parseEther("10");
-  // 0 for now cause we dont have any amm
-  const depositThreshold = parseEther("0");
+  const fee = parseEther("5");
 
   const { Id, lv } = await initializeNewPsmLv({
-    moduleCore: moduleCore.contract.address,
+    moduleCore: moduleCore.address,
     config: config.contract.address,
     pa: pa.address,
     ra: ra.address,
     lvFee: fee,
-    lvAmmWaDepositThreshold: depositThreshold,
-    lvAmmCtDepositThreshold: depositThreshold,
   });
 
   return {
@@ -487,8 +514,10 @@ export async function ModuleCoreWithInitializedPsmLv() {
     ra,
     Id: Id!,
     lvFee: fee,
-    lvAmmWaDepositThreshold: depositThreshold,
-    lvAmmCtDepositThreshold: depositThreshold,
+    dsFlashSwapRouter,
+    univ2Factory,
+    univ2Router,
+    weth,
   };
 }
 

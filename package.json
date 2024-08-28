@@ -6,6 +6,7 @@
   "license": "MIT",
   "scripts": {
     "test": "npx hardhat test",
+    "build": "npx hardhat compile",
     "lint:contract": "npx solhint 'contracts/**/*.sol'",
     "lint:contract:fix": "npx solhint 'contracts/**/*.sol' --fix"
   },
@@ -24,6 +25,8 @@
     "chai": "^4.2.0",
     "ethereum-waffle": "^4.0.10",
     "hardhat": "^2.22.3",
+    "hardhat-deploy": "^0.12.4",
+    "hardhat-deploy-ethers": "^0.4.2",
     "hardhat-gas-reporter": "^2.1.1",
     "solidity-coverage": "^0.8.0",
     "ts-node": ">=8.0.0",

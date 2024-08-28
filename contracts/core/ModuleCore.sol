@@ -1,57 +1,35 @@
-// SPDX-License-Identifier: UNLICENSED
-pragma solidity ^0.8.0;
-import "../libraries/PsmLib.sol";
-import "../libraries/VaultLib.sol";
-import "../libraries/Pair.sol";
-import "../libraries/MathHelper.sol";
-import "../interfaces/IPSMcore.sol";
-import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
-import "../interfaces/IAssetFactory.sol";
-import "../libraries/State.sol";
-import "./ModuleState.sol";
-import "../interfaces/ICommon.sol";
-import "./Psm.sol";
-import "./Vault.sol";
-import "../interfaces/Init.sol";
-import "../interfaces/uniswap-v2/factory.sol";
-import "./flash-swaps/RouterState.sol";
+pragma solidity 0.8.24;
 
-// TODO : make entrypoint that do not rely on permit with function overloading or different function altogether
+import {PsmLibrary} from "../libraries/PsmLib.sol";
+import {VaultLibrary, VaultConfigLibrary} from "../libraries/VaultLib.sol";
+import {Id, Pair, PairLibrary} from "../libraries/Pair.sol";
+import {IAssetFactory} from "../interfaces/IAssetFactory.sol";
+import {State} from "../libraries/State.sol";
+import {ModuleState} from "./ModuleState.sol";
+import {PsmCore} from "./Psm.sol";
+import {VaultCore} from "./Vault.sol";
+import {Initialize} from "../interfaces/Init.sol";
+
 contract ModuleCore is PsmCore, Initialize, VaultCore {
     using PsmLibrary for State;
     using PairLibrary for Pair;
 
     constructor(
-        address swapAssetFactory,
-        address ammFactory,
-        address flashSwapRouter,
-        address ammRouter,
-        address config
+        address _swapAssetFactory,
+        address _ammFactory,
+        address _flashSwapRouter,
+        address _ammRouter,
+        address _config,
+        uint256 _psmBaseRedemptionFeePrecentage
     )
-        ModuleState(
-            swapAssetFactory,
-            ammFactory,
-            flashSwapRouter,
-            ammRouter,
-            config
-        )
+        ModuleState(_swapAssetFactory, _ammFactory, _flashSwapRouter, _ammRouter, _config, _psmBaseRedemptionFeePrecentage)
     {}
 
     function getId(address pa, address ra) external pure returns (Id) {
         return PairLibrary.initalize(pa, ra).toId();
     }
 
-    // TODO : only allow to call this from config contract later or router
-    // TODO : make a pair id associated with it's interval.
-    // TODO : auto issue.
-    function initialize(
-        address pa,
-        address ra,
-        uint256 lvFee,
-        // TODO : maybe remove this threshold
-        uint256 lvAmmWaDepositThreshold,
-        uint256 lvAmmCtDepositThreshold
-    ) external override onlyConfig {
+    function initialize(address pa, address ra, uint256 lvFee, uint256 initialDsPrice) external override onlyConfig {
         Pair memory key = PairLibrary.initalize(pa, ra);
         Id id = key.toId();
 
@@ -61,105 +39,93 @@ contract ModuleCore is PsmCore, Initialize, VaultCore {
             revert AlreadyInitialized();
         }
 
-        IAssetFactory factory = IAssetFactory(swapAssetFactory);
+        IAssetFactory assetsFactory = IAssetFactory(SWAP_ASSET_FACTORY);
 
-        address lv = factory.deployLv(ra, pa, address(this));
+        address lv = assetsFactory.deployLv(ra, pa, address(this));
 
         PsmLibrary.initialize(state, key);
-        VaultLibrary.initialize(
-            state.vault,
-            lv,
-            lvFee,
-            lvAmmWaDepositThreshold,
-            lvAmmCtDepositThreshold,
-            ra
-        );
+        VaultLibrary.initialize(state.vault, lv, lvFee, ra, initialDsPrice);
 
         emit Initialized(id, pa, ra, lv);
     }
 
-    // TODO : only allow to call this from config contract later or router
-    function issueNewDs(
-        Id id,
-        uint256 expiry,
-        uint256 exchangeRates,
-        uint256 repurchaseFeePrecentage
-    ) external override onlyConfig onlyInitialized(id) {
+    function issueNewDs(Id id, uint256 expiry, uint256 exchangeRates, uint256 repurchaseFeePrecentage)
+        external
+        override
+        onlyConfig
+        onlyInitialized(id)
+    {
+        if (repurchaseFeePrecentage > 5 ether) {
+            revert InvalidFees();
+        }
         State storage state = states[id];
 
         address ra = state.info.pair1;
 
-        (address ct, address ds) = IAssetFactory(swapAssetFactory).deploySwapAssets(
-            ra,
-            state.info.pair0,
-            address(this),
-            expiry,
-            exchangeRates
-        );
-
         uint256 prevIdx = state.globalAssetIdx++;
         uint256 idx = state.globalAssetIdx;
 
+        (address ct, address ds) = IAssetFactory(SWAP_ASSET_FACTORY).deploySwapAssets(
+            ra, state.info.pair0, address(this), expiry, exchangeRates
+        );
+
         address ammPair = getAmmFactory().createPair(ra, ct);
 
-        PsmLibrary.onNewIssuance(
-            state,
-            ct,
-            ds,
-            ammPair,
-            idx,
-            prevIdx,
-            repurchaseFeePrecentage
-        );
+        PsmLibrary.onNewIssuance(state, ct, ds, ammPair, idx, prevIdx, repurchaseFeePrecentage);
 
-        // TODO : 0 for initial reserve for now, will be calculated later when rollover stragegy is implemented
-        getRouterCore().onNewIssuance(id, idx, ds, ammPair, 0);
+        getRouterCore().onNewIssuance(id, idx, ds, ammPair, 0, ra, ct);
 
-        VaultLibrary.onNewIssuance(
-            state,
-            prevIdx,
-            getRouterCore(),
-            getAmmRouter()
-        );
+        VaultLibrary.onNewIssuance(state, prevIdx, getRouterCore(), getAmmRouter());
 
         emit Issued(id, idx, expiry, ds, ct, ammPair);
     }
 
-    function updateRepurchaseFeeRate(
-        Id id,
-        uint256 newRepurchaseFeePrecentage        
-    ) external onlyConfig {
+    function updateRepurchaseFeeRate(Id id, uint256 newRepurchaseFeePrecentage) external onlyConfig {
         State storage state = states[id];
-        state.psm.repurchaseFeePrecentage = newRepurchaseFeePrecentage;
+        PsmLibrary.updateRepurchaseFeePercentage(state, newRepurchaseFeePrecentage);
 
         emit RepurchaseFeeRateUpdated(id, newRepurchaseFeePrecentage);
     }
 
-    function updateEarlyRedemptionFeeRate(
-        Id id,
-        uint256 newEarlyRedemptionFeeRate        
-    ) external onlyConfig {
+    function updateEarlyRedemptionFeeRate(Id id, uint256 newEarlyRedemptionFeeRate) external onlyConfig {
         State storage state = states[id];
         VaultConfigLibrary.updateFee(state.vault.config, newEarlyRedemptionFeeRate);
 
-        emit RepurchaseFeeRateUpdated(id, newEarlyRedemptionFeeRate);
+        emit EarlyRedemptionFeeRateUpdated(id, newEarlyRedemptionFeeRate);
+    }
+
+    function updatePoolsStatus(
+        Id id,
+        bool isPSMDepositPaused,
+        bool isPSMWithdrawalPaused,
+        bool isLVDepositPaused,
+        bool isLVWithdrawalPaused
+    ) external onlyConfig {
+        State storage state = states[id];
+        PsmLibrary.updatePoolsStatus(
+            state, isPSMDepositPaused, isPSMWithdrawalPaused, isLVDepositPaused, isLVWithdrawalPaused
+        );
+
+        emit PoolsStatusUpdated(id, isPSMDepositPaused, isPSMWithdrawalPaused, isLVDepositPaused, isLVWithdrawalPaused);
     }
 
     function lastDsId(Id id) external view override returns (uint256 dsId) {
         return states[id].globalAssetIdx;
     }
 
-    function underlyingAsset(
-        Id id
-    ) external view override returns (address ra, address pa) {
+    function underlyingAsset(Id id) external view override returns (address ra, address pa) {
         (ra, pa) = states[id].info.underlyingAsset();
     }
 
-    function swapAsset(
-        Id id,
-        uint256 dsId
-    ) external view override returns (address ct, address ds) {
+    function swapAsset(Id id, uint256 dsId) external view override returns (address ct, address ds) {
         ct = states[id].ds[dsId].ct;
         ds = states[id].ds[dsId]._address;
+    }
+
+    function updatePsmBaseRedemptionFeePrecentage(uint256 newPsmBaseRedemptionFeePrecentage) external onlyConfig {
+        if (newPsmBaseRedemptionFeePrecentage > 5 ether) {
+            revert InvalidFees();
+        }
+        psmBaseRedemptionFeePrecentage = newPsmBaseRedemptionFeePrecentage;
     }
 }

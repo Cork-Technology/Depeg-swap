@@ -1,7 +1,7 @@
-// SPDX-License-Identifier: UNLICENSED
-pragma solidity ^0.8.0;
-import "./DepegSwapLib.sol";
-import "./LvAssetLib.sol";
+pragma solidity 0.8.24;
+
+import {DepegSwap, DepegSwapLibrary} from "./DepegSwapLib.sol";
+import {LvAsset, LvAssetLibrary} from "./LvAssetLib.sol";
 
 library Guard {
     using DepegSwapLibrary for DepegSwap;

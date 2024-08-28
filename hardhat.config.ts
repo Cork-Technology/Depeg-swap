@@ -1,5 +1,7 @@
 import { HardhatUserConfig } from "hardhat/config";
-
+import "@nomicfoundation/hardhat-ethers";
+import "hardhat-deploy";
+import "hardhat-deploy-ethers";
 import "@nomicfoundation/hardhat-toolbox-viem";
 import "hardhat-gas-reporter";
 import "@nomicfoundation/hardhat-viem";
@@ -7,6 +9,7 @@ import loadEnv from "dotenv";
 import "hardhat-contract-sizer";
 import chai from "chai";
 import { solidity } from "ethereum-waffle";
+import "solidity-coverage";
 
 chai.use(solidity);
 // import "@nomicfoundation/hardhat-chai-matchers";
@@ -27,10 +30,15 @@ const config: HardhatUserConfig = {
   networks: {
     hardhat: {},
     sepolia: {
-      url: "https://rpc.sepolia.org	",
-      chainId: 1337,
+      url: "https://eth-sepolia.api.onfinality.io/public",
+      chainId: 11155111,
       accounts: [process.env.PRIVATE_KEY!],
+      enableTransientStorage: true,
+      loggingEnabled: true,
     },
+  },
+  ignition: {
+    requiredConfirmations: 0, 
   },
   gasReporter: {
     enabled: process.env.REPORT_GAS === "true" ? true : false,
@@ -48,8 +56,10 @@ const config: HardhatUserConfig = {
       "MathHelper",
       "VaultLibrary",
       "PsmLibrary",
+      "RouterState",
     ],
   },
+
 };
 
 export default config;

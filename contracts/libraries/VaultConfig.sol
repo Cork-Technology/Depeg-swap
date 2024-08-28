@@ -1,41 +1,20 @@
-// SPDX-License-Identifier: UNLICENSED
-pragma solidity ^0.8.0;
-import "./State.sol";
+pragma solidity 0.8.24;
+
+import {ICommon} from "../interfaces/ICommon.sol";
+import {VaultConfig} from "./State.sol";
 
 library VaultConfigLibrary {
-    function initialize(
-        uint256 fee,
-        uint256 ammWaDepositThreshold,
-        uint256 ammCtDepositThreshold
-    ) internal pure returns (VaultConfig memory) {
-        return
-            VaultConfig({
-                fee: fee,
-                ammRaDepositThreshold: ammWaDepositThreshold,
-                lpRaBalance: 0,
-                lpCtBalance: 0,
-                ammCtDepositThreshold: ammCtDepositThreshold,
-                lpBalance: 0
-            });
+    function initialize(uint256 fee) internal pure returns (VaultConfig memory) {
+        if (fee > 5 ether) {
+            revert ICommon.InvalidFees();
+        }
+        return VaultConfig({fee: fee, lpBalance: 0, isDepositPaused: false, isWithdrawalPaused: false});
     }
 
-    function mustProvideLiquidity(
-        VaultConfig memory self
-    ) internal pure returns (bool) {
-        return
-            (self.lpRaBalance > self.ammRaDepositThreshold) &&
-            (self.lpCtBalance > self.ammCtDepositThreshold);
-    }
-
-    function updateFee(VaultConfig memory self, uint256 fee) internal pure {
+    function updateFee(VaultConfig storage self, uint256 fee) internal {
+        if (fee > 5 ether) {
+            revert ICommon.InvalidFees();
+        }
         self.fee = fee;
     }
-
-    function updateAmmDepositThreshold(
-        VaultConfig memory self,
-        uint256 ammDepositThreshold
-    ) internal pure {
-        self.ammRaDepositThreshold = ammDepositThreshold;
-    }
-
 }
