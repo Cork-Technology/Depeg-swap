@@ -72,7 +72,7 @@ contract CorkConfig is AccessControl, Pausable {
     /**
      * @notice Updates fee rates for psm repurchase
      * @param id id of PSM
-     * @param newRepurchaseFeePrecentage new value of repurchase fees
+     * @param newRepurchaseFeePrecentage new value of repurchase fees, make sure it has 18 decimals(e.g 1% = 1e18)
      */
     function updateRepurchaseFeeRate(Id id, uint256 newRepurchaseFeePrecentage) external onlyManager {
         moduleCore.updateRepurchaseFeeRate(id, newRepurchaseFeePrecentage);
@@ -81,7 +81,7 @@ contract CorkConfig is AccessControl, Pausable {
     /**
      * @notice Updates earlyFeeRedemption rates
      * @param id id of PSM
-     * @param newEarlyRedemptionFeeRate new value of earlyRedemptin fees
+     * @param newEarlyRedemptionFeeRate new value of earlyRedemptin fees, make sure it has 18 decimals(e.g 1% = 1e18)
      */
     function updateEarlyRedemptionFeeRate(Id id, uint256 newEarlyRedemptionFeeRate) external onlyManager {
         moduleCore.updateEarlyRedemptionFeeRate(id, newEarlyRedemptionFeeRate);
@@ -109,7 +109,7 @@ contract CorkConfig is AccessControl, Pausable {
 
     /**
      * @notice Updates base redemption fee percentage
-     * @param newPsmBaseRedemptionFeePrecentage new value of fees
+     * @param newPsmBaseRedemptionFeePrecentage new value of fees, make sure it has 18 decimals(e.g 1% = 1e18)
      */
     function updatePsmBaseRedemptionFeePrecentage(uint256 newPsmBaseRedemptionFeePrecentage) external onlyManager {
         moduleCore.updatePsmBaseRedemptionFeePrecentage(newPsmBaseRedemptionFeePrecentage);
