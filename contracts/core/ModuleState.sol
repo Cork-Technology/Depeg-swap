@@ -1,4 +1,3 @@
-// SPDX-License-Identifier: UNLICENSED
 pragma solidity 0.8.24;
 
 import {Id} from "../libraries/Pair.sol";
@@ -8,7 +7,7 @@ import {PsmLibrary} from "../libraries/PsmLib.sol";
 import {IUniswapV2Factory} from "../interfaces/uniswap-v2/factory.sol";
 import {RouterState} from "./flash-swaps/FlashSwapRouter.sol";
 import {IUniswapV2Router02} from "../interfaces/uniswap-v2/RouterV2.sol";
-import {MutexLock} from "../libraries/MutexLock.sol";
+import {NoReentrant} from "../libraries/MutexLock.sol";
 
 abstract contract ModuleState is ICommon {
     using PsmLibrary for State;
@@ -50,6 +49,9 @@ abstract contract ModuleState is ICommon {
         address _config,
         uint256 _psmBaseRedemptionFeePrecentage
     ) {
+        if (psmBaseRedemptionFeePrecentage > 5 ether) {
+            revert InvalidFees();
+        }
         SWAP_ASSET_FACTORY = _swapAssetFactory;
         AMM_FACTORY = _ammFactory;
         DS_FLASHSWAP_ROUTER = _dsFlashSwapRouter;
@@ -114,9 +116,9 @@ abstract contract ModuleState is ICommon {
 
     /// @notice This will revert if the contract is locked
     modifier nonReentrant() {
-        if (MutexLock.isLocked()) revert StateLocked();
-        MutexLock.lock();
+        if (NoReentrant.acquired()) revert StateLocked();
+        NoReentrant.acquire();
         _;
-        MutexLock.unlock();
+        NoReentrant.release();
     }
 }

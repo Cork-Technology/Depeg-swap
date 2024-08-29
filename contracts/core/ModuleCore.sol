@@ -1,4 +1,3 @@
-// SPDX-License-Identifier: UNLICENSED
 pragma solidity 0.8.24;
 
 import {PsmLibrary} from "../libraries/PsmLib.sol";
@@ -30,7 +29,7 @@ contract ModuleCore is PsmCore, Initialize, VaultCore {
         return PairLibrary.initalize(pa, ra).toId();
     }
 
-    function initialize(address pa, address ra, uint256 lvFee) external override onlyConfig {
+    function initialize(address pa, address ra, uint256 lvFee, uint256 initialDsPrice) external override onlyConfig {
         Pair memory key = PairLibrary.initalize(pa, ra);
         Id id = key.toId();
 
@@ -45,7 +44,7 @@ contract ModuleCore is PsmCore, Initialize, VaultCore {
         address lv = assetsFactory.deployLv(ra, pa, address(this));
 
         PsmLibrary.initialize(state, key);
-        VaultLibrary.initialize(state.vault, lv, lvFee, ra);
+        VaultLibrary.initialize(state.vault, lv, lvFee, ra, initialDsPrice);
 
         emit Initialized(id, pa, ra, lv);
     }
@@ -56,6 +55,9 @@ contract ModuleCore is PsmCore, Initialize, VaultCore {
         onlyConfig
         onlyInitialized(id)
     {
+        if (repurchaseFeePrecentage > 5 ether) {
+            revert InvalidFees();
+        }
         State storage state = states[id];
 
         address ra = state.info.pair1;
@@ -121,6 +123,9 @@ contract ModuleCore is PsmCore, Initialize, VaultCore {
     }
 
     function updatePsmBaseRedemptionFeePrecentage(uint256 newPsmBaseRedemptionFeePrecentage) external onlyConfig {
+        if (newPsmBaseRedemptionFeePrecentage > 5 ether) {
+            revert InvalidFees();
+        }
         psmBaseRedemptionFeePrecentage = newPsmBaseRedemptionFeePrecentage;
     }
 }

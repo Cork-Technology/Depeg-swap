@@ -1,4 +1,3 @@
-// SPDX-License-Identifier: UNLICENSED
 pragma solidity 0.8.24;
 
 interface IAssetFactory {
@@ -21,7 +20,7 @@ interface IAssetFactory {
 
     function isDeployed(address asset) external view returns (bool);
 
-    function getDeployedSwapAssets(address ra, uint8 page, uint8 limit)
+    function getDeployedSwapAssets(address ra, address pa, uint8 page, uint8 limit)
         external
         view
         returns (address[] memory ct, address[] memory ds);

@@ -1,4 +1,3 @@
-// SPDX-License-Identifier: UNLICENSED
 pragma solidity 0.8.24;
 
 import {Id} from "../libraries/Pair.sol";
@@ -36,6 +35,9 @@ interface ICommon {
 
     /// @notice Thrown when user deposit with 0 amount
     error ZeroDeposit();
+
+    /// @notice Thrown this error when fees are more than 5%
+    error InvalidFees();
 
     /// @notice Emitted when a new LV and PSM is initialized with a given pair
     /// @param id The PSM id

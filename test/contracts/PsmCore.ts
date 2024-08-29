@@ -121,7 +121,7 @@ describe("PSM core", function () {
         Id,
         BigInt(expiryTime),
         parseEther("1"),
-        parseEther("10"),
+        parseEther("5"),
       ]);
 
       const events = await moduleCore.getEvents.Issued({
@@ -713,9 +713,9 @@ describe("PSM core", function () {
           parseEther("2"),
         ]);
 
-      expect(received).to.equal(parseEther("0.9"));
-      expect(feePrecentage).to.equal(parseEther("10"));
-      expect(fee).to.equal(parseEther("0.2"));
+      expect(received).to.equal(parseEther("0.95"));
+      expect(feePrecentage).to.equal(parseEther("5"));
+      expect(fee).to.equal(parseEther("0.1"));
       expect(exchangeRate).to.equal(parseEther("2"));
 
       await fixture.moduleCore.write.repurchase([fixture.Id, parseEther("2")]);
@@ -913,7 +913,7 @@ describe("PSM core", function () {
       ]);
       await expect(
         moduleCore.write.repurchase([fixture.Id, parseEther("2")])
-      ).to.be.rejectedWith(`InsufficientLiquidity(0, ${parseEther("0.9")})`);
+      ).to.be.rejectedWith(`InsufficientLiquidity(0, ${parseEther("0.95")})`);
     });
   });
 
@@ -937,7 +937,7 @@ describe("PSM core", function () {
         Id,
         BigInt(expiry),
         parseEther("1"),
-        parseEther("10"),
+        parseEther("5"),
       ]);
 
       const events = await fixture.moduleCore.getEvents.Issued({
@@ -962,71 +962,79 @@ describe("PSM core", function () {
     }
   });
 
-  it("should separate liquidity", async function () {
-    mintAmount = parseEther("10000");
+  describe("separate liquidity", function () {
+    it("should separate liquidity", async function () {
+      mintAmount = parseEther("10000");
 
-    await fixture.ra.write.approve([fixture.moduleCore.address, mintAmount]);
+      await fixture.ra.write.approve([fixture.moduleCore.address, mintAmount]);
 
-    await helper.mintRa(
-      fixture.ra.address,
-      defaultSigner.account.address,
-      mintAmount
-    );
+      await helper.mintRa(
+        fixture.ra.address,
+        defaultSigner.account.address,
+        mintAmount
+      );
 
-    pa.write.approve([fixture.moduleCore.address, parseEther("10000")]);
+      pa.write.approve([fixture.moduleCore.address, parseEther("10000")]);
 
-    const expiry = helper.expiry(expiryTime);
+      const expiry = helper.expiry(expiryTime);
 
-    await issueNewSwapAssets(expiry);
+      await issueNewSwapAssets(expiry);
 
-    await fixture.moduleCore.write.depositPsm([fixture.Id, parseEther("1000")]);
-    await time.increaseTo(expiry);
+      await fixture.moduleCore.write.depositPsm([
+        fixture.Id,
+        parseEther("1000"),
+      ]);
+      await time.increaseTo(expiry);
 
-    const newExpiry = helper.expiry(expiry * 2);
+      const newExpiry = helper.expiry(expiry * 2);
 
-    const { dsId, ct } = await helper.issueNewSwapAssets({
-      expiry: newExpiry,
-      moduleCore: fixture.moduleCore.address,
-      config: fixture.config.contract.address,
-      pa: fixture.pa.address,
-      ra: fixture.ra.address,
-      factory: fixture.factory.contract.address,
+      const { dsId, ct } = await helper.issueNewSwapAssets({
+        expiry: newExpiry,
+        moduleCore: fixture.moduleCore.address,
+        config: fixture.config.contract.address,
+        pa: fixture.pa.address,
+        ra: fixture.ra.address,
+        factory: fixture.factory.contract.address,
+      });
+
+      await fixture.moduleCore.write.depositPsm([
+        fixture.Id,
+        parseEther("1000"),
+      ]);
+
+      const deadline = BigInt(newExpiry * 2);
+
+      const msgPermit = await helper.permit({
+        amount: parseEther("100"),
+        deadline,
+        erc20contractAddress: ct!,
+        psmAddress: fixture.moduleCore.address,
+        signer: defaultSigner,
+      });
+
+      await time.increaseTo(newExpiry);
+
+      await fixture.moduleCore.write.redeemWithCT([
+        fixture.Id,
+        dsId!,
+        parseEther("100"),
+        msgPermit,
+        deadline,
+      ]);
+
+      const event = await fixture.moduleCore.getEvents
+        .CtRedeemed({
+          Id: fixture.Id,
+          redeemer: defaultSigner.account.address,
+          dsId,
+        })
+        .then((e) => e[0]);
+
+      // we expect the amount to be 100 because we deposit 1000 on the DS id while having a total
+      // of 2000 RA on the PSM including the DS ID before this, so if we get 1/10 of 1000 back from what
+      // we deposited on this DS ID, we can consider this a success
+      expect(event.args.raReceived!).to.equal(parseEther("100"));
     });
-
-    await fixture.moduleCore.write.depositPsm([fixture.Id, parseEther("1000")]);
-
-    const deadline = BigInt(newExpiry * 2);
-
-    const msgPermit = await helper.permit({
-      amount: parseEther("100"),
-      deadline,
-      erc20contractAddress: ct!,
-      psmAddress: fixture.moduleCore.address,
-      signer: defaultSigner,
-    });
-
-    time.increaseTo(newExpiry);
-
-    await fixture.moduleCore.write.redeemWithCT([
-      fixture.Id,
-      dsId!,
-      parseEther("100"),
-      msgPermit,
-      deadline,
-    ]);
-
-    const event = await fixture.moduleCore.getEvents
-      .CtRedeemed({
-        Id: fixture.Id,
-        redeemer: defaultSigner.account.address,
-        dsId,
-      })
-      .then((e) => e[0]);
-
-    // we expect the amount to be 100 because we deposit 1000 on the DS id while having a total
-    // of 2000 RA on the PSM including the DS ID before this, so if we get 1/10 of 1000 back from what
-    // we deposited on this DS ID, we can consider this a success
-    expect(event.args.raReceived!).to.equal(parseEther("100"));
   });
 
   describe("valueLocked", function () {
@@ -1118,9 +1126,9 @@ describe("PSM core", function () {
           parseEther("2"),
         ]);
 
-      expect(received).to.equal(parseEther("0.9"));
-      expect(feePrecentage).to.equal(parseEther("10"));
-      expect(fee).to.equal(parseEther("0.2"));
+      expect(received).to.equal(parseEther("0.95"));
+      expect(feePrecentage).to.equal(parseEther("5"));
+      expect(fee).to.equal(parseEther("0.1"));
       expect(exchangeRate).to.equal(parseEther("2"));
     });
 
@@ -1139,7 +1147,7 @@ describe("PSM core", function () {
       ]);
       await expect(
         moduleCore.read.previewRepurchase([fixture.Id, parseEther("2")])
-      ).to.be.rejectedWith(`InsufficientLiquidity(0, ${parseEther("0.9")})`);
+      ).to.be.rejectedWith(`InsufficientLiquidity(0, ${parseEther("0.95")})`);
     });
   });
 

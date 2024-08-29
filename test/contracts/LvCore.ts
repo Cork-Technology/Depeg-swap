@@ -527,7 +527,7 @@ describe("LvCore", function () {
           redeemer: defaultSigner.account.address,
         })
         .then((e) => e[0]);
-      expect(event.args.feePrecentage).to.be.equal(parseEther("10"));
+      expect(event.args.feePrecentage).to.be.equal(parseEther("5"));
 
       console.log(
         "event.args.amount                                          :",
@@ -540,7 +540,7 @@ describe("LvCore", function () {
 
       expect(event.args.amount).to.be.closeTo(
         ethers.BigNumber.from(
-          helper.calculateMinimumLiquidity(parseEther("0.9"))
+          helper.calculateMinimumLiquidity(parseEther("0.95"))
         ),
         // the amount will be slightly less because this is the first issuance,
         // caused by liquidity lock up by uni v2
@@ -549,7 +549,7 @@ describe("LvCore", function () {
       );
       // 10% fee
       expect(event.args.fee).to.be.closeTo(
-        ethers.BigNumber.from(parseEther("0.1")),
+        ethers.BigNumber.from(parseEther("0.05")),
         // the amount of fee deducted will also slightles less because this is the first issuance,
         // caused by liquidity lock up by uni v2
         // will receive slightly less ETH by 0,0000000000000001
@@ -574,11 +574,11 @@ describe("LvCore", function () {
           redeemer: defaultSigner.account.address,
         })
         .then((e) => e[0]);
-      expect(event.args.feePrecentage).to.be.equal(parseEther("10"));
+      expect(event.args.feePrecentage).to.be.equal(parseEther("5"));
 
       expect(event.args.amount).to.be.closeTo(
         ethers.BigNumber.from(
-          helper.calculateMinimumLiquidity(parseEther("0.9"))
+          helper.calculateMinimumLiquidity(parseEther("0.95"))
         ),
         // the amount will be slightly less because this is the first issuance,
         // caused by liquidity lock up by uni v2
@@ -587,7 +587,7 @@ describe("LvCore", function () {
       );
       // 10% fee
       expect(event.args.fee).to.be.closeTo(
-        ethers.BigNumber.from(parseEther("0.1")),
+        ethers.BigNumber.from(parseEther("0.05")),
         // the amount of fee deducted will also slightles less because this is the first issuance,
         // caused by liquidity lock up by uni v2
         // will receive slightly less ETH by 0,0000000000000001
@@ -644,7 +644,7 @@ describe("LvCore", function () {
       .then((e) => e[0]);
     expect(event.args.amount).to.be.closeTo(
       ethers.BigNumber.from(
-        helper.calculateMinimumLiquidity(parseEther("0.9"))
+        helper.calculateMinimumLiquidity(parseEther("0.95"))
       ),
       // the amount will be slightly less because this is the first issuance,
       // caused by liquidity lock up by uni v2
@@ -652,10 +652,10 @@ describe("LvCore", function () {
       100
     );
     // 10% fee
-    expect(event.args.feePrecentage).to.be.equal(parseEther("10"));
+    expect(event.args.feePrecentage).to.be.equal(parseEther("5"));
     // 10% fee
     expect(event.args.fee).to.be.closeTo(
-      ethers.BigNumber.from(parseEther("0.1")),
+      ethers.BigNumber.from(parseEther("0.05")),
       // the amount of fee deducted will also slightles less because this is the first issuance,
       // caused by liquidity lock up by uni v2
       // will receive slightly less ETH by 0,0000000000000001
@@ -711,7 +711,7 @@ describe("LvCore", function () {
         [Id, redeemAmount]
       );
 
-      expect(precentage).to.be.equal(parseEther("10"));
+      expect(precentage).to.be.equal(parseEther("5"));
       expect(fee).to.be.closeTo(
         ethers.BigNumber.from(parseEther("0.1")),
         // the amount of fee deducted will also slightles less because this is the first issuance,
@@ -872,7 +872,7 @@ describe("LvCore", function () {
   describe("earlyRedemptionFee", function () {
     it("earlyRedemptionFee should work correctly", async function () {
       let fees = await moduleCore.read.earlyRedemptionFee([Id]);
-      expect(fees).to.equal(parseEther("10"));
+      expect(fees).to.equal(parseEther("5"));
     });
   });
 

@@ -1,4 +1,3 @@
-// SPDX-License-Identifier: UNLICENSED
 pragma solidity 0.8.24;
 
 import {AccessControl} from "@openzeppelin/contracts/access/AccessControl.sol";
@@ -45,8 +44,8 @@ contract CorkConfig is AccessControl, Pausable {
     /**
      * @dev Initialize Module Core
      */
-    function initializeModuleCore(address pa, address ra, uint256 lvFee) external onlyManager {
-        moduleCore.initialize(pa, ra, lvFee);
+    function initializeModuleCore(address pa, address ra, uint256 lvFee, uint256 initialDsPrice) external onlyManager {
+        moduleCore.initialize(pa, ra, lvFee, initialDsPrice);
     }
 
     /**

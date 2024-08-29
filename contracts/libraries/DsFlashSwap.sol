@@ -1,4 +1,3 @@
-// SPDX-License-Identifier: UNLICENSED
 pragma solidity 0.8.24;
 
 import {IUniswapV2Pair} from "../interfaces/uniswap-v2/pair.sol";
@@ -28,11 +27,11 @@ struct ReserveState {
 library DsFlashSwaplibrary {
     /// @dev the precentage amount of reserve that will be used to fill buy orders
     /// the router will sell in respect to this ratio on first issuance
-    uint256 public constant INITIAL_RESERVE_SELL_PRESSURE_PRECENTAGE = 501e8;
+    uint256 public constant INITIAL_RESERVE_SELL_PRESSURE_PRECENTAGE = 50e18;
 
     /// @dev the precentage amount of reserve that will be used to fill buy orders
     /// the router will sell in respect to this ratio on subsequent issuances
-    uint256 public constant SUBSEQUENT_RESERVE_SELL_PRESSURE_PRECENTAGE = 801e8;
+    uint256 public constant SUBSEQUENT_RESERVE_SELL_PRESSURE_PRECENTAGE = 80e18;
 
     function onNewIssuance(
         ReserveState storage self,

@@ -1,4 +1,3 @@
-// SPDX-License-Identifier: UNLICENSED
 pragma solidity 0.8.24;
 
 import {Asset, ERC20Burnable} from "../core/assets/Asset.sol";
@@ -229,6 +228,9 @@ library PsmLibrary {
     }
 
     function updateRepurchaseFeePercentage(State storage self, uint256 newFees) internal {
+        if (newFees > 5 ether) {
+            revert ICommon.InvalidFees();
+        }
         self.psm.repurchaseFeePrecentage = newFees;
     }
 

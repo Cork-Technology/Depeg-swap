@@ -1,4 +1,3 @@
-// SPDX-License-Identifier: UNLICENSED
 pragma solidity 0.8.24;
 
 import {State, VaultState, VaultConfig, VaultWithdrawalPool, VaultAmmLiquidityPool} from "./State.sol";
@@ -31,9 +30,6 @@ library VaultLibrary {
     using VaultPoolLibrary for VaultPool;
     using SafeERC20 for IERC20;
 
-    /// @notice this will set the initial CT price to 0.9 RA, thus also making the initial price of DS to be 0.1 RA
-    uint256 internal constant DEFAULT_AMM_DEPOSIT_RATIO = 9e17;
-
     /// @notice caller is not authorized to perform the action, e.g transfering
     /// redemption rights to another address while not having the rights
     error Unauthorized(address caller);
@@ -41,11 +37,14 @@ library VaultLibrary {
     /// @notice inssuficient balance to perform expiry redeem(e.g requesting 5 LV to redeem but trying to redeem 10)
     error InsufficientBalance(address caller, uint256 requested, uint256 balance);
 
-    function initialize(VaultState storage self, address lv, uint256 fee, address ra) external {
+    function initialize(VaultState storage self, address lv, uint256 fee, address ra, uint256 initialDsPrice)
+        external
+    {
         self.config = VaultConfigLibrary.initialize(fee);
 
         self.lv = LvAssetLibrary.initialize(lv);
         self.balances.ra = RedemptionAssetManagerLibrary.initialize(ra);
+        self.initialDsPrice = initialDsPrice;
     }
 
     function __addLiquidityToAmmUnchecked(
@@ -137,8 +136,8 @@ library VaultLibrary {
         view
         returns (uint256 ratio)
     {
-        // This basically means that if the reserve is empty, then we use the default ratio
-        ratio = DEFAULT_AMM_DEPOSIT_RATIO;
+        // This basically means that if the reserve is empty, then we use the default ratio supplied at deployment
+        ratio = self.ds[dsId].exchangeRate() - self.vault.initialDsPrice;
 
         // will always fail for the first deposit
         try flashSwapRouter.getCurrentPriceRatio(self.info.toId(), dsId) returns (uint256, uint256 _ctRatio) {

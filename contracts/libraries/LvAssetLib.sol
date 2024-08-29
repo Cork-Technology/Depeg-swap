@@ -1,4 +1,3 @@
-// SPDX-License-Identifier: UNLICENSED
 pragma solidity 0.8.24;
 
 import {IERC20, Asset, ERC20, ERC20Burnable} from "../core/assets/Asset.sol";
