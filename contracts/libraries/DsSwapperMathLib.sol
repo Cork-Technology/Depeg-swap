@@ -5,7 +5,6 @@ import {SignedMath} from "@openzeppelin/contracts/utils/math/SignedMath.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 
 // library function for handling math operations for DS swap contract
-
 library SwapperMathLibrary {
     using UQ112x112 for uint224;
 
@@ -48,7 +47,6 @@ library SwapperMathLibrary {
         price = dsExchangeRate - ctPriceRatio;
     }
 
-
     /*
      * S = (E + x - y + sqrt(E^2 + 2E(x + y) + (x - y)^2)) / 2
      *
@@ -89,5 +87,47 @@ library SwapperMathLibrary {
 
         // R = s - e (should be fine with direct typecasting)
         raBorrowed = dsReceived - SignedMath.abs(raProvided);
+    }
+
+    function calculatePrecentage(uint256 amount, uint256 precentage) private pure returns(uint256 result){
+        result = (((amount * 1e18) * precentage) / (100 * 1e18)) / 1e18;
+    }
+
+    /**
+     * cumulatedHPA = Price_i × Volume_i × 1 - ((Discount / 86400) * (currentTime - issuanceTime))
+     */
+    function calculateHPAcumulated(uint256 effectiveDsPrice, uint256 amount, uint256 decayDiscountInDays, uint256 issuanceTimestamp, uint256 currentTime) external pure returns(uint256 cumulatedHPA){
+        uint256 decay = calculateDecayDiscount(decayDiscountInDays, issuanceTimestamp, currentTime);
+
+        cumulatedHPA = calculatePrecentage(effectiveDsPrice * amount / 1e18, decay) ;
+    }
+
+    function calculateEffectiveDsPrice(uint256 dsAmount, uint256 raProvided) external pure returns(uint256 effectiveDsPrice){
+        effectiveDsPrice = raProvided * 1e18 / dsAmount;
+    }
+
+    function calculateVHPAcumulated(uint256 amount, uint256 decayDiscountInDays, uint256 issuanceTimestamp, uint256 currentTime) external pure returns (uint256 cumulatedVHPA) {
+        uint256 decay = calculateDecayDiscount(decayDiscountInDays, issuanceTimestamp, currentTime);
+
+        cumulatedVHPA = calculatePrecentage(amount, decay);
+    }
+
+    function calculateHPA(uint256 cumulatedHPA, uint256 cumulatedVHPA) external pure returns (uint256 hpa) {
+        hpa = cumulatedHPA * 1e18 / cumulatedVHPA;
+    }
+
+    /**
+     * decay = 1 - ((Discount / 86400) * (currentTime - issuanceTime))
+     * requirements :
+     * Discount * (currentTime - issuanceTime) < 100
+     */
+    function calculateDecayDiscount(uint256 decayDiscountInDays, uint256 issuanceTime, uint256 currentTime) public pure returns (uint256 decay) {
+        uint256 discPerSec = decayDiscountInDays / 1 days;
+        uint256 t = currentTime - issuanceTime;
+        uint256 discount = discPerSec * t;
+
+        // this must hold true, it doesn't make sense to have a discount above 100%
+        assert(discount < 100e18);
+        decay = 100e18 - discount;
     }
 }
