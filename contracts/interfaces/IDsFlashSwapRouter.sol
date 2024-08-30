@@ -18,7 +18,15 @@ interface IDsFlashSwapUtility {
 
 interface IDsFlashSwapCore is IDsFlashSwapUtility {
     error InsufficientOutputAmount();
+
     error PermitNotSupported();
+
+    /// @notice thrown when the caller is not the module core
+    error NotModuleCore();
+
+    /// @notice thrown when the caller is not Config contract
+    error NotConfig();
+
 
     /**
      * @notice Emitted when DS is swapped for RA
