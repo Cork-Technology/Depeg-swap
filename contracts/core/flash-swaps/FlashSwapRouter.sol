@@ -6,7 +6,7 @@ import {SwapperMathLibrary} from "../../libraries/DsSwapperMathLib.sol";
 import {MathHelper} from "../../libraries/MathHelper.sol";
 import {Id} from "../../libraries/Pair.sol";
 import {IDsFlashSwapCore, IDsFlashSwapUtility} from "../../interfaces/IDsFlashSwapRouter.sol";
-import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
+import {AccessControlUpgradeable} from "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
 import {UUPSUpgradeable} from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import {IUniswapV2Callee} from "../../interfaces/uniswap-v2/callee.sol";
 import {IUniswapV2Router02} from "../../interfaces/uniswap-v2/RouterV2.sol";
@@ -18,23 +18,51 @@ import {Asset} from "../assets/Asset.sol";
 import {DepegSwapLibrary} from "../../libraries/DepegSwapLib.sol";
 import {SafeERC20, IERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
-contract RouterState is IDsFlashSwapUtility, IDsFlashSwapCore, OwnableUpgradeable, UUPSUpgradeable, IUniswapV2Callee {
+contract RouterState is IDsFlashSwapUtility, IDsFlashSwapCore, AccessControlUpgradeable, UUPSUpgradeable, IUniswapV2Callee {
     using DsFlashSwaplibrary for ReserveState;
     using DsFlashSwaplibrary for AssetPair;
     using SafeERC20 for IERC20;
 
-    IUniswapV2Router02 internal univ2Router;
+    bytes32 public constant  MODULE_CORE = keccak256("MODULE_CORE");
+    bytes32 public constant  CONFIG = keccak256("CONFIG");
 
-    function initialize(address moduleCore, address _univ2Router) external initializer notDelegated {
-        __Ownable_init(moduleCore);
+    /// @notice thrown when the caller is not the module core
+    error NotModuleCore();
+
+    /// @notice thrown when the caller is not Config contract
+    error NotConfig();
+
+    IUniswapV2Router02 internal univ2Router;
+    address public _moduleCore;
+
+    modifier onlyModuleCore {
+        if (!hasRole(MODULE_CORE, msg.sender)) {
+            revert NotModuleCore();
+        }
+        _;
+    }
+
+    modifier onlyConfig {
+        if (!hasRole(CONFIG, msg.sender)) {
+            revert NotConfig();
+        }
+        _;
+    }
+
+    function initialize(address config, address moduleCore, address _univ2Router) external initializer notDelegated {
+        __AccessControl_init();
         __UUPSUpgradeable_init();
 
+        _grantRole(MODULE_CORE, moduleCore);
+        _grantRole(CONFIG, config);
+
         univ2Router = IUniswapV2Router02(_univ2Router);
+        _moduleCore = moduleCore;
     }
 
     mapping(Id => ReserveState) internal reserves;
 
-    function _authorizeUpgrade(address newImplementation) internal override onlyOwner notDelegated {}
+    function _authorizeUpgrade(address newImplementation) internal override onlyConfig notDelegated {}
 
     function onNewIssuance(
         Id reserveId,
@@ -44,7 +72,7 @@ contract RouterState is IDsFlashSwapUtility, IDsFlashSwapCore, OwnableUpgradeabl
         uint256 initialReserve,
         address ra,
         address ct
-    ) external override onlyOwner {
+    ) external override onlyModuleCore {
         reserves[reserveId].onNewIssuance(dsId, ds, pair, initialReserve, ra, ct);
 
         emit NewIssuance(reserveId, dsId, ds, pair, initialReserve);
@@ -62,18 +90,18 @@ contract RouterState is IDsFlashSwapUtility, IDsFlashSwapCore, OwnableUpgradeabl
         return reserves[id].getPair(dsId);
     }
 
-    function emptyReserve(Id reserveId, uint256 dsId) external override onlyOwner returns (uint256 amount) {
-        amount = reserves[reserveId].emptyReserve(dsId, owner());
+    function emptyReserve(Id reserveId, uint256 dsId) external override onlyModuleCore returns (uint256 amount) {
+        amount = reserves[reserveId].emptyReserve(dsId, _moduleCore);
         emit ReserveEmptied(reserveId, dsId, amount);
     }
 
     function emptyReservePartial(Id reserveId, uint256 dsId, uint256 amount)
         external
         override
-        onlyOwner
+        onlyModuleCore
         returns (uint256 reserve)
     {
-        reserve = reserves[reserveId].emptyReservePartial(dsId, amount, owner());
+        reserve = reserves[reserveId].emptyReservePartial(dsId, amount, _moduleCore);
         emit ReserveEmptied(reserveId, dsId, amount);
     }
 
@@ -86,8 +114,8 @@ contract RouterState is IDsFlashSwapUtility, IDsFlashSwapCore, OwnableUpgradeabl
         (raPriceRatio, ctPriceRatio) = reserves[id].getPriceRatio(dsId);
     }
 
-    function addReserve(Id id, uint256 dsId, uint256 amount) external override onlyOwner {
-        reserves[id].addReserve(dsId, amount, owner());
+    function addReserve(Id id, uint256 dsId, uint256 amount) external override onlyModuleCore {
+        reserves[id].addReserve(dsId, amount, _moduleCore);
         emit ReserveAdded(id, dsId, amount);
     }
 
@@ -118,7 +146,7 @@ contract RouterState is IDsFlashSwapUtility, IDsFlashSwapCore, OwnableUpgradeabl
 
             // sell the DS tokens from the reserve and accrue value to LV holders
             uint256 vaultRa = __swapDsforRa(assetPair, reserveId, dsId, amountSellFromReserve, 0);
-            IVault(owner()).provideLiquidityWithFlashSwapFee(reserveId, vaultRa);
+            IVault(_moduleCore).provideLiquidityWithFlashSwapFee(reserveId, vaultRa);
 
             // recalculate the amount of DS tokens attributed, since we sold some from the reserve
             (amountOut, borrowedAmount,) = assetPair.getAmountOutBuyDS(amount);
@@ -308,9 +336,9 @@ contract RouterState is IDsFlashSwapUtility, IDsFlashSwapCore, OwnableUpgradeabl
         uint256 dsAttributed
     ) internal {
         AssetPair storage assetPair = self.ds[dsId];
-        assetPair.ra.approve(owner(), dsAttributed);
+        assetPair.ra.approve(_moduleCore, dsAttributed);
 
-        IPSMcore psm = IPSMcore(owner());
+        IPSMcore psm = IPSMcore(_moduleCore);
         psm.depositPsm(reserveId, dsAttributed);
 
         // should be the same, we don't compare with the RA amount since we maybe dealing
@@ -332,10 +360,10 @@ contract RouterState is IDsFlashSwapUtility, IDsFlashSwapCore, OwnableUpgradeabl
         uint256 raAttributed
     ) internal {
         AssetPair storage assetPair = self.ds[dsId];
-        assetPair.ds.approve(owner(), ctAmount);
-        assetPair.ct.approve(owner(), ctAmount);
+        assetPair.ds.approve(_moduleCore, ctAmount);
+        assetPair.ct.approve(_moduleCore, ctAmount);
 
-        IPSMcore psm = IPSMcore(owner());
+        IPSMcore psm = IPSMcore(_moduleCore);
 
         (uint256 received,) = psm.redeemRaWithCtDs(reserveId, ctAmount);
 
