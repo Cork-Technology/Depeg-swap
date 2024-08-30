@@ -21,28 +21,28 @@ contract ExchangeRate is IRates {
 }
 
 contract Expiry is IExpiry {
-    uint256 internal immutable TIMESTAMP;
-    uint256 internal immutable ISSUED_AT ;
+    uint256 internal immutable EXPIRY;
+    uint256 internal immutable ISSUED_AT;
 
     constructor(uint256 _expiry) {
         if (_expiry != 0 && _expiry < block.timestamp) {
             revert Expired();
         }
 
-        TIMESTAMP = _expiry;
+        EXPIRY = _expiry;
         ISSUED_AT = block.timestamp;
     }
 
     function isExpired() external view virtual returns (bool) {
-        if (TIMESTAMP == 0) {
+        if (EXPIRY == 0) {
             return false;
         }
 
-        return block.timestamp >= TIMESTAMP;
+        return block.timestamp >= EXPIRY;
     }
 
     function expiry() external view virtual returns (uint256) {
-        return TIMESTAMP;
+        return EXPIRY;
     }
 
     function issuedAt() external view virtual returns (uint256) {
