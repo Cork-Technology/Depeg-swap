@@ -224,6 +224,7 @@ export async function deployModuleCore(
   );
 
   await dsFlashSwapRouter.contract.write.initialize([
+    dsFlashSwapRouter.contract.address,
     contract.address,
     univ2Router,
   ]);
