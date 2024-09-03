@@ -3,6 +3,11 @@ pragma solidity 0.8.24;
 import {VaultPool, VaultWithdrawalPool, VaultAmmLiquidityPool} from "./State.sol";
 import {MathHelper} from "./MathHelper.sol";
 
+/**
+ * @title VaultPool Library Contract
+ * @author Cork Team
+ * @notice VaultPool Library implements features related to LV Pools(liquidity Vault Pools)
+ */
 library VaultPoolLibrary {
     function reserve(VaultPool storage self, uint256 totalLvIssued, uint256 addedRa, uint256 addedPa) internal {
         uint256 totalLvWithdrawn = self.withdrawalPool.atrributedLv;

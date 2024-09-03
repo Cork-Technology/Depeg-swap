@@ -10,6 +10,11 @@ import {PsmCore} from "./Psm.sol";
 import {VaultCore} from "./Vault.sol";
 import {Initialize} from "../interfaces/Init.sol";
 
+/**
+ * @title ModuleCore Contract
+ * @author Cork Team
+ * @notice Modulecore contract for integrating abstract modules like PSM and Vault contracts
+ */
 contract ModuleCore is PsmCore, Initialize, VaultCore {
     using PsmLibrary for State;
     using PairLibrary for Pair;
@@ -109,19 +114,42 @@ contract ModuleCore is PsmCore, Initialize, VaultCore {
         emit PoolsStatusUpdated(id, isPSMDepositPaused, isPSMWithdrawalPaused, isLVDepositPaused, isLVWithdrawalPaused);
     }
 
+    /**
+     * @notice Get the last DS id issued for a given module, the returned DS doesn't guarantee to be active
+     * @param id The current module id
+     * @return dsId The current effective DS id
+     *
+     */
     function lastDsId(Id id) external view override returns (uint256 dsId) {
         return states[id].globalAssetIdx;
     }
 
+    /**
+     * @notice returns the address of the underlying RA and PA token
+     * @param id the id of PSM
+     * @return ra address of the underlying RA token
+     * @return pa address of the underlying PA token
+     */
     function underlyingAsset(Id id) external view override returns (address ra, address pa) {
         (ra, pa) = states[id].info.underlyingAsset();
     }
 
+    /**
+     * @notice returns the address of CT and DS associated with a certain DS id
+     * @param id the id of PSM
+     * @param dsId the DS id
+     * @return ct address of the CT token
+     * @return ds address of the DS token
+     */
     function swapAsset(Id id, uint256 dsId) external view override returns (address ct, address ds) {
         ct = states[id].ds[dsId].ct;
         ds = states[id].ds[dsId]._address;
     }
 
+    /**
+     * @notice update value of PSMBaseRedemption fees
+     * @param newPsmBaseRedemptionFeePrecentage new value of fees
+     */
     function updatePsmBaseRedemptionFeePrecentage(uint256 newPsmBaseRedemptionFeePrecentage) external onlyConfig {
         if (newPsmBaseRedemptionFeePrecentage > 5 ether) {
             revert InvalidFees();

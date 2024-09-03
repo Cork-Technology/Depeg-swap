@@ -1,12 +1,21 @@
 pragma solidity 0.8.24;
 
+/**
+ * @dev Signature structure    
+ */
 struct Signature {
     uint8 v;
     bytes32 r;
     bytes32 s;
 }
 
+/**
+ * @title MinimalSignatureHelper Library Contract
+ * @author Cork Team
+ * @notice MinimalSignatureHelper Library implements signature related functions
+ */
 library MinimalSignatureHelper {
+    /// @notice thrown when Signature length is not valid
     error InvalidSignatureLength(uint256 length);
 
     function split(bytes memory raw) internal pure returns (Signature memory sig) {

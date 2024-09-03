@@ -2,6 +2,11 @@ pragma solidity 0.8.24;
 
 import {Id} from "../libraries/Pair.sol";
 
+/**
+ * @title ICommon Interface
+ * @author Cork Team
+ * @notice Common Interface which provides common errors, events and functions
+ */
 interface ICommon {
     /// @notice only flash swap router is allowed to call this function
     error OnlyFlashSwapRouterAllowed();
@@ -16,6 +21,7 @@ interface ICommon {
     error AlreadyInitialized();
 
     /// @notice invalid asset, thrown when trying to do something with an asset not deployed with asset factory
+    /// @param asset Address of given Asset contract
     error InvalidAsset(address asset);
 
     /// @notice PSM Deposit is paused, i.e thrown when deposit is paused for PSM
