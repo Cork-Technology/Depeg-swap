@@ -369,7 +369,7 @@ library VaultLibrary {
         uint256 reservedDs = flashSwapRouter.emptyReserve(self.info.toId(), dsId);
 
         uint256 redeemAmount = reservedDs >= ctAmm ? ctAmm : reservedDs;
-        PsmLibrary.lvRedeemRaWithCtDs(self, redeemAmount, dsId);
+        redeemAmount = PsmLibrary.lvRedeemRaWithCtDs(self, redeemAmount, dsId);
 
         // if the reserved DS is more than the CT that's available from liquidating the AMM LP
         // then there's no CT we can use to effectively redeem RA + PA from the PSM
