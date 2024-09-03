@@ -26,12 +26,6 @@ contract RouterState is IDsFlashSwapUtility, IDsFlashSwapCore, AccessControlUpgr
     bytes32 public constant  MODULE_CORE = keccak256("MODULE_CORE");
     bytes32 public constant  CONFIG = keccak256("CONFIG");
 
-    /// @notice thrown when the caller is not the module core
-    error NotModuleCore();
-
-    /// @notice thrown when the caller is not Config contract
-    error NotConfig();
-
     IUniswapV2Router02 internal univ2Router;
     address public _moduleCore;
 

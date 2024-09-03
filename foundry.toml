@@ -3,4 +3,6 @@ src = 'contracts'
 out = 'out'
 libs = ['node_modules', 'lib']
 test = 'test'
-cache_path  = 'cache_forge'
+cache_path = 'cache_forge'
+evm_version = 'cancun'
+solc = "0.8.24"
