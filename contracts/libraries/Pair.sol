@@ -4,8 +4,10 @@ import {PeggedAsset, PeggedAssetLibrary} from "./PeggedAssetLib.sol";
 
 type Id is bytes32;
 
-/// @dev represent a token pair that does not assumes relationship between the two
-/// it may be a pegged asset and a redemption asset, or ct and ds or any other pair
+/**
+ * @dev represent a token pair that does not assumes relationship between the two
+ * @dev it may be a pegged asset and a redemption asset, or ct and ds or any other pair
+ */
 struct Pair {
     // pa/ct
     address pair0;
@@ -13,6 +15,11 @@ struct Pair {
     address pair1;
 }
 
+/**
+ * @title PairLibrary Contract
+ * @author Cork Team
+ * @notice Pair Library which implements functions for handling Pair operations
+ */
 library PairLibrary {
     using PeggedAssetLibrary for PeggedAsset;
 

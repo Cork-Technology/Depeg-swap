@@ -6,6 +6,11 @@ import {UUPSUpgradeable} from "@openzeppelin/contracts-upgradeable/proxy/utils/U
 import {Id, Pair, PairLibrary} from "../../libraries/Pair.sol";
 import {Asset} from "./Asset.sol";
 
+/**
+ * @title Factory contract for Assets
+ * @author Cork Team
+ * @notice Factory contract for deploying assets contracts
+ */
 contract AssetFactory is IAssetFactory, OwnableUpgradeable, UUPSUpgradeable {
     using PairLibrary for Pair;
 
@@ -21,7 +26,10 @@ contract AssetFactory is IAssetFactory, OwnableUpgradeable, UUPSUpgradeable {
     mapping(Id => Pair[]) internal swapAssets;
     mapping(address => bool) internal deployed;
 
-    // for safety checks in psm core, also act as kind of like a registry
+    /**
+     * @notice for safety checks in psm core, also act as kind of like a registry
+     * @param asset the address of Asset contract
+     */
     function isDeployed(address asset) external view override returns (bool) {
         return deployed[asset];
     }
@@ -33,11 +41,22 @@ contract AssetFactory is IAssetFactory, OwnableUpgradeable, UUPSUpgradeable {
         _;
     }
 
+    /**
+     * @notice initializes asset factory contract and setup owner
+     * @param moduleCore the address of Module Core contract
+     */
     function initialize(address moduleCore) external initializer notDelegated {
         __Ownable_init(moduleCore);
         __UUPSUpgradeable_init();
     }
 
+    /**
+     * @notice for getting list of deployed Assets with this factory
+     * @param page page number
+     * @param limit number of entries per page
+     * @return ra list of deployed RA assets
+     * @return lv list of deployed LV assets
+     */
     function getDeployedAssets(uint8 page, uint8 limit)
         external
         view
@@ -69,6 +88,15 @@ contract AssetFactory is IAssetFactory, OwnableUpgradeable, UUPSUpgradeable {
         }
     }
 
+    /**
+     * @notice for getting list of deployed SwapAssets with this factory
+     * @param ra Address of RA
+     * @param pa Address of PA
+     * @param page page number
+     * @param limit number of entries per page
+     * @return ct list of deployed CT assets
+     * @return ds list of deployed DS assets
+     */
     function getDeployedSwapAssets(address ra, address pa, uint8 page, uint8 limit)
         external
         view
@@ -99,6 +127,16 @@ contract AssetFactory is IAssetFactory, OwnableUpgradeable, UUPSUpgradeable {
         }
     }
 
+    /**
+     * @notice deploys new Swap Assets for given RA & PA
+     * @param ra Address of RA
+     * @param pa Address of PA
+     * @param owner Address of asset owners
+     * @param expiry expiry timestamp
+     * @param psmExchangeRate exchange rate for this pair
+     * @return ct new CT contract address
+     * @return ds new DS contract address
+     */
     function deploySwapAssets(address ra, address pa, address owner, uint256 expiry, uint256 psmExchangeRate)
         external
         override
@@ -127,6 +165,13 @@ contract AssetFactory is IAssetFactory, OwnableUpgradeable, UUPSUpgradeable {
         emit AssetDeployed(ra, ct, ds);
     }
 
+    /**
+     * @notice deploys new LV Assets for given RA & PA
+     * @param ra Address of RA
+     * @param pa Address of PA
+     * @param owner Address of asset owners
+     * @return lv new LV contract address
+     */
     function deployLv(address ra, address pa, address owner)
         external
         override

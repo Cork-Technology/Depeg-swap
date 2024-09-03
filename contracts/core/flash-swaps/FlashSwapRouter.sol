@@ -1,4 +1,3 @@
-// SPDX-License-Identifier: UNLICENSED
 pragma solidity 0.8.24;
 
 import {AssetPair, ReserveState, DsFlashSwaplibrary} from "../../libraries/DsFlashSwap.sol";
@@ -18,6 +17,11 @@ import {Asset} from "../assets/Asset.sol";
 import {DepegSwapLibrary} from "../../libraries/DepegSwapLib.sol";
 import {SafeERC20, IERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
+/**
+ * @title Router contract for Flashswap
+ * @author Cork Team
+ * @notice Router contract for implementing flashswaps for DS/CT
+ */
 contract RouterState is IDsFlashSwapUtility, IDsFlashSwapCore, OwnableUpgradeable, UUPSUpgradeable, IUniswapV2Callee {
     using DsFlashSwaplibrary for ReserveState;
     using DsFlashSwaplibrary for AssetPair;
@@ -133,6 +137,16 @@ contract RouterState is IDsFlashSwapUtility, IDsFlashSwapCore, OwnableUpgradeabl
         __flashSwap(assetPair, assetPair.pair, borrowedAmount, 0, dsId, reserveId, true, amountOut);
     }
 
+    /**
+     * @notice Swaps RA for DS
+     * @param reserveId the reserve id same as the id on PSM and LV
+     * @param dsId the ds id of the pair, the same as the DS id on PSM and LV
+     * @param amount the amount of RA to swap
+     * @param amountOutMin the minimum amount of DS to receive, will revert if the actual amount is less than this. should be inserted with value from previewSwapRaforDs
+     * @param rawRaPermitSig raw signature for RA token approval
+     * @param deadline the deadline of given permit signature
+     * @return amountOut amount of DS that's received
+     */
     function swapRaforDs(
         Id reserveId,
         uint256 dsId,
@@ -155,6 +169,14 @@ contract RouterState is IDsFlashSwapUtility, IDsFlashSwapCore, OwnableUpgradeabl
         emit RaSwapped(reserveId, dsId, msg.sender, amount, amountOut);
     }
 
+    /**
+     * @notice Swaps RA for DS
+     * @param reserveId the reserve id same as the id on PSM and LV
+     * @param dsId the ds id of the pair, the same as the DS id on PSM and LV
+     * @param amount the amount of RA to swap
+     * @param amountOutMin the minimum amount of DS to receive, will revert if the actual amount is less than this. should be inserted with value from previewSwapRaforDs
+     * @return amountOut amount of DS that's received
+     */
     function swapRaforDs(Id reserveId, uint256 dsId, uint256 amount, uint256 amountOutMin)
         external
         returns (uint256 amountOut)
@@ -168,6 +190,13 @@ contract RouterState is IDsFlashSwapUtility, IDsFlashSwapCore, OwnableUpgradeabl
         emit RaSwapped(reserveId, dsId, msg.sender, amount, amountOut);
     }
 
+    /**
+     * @notice Preview the amount of DS that will be received from swapping RA
+     * @param reserveId the reserve id same as the id on PSM and LV
+     * @param dsId the ds id of the pair, the same as the DS id on PSM and LV
+     * @param amount the amount of RA to swap
+     * @return amountOut amount of DS that will be received
+     */
     function previewSwapRaforDs(Id reserveId, uint256 dsId, uint256 amount) external view returns (uint256 amountOut) {
         ReserveState storage self = reserves[reserveId];
         AssetPair storage assetPair = self.ds[dsId];
@@ -207,6 +236,16 @@ contract RouterState is IDsFlashSwapUtility, IDsFlashSwapCore, OwnableUpgradeabl
         }
     }
 
+    /**
+     * @notice Swaps DS for RA
+     * @param reserveId the reserve id same as the id on PSM and LV
+     * @param dsId the ds id of the pair, the same as the DS id on PSM and LV
+     * @param amount the amount of DS to swap
+     * @param amountOutMin the minimum amount of RA to receive, will revert if the actual amount is less than this. should be inserted with value from previewSwapDsforRa
+     * @param rawDsPermitSig raw signature for DS token approval
+     * @param deadline the deadline of given permit signature
+     * @return amountOut amount of RA that's received
+     */
     function swapDsforRa(
         Id reserveId,
         uint256 dsId,
@@ -225,6 +264,14 @@ contract RouterState is IDsFlashSwapUtility, IDsFlashSwapCore, OwnableUpgradeabl
         emit DsSwapped(reserveId, dsId, msg.sender, amount, amountOut);
     }
 
+    /**
+     * @notice Swaps DS for RA
+     * @param reserveId the reserve id same as the id on PSM and LV
+     * @param dsId the ds id of the pair, the same as the DS id on PSM and LV
+     * @param amount the amount of DS to swap
+     * @param amountOutMin the minimum amount of RA to receive, will revert if the actual amount is less than this. should be inserted with value from previewSwapDsforRa
+     * @return amountOut amount of RA that's received
+     */
     function swapDsforRa(Id reserveId, uint256 dsId, uint256 amount, uint256 amountOutMin)
         external
         returns (uint256 amountOut)
@@ -254,6 +301,13 @@ contract RouterState is IDsFlashSwapUtility, IDsFlashSwapCore, OwnableUpgradeabl
         __flashSwap(assetPair, assetPair.pair, 0, amount, dsId, reserveId, false, amountOut);
     }
 
+    /**
+     * @notice Preview the amount of RA that will be received from swapping DS
+     * @param reserveId the reserve id same as the id on PSM and LV
+     * @param dsId the ds id of the pair, the same as the DS id on PSM and LV
+     * @param amount the amount of DS to swap
+     * @return amountOut amount of RA that will be received
+     */
     function previewSwapDsforRa(Id reserveId, uint256 dsId, uint256 amount) external view returns (uint256 amountOut) {
         AssetPair storage assetPair = reserves[reserveId].ds[dsId];
         (amountOut,) = assetPair.getAmountOutSellDS(amount);
