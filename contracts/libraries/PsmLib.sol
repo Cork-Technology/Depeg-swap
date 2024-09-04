@@ -307,7 +307,7 @@ library PsmLibrary {
         self.psm.balances.dsBalance -= (received);
 
         // transfer user RA to the PSM/LV
-        self.psm.balances.ra.lockUnchecked(amount, buyer);
+        self.psm.balances.ra.lockFrom(amount, buyer);
 
         // transfer user attrubuted DS + PA
         // PA
