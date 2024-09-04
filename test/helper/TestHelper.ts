@@ -140,7 +140,7 @@ export async function deployUniV2Factory(flashswap: Address) {
 
   const hash = await defaultSigner.deployContract({
     abi: UNIV2FACTORY.abi,
-    bytecode: `0x${UNIV2FACTORY.bytecode}`,
+    bytecode: `0x${UNIV2FACTORY.evm.bytecode.object}`,
     account: defaultSigner.account,
     args: [defaultSigner.account.address, flashswap],
   });
@@ -163,7 +163,7 @@ export async function deployUniV2Router(
 
   const hash = await defaultSigner.deployContract({
     abi: UNIV2ROUTER.abi,
-    bytecode: `0x${UNIV2ROUTER.bytecode}`,
+    bytecode: `0x${UNIV2ROUTER.evm.bytecode.object}`,
     account: defaultSigner.account,
     args: [univ2Factory, weth, router],
   });
