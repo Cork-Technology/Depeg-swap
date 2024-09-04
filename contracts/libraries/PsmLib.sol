@@ -305,6 +305,7 @@ library PsmLibrary {
         // we also include the fee here to separate the accumulated fee from the repurchase
         self.psm.balances.paBalance -= (received);
         self.psm.balances.dsBalance -= (received);
+        self.psm.balances.ra += amount;
 
         // transfer user RA to the PSM/LV
         self.psm.balances.ra.lockUnchecked(amount, buyer);
