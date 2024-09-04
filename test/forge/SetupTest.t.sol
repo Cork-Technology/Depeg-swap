@@ -9,8 +9,12 @@ contract SetupTest is Helper {
     }
 
     function test_setupDeployUniswapRouter() public {
-        deployUniswapRouter(address(this), address(this), address(this));
+        deployUniswapRouter(address(this), address(this));
         assertEq(uniswapRouter.factory(), address(this));
-        assertEq(uniswapRouter.WETH(), address(this));
+        assertEq(uniswapRouter.WETH(), address(weth));
+    }
+
+    function test_setupModuleCore() public {
+        deployModuleCore();
     }
 }
