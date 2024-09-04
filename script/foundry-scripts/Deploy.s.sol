@@ -5,6 +5,7 @@ import {ERC1967Proxy} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.s
 import {AssetFactory} from "../../contracts/core/assets/AssetFactory.sol";
 import {CorkConfig} from "../../contracts/core/CorkConfig.sol";
 import {RouterState} from "../../contracts/core/flash-swaps/FlashSwapRouter.sol";
+import {UniswapV2Factory} from "uniswap-v2/contracts/UniswapV2Factory.sol";
 
 contract DeployScript is Script {
     AssetFactory public assetFactory;
@@ -37,6 +38,9 @@ contract DeployScript is Script {
 
         assetFactory = AssetFactory(address(assetFactoryProxy));
         flashswapRouter = RouterState(address(routerProxy));
+
+        // Deploy the UniswapV2Factory contract
+        UniswapV2Factory uniV2Factory = new UniswapV2Factory(msg.sender, flashSwapRouterAddress);
         vm.stopBroadcast();
     }
 }

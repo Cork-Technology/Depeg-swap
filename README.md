@@ -41,7 +41,7 @@ IgnitionError: IGN403: You have sent transactions from 0x3e995c17172ea3e23505adf
 This is because we actualy don't use ignition when deploying uniswap v2 related contracts(e.g factory, router). Instead, we use ethers due to the fact that for some reason, deploying using ignition modules won't work with uniswap v2 contracts. To resolve this, simply run the command again. This usually takes 1-2 times, but don't worry, all of the previous deployments will be cached
 
 ```bash
-npx hardhat run scripts/deploy.ts --network <network>
+npx hardhat run script/hardhat-scripts/deploy.ts --network <network>
 ```
 
 AFter that, you should see something like this on your terminal :

@@ -113,10 +113,7 @@ async function main() {
   });
 
   await assetFactory.write.initialize([ModuleCore.address]);
-  await FlashSwapRouter.write.initialize([
-    ModuleCore.address,
-    UniV2Factory.address as Address,
-  ]);
+  await FlashSwapRouter.write.initialize([ModuleCore.address]);
 
   console.log("ModuleCore deployed to       :", ModuleCore.address);
 }

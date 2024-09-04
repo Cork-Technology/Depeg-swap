@@ -223,10 +223,7 @@ export async function deployModuleCore(
     }
   );
 
-  await dsFlashSwapRouter.contract.write.initialize([
-    contract.address,
-    univ2Router,
-  ]);
+  await dsFlashSwapRouter.contract.write.initialize([contract.address]);
 
   return {
     contract,
@@ -257,9 +254,12 @@ export async function initializeNewPsmLv(arg: InitializeNewPsmArg) {
     account: defaultSigner.account,
   });
 
-  await configContract.write.initializeModuleCore([arg.pa, arg.ra, arg.lvFee, dsPrice], {
-    account: defaultSigner.account,
-  });
+  await configContract.write.initializeModuleCore(
+    [arg.pa, arg.ra, arg.lvFee, dsPrice],
+    {
+      account: defaultSigner.account,
+    }
+  );
 
   const events = await contract.getEvents.Initialized({
     pa: arg.pa,

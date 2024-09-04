@@ -8,7 +8,6 @@ import {IDsFlashSwapCore, IDsFlashSwapUtility} from "../../interfaces/IDsFlashSw
 import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import {UUPSUpgradeable} from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import {IUniswapV2Callee} from "../../interfaces/uniswap-v2/callee.sol";
-import {IUniswapV2Router02} from "../../interfaces/uniswap-v2/RouterV2.sol";
 import {IUniswapV2Pair} from "../../interfaces/uniswap-v2/pair.sol";
 import {MinimalUniswapV2Library} from "../../libraries/uni-v2/UniswapV2Library.sol";
 import {IPSMcore} from "../../interfaces/IPSMcore.sol";
@@ -27,13 +26,9 @@ contract RouterState is IDsFlashSwapUtility, IDsFlashSwapCore, OwnableUpgradeabl
     using DsFlashSwaplibrary for AssetPair;
     using SafeERC20 for IERC20;
 
-    IUniswapV2Router02 internal univ2Router;
-
-    function initialize(address moduleCore, address _univ2Router) external initializer {
+    function initialize(address moduleCore) external initializer {
         __Ownable_init(moduleCore);
         __UUPSUpgradeable_init();
-
-        univ2Router = IUniswapV2Router02(_univ2Router);
     }
 
     mapping(Id => ReserveState) internal reserves;
