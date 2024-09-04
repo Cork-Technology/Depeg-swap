@@ -1,5 +1,10 @@
 pragma solidity 0.8.24;
 
+/**
+ * @title MathHelper Library Contract
+ * @author Cork Team
+ * @notice MathHelper Library which implements Helper functions for Math
+ */
 library MathHelper {
     uint224 internal constant Q112 = 2 ** 112;
 
