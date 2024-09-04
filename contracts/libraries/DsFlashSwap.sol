@@ -63,18 +63,18 @@ library DsFlashSwaplibrary {
         return self.ds[dsId].pair;
     }
 
-    function emptyReserve(ReserveState storage self, uint256 dsId, address to) internal returns (uint256 reserve) {
-        reserve = emptyReservePartial(self, dsId, self.ds[dsId].reserve, to);
+    function emptyReserve(ReserveState storage self, uint256 dsId, address to) internal returns (uint256 emptied) {
+        emptied = emptyReservePartial(self, dsId, self.ds[dsId].reserve, to);
     }
 
     function emptyReservePartial(ReserveState storage self, uint256 dsId, uint256 amount, address to)
         internal
-        returns (uint256 reserve)
+        returns (uint256 emptied)
     {
-        self.ds[dsId].ds.transfer(to, amount);
 
         self.ds[dsId].reserve -= amount;
-        reserve = self.ds[dsId].reserve;
+        self.ds[dsId].ds.transfer(to, amount);
+        emptied = amount;
     }
 
     function getPriceRatio(ReserveState storage self, uint256 dsId)
