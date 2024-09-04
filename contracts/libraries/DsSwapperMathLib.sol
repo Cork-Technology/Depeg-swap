@@ -4,14 +4,25 @@ import {UQ112x112} from "./UQ112x112.sol";
 import {SignedMath} from "@openzeppelin/contracts/utils/math/SignedMath.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 
-// library function for handling math operations for DS swap contract
+/**
+ * @title SwapperMathLibrary Contract
+ * @author Cork Team
+ * @notice SwapperMath library which implements math operations for DS swap contract
+ */
 library SwapperMathLibrary {
     using UQ112x112 for uint224;
 
+    /// @notice thrown when Reserve is Zero
     error ZeroReserve();
+
+    /// @notice thrown when Input amount is not sufficient
     error InsufficientInputAmount();
+
+    /// @notice thrown when not having sufficient Liquidity
     error InsufficientLiquidity();
-    error InsufficientOtuputAmount();
+
+    /// @notice thrown when Output amount is not sufficient
+    error InsufficientOutputAmount();
 
     // Calculate price ratio of two tokens in a uniswap v2 pair, will return ratio on 18 decimals precision
     function getPriceRatioUniv2(uint112 raReserve, uint112 ctReserve)
@@ -45,6 +56,44 @@ library SwapperMathLibrary {
         (, uint256 ctPriceRatio) = getPriceRatioUniv2(raReserve, ctReserve);
 
         price = dsExchangeRate - ctPriceRatio;
+    }
+
+    function getAmountIn(
+        uint256 amountOut, // Amount of DS tokens to buy
+        uint112 raReserve, // Reserve of the input token
+        uint112 ctReserve, // Reserve of the other token (needed for price ratio calculation)
+        uint256 dsExchangeRate // DS exchange rate
+    ) external pure returns (uint256 amountIn) {
+        if (amountOut == 0) {
+            revert InsufficientOutputAmount();
+        }
+
+        if (raReserve == 0 || ctReserve == 0) {
+            revert InsufficientLiquidity();
+        }
+
+        uint256 dsPrice = calculateDsPrice(raReserve, ctReserve, dsExchangeRate);
+
+        amountIn = (amountOut * dsPrice) / 1e18;
+    }
+
+    function getAmountOut(
+        uint256 amountIn, // Amount of input tokens
+        uint112 reserveIn, // Reserve of the input token
+        uint112 reserveOut, // Reserve of the other token (needed for price ratio calculation)
+        uint256 dsExchangeRate // DS exchange rate
+    ) external pure returns (uint256 amountOut) {
+        if (amountIn == 0) {
+            revert InsufficientInputAmount();
+        }
+
+        if (reserveIn == 0 || reserveOut == 0) {
+            revert InsufficientLiquidity();
+        }
+
+        uint256 dsPrice = calculateDsPrice(reserveIn, reserveOut, dsExchangeRate);
+
+        amountOut = amountIn / dsPrice;
     }
 
     /*

@@ -8,6 +8,11 @@ import {ERC20Burnable} from "@openzeppelin/contracts/token/ERC20/extensions/ERC2
 import {IExpiry} from "../../interfaces/IExpiry.sol";
 import {IRates} from "../../interfaces/IRates.sol";
 
+/**
+ * @title Contract for Adding Exchange Rate functionality
+ * @author Cork Team
+ * @notice Adds Exchange Rate functionality to Assets contracts
+ */
 contract ExchangeRate is IRates {
     uint256 internal immutable RATE;
 
@@ -15,11 +20,20 @@ contract ExchangeRate is IRates {
         RATE = _rate;
     }
 
+    /**
+     * @notice returns the current exchange rate
+     */
     function exchangeRate() external view override returns (uint256) {
         return RATE;
     }
 }
 
+/**
+ * @title Contract for Adding Expiry functionality to DS
+ * @author Cork Team
+ * @notice Adds Expiry functionality to Assets contracts
+ * @dev Used for adding Expiry functionality to contracts like DS
+ */
 contract Expiry is IExpiry {
     uint256 internal immutable EXPIRY;
     uint256 internal immutable ISSUED_AT;
@@ -33,6 +47,9 @@ contract Expiry is IExpiry {
         ISSUED_AT = block.timestamp;
     }
 
+    /**
+     * @notice returns if contract is expired or not(if timestamp==0 then contract not having any expiry)
+     */
     function isExpired() external view virtual returns (bool) {
         if (EXPIRY == 0) {
             return false;
@@ -41,6 +58,9 @@ contract Expiry is IExpiry {
         return block.timestamp >= EXPIRY;
     }
 
+    /**
+     * @notice returns expiry timestamp of contract
+     */
     function expiry() external view virtual returns (uint256) {
         return EXPIRY;
     }
@@ -50,6 +70,11 @@ contract Expiry is IExpiry {
     }
 }
 
+/**
+ * @title Assets Contract
+ * @author Cork Team
+ * @notice Contract for implementing assets like DS/CT etc
+ */
 contract Asset is ERC20Burnable, ERC20Permit, Ownable, Expiry, ExchangeRate {
     constructor(string memory prefix, string memory pairName, address _owner, uint256 _expiry, uint256 _rate)
         ExchangeRate(_rate)
@@ -59,6 +84,11 @@ contract Asset is ERC20Burnable, ERC20Permit, Ownable, Expiry, ExchangeRate {
         Expiry(_expiry)
     {}
 
+    /**
+     * @notice mints `amount` number of tokens to `to` address
+     * @param to address of receiver
+     * @param amount number of tokens to be minted
+     */
     function mint(address to, uint256 amount) public onlyOwner {
         _mint(to, amount);
     }
