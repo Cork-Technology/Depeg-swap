@@ -29,7 +29,7 @@ contract RouterState is IDsFlashSwapUtility, IDsFlashSwapCore, OwnableUpgradeabl
 
     IUniswapV2Router02 internal univ2Router;
 
-    function initialize(address moduleCore, address _univ2Router) external initializer notDelegated {
+    function initialize(address moduleCore, address _univ2Router) external initializer {
         __Ownable_init(moduleCore);
         __UUPSUpgradeable_init();
 
