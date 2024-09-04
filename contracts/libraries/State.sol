@@ -6,7 +6,10 @@ import {LvAsset} from "./LvAssetLib.sol";
 import {BitMaps} from "@openzeppelin/contracts/utils/structs/BitMaps.sol";
 import {DepegSwap} from "./DepegSwapLib.sol";
 
-// as there are some fields that are used in PSM but not in LV
+/**
+ * @dev State structure
+ * @dev as there are some fields that are used in PSM but not in LV
+ */
 struct State {
     /// @dev used to track current ds and ct for both lv and psm
     uint256 globalAssetIdx;
@@ -17,6 +20,9 @@ struct State {
     VaultState vault;
 }
 
+/**
+ * @dev PsmState structure for PSM Core
+ */
 struct PsmState {
     Balances balances;
     uint256 repurchaseFeePrecentage;
@@ -27,12 +33,18 @@ struct PsmState {
     bool isWithdrawalPaused;
 }
 
+/**
+ * @dev PsmPoolArchive structure for PSM Pools
+ */
 struct PsmPoolArchive {
     uint256 raAccrued;
     uint256 paAccrued;
     uint256 ctAttributed;
 }
 
+/**
+ * @dev Balances structure for managing balances in PSM Core
+ */
 struct Balances {
     PsmRedemptionAssetManager ra;
     uint256 dsBalance;
@@ -40,6 +52,9 @@ struct Balances {
     uint256 paBalance;
 }
 
+/**
+ * @dev VaultPool structure for providing pools in Vault(Liquidity Pool)
+ */
 struct VaultPool {
     VaultWithdrawalPool withdrawalPool;
     VaultAmmLiquidityPool ammLiquidityPool;
@@ -47,6 +62,9 @@ struct VaultPool {
     mapping(address => uint256) withdrawEligible;
 }
 
+/**
+ * @dev VaultWithdrawalPool structure for providing withdrawal pools in Vault(Liquidity Pool)
+ */
 struct VaultWithdrawalPool {
     uint256 atrributedLv;
     uint256 raExchangeRate;
@@ -60,10 +78,16 @@ struct VaultWithdrawalPool {
     uint256 stagnatedPaBalance;
 }
 
+/**
+ * @dev VaultAmmLiquidityPool structure for providing AMM pools in Vault(Liquidity Pool)
+ */
 struct VaultAmmLiquidityPool {
     uint256 balance;
 }
 
+/**
+ * @dev VaultState structure for VaultCore
+ */
 struct VaultState {
     Balances balances;
     VaultConfig config;
@@ -73,6 +97,9 @@ struct VaultState {
     uint256 initialDsPrice;
 }
 
+/**
+ * @dev VaultConfig structure for VaultConfig Contract
+ */
 struct VaultConfig {
     // 1 % = 1e18
     uint256 fee;
