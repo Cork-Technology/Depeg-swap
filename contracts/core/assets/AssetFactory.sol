@@ -45,7 +45,7 @@ contract AssetFactory is IAssetFactory, OwnableUpgradeable, UUPSUpgradeable {
      * @notice initializes asset factory contract and setup owner
      * @param moduleCore the address of Module Core contract
      */
-    function initialize(address moduleCore) external initializer notDelegated {
+    function initialize(address moduleCore) external initializer {
         __Ownable_init(moduleCore);
         __UUPSUpgradeable_init();
     }
