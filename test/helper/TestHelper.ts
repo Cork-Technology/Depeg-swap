@@ -13,8 +13,8 @@ import {
   verifyTypedData,
   WalletClient,
 } from "viem";
-import UNIV2FACTORY from "./ext-abi/uni-v2-factory.json";
-import UNIV2ROUTER from "./ext-abi/uni-v2-router.json";
+import UNIV2FACTORY from "./ext-abi/hardhat/uni-v2-factory.json";
+import UNIV2ROUTER from "./ext-abi/hardhat/uni-v2-router.json";
 import { ethers } from "ethers";
 
 const DEVISOR = BigInt(1e18);

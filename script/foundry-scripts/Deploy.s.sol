@@ -12,8 +12,9 @@ import {ModuleCore} from "../../contracts/core/ModuleCore.sol";
 import {DummyWETH} from "../../contracts/dummy/DummyWETH.sol";
 
 contract DeployScript is Script {
-    string constant v2FactoryArtifact = "test/helper/ext-abi/uni-v2-factory.json";
-    string constant v2RouterArtifact = "test/helper/ext-abi/uni-v2-router.json";
+    // TODO : check if univ2 compilation with foundry is same as hardhat compiled bytecode
+    string constant v2FactoryArtifact = "test/helper/ext-abi/foundry/uni-v2-factory.json";
+    string constant v2RouterArtifact = "test/helper/ext-abi/foundry/uni-v2-router.json";
 
     IUniswapV2Factory public factory;
     IUniswapV2Router02 public univ2Router;

@@ -4,8 +4,8 @@ import dotenv from "dotenv";
 import * as core from "../../ignition/modules/core";
 import * as lib from "../../ignition/modules/lib";
 import * as uniV2 from "../../ignition/modules/uniV2";
-import UNIV2FACTORY from "../../test/helper/ext-abi/uni-v2-factory.json";
-import UNIV2ROUTER from "../../test/helper/ext-abi/uni-v2-router.json";
+import UNIV2FACTORY from "../../test/helper/ext-abi/hardhat/uni-v2-factory.json";
+import UNIV2ROUTER from "../../test/helper/ext-abi/hardhat/uni-v2-router.json";
 
 import { Address, isAddress } from "viem";
 
