@@ -112,8 +112,11 @@ async function main() {
     },
   });
 
-  await assetFactory.write.initialize([ModuleCore.address]);
-  await FlashSwapRouter.write.initialize([ModuleCore.address]);
+  await assetFactory.write.initialize();
+  await FlashSwapRouter.write.initialize();
+
+  await assetFactory.write.transferOwnership([ModuleCore.address]);
+  await FlashSwapRouter.write.transferOwnership([ModuleCore.address]);
 
   console.log("ModuleCore deployed to       :", ModuleCore.address);
 }

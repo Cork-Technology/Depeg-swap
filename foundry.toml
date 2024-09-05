@@ -1,6 +1,10 @@
 [profile.default]
-src = "src"
+src = "contracts"
+evm_version = "cancun"   
 out = "out"
 libs = ["lib"]
-
+test = "test"
+cache_path = "cache_forge"
+optimizer = true
+optimizer_runs = 10_000
 # See more config options https://github.com/foundry-rs/foundry/blob/master/crates/config/README.md#all-options

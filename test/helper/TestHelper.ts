@@ -223,7 +223,8 @@ export async function deployModuleCore(
     }
   );
 
-  await dsFlashSwapRouter.contract.write.initialize([contract.address]);
+  await dsFlashSwapRouter.contract.write.initialize();
+  await dsFlashSwapRouter.contract.write.transferOwnership([contract.address]);
 
   return {
     contract,
@@ -468,7 +469,8 @@ export async function onlymoduleCoreWithFactory(basePsmRedemptionFee: bigint) {
       basePsmRedemptionFee
     );
   const moduleCore = contract;
-  await factory.contract.write.initialize([moduleCore.address]);
+  await factory.contract.write.initialize();
+  await factory.contract.write.transferOwnership([moduleCore.address]);
 
   return {
     factory,

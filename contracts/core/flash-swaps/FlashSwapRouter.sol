@@ -26,8 +26,8 @@ contract RouterState is IDsFlashSwapUtility, IDsFlashSwapCore, OwnableUpgradeabl
     using DsFlashSwaplibrary for AssetPair;
     using SafeERC20 for IERC20;
 
-    function initialize(address moduleCore) external initializer {
-        __Ownable_init(moduleCore);
+    function initialize() external initializer {
+        __Ownable_init(msg.sender);
         __UUPSUpgradeable_init();
     }
 
