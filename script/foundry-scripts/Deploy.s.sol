@@ -23,16 +23,26 @@ contract DeployScript is Script {
     RouterState public flashswapRouter;
     ModuleCore public moduleCore;
 
+    bool public isProd = vm.envBool("PRODUCTION");
     uint256 public base_redemption_fee = vm.envUint("PSM_BASE_REDEMPTION_FEE_PRECENTAGE");
+    address public ceth = vm.envAddress("WETH");
+    uint256 public pk = vm.envUint("PRIVATE_KEY");
 
     function setUp() public {}
 
     function run() public {
-        vm.startBroadcast();
-
-        // Deploy the WETH contract
-        DummyWETH weth = new DummyWETH();
-        console.log("WETH                            : ", address(weth));
+        vm.startBroadcast(pk);
+        if (!isProd && ceth == address(0)) {
+            // Deploy the WETH contract
+            DummyWETH weth = new DummyWETH();
+            console.log("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-");
+            console.log("WETH                            : ", address(weth));
+            ceth = address(weth);
+        } else {
+            console.log("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-");
+            console.log("CETH USED                       : ", address(ceth));
+            console.log("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-");
+        }
 
         // Deploy the Asset Factory implementation (logic) contract
         AssetFactory assetFactoryImplementation = new AssetFactory();
@@ -64,7 +74,7 @@ contract DeployScript is Script {
         console.log("Univ2 Factory                   : ", _factory);
 
         // Deploy the UniswapV2Router contract
-        address _router = deployCode(v2RouterArtifact, abi.encode(_factory, address(weth), address(flashswapRouter)));
+        address _router = deployCode(v2RouterArtifact, abi.encode(_factory, address(ceth), address(flashswapRouter)));
         univ2Router = IUniswapV2Router02(_router);
         console.log("Univ2 Router                    : ", _router);
 
@@ -73,11 +83,13 @@ contract DeployScript is Script {
             address(assetFactory), _factory, address(flashswapRouter), _router, address(config), base_redemption_fee
         );
         console.log("Module Core                     : ", address(moduleCore));
+        console.log("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-");
 
         // Transfer Ownership to moduleCore
         assetFactory.transferOwnership(address(moduleCore));
         flashswapRouter.transferOwnership(address(moduleCore));
         console.log("Transferred ownerships to Modulecore");
+        console.log("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-");
         vm.stopBroadcast();
     }
 }
