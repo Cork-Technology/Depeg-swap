@@ -29,6 +29,7 @@ struct PsmState {
     BitMaps.BitMap liquiditySeparated;
     /// @dev dsId => PsmPoolArchive
     mapping(uint256 => PsmPoolArchive) poolArchive;
+    mapping(address => bool) autoSell;
     bool isDepositPaused;
     bool isWithdrawalPaused;
 }

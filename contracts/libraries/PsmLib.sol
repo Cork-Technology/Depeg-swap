@@ -39,6 +39,10 @@ library PsmLibrary {
         self.psm.balances.ra = RedemptionAssetManagerLibrary.initialize(key.redemptionAsset());
     }
 
+    function updateAutoSell(State storage self, address user , bool status) internal {
+        self.psm.autoSell[user] = status;
+    }
+
     /// @notice issue a new pair of DS, will fail if the previous DS isn't yet expired
     function onNewIssuance(
         State storage self,
@@ -109,7 +113,7 @@ library PsmLibrary {
     // This is here just for semantics, since in the whitepaper, all the CT DS issuance
     // happens in the PSM, although they essentially lives in the same contract, we leave it here just for consistency sake
     //
-    // IMPORTANT/FIXME: this is unsafe because by issuing CT, we also lock an equal amount of RA into the PSM.
+    // IMPORTANT: this is unsafe because by issuing CT, we also lock an equal amount of RA into the PSM.
     // it is a must, that the LV won't count the amount being locked in the PSM as it's balances.
     // doing so would create a mismatch between the accounting balance and the actual token balance.
     function unsafeIssueToLv(State storage self, uint256 amount) internal {

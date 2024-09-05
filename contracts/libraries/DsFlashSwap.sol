@@ -28,6 +28,11 @@ struct ReserveState {
     /// @dev dsId => [RA, CT, DS]
     mapping(uint256 => AssetPair) ds;
     uint256 reserveSellPressurePrecentage;
+    uint256 hpaCumulated;
+    uint256 vhpaCumulated;
+    uint256 decayDiscountRateInDays;
+    uint256 rolloverPeriodInblocks;
+    uint256 hpa;
 }
 
 /**
@@ -57,6 +62,18 @@ library DsFlashSwaplibrary {
 
         self.reserveSellPressurePrecentage =
             dsId == 1 ? INITIAL_RESERVE_SELL_PRESSURE_PRECENTAGE : SUBSEQUENT_RESERVE_SELL_PRESSURE_PRECENTAGE;
+            
+        if(dsId != 1){
+            self.hpaCumulated = 0;
+            self.vhpaCumulated = 0;
+            
+            try SwapperMathLibrary.calculateHPA(self.hpaCumulated, self.vhpaCumulated) returns(uint256 hpa){
+                self.hpa = hpa;
+            } catch {
+                self.hpa = 0;
+            }
+        }
+
     }
 
     function getPair(ReserveState storage self, uint256 dsId) internal view returns (IUniswapV2Pair) {
@@ -65,6 +82,16 @@ library DsFlashSwaplibrary {
 
     function emptyReserve(ReserveState storage self, uint256 dsId, address to) internal returns (uint256 emptied) {
         emptied = emptyReservePartial(self, dsId, self.ds[dsId].reserve, to);
+    }
+
+    function recalculateHPA(ReserveState storage self, uint256 dsId,uint256 raProvided, uint256 dsReceived) internal {
+        uint256 effectiveDsPrice = SwapperMathLibrary.calculateEffectiveDsPrice(dsReceived, raProvided);
+        uint256 issuanceTime =  self.ds[dsId].ds.issuedAt();
+        uint256 currentTime = block.timestamp;
+        uint256 decayDiscount =  self.decayDiscountRateInDays;
+
+        self.hpaCumulated += SwapperMathLibrary.calculateHPAcumulated(effectiveDsPrice,dsReceived,decayDiscount,issuanceTime,currentTime);
+        self.vhpaCumulated += SwapperMathLibrary.calculateVHPAcumulated(dsReceived,decayDiscount,issuanceTime,currentTime);
     }
 
     function emptyReservePartial(ReserveState storage self, uint256 dsId, uint256 amount, address to)
