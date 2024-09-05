@@ -22,7 +22,7 @@ import {SafeERC20, IERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeE
  * @author Cork Team
  * @notice Router contract for implementing flashswaps for DS/CT
  */
-contract RouterState is IDsFlashSwapUtility, IDsFlashSwapCore, OwnableUpgradeable, UUPSUpgradeable, IUniswapV2Callee {
+contract RouterState is IDsFlashSwapUtility, IDsFlashSwapCore, AccessControlUpgradeable, UUPSUpgradeable, IUniswapV2Callee {
     using DsFlashSwaplibrary for ReserveState;
     using DsFlashSwaplibrary for AssetPair;
     using SafeERC20 for IERC20;
