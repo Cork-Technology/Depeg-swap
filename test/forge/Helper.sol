@@ -26,12 +26,24 @@ abstract contract Helper is Test {
         assetFactory = new AssetFactory();
     }
 
-    function initializeAssetFactory() internal {
-        assetFactory.initialize(address(moduleCore));
+    function deployFlashSwapRouter() internal {
+        flashSwapRouter = new RouterState();
     }
 
-    function deployUniswapRouter(address uniswapfactory, address _flashSwapRouter) internal {
-        bytes memory constructorArgs = abi.encode(uniswapfactory, weth, _flashSwapRouter);
+    function deployCorkConfig() internal {
+        config = new CorkConfig();
+    }
+
+    function deployUniswapRouter(
+        address uniswapfactory,
+        address weth,
+        address flashSwapRouter
+    ) internal {
+        bytes memory constructorArgs = abi.encode(
+            uniswapfactory,
+            weth,
+            flashSwapRouter
+        );
 
         address addr = deployCode("test/helper/ext-abi/uni-v2-router.json", constructorArgs);
 
