@@ -9,9 +9,9 @@ import {AssetFactory} from "../../contracts/core/assets/AssetFactory.sol";
 import {CorkConfig} from "../../contracts/core/CorkConfig.sol";
 import {RouterState} from "../../contracts/core/flash-swaps/FlashSwapRouter.sol";
 import {ModuleCore} from "../../contracts/core/ModuleCore.sol";
-import {DummyWETH} from "../../contracts/dummy/DummyWETH.sol";
+import {CETH} from "../../contracts/tokens/CETH.sol";
+import {CST} from "../../contracts/tokens/CST.sol";
 import {Id} from "../../contracts/libraries/Pair.sol";
-import {IERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
 interface ICST {
     function deposit(uint256 amount) external;
@@ -41,7 +41,7 @@ contract DeployScript is Script {
     address mlETH = 0x5FeB996d05633571C0d9A3E12A65B887a829f60b;
 
     uint256 depositAmt = 1_000_000_000_000 ether;
-    IERC20 cETH = IERC20(ceth);
+    CETH cETH = CETH(ceth);
 
     function setUp() public {}
 
@@ -49,10 +49,31 @@ contract DeployScript is Script {
         vm.startBroadcast(pk);
         if (!isProd && ceth == address(0)) {
             // Deploy the WETH contract
-            DummyWETH weth = new DummyWETH();
+            CETH weth = new CETH();
+            weth.mint(msg.sender, 100_000_000_000_000 ether);
             console.log("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-");
             console.log("WETH                            : ", address(weth));
             ceth = address(weth);
+
+            CST bsETHCST = new CST("Bear Sterns Restaked ETH", "bsETH", ceth, msg.sender);
+            bsETH = address(bsETHCST);
+            weth.approve(bsETH, depositAmt);
+            bsETHCST.deposit(depositAmt);
+
+            CST lbETHCST = new CST("Lehman Brothers Restaked ETH", "lbETH", ceth, msg.sender);
+            lbETH = address(lbETHCST);
+            weth.approve(lbETH, depositAmt);
+            lbETHCST.deposit(depositAmt);
+
+            CST wamuETHCST = new CST("Washington Mutual restaked ETH", "wamuETH", ceth, msg.sender);
+            wamuETH = address(wamuETHCST);
+            weth.approve(wamuETH, depositAmt);
+            wamuETHCST.deposit(depositAmt);
+
+            CST mlETHCST = new CST("Merrill Lynch staked ETH", "mlETH", ceth, msg.sender);
+            mlETH = address(mlETHCST);
+            weth.approve(mlETH, depositAmt);
+            mlETHCST.deposit(depositAmt);
         } else {
             console.log("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-");
             console.log("CETH USED                       : ", address(ceth));
