@@ -10,37 +10,53 @@ import {IUniswapV2Pair} from "./uniswap-v2/pair.sol";
  */
 interface IDsFlashSwapUtility {
     /**
-     * @notice returns the current price ratio of the pair 
-     * @param id the id of the pair 
-     * @param dsId the ds id of the pair 
-     * @return raPriceRatio ratio of RA 
-     * @return ctPriceRatio ratio of CT 
+     * @notice returns the current price ratio of the pair
+     * @param id the id of the pair
+     * @param dsId the ds id of the pair
+     * @return raPriceRatio ratio of RA
+     * @return ctPriceRatio ratio of CT
      */
-    function getCurrentPriceRatio(Id id, uint256 dsId) external view returns (uint256 raPriceRatio, uint256 ctPriceRatio); 
+    function getCurrentPriceRatio(Id id, uint256 dsId)
+        external
+        view
+        returns (uint256 raPriceRatio, uint256 ctPriceRatio);
 
     /**
      * @notice returns the current reserve of the pair
-     * @param id the id of the pair 
-     * @param dsId the ds id of the pair 
-     * @return raReserve reserve of RA 
-     * @return ctReserve reserve of CT  
+     * @param id the id of the pair
+     * @param dsId the ds id of the pair
+     * @return raReserve reserve of RA
+     * @return ctReserve reserve of CT
      */
     function getAmmReserve(Id id, uint256 dsId) external view returns (uint112 raReserve, uint112 ctReserve);
 
     /**
      * @notice returns the current DS reserve that is owned by liquidity vault
-     * @param id the id of the pair 
+     * @param id the id of the pair
      * @param dsId the ds id of the pair
-     * @return lvReserve reserve of DS 
+     * @return lvReserve reserve of DS
      */
     function getLvReserve(Id id, uint256 dsId) external view returns (uint256 lvReserve);
 
     /**
      * @notice returns the underlying uniswap v2 pair address
-     * @param id the id of the pair 
-     * @param dsId the ds id of the pair 
+     * @param id the id of the pair
+     * @param dsId the ds id of the pair
      */
     function getUniV2pair(Id id, uint256 dsId) external view returns (IUniswapV2Pair pair);
+
+    /**
+     * @notice returns the current cumulative HPA of the pair
+     * @param id the id of the pair
+     * @return hpaCummulative the current cumulative HPA
+     */
+    function getCurrentCumulativeHPA(Id id) external view returns (uint256 hpaCummulative);
+
+    /**
+     * @notice returns the current effective HPA of the pair
+     * @param id the id of the pair
+     */
+    function getCurrentEffectiveHPA(Id id) external view returns (uint256 hpa);
 }
 
 /**
@@ -61,6 +77,8 @@ interface IDsFlashSwapCore is IDsFlashSwapUtility {
     /// @notice thrown when the caller is not Config contract
     error NotConfig();
 
+    /// @notice thrown when the swap somehow got into rollover period, but the rollover period is not active
+    error RolloverNotActive();
 
     /**
      * @notice Emitted when DS is swapped for RA
@@ -114,13 +132,13 @@ interface IDsFlashSwapCore is IDsFlashSwapUtility {
 
     /**
      * @notice trigger new issuance logic, can only be called my moduleCore
-     * @param reserveId the pair id 
-     * @param dsId the ds id of the pair 
-     * @param ds the address of the new issued DS 
-     * @param pair the address of the underlying uniswap v2 pair 
-     * @param initialReserve the initial reserve of the DS 
-     * @param ra the address of RA token 
-     * @param ct the address of CT token 
+     * @param reserveId the pair id
+     * @param dsId the ds id of the pair
+     * @param ds the address of the new issued DS
+     * @param pair the address of the underlying uniswap v2 pair
+     * @param initialReserve the initial reserve of the DS
+     * @param ra the address of RA token
+     * @param ct the address of CT token
      */
     function onNewIssuance(
         Id reserveId,
@@ -136,28 +154,28 @@ interface IDsFlashSwapCore is IDsFlashSwapUtility {
 
     /**
      * @notice add more DS reserve from liquidity vault, can only be called by moduleCore
-     * @param id the pair id 
-     * @param dsId the ds id of the pair 
-     * @param amount the amount of DS to add  
+     * @param id the pair id
+     * @param dsId the ds id of the pair
+     * @param amount the amount of DS to add
      */
-    function addReserve(Id id, uint256 dsId, uint256 amount) external;
+    function addReserveLv(Id id, uint256 dsId, uint256 amount) external;
 
     /**
-     * @notice empty all DS reserve to liquidity vault, can only be called by moduleCore 
+     * @notice empty all DS reserve to liquidity vault, can only be called by moduleCore
      * @param reserveId the pair id
      * @param dsId the ds id of the pair
-     * @return amount the amount of DS that's emptied 
+     * @return amount the amount of DS that's emptied
      */
-    function emptyReserve(Id reserveId, uint256 dsId) external returns (uint256 amount);
+    function emptyReserveLv(Id reserveId, uint256 dsId) external returns (uint256 amount);
 
     /**
-     * @notice empty some or all DS reserve to liquidity vault, can only be called by moduleCore 
-     * @param reserveId the pair id 
-     * @param dsId the ds id of the pair 
+     * @notice empty some or all DS reserve to liquidity vault, can only be called by moduleCore
+     * @param reserveId the pair id
+     * @param dsId the ds id of the pair
      * @param amount the amount of DS to empty
-     * @return reserve the remaining reserve of DS 
+     * @return reserve the remaining reserve of DS
      */
-    function emptyReservePartial(Id reserveId, uint256 dsId, uint256 amount) external returns (uint256 reserve);
+    function emptyReservePartialLv(Id reserveId, uint256 dsId, uint256 amount) external returns (uint256 reserve);
 
     /**
      * @notice Swaps RA for DS
@@ -200,4 +218,11 @@ interface IDsFlashSwapCore is IDsFlashSwapUtility {
      * @return amountOut amount of RA that will be received
      */
     function previewSwapDsforRa(Id reserveId, uint256 dsId, uint256 amount) external returns (uint256 amountOut);
+
+    /**
+     * @notice Updates the discount rate in D days for the pair
+     * @param id the pair id
+     * @param discountRateInDays the new discount rate in D days
+     */
+    function updateDiscountRateInDdays(Id id, uint256 discountRateInDays) external;
 }

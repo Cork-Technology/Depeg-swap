@@ -78,14 +78,14 @@ library VaultLibrary {
         self.vault.config.lpBalance += lp;
     }
 
-    function _addFlashSwapReserve(
+    function _addFlashSwapReserveLv(
         State storage self,
         IDsFlashSwapCore flashSwapRouter,
         DepegSwap storage ds,
         uint256 amount
     ) internal {
         Asset(ds._address).approve(address(flashSwapRouter), amount);
-        flashSwapRouter.addReserve(self.info.toId(), self.globalAssetIdx, amount);
+        flashSwapRouter.addReserveLv(self.info.toId(), self.globalAssetIdx, amount);
     }
 
     // MUST be called on every new DS issuance
@@ -141,13 +141,13 @@ library VaultLibrary {
         view
         returns (uint256 ratio)
     {
-        // This basically means that if the reserve is empty, then we use the default ratio supplied at deployment
-        ratio = self.ds[dsId].exchangeRate() - self.vault.initialDsPrice;
+        uint256 exchangeRate = self.ds[dsId].exchangeRate();
+        uint256 hpa = flashSwapRouter.getCurrentEffectiveHPA(self.info.toId());
 
-        // will always fail for the first deposit
-        try flashSwapRouter.getCurrentPriceRatio(self.info.toId(), dsId) returns (uint256, uint256 _ctRatio) {
-            ratio = _ctRatio;
-        } catch {}
+        // this means that if the hpa is 0(because it's the first issuance or because there's no DS trade, will fallback to the initial exchange rate)
+        // if the hpa is not 0, then we will calculate the ratio based on the hpa.
+        // note that hpa is the target DS price and since the CT price is inversely related to DS we can do it like this
+        ratio  = hpa == 0 ? exchangeRate - self.vault.initialDsPrice : exchangeRate - hpa; 
     }
 
     function __provideLiquidity(
@@ -168,7 +168,7 @@ library VaultLibrary {
 
         __addLiquidityToAmmUnchecked(self, raAmount, ctAmount, self.info.redemptionAsset(), ctAddress, ammRouter);
 
-        _addFlashSwapReserve(self, flashSwapRouter, self.ds[dsId], ctAmount);
+        _addFlashSwapReserveLv(self, flashSwapRouter, self.ds[dsId], ctAmount);
     }
 
     function __provideAmmLiquidityFromPool(
@@ -326,7 +326,7 @@ library VaultLibrary {
 
         uint256 redeemAmount = reservedDs >= ammCtBalance ? ammCtBalance : reservedDs;
 
-        reservedDs = flashSwapRouter.emptyReservePartial(self.info.toId(), dsId, redeemAmount);
+        reservedDs = flashSwapRouter.emptyReservePartialLv(self.info.toId(), dsId, redeemAmount);
 
         ra += redeemAmount;
         PsmLibrary.lvRedeemRaWithCtDs(self, redeemAmount, dsId);
@@ -371,7 +371,7 @@ library VaultLibrary {
             self, self.info.pair1, self.ds[dsId].ct, ammRouter, IUniswapV2Pair(ds.ammPair), self.vault.config.lpBalance
         );
 
-        uint256 reservedDs = flashSwapRouter.emptyReserve(self.info.toId(), dsId);
+        uint256 reservedDs = flashSwapRouter.emptyReserveLv(self.info.toId(), dsId);
 
         uint256 redeemAmount = reservedDs >= ctAmm ? ctAmm : reservedDs;
         PsmLibrary.lvRedeemRaWithCtDs(self, redeemAmount, dsId);
