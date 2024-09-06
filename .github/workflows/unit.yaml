@@ -16,7 +16,7 @@ on:
       - main
 
 jobs:
-  test:
+  test-hardhat:
     runs-on: ubuntu-latest
     name: Hardhat unit test
     steps:
@@ -28,3 +28,21 @@ jobs:
         uses: ambersun1234/hardhat-test-action@v1
         with:
           network: hardhat
+          
+  test-forge:
+    name: Foundry unit test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          submodules: recursive
+
+      - name: Install Foundry
+        uses: foundry-rs/foundry-toolchain@v1
+
+      - name: Run tests
+        run: forge test -vvv
+
+      - name: Run snapshot
+        run: forge snapshot
+
