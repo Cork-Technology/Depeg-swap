@@ -55,21 +55,20 @@ AFter that, you should see something like this on your terminal :
   Chain Id                     : 11155111
   Deployer                     : 0xFFB6b6896D469798cE64136fd3129979411B5514
   -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-  TC Contracts
-  CETH deployed to                : 0x8135505f4C49e4Bd882b7fB7a33051C49feBB1d9
-  bsETH deployed to               : 0x47Ac327afFAf064Da7a42175D02cF4435E0d4088
-  lbETH deployed to               : 0x36645b1356c3a57A8ad401d274c5487Bc4A586B6
-  wamuETH deployed to             : 0x64BAdb1F23a409574441C10C2e0e9385E78bAD0F
-  mlETH deployed to               : 0x5FeB996d05633571C0d9A3E12A65B887a829f60b
+  CETH                            :  0x5A517Bdd28E6c82fc88DD94B255B182788d12080
+  bsETH                           :  0xB926f1279e58AF494976D324CC38866018CCa892
+  lbETH                           :  0xCa15c974445d7C8A0aA14Bd5E6b3aFd5F22D7D17
+  wamuETH                         :  0xE7Df8d2654183E4C809803850A56829131ae77f6
+  mlETH                           :  0x4Bc92B2E2066906e0b4C1E1D9d30f985375D9268
   -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-  CETH USED                       :  0x8135505f4C49e4Bd882b7fB7a33051C49feBB1d9
+  Asset Factory Implementation    :  0xA16C75fbdB9719832B38b54D07176978c495825A
+  Asset Factory                   :  0xEf8e5a6410Ad6d96E50A88557a30f015dd4a7dFC
+  Cork Config                     :  0x90C95749f0018F0C790CB2e9a93a2cE34181AdDA
+  Flashswap Router Implementation :  0xd8A5e28c17402aA7f6692Ed2FCfFD9BD654A62Ee
+  Flashswap Router Proxy          :  0xD9850bFE4b85972904FEe5e38f6be9117Ce1f18f
+  Univ2 Factory                   :  0xaF2e1Ad77fAcc108d5085D2f12418936880EeEeD
+  Univ2 Router                    :  0x733732F1C66f1973b90ca443022Cef2B287EFCB6
+  Module Core                     :  0x1647873c50Ec462039d4Eb4Fbd7bdFD8835a1133
   -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-  Asset Factory Implementation    :  0x1406A3E45f5344d53c821B27031A68E85605defE
-  Asset Factory                   :  0xe1DB6AeCeBE168DE936bf025BDcd17CFB86d1853
-  Cork Config                     :  0xd36179416804dAF522894fC74C7A79F21eEB8D4F
-  Flashswap Router Implementation :  0x11fF631B48D23365bb1d903b47e113Fef423252f
-  Flashswap Router Proxy          :  0x696A35c03A82137CdeA9AF3675bB15922FD5C6E1
-  Univ2 Factory                   :  0x4EfcfAE12609E700BA2fF295cf4a1B0C763E70C0
-  Univ2 Router                    :  0x2b1f46Bf510c5BD58490cF0131D68EaF6ffC7f7F
-  Module Core                     :  0xE843742Db2dfF75f5c5C4D524f9d05cf31f0006a  -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+
 ```

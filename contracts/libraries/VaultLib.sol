@@ -62,15 +62,19 @@ library VaultLibrary {
     ) internal {
         (uint256 raTolerance, uint256 ctTolerance) =
             MathHelper.calculateWithTolerance(raAmount, ctAmount, MathHelper.UNIV2_STATIC_TOLERANCE);
+
         ERC20(raAddress).approve(address(ammRouter), raAmount);
         ERC20(ctAddress).approve(address(ammRouter), ctAmount);
+
         (address token0, address token1, uint256 token0Amount, uint256 token1Amount) =
             MinimalUniswapV2Library.sortTokensUnsafeWithAmount(raAddress, ctAddress, raAmount, ctAmount);
         (,, uint256 token0Tolerance, uint256 token1Tolerance) =
             MinimalUniswapV2Library.sortTokensUnsafeWithAmount(raAddress, ctAddress, raTolerance, ctTolerance);
+
         (,, uint256 lp) = ammRouter.addLiquidity(
             token0, token1, token0Amount, token1Amount, token0Tolerance, token1Tolerance, address(this), block.timestamp
         );
+
         self.vault.config.lpBalance += lp;
     }
 
@@ -124,8 +128,11 @@ library VaultLibrary {
         IUniswapV2Router02 ammRouter
     ) internal returns (uint256 ra, uint256 ct) {
         uint256 dsId = self.globalAssetIdx;
+
         uint256 ctRatio = __getAmmCtPriceRatio(self, flashSwapRouter, dsId);
+
         (ra, ct) = MathHelper.calculateProvideLiquidityAmountBasedOnCtPrice(amount, ctRatio);
+
         __provideLiquidity(self, ra, ct, flashSwapRouter, ctAddress, ammRouter, dsId);
     }
 
@@ -156,8 +163,11 @@ library VaultLibrary {
         if (raAmount == 0 && ctAmount == 0) {
             return;
         }
+
         PsmLibrary.unsafeIssueToLv(self, ctAmount);
+
         __addLiquidityToAmmUnchecked(self, raAmount, ctAmount, self.info.redemptionAsset(), ctAddress, ammRouter);
+
         _addFlashSwapReserve(self, flashSwapRouter, self.ds[dsId], ctAmount);
     }
 

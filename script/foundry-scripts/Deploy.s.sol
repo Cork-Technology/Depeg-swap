@@ -50,7 +50,7 @@ contract DeployScript is Script {
         vm.startBroadcast(pk);
         if (!isProd && ceth == address(0)) {
             // Deploy the WETH contract
-            CETH cETH = new CETH();
+            cETH = new CETH();
             cETH.mint(msg.sender, 100_000_000_000_000 ether);
             ceth = address(cETH);
             console.log("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-");
@@ -60,27 +60,32 @@ contract DeployScript is Script {
             bsETH = address(bsETHCST);
             cETH.approve(bsETH, depositAmt);
             bsETHCST.deposit(depositAmt);
+            console.log("bsETH                           : ", address(bsETH));
 
             CST lbETHCST = new CST("Lehman Brothers Restaked ETH", "lbETH", ceth, msg.sender);
             lbETH = address(lbETHCST);
             cETH.approve(lbETH, depositAmt);
             lbETHCST.deposit(depositAmt);
+            console.log("lbETH                           : ", address(lbETH));
 
             CST wamuETHCST = new CST("Washington Mutual restaked ETH", "wamuETH", ceth, msg.sender);
             wamuETH = address(wamuETHCST);
             cETH.approve(wamuETH, depositAmt);
             wamuETHCST.deposit(depositAmt);
+            console.log("wamuETH                         : ", address(wamuETH));
 
             CST mlETHCST = new CST("Merrill Lynch staked ETH", "mlETH", ceth, msg.sender);
             mlETH = address(mlETHCST);
             cETH.approve(mlETH, depositAmt);
             mlETHCST.deposit(depositAmt);
+            console.log("mlETH                           : ", address(mlETH));
+            console.log("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-");
         } else {
             console.log("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-");
             console.log("CETH USED                       : ", address(ceth));
             console.log("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-");
         }
-        CETH cETH = CETH(ceth);
+        cETH = CETH(ceth);
 
         // Deploy the Asset Factory implementation (logic) contract
         AssetFactory assetFactoryImplementation = new AssetFactory();
