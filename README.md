@@ -44,6 +44,10 @@ This is because we actualy don't use ignition when deploying uniswap v2 related 
 
 ```bash
 npx hardhat run scripts/deploy.ts --network <network>
+
+# For deploying up Tokens for Trading competition 
+npx hardhat run scripts/setupTC.ts --network <network>
+
 ```
 
 AFter that, you should see something like this on your terminal :
