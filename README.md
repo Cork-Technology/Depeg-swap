@@ -66,9 +66,9 @@ UniV2Router deployed to      : 0x7f4e645054966556983B21a5Fe5eE6A17C21171a
 ModuleCore deployed to       : 0xB2643D4b7Ee4aeb9f03CD0C18B971A141eC07f37
 
 TC Contracts
-CETH deployed to             : 0xDe6CCd057e10A5Fa5B33fd97031Afa806586db32
-bsETH deployed to            : 0x479B33663121678476d6e29F0C4ebA8f689cd955
-lbETH deployed to            : 0x8a519d5300aeeCDDFa62E8cDB734f0965d2d46ec
-wamuETH deployed to          : 0x3C9939C5066F9Ab6cE80e2D534a1f45b3b64302D
-mlETH deployed to            : 0xCC8a4898C999Aa8f449C3282b9D51cE81d68A944
+CETH deployed to             : 0x8135505f4C49e4Bd882b7fB7a33051C49feBB1d9
+bsETH deployed to            : 0x47Ac327afFAf064Da7a42175D02cF4435E0d4088
+lbETH deployed to            : 0x36645b1356c3a57A8ad401d274c5487Bc4A586B6
+wamuETH deployed to          : 0x64BAdb1F23a409574441C10C2e0e9385E78bAD0F
+mlETH deployed to            : 0x5FeB996d05633571C0d9A3E12A65B887a829f60b
 ```
