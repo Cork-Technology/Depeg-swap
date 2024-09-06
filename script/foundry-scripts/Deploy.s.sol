@@ -49,36 +49,37 @@ contract DeployScript is Script {
         vm.startBroadcast(pk);
         if (!isProd && ceth == address(0)) {
             // Deploy the WETH contract
-            CETH weth = new CETH();
-            weth.mint(msg.sender, 100_000_000_000_000 ether);
+            CETH cETH = new CETH();
+            cETH.mint(msg.sender, 100_000_000_000_000 ether);
+            ceth = address(cETH);
             console.log("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-");
-            console.log("WETH                            : ", address(weth));
-            ceth = address(weth);
+            console.log("CETH                            : ", address(cETH));
 
             CST bsETHCST = new CST("Bear Sterns Restaked ETH", "bsETH", ceth, msg.sender);
             bsETH = address(bsETHCST);
-            weth.approve(bsETH, depositAmt);
+            cETH.approve(bsETH, depositAmt);
             bsETHCST.deposit(depositAmt);
 
             CST lbETHCST = new CST("Lehman Brothers Restaked ETH", "lbETH", ceth, msg.sender);
             lbETH = address(lbETHCST);
-            weth.approve(lbETH, depositAmt);
+            cETH.approve(lbETH, depositAmt);
             lbETHCST.deposit(depositAmt);
 
             CST wamuETHCST = new CST("Washington Mutual restaked ETH", "wamuETH", ceth, msg.sender);
             wamuETH = address(wamuETHCST);
-            weth.approve(wamuETH, depositAmt);
+            cETH.approve(wamuETH, depositAmt);
             wamuETHCST.deposit(depositAmt);
 
             CST mlETHCST = new CST("Merrill Lynch staked ETH", "mlETH", ceth, msg.sender);
             mlETH = address(mlETHCST);
-            weth.approve(mlETH, depositAmt);
+            cETH.approve(mlETH, depositAmt);
             mlETHCST.deposit(depositAmt);
         } else {
             console.log("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-");
             console.log("CETH USED                       : ", address(ceth));
             console.log("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-");
         }
+        CETH cETH = CETH(ceth);
 
         // Deploy the Asset Factory implementation (logic) contract
         AssetFactory assetFactoryImplementation = new AssetFactory();
@@ -129,7 +130,7 @@ contract DeployScript is Script {
         config.setModuleCore(address(moduleCore));
         console.log("Modulecore configured in Config contract");
 
-        config.initializeModuleCore(bsETH, ceth, 0.3 ether, 0.2 ether); // LVFee = 0.3%,  DSPrice=20%(TODO : or maybe 0.2%)
+        config.initializeModuleCore(bsETH, ceth, 0.3 ether, 0.2 ether); // LVFee = 0.3%,  DSPrice=0.2%(or 20%)
         console.log("Modulecore initialized");
 
         Id id = moduleCore.getId(bsETH, ceth);
@@ -144,17 +145,18 @@ contract DeployScript is Script {
 
         cETH.approve(address(moduleCore), 5000 ether);
         moduleCore.depositLv(id, 5000 ether);
+        console.log("New DS issued");
 
-        // univ2Router.addLiquidity(
-        //     ceth,
-        //     bsETH,
-        //     1_000_000 ether,
-        //     1_000_000 ether,
-        //     1_000_000 ether,
-        //     1_000_000 ether,
-        //     msg.sender,
-        //     block.timestamp + 10000 minutes
-        // );
+        univ2Router.addLiquidity(
+            ceth,
+            bsETH,
+            1_000_000 ether,
+            1_000_000 ether,
+            1_000_000 ether,
+            1_000_000 ether,
+            msg.sender,
+            block.timestamp + 10000 minutes
+        );
         console.log("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-");
         vm.stopBroadcast();
     }
