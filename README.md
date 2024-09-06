@@ -64,13 +64,13 @@ AFter that, you should see something like this on your terminal :
   -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
   CETH USED                       :  0x8135505f4C49e4Bd882b7fB7a33051C49feBB1d9
   -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-  Asset Factory Implementation    :  0x8c65cA47c5724f3E91f94917BE0Fb6aC21620114
-  Asset Factory                   :  0x8Cb83D51a1a4e786069013e5F57020ff35103c67
-  Cork Config                     :  0xdaBe7aDC50420Df3FDf9D3E2c19B86d19FAC6b55
-  Flashswap Router Implementation :  0xc0CAaA5d2131457Ad59Da64e032570E92181B674
-  Flashswap Router Proxy          :  0x34AeB26069858993385774dcF6A9AA18C47AAc72
-  Univ2 Factory                   :  0xE14344fb9488C55A27da37cd9351B97A577Ed363
-  Univ2 Router                    :  0x334B2C016372cdBbB37C5AD3a09A8e055ab6d3f5
-  Module Core                     :  0xf6fa5512A057e34707361155c4ae9ea94e759b8E
+  Asset Factory Implementation    :  0x9907fad82174436B526b41f3E25581b5F19de031
+  Asset Factory                   :  0xb9A02dC7B0Dbde47bf03e94Fa1930CEAf5539267
+  Cork Config                     :  0xD3Ef59A1DF0B226c323FC66B83B3352Ab9453bc7
+  Flashswap Router Implementation :  0x602a8441C89f18D9352D9EEb0c9C0E61A126b2D9
+  Flashswap Router Proxy          :  0x9877602c6e781B9130EC3Ed7fb2824371076aC71
+  Univ2 Factory                   :  0x022525E2538daD0F76172f91320a394B670a4316
+  Univ2 Router                    :  0xCC219192908FEbfa47E2aFb7A2204120A5896191
+  Module Core                     :  0x2154fC8b73a449208C1105BBf611DEa4F03E5c4E
   -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 ```
