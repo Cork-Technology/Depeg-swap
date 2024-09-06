@@ -18,7 +18,7 @@ import {DepegSwap, DepegSwapLibrary} from "./DepegSwapLib.sol";
 import {Asset, ERC20, ERC20Burnable} from "../core/assets/Asset.sol";
 import {ICommon} from "../interfaces/ICommon.sol";
 import {SafeERC20, IERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-
+import "forge-std/console.sol";
 /**
  * @title Vault Library Contract
  * @author Cork Team
@@ -62,18 +62,20 @@ library VaultLibrary {
     ) internal {
         (uint256 raTolerance, uint256 ctTolerance) =
             MathHelper.calculateWithTolerance(raAmount, ctAmount, MathHelper.UNIV2_STATIC_TOLERANCE);
-
+console.log("33");
         ERC20(raAddress).approve(address(ammRouter), raAmount);
         ERC20(ctAddress).approve(address(ammRouter), ctAmount);
-
+console.log("34");
         (address token0, address token1, uint256 token0Amount, uint256 token1Amount) =
             MinimalUniswapV2Library.sortTokensUnsafeWithAmount(raAddress, ctAddress, raAmount, ctAmount);
         (,, uint256 token0Tolerance, uint256 token1Tolerance) =
             MinimalUniswapV2Library.sortTokensUnsafeWithAmount(raAddress, ctAddress, raTolerance, ctTolerance);
-
+console.log("35");
+console.log(address(ammRouter));
         (,, uint256 lp) = ammRouter.addLiquidity(
             token0, token1, token0Amount, token1Amount, token0Tolerance, token1Tolerance, address(this), block.timestamp
         );
+console.log("36");
 
         self.vault.config.lpBalance += lp;
     }
@@ -128,12 +130,13 @@ library VaultLibrary {
         IUniswapV2Router02 ammRouter
     ) internal returns (uint256 ra, uint256 ct) {
         uint256 dsId = self.globalAssetIdx;
-
+console.log("10");
         uint256 ctRatio = __getAmmCtPriceRatio(self, flashSwapRouter, dsId);
-
+console.log("11");
         (ra, ct) = MathHelper.calculateProvideLiquidityAmountBasedOnCtPrice(amount, ctRatio);
-
+console.log("12");
         __provideLiquidity(self, ra, ct, flashSwapRouter, ctAddress, ammRouter, dsId);
+console.log("13");
     }
 
     function __getAmmCtPriceRatio(State storage self, IDsFlashSwapCore flashSwapRouter, uint256 dsId)
@@ -163,12 +166,13 @@ library VaultLibrary {
         if (raAmount == 0 && ctAmount == 0) {
             return;
         }
-
+console.log("22");
         PsmLibrary.unsafeIssueToLv(self, ctAmount);
-
+console.log("23");
         __addLiquidityToAmmUnchecked(self, raAmount, ctAmount, self.info.redemptionAsset(), ctAddress, ammRouter);
-
+console.log("24");
         _addFlashSwapReserve(self, flashSwapRouter, self.ds[dsId], ctAmount);
+console.log("25");
     }
 
     function __provideAmmLiquidityFromPool(
@@ -198,11 +202,15 @@ library VaultLibrary {
         if (amount == 0) {
             revert ICommon.ZeroDeposit();
         }
-
+        console.log("1");
         safeBeforeExpired(self);
+        console.log("2");
         self.vault.balances.ra.lockUnchecked(amount, from);
+        console.log("3");
         __provideLiquidityWithRatio(self, amount, flashSwapRouter, self.ds[self.globalAssetIdx].ct, ammRouter);
+        console.log("4");
         self.vault.lv.issue(from, amount);
+        console.log("5");
     }
 
     // preview a deposit action with current exchange rate,

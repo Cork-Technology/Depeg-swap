@@ -10,6 +10,12 @@ import {CorkConfig} from "../../contracts/core/CorkConfig.sol";
 import {RouterState} from "../../contracts/core/flash-swaps/FlashSwapRouter.sol";
 import {ModuleCore} from "../../contracts/core/ModuleCore.sol";
 import {DummyWETH} from "../../contracts/dummy/DummyWETH.sol";
+import {Id} from "../../contracts/libraries/Pair.sol";
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+
+interface ICST {
+    function deposit(uint256 amount) external;
+}
 
 contract DeployScript is Script {
     // TODO : check if univ2 compilation with foundry is same as hardhat compiled bytecode
@@ -30,6 +36,12 @@ contract DeployScript is Script {
     uint256 public pk = vm.envUint("PRIVATE_KEY");
 
     address bsETH = 0x47Ac327afFAf064Da7a42175D02cF4435E0d4088;
+    address lbETH = 0x36645b1356c3a57A8ad401d274c5487Bc4A586B6;
+    address wamuETH = 0x64BAdb1F23a409574441C10C2e0e9385E78bAD0F;
+    address mlETH = 0x5FeB996d05633571C0d9A3E12A65B887a829f60b;
+
+    uint256 depositAmt = 1_000_000_000_000 ether;
+    IERC20 cETH = IERC20(ceth);
 
     function setUp() public {}
 
@@ -96,16 +108,32 @@ contract DeployScript is Script {
         config.setModuleCore(address(moduleCore));
         console.log("Modulecore configured in Config contract");
 
-        config.initializeModuleCore(bsETH, ceth, 0.3 ether, 20 ether); // LVFee = 0.3%,  DSPrice=20%
+        config.initializeModuleCore(bsETH, ceth, 0.3 ether, 0.2 ether); // LVFee = 0.3%,  DSPrice=20%(TODO : or maybe 0.2%)
         console.log("Modulecore initialized");
 
+        Id id = moduleCore.getId(bsETH, ceth);
         config.issueNewDs(
-            moduleCore.getId(bsETH, ceth),
+            id,
             block.timestamp + 180 days, // 6 months
             2 ether, // 2%
             1 ether // 1%
         );
         console.log("New DS issued");
+        console.log("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-");
+
+        cETH.approve(address(moduleCore), 5000 ether);
+        moduleCore.depositLv(id, 5000 ether);
+
+        // univ2Router.addLiquidity(
+        //     ceth,
+        //     bsETH,
+        //     1_000_000 ether,
+        //     1_000_000 ether,
+        //     1_000_000 ether,
+        //     1_000_000 ether,
+        //     msg.sender,
+        //     block.timestamp + 10000 minutes
+        // );
         console.log("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-");
         vm.stopBroadcast();
     }
