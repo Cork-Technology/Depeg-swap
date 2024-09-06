@@ -69,9 +69,11 @@ contract RouterState is IDsFlashSwapUtility, IDsFlashSwapCore, AccessControlUpgr
         address pair,
         uint256 initialReserve,
         address ra,
-        address ct
-    ) external override onlyModuleCore {
-        reserves[reserveId].onNewIssuance(dsId, ds, pair, initialReserve, ra, ct);
+        address ct,
+        uint256 decayDiscountRateInDays,
+        uint256 rolloverPeriodInblocks
+     ) external override onlyModuleCore {
+        reserves[reserveId].onNewIssuance(dsId, ds, pair, initialReserve, ra, ct, decayDiscountRateInDays, rolloverPeriodInblocks);
 
         emit NewIssuance(reserveId, dsId, ds, pair, initialReserve);
     }

@@ -56,8 +56,13 @@ library DsFlashSwaplibrary {
         address pair,
         uint256 initialReserve,
         address ra,
-        address ct
+        address ct,
+        uint256 decayDiscountRateInDays,
+        uint256 rolloverPeriodInblocks
     ) internal {
+        self.decayDiscountRateInDays = decayDiscountRateInDays;
+        self.rolloverPeriodInblocks = rolloverPeriodInblocks;
+
         self.ds[dsId] = AssetPair(Asset(ra), Asset(ct), Asset(ds), IUniswapV2Pair(pair), initialReserve);
 
         self.reserveSellPressurePrecentage =

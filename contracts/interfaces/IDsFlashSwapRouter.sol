@@ -129,7 +129,9 @@ interface IDsFlashSwapCore is IDsFlashSwapUtility {
         address pair,
         uint256 initialReserve,
         address ra,
-        address ct
+        address ct,
+        uint256 decayDiscountRateInDays,
+        uint256 rolloverPeriodInblocks 
     ) external;
 
     /**
