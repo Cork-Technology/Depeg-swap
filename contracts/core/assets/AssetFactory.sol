@@ -140,7 +140,6 @@ contract AssetFactory is IAssetFactory, OwnableUpgradeable, UUPSUpgradeable {
         external
         override
         onlyOwner
-        notDelegated
         returns (address ct, address ds)
     {
         Pair memory asset = Pair(pa, ra);
@@ -175,7 +174,6 @@ contract AssetFactory is IAssetFactory, OwnableUpgradeable, UUPSUpgradeable {
         external
         override
         onlyOwner
-        notDelegated
         returns (address lv)
     {
         lv = address(

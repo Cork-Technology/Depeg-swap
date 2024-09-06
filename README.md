@@ -64,13 +64,12 @@ AFter that, you should see something like this on your terminal :
   -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
   CETH USED                       :  0x8135505f4C49e4Bd882b7fB7a33051C49feBB1d9
   -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-  Asset Factory Implementation    :  0x9907fad82174436B526b41f3E25581b5F19de031
-  Asset Factory                   :  0xb9A02dC7B0Dbde47bf03e94Fa1930CEAf5539267
-  Cork Config                     :  0xD3Ef59A1DF0B226c323FC66B83B3352Ab9453bc7
-  Flashswap Router Implementation :  0x602a8441C89f18D9352D9EEb0c9C0E61A126b2D9
-  Flashswap Router Proxy          :  0x9877602c6e781B9130EC3Ed7fb2824371076aC71
-  Univ2 Factory                   :  0x022525E2538daD0F76172f91320a394B670a4316
-  Univ2 Router                    :  0xCC219192908FEbfa47E2aFb7A2204120A5896191
-  Module Core                     :  0x2154fC8b73a449208C1105BBf611DEa4F03E5c4E
-  -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+  Asset Factory Implementation    :  0x1406A3E45f5344d53c821B27031A68E85605defE
+  Asset Factory                   :  0xe1DB6AeCeBE168DE936bf025BDcd17CFB86d1853
+  Cork Config                     :  0xd36179416804dAF522894fC74C7A79F21eEB8D4F
+  Flashswap Router Implementation :  0x11fF631B48D23365bb1d903b47e113Fef423252f
+  Flashswap Router Proxy          :  0x696A35c03A82137CdeA9AF3675bB15922FD5C6E1
+  Univ2 Factory                   :  0x4EfcfAE12609E700BA2fF295cf4a1B0C763E70C0
+  Univ2 Router                    :  0x2b1f46Bf510c5BD58490cF0131D68EaF6ffC7f7F
+  Module Core                     :  0xE843742Db2dfF75f5c5C4D524f9d05cf31f0006a  -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 ```

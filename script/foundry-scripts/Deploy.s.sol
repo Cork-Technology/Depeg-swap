@@ -29,6 +29,8 @@ contract DeployScript is Script {
     address public ceth = vm.envAddress("WETH");
     uint256 public pk = vm.envUint("PRIVATE_KEY");
 
+    address bsETH = 0x47Ac327afFAf064Da7a42175D02cF4435E0d4088;
+
     function setUp() public {}
 
     function run() public {
@@ -90,6 +92,20 @@ contract DeployScript is Script {
         assetFactory.transferOwnership(address(moduleCore));
         flashswapRouter.transferOwnership(address(moduleCore));
         console.log("Transferred ownerships to Modulecore");
+
+        config.setModuleCore(address(moduleCore));
+        console.log("Modulecore configured in Config contract");
+
+        config.initializeModuleCore(bsETH, ceth, 0.3 ether, 20 ether); // LVFee = 0.3%,  DSPrice=20%
+        console.log("Modulecore initialized");
+
+        config.issueNewDs(
+            moduleCore.getId(bsETH, ceth),
+            block.timestamp + 180 days, // 6 months
+            2 ether, // 2%
+            1 ether // 1%
+        );
+        console.log("New DS issued");
         console.log("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-");
         vm.stopBroadcast();
     }
