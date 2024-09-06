@@ -2,6 +2,11 @@ pragma solidity 0.8.24;
 
 import {Id} from "../libraries/Pair.sol";
 
+/**
+ * @title IVault Interface
+ * @author Cork Team
+ * @notice IVault interface for VaultCore contract
+ */
 interface IVault {
     /// @notice Emitted when a user deposits assets into a given Vault
     /// @param id The Module id that is used to reference both psm and lv of a given pair
@@ -127,6 +132,8 @@ interface IVault {
      * @param id The Module id that is used to reference both psm and lv of a given pair
      * @param receiver The address of the receiver
      * @param amount The amount of the asset to be redeemed
+     * @param rawLvPermitSig Raw signature for LV approval permit
+     * @param deadline deadline for Approval permit signature
      */
     function redeemEarlyLv(Id id, address receiver, uint256 amount, bytes memory rawLvPermitSig, uint256 deadline)
         external;

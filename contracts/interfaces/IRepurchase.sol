@@ -2,6 +2,11 @@ pragma solidity 0.8.24;
 
 import {Id} from "../libraries/Pair.sol";
 
+/**
+ * @title IRepurchase Interface
+ * @author Cork Team
+ * @notice IRepurchase interface for supporting Repurchase features through PSMCore
+ */
 interface IRepurchase {
     /**
      * @notice emitted when repurchase is done

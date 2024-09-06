@@ -3,7 +3,11 @@ pragma solidity 0.8.24;
 
 import {ERC20, ERC20Burnable} from "@openzeppelin/contracts/token/ERC20/extensions/ERC20Burnable.sol";
 
-// dummy contract for RA and PA
+/**
+ * @title DummyWETH Contract
+ * @author Cork Team
+ * @notice Dummy contract which provides WETH with ERC20
+ */
 contract DummyWETH is ERC20Burnable {
     event Deposit(address indexed dst, uint256 wad);
     event Withdrawal(address indexed src, uint256 wad);

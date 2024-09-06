@@ -9,6 +9,11 @@ import {RouterState} from "./flash-swaps/FlashSwapRouter.sol";
 import {IUniswapV2Router02} from "../interfaces/uniswap-v2/RouterV2.sol";
 import {NoReentrant} from "../libraries/MutexLock.sol";
 
+/**
+ * @title ModuleState Abstract Contract
+ * @author Cork Team
+ * @notice Abstract ModuleState contract for providing base for Modulecore contract
+ */
 abstract contract ModuleState is ICommon {
     using PsmLibrary for State;
 

@@ -6,6 +6,9 @@ import {SwapperMathLibrary} from "./DsSwapperMathLib.sol";
 import {MinimalUniswapV2Library} from "./uni-v2/UniswapV2Library.sol";
 import {PermitChecker} from "./PermitChecker.sol";
 
+/**
+ * @dev AssetPair structure for Asset Pairs   
+ */
 struct AssetPair {
     Asset ra;
     Asset ct;
@@ -18,12 +21,20 @@ struct AssetPair {
     uint256 reserve;
 }
 
+/**
+ * @dev ReserveState structure for Reserve    
+ */
 struct ReserveState {
     /// @dev dsId => [RA, CT, DS]
     mapping(uint256 => AssetPair) ds;
     uint256 reserveSellPressurePrecentage;
 }
 
+/**
+ * @title DsFlashSwaplibrary Contract
+ * @author Cork Team
+ * @notice DsFlashSwap library which implements Flashswap related features for DS/CT 
+ */
 library DsFlashSwaplibrary {
     /// @dev the precentage amount of reserve that will be used to fill buy orders
     /// the router will sell in respect to this ratio on first issuance
@@ -52,18 +63,18 @@ library DsFlashSwaplibrary {
         return self.ds[dsId].pair;
     }
 
-    function emptyReserve(ReserveState storage self, uint256 dsId, address to) internal returns (uint256 reserve) {
-        reserve = emptyReservePartial(self, dsId, self.ds[dsId].reserve, to);
+    function emptyReserve(ReserveState storage self, uint256 dsId, address to) internal returns (uint256 emptied) {
+        emptied = emptyReservePartial(self, dsId, self.ds[dsId].reserve, to);
     }
 
     function emptyReservePartial(ReserveState storage self, uint256 dsId, uint256 amount, address to)
         internal
-        returns (uint256 reserve)
+        returns (uint256 emptied)
     {
-        self.ds[dsId].ds.transfer(to, amount);
 
         self.ds[dsId].reserve -= amount;
-        reserve = self.ds[dsId].reserve;
+        self.ds[dsId].ds.transfer(to, amount);
+        emptied = amount;
     }
 
     function getPriceRatio(ReserveState storage self, uint256 dsId)
