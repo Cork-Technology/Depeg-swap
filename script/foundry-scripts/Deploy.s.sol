@@ -12,6 +12,7 @@ import {ModuleCore} from "../../contracts/core/ModuleCore.sol";
 import {CETH} from "../../contracts/tokens/CETH.sol";
 import {CST} from "../../contracts/tokens/CST.sol";
 import {Id} from "../../contracts/libraries/Pair.sol";
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
 interface ICST {
     function deposit(uint256 amount) external;
@@ -147,16 +148,19 @@ contract DeployScript is Script {
         moduleCore.depositLv(id, 5000 ether);
         console.log("New DS issued");
 
+        cETH.approve(address(univ2Router), 1_000_000 ether);
+        IERC20(bsETH).approve(address(univ2Router), 1_000_000 ether);
         univ2Router.addLiquidity(
             ceth,
             bsETH,
             1_000_000 ether,
             1_000_000 ether,
-            1_000_000 ether,
-            1_000_000 ether,
+            1_000_00 ether,
+            1_000_00 ether,
             msg.sender,
             block.timestamp + 10000 minutes
         );
+        console.log("Liquidity Added to AMM");
         console.log("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-");
         vm.stopBroadcast();
     }
