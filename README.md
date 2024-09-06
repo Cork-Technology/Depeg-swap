@@ -43,21 +43,34 @@ This is because we actualy don't use ignition when deploying uniswap v2 related 
 ```bash
 npx hardhat run script/hardhat-scripts/deploy.ts --network <network>
 
-forge script script/foundry-scripts/Deploy.s.sol:DeployScript --rpc-url https://1rpc.io/sepolia --broadcast -vvv --with-gas-price 80000000000
+forge script script/foundry-scripts/Deploy.s.sol:DeployScript --rpc-url https://1rpc.io/sepolia --broadcast -vvv --with-gas-price 25000000000
 ```
 
 AFter that, you should see something like this on your terminal :
 
 ```bash
-PRODUCTION                   : undefined
-Network                      : sepolia
-Chain Id                     : 11155111
-Deployer                     : 0x3e995c17172ea3e23505adfe5630df395a738e51
-
-AssetFactory deployed to     : 0xD5A39C05d6f5bffD7501287f975cE53c483FDA4C
-CorkConfig deployed to       : 0x6B0636aaa7dB7D8bD05fFE147AF8CD295b2677c4
-FlashSwapRouter deployed to  : 0x071a4F363AAC0948BA92bb1af698Bf09B89E8Fc6
-UniV2Factory deployed to     : 0xc309a6A25B96D6aC843148ABF8100054c8644c38
-UniV2Router deployed to      : 0x7f4e645054966556983B21a5Fe5eE6A17C21171a
-ModuleCore deployed to       : 0xB2643D4b7Ee4aeb9f03CD0C18B971A141eC07f37
+  -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+  PRODUCTION                   : undefined
+  Network                      : sepolia
+  Chain Id                     : 11155111
+  Deployer                     : 0xFFB6b6896D469798cE64136fd3129979411B5514
+  -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+  TC Contracts
+  CETH deployed to                : 0x8135505f4C49e4Bd882b7fB7a33051C49feBB1d9
+  bsETH deployed to               : 0x47Ac327afFAf064Da7a42175D02cF4435E0d4088
+  lbETH deployed to               : 0x36645b1356c3a57A8ad401d274c5487Bc4A586B6
+  wamuETH deployed to             : 0x64BAdb1F23a409574441C10C2e0e9385E78bAD0F
+  mlETH deployed to               : 0x5FeB996d05633571C0d9A3E12A65B887a829f60b
+  -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+  CETH USED                       :  0x8135505f4C49e4Bd882b7fB7a33051C49feBB1d9
+  -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+  Asset Factory Implementation    :  0x8c65cA47c5724f3E91f94917BE0Fb6aC21620114
+  Asset Factory                   :  0x8Cb83D51a1a4e786069013e5F57020ff35103c67
+  Cork Config                     :  0xdaBe7aDC50420Df3FDf9D3E2c19B86d19FAC6b55
+  Flashswap Router Implementation :  0xc0CAaA5d2131457Ad59Da64e032570E92181B674
+  Flashswap Router Proxy          :  0x34AeB26069858993385774dcF6A9AA18C47AAc72
+  Univ2 Factory                   :  0xE14344fb9488C55A27da37cd9351B97A577Ed363
+  Univ2 Router                    :  0x334B2C016372cdBbB37C5AD3a09A8e055ab6d3f5
+  Module Core                     :  0xf6fa5512A057e34707361155c4ae9ea94e759b8E
+  -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 ```
