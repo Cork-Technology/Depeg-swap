@@ -326,12 +326,12 @@ library VaultLibrary {
 
         uint256 redeemAmount = reservedDs >= ammCtBalance ? ammCtBalance : reservedDs;
 
-        reservedDs = flashSwapRouter.emptyReservePartial(self.info.toId(), dsId, redeemAmount);
+        flashSwapRouter.emptyReservePartial(self.info.toId(), dsId, redeemAmount);
 
         ra += redeemAmount;
         PsmLibrary.lvRedeemRaWithCtDs(self, redeemAmount, dsId);
 
-        uint256 ctSellAmount = reservedDs >= ammCtBalance ? 0 : ammCtBalance - reservedDs;
+        uint256 ctSellAmount = reservedDs >= ammCtBalance ? 0 : ammCtBalance - redeemAmount;
 
         DepegSwap storage ds = self.ds[dsId];
         address[] memory path = new address[](2);
@@ -374,7 +374,7 @@ library VaultLibrary {
         uint256 reservedDs = flashSwapRouter.emptyReserve(self.info.toId(), dsId);
 
         uint256 redeemAmount = reservedDs >= ctAmm ? ctAmm : reservedDs;
-        PsmLibrary.lvRedeemRaWithCtDs(self, redeemAmount, dsId);
+        redeemAmount = PsmLibrary.lvRedeemRaWithCtDs(self, redeemAmount, dsId);
 
         // if the reserved DS is more than the CT that's available from liquidating the AMM LP
         // then there's no CT we can use to effectively redeem RA + PA from the PSM

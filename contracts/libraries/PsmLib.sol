@@ -122,8 +122,12 @@ library PsmLibrary {
         ds.issue(address(this), amount);
     }
 
-    function lvRedeemRaWithCtDs(State storage self, uint256 amount, uint256 dsId) internal {
+    function lvRedeemRaWithCtDs(State storage self, uint256 amount, uint256 dsId) internal returns (uint256 ra){
         DepegSwap storage ds = self.ds[dsId];
+
+        uint256 rates = ds.exchangeRate();
+        ra = MathHelper.calculateRedeemAmountWithExchangeRate(amount, rates);
+
         ds.burnBothforSelf(amount);
     }
 
