@@ -32,7 +32,7 @@ struct PsmState {
     mapping(address => bool) autoSell;
     bool isDepositPaused;
     bool isWithdrawalPaused;
-}
+ }
 
 /**
  * @dev PsmPoolArchive structure for PSM Pools
@@ -41,6 +41,10 @@ struct PsmPoolArchive {
     uint256 raAccrued;
     uint256 paAccrued;
     uint256 ctAttributed;
+    uint256 ctAttributedToRollover;
+    /// @dev user => amount
+    mapping(address => uint256) rolloverClaims;
+    uint256 rolloverProfit;
 }
 
 /**
