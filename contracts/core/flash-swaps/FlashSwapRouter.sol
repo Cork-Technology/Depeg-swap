@@ -116,7 +116,8 @@ contract RouterState is IDsFlashSwapUtility, IDsFlashSwapCore, OwnableUpgradeabl
             assetPair.reserve -= amountSellFromReserve;
 
             // sell the DS tokens from the reserve and accrue value to LV holders
-            uint256 vaultRa = __swapDsforRa(assetPair, reserveId, dsId, amountSellFromReserve, 0);
+            // we pass in owner(vault) as the caller since we want the RA profit to be sent to the vault
+            uint256 vaultRa = __swapDsforRa(assetPair, reserveId, dsId, amountSellFromReserve, 0, owner());
             IVault(owner()).provideLiquidityWithFlashSwapFee(reserveId, vaultRa);
 
             // recalculate the amount of DS tokens attributed, since we sold some from the reserve
@@ -128,8 +129,7 @@ contract RouterState is IDsFlashSwapUtility, IDsFlashSwapCore, OwnableUpgradeabl
         }
 
         // trigger flash swaps and send the attributed DS tokens to the user
-
-        __flashSwap(assetPair, assetPair.pair, borrowedAmount, 0, dsId, reserveId, true, amountOut);
+        __flashSwap(assetPair, assetPair.pair, borrowedAmount, 0, dsId, reserveId, true, amountOut, msg.sender);
     }
 
     /**
@@ -254,7 +254,7 @@ contract RouterState is IDsFlashSwapUtility, IDsFlashSwapCore, OwnableUpgradeabl
         DepegSwapLibrary.permit(address(assetPair.ds), rawDsPermitSig, msg.sender, address(this), amount, deadline);
         assetPair.ds.transferFrom(msg.sender, address(this), amount);
 
-        amountOut = __swapDsforRa(assetPair, reserveId, dsId, amount, amountOutMin);
+        amountOut = __swapDsforRa(assetPair, reserveId, dsId, amount, amountOutMin, msg.sender);
 
         emit DsSwapped(reserveId, dsId, msg.sender, amount, amountOut);
     }
@@ -275,7 +275,7 @@ contract RouterState is IDsFlashSwapUtility, IDsFlashSwapCore, OwnableUpgradeabl
 
         assetPair.ds.transferFrom(msg.sender, address(this), amount);
 
-        amountOut = __swapDsforRa(assetPair, reserveId, dsId, amount, amountOutMin);
+        amountOut = __swapDsforRa(assetPair, reserveId, dsId, amount, amountOutMin, msg.sender);
 
         emit DsSwapped(reserveId, dsId, msg.sender, amount, amountOut);
     }
@@ -285,7 +285,8 @@ contract RouterState is IDsFlashSwapUtility, IDsFlashSwapCore, OwnableUpgradeabl
         Id reserveId,
         uint256 dsId,
         uint256 amount,
-        uint256 amountOutMin
+        uint256 amountOutMin,
+        address caller
     ) internal returns (uint256 amountOut) {
         (amountOut,) = assetPair.getAmountOutSellDS(amount);
 
@@ -293,7 +294,7 @@ contract RouterState is IDsFlashSwapUtility, IDsFlashSwapCore, OwnableUpgradeabl
             revert InsufficientOutputAmount();
         }
 
-        __flashSwap(assetPair, assetPair.pair, 0, amount, dsId, reserveId, false, amountOut);
+        __flashSwap(assetPair, assetPair.pair, 0, amount, dsId, reserveId, false, amountOut, caller);
     }
 
     /**
@@ -319,13 +320,14 @@ contract RouterState is IDsFlashSwapUtility, IDsFlashSwapCore, OwnableUpgradeabl
         // extra data to be encoded into the callback
         // will be interpreted as the ra attributed to user for selling ds
         // and ds attributed to user for buying ra
-        uint256 extraData
+        uint256 extraData,
+        address caller
     ) internal {
         (,, uint256 amount0out, uint256 amount1out) = MinimalUniswapV2Library.sortTokensUnsafeWithAmount(
             address(assetPair.ra), address(assetPair.ct), raAmount, ctAmount
         );
 
-        bytes memory data = abi.encode(reserveId, dsId, buyDs, msg.sender, extraData);
+        bytes memory data = abi.encode(reserveId, dsId, buyDs, caller, extraData);
 
         univ2Pair.swap(amount0out, amount1out, address(this), data);
     }
