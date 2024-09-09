@@ -300,4 +300,23 @@ abstract contract PsmCore is IPSMcore, ModuleState, Context {
     function baseRedemptionFee() external view override returns (uint256) {
         return psmBaseRedemptionFeePrecentage;
     }
+
+    function psmAcceptFlashSwapProfit(Id id, uint256 profit) external onlyFlashSwapRouter {
+        State storage state = states[id];
+        state.acceptRolloverProfit(profit);
+    }
+   
+    function rolloverCt(Id id,address owner, uint256 amount, uint256 dsId, bytes memory rawCtPermitSig, uint256 ctDeadline) external PSMDepositNotPaused(id){
+        State storage state = states[id];
+        (uint256 dsReceived, uint256 _exchangeRate, uint256 rolloverProfit, uint256 paReceived) = state.rolloverCt(owner, amount, dsId, getRouterCore() ,rawCtPermitSig, ctDeadline);
+        emit RolledOver(id, state.globalAssetIdx, _msgSender(), dsId, amount, dsReceived, paReceived, _exchangeRate, rolloverProfit);
+    }
+
+    function rolloverCt(Id id,address owner, uint256 amount, uint256 dsId) external PSMDepositNotPaused(id) {
+        State storage state = states[id];
+        bytes memory signaturePlaceHolder;
+        (uint256 dsReceived, uint256 _exchangeRate, uint256 rolloverProfit, uint256 paReceived) = state.rolloverCt(owner, amount, dsId, getRouterCore() ,signaturePlaceHolder, 0);
+        emit RolledOver(id, state.globalAssetIdx, _msgSender(), dsId, amount, dsReceived, paReceived, _exchangeRate, rolloverProfit);
+
+    }
 }
