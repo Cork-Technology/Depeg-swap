@@ -131,6 +131,16 @@ interface IDsFlashSwapCore is IDsFlashSwapUtility {
     event ReserveEmptied(Id indexed reserveId, uint256 indexed dsId, uint256 amount);
 
     /**
+    * @notice Emitted when some DS is swapped via rollover
+    * @param reserveId the reserve id same as the id on PSM and LV
+    * @param dsId the ds id of the pair, the same as the DS id on PSM and LV
+    * @param user the user that's swapping
+    * @param dsReceived the amount of DS that's received
+    * @param raLeft the amount of RA that's left
+    */
+    event RolloverSold(Id indexed reserveId, uint256 indexed dsId, address indexed user, uint256 dsReceived, uint256 raLeft);
+
+    /**
      * @notice trigger new issuance logic, can only be called my moduleCore
      * @param reserveId the pair id
      * @param dsId the ds id of the pair
@@ -147,9 +157,20 @@ interface IDsFlashSwapCore is IDsFlashSwapUtility {
         address pair,
         uint256 initialReserve,
         address ra,
-        address ct,
+        address ct
+    ) external;
+
+    /**
+     * @notice set the discount rate rate and rollover for the new issuance
+     * @dev needed to avoid stack to deep errors. MUST be called after onNewIssuance and only by moduleCore at new issuance
+     * @param reserveId the pair id
+     * @param decayDiscountRateInDays the decay discount rate in days
+     * @param rolloverPeriodInblocks the rollover period in blocks
+     */
+    function setDecayDiscountAndRolloverPeriodOnNewIssuance(
+        Id reserveId,
         uint256 decayDiscountRateInDays,
-        uint256 rolloverPeriodInblocks 
+        uint256 rolloverPeriodInblocks
     ) external;
 
     /**
@@ -159,6 +180,8 @@ interface IDsFlashSwapCore is IDsFlashSwapUtility {
      * @param amount the amount of DS to add
      */
     function addReserveLv(Id id, uint256 dsId, uint256 amount) external;
+    
+    function addReservePsm(Id id, uint256 dsId, uint256 amount) external;
 
     /**
      * @notice empty all DS reserve to liquidity vault, can only be called by moduleCore
