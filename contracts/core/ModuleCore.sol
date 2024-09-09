@@ -54,25 +54,47 @@ contract ModuleCore is PsmCore, Initialize, VaultCore {
         emit Initialized(id, pa, ra, lv);
     }
 
-    function issueNewDs(Id id, uint256 expiry, uint256 exchangeRates, uint256 repurchaseFeePrecentage)
-        external
-        override
-        onlyConfig
-        onlyInitialized(id)
-    {
+    function issueNewDs(
+        Id id,
+        uint256 expiry,
+        uint256 exchangeRates,
+        uint256 repurchaseFeePrecentage,
+        uint256 decayDiscountRateInDays,
+        // won't have effect on first issuance
+        uint256 rolloverPeriodInblocks
+    ) external override onlyConfig onlyInitialized(id) {
         if (repurchaseFeePrecentage > 5 ether) {
             revert InvalidFees();
         }
+
         State storage state = states[id];
 
         address ra = state.info.pair1;
 
-        uint256 prevIdx = state.globalAssetIdx++;
-        uint256 idx = state.globalAssetIdx;
-
         (address ct, address ds) = IAssetFactory(SWAP_ASSET_FACTORY).deploySwapAssets(
             ra, state.info.pair0, address(this), expiry, exchangeRates
         );
+
+        // avoid stack to deep error
+        _initOnNewIssuance(id, rolloverPeriodInblocks, ra, ct, ds, expiry);
+        // avoid stack to deep error
+        getRouterCore().setDecayDiscountAndRolloverPeriodOnNewIssuance(
+            id, decayDiscountRateInDays, rolloverPeriodInblocks
+        );
+    }
+
+    function _initOnNewIssuance(
+        Id id,
+        uint256 repurchaseFeePrecentage,
+        address ra,
+        address ct,
+        address ds,
+        uint256 expiry
+    ) internal {
+        State storage state = states[id];
+
+        uint256 prevIdx = state.globalAssetIdx++;
+        uint256 idx = state.globalAssetIdx;
 
         address ammPair = getAmmFactory().createPair(ra, ct);
 
@@ -81,7 +103,6 @@ contract ModuleCore is PsmCore, Initialize, VaultCore {
         getRouterCore().onNewIssuance(id, idx, ds, ammPair, 0, ra, ct);
 
         VaultLibrary.onNewIssuance(state, prevIdx, getRouterCore(), getAmmRouter());
-
         emit Issued(id, idx, expiry, ds, ct, ammPair);
     }
 
