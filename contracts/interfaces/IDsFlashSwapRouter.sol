@@ -146,7 +146,7 @@ interface IDsFlashSwapCore is IDsFlashSwapUtility {
      * @param reserveId the pair id 
      * @param dsId the ds id of the pair 
      * @param amount the amount of DS to empty
-     * @return reserve the remaining reserve of DS 
+     * @return reserve emptied amount of DS that's emptied 
      */
     function emptyReservePartial(Id reserveId, uint256 dsId, uint256 amount) external returns (uint256 reserve);
 
