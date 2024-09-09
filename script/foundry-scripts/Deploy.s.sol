@@ -143,7 +143,7 @@ contract DeployScript is Script {
         config.issueNewDs(
             id,
             block.timestamp + 180 days, // 6 months
-            2 ether, // 2%
+            1 ether, // exchange rate = 1:1
             1 ether // 1%
         );
         console.log("New DS issued");
@@ -151,7 +151,7 @@ contract DeployScript is Script {
 
         cETH.approve(address(moduleCore), 5000 ether);
         moduleCore.depositLv(id, 5000 ether);
-        console.log("New DS issued");
+        console.log("LV Deposited");
 
         cETH.approve(address(univ2Router), 1_000_000 ether);
         IERC20(bsETH).approve(address(univ2Router), 1_000_000 ether);
@@ -166,6 +166,10 @@ contract DeployScript is Script {
             block.timestamp + 10000 minutes
         );
         console.log("Liquidity Added to AMM");
+
+        moduleCore.redeemEarlyLv(id, msg.sender, 10 ether);
+        uint256 result = flashswapRouter.previewSwapRaforDs(id, 1, 100 ether);
+        console.log(result);
         console.log("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-");
         vm.stopBroadcast();
     }

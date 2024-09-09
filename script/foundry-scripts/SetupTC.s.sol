@@ -33,65 +33,87 @@ contract SetupTCScript is Script {
     address public ceth = vm.envAddress("WETH");
     uint256 public pk = vm.envUint("PRIVATE_KEY");
 
+    uint256 mintAmount = 1_000_000_000_000 ether;
+    uint256 depositLVAmt = 5000 ether;
+    uint256 liquidityAmt = 1_000_000 ether;
+
     function setUp() public {}
 
     function run() public {
         vm.startBroadcast(pk);
-        address bsETH = 0x47Ac327afFAf064Da7a42175D02cF4435E0d4088;
-        address lbETH = 0x36645b1356c3a57A8ad401d274c5487Bc4A586B6;
-        address wamuETH = 0x64BAdb1F23a409574441C10C2e0e9385E78bAD0F;
-        address mlETH = 0x5FeB996d05633571C0d9A3E12A65B887a829f60b;
+        address bsETH = 0xB926f1279e58AF494976D324CC38866018CCa892;
+        address lbETH = 0xCa15c974445d7C8A0aA14Bd5E6b3aFd5F22D7D17;
+        address wamuETH = 0xE7Df8d2654183E4C809803850A56829131ae77f6;
+        address mlETH = 0x4Bc92B2E2066906e0b4C1E1D9d30f985375D9268;
 
-        moduleCore = ModuleCore(0xE843742Db2dfF75f5c5C4D524f9d05cf31f0006a);
-        config = CorkConfig(0xd36179416804dAF522894fC74C7A79F21eEB8D4F);
-        univ2Router = IUniswapV2Router02(0x2b1f46Bf510c5BD58490cF0131D68EaF6ffC7f7F);
-
-        uint256 depositAmt = 1_000_000_000_000 ether;
+        moduleCore = ModuleCore(0x1647873c50Ec462039d4Eb4Fbd7bdFD8835a1133);
+        config = CorkConfig(0x90C95749f0018F0C790CB2e9a93a2cE34181AdDA);
+        univ2Router = IUniswapV2Router02(0x733732F1C66f1973b90ca443022Cef2B287EFCB6);
 
         cETH = IERC20(ceth);
 
         // cst = ICST(bsETH);
-        // cETH.approve(bsETH, depositAmt);
-        // cst.deposit(depositAmt);
+        // cETH.approve(bsETH, mintAmount);
+        // cst.deposit(mintAmount);
 
         // cst = ICST(lbETH);
-        // cETH.approve(lbETH, depositAmt);
-        // cst.deposit(depositAmt);
+        // cETH.approve(lbETH, mintAmount);
+        // cst.deposit(mintAmount);
 
         // cst = ICST(wamuETH);
-        // cETH.approve(wamuETH, depositAmt);
-        // cst.deposit(depositAmt);
+        // cETH.approve(wamuETH, mintAmount);
+        // cst.deposit(mintAmount);
 
         // cst = ICST(mlETH);
-        // cETH.approve(mlETH, depositAmt);
-        // cst.deposit(depositAmt);
+        // cETH.approve(mlETH, mintAmount);
+        // cst.deposit(mintAmount);
 
         // config.setModuleCore(address(moduleCore));
         // config.initializeModuleCore(bsETH, cETH, 0.3 ether, 20 ether);
-        // config.issueNewDs(
-        //     moduleCore.getId(bsETH, cETH),
-        //     block.timestamp + 180 days,
-        //     2 ether, // 2%
-        //     1 ether // 1%
-        // );
-        // console.log("New DS issued");
-        // console.log("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-");
 
-        Id id = moduleCore.getId(bsETH, ceth);
-        cETH.approve(address(moduleCore), 5000 ether);
-        moduleCore.depositLv(id, 5000 ether);
+        issueDSAndAddLiquidity(bsETH, ceth, 0.3 ether, 0.2 ether, 1 ether); // EarlyRedemptionFee = 0.3%,  DSPrice=0.2%(or 20%)  repurchaseFee = 1%
+        issueDSAndAddLiquidity(lbETH, ceth, 0.3 ether, 0.3 ether, 0.5 ether); // EarlyRedemptionFee = 0.3%,  DSPrice=0.3%(or 30%)  repurchaseFee = 0.5%
+        issueDSAndAddLiquidity(wamuETH, ceth, 0.3 ether, 0.7 ether, 0); // EarlyRedemptionFee = 0.3%,  DSPrice=0.3%(or 70%)  repurchaseFee = 0%
+        issueDSAndAddLiquidity(mlETH, ceth, 0.3 ether, 0.3 ether, 0.25 ether); // EarlyRedemptionFee = 0.3%,  DSPrice=0.3%(or 30%)  repurchaseFee = 0.25%
+        console.log("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-");
+        vm.stopBroadcast();
+    }
 
+    function issueDSAndAddLiquidity(
+        address cst,
+        address ceth,
+        uint256 redmptionFee,
+        uint256 dsPrice,
+        uint256 repurchaseFee
+    ) public {
+        config.initializeModuleCore(cst, ceth, redmptionFee, dsPrice);
+
+        Id id = moduleCore.getId(cst, ceth);
+        config.issueNewDs(
+            id,
+            block.timestamp + 180 days, // 6 months
+            1 ether, // exchange rate = 1:1
+            repurchaseFee
+        );
+        console.log("New DS issued");
+        console.log("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-");
+
+        cETH.approve(address(moduleCore), depositLVAmt);
+        moduleCore.depositLv(id, depositLVAmt);
+        console.log("LV Deposited");
+
+        cETH.approve(address(univ2Router), liquidityAmt);
+        IERC20(cst).approve(address(univ2Router), liquidityAmt);
         univ2Router.addLiquidity(
             ceth,
-            bsETH,
-            1_000_000 ether,
-            1_000_000 ether,
-            1_000_000 ether,
-            1_000_000 ether,
+            cst,
+            liquidityAmt,
+            liquidityAmt,
+            liquidityAmt,
+            liquidityAmt,
             msg.sender,
             block.timestamp + 10000 minutes
         );
-        console.log("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-");
-        vm.stopBroadcast();
+        console.log("Liquidity Added to AMM");
     }
 }
