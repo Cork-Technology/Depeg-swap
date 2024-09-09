@@ -179,4 +179,30 @@ library SwapperMathLibrary {
         assert(discount < 100e18);
         decay = 100e18 - discount;
     }
+
+    function calculateRolloverSale(uint256 lvDsReserve, uint256 psmDsReserve, uint256 raProvided, uint256 hpa) external pure returns (uint256 lvProfit, uint256 psmProfit, uint256 raLeft, uint256 dsReceived, uint256 lvReserveUsed, uint256 psmReserveUsed) {
+        uint256 totalDsReserve = lvDsReserve + psmDsReserve;
+
+        // calculate the amount of DS user will receive
+        dsReceived = raProvided * hpa / 1e18;
+
+        // returns the RA if, the total reserve cannot cover the DS that user will receive. this Ra left must subject to the AMM rates
+        raLeft = totalDsReserve > dsReceived ? 0 : ((dsReceived - totalDsReserve) * 1e18) / hpa;
+        
+        // recalculate the DS user will receive, after the RA left is deducted
+        raProvided -= raLeft;
+        dsReceived = raProvided * hpa / 1e18;
+
+        // proportionally calculate how much DS should be taken from LV and PSM
+        // e.g if LV has 60% of the total reserve, then 60% of the DS should be taken from LV
+        lvReserveUsed = (lvDsReserve * dsReceived * 1e18) / totalDsReserve / 1e18;
+        psmReserveUsed = dsReceived - lvReserveUsed;
+
+        // calculate the RA profit of LV and PSM
+        lvProfit = (lvReserveUsed * hpa) / 1e18;
+        psmProfit = (psmReserveUsed * hpa) / 1e18;
+
+        assert(lvProfit + psmProfit == raProvided);
+        assert(lvReserveUsed + psmReserveUsed == dsReceived);
+    }
 }
