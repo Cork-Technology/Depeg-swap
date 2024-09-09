@@ -279,8 +279,6 @@ library PsmLibrary {
         // we use deposit here because technically the user deposit RA to the PSM when repurchasing
         received = MathHelper.calculateDepositAmountWithExchangeRate(amount, exchangeRates);
 
-        received = received;
-
         uint256 available = self.psm.balances.paBalance;
         // ensure that we have an equal amount of DS and PA
         assert(available == self.psm.balances.dsBalance);

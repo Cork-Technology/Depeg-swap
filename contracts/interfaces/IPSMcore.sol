@@ -133,7 +133,7 @@ interface IPSMcore is IRepurchase {
      * @param rawDsPermitSig The raw signature for DS approval permit 
      * @param deadline The deadline for DS approval permit signature 
      */
-    function redeemRaWithDs(Id id, uint256 dsId, uint256 amount, bytes memory rawDsPermitSig, uint256 deadline) external;
+    function redeemRaWithDs(Id id, uint256 dsId, uint256 amount, bytes memory rawDsPermitSig, uint256 deadline) external returns (uint256 received, uint256 _exchangeRate, uint256 fee);
 
     /**
      * @notice redeem RA with DS + PA
@@ -141,7 +141,7 @@ interface IPSMcore is IRepurchase {
      * @param dsId The DS id
      * @param amount The amount of DS + PA to redeem 
      */
-    function redeemRaWithDs(Id id, uint256 dsId, uint256 amount) external;
+    function redeemRaWithDs(Id id, uint256 dsId, uint256 amount) external returns (uint256 received, uint256 _exchangeRate, uint256 fee);
 
     /**
      * @notice preview the amount of RA user will get when Redeem RA with DS+PA 
@@ -159,7 +159,7 @@ interface IPSMcore is IRepurchase {
      * @param rawCtPermitSig The raw signature for CT approval permit
      * @param deadline The deadline for CT approval permit signature 
      */
-    function redeemWithCT(Id id, uint256 dsId, uint256 amount, bytes memory rawCtPermitSig, uint256 deadline) external;
+    function redeemWithCT(Id id, uint256 dsId, uint256 amount, bytes memory rawCtPermitSig, uint256 deadline) external returns (uint256 accruedPa, uint256 accruedRa);
 
     /**
      * @notice redeem RA + PA with CT at expiry 
@@ -167,7 +167,7 @@ interface IPSMcore is IRepurchase {
      * @param dsId The DS id 
      * @param amount The amount of CT to redeem 
      */
-    function redeemWithCT(Id id, uint256 dsId, uint256 amount) external;
+    function redeemWithCT(Id id, uint256 dsId, uint256 amount) external returns (uint256 accruedPa, uint256 accruedRa);
 
     /**
      * @notice preview the amount of RA user will get when Redeem RA with CT+DS 
@@ -195,7 +195,7 @@ interface IPSMcore is IRepurchase {
         uint256 dsDeadline,
         bytes memory rawCtPermitSig,
         uint256 ctDeadline
-    ) external;
+    ) external returns (uint256 ra, uint256 dsId, uint256 rates);
 
     /**
      * @notice returns amount of ra user will get when Redeem RA with CT+DS
@@ -204,7 +204,7 @@ interface IPSMcore is IRepurchase {
      * @return received amount of RA user received
      * @return rates the effective rate at the time of redemption
      */
-    function redeemRaWithCtDs(Id id, uint256 amount) external returns (uint256 received, uint256 rates);
+    function redeemRaWithCtDs(Id id, uint256 amount) external returns (uint256 ra, uint256 dsId, uint256 rates);
 
     /**
      * @notice returns amount of ra user will get when Redeem RA with CT+DS
