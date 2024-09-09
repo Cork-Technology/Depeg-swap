@@ -240,4 +240,9 @@ abstract contract VaultCore is ModuleState, Context, IVault {
     function vaultLp(Id id) external view returns (uint256) {
         return states[id].vault.config.lpBalance;
     }
+
+    function lvAcceptRolloverProfit(Id id, uint256 amount) external onlyFlashSwapRouter {
+        State storage state = states[id];
+        state.provideLiquidityWithFee(amount, getRouterCore(), getAmmRouter());
+    }
 }
