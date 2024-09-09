@@ -75,9 +75,9 @@ contract RouterState is IDsFlashSwapUtility, IDsFlashSwapCore, OwnableUpgradeabl
         external
         override
         onlyOwner
-        returns (uint256 reserve)
+        returns (uint256 emptied)
     {
-        reserve = reserves[reserveId].emptyReservePartial(dsId, amount, owner());
+        emptied = reserves[reserveId].emptyReservePartial(dsId, amount, owner());
         emit ReserveEmptied(reserveId, dsId, amount);
     }
 
