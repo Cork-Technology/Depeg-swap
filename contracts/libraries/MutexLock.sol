@@ -10,7 +10,7 @@ library NoReentrant {
     bytes32 private constant TRANSIENT_SLOT = 0x10bc01d611f2c803e55ff98d999836f196afae7cf91f96f3b6f511e56ba84973;
 
     function acquire() internal {
-        assembly ("memory-safe") {
+        assembly ("memory-safe") { 
             tstore(TRANSIENT_SLOT, true)
         }
     }
