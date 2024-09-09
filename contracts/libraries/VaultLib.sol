@@ -326,12 +326,12 @@ library VaultLibrary {
 
         uint256 redeemAmount = reservedDs >= ammCtBalance ? ammCtBalance : reservedDs;
 
-        reservedDs = flashSwapRouter.emptyReservePartial(self.info.toId(), dsId, redeemAmount);
+        flashSwapRouter.emptyReservePartial(self.info.toId(), dsId, redeemAmount);
 
         ra += redeemAmount;
         PsmLibrary.lvRedeemRaWithCtDs(self, redeemAmount, dsId);
 
-        uint256 ctSellAmount = reservedDs >= ammCtBalance ? 0 : ammCtBalance - reservedDs;
+        uint256 ctSellAmount = reservedDs >= ammCtBalance ? 0 : ammCtBalance - redeemAmount;
 
         DepegSwap storage ds = self.ds[dsId];
         address[] memory path = new address[](2);
