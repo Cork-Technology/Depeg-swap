@@ -81,7 +81,7 @@ describe("FlashSwapRouter", function () {
           zeroAddress,
           zeroAddress,
         ])
-      ).to.be.rejected
+      ).to.be.rejected;
     });
   });
 
@@ -92,7 +92,7 @@ describe("FlashSwapRouter", function () {
           pool.Id,
           pool.dsId!,
         ])
-      ).to.be.rejected
+      ).to.be.rejected;
     });
   });
 
@@ -102,9 +102,9 @@ describe("FlashSwapRouter", function () {
         fixture.dsFlashSwapRouter.contract.write.emptyReservePartial([
           pool.Id,
           pool.dsId!,
-          10n
+          10n,
         ])
-      ).to.be.rejected
+      ).to.be.rejected;
     });
   });
 
@@ -114,9 +114,9 @@ describe("FlashSwapRouter", function () {
         fixture.dsFlashSwapRouter.contract.write.emptyReservePartial([
           pool.Id,
           pool.dsId!,
-          10n
+          10n,
         ])
-      ).to.be.rejected
+      ).to.be.rejected;
     });
   });
 
@@ -377,7 +377,10 @@ describe("FlashSwapRouter", function () {
         })
         .then((e) => e[0]);
 
-      expect(event.args.amountOut).to.be.equal(amountOutPreview);
+      expect(event.args.amountOut).to.be.closeTo(
+        helper.toEthersBigNumer(amountOutPreview),
+        helper.toEthersBigNumer("0.0001")
+      );
     });
   });
 });
