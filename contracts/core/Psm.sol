@@ -252,8 +252,7 @@ abstract contract PsmCore is IPSMcore, ModuleState, Context {
         uint256 dsDeadline,
         bytes memory rawCtPermitSig,
         uint256 ctDeadline
-    ) external override nonReentrant PSMWithdrawalNotPaused(id) 
-    returns (uint256 ra, uint256 dsId, uint256 rates){
+    ) external override nonReentrant PSMWithdrawalNotPaused(id) returns (uint256 ra, uint256 dsId, uint256 rates) {
         State storage state = states[id];
         (ra, dsId, rates) =
             state.redeemRaWithCtDs(_msgSender(), amount, rawDsPermitSig, dsDeadline, rawCtPermitSig, ctDeadline);
@@ -266,6 +265,7 @@ abstract contract PsmCore is IPSMcore, ModuleState, Context {
      * @param id The PSM id
      * @param amount amount user wants to redeem
      * @return ra amount of RA user received
+     * @return dsId the id of DS
      * @return rates the effective rate at the time of redemption
      */
     function redeemRaWithCtDs(Id id, uint256 amount)

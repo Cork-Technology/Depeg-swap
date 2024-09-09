@@ -105,6 +105,8 @@ abstract contract VaultCore is ModuleState, Context, IVault {
      * @param amount The amount of the asset to be redeemed
      * @param rawLvPermitSig  The signature for Lv transfer permitted by user
      * @param deadline  The deadline timestamp os signature expiry
+     * @return attributedRa The amount of ra that will be redeemed
+     * @return attributedPa The amount of pa that will be redeemed
      */
     function redeemExpiredLv(Id id, address receiver, uint256 amount, bytes memory rawLvPermitSig, uint256 deadline)
         external
@@ -181,9 +183,9 @@ abstract contract VaultCore is ModuleState, Context, IVault {
         LVWithdrawalNotPaused(id)
         returns (uint256 received, uint256 fee, uint256 feePrecentage)
     {
-        State storage state = states[id];
-        (received, fee, feePrecentage) =
-            state.redeemEarly(_msgSender(), receiver, amount, getRouterCore(), getAmmRouter(), rawLvPermitSig, deadline);
+        (received, fee, feePrecentage) = states[id].redeemEarly(
+            _msgSender(), receiver, amount, getRouterCore(), getAmmRouter(), rawLvPermitSig, deadline
+        );
 
         emit LvRedeemEarly(id, _msgSender(), receiver, received, fee, feePrecentage);
     }

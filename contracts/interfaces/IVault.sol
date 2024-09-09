@@ -101,9 +101,12 @@ interface IVault {
      * @param amount The amount of the asset to be redeemed
      * @param rawLvPermitSig  The signature for Lv transfer permitted by user
      * @param deadline  The deadline timestamp os signature expiry
+     * @return attributedRa The amount of ra that will be redeemed
+     * @return attributedPa The amount of pa that will be redeemed
      */
     function redeemExpiredLv(Id id, address receiver, uint256 amount, bytes memory rawLvPermitSig, uint256 deadline)
-        external;
+        external
+        returns (uint256 attributedRa, uint256 attributedPa);
 
     /**
      * @notice Redeem expired lv, when there's no active DS issuance, there's no cap on the amount of lv that can be redeemed.
@@ -115,7 +118,7 @@ interface IVault {
         external
         returns (uint256 attributedRa, uint256 attributedPa);
 
-    function cancelRedemptionRequest(Id id, amount) external;
+    function cancelRedemptionRequest(Id id, uint256 amount) external;
 
     /**
      * @notice preview redeem expired lv
@@ -139,8 +142,9 @@ interface IVault {
      * @param rawLvPermitSig Raw signature for LV approval permit
      * @param deadline deadline for Approval permit signature
      */
-    function redeemEarlyLv(Id id, address receiver, uint256 amount, bytes memory rawLvPermitSig, uint256 deadline) returns (uint256 received, uint256 fee, uint256 feePrecentage)
-        external;
+    function redeemEarlyLv(Id id, address receiver, uint256 amount, bytes memory rawLvPermitSig, uint256 deadline)
+        external
+        returns (uint256 received, uint256 fee, uint256 feePrecentage);
 
     /**
      * @notice Redeem lv before expiry
@@ -148,7 +152,9 @@ interface IVault {
      * @param receiver The address of the receiver
      * @param amount The amount of the asset to be redeemed
      */
-    function redeemEarlyLv(Id id, address receiver, uint256 amount) external returns (uint256 received, uint256 fee, uint256 feePrecentage);
+    function redeemEarlyLv(Id id, address receiver, uint256 amount)
+        external
+        returns (uint256 received, uint256 fee, uint256 feePrecentage);
 
     /**
      * @notice Get the amount of locked lv for a given user

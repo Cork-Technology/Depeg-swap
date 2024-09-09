@@ -391,7 +391,7 @@ contract RouterState is IDsFlashSwapUtility, IDsFlashSwapCore, OwnableUpgradeabl
 
         IPSMcore psm = IPSMcore(owner());
 
-        (uint256 received,) = psm.redeemRaWithCtDs(reserveId, ctAmount);
+        (uint256 received,,) = psm.redeemRaWithCtDs(reserveId, ctAmount);
 
         // for rounding error and to satisfy uni v2 liquidity rules(it forces us to repay 1 wei higher to prevent liquidity stealing)
         uint256 repaymentAmount = received - raAttributed;
