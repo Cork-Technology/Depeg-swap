@@ -9,9 +9,10 @@ import {IUniswapV2Router02} from "./../../contracts/interfaces/uniswap-v2/Router
 import {CorkConfig} from "./../../contracts/core/CorkConfig.sol";
 import {RouterState} from "./../../contracts/core/flash-swaps/FlashSwapRouter.sol";
 import {DummyWETH} from "./../../contracts/dummy/DummyWETH.sol";
+import {TestModuleCore} from "./TestModuleCore.sol";
 
 abstract contract Helper is Test {
-    ModuleCore internal moduleCore;
+    TestModuleCore internal moduleCore;
     AssetFactory internal assetFactory;
     IUniswapV2Factory internal uniswapFactory;
     IUniswapV2Router02 internal uniswapRouter;
@@ -73,7 +74,7 @@ abstract contract Helper is Test {
         deployUniswapFactory(address(0), address(flashSwapRouter));
         deployUniswapRouter(address(uniswapFactory), address(flashSwapRouter));
 
-        moduleCore = new ModuleCore(
+        moduleCore = new TestModuleCore(
             address(assetFactory),
             address(uniswapFactory),
             address(flashSwapRouter),
@@ -93,7 +94,7 @@ abstract contract Helper is Test {
         deployUniswapFactory(address(0), address(flashSwapRouter));
         deployUniswapRouter(address(uniswapFactory), address(flashSwapRouter));
 
-        moduleCore = new ModuleCore(
+        moduleCore = new TestModuleCore(
             address(assetFactory),
             address(uniswapFactory),
             address(flashSwapRouter),
