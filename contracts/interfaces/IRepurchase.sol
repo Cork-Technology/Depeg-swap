@@ -53,7 +53,9 @@ interface IRepurchase {
      * @param id the id of PSM
      * @param amount the amount of RA to use
      */
-    function repurchase(Id id, uint256 amount) external;
+    function repurchase(Id id, uint256 amount)
+        external
+        returns (uint256 dsId, uint256 received, uint256 feePrecentage, uint256 fee, uint256 exchangeRates);
 
     /**
      * @notice returns the amount of pa and ds tokens that will be received after repurchasing
