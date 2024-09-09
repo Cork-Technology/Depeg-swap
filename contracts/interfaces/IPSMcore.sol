@@ -25,6 +25,27 @@ interface IPSMcore is IRepurchase {
         uint256 exchangeRate
     );
 
+    /// @notice Emitted when a user rolled over their CT 
+    /// @param Id The PSM id
+    /// @param currentDsId The current DS id
+    /// @param owner The address of the owner
+    /// @param prevDsId The previous DS id
+    /// @param amountCtRolledOver The amount of CT rolled over
+    /// @param dsReceived The amount of DS received, if 0 then the DS is sold to flash swap router, and implies the user opt-in for DS auto-sell
+    /// @param paReceived The amount of PA received
+    /// @param exchangeRate The exchange rate of DS at the time of rollover
+    event RolledOver (
+        Id indexed Id,
+        uint256 indexed currentDsId,
+        address indexed owner,
+        uint256 prevDsId,
+        uint256 amountCtRolledOver,
+        uint256 dsReceived,
+        uint256 paReceived,
+        uint256 exchangeRate,
+        uint256 rolloverProfit
+    );
+
     /// @notice Emitted when a user redeems a DS for a given PSM
     /// @param Id The PSM id
     /// @param dsId The DS id
@@ -127,57 +148,62 @@ interface IPSMcore is IRepurchase {
 
     /**
      * @notice redeem RA with DS + PA
-     * @param id The pair id 
-     * @param dsId The DS id  
-     * @param amount The amount of DS + PA to redeem 
-     * @param rawDsPermitSig The raw signature for DS approval permit 
-     * @param deadline The deadline for DS approval permit signature 
+     * @param id The pair id
+     * @param dsId The DS id
+     * @param amount The amount of DS + PA to redeem
+     * @param rawDsPermitSig The raw signature for DS approval permit
+     * @param deadline The deadline for DS approval permit signature
      */
-    function redeemRaWithDs(Id id, uint256 dsId, uint256 amount, bytes memory rawDsPermitSig, uint256 deadline) external;
+    function redeemRaWithDs(Id id, uint256 dsId, uint256 amount, bytes memory rawDsPermitSig, uint256 deadline)
+        external;
 
     /**
      * @notice redeem RA with DS + PA
      * @param id The pair id
      * @param dsId The DS id
-     * @param amount The amount of DS + PA to redeem 
+     * @param amount The amount of DS + PA to redeem
      */
     function redeemRaWithDs(Id id, uint256 dsId, uint256 amount) external;
 
     /**
-     * @notice preview the amount of RA user will get when Redeem RA with DS+PA 
+     * @notice preview the amount of RA user will get when Redeem RA with DS+PA
      * @param id The pair id
-     * @param dsId The DS id 
-     * @param amount The amount of DS + PA to redeem 
+     * @param dsId The DS id
+     * @param amount The amount of DS + PA to redeem
      */
     function previewRedeemRaWithDs(Id id, uint256 dsId, uint256 amount) external view returns (uint256 assets);
 
     /**
-     * @notice redeem RA + PA with CT at expiry 
-     * @param id The pair id 
-     * @param dsId The DS id 
-     * @param amount The amount of CT to redeem 
+     * @notice redeem RA + PA with CT at expiry
+     * @param id The pair id
+     * @param dsId The DS id
+     * @param amount The amount of CT to redeem
      * @param rawCtPermitSig The raw signature for CT approval permit
-     * @param deadline The deadline for CT approval permit signature 
+     * @param deadline The deadline for CT approval permit signature
      */
-    function redeemWithCT(Id id, uint256 dsId, uint256 amount, bytes memory rawCtPermitSig, uint256 deadline) external;
+    function redeemWithCT(Id id, uint256 dsId, uint256 amount, bytes memory rawCtPermitSig, uint256 deadline)
+        external;
 
     /**
-     * @notice redeem RA + PA with CT at expiry 
-     * @param id The pair id 
-     * @param dsId The DS id 
-     * @param amount The amount of CT to redeem 
+     * @notice redeem RA + PA with CT at expiry
+     * @param id The pair id
+     * @param dsId The DS id
+     * @param amount The amount of CT to redeem
      */
     function redeemWithCT(Id id, uint256 dsId, uint256 amount) external;
 
     /**
-     * @notice preview the amount of RA user will get when Redeem RA with CT+DS 
-     * @param id The pair id 
-     * @param dsId The DS id 
-     * @param amount The amount of CT to redeem  
+     * @notice preview the amount of RA user will get when Redeem RA with CT+DS
+     * @param id The pair id
+     * @param dsId The DS id
+     * @param amount The amount of CT to redeem
      * @return paReceived The amount of PA user will get
-     * @return raReceived The amount of RA user will get 
+     * @return raReceived The amount of RA user will get
      */
-    function previewRedeemWithCt(Id id, uint256 dsId, uint256 amount) external view returns (uint256 paReceived, uint256 raReceived);
+    function previewRedeemWithCt(Id id, uint256 dsId, uint256 amount)
+        external
+        view
+        returns (uint256 paReceived, uint256 raReceived);
 
     /**
      * @notice returns amount of ra user will get when Redeem RA with CT+DS
@@ -225,4 +251,10 @@ interface IPSMcore is IRepurchase {
      * @notice returns base redemption fees (1e18 = 1%)
      */
     function baseRedemptionFee() external view returns (uint256);
+
+    function psmAcceptFlashSwapProfit(Id id, uint256 profit) external;
+
+    function rolloverCt(Id id,address owner, uint256 amount, uint256 dsId, bytes memory rawCtPermitSig, uint256 ctDeadline) external;
+
+    function rolloverCt(Id id,address owner, uint256 amount, uint256 dsId) external;
 }
