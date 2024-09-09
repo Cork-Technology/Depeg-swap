@@ -7,7 +7,7 @@ import {MinimalUniswapV2Library} from "./uni-v2/UniswapV2Library.sol";
 import {PermitChecker} from "./PermitChecker.sol";
 
 /**
- * @dev AssetPair structure for Asset Pairs   
+ * @dev AssetPair structure for Asset Pairs
  */
 struct AssetPair {
     Asset ra;
@@ -18,11 +18,15 @@ struct AssetPair {
     /// @dev this represent the amount of DS that the LV has in reserve
     /// will be used to fullfill buy DS orders based on the LV DS selling strategy
     // (i.e 50:50 for first expiry, and 80:20 on subsequent expiries. note that it's represented as LV:AMM)
-    uint256 reserve;
+    uint256 lvReserve;
+    /// @dev this represent the amount of DS that the PSM has in reserve, used to fill buy pressure on rollover period
+    /// and  based on the LV DS selling strategy
+
+    uint256 psmReserve;
 }
 
 /**
- * @dev ReserveState structure for Reserve    
+ * @dev ReserveState structure for Reserve
  */
 struct ReserveState {
     /// @dev dsId => [RA, CT, DS]
@@ -31,14 +35,14 @@ struct ReserveState {
     uint256 hpaCumulated;
     uint256 vhpaCumulated;
     uint256 decayDiscountRateInDays;
-    uint256 rolloverPeriodInblocks;
+    uint256 rolloverEndInBlockNumber;
     uint256 hpa;
 }
 
 /**
  * @title DsFlashSwaplibrary Contract
  * @author Cork Team
- * @notice DsFlashSwap library which implements Flashswap related features for DS/CT 
+ * @notice DsFlashSwap library which implements supporting lib and functions flashswap related features for DS/CT
  */
 library DsFlashSwaplibrary {
     /// @dev the precentage amount of reserve that will be used to fill buy orders
@@ -49,6 +53,8 @@ library DsFlashSwaplibrary {
     /// the router will sell in respect to this ratio on subsequent issuances
     uint256 public constant SUBSEQUENT_RESERVE_SELL_PRESSURE_PRECENTAGE = 80e18;
 
+    uint256 public constant FIRST_ISSUANCE = 1;
+
     function onNewIssuance(
         ReserveState storage self,
         uint256 dsId,
@@ -56,55 +62,68 @@ library DsFlashSwaplibrary {
         address pair,
         uint256 initialReserve,
         address ra,
-        address ct,
-        uint256 decayDiscountRateInDays,
-        uint256 rolloverPeriodInblocks
+        address ct
     ) internal {
-        self.decayDiscountRateInDays = decayDiscountRateInDays;
-        self.rolloverPeriodInblocks = rolloverPeriodInblocks;
 
-        self.ds[dsId] = AssetPair(Asset(ra), Asset(ct), Asset(ds), IUniswapV2Pair(pair), initialReserve);
+        // TODO: fix initial reserves, make it disappear or actually enforce them
+        self.ds[dsId] = AssetPair(Asset(ra), Asset(ct), Asset(ds), IUniswapV2Pair(pair), initialReserve, 0);
 
         self.reserveSellPressurePrecentage =
-            dsId == 1 ? INITIAL_RESERVE_SELL_PRESSURE_PRECENTAGE : SUBSEQUENT_RESERVE_SELL_PRESSURE_PRECENTAGE;
-            
-        if(dsId != 1){
+            dsId == FIRST_ISSUANCE ? INITIAL_RESERVE_SELL_PRESSURE_PRECENTAGE : SUBSEQUENT_RESERVE_SELL_PRESSURE_PRECENTAGE;
+
+        if (dsId != FIRST_ISSUANCE) {
             self.hpaCumulated = 0;
             self.vhpaCumulated = 0;
-            
-            try SwapperMathLibrary.calculateHPA(self.hpaCumulated, self.vhpaCumulated) returns(uint256 hpa){
+
+            try SwapperMathLibrary.calculateHPA(self.hpaCumulated, self.vhpaCumulated) returns (uint256 hpa) {
                 self.hpa = hpa;
             } catch {
                 self.hpa = 0;
             }
         }
+    }
 
+    function rolloverSale(ReserveState storage self) internal view returns (bool) {
+        return block.number <= self.rolloverEndInBlockNumber;
     }
 
     function getPair(ReserveState storage self, uint256 dsId) internal view returns (IUniswapV2Pair) {
         return self.ds[dsId].pair;
     }
 
-    function emptyReserve(ReserveState storage self, uint256 dsId, address to) internal returns (uint256 emptied) {
-        emptied = emptyReservePartial(self, dsId, self.ds[dsId].reserve, to);
+    function emptyReserveLv(ReserveState storage self, uint256 dsId, address to) internal returns (uint256 emptied) {
+        emptied = emptyReservePartialLv(self, dsId, self.ds[dsId].lvReserve, to);
     }
 
-    function recalculateHPA(ReserveState storage self, uint256 dsId,uint256 raProvided, uint256 dsReceived) internal {
-        uint256 effectiveDsPrice = SwapperMathLibrary.calculateEffectiveDsPrice(dsReceived, raProvided);
-        uint256 issuanceTime =  self.ds[dsId].ds.issuedAt();
+    function getEffectiveHPA(ReserveState storage self) internal view returns (uint256) {
+        return self.hpa;
+    }
+
+    function getCurrentCumulativeHPA(ReserveState storage self) internal view returns (uint256) {
+        try SwapperMathLibrary.calculateHPA(self.hpaCumulated, self.vhpaCumulated) returns (uint256 hpa) {
+            return hpa;
+        } catch {
+            return 0;
+        }
+    }
+
+    // this function is called for every trade, it recalculates the HPA and VHPA for the reserve.
+    function recalculateHPA(ReserveState storage self, uint256 dsId, uint256 ra, uint256 ds) internal {
+        uint256 effectiveDsPrice = SwapperMathLibrary.calculateEffectiveDsPrice(ds, ra);
+        uint256 issuanceTime = self.ds[dsId].ds.issuedAt();
         uint256 currentTime = block.timestamp;
-        uint256 decayDiscount =  self.decayDiscountRateInDays;
+        uint256 decayDiscount = self.decayDiscountRateInDays;
 
-        self.hpaCumulated += SwapperMathLibrary.calculateHPAcumulated(effectiveDsPrice,dsReceived,decayDiscount,issuanceTime,currentTime);
-        self.vhpaCumulated += SwapperMathLibrary.calculateVHPAcumulated(dsReceived,decayDiscount,issuanceTime,currentTime);
+        self.hpaCumulated +=
+            SwapperMathLibrary.calculateHPAcumulated(effectiveDsPrice, ds, decayDiscount, issuanceTime, currentTime);
+        self.vhpaCumulated += SwapperMathLibrary.calculateVHPAcumulated(ds, decayDiscount, issuanceTime, currentTime);
     }
 
-    function emptyReservePartial(ReserveState storage self, uint256 dsId, uint256 amount, address to)
+    function emptyReservePartialLv(ReserveState storage self, uint256 dsId, uint256 amount, address to)
         internal
         returns (uint256 emptied)
     {
-
-        self.ds[dsId].reserve -= amount;
+        self.ds[dsId].lvReserve -= amount;
         self.ds[dsId].ds.transfer(to, amount);
         emptied = amount;
     }
@@ -159,14 +178,23 @@ library DsFlashSwaplibrary {
         (raReserve, ctReserve,) = self.ds[dsId].pair.getReserves();
     }
 
-    function addReserve(ReserveState storage self, uint256 dsId, uint256 amount, address from)
+    function addReserveLv(ReserveState storage self, uint256 dsId, uint256 amount, address from)
         internal
         returns (uint256 reserve)
     {
         self.ds[dsId].ds.transferFrom(from, address(this), amount);
 
-        self.ds[dsId].reserve += amount;
-        reserve = self.ds[dsId].reserve;
+        self.ds[dsId].lvReserve += amount;
+        reserve = self.ds[dsId].lvReserve;
+    }
+    function addReservePsm(ReserveState storage self, uint256 dsId, uint256 amount, address from)
+        internal
+        returns (uint256 reserve)
+    {
+        self.ds[dsId].ds.transferFrom(from, address(this), amount);
+
+        self.ds[dsId].psmReserve += amount;
+        reserve = self.ds[dsId].psmReserve;
     }
 
     function getReservesSorted(AssetPair storage self) internal view returns (uint112 raReserve, uint112 ctReserve) {
