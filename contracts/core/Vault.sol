@@ -111,9 +111,10 @@ abstract contract VaultCore is ModuleState, Context, IVault {
         override
         nonReentrant
         LVWithdrawalNotPaused(id)
+        returns (uint256 attributedRa, uint256 attributedPa)
     {
         State storage state = states[id];
-        (uint256 attributedRa, uint256 attributedPa) = state.redeemExpired(
+        (attributedRa, attributedPa) = state.redeemExpired(
             _msgSender(), receiver, amount, getAmmRouter(), getRouterCore(), rawLvPermitSig, deadline
         );
         emit LvRedeemExpired(id, receiver, attributedRa, attributedPa);
@@ -130,11 +131,19 @@ abstract contract VaultCore is ModuleState, Context, IVault {
         override
         nonReentrant
         LVWithdrawalNotPaused(id)
+        returns (uint256 attributedRa, uint256 attributedPa)
     {
         State storage state = states[id];
-        (uint256 attributedRa, uint256 attributedPa) =
+        (attributedRa, attributedPa) =
             state.redeemExpired(_msgSender(), receiver, amount, getAmmRouter(), getRouterCore(), bytes(""), 0);
         emit LvRedeemExpired(id, receiver, attributedRa, attributedPa);
+    }
+
+    function cancelRedemptionRequest(Id id, uint256 amount) external override {
+        State storage state = states[id];
+        state.cancelRedemptionRequest(_msgSender(), amount);
+
+        emit RedemptionRequestCancelled(id, _msgSender(), amount);
     }
 
     /**
@@ -170,9 +179,10 @@ abstract contract VaultCore is ModuleState, Context, IVault {
         override
         nonReentrant
         LVWithdrawalNotPaused(id)
+        returns (uint256 received, uint256 fee, uint256 feePrecentage)
     {
         State storage state = states[id];
-        (uint256 received, uint256 fee, uint256 feePrecentage) =
+        (received, fee, feePrecentage) =
             state.redeemEarly(_msgSender(), receiver, amount, getRouterCore(), getAmmRouter(), rawLvPermitSig, deadline);
 
         emit LvRedeemEarly(id, _msgSender(), receiver, received, fee, feePrecentage);
@@ -189,9 +199,10 @@ abstract contract VaultCore is ModuleState, Context, IVault {
         override
         nonReentrant
         LVWithdrawalNotPaused(id)
+        returns (uint256 received, uint256 fee, uint256 feePrecentage)
     {
         State storage state = states[id];
-        (uint256 received, uint256 fee, uint256 feePrecentage) =
+        (received, fee, feePrecentage) =
             state.redeemEarly(_msgSender(), receiver, amount, getRouterCore(), getAmmRouter(), bytes(""), 0);
 
         emit LvRedeemEarly(id, _msgSender(), receiver, received, fee, feePrecentage);
