@@ -41,14 +41,14 @@ contract SetupTCScript is Script {
 
     function run() public {
         vm.startBroadcast(pk);
-        address bsETH = 0xB926f1279e58AF494976D324CC38866018CCa892;
-        address lbETH = 0xCa15c974445d7C8A0aA14Bd5E6b3aFd5F22D7D17;
-        address wamuETH = 0xE7Df8d2654183E4C809803850A56829131ae77f6;
-        address mlETH = 0x4Bc92B2E2066906e0b4C1E1D9d30f985375D9268;
+        address bsETH = 0xcDD25693eb938B3441585eBDB4D766751fd3cdAD;
+        address lbETH = 0xA00B0cC70dC182972289a0625D3E1eFCE6Aac624;
+        address wamuETH = 0x79A8b67B51be1a9d18Cf88b4e287B46c73316d89;
+        address mlETH = 0x68eb9E1bB42feef616BE433b51440D007D86738e;
 
-        moduleCore = ModuleCore(0x1647873c50Ec462039d4Eb4Fbd7bdFD8835a1133);
-        config = CorkConfig(0x90C95749f0018F0C790CB2e9a93a2cE34181AdDA);
-        univ2Router = IUniswapV2Router02(0x733732F1C66f1973b90ca443022Cef2B287EFCB6);
+        moduleCore = ModuleCore(0xa97e7b244B1C853b5981E2F74C133a68d9941F03);
+        config = CorkConfig(0x25F8d3dB6c0cfC8815972C6Faaea875d48d1b401);
+        univ2Router = IUniswapV2Router02(0x2eAc54667957a8a4312c92532df47eEBAE7bc36e);
 
         cETH = IERC20(ceth);
 

@@ -36,13 +36,17 @@ contract DeployScript is Script {
     address public ceth = vm.envAddress("WETH");
     uint256 public pk = vm.envUint("PRIVATE_KEY");
 
-    address bsETH = 0x47Ac327afFAf064Da7a42175D02cF4435E0d4088;
-    address lbETH = 0x36645b1356c3a57A8ad401d274c5487Bc4A586B6;
-    address wamuETH = 0x64BAdb1F23a409574441C10C2e0e9385E78bAD0F;
-    address mlETH = 0x5FeB996d05633571C0d9A3E12A65B887a829f60b;
+    address bsETH = 0xcDD25693eb938B3441585eBDB4D766751fd3cdAD;
+    address lbETH = 0xA00B0cC70dC182972289a0625D3E1eFCE6Aac624;
+    address wamuETH = 0x79A8b67B51be1a9d18Cf88b4e287B46c73316d89;
+    address mlETH = 0x68eb9E1bB42feef616BE433b51440D007D86738e;
+
+    CETH cETH = CETH(ceth);
 
     uint256 depositAmt = 1_000_000_000_000 ether;
-    CETH cETH = CETH(ceth);
+    uint256 mintAmount = 1_000_000_000_000 ether;
+    uint256 depositLVAmt = 5000 ether;
+    uint256 liquidityAmt = 1_000_000 ether;
 
     function setUp() public {}
 
@@ -135,42 +139,55 @@ contract DeployScript is Script {
 
         config.setModuleCore(address(moduleCore));
         console.log("Modulecore configured in Config contract");
+        console.log("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-");
 
-        config.initializeModuleCore(bsETH, ceth, 0.3 ether, 0.2 ether); // LVFee = 0.3%,  DSPrice=0.2%(or 20%)
-        console.log("Modulecore initialized");
+        issueDSAndAddLiquidity(bsETH, ceth, 0.3 ether, 0.2 ether, 1 ether); // EarlyRedemptionFee = 0.3%,  DSPrice=0.2%(or 20%)  repurchaseFee = 1%
+        issueDSAndAddLiquidity(lbETH, ceth, 0.3 ether, 0.3 ether, 0.5 ether); // EarlyRedemptionFee = 0.3%,  DSPrice=0.3%(or 30%)  repurchaseFee = 0.5%
+        issueDSAndAddLiquidity(wamuETH, ceth, 0.3 ether, 0.7 ether, 0); // EarlyRedemptionFee = 0.3%,  DSPrice=0.3%(or 70%)  repurchaseFee = 0%
+        issueDSAndAddLiquidity(mlETH, ceth, 0.3 ether, 0.3 ether, 0.25 ether); // EarlyRedemptionFee = 0.3%,  DSPrice=0.3%(or 30%)  repurchaseFee = 0.25%
 
-        Id id = moduleCore.getId(bsETH, ceth);
+        // moduleCore.redeemEarlyLv(id, msg.sender, 10 ether);
+        // uint256 result = flashswapRouter.previewSwapRaforDs(id, 1, 100 ether);
+        // console.log(result);
+        console.log("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-");
+        vm.stopBroadcast();
+    }
+
+    function issueDSAndAddLiquidity(
+        address cst,
+        address ceth,
+        uint256 redmptionFee,
+        uint256 dsPrice,
+        uint256 repurchaseFee
+    ) public {
+        config.initializeModuleCore(cst, ceth, redmptionFee, dsPrice);
+
+        Id id = moduleCore.getId(cst, ceth);
         config.issueNewDs(
             id,
             block.timestamp + 180 days, // 6 months
             1 ether, // exchange rate = 1:1
-            1 ether // 1%
+            repurchaseFee
         );
         console.log("New DS issued");
         console.log("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-");
 
-        cETH.approve(address(moduleCore), 5000 ether);
-        moduleCore.depositLv(id, 5000 ether);
+        cETH.approve(address(moduleCore), depositLVAmt);
+        moduleCore.depositLv(id, depositLVAmt);
         console.log("LV Deposited");
 
-        cETH.approve(address(univ2Router), 1_000_000 ether);
-        IERC20(bsETH).approve(address(univ2Router), 1_000_000 ether);
+        cETH.approve(address(univ2Router), liquidityAmt);
+        IERC20(cst).approve(address(univ2Router), liquidityAmt);
         univ2Router.addLiquidity(
             ceth,
-            bsETH,
-            1_000_000 ether,
-            1_000_000 ether,
-            1_000_00 ether,
-            1_000_00 ether,
+            cst,
+            liquidityAmt,
+            liquidityAmt,
+            liquidityAmt,
+            liquidityAmt,
             msg.sender,
             block.timestamp + 10000 minutes
         );
         console.log("Liquidity Added to AMM");
-
-        moduleCore.redeemEarlyLv(id, msg.sender, 10 ether);
-        uint256 result = flashswapRouter.previewSwapRaforDs(id, 1, 100 ether);
-        console.log(result);
-        console.log("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-");
-        vm.stopBroadcast();
     }
 }
