@@ -32,6 +32,7 @@ interface IPSMcore is IRepurchase {
     /// @param prevDsId The previous DS id
     /// @param amountCtRolledOver The amount of CT rolled over
     /// @param dsReceived The amount of DS received, if 0 then the DS is sold to flash swap router, and implies the user opt-in for DS auto-sell
+    /// @param ctReceived The amount of CT received
     /// @param paReceived The amount of PA received
     /// @param exchangeRate The exchange rate of DS at the time of rollover
     event RolledOver (
@@ -41,9 +42,23 @@ interface IPSMcore is IRepurchase {
         uint256 prevDsId,
         uint256 amountCtRolledOver,
         uint256 dsReceived,
+        uint256 ctReceived,
         uint256 paReceived,
-        uint256 exchangeRate,
-        uint256 rolloverProfit
+        uint256 exchangeRate
+    );
+
+    /// @notice Emitted when a user claims profit from a rollover
+    /// @param Id The PSM id
+    /// @param dsId The DS id
+    /// @param owner The address of the owner
+    /// @param amount The amount of the asset claimed
+    /// @param profit The amount of profit claimed
+    event RolloverProfitClaimed(
+        Id indexed Id,
+        uint256 indexed dsId,
+        address indexed owner,
+        uint256 amount,
+        uint256 profit
     );
 
     /// @notice Emitted when a user redeems a DS for a given PSM
@@ -266,7 +281,9 @@ interface IPSMcore is IRepurchase {
 
     function psmAcceptFlashSwapProfit(Id id, uint256 profit) external;
 
-    function rolloverCt(Id id,address owner, uint256 amount, uint256 dsId, bytes memory rawCtPermitSig, uint256 ctDeadline) external;
+    function rolloverCt(Id id,address owner, uint256 amount, uint256 dsId, bytes memory rawCtPermitSig, uint256 ctDeadline) external returns (uint256 ctDsReceived, uint256 _exchangeRate, uint256 paReceived);
 
-    function rolloverCt(Id id,address owner, uint256 amount, uint256 dsId) external;
+    function rolloverCt(Id id,address owner, uint256 amount, uint256 dsId) external returns (uint256 ctDsReceived, uint256 _exchangeRate, uint256 paReceived);
+
+    function claimRolloverProfit(Id id, uint256 dsId, uint256 amount)  external returns(uint256 profit);
 }

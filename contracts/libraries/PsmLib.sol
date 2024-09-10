@@ -69,14 +69,18 @@ library PsmLibrary {
         IDsFlashSwapCore flashSwapRouter,
         bytes memory rawCtPermitSig,
         uint256 ctDeadline
-    ) internal returns (uint256 dsReceived, uint256 _exchangeRate, uint256 rolloverProfit, uint256 paReceived) {
+    ) internal returns (uint256 dsReceived, uint256 _exchangeRate, uint256 paReceived) {
         if (rawCtPermitSig.length > 0 && ctDeadline != 0) {
             DepegSwapLibrary.permit(self.ds[dsId].ct, rawCtPermitSig, owner, address(this), amount, ctDeadline);
         }
 
-        (dsReceived, _exchangeRate, rolloverProfit, paReceived) = _rolloverCt(self, owner, amount, self.globalAssetIdx, flashSwapRouter);
+        (dsReceived, _exchangeRate, paReceived) = _rolloverCt(self, owner, amount, self.globalAssetIdx, flashSwapRouter);
     }
 
+    function claimRolloverProfit(State storage self, address owner, uint256 dsId, uint256 amount) internal returns (uint256 profit) {
+        Guard.safeAfterExpired(self.ds[dsId]);
+        profit = _claimRolloverProfit(self, self.psm.poolArchive[dsId], owner, amount);
+    }
     // 1. check how much expirec CT does use have
     // 2. calculate how much backed RA and PA the user can redeem
     // 3. mint new CT and DS equal to backed RA user has
@@ -91,7 +95,7 @@ library PsmLibrary {
         uint256 amount,
         uint256 prevDsId,
         IDsFlashSwapCore flashSwapRouter
-    ) internal returns (uint256 dsReceived, uint256 _exchangeRate, uint256 rolloverProfit, uint256 paReceived) {
+    ) internal returns (uint256 dsReceived, uint256 _exchangeRate, uint256 paReceived) {
         // claim logic
         PsmPoolArchive storage prevArchive;
 
@@ -116,12 +120,6 @@ library PsmLibrary {
         // increase rollover claims if user opt-in for auto sell, avoid stack too deep error
         _incRolloverClaims(self, ctDsReceived, owner, dsReceived);
         // end deposit logic
-
-        // sends user all their rollover profit if they have any
-        if (prevArchive.rolloverClaims[owner] != 0) {
-            // avoid stack too deep error
-            rolloverProfit = _claimRolloverProfit(self, prevArchive, owner);
-        }
 
         // send, burn tokens and mint new ones
         _afterRollover(self, currentDs, owner, ctDsReceived, paReceived, flashSwapRouter);
@@ -164,20 +162,24 @@ library PsmLibrary {
         ERC20Burnable(prevDs.ct).burnFrom(owner, amount);
     }
 
-    function _claimRolloverProfit(State storage self, PsmPoolArchive storage prevArchive, address owner)
+    function _claimRolloverProfit(State storage self, PsmPoolArchive storage prevArchive, address owner, uint256 amount)
         private
         returns (uint256 rolloverProfit)
     {
+        if (prevArchive.rolloverClaims[owner] < amount) {
+            revert InsufficientRolloverRedemtionBalance(owner, amount, prevArchive.rolloverClaims[owner]);
+        }
+
         // calculate their share of profit
         rolloverProfit = MathHelper.calculateAccrued(
-            prevArchive.rolloverClaims[owner], prevArchive.rolloverProfit, prevArchive.attributedToRollover
+            amount, prevArchive.rolloverProfit, prevArchive.attributedToRollover
         );
         // reset their claim
-        prevArchive.rolloverClaims[owner] = 0;
+        prevArchive.rolloverClaims[owner] -= amount;
         // decrement total profit
         prevArchive.rolloverProfit -= rolloverProfit;
         // decrement total ct attributed to rollover
-        prevArchive.attributedToRollover -= prevArchive.rolloverClaims[owner];
+        prevArchive.attributedToRollover -= amount;
 
         IERC20(self.info.redemptionAsset()).safeTransfer(owner, rolloverProfit);
     }

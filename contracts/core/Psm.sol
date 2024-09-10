@@ -312,17 +312,21 @@ abstract contract PsmCore is IPSMcore, ModuleState, Context {
         state.acceptRolloverProfit(profit);
     }
    
-    function rolloverCt(Id id,address owner, uint256 amount, uint256 dsId, bytes memory rawCtPermitSig, uint256 ctDeadline) external PSMDepositNotPaused(id){
+    function rolloverCt(Id id,address owner, uint256 amount, uint256 dsId, bytes memory rawCtPermitSig, uint256 ctDeadline) external PSMDepositNotPaused(id) returns (uint256 ctDsReceived, uint256 _exchangeRate, uint256 paReceived){
         State storage state = states[id];
-        (uint256 dsReceived, uint256 _exchangeRate, uint256 rolloverProfit, uint256 paReceived) = state.rolloverCt(owner, amount, dsId, getRouterCore() ,rawCtPermitSig, ctDeadline);
-        emit RolledOver(id, state.globalAssetIdx, _msgSender(), dsId, amount, dsReceived, paReceived, _exchangeRate, rolloverProfit);
+        ( ctDsReceived,  _exchangeRate,  paReceived) = state.rolloverCt(owner, amount, dsId, getRouterCore() ,rawCtPermitSig, ctDeadline);
+        emit RolledOver(id, state.globalAssetIdx, _msgSender(), dsId, amount, ctDsReceived,ctDsReceived, paReceived, _exchangeRate);
     }
 
-    function rolloverCt(Id id,address owner, uint256 amount, uint256 dsId) external PSMDepositNotPaused(id) {
+    function rolloverCt(Id id,address owner, uint256 amount, uint256 dsId) external PSMDepositNotPaused(id) returns (uint256 ctDsReceived, uint256 _exchangeRate, uint256 paReceived){
         State storage state = states[id];
         bytes memory signaturePlaceHolder;
-        (uint256 dsReceived, uint256 _exchangeRate, uint256 rolloverProfit, uint256 paReceived) = state.rolloverCt(owner, amount, dsId, getRouterCore() ,signaturePlaceHolder, 0);
-        emit RolledOver(id, state.globalAssetIdx, _msgSender(), dsId, amount, dsReceived, paReceived, _exchangeRate, rolloverProfit);
+        (ctDsReceived, _exchangeRate, paReceived) = state.rolloverCt(owner, amount, dsId, getRouterCore() ,signaturePlaceHolder, 0);
+        emit RolledOver(id, state.globalAssetIdx, _msgSender(), dsId, amount, ctDsReceived,ctDsReceived, paReceived, _exchangeRate );
+    }
 
+    function claimRolloverProfit(Id id, uint256 dsId, uint256 amount)  external returns(uint256 profit){
+        State storage state = states[id];
+        profit = state.claimRolloverProfit(_msgSender(), dsId, amount);
     }
 }
