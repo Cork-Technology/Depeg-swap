@@ -15,7 +15,16 @@ interface IDsFlashSwapUtility {
      * @param dsId the ds id of the pair
      * @return raPriceRatio ratio of RA
      * @return ctPriceRatio ratio of CT
+     * @notice returns the current price ratio of the pair
+     * @param id the id of the pair
+     * @param dsId the ds id of the pair
+     * @return raPriceRatio ratio of RA
+     * @return ctPriceRatio ratio of CT
      */
+    function getCurrentPriceRatio(Id id, uint256 dsId)
+        external
+        view
+        returns (uint256 raPriceRatio, uint256 ctPriceRatio);
     function getCurrentPriceRatio(Id id, uint256 dsId)
         external
         view
@@ -196,9 +205,9 @@ interface IDsFlashSwapCore is IDsFlashSwapUtility {
      * @param reserveId the pair id
      * @param dsId the ds id of the pair
      * @param amount the amount of DS to empty
-     * @return reserve the remaining reserve of DS
+     * @return emptied emptied amount of DS that's emptied
      */
-    function emptyReservePartialLv(Id reserveId, uint256 dsId, uint256 amount) external returns (uint256 reserve);
+    function emptyReservePartialLv(Id reserveId, uint256 dsId, uint256 amount) external returns (uint256 emptied);
 
     /**
      * @notice Swaps RA for DS

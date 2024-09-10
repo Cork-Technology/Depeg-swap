@@ -292,8 +292,12 @@ library PsmLibrary {
         ds.issue(address(this), amount);
     }
 
-    function lvRedeemRaWithCtDs(State storage self, uint256 amount, uint256 dsId) internal {
+    function lvRedeemRaWithCtDs(State storage self, uint256 amount, uint256 dsId) internal returns (uint256 ra){
         DepegSwap storage ds = self.ds[dsId];
+
+        uint256 rates = ds.exchangeRate();
+        ra = MathHelper.calculateRedeemAmountWithExchangeRate(amount, rates);
+
         ds.burnBothforSelf(amount);
     }
 
@@ -449,8 +453,6 @@ library PsmLibrary {
         // we use deposit here because technically the user deposit RA to the PSM when repurchasing
         received = MathHelper.calculateDepositAmountWithExchangeRate(amount, exchangeRates);
 
-        received = received;
-
         uint256 available = self.psm.balances.paBalance;
         // ensure that we have an equal amount of DS and PA
         assert(available == self.psm.balances.dsBalance);
@@ -477,7 +479,7 @@ library PsmLibrary {
         self.psm.balances.dsBalance -= (received);
 
         // transfer user RA to the PSM/LV
-        self.psm.balances.ra.lockUnchecked(amount, buyer);
+        self.psm.balances.ra.lockFrom(amount, buyer);
 
         // transfer user attrubuted DS + PA
         // PA
