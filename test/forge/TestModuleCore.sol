@@ -39,8 +39,28 @@ contract TestModuleCore is ModuleCore {
         return states[id].psm.balances;
     }
 
-    function getPsmPoolArchive(Id id, uint256 dsId) external view returns (PsmPoolArchive memory) {
-        return states[id].psm.poolArchive[dsId];
+    function getPsmPoolArchiveRaAccrued(Id id, uint256 dsId) external view returns (uint256) {
+        return states[id].psm.poolArchive[dsId].raAccrued;
+    }
+
+    function getPsmPoolArchivePaAccrued(Id id, uint256 dsId) external view returns (uint256) {
+        return states[id].psm.poolArchive[dsId].paAccrued;
+    }
+
+    function getPsmPoolArchiveCtAttributed(Id id, uint256 dsId) external view returns (uint256) {
+        return states[id].psm.poolArchive[dsId].ctAttributed;
+    }
+
+    function getPsmPoolArchiveAttributedToRollover(Id id, uint256 dsId) external view returns (uint256) {
+        return states[id].psm.poolArchive[dsId].attributedToRollover;
+    }
+
+    function getPsmPoolArchiveRolloverClaims(Id id, uint256 dsId, address user) external view returns (uint256) {
+        return states[id].psm.poolArchive[dsId].rolloverClaims[user];
+    }
+
+    function getPsmPoolArchiveRolloverProfit(Id id, uint256 dsId) external view returns (uint256) {
+        return states[id].psm.poolArchive[dsId].rolloverProfit;
     }
 
     function getPsmRepurchaseFeePrecentage(Id id) external view returns (uint256) {

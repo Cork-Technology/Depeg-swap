@@ -64,7 +64,7 @@ abstract contract Helper is Test {
     }
 
     function initializeFlashSwapRouter() internal {
-        flashSwapRouter.initialize(address(moduleCore), address(uniswapRouter));
+        flashSwapRouter.initialize(address(corkConfig),address(moduleCore), address(uniswapRouter));
     }
 
     function deployModuleCore() internal {
