@@ -133,7 +133,7 @@ library PsmLibrary {
     {
         if (self.psm.autoSell[owner]) {
             PsmPoolArchive storage currentArchive = self.psm.poolArchive[self.globalAssetIdx];
-            currentArchive.ctAttributedToRollover += ctDsReceived;
+            currentArchive.attributedToRollover += ctDsReceived;
             currentArchive.rolloverClaims[owner] += ctDsReceived;
             // we return 0 since the user opt-in for auto sell
             return 0;
@@ -170,14 +170,14 @@ library PsmLibrary {
     {
         // calculate their share of profit
         rolloverProfit = MathHelper.calculateAccrued(
-            prevArchive.rolloverClaims[owner], prevArchive.rolloverProfit, prevArchive.ctAttributedToRollover
+            prevArchive.rolloverClaims[owner], prevArchive.rolloverProfit, prevArchive.attributedToRollover
         );
         // reset their claim
         prevArchive.rolloverClaims[owner] = 0;
         // decrement total profit
         prevArchive.rolloverProfit -= rolloverProfit;
         // decrement total ct attributed to rollover
-        prevArchive.ctAttributedToRollover -= prevArchive.rolloverClaims[owner];
+        prevArchive.attributedToRollover -= prevArchive.rolloverClaims[owner];
 
         IERC20(self.info.redemptionAsset()).safeTransfer(owner, rolloverProfit);
     }
