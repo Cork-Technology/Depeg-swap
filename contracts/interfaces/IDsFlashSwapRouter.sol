@@ -15,16 +15,7 @@ interface IDsFlashSwapUtility {
      * @param dsId the ds id of the pair
      * @return raPriceRatio ratio of RA
      * @return ctPriceRatio ratio of CT
-     * @notice returns the current price ratio of the pair
-     * @param id the id of the pair
-     * @param dsId the ds id of the pair
-     * @return raPriceRatio ratio of RA
-     * @return ctPriceRatio ratio of CT
      */
-    function getCurrentPriceRatio(Id id, uint256 dsId)
-        external
-        view
-        returns (uint256 raPriceRatio, uint256 ctPriceRatio);
     function getCurrentPriceRatio(Id id, uint256 dsId)
         external
         view
@@ -201,6 +192,9 @@ interface IDsFlashSwapCore is IDsFlashSwapUtility {
     function emptyReserveLv(Id reserveId, uint256 dsId) external returns (uint256 amount);
 
     /**
+     * @notice empty some or all DS reserve to liquidity vault, can only be called by moduleCore
+     * @param reserveId the pair id
+     * @param dsId the ds id of the pair
      * @notice empty some or all DS reserve to liquidity vault, can only be called by moduleCore
      * @param reserveId the pair id
      * @param dsId the ds id of the pair

@@ -126,7 +126,7 @@ contract RouterState is
     function emptyReservePartialLv(Id reserveId, uint256 dsId, uint256 amount)
         external
         override
-        onlyOwner
+        onlyModuleCore
         returns (uint256 emptied)
     {
         emptied = reserves[reserveId].emptyReservePartialLv(dsId, amount, _moduleCore);
@@ -218,7 +218,6 @@ contract RouterState is
         return reserves[reserveId].rolloverEndInBlockNumber;
     }
 
-    // TODO : add rollover and subtract reserve from the two reserve
     function _swapRaforDs(
         ReserveState storage self,
         AssetPair storage assetPair,
@@ -262,7 +261,9 @@ contract RouterState is
             assetPair.psmReserve -= psmReserveUsed;
 
             // sell the DS tokens from the reserve and accrue value to LV holders
-            uint256 profitRa = __swapDsforRa(assetPair, reserveId, dsId, amountSellFromReserve, 0);
+            // it's safe to transfer all profit to the module core since the profit for each PSM and LV is calculated separately and we invoke 
+            // the profit acceptance function for each of them
+            uint256 profitRa = __swapDsforRa(assetPair, reserveId, dsId, amountSellFromReserve, 0, _moduleCore);
             // calculate the profit of the liquidity vault
             uint256 vaultProfit = profitRa * lvReserveUsed / amountSellFromReserve;
             // calculate the profit of the PSM
