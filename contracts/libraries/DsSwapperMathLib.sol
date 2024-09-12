@@ -3,7 +3,7 @@ pragma solidity 0.8.24;
 import {UQ112x112} from "./UQ112x112.sol";
 import {SignedMath} from "@openzeppelin/contracts/utils/math/SignedMath.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
-import {UQ112x112} from "./UQ112x112.sol";
+import "forge-std/console.sol";
 
 /**
  * @title SwapperMathLibrary Contract
@@ -231,8 +231,6 @@ library SwapperMathLibrary {
         // returns the RA if, the total reserve cannot cover the DS that user will receive. this Ra left must subject to the AMM rates
         raLeft = totalDsReserve > dsReceived ? 0 : ((dsReceived - totalDsReserve) * 1e18) / hpa;
 
-        console.log("raLeft         :", raLeft);
-
         // recalculate the DS user will receive, after the RA left is deducted
         raProvided -= raLeft;
         dsReceived = raProvided * 1e18 / hpa;
@@ -245,6 +243,12 @@ library SwapperMathLibrary {
         // calculate the RA profit of LV and PSM
         lvProfit = (lvReserveUsed * hpa) / 1e18;
         psmProfit = (psmReserveUsed * hpa) / 1e18;
+
+        // for rounding errors
+        lvProfit = lvProfit  + psmProfit + 1 == raProvided ? lvProfit + 1 : lvProfit;
+        
+        // for rounding errors
+        psmReserveUsed = lvReserveUsed + psmReserveUsed + 1 == dsReceived ? psmReserveUsed + 1 : psmReserveUsed;
 
         assert(lvProfit + psmProfit == raProvided);
         assert(lvReserveUsed + psmReserveUsed == dsReceived);
