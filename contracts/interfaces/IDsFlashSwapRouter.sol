@@ -39,6 +39,14 @@ interface IDsFlashSwapUtility {
     function getLvReserve(Id id, uint256 dsId) external view returns (uint256 lvReserve);
 
     /**
+     * @notice returns the current DS reserve that is owned by PSM
+     * @param id the id of the pair
+     * @param dsId the ds id of the pair
+     * @return psmReserve reserve of DS
+     */
+    function getPsmReserve(Id id, uint256 dsId) external view returns (uint256 psmReserve);
+
+    /**
      * @notice returns the underlying uniswap v2 pair address
      * @param id the id of the pair
      * @param dsId the ds id of the pair
@@ -131,14 +139,16 @@ interface IDsFlashSwapCore is IDsFlashSwapUtility {
     event ReserveEmptied(Id indexed reserveId, uint256 indexed dsId, uint256 amount);
 
     /**
-    * @notice Emitted when some DS is swapped via rollover
-    * @param reserveId the reserve id same as the id on PSM and LV
-    * @param dsId the ds id of the pair, the same as the DS id on PSM and LV
-    * @param user the user that's swapping
-    * @param dsReceived the amount of DS that's received
-    * @param raLeft the amount of RA that's left
-    */
-    event RolloverSold(Id indexed reserveId, uint256 indexed dsId, address indexed user, uint256 dsReceived, uint256 raLeft);
+     * @notice Emitted when some DS is swapped via rollover
+     * @param reserveId the reserve id same as the id on PSM and LV
+     * @param dsId the ds id of the pair, the same as the DS id on PSM and LV
+     * @param user the user that's swapping
+     * @param dsReceived the amount of DS that's received
+     * @param raLeft the amount of RA that's left
+     */
+    event RolloverSold(
+        Id indexed reserveId, uint256 indexed dsId, address indexed user, uint256 dsReceived, uint256 raLeft
+    );
 
     /**
      * @notice trigger new issuance logic, can only be called my moduleCore
@@ -180,7 +190,7 @@ interface IDsFlashSwapCore is IDsFlashSwapUtility {
      * @param amount the amount of DS to add
      */
     function addReserveLv(Id id, uint256 dsId, uint256 amount) external;
-    
+
     function addReservePsm(Id id, uint256 dsId, uint256 amount) external;
 
     /**
@@ -191,6 +201,10 @@ interface IDsFlashSwapCore is IDsFlashSwapUtility {
      */
     function emptyReserveLv(Id reserveId, uint256 dsId) external returns (uint256 amount);
 
+    function emptyReservePsm(Id reserveId, uint256 dsId) external returns (uint256 amount);
+
+    function emptyReservePartialPsm(Id reserveId, uint256 dsId, uint256 amount) external returns (uint256 emptied);
+    
     /**
      * @notice empty some or all DS reserve to liquidity vault, can only be called by moduleCore
      * @param reserveId the pair id
@@ -251,4 +265,6 @@ interface IDsFlashSwapCore is IDsFlashSwapUtility {
      * @param discountRateInDays the new discount rate in D days
      */
     function updateDiscountRateInDdays(Id id, uint256 discountRateInDays) external;
+
+    function isRolloverSale(Id id, uint256 dsId) external view returns (bool);
 }
