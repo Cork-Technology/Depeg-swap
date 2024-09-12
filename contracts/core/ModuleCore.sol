@@ -76,7 +76,7 @@ contract ModuleCore is PsmCore, Initialize, VaultCore {
         );
 
         // avoid stack to deep error
-        _initOnNewIssuance(id, rolloverPeriodInblocks, ra, ct, ds, expiry);
+        _initOnNewIssuance(id, repurchaseFeePrecentage, ra, ct, ds, expiry);
         // avoid stack to deep error
         getRouterCore().setDecayDiscountAndRolloverPeriodOnNewIssuance(
             id, decayDiscountRateInDays, rolloverPeriodInblocks

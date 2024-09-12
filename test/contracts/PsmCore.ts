@@ -122,6 +122,8 @@ describe("PSM core", function () {
         BigInt(expiryTime),
         parseEther("1"),
         parseEther("5"),
+        parseEther("1"),
+        10n,
       ]);
 
       const events = await moduleCore.getEvents.Issued({
@@ -712,7 +714,7 @@ describe("PSM core", function () {
           fixture.Id,
           parseEther("2"),
         ]);
-
+      
       expect(received).to.equal(parseEther("0.95"));
       expect(feePrecentage).to.equal(parseEther("5"));
       expect(fee).to.equal(parseEther("0.1"));
@@ -938,6 +940,8 @@ describe("PSM core", function () {
         BigInt(expiry),
         parseEther("1"),
         parseEther("5"),
+        parseEther("1"),
+        10n,
       ]);
 
       const events = await fixture.moduleCore.getEvents.Issued({

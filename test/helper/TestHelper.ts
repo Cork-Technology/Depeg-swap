@@ -294,7 +294,7 @@ export async function issueNewSwapAssets(arg: IssueNewSwapAssetsArg) {
   const { defaultSigner } = getSigners(signers);
 
   const rate = arg.rates ?? parseEther("1");
-  // 10% by default
+  // 5% by default
   const repurchaseFeePercent = arg.repurhcaseFeePrecent ?? parseEther("5");
 
   const contract = await hre.viem.getContractAt("ModuleCore", arg.moduleCore);
@@ -302,7 +302,7 @@ export async function issueNewSwapAssets(arg: IssueNewSwapAssetsArg) {
 
   const configContract = await hre.viem.getContractAt("CorkConfig", arg.config);
   await configContract.write.issueNewDs(
-    [Id, BigInt(arg.expiry), rate, repurchaseFeePercent],
+    [Id, BigInt(arg.expiry), rate, repurchaseFeePercent, parseEther("1"), 10n],
     {
       account: defaultSigner.account,
     }
