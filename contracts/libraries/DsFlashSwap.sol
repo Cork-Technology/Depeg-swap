@@ -65,7 +65,6 @@ library DsFlashSwaplibrary {
         address ra,
         address ct
     ) internal {
-        // TODO: fix initial reserves, make it disappear or actually enforce them
         self.ds[dsId] = AssetPair(Asset(ra), Asset(ct), Asset(ds), IUniswapV2Pair(pair), initialReserve, 0);
 
         self.reserveSellPressurePrecentage = dsId == FIRST_ISSUANCE
