@@ -3,7 +3,6 @@ pragma solidity 0.8.24;
 import {UQ112x112} from "./UQ112x112.sol";
 import {SignedMath} from "@openzeppelin/contracts/utils/math/SignedMath.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
-import "forge-std/console.sol";
 
 /**
  * @title SwapperMathLibrary Contract

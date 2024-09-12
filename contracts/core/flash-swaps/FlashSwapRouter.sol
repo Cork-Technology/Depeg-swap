@@ -1,6 +1,5 @@
 pragma solidity 0.8.24;
 
-import "forge-std/console.sol";
 import {AssetPair, ReserveState, DsFlashSwaplibrary} from "../../libraries/DsFlashSwap.sol";
 import {SwapperMathLibrary} from "../../libraries/DsSwapperMathLib.sol";
 import {MathHelper} from "../../libraries/MathHelper.sol";
@@ -402,7 +401,6 @@ contract RouterState is
         // sell the DS tokens from the reserve if there's any
         if (amountSellFromReserve != 0) {
             amountOut = _trySellFromReserve(self, assetPair, amountSellFromReserve, dsId, amount);
-            console.log("amountOut preview", amountOut);
         }
 
         // add the amount of DS tokens from the rollover, if any

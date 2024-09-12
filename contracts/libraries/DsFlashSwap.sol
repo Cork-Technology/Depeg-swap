@@ -1,6 +1,5 @@
 pragma solidity 0.8.24;
 
-import "forge-std/console.sol";
 
 import {IUniswapV2Pair} from "../interfaces/uniswap-v2/pair.sol";
 import {Asset} from "../core/assets/Asset.sol";
@@ -77,9 +76,6 @@ library DsFlashSwaplibrary {
             } catch {
                 self.hpa = 0;
             }
-            console.log("hpa", self.hpa);
-            console.log("hpaCumulated", self.hpaCumulated);
-            console.log("vhpaCumulated", self.vhpaCumulated);
 
             self.hpaCumulated = 0;
             self.vhpaCumulated = 0;
@@ -170,9 +166,6 @@ library DsFlashSwaplibrary {
         uint256 raAdded
     ) internal view returns (uint256 raPriceRatio, uint256 ctPriceRatio) {
         (uint112 raReserve, uint112 ctReserve) = getReservesSorted(self.ds[dsId]);
-
-        console.log("ra Resserve", raReserve);
-        console.log("ct Resserve", ctReserve);
 
         raReserve += uint112(raAdded);
         ctReserve -= uint112(ctSubstracted);
