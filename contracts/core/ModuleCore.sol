@@ -81,6 +81,7 @@ contract ModuleCore is PsmCore, Initialize, VaultCore {
         getRouterCore().setDecayDiscountAndRolloverPeriodOnNewIssuance(
             id, decayDiscountRateInDays, rolloverPeriodInblocks
         );
+        VaultLibrary.onNewIssuance(state, state.globalAssetIdx - 1, getRouterCore(), getAmmRouter());
     }
 
     function _initOnNewIssuance(
@@ -102,7 +103,6 @@ contract ModuleCore is PsmCore, Initialize, VaultCore {
 
         getRouterCore().onNewIssuance(id, idx, ds, ammPair, 0, ra, ct);
 
-        VaultLibrary.onNewIssuance(state, prevIdx, getRouterCore(), getAmmRouter());
         emit Issued(id, idx, expiry, ds, ct, ammPair);
     }
 
