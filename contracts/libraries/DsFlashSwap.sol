@@ -1,5 +1,7 @@
 pragma solidity 0.8.24;
 
+import "forge-std/console.sol";
+
 import {IUniswapV2Pair} from "../interfaces/uniswap-v2/pair.sol";
 import {Asset} from "../core/assets/Asset.sol";
 import {SwapperMathLibrary} from "./DsSwapperMathLib.sol";
@@ -21,7 +23,6 @@ struct AssetPair {
     uint256 lvReserve;
     /// @dev this represent the amount of DS that the PSM has in reserve, used to fill buy pressure on rollover period
     /// and  based on the LV DS selling strategy
-
     uint256 psmReserve;
 }
 
@@ -64,22 +65,25 @@ library DsFlashSwaplibrary {
         address ra,
         address ct
     ) internal {
-
         // TODO: fix initial reserves, make it disappear or actually enforce them
         self.ds[dsId] = AssetPair(Asset(ra), Asset(ct), Asset(ds), IUniswapV2Pair(pair), initialReserve, 0);
 
-        self.reserveSellPressurePrecentage =
-            dsId == FIRST_ISSUANCE ? INITIAL_RESERVE_SELL_PRESSURE_PRECENTAGE : SUBSEQUENT_RESERVE_SELL_PRESSURE_PRECENTAGE;
+        self.reserveSellPressurePrecentage = dsId == FIRST_ISSUANCE
+            ? INITIAL_RESERVE_SELL_PRESSURE_PRECENTAGE
+            : SUBSEQUENT_RESERVE_SELL_PRESSURE_PRECENTAGE;
 
         if (dsId != FIRST_ISSUANCE) {
-            self.hpaCumulated = 0;
-            self.vhpaCumulated = 0;
-
             try SwapperMathLibrary.calculateHPA(self.hpaCumulated, self.vhpaCumulated) returns (uint256 hpa) {
                 self.hpa = hpa;
             } catch {
                 self.hpa = 0;
             }
+            console.log("hpa", self.hpa);
+            console.log("hpaCumulated", self.hpaCumulated);
+            console.log("vhpaCumulated", self.vhpaCumulated);
+
+            self.hpaCumulated = 0;
+            self.vhpaCumulated = 0;
         }
     }
 
@@ -128,6 +132,19 @@ library DsFlashSwaplibrary {
         emptied = amount;
     }
 
+    function emptyReservePsm(ReserveState storage self, uint256 dsId, address to) internal returns (uint256 emptied) {
+        emptied = emptyReservePartialPsm(self, dsId, self.ds[dsId].psmReserve, to);
+    }
+
+    function emptyReservePartialPsm(ReserveState storage self, uint256 dsId, uint256 amount, address to)
+        internal
+        returns (uint256 emptied)
+    {
+        self.ds[dsId].psmReserve -= amount;
+        self.ds[dsId].ds.transfer(to, amount);
+        emptied = amount;
+    }
+
     function getPriceRatio(ReserveState storage self, uint256 dsId)
         internal
         view
@@ -153,16 +170,10 @@ library DsFlashSwaplibrary {
         uint256 ctSubstracted,
         uint256 raAdded
     ) internal view returns (uint256 raPriceRatio, uint256 ctPriceRatio) {
-        AssetPair storage asset = self.ds[dsId];
+        (uint112 raReserve, uint112 ctReserve) = getReservesSorted(self.ds[dsId]);
 
-        address token0 = asset.pair.token0();
-        address token1 = asset.pair.token1();
-
-        (uint112 token0Reserve, uint112 token1Reserve,) = self.ds[dsId].pair.getReserves();
-
-        (uint112 raReserve, uint112 ctReserve) = MinimalUniswapV2Library.reverseSortWithAmount112(
-            token0, token1, address(asset.ra), address(asset.ct), token0Reserve, token1Reserve
-        );
+        console.log("ra Resserve", raReserve);
+        console.log("ct Resserve", ctReserve);
 
         raReserve += uint112(raAdded);
         ctReserve -= uint112(ctSubstracted);
@@ -187,6 +198,7 @@ library DsFlashSwaplibrary {
         self.ds[dsId].lvReserve += amount;
         reserve = self.ds[dsId].lvReserve;
     }
+
     function addReservePsm(ReserveState storage self, uint256 dsId, uint256 amount, address from)
         internal
         returns (uint256 reserve)
