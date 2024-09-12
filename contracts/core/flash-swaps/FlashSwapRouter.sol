@@ -1,5 +1,6 @@
 pragma solidity 0.8.24;
 
+import "forge-std/console.sol";
 import {AssetPair, ReserveState, DsFlashSwaplibrary} from "../../libraries/DsFlashSwap.sol";
 import {SwapperMathLibrary} from "../../libraries/DsSwapperMathLib.sol";
 import {MathHelper} from "../../libraries/MathHelper.sol";
@@ -114,6 +115,10 @@ contract RouterState is
         return reserves[id].ds[dsId].lvReserve;
     }
 
+    function getPsmReserve(Id id, uint256 dsId) external view override returns (uint256 psmReserve) {
+        return reserves[id].ds[dsId].psmReserve;
+    }
+
     function getUniV2pair(Id id, uint256 dsId) external view override returns (IUniswapV2Pair pair) {
         return reserves[id].getPair(dsId);
     }
@@ -130,6 +135,21 @@ contract RouterState is
         returns (uint256 emptied)
     {
         emptied = reserves[reserveId].emptyReservePartialLv(dsId, amount, _moduleCore);
+        emit ReserveEmptied(reserveId, dsId, amount);
+    }
+
+    function emptyReservePsm(Id reserveId, uint256 dsId) external override onlyModuleCore returns (uint256 amount) {
+        amount = reserves[reserveId].emptyReservePsm(dsId, _moduleCore);
+        emit ReserveEmptied(reserveId, dsId, amount);
+    }
+
+    function emptyReservePartialPsm(Id reserveId, uint256 dsId, uint256 amount)
+        external
+        override
+        onlyModuleCore
+        returns (uint256 emptied)
+    {
+        emptied = reserves[reserveId].emptyReservePartialPsm(dsId, amount, _moduleCore);
         emit ReserveEmptied(reserveId, dsId, amount);
     }
 
@@ -261,7 +281,7 @@ contract RouterState is
             assetPair.psmReserve -= psmReserveUsed;
 
             // sell the DS tokens from the reserve and accrue value to LV holders
-            // it's safe to transfer all profit to the module core since the profit for each PSM and LV is calculated separately and we invoke 
+            // it's safe to transfer all profit to the module core since the profit for each PSM and LV is calculated separately and we invoke
             // the profit acceptance function for each of them
             uint256 profitRa = __swapDsforRa(assetPair, reserveId, dsId, amountSellFromReserve, 0, _moduleCore);
             // calculate the profit of the liquidity vault
@@ -368,7 +388,7 @@ contract RouterState is
             return dsReceived;
         }
 
-        (amountOut, ,) = assetPair.getAmountOutBuyDS(amount);
+        (amountOut,,) = assetPair.getAmountOutBuyDS(amount);
 
         // calculate the amount of DS tokens that will be sold from reserve
         uint256 amountSellFromReserve =
@@ -381,32 +401,53 @@ contract RouterState is
 
         // sell the DS tokens from the reserve if there's any
         if (amountSellFromReserve != 0) {
-            (uint112 raReserve, uint112 ctReserve) = assetPair.getReservesSorted();
-
-            // we borrow the same amount of CT tokens from the reserve
-            ctReserve -= uint112(amountSellFromReserve);
-
-            (uint256 vaultRa, uint256 raAdded) = assetPair.getAmountOutSellDS(amountSellFromReserve);
-            raReserve += uint112(raAdded);
-
-            // emulate Vault way of adding liquidity using RA from selling DS reserve
-            (, uint256 ratio) = self.tryGetPriceRatioAfterSellDs(dsId, amountSellFromReserve, raAdded);
-            uint256 ctAdded;
-            (raAdded, ctAdded) = MathHelper.calculateProvideLiquidityAmountBasedOnCtPrice(vaultRa, ratio);
-
-            raReserve += uint112(raAdded);
-            ctReserve += uint112(ctAdded);
-
-            // update amountOut since we sold some from the reserve
-            (, amountOut) = SwapperMathLibrary.getAmountOutDs(
-                int256(uint256(raReserve)), int256(uint256(ctReserve)), int256(amount)
-            );
+            amountOut = _trySellFromReserve(self, assetPair, amountSellFromReserve, dsId, amount);
+            console.log("amountOut preview", amountOut);
         }
 
         // add the amount of DS tokens from the rollover, if any
         // we add here the last for simpler control flow, since this way the logic of regular swap
         // don't need to care about how much token is received from the rollover sale
         amountOut += dsReceived;
+    }
+
+    function _trySellFromReserve(
+        ReserveState storage self,
+        AssetPair storage assetPair,
+        uint256 amountSellFromReserve,
+        uint256 dsId,
+        uint256 amount
+    ) private view returns (uint256 amountOut) {
+        (uint112 raReserve, uint112 ctReserve) = assetPair.getReservesSorted();
+
+        // we borrow the same amount of CT tokens from the reserve
+        ctReserve -= uint112(amountSellFromReserve);
+
+        (uint256 profit, uint256 raAdded) = assetPair.getAmountOutSellDS(amountSellFromReserve);
+        raReserve += uint112(raAdded);
+
+        // emulate Vault way of adding liquidity using RA from selling DS reserve
+        (, uint256 ratio) = self.tryGetPriceRatioAfterSellDs(dsId, amountSellFromReserve, raAdded);
+        uint256 ctAdded;
+        uint256 lvReserveUsed =
+            assetPair.lvReserve * amountSellFromReserve * 1e18 / (assetPair.lvReserve + assetPair.psmReserve) / 1e18; // calculate the profit of the liquidity vault
+
+        // get the vault profit, we don't care about the PSM profit since it'll be sent to PSM
+        profit = profit * lvReserveUsed / amountSellFromReserve;
+
+        // use the vault profit
+        (raAdded, ctAdded) = MathHelper.calculateProvideLiquidityAmountBasedOnCtPrice(profit, ratio);
+
+        raReserve += uint112(raAdded);
+        ctReserve += uint112(ctAdded);
+
+        // update amountOut since we sold some from the reserve
+        (, amountOut) =
+            SwapperMathLibrary.getAmountOutDs(int256(uint256(raReserve)), int256(uint256(ctReserve)), int256(amount));
+    }
+
+    function isRolloverSale(Id id, uint256 dsId) external view returns (bool) {
+        return reserves[id].rolloverSale();
     }
 
     /**
