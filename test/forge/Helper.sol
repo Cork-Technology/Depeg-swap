@@ -6,22 +6,46 @@ import "forge-std/Test.sol";
 import "forge-std/console.sol";
 import {IUniswapV2Factory} from "./../../contracts/interfaces/uniswap-v2/factory.sol";
 import {IUniswapV2Router02} from "./../../contracts/interfaces/uniswap-v2/RouterV2.sol";
+import {Id, Pair, PairLibrary} from "./../../contracts/libraries/Pair.sol";
 import {CorkConfig} from "./../../contracts/core/CorkConfig.sol";
 import {RouterState} from "./../../contracts/core/flash-swaps/FlashSwapRouter.sol";
 import {DummyWETH} from "./../../contracts/dummy/DummyWETH.sol";
 import {TestModuleCore} from "./TestModuleCore.sol";
+import {TestFlashSwapRouter} from "./TestFlashSwapRouter.sol";
+import "./SigUtils.sol";
 
-abstract contract Helper is Test {
+abstract contract Helper is Test, SigUtils {
     TestModuleCore internal moduleCore;
     AssetFactory internal assetFactory;
     IUniswapV2Factory internal uniswapFactory;
     IUniswapV2Router02 internal uniswapRouter;
     CorkConfig internal corkConfig;
-    RouterState internal flashSwapRouter;
+    TestFlashSwapRouter internal flashSwapRouter;
     DummyWETH internal weth = new DummyWETH();
 
     // 1% base redemption fee
     uint256 internal DEFAULT_BASE_REDEMPTION_FEE = 1 ether;
+
+    uint256 internal DEFAULT_EXCHANGE_RATES = 1 ether;
+
+    // use this to test functions as user
+    uint256 internal DEFAULT_ADDRESS_PK = 1;
+    address internal DEFAULT_ADDRESS = vm.rememberKey(DEFAULT_ADDRESS_PK);
+
+    // 1% repurchase fee
+    uint256 internal constant DEFAULT_REPURCHASE_FEE = 1 ether;
+
+    // 1% decay discount rate
+    uint256 internal constant DEFAULT_DECAY_DISCOUNT_RATE = 1 ether;
+
+    // 10 block rollover period
+    uint256 internal constant DEFAULT_ROLLOVER_PERIOD = 100000;
+
+    // 1% liquidity vault early fee
+    uint256 internal constant DEFAULT_LV_FEE = 1 ether;
+
+    // 1% initial ds price
+    uint256 internal constant DEFAULT_INITIAL_DS_PRICE = 0.1 ether;
 
     function deployAssetFactory() internal {
         assetFactory = new AssetFactory();
@@ -51,6 +75,79 @@ abstract contract Helper is Test {
         uniswapFactory = IUniswapV2Factory(addr);
     }
 
+    function initializeNewModuleCore(address pa, address ra, uint256 lvFee, uint256 initialDsPrice) internal {
+        corkConfig.initializeModuleCore(pa, ra, lvFee, initialDsPrice);
+    }
+
+    function issueNewDs(
+        Id id,
+        uint256 expiryInSeconds,
+        uint256 exchangeRates,
+        uint256 repurchaseFeePrecentage,
+        uint256 decayDiscountRateInDays,
+        uint256 rolloverPeriodInblocks
+    ) internal {
+        corkConfig.issueNewDs(
+            id, expiryInSeconds, exchangeRates, repurchaseFeePrecentage, decayDiscountRateInDays, rolloverPeriodInblocks
+        );
+    }
+
+    function issueNewDs(Id id, uint256 expiryInSeconds) internal {
+        issueNewDs(
+            id,
+            expiryInSeconds,
+            DEFAULT_EXCHANGE_RATES,
+            DEFAULT_REPURCHASE_FEE,
+            DEFAULT_DECAY_DISCOUNT_RATE,
+            block.number + DEFAULT_ROLLOVER_PERIOD
+        );
+    }
+
+    function initializeAndIssueNewDs(uint256 expiryInSeconds) internal returns (DummyWETH ra, DummyWETH pa, Id id) {
+        if (block.timestamp + expiryInSeconds > block.timestamp + 100 days) {
+            revert(
+                "Expiry too far in the future, specify a default decay rate, this will cause the discount to exceed 100!"
+            );
+        }
+
+        ra = new DummyWETH();
+        pa = new DummyWETH();
+
+        Pair memory _id = PairLibrary.initalize(address(pa), address(ra));
+        id = PairLibrary.toId(_id);
+
+        initializeNewModuleCore(address(pa), address(ra), DEFAULT_LV_FEE, DEFAULT_INITIAL_DS_PRICE);
+        issueNewDs(
+            id,
+            expiryInSeconds,
+            DEFAULT_EXCHANGE_RATES,
+            DEFAULT_REPURCHASE_FEE,
+            DEFAULT_DECAY_DISCOUNT_RATE,
+            DEFAULT_ROLLOVER_PERIOD
+        );
+    }
+
+    function initializeAndIssueNewDs(
+        uint256 expiryInSeconds,
+        uint256 exchangeRates,
+        uint256 repurchaseFeePrecentage,
+        uint256 decayDiscountRateInDays,
+        uint256 rolloverPeriodInblocks,
+        uint256 lvFee,
+        uint256 initialDsPrice
+    ) internal returns (DummyWETH ra, DummyWETH pa, Id id) {
+        ra = new DummyWETH();
+        pa = new DummyWETH();
+
+        Pair memory _id = PairLibrary.initalize(address(pa), address(ra));
+        id = PairLibrary.toId(_id);
+
+        initializeNewModuleCore(address(pa), address(ra), lvFee, initialDsPrice);
+        issueNewDs(
+            id, expiryInSeconds, exchangeRates, repurchaseFeePrecentage, decayDiscountRateInDays, rolloverPeriodInblocks
+        );
+    }
+
     function deployConfig() internal {
         corkConfig = new CorkConfig();
     }
@@ -60,11 +157,11 @@ abstract contract Helper is Test {
     }
 
     function deployFlashSwapRouter() internal {
-        flashSwapRouter = new RouterState();
+        flashSwapRouter = new TestFlashSwapRouter();
     }
 
     function initializeFlashSwapRouter() internal {
-        flashSwapRouter.initialize(address(corkConfig),address(moduleCore), address(uniswapRouter));
+        flashSwapRouter.initialize(address(corkConfig), address(moduleCore), address(uniswapRouter));
     }
 
     function deployModuleCore() internal {
@@ -80,7 +177,7 @@ abstract contract Helper is Test {
             address(flashSwapRouter),
             address(uniswapRouter),
             address(corkConfig),
-            DEFAULT_BASE_REDEMPTION_FEE
+            DEFAULT_EXCHANGE_RATES
         );
         initializeAssetFactory();
         initializeConfig();
