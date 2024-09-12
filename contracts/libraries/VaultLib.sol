@@ -1,8 +1,9 @@
 pragma solidity 0.8.24;
 
+import "forge-std/console.sol";
 import {State, VaultState, VaultConfig, VaultWithdrawalPool, VaultAmmLiquidityPool} from "./State.sol";
 import {VaultConfigLibrary} from "./VaultConfig.sol";
-import {Pair, PairLibrary} from "./Pair.sol";
+import {Pair, PairLibrary, Id} from "./Pair.sol";
 import {LvAsset, LvAssetLibrary} from "./LvAssetLib.sol";
 import {PsmLibrary} from "./PsmLib.sol";
 import {PsmRedemptionAssetManager, RedemptionAssetManagerLibrary} from "./RedemptionAssetManagerLib.sol";
@@ -141,13 +142,50 @@ library VaultLibrary {
         view
         returns (uint256 ratio)
     {
+        Id id = self.info.toId();
         uint256 exchangeRate = self.ds[dsId].exchangeRate();
-        uint256 hpa = flashSwapRouter.getCurrentEffectiveHPA(self.info.toId());
+        uint256 hpa = flashSwapRouter.getCurrentEffectiveHPA(id);
+        bool isRollover = flashSwapRouter.isRolloverSale(id, dsId);
 
-        // this means that if the hpa is 0(because it's the first issuance or because there's no DS trade, will fallback to the initial exchange rate)
-        // if the hpa is not 0, then we will calculate the ratio based on the hpa.
-        // note that hpa is the target DS price and since the CT price is inversely related to DS we can do it like this
-        ratio  = hpa == 0 ? exchangeRate - self.vault.initialDsPrice : exchangeRate - hpa; 
+        uint256 marketRatio;
+
+        try flashSwapRouter.getCurrentPriceRatio(id, dsId) returns (uint256, uint256 _marketRatio) {
+            marketRatio = _marketRatio;
+        } catch {
+            marketRatio = 0;
+        }
+
+        ratio = _determineRatio(hpa, marketRatio, self.vault.initialDsPrice, exchangeRate, isRollover, dsId);
+    }
+
+    function _determineRatio(
+        uint256 hpa,
+        uint256 marketRatio,
+        uint256 initialDsPrice,
+        uint256 exchangeRate,
+        bool isRollover,
+        uint256 dsId
+    ) internal view returns (uint256 ratio) {
+        // fallback to initial ds price ratio if hpa is 0, and market ratio is 0
+        // usually happens when there's no trade on the router AND is not the first issuance
+        // OR it's the first issuance
+        if (hpa == 0 && marketRatio == 0) {
+            ratio = exchangeRate - initialDsPrice;
+            return ratio;
+        }
+
+        // this will return the hpa as ratio when it's basically not the first issuance, and there's actually an hpa to rely on
+        // we must specifically check for market ratio since, we want to trigger this only when there's no market ratio(i.e freshly after a rollover)
+        if (dsId != 1 && isRollover && hpa != 0 && marketRatio == 0) {
+            ratio = exchangeRate - hpa;
+            return ratio;
+        }
+
+        // this will be the default ratio to use
+        if (marketRatio != 0) {
+            ratio = marketRatio;
+            return ratio;
+        }
     }
 
     function __provideLiquidity(
