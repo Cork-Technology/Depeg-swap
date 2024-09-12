@@ -25,7 +25,7 @@ interface IPSMcore is IRepurchase {
         uint256 exchangeRate
     );
 
-    /// @notice Emitted when a user rolled over their CT 
+    /// @notice Emitted when a user rolled over their CT
     /// @param Id The PSM id
     /// @param currentDsId The current DS id
     /// @param owner The address of the owner
@@ -35,7 +35,7 @@ interface IPSMcore is IRepurchase {
     /// @param ctReceived The amount of CT received
     /// @param paReceived The amount of PA received
     /// @param exchangeRate The exchange rate of DS at the time of rollover
-    event RolledOver (
+    event RolledOver(
         Id indexed Id,
         uint256 indexed currentDsId,
         address indexed owner,
@@ -53,12 +53,9 @@ interface IPSMcore is IRepurchase {
     /// @param owner The address of the owner
     /// @param amount The amount of the asset claimed
     /// @param profit The amount of profit claimed
+    /// @param remainingDs The amount of DS remaining user claimed
     event RolloverProfitClaimed(
-        Id indexed Id,
-        uint256 indexed dsId,
-        address indexed owner,
-        uint256 amount,
-        uint256 profit
+        Id indexed Id, uint256 indexed dsId, address indexed owner, uint256 amount, uint256 profit, uint256 remainingDs
     );
 
     /// @notice Emitted when a user redeems a DS for a given PSM
@@ -170,7 +167,6 @@ interface IPSMcore is IRepurchase {
      * @param deadline The deadline for DS approval permit signature
      */
     function redeemRaWithDs(Id id, uint256 dsId, uint256 amount, bytes memory rawDsPermitSig, uint256 deadline)
-       
         external
         returns (uint256 received, uint256 _exchangeRate, uint256 fee);
 
@@ -201,7 +197,6 @@ interface IPSMcore is IRepurchase {
      * @param deadline The deadline for CT approval permit signature
      */
     function redeemWithCT(Id id, uint256 dsId, uint256 amount, bytes memory rawCtPermitSig, uint256 deadline)
-       
         external
         returns (uint256 accruedPa, uint256 accruedRa);
 
@@ -236,9 +231,9 @@ interface IPSMcore is IRepurchase {
      * @param dsDeadline deadline for DS approval permit signature
      * @param rawCtPermitSig raw signature for CT approval permit
      * @param ctDeadline deadline for CT approval permit signature
-        * @return ra amount of RA user received
-        * @return dsId the id of DS
-        * @return rates the effective rate at the time of redemption
+     * @return ra amount of RA user received
+     * @return dsId the id of DS
+     * @return rates the effective rate at the time of redemption
      */
     function redeemRaWithCtDs(
         Id id,
@@ -281,9 +276,22 @@ interface IPSMcore is IRepurchase {
 
     function psmAcceptFlashSwapProfit(Id id, uint256 profit) external;
 
-    function rolloverCt(Id id,address owner, uint256 amount, uint256 dsId, bytes memory rawCtPermitSig, uint256 ctDeadline) external returns (uint256 ctDsReceived, uint256 _exchangeRate, uint256 paReceived);
+    function rolloverCt(
+        Id id,
+        address owner,
+        uint256 amount,
+        uint256 prevDsId,
+        bytes memory rawCtPermitSig,
+        uint256 ctDeadline
+    ) external returns (uint256 ctReceived, uint256 dsReceived, uint256 _exchangeRate, uint256 paReceived);
 
-    function rolloverCt(Id id,address owner, uint256 amount, uint256 dsId) external returns (uint256 ctDsReceived, uint256 _exchangeRate, uint256 paReceived);
+    function rolloverCt(Id id, address owner, uint256 amount, uint256 prevDsId)
+        external
+        returns (uint256 ctReceived, uint256 dsReceived, uint256 _exchangeRate, uint256 paReceived);
 
-    function claimRolloverProfit(Id id, uint256 dsId, uint256 amount)  external returns(uint256 profit);
+    function claimRolloverProfit(Id id, uint256 prevDsId, uint256 amount) external returns (uint256 profit, uint256 dsReceived);
+
+    function updatePsmAutoSellStatus(Id id, address user, bool status) external;
+
+    function rolloverProfitRemaining(Id id, uint256 dsId) external view returns (uint256);
 }
