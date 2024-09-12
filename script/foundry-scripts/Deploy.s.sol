@@ -189,5 +189,10 @@ contract DeployScript is Script {
             block.timestamp + 10000 minutes
         );
         console.log("Liquidity Added to AMM");
+
+        // moduleCore.redeemEarlyLv(id, msg.sender, 10 ether);
+        // uint256 result = flashswapRouter.previewSwapRaforDs(id, 1, 100 ether);
+        // console.log(result);
+        // console.log("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-");
     }
 }
