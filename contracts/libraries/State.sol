@@ -41,7 +41,7 @@ struct PsmPoolArchive {
     uint256 raAccrued;
     uint256 paAccrued;
     uint256 ctAttributed;
-    uint256 attributedToRollover;
+    uint256 attributedToRolloverProfit;
     /// @dev user => amount
     mapping(address => uint256) rolloverClaims;
     uint256 rolloverProfit;

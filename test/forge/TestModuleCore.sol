@@ -52,7 +52,7 @@ contract TestModuleCore is ModuleCore {
     }
 
     function getPsmPoolArchiveAttributedToRollover(Id id, uint256 dsId) external view returns (uint256) {
-        return states[id].psm.poolArchive[dsId].attributedToRollover;
+        return states[id].psm.poolArchive[dsId].attributedToRolloverProfit;
     }
 
     function getPsmPoolArchiveRolloverClaims(Id id, uint256 dsId, address user) external view returns (uint256) {
