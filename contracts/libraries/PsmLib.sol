@@ -31,7 +31,10 @@ library PsmLibrary {
     using SafeERC20 for IERC20;
 
     /// @notice inssuficient balance to perform rollover redeem(e.g having 5 CT worth of rollover to redeem but trying to redeem 10)
-    error InsufficientRolloverRedemtionBalance(address caller, uint256 requested, uint256 balance);
+    error InsufficientRolloverBalance(address caller, uint256 requested, uint256 balance);
+
+    /// @notice thrown when trying to rollover while no active issuance
+    error NoActiveIssuance();
 
     function isInitialized(State storage self) internal view returns (bool status) {
         status = self.info.isInitialized();
@@ -54,7 +57,7 @@ library PsmLibrary {
         internal
     {
         if (self.psm.poolArchive[dsId].rolloverClaims[from] < amount) {
-            revert InsufficientRolloverRedemtionBalance(from, amount, self.psm.poolArchive[dsId].rolloverClaims[from]);
+            revert InsufficientRolloverBalance(from, amount, self.psm.poolArchive[dsId].rolloverClaims[from]);
         }
 
         self.psm.poolArchive[dsId].rolloverClaims[from] -= amount;
@@ -69,17 +72,23 @@ library PsmLibrary {
         IDsFlashSwapCore flashSwapRouter,
         bytes memory rawCtPermitSig,
         uint256 ctDeadline
-    ) internal returns (uint256 dsReceived, uint256 _exchangeRate, uint256 paReceived) {
+    ) internal returns (uint256 ctReceived, uint256 dsReceived, uint256 _exchangeRate, uint256 paReceived) {
         if (rawCtPermitSig.length > 0 && ctDeadline != 0) {
             DepegSwapLibrary.permit(self.ds[dsId].ct, rawCtPermitSig, owner, address(this), amount, ctDeadline);
         }
 
-        (dsReceived, _exchangeRate, paReceived) = _rolloverCt(self, owner, amount, self.globalAssetIdx, flashSwapRouter);
+        (ctReceived, dsReceived, _exchangeRate, paReceived) = _rolloverCt(self, owner, amount, dsId, flashSwapRouter);
     }
 
-    function claimRolloverProfit(State storage self, address owner, uint256 dsId, uint256 amount) internal returns (uint256 profit) {
-        Guard.safeAfterExpired(self.ds[dsId]);
-        profit = _claimRolloverProfit(self, self.psm.poolArchive[dsId], owner, amount);
+    function claimRolloverProfit(
+        State storage self,
+        IDsFlashSwapCore flashSwapRouter,
+        address owner,
+        uint256 dsId,
+        uint256 amount
+    ) internal returns (uint256 profit, uint256 remainingDsReceived) {
+        (profit, remainingDsReceived) =
+            _claimRolloverProfit(self, self.psm.poolArchive[dsId], flashSwapRouter, owner, amount, dsId);
     }
     // 1. check how much expirec CT does use have
     // 2. calculate how much backed RA and PA the user can redeem
@@ -89,13 +98,18 @@ library PsmLibrary {
     // 6. send RA to user if they don't opt-in for auto sell
     // 7. send PA to user
     // regardless of amount, it will always send user all the profit from rollover
+
     function _rolloverCt(
         State storage self,
         address owner,
         uint256 amount,
         uint256 prevDsId,
         IDsFlashSwapCore flashSwapRouter
-    ) internal returns (uint256 dsReceived, uint256 _exchangeRate, uint256 paReceived) {
+    ) internal returns (uint256 ctReceived, uint256 dsReceived, uint256 _exchangeRate, uint256 paReceived) {
+        if (prevDsId == self.globalAssetIdx) {
+            revert NoActiveIssuance();
+        }
+
         // claim logic
         PsmPoolArchive storage prevArchive;
 
@@ -109,20 +123,20 @@ library PsmLibrary {
 
         // calculate ct and ds received
         _exchangeRate = currentDs.exchangeRate();
-        uint256 ctDsReceived = MathHelper.calculateDepositAmountWithExchangeRate(accruedRa, _exchangeRate);
+        ctReceived = MathHelper.calculateDepositAmountWithExchangeRate(accruedRa, _exchangeRate);
 
         // by default the amount of DS received is the same as CT
-        dsReceived = ctDsReceived;
+        dsReceived = ctReceived;
 
         // increase current ds active RA balance locked
         self.psm.balances.ra.incLocked(accruedRa);
 
         // increase rollover claims if user opt-in for auto sell, avoid stack too deep error
-        _incRolloverClaims(self, ctDsReceived, owner, dsReceived);
+        dsReceived = _incRolloverClaims(self, ctReceived, owner, dsReceived);
         // end deposit logic
 
         // send, burn tokens and mint new ones
-        _afterRollover(self, currentDs, owner, ctDsReceived, paReceived, flashSwapRouter);
+        _afterRollover(self, currentDs, owner, ctReceived, paReceived, flashSwapRouter);
     }
 
     function _incRolloverClaims(State storage self, uint256 ctDsReceived, address owner, uint256 dsReceived)
@@ -131,7 +145,7 @@ library PsmLibrary {
     {
         if (self.psm.autoSell[owner]) {
             PsmPoolArchive storage currentArchive = self.psm.poolArchive[self.globalAssetIdx];
-            currentArchive.attributedToRollover += ctDsReceived;
+            currentArchive.attributedToRolloverProfit += ctDsReceived;
             currentArchive.rolloverClaims[owner] += ctDsReceived;
             // we return 0 since the user opt-in for auto sell
             return 0;
@@ -146,6 +160,10 @@ library PsmLibrary {
     {
         DepegSwap storage prevDs = self.ds[prevDsId];
         Guard.safeAfterExpired(prevDs);
+
+        if (Asset(prevDs.ct).balanceOf(owner) < amount) {
+            revert InsufficientRolloverBalance(owner, amount, Asset(prevDs.ct).balanceOf(owner));
+        }
 
         // separate liquidity first so that we can properly calculate the attributed amount
         _separateLiquidity(self, prevDsId);
@@ -162,26 +180,42 @@ library PsmLibrary {
         ERC20Burnable(prevDs.ct).burnFrom(owner, amount);
     }
 
-    function _claimRolloverProfit(State storage self, PsmPoolArchive storage prevArchive, address owner, uint256 amount)
-        private
-        returns (uint256 rolloverProfit)
-    {
+    function _claimRolloverProfit(
+        State storage self,
+        PsmPoolArchive storage prevArchive,
+        IDsFlashSwapCore flashswapRouter,
+        address owner,
+        uint256 amount,
+        uint256 prevDsId
+    ) private returns (uint256 rolloverProfit, uint256 remainingRolloverDs) {
         if (prevArchive.rolloverClaims[owner] < amount) {
-            revert InsufficientRolloverRedemtionBalance(owner, amount, prevArchive.rolloverClaims[owner]);
+            revert InsufficientRolloverBalance(owner, amount, prevArchive.rolloverClaims[owner]);
+        }
+
+        remainingRolloverDs = MathHelper.calculateAccrued(
+            amount, flashswapRouter.getPsmReserve(self.info.toId(), prevDsId), prevArchive.attributedToRolloverProfit
+        );
+
+        if (remainingRolloverDs != 0) {
+            flashswapRouter.emptyReservePartialPsm(self.info.toId(), prevDsId, remainingRolloverDs);
         }
 
         // calculate their share of profit
-        rolloverProfit = MathHelper.calculateAccrued(
-            amount, prevArchive.rolloverProfit, prevArchive.attributedToRollover
-        );
+        rolloverProfit =
+            MathHelper.calculateAccrued(amount, prevArchive.rolloverProfit, prevArchive.attributedToRolloverProfit);
         // reset their claim
         prevArchive.rolloverClaims[owner] -= amount;
         // decrement total profit
         prevArchive.rolloverProfit -= rolloverProfit;
         // decrement total ct attributed to rollover
-        prevArchive.attributedToRollover -= amount;
+        prevArchive.attributedToRolloverProfit -= amount;
 
         IERC20(self.info.redemptionAsset()).safeTransfer(owner, rolloverProfit);
+
+        if (remainingRolloverDs != 0) {
+            // mint DS to user
+            Asset(self.ds[prevDsId]._address).transfer(owner, remainingRolloverDs);
+        }
     }
 
     function _afterRollover(
@@ -195,6 +229,8 @@ library PsmLibrary {
         if (self.psm.autoSell[owner]) {
             // send DS to flashswap router if auto sellf
             Asset(currentDs._address).mint(address(this), ctDsReceived);
+            Asset(currentDs._address).approve(address(flashSwapRouter), ctDsReceived);
+
             flashSwapRouter.addReservePsm(self.info.toId(), self.globalAssetIdx, ctDsReceived);
         } else {
             // mint DS to user
@@ -294,7 +330,7 @@ library PsmLibrary {
         ds.issue(address(this), amount);
     }
 
-    function lvRedeemRaWithCtDs(State storage self, uint256 amount, uint256 dsId) internal returns (uint256 ra){
+    function lvRedeemRaWithCtDs(State storage self, uint256 amount, uint256 dsId) internal returns (uint256 ra) {
         DepegSwap storage ds = self.ds[dsId];
 
         uint256 rates = ds.exchangeRate();
