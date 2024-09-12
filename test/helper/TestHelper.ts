@@ -236,6 +236,7 @@ export async function deployModuleCore(
 }
 
 export type InitializeNewPsmArg = {
+  factory: Address;
   moduleCore: Address;
   config: Address;
   pa: Address;
@@ -247,6 +248,7 @@ export type InitializeNewPsmArg = {
 export async function initializeNewPsmLv(arg: InitializeNewPsmArg) {
   const signers = await hre.viem.getWalletClients();
   const { defaultSigner } = getSigners(signers);
+  const factory = await hre.viem.getContractAt("AssetFactory", arg.factory);
   const contract = await hre.viem.getContractAt("ModuleCore", arg.moduleCore);
   const configContract = await hre.viem.getContractAt("CorkConfig", arg.config);
   const dsPrice = arg.initialDsPrice ?? parseEther("0.1");
@@ -261,15 +263,11 @@ export async function initializeNewPsmLv(arg: InitializeNewPsmArg) {
     arg.lvFee,
     dsPrice,
   ]);
-  console.log(arg.moduleCore, contract.address, arg.pa,arg.ra)
-  const events = await contract.getEvents.Initialized({
-    pa: arg.pa,
-    ra: arg.ra,
-  });
-  console.log(events);
+  let assets = await factory.read.getDeployedAssets([0, 1]);
+  let Id = await contract.read.getId([arg.pa, arg.ra]);
   return {
-    lv: events[0].args.lv,
-    Id: events[0].args.id,
+    lv: assets[1][0],
+    Id: Id,
   };
 }
 
@@ -499,6 +497,7 @@ export async function ModuleCoreWithInitializedPsmLv(
   const fee = parseEther("5");
 
   const { Id, lv } = await initializeNewPsmLv({
+    factory: factory.contract.address,
     moduleCore: moduleCore.address,
     config: config.contract.address,
     pa: pa.address,

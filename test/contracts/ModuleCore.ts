@@ -98,26 +98,23 @@ describe("Module Core", function () {
     const swapAssetFactory = await helper.deployAssetFactory();
     const config = await helper.deployCorkConfig();
 
-    const moduleCore = await hre.viem.deployContract(
-      "ModuleCore",
-      [
-        swapAssetFactory.contract.address,
-        univ2Factory,
-        dsFlashSwapRouter.contract.address,
-        univ2Router,
-        config.contract.address,
-        helper.DEFAULT_BASE_REDEMPTION_PRECENTAGE,
-      ],
-      {
-        client: {
-          wallet: defaultSigner,
-        },
-        libraries: {
-          MathHelper: mathLib.address,
-          VaultLibrary: vault.address,
-        },
-      }
-    );
+    const moduleCore = await hre.viem.deployContract("ModuleCore", [], {
+      client: {
+        wallet: defaultSigner,
+      },
+      libraries: {
+        MathHelper: mathLib.address,
+        VaultLibrary: vault.address,
+      },
+    });
+    moduleCore.write.initialize([
+      swapAssetFactory.contract.address,
+      univ2Factory,
+      dsFlashSwapRouter.contract.address,
+      univ2Router,
+      config.contract.address,
+      helper.DEFAULT_BASE_REDEMPTION_PRECENTAGE,
+    ]);
     expect(moduleCore).to.be.ok;
   });
 
@@ -137,8 +134,8 @@ describe("Module Core", function () {
     });
   });
 
-  describe("initialize", function () {
-    it("initialize should work correctly", async function () {
+  describe("initializeModuleCore", function () {
+    it("initializeModuleCore should work correctly", async function () {
       const { pa, ra } = await helper.backedAssets();
       const expectedId = ethers.utils.keccak256(
         ethers.utils.defaultAbiCoder.encode(
@@ -146,7 +143,7 @@ describe("Module Core", function () {
           [pa.address, ra.address]
         )
       ) as `0x${string}`;
-      
+
       await corkConfig.write.initializeModuleCore([
         pa.address,
         ra.address,
