@@ -202,26 +202,24 @@ export async function deployModuleCore(
     dsFlashSwapRouter.contract.address
   );
 
-  const contract = await hre.viem.deployContract(
-    "ModuleCore",
-    [
-      swapAssetFactory,
-      univ2Factory,
-      dsFlashSwapRouter.contract.address,
-      univ2Router,
-      config,
-      basePsmRedemptionFee,
-    ],
-    {
-      client: {
-        wallet: defaultSigner,
-      },
-      libraries: {
-        MathHelper: mathLib.address,
-        VaultLibrary: vault.address,
-      },
-    }
-  );
+  const contract = await hre.viem.deployContract("ModuleCore", [], {
+    client: {
+      wallet: defaultSigner,
+    },
+    libraries: {
+      MathHelper: mathLib.address,
+      VaultLibrary: vault.address,
+    },
+  });
+
+  contract.write.initialize([
+    swapAssetFactory,
+    univ2Factory,
+    dsFlashSwapRouter.contract.address,
+    univ2Router,
+    config,
+    basePsmRedemptionFee,
+  ]);
 
   await dsFlashSwapRouter.contract.write.initialize([
     contract.address,
@@ -257,15 +255,18 @@ export async function initializeNewPsmLv(arg: InitializeNewPsmArg) {
     account: defaultSigner.account,
   });
 
-  await configContract.write.initializeModuleCore([arg.pa, arg.ra, arg.lvFee, dsPrice], {
-    account: defaultSigner.account,
-  });
-
+  await configContract.write.initializeModuleCore([
+    arg.pa,
+    arg.ra,
+    arg.lvFee,
+    dsPrice,
+  ]);
+  console.log(arg.moduleCore, contract.address, arg.pa,arg.ra)
   const events = await contract.getEvents.Initialized({
     pa: arg.pa,
     ra: arg.ra,
   });
-
+  console.log(events);
   return {
     lv: events[0].args.lv,
     Id: events[0].args.id,

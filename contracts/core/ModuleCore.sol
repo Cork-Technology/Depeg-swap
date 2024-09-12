@@ -1,5 +1,7 @@
 pragma solidity 0.8.24;
 
+import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
+import {UUPSUpgradeable} from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import {PsmLibrary} from "../libraries/PsmLib.sol";
 import {VaultLibrary, VaultConfigLibrary} from "../libraries/VaultLib.sol";
 import {Id, Pair, PairLibrary} from "../libraries/Pair.sol";
@@ -9,32 +11,54 @@ import {ModuleState} from "./ModuleState.sol";
 import {PsmCore} from "./Psm.sol";
 import {VaultCore} from "./Vault.sol";
 import {Initialize} from "../interfaces/Init.sol";
+import {Context} from "@openzeppelin/contracts/utils/Context.sol";
+import {ContextUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/ContextUpgradeable.sol";
 
 /**
  * @title ModuleCore Contract
  * @author Cork Team
  * @notice Modulecore contract for integrating abstract modules like PSM and Vault contracts
  */
-contract ModuleCore is PsmCore, Initialize, VaultCore {
+contract ModuleCore is OwnableUpgradeable, UUPSUpgradeable, PsmCore, Initialize, VaultCore {
     using PsmLibrary for State;
     using PairLibrary for Pair;
 
-    constructor(
+    /// @notice Initializer function for upgradeable contracts
+    function initialize(
         address _swapAssetFactory,
         address _ammFactory,
         address _flashSwapRouter,
         address _ammRouter,
         address _config,
         uint256 _psmBaseRedemptionFeePrecentage
-    )
-        ModuleState(_swapAssetFactory, _ammFactory, _flashSwapRouter, _ammRouter, _config, _psmBaseRedemptionFeePrecentage)
-    {}
+    ) external initializer {
+        __Ownable_init(msg.sender);
+        __UUPSUpgradeable_init();
+        initializeModuleState(
+            _swapAssetFactory, _ammFactory, _flashSwapRouter, _ammRouter, _config, _psmBaseRedemptionFeePrecentage
+        );
+    }
+
+    /// @notice Authorization function for UUPS proxy upgrades
+    function _authorizeUpgrade(address newImplementation) internal override onlyOwner {}
+
+    function _msgSender() internal view override(ContextUpgradeable, Context) returns (address) {
+        return super._msgSender();
+    }
+
+    function _msgData() internal view override(ContextUpgradeable, Context) returns (bytes calldata) {
+        return super._msgData();
+    }
+
+    function _contextSuffixLength() internal view override(ContextUpgradeable, Context) returns (uint256) {
+        return super._contextSuffixLength();
+    }
 
     function getId(address pa, address ra) external pure returns (Id) {
         return PairLibrary.initalize(pa, ra).toId();
     }
 
-    function initialize(address pa, address ra, uint256 lvFee, uint256 initialDsPrice) external override onlyConfig {
+    function initializeModuleCore(address pa, address ra, uint256 lvFee, uint256 initialDsPrice) external override onlyConfig {
         Pair memory key = PairLibrary.initalize(pa, ra);
         Id id = key.toId();
 

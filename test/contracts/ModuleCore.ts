@@ -182,7 +182,7 @@ describe("Module Core", function () {
 
     it("initialize should revert when not called by Config contract", async function () {
       await expect(
-        moduleCore.write.initialize([
+        moduleCore.write.initializeModuleCore([
           fixture.pa.address,
           fixture.ra.address,
           fixture.lvFee,
