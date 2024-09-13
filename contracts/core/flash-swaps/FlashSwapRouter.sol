@@ -5,7 +5,7 @@ import {SwapperMathLibrary} from "../../libraries/DsSwapperMathLib.sol";
 import {MathHelper} from "../../libraries/MathHelper.sol";
 import {Id} from "../../libraries/Pair.sol";
 import {IDsFlashSwapCore, IDsFlashSwapUtility} from "../../interfaces/IDsFlashSwapRouter.sol";
-import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
+import {AccessControlUpgradeable} from "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
 import {UUPSUpgradeable} from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import {IUniswapV2Callee} from "../../interfaces/uniswap-v2/callee.sol";
 import {IUniswapV2Pair} from "../../interfaces/uniswap-v2/pair.sol";
@@ -21,19 +21,63 @@ import {SafeERC20, IERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeE
  * @author Cork Team
  * @notice Router contract for implementing flashswaps for DS/CT
  */
-contract RouterState is IDsFlashSwapUtility, IDsFlashSwapCore, OwnableUpgradeable, UUPSUpgradeable, IUniswapV2Callee {
+contract RouterState is
+    IDsFlashSwapUtility,
+    IDsFlashSwapCore,
+    AccessControlUpgradeable,
+    UUPSUpgradeable,
+    IUniswapV2Callee
+{
     using DsFlashSwaplibrary for ReserveState;
     using DsFlashSwaplibrary for AssetPair;
     using SafeERC20 for IERC20;
 
-    function initialize() external initializer {
-        __Ownable_init(msg.sender);
+    bytes32 public constant MODULE_CORE = keccak256("MODULE_CORE");
+    bytes32 public constant CONFIG = keccak256("CONFIG");
+
+    IUniswapV2Router02 internal univ2Router;
+    address public _moduleCore;
+
+    modifier onlyModuleCore() {
+        if (!hasRole(MODULE_CORE, msg.sender)) {
+            revert NotModuleCore();
+        }
+        _;
+    }
+
+    modifier onlyConfig() {
+        if (!hasRole(CONFIG, msg.sender)) {
+            revert NotConfig();
+        }
+        _;
+    }
+
+    function updateDiscountRateInDdays(Id id, uint256 discountRateInDays) external override onlyConfig {
+        reserves[id].decayDiscountRateInDays = discountRateInDays;
+    }
+
+    function getCurrentCumulativeHPA(Id id) external view returns (uint256 hpaCummulative) {
+        hpaCummulative = reserves[id].getCurrentCumulativeHPA();
+    }
+
+    function getCurrentEffectiveHPA(Id id) external view returns (uint256 hpa) {
+        hpa = reserves[id].getEffectiveHPA();
+    }
+
+    function initialize(address config, address moduleCore, address _univ2Router) external initializer {
+        __AccessControl_init();
         __UUPSUpgradeable_init();
+
+        _grantRole(MODULE_CORE, moduleCore);
+        _grantRole(CONFIG, config);
+
+        univ2Router = IUniswapV2Router02(_univ2Router);
+        _moduleCore = moduleCore;
     }
 
     mapping(Id => ReserveState) internal reserves;
 
-    function _authorizeUpgrade(address newImplementation) internal override onlyOwner notDelegated {}
+    function _authorizeUpgrade(address newImplementation) internal override onlyConfig {}
 
     function onNewIssuance(
         Id reserveId,
@@ -43,10 +87,22 @@ contract RouterState is IDsFlashSwapUtility, IDsFlashSwapCore, OwnableUpgradeabl
         uint256 initialReserve,
         address ra,
         address ct
-    ) external override onlyOwner {
+    ) external override onlyModuleCore {
         reserves[reserveId].onNewIssuance(dsId, ds, pair, initialReserve, ra, ct);
 
         emit NewIssuance(reserveId, dsId, ds, pair, initialReserve);
+    }
+
+    /// @notice set the discount rate rate and rollover for the new issuance
+    /// @dev needed to avoid stack to deep errors. MUST be called after onNewIssuance and only by moduleCore at new issuance
+    function setDecayDiscountAndRolloverPeriodOnNewIssuance(
+        Id reserveId,
+        uint256 decayDiscountRateInDays,
+        uint256 rolloverPeriodInblocks
+    ) external override onlyModuleCore {
+        ReserveState storage self = reserves[reserveId];
+        self.decayDiscountRateInDays = decayDiscountRateInDays;
+        self.rolloverEndInBlockNumber = block.number + rolloverPeriodInblocks;
     }
 
     function getAmmReserve(Id id, uint256 dsId) external view override returns (uint112 raReserve, uint112 ctReserve) {
@@ -54,25 +110,44 @@ contract RouterState is IDsFlashSwapUtility, IDsFlashSwapCore, OwnableUpgradeabl
     }
 
     function getLvReserve(Id id, uint256 dsId) external view override returns (uint256 lvReserve) {
-        return reserves[id].ds[dsId].reserve;
+        return reserves[id].ds[dsId].lvReserve;
+    }
+
+    function getPsmReserve(Id id, uint256 dsId) external view override returns (uint256 psmReserve) {
+        return reserves[id].ds[dsId].psmReserve;
     }
 
     function getUniV2pair(Id id, uint256 dsId) external view override returns (IUniswapV2Pair pair) {
         return reserves[id].getPair(dsId);
     }
 
-    function emptyReserve(Id reserveId, uint256 dsId) external override onlyOwner returns (uint256 amount) {
-        amount = reserves[reserveId].emptyReserve(dsId, owner());
+    function emptyReserveLv(Id reserveId, uint256 dsId) external override onlyModuleCore returns (uint256 amount) {
+        amount = reserves[reserveId].emptyReserveLv(dsId, _moduleCore);
         emit ReserveEmptied(reserveId, dsId, amount);
     }
 
-    function emptyReservePartial(Id reserveId, uint256 dsId, uint256 amount)
+    function emptyReservePartialLv(Id reserveId, uint256 dsId, uint256 amount)
         external
         override
-        onlyOwner
+        onlyModuleCore
         returns (uint256 emptied)
     {
-        emptied = reserves[reserveId].emptyReservePartial(dsId, amount, owner());
+        emptied = reserves[reserveId].emptyReservePartialLv(dsId, amount, _moduleCore);
+        emit ReserveEmptied(reserveId, dsId, amount);
+    }
+
+    function emptyReservePsm(Id reserveId, uint256 dsId) external override onlyModuleCore returns (uint256 amount) {
+        amount = reserves[reserveId].emptyReservePsm(dsId, _moduleCore);
+        emit ReserveEmptied(reserveId, dsId, amount);
+    }
+
+    function emptyReservePartialPsm(Id reserveId, uint256 dsId, uint256 amount)
+        external
+        override
+        onlyModuleCore
+        returns (uint256 emptied)
+    {
+        emptied = reserves[reserveId].emptyReservePartialPsm(dsId, amount, _moduleCore);
         emit ReserveEmptied(reserveId, dsId, amount);
     }
 
@@ -85,9 +160,80 @@ contract RouterState is IDsFlashSwapUtility, IDsFlashSwapCore, OwnableUpgradeabl
         (raPriceRatio, ctPriceRatio) = reserves[id].getPriceRatio(dsId);
     }
 
-    function addReserve(Id id, uint256 dsId, uint256 amount) external override onlyOwner {
-        reserves[id].addReserve(dsId, amount, owner());
+    function addReserveLv(Id id, uint256 dsId, uint256 amount) external override onlyModuleCore {
+        reserves[id].addReserveLv(dsId, amount, _moduleCore);
         emit ReserveAdded(id, dsId, amount);
+    }
+
+    function addReservePsm(Id id, uint256 dsId, uint256 amount) external override onlyModuleCore {
+        reserves[id].addReservePsm(dsId, amount, _moduleCore);
+        emit ReserveAdded(id, dsId, amount);
+    }
+
+    /// will return that can't be filled from the reserve, this happens when the total reserve is less than the amount requested
+    function _swapRaForDsViaRollover(Id reserveId, uint256 dsId, uint256 amountRa, uint256 amountOutMin)
+        internal
+        returns (uint256 raLeft, uint256 dsReceived)
+    {
+        // this means that we ignore and don't do rollover sale when it's first issuance or it's not rollover time
+        if (dsId == DsFlashSwaplibrary.FIRST_ISSUANCE || !reserves[reserveId].rolloverSale()) {
+            // noop and return back the full amountRa
+            return (amountRa, 0);
+        }
+
+        ReserveState storage self = reserves[reserveId];
+        AssetPair storage assetPair = self.ds[dsId];
+
+        uint256 lvProfit;
+        uint256 psmProfit;
+        dsReceived;
+        uint256 lvReserveUsed;
+        uint256 psmReserveUsed;
+
+        (lvProfit, psmProfit, raLeft, dsReceived, lvReserveUsed, psmReserveUsed) =
+            SwapperMathLibrary.calculateRolloverSale(assetPair.lvReserve, assetPair.psmReserve, amountRa, self.hpa);
+
+        if (dsReceived < amountOutMin) {
+            revert InsufficientOutputAmount();
+        }
+
+        assetPair.psmReserve -= psmReserveUsed;
+        assetPair.lvReserve -= lvReserveUsed;
+
+        IERC20(assetPair.ra).safeTransfer(_moduleCore, lvProfit + psmProfit);
+
+        IPSMcore(_moduleCore).psmAcceptFlashSwapProfit(reserveId, psmProfit);
+        IVault(_moduleCore).lvAcceptRolloverProfit(reserveId, lvProfit);
+
+        IERC20(assetPair.ds).safeTransfer(msg.sender, dsReceived);
+
+        emit RolloverSold(reserveId, dsId, msg.sender, dsReceived, amountRa - raLeft);
+    }
+
+    function _previewSwapRaForDsViaRollover(Id reserveId, uint256 dsId, uint256 amountRa)
+        internal
+        view
+        returns (uint256 raLeft, uint256 dsReceived)
+    {
+        if (dsId == DsFlashSwaplibrary.FIRST_ISSUANCE || !reserves[reserveId].rolloverSale()) {
+            return (amountRa, 0);
+        }
+
+        ReserveState storage self = reserves[reserveId];
+        AssetPair storage assetPair = self.ds[dsId];
+
+        uint256 lvProfit;
+        uint256 psmProfit;
+        dsReceived;
+        uint256 lvReserveUsed;
+        uint256 psmReserveUsed;
+
+        (lvProfit, psmProfit, raLeft, dsReceived, lvReserveUsed, psmReserveUsed) =
+            SwapperMathLibrary.calculateRolloverSale(assetPair.lvReserve, assetPair.psmReserve, amountRa, self.hpa);
+    }
+
+    function rolloverSaleEnds(Id reserveId) external view returns (uint256 endInBlockNumber) {
+        return reserves[reserveId].rolloverEndInBlockNumber;
     }
 
     function _swapRaforDs(
@@ -100,25 +246,52 @@ contract RouterState is IDsFlashSwapUtility, IDsFlashSwapCore, OwnableUpgradeabl
     ) internal returns (uint256 amountOut) {
         uint256 borrowedAmount;
 
+        uint256 dsReceived;
+        // try to swap the RA for DS via rollover, this will noop if the condition for rollover is not met
+        (amount, dsReceived) = _swapRaForDsViaRollover(reserveId, dsId, amount, amountOutMin);
+
+        // short circuit if all the swap is filled using rollover
+        if (amount == 0) {
+            return dsReceived;
+        }
+
         // calculate the amount of DS tokens attributed
         (amountOut, borrowedAmount,) = assetPair.getAmountOutBuyDS(amount);
 
-        // calculate the amount of DS tokens that will be sold from LV reserve
+        // calculate the amount of DS tokens that will be sold from reserve
         uint256 amountSellFromReserve =
             amountOut - MathHelper.calculatePrecentageFee(self.reserveSellPressurePrecentage, amountOut);
 
         // sell all tokens if the sell amount is higher than the available reserve
-        amountSellFromReserve = assetPair.reserve < amountSellFromReserve ? assetPair.reserve : amountSellFromReserve;
+        amountSellFromReserve = assetPair.lvReserve + assetPair.psmReserve < amountSellFromReserve
+            ? assetPair.lvReserve + assetPair.psmReserve
+            : amountSellFromReserve;
 
         // sell the DS tokens from the reserve if there's any
         if (amountSellFromReserve != 0) {
+            // calculate the amount of DS tokens that will be sold from both reserve
+            uint256 lvReserveUsed =
+                assetPair.lvReserve * amountSellFromReserve * 1e18 / (assetPair.lvReserve + assetPair.psmReserve) / 1e18;
+            uint256 psmReserveUsed = amountSellFromReserve - lvReserveUsed;
+
             // decrement reserve
-            assetPair.reserve -= amountSellFromReserve;
+            assetPair.lvReserve -= lvReserveUsed;
+            assetPair.psmReserve -= psmReserveUsed;
 
             // sell the DS tokens from the reserve and accrue value to LV holders
-            // we pass in owner(vault) as the caller since we want the RA profit to be sent to the vault
-            uint256 vaultRa = __swapDsforRa(assetPair, reserveId, dsId, amountSellFromReserve, 0, owner());
-            IVault(owner()).provideLiquidityWithFlashSwapFee(reserveId, vaultRa);
+            // it's safe to transfer all profit to the module core since the profit for each PSM and LV is calculated separately and we invoke
+            // the profit acceptance function for each of them
+            uint256 profitRa = __swapDsforRa(assetPair, reserveId, dsId, amountSellFromReserve, 0, _moduleCore);
+            // calculate the profit of the liquidity vault
+            uint256 vaultProfit = profitRa * lvReserveUsed / amountSellFromReserve;
+            // calculate the profit of the PSM
+            uint256 psmProfit = profitRa - vaultProfit;
+
+            assert(vaultProfit + psmProfit == profitRa);
+
+            // send profit to the vault and PSM
+            IVault(_moduleCore).provideLiquidityWithFlashSwapFee(reserveId, vaultProfit);
+            IPSMcore(_moduleCore).psmAcceptFlashSwapProfit(reserveId, psmProfit);
 
             // recalculate the amount of DS tokens attributed, since we sold some from the reserve
             (amountOut, borrowedAmount,) = assetPair.getAmountOutBuyDS(amount);
@@ -152,6 +325,7 @@ contract RouterState is IDsFlashSwapUtility, IDsFlashSwapCore, OwnableUpgradeabl
     ) external returns (uint256 amountOut) {
         ReserveState storage self = reserves[reserveId];
         AssetPair storage assetPair = self.ds[dsId];
+
         if (!DsFlashSwaplibrary.isRAsupportsPermit(address(assetPair.ra))) {
             revert PermitNotSupported();
         }
@@ -160,6 +334,8 @@ contract RouterState is IDsFlashSwapUtility, IDsFlashSwapCore, OwnableUpgradeabl
         IERC20(assetPair.ra).safeTransferFrom(msg.sender, address(this), amount);
 
         amountOut = _swapRaforDs(self, assetPair, reserveId, dsId, amount, amountOutMin);
+
+        self.recalculateHPA(dsId, amount, amountOut);
 
         emit RaSwapped(reserveId, dsId, msg.sender, amount, amountOut);
     }
@@ -178,13 +354,17 @@ contract RouterState is IDsFlashSwapUtility, IDsFlashSwapCore, OwnableUpgradeabl
     {
         ReserveState storage self = reserves[reserveId];
         AssetPair storage assetPair = self.ds[dsId];
+
         IERC20(assetPair.ra).safeTransferFrom(msg.sender, address(this), amount);
 
         amountOut = _swapRaforDs(self, assetPair, reserveId, dsId, amount, amountOutMin);
 
+        self.recalculateHPA(dsId, amount, amountOut);
+
         emit RaSwapped(reserveId, dsId, msg.sender, amount, amountOut);
     }
 
+    // TODO : add rollover and subtract reserve from the two reserve
     /**
      * @notice Preview the amount of DS that will be received from swapping RA
      * @param reserveId the reserve id same as the id on PSM and LV
@@ -196,39 +376,75 @@ contract RouterState is IDsFlashSwapUtility, IDsFlashSwapCore, OwnableUpgradeabl
         ReserveState storage self = reserves[reserveId];
         AssetPair storage assetPair = self.ds[dsId];
 
-        uint256 borrowedAmount;
-        (amountOut, borrowedAmount,) = assetPair.getAmountOutBuyDS(amount);
+        uint256 dsReceived;
 
-        // calculate the amount of DS tokens that will be sold from LV reserve
+        // preview rollover, if applicable
+        (amount, dsReceived) = _previewSwapRaForDsViaRollover(reserveId, dsId, amount);
+
+        // short circuit if all the swap is filled using rollover
+        if (amount == 0) {
+            return dsReceived;
+        }
+
+        (amountOut,,) = assetPair.getAmountOutBuyDS(amount);
+
+        // calculate the amount of DS tokens that will be sold from reserve
         uint256 amountSellFromReserve =
             amountOut - MathHelper.calculatePrecentageFee(self.reserveSellPressurePrecentage, amountOut);
 
         // sell all tokens if the sell amount is higher than the available reserve
-        amountSellFromReserve = assetPair.reserve < amountSellFromReserve ? assetPair.reserve : amountSellFromReserve;
+        amountSellFromReserve = assetPair.lvReserve + assetPair.psmReserve < amountSellFromReserve
+            ? assetPair.lvReserve + assetPair.psmReserve
+            : amountSellFromReserve;
 
         // sell the DS tokens from the reserve if there's any
         if (amountSellFromReserve != 0) {
-            (uint112 raReserve, uint112 ctReserve) = assetPair.getReservesSorted();
-
-            // we borrow the same amount of CT tokens from the reserve
-            ctReserve -= uint112(amountSellFromReserve);
-
-            (uint256 vaultRa, uint256 raAdded) = assetPair.getAmountOutSellDS(amountSellFromReserve);
-            raReserve += uint112(raAdded);
-
-            // emulate Vault way of adding liquidity using RA from selling DS reserve
-            (, uint256 ratio) = self.tryGetPriceRatioAfterSellDs(dsId, amountSellFromReserve, raAdded);
-            uint256 ctAdded;
-            (raAdded, ctAdded) = MathHelper.calculateProvideLiquidityAmountBasedOnCtPrice(vaultRa, ratio);
-
-            raReserve += uint112(raAdded);
-            ctReserve += uint112(ctAdded);
-
-            // update amountOut since we sold some from the reserve
-            (, amountOut) = SwapperMathLibrary.getAmountOutDs(
-                int256(uint256(raReserve)), int256(uint256(ctReserve)), int256(amount)
-            );
+            amountOut = _trySellFromReserve(self, assetPair, amountSellFromReserve, dsId, amount);
         }
+
+        // add the amount of DS tokens from the rollover, if any
+        // we add here the last for simpler control flow, since this way the logic of regular swap
+        // don't need to care about how much token is received from the rollover sale
+        amountOut += dsReceived;
+    }
+
+    function _trySellFromReserve(
+        ReserveState storage self,
+        AssetPair storage assetPair,
+        uint256 amountSellFromReserve,
+        uint256 dsId,
+        uint256 amount
+    ) private view returns (uint256 amountOut) {
+        (uint112 raReserve, uint112 ctReserve) = assetPair.getReservesSorted();
+
+        // we borrow the same amount of CT tokens from the reserve
+        ctReserve -= uint112(amountSellFromReserve);
+
+        (uint256 profit, uint256 raAdded) = assetPair.getAmountOutSellDS(amountSellFromReserve);
+        raReserve += uint112(raAdded);
+
+        // emulate Vault way of adding liquidity using RA from selling DS reserve
+        (, uint256 ratio) = self.tryGetPriceRatioAfterSellDs(dsId, amountSellFromReserve, raAdded);
+        uint256 ctAdded;
+        uint256 lvReserveUsed =
+            assetPair.lvReserve * amountSellFromReserve * 1e18 / (assetPair.lvReserve + assetPair.psmReserve) / 1e18; // calculate the profit of the liquidity vault
+
+        // get the vault profit, we don't care about the PSM profit since it'll be sent to PSM
+        profit = profit * lvReserveUsed / amountSellFromReserve;
+
+        // use the vault profit
+        (raAdded, ctAdded) = MathHelper.calculateProvideLiquidityAmountBasedOnCtPrice(profit, ratio);
+
+        raReserve += uint112(raAdded);
+        ctReserve += uint112(ctAdded);
+
+        // update amountOut since we sold some from the reserve
+        (, amountOut) =
+            SwapperMathLibrary.getAmountOutDs(int256(uint256(raReserve)), int256(uint256(ctReserve)), int256(amount));
+    }
+
+    function isRolloverSale(Id id, uint256 dsId) external view returns (bool) {
+        return reserves[id].rolloverSale();
     }
 
     /**
@@ -249,12 +465,15 @@ contract RouterState is IDsFlashSwapUtility, IDsFlashSwapCore, OwnableUpgradeabl
         bytes memory rawDsPermitSig,
         uint256 deadline
     ) external returns (uint256 amountOut) {
-        AssetPair storage assetPair = reserves[reserveId].ds[dsId];
+        ReserveState storage self = reserves[reserveId];
+        AssetPair storage assetPair = self.ds[dsId];
 
         DepegSwapLibrary.permit(address(assetPair.ds), rawDsPermitSig, msg.sender, address(this), amount, deadline);
         assetPair.ds.transferFrom(msg.sender, address(this), amount);
 
         amountOut = __swapDsforRa(assetPair, reserveId, dsId, amount, amountOutMin, msg.sender);
+
+        self.recalculateHPA(dsId, amountOut, amount);
 
         emit DsSwapped(reserveId, dsId, msg.sender, amount, amountOut);
     }
@@ -271,11 +490,14 @@ contract RouterState is IDsFlashSwapUtility, IDsFlashSwapCore, OwnableUpgradeabl
         external
         returns (uint256 amountOut)
     {
-        AssetPair storage assetPair = reserves[reserveId].ds[dsId];
+        ReserveState storage self = reserves[reserveId];
+        AssetPair storage assetPair = self.ds[dsId];
 
         assetPair.ds.transferFrom(msg.sender, address(this), amount);
 
         amountOut = __swapDsforRa(assetPair, reserveId, dsId, amount, amountOutMin, msg.sender);
+
+        self.recalculateHPA(dsId, amountOut, amount);
 
         emit DsSwapped(reserveId, dsId, msg.sender, amount, amountOut);
     }
@@ -359,9 +581,9 @@ contract RouterState is IDsFlashSwapUtility, IDsFlashSwapCore, OwnableUpgradeabl
         uint256 dsAttributed
     ) internal {
         AssetPair storage assetPair = self.ds[dsId];
-        assetPair.ra.approve(owner(), dsAttributed);
+        assetPair.ra.approve(_moduleCore, dsAttributed);
 
-        IPSMcore psm = IPSMcore(owner());
+        IPSMcore psm = IPSMcore(_moduleCore);
         psm.depositPsm(reserveId, dsAttributed);
 
         // should be the same, we don't compare with the RA amount since we maybe dealing
@@ -383,10 +605,10 @@ contract RouterState is IDsFlashSwapUtility, IDsFlashSwapCore, OwnableUpgradeabl
         uint256 raAttributed
     ) internal {
         AssetPair storage assetPair = self.ds[dsId];
-        assetPair.ds.approve(owner(), ctAmount);
-        assetPair.ct.approve(owner(), ctAmount);
+        assetPair.ds.approve(_moduleCore, ctAmount);
+        assetPair.ct.approve(_moduleCore, ctAmount);
 
-        IPSMcore psm = IPSMcore(owner());
+        IPSMcore psm = IPSMcore(_moduleCore);
 
         (uint256 received,,) = psm.redeemRaWithCtDs(reserveId, ctAmount);
 

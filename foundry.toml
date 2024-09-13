@@ -2,12 +2,10 @@
 src = "contracts"
 evm_version = "cancun"   
 out = "out"
-libs = ["lib"]
+libs = ["node_modules","lib"]
 test = "test"
 cache_path = "cache_forge"
 optimizer = true
 optimizer_runs = 10_000
 solc_version = "0.8.24"
 fs_permissions = [{ access = "read", path = "./"}]
-
-# See more config options https://github.com/foundry-rs/foundry/blob/master/crates/config/README.md#all-options

@@ -1,5 +1,7 @@
 pragma solidity 0.8.24;
 
+import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
+import {UUPSUpgradeable} from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import {PsmLibrary} from "../libraries/PsmLib.sol";
 import {VaultLibrary, VaultConfigLibrary} from "../libraries/VaultLib.sol";
 import {Id, Pair, PairLibrary} from "../libraries/Pair.sol";
@@ -9,32 +11,54 @@ import {ModuleState} from "./ModuleState.sol";
 import {PsmCore} from "./Psm.sol";
 import {VaultCore} from "./Vault.sol";
 import {Initialize} from "../interfaces/Init.sol";
+import {Context} from "@openzeppelin/contracts/utils/Context.sol";
+import {ContextUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/ContextUpgradeable.sol";
 
 /**
  * @title ModuleCore Contract
  * @author Cork Team
  * @notice Modulecore contract for integrating abstract modules like PSM and Vault contracts
  */
-contract ModuleCore is PsmCore, Initialize, VaultCore {
+contract ModuleCore is OwnableUpgradeable, UUPSUpgradeable, PsmCore, Initialize, VaultCore {
     using PsmLibrary for State;
     using PairLibrary for Pair;
 
-    constructor(
+    /// @notice Initializer function for upgradeable contracts
+    function initialize(
         address _swapAssetFactory,
         address _ammFactory,
         address _flashSwapRouter,
         address _ammRouter,
         address _config,
         uint256 _psmBaseRedemptionFeePrecentage
-    )
-        ModuleState(_swapAssetFactory, _ammFactory, _flashSwapRouter, _ammRouter, _config, _psmBaseRedemptionFeePrecentage)
-    {}
+    ) external initializer {
+        __Ownable_init(msg.sender);
+        __UUPSUpgradeable_init();
+        initializeModuleState(
+            _swapAssetFactory, _ammFactory, _flashSwapRouter, _ammRouter, _config, _psmBaseRedemptionFeePrecentage
+        );
+    }
+
+    /// @notice Authorization function for UUPS proxy upgrades
+    function _authorizeUpgrade(address newImplementation) internal override onlyOwner {}
+
+    function _msgSender() internal view override(ContextUpgradeable, Context) returns (address) {
+        return super._msgSender();
+    }
+
+    function _msgData() internal view override(ContextUpgradeable, Context) returns (bytes calldata) {
+        return super._msgData();
+    }
+
+    function _contextSuffixLength() internal view override(ContextUpgradeable, Context) returns (uint256) {
+        return super._contextSuffixLength();
+    }
 
     function getId(address pa, address ra) external pure returns (Id) {
         return PairLibrary.initalize(pa, ra).toId();
     }
 
-    function initialize(address pa, address ra, uint256 lvFee, uint256 initialDsPrice) external override onlyConfig {
+    function initializeModuleCore(address pa, address ra, uint256 lvFee, uint256 initialDsPrice) external override onlyConfig {
         Pair memory key = PairLibrary.initalize(pa, ra);
         Id id = key.toId();
 
@@ -51,36 +75,57 @@ contract ModuleCore is PsmCore, Initialize, VaultCore {
         PsmLibrary.initialize(state, key);
         VaultLibrary.initialize(state.vault, lv, lvFee, ra, initialDsPrice);
 
-        emit Initialized(id, pa, ra, lv);
+        emit InitializedModuleCore(id, pa, ra, lv);
     }
 
-    function issueNewDs(Id id, uint256 expiry, uint256 exchangeRates, uint256 repurchaseFeePrecentage)
-        external
-        override
-        onlyConfig
-        onlyInitialized(id)
-    {
+    function issueNewDs(
+        Id id,
+        uint256 expiry,
+        uint256 exchangeRates,
+        uint256 repurchaseFeePrecentage,
+        uint256 decayDiscountRateInDays,
+        // won't have effect on first issuance
+        uint256 rolloverPeriodInblocks
+    ) external override onlyConfig onlyInitialized(id) {
         if (repurchaseFeePrecentage > 5 ether) {
             revert InvalidFees();
         }
+
         State storage state = states[id];
 
         address ra = state.info.pair1;
 
-        uint256 prevIdx = state.globalAssetIdx++;
-        uint256 idx = state.globalAssetIdx;
-
         (address ct, address ds) = IAssetFactory(SWAP_ASSET_FACTORY).deploySwapAssets(
             ra, state.info.pair0, address(this), expiry, exchangeRates
         );
+
+        // avoid stack to deep error
+        _initOnNewIssuance(id, repurchaseFeePrecentage, ra, ct, ds, expiry);
+        // avoid stack to deep error
+        getRouterCore().setDecayDiscountAndRolloverPeriodOnNewIssuance(
+            id, decayDiscountRateInDays, rolloverPeriodInblocks
+        );
+        VaultLibrary.onNewIssuance(state, state.globalAssetIdx - 1, getRouterCore(), getAmmRouter());
+    }
+
+    function _initOnNewIssuance(
+        Id id,
+        uint256 repurchaseFeePrecentage,
+        address ra,
+        address ct,
+        address ds,
+        uint256 expiry
+    ) internal {
+        State storage state = states[id];
+
+        uint256 prevIdx = state.globalAssetIdx++;
+        uint256 idx = state.globalAssetIdx;
 
         address ammPair = getAmmFactory().createPair(ra, ct);
 
         PsmLibrary.onNewIssuance(state, ct, ds, ammPair, idx, prevIdx, repurchaseFeePrecentage);
 
         getRouterCore().onNewIssuance(id, idx, ds, ammPair, 0, ra, ct);
-
-        VaultLibrary.onNewIssuance(state, prevIdx, getRouterCore(), getAmmRouter());
 
         emit Issued(id, idx, expiry, ds, ct, ammPair);
     }
