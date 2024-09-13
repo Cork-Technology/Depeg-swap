@@ -142,7 +142,7 @@ export async function deployUniV2Factory(flashswap: Address) {
     abi: UNIV2FACTORY.abi,
     bytecode: `0x${UNIV2FACTORY.bytecode}`,
     account: defaultSigner.account,
-    args: [defaultSigner.account.address, flashswap],
+    args: [ethers.constants.AddressZero, flashswap],
   });
 
   const client = await hre.viem.getPublicClient();
