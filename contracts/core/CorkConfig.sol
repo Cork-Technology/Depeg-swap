@@ -4,6 +4,8 @@ import {AccessControl} from "@openzeppelin/contracts/access/AccessControl.sol";
 import {Pausable} from "@openzeppelin/contracts/utils/Pausable.sol";
 import {Initialize} from "../interfaces/Init.sol";
 import {Id} from "../libraries/Pair.sol";
+import {IDsFlashSwapCore} from "../interfaces/IDsFlashSwapRouter.sol";
+import {Pair} from "../libraries/Pair.sol";
 
 /**
  * @title Config Contract
@@ -13,6 +15,7 @@ import {Id} from "../libraries/Pair.sol";
 contract CorkConfig is AccessControl, Pausable {
     bytes32 public constant MANAGER_ROLE = keccak256("MANAGER_ROLE");
     Initialize public moduleCore;
+    IDsFlashSwapCore public flashSwapRouter;
 
     /// @notice thrown when caller is not manager/Admin of Cork Protocol
     error CallerNotManager();
@@ -23,6 +26,10 @@ contract CorkConfig is AccessControl, Pausable {
     /// @notice Emitted when a moduleCore variable set
     /// @param moduleCore Address of Modulecore contract
     event ModuleCoreSet(address moduleCore);
+
+    /// @notice Emitted when a flashSwapRouter variable set
+    /// @param flashSwapRouter Address of flashSwapRouter contract
+    event FlashSwapCoreSet(address flashSwapRouter);
 
     modifier onlyManager() {
         if (!hasRole(MANAGER_ROLE, msg.sender) && !hasRole(DEFAULT_ADMIN_ROLE, msg.sender)) {
@@ -47,6 +54,14 @@ contract CorkConfig is AccessControl, Pausable {
         emit ModuleCoreSet(_moduleCore);
     }
 
+    function setFlashSwapCore(address _flashSwapRouter) external onlyManager {
+        if (_flashSwapRouter == address(0)) {
+            revert InvalidAddress();
+        }
+        flashSwapRouter = IDsFlashSwapCore(_flashSwapRouter);
+        emit FlashSwapCoreSet(_flashSwapRouter);
+    }
+
     /**
      * @dev Initialize Module Core
      * @param pa Address of PA
@@ -61,12 +76,18 @@ contract CorkConfig is AccessControl, Pausable {
     /**
      * @dev Issues new assets
      */
-    function issueNewDs(Id id, uint256 expiry, uint256 exchangeRates, uint256 repurchaseFeePrecentage)
-        external
-        whenNotPaused
-        onlyManager
-    {
-        moduleCore.issueNewDs(id, expiry, exchangeRates, repurchaseFeePrecentage);
+    function issueNewDs(
+        Id id,
+        uint256 expiry,
+        uint256 exchangeRates,
+        uint256 repurchaseFeePrecentage,
+        uint256 decayDiscountRateInDays,
+        // won't have effect on first issuance
+        uint256 rolloverPeriodInblocks
+    ) external whenNotPaused onlyManager {
+        moduleCore.issueNewDs(
+            id, expiry, exchangeRates, repurchaseFeePrecentage, decayDiscountRateInDays, rolloverPeriodInblocks
+        );
     }
 
     /**
@@ -113,6 +134,10 @@ contract CorkConfig is AccessControl, Pausable {
      */
     function updatePsmBaseRedemptionFeePrecentage(uint256 newPsmBaseRedemptionFeePrecentage) external onlyManager {
         moduleCore.updatePsmBaseRedemptionFeePrecentage(newPsmBaseRedemptionFeePrecentage);
+    }
+
+    function updateFlashSwapRouterDiscountInDays(Id id, uint256 newDiscountInDays) external onlyManager {
+        flashSwapRouter.updateDiscountRateInDdays(id, newDiscountInDays);
     }
 
     /**

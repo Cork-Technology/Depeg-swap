@@ -25,6 +25,39 @@ interface IPSMcore is IRepurchase {
         uint256 exchangeRate
     );
 
+    /// @notice Emitted when a user rolled over their CT
+    /// @param Id The PSM id
+    /// @param currentDsId The current DS id
+    /// @param owner The address of the owner
+    /// @param prevDsId The previous DS id
+    /// @param amountCtRolledOver The amount of CT rolled over
+    /// @param dsReceived The amount of DS received, if 0 then the DS is sold to flash swap router, and implies the user opt-in for DS auto-sell
+    /// @param ctReceived The amount of CT received
+    /// @param paReceived The amount of PA received
+    /// @param exchangeRate The exchange rate of DS at the time of rollover
+    event RolledOver(
+        Id indexed Id,
+        uint256 indexed currentDsId,
+        address indexed owner,
+        uint256 prevDsId,
+        uint256 amountCtRolledOver,
+        uint256 dsReceived,
+        uint256 ctReceived,
+        uint256 paReceived,
+        uint256 exchangeRate
+    );
+
+    /// @notice Emitted when a user claims profit from a rollover
+    /// @param Id The PSM id
+    /// @param dsId The DS id
+    /// @param owner The address of the owner
+    /// @param amount The amount of the asset claimed
+    /// @param profit The amount of profit claimed
+    /// @param remainingDs The amount of DS remaining user claimed
+    event RolloverProfitClaimed(
+        Id indexed Id, uint256 indexed dsId, address indexed owner, uint256 amount, uint256 profit, uint256 remainingDs
+    );
+
     /// @notice Emitted when a user redeems a DS for a given PSM
     /// @param Id The PSM id
     /// @param dsId The DS id
@@ -198,9 +231,9 @@ interface IPSMcore is IRepurchase {
      * @param dsDeadline deadline for DS approval permit signature
      * @param rawCtPermitSig raw signature for CT approval permit
      * @param ctDeadline deadline for CT approval permit signature
-        * @return ra amount of RA user received
-        * @return dsId the id of DS
-        * @return rates the effective rate at the time of redemption
+     * @return ra amount of RA user received
+     * @return dsId the id of DS
+     * @return rates the effective rate at the time of redemption
      */
     function redeemRaWithCtDs(
         Id id,
@@ -240,4 +273,25 @@ interface IPSMcore is IRepurchase {
      * @notice returns base redemption fees (1e18 = 1%)
      */
     function baseRedemptionFee() external view returns (uint256);
+
+    function psmAcceptFlashSwapProfit(Id id, uint256 profit) external;
+
+    function rolloverCt(
+        Id id,
+        address owner,
+        uint256 amount,
+        uint256 prevDsId,
+        bytes memory rawCtPermitSig,
+        uint256 ctDeadline
+    ) external returns (uint256 ctReceived, uint256 dsReceived, uint256 _exchangeRate, uint256 paReceived);
+
+    function rolloverCt(Id id, address owner, uint256 amount, uint256 prevDsId)
+        external
+        returns (uint256 ctReceived, uint256 dsReceived, uint256 _exchangeRate, uint256 paReceived);
+
+    function claimRolloverProfit(Id id, uint256 prevDsId, uint256 amount) external returns (uint256 profit, uint256 dsReceived);
+
+    function updatePsmAutoSellStatus(Id id, address user, bool status) external;
+
+    function rolloverProfitRemaining(Id id, uint256 dsId) external view returns (uint256);
 }

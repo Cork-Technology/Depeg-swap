@@ -10,6 +10,7 @@ import "hardhat-contract-sizer";
 import chai from "chai";
 import { solidity } from "ethereum-waffle";
 import "solidity-coverage";
+import "@nomicfoundation/hardhat-foundry";
 
 chai.use(solidity);
 // import "@nomicfoundation/hardhat-chai-matchers";
