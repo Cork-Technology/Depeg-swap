@@ -263,11 +263,13 @@ export async function initializeNewPsmLv(arg: InitializeNewPsmArg) {
     arg.lvFee,
     dsPrice,
   ]);
-  let assets = await factory.read.getDeployedAssets([0, 1]);
-  let Id = await contract.read.getId([arg.pa, arg.ra]);
+  const events = await contract.getEvents.InitializedModuleCore({
+    pa: arg.pa,
+    ra: arg.ra,
+  });
   return {
-    lv: assets[1][0],
-    Id: Id,
+    lv: events[0].args.lv,
+    Id: events[0].args.id,
   };
 }
 

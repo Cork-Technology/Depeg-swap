@@ -150,7 +150,7 @@ describe("Module Core", function () {
         fixture.lvFee,
         initialDsPrice,
       ]);
-      const events = await moduleCore.getEvents.Initialized({
+      const events = await moduleCore.getEvents.InitializedModuleCore({
         id: expectedId,
       });
       expect(events.length).to.equal(1);

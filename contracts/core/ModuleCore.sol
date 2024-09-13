@@ -75,7 +75,7 @@ contract ModuleCore is OwnableUpgradeable, UUPSUpgradeable, PsmCore, Initialize,
         PsmLibrary.initialize(state, key);
         VaultLibrary.initialize(state.vault, lv, lvFee, ra, initialDsPrice);
 
-        emit Initialized(id, pa, ra, lv);
+        emit InitializedModuleCore(id, pa, ra, lv);
     }
 
     function issueNewDs(Id id, uint256 expiry, uint256 exchangeRates, uint256 repurchaseFeePrecentage)

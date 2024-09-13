@@ -50,7 +50,7 @@ interface ICommon {
     /// @param pa The address of the pegged asset
     /// @param ra The address of the redemption asset
     /// @param lv The address of the LV
-    event Initialized(Id indexed id, address indexed pa, address indexed ra, address lv);
+    event InitializedModuleCore(Id indexed id, address indexed pa, address indexed ra, address lv);
 
     /// @notice Emitted when a new DS is issued for a given PSM
     /// @param Id The PSM id
