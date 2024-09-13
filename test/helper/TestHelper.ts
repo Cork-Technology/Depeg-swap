@@ -202,26 +202,24 @@ export async function deployModuleCore(
     dsFlashSwapRouter.contract.address
   );
 
-  const contract = await hre.viem.deployContract(
-    "ModuleCore",
-    [
-      swapAssetFactory,
-      univ2Factory,
-      dsFlashSwapRouter.contract.address,
-      univ2Router,
-      config,
-      basePsmRedemptionFee,
-    ],
-    {
-      client: {
-        wallet: defaultSigner,
-      },
-      libraries: {
-        MathHelper: mathLib.address,
-        VaultLibrary: vault.address,
-      },
-    }
-  );
+  const contract = await hre.viem.deployContract("ModuleCore", [], {
+    client: {
+      wallet: defaultSigner,
+    },
+    libraries: {
+      MathHelper: mathLib.address,
+      VaultLibrary: vault.address,
+    },
+  });
+
+  contract.write.initialize([
+    swapAssetFactory,
+    univ2Factory,
+    dsFlashSwapRouter.contract.address,
+    univ2Router,
+    config,
+    basePsmRedemptionFee,
+  ]);
 
   await dsFlashSwapRouter.contract.write.initialize([
     contract.address,
@@ -238,6 +236,7 @@ export async function deployModuleCore(
 }
 
 export type InitializeNewPsmArg = {
+  factory: Address;
   moduleCore: Address;
   config: Address;
   pa: Address;
@@ -249,6 +248,7 @@ export type InitializeNewPsmArg = {
 export async function initializeNewPsmLv(arg: InitializeNewPsmArg) {
   const signers = await hre.viem.getWalletClients();
   const { defaultSigner } = getSigners(signers);
+  const factory = await hre.viem.getContractAt("AssetFactory", arg.factory);
   const contract = await hre.viem.getContractAt("ModuleCore", arg.moduleCore);
   const configContract = await hre.viem.getContractAt("CorkConfig", arg.config);
   const dsPrice = arg.initialDsPrice ?? parseEther("0.1");
@@ -257,15 +257,16 @@ export async function initializeNewPsmLv(arg: InitializeNewPsmArg) {
     account: defaultSigner.account,
   });
 
-  await configContract.write.initializeModuleCore([arg.pa, arg.ra, arg.lvFee, dsPrice], {
-    account: defaultSigner.account,
-  });
-
-  const events = await contract.getEvents.Initialized({
+  await configContract.write.initializeModuleCore([
+    arg.pa,
+    arg.ra,
+    arg.lvFee,
+    dsPrice,
+  ]);
+  const events = await contract.getEvents.InitializedModuleCore({
     pa: arg.pa,
     ra: arg.ra,
   });
-
   return {
     lv: events[0].args.lv,
     Id: events[0].args.id,
@@ -498,6 +499,7 @@ export async function ModuleCoreWithInitializedPsmLv(
   const fee = parseEther("5");
 
   const { Id, lv } = await initializeNewPsmLv({
+    factory: factory.contract.address,
     moduleCore: moduleCore.address,
     config: config.contract.address,
     pa: pa.address,

@@ -17,7 +17,7 @@ interface Initialize {
      * @param initialDsPrice initial target price of DS, will be used to derive optimal ratio to provide AMM from liquidity vault, make sure it has 18 decimals(e.g 0.1 = 1e17)
      * 
      */
-    function initialize(address pa, address ra, uint256 lvFee, uint256 initialDsPrice) external;
+    function initializeModuleCore(address pa, address ra, uint256 lvFee, uint256 initialDsPrice) external;
 
     /**
      * @notice issue a new DS, can only be done after the previous DS has expired(if any). will deploy CT, DS and initialize new AMM and increment ds Id
