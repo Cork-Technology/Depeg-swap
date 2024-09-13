@@ -223,8 +223,7 @@ export async function deployModuleCore(
 
   await dsFlashSwapRouter.contract.write.initialize([
     dsFlashSwapRouter.contract.address,
-    contract.address,
-    univ2Router,
+    contract.address
   ]);
   // await dsFlashSwapRouter.contract.write.transferOwnership([contract.address]);
 

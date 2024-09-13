@@ -35,7 +35,6 @@ contract RouterState is
     bytes32 public constant MODULE_CORE = keccak256("MODULE_CORE");
     bytes32 public constant CONFIG = keccak256("CONFIG");
 
-    IUniswapV2Router02 internal univ2Router;
     address public _moduleCore;
 
     modifier onlyModuleCore() {
@@ -64,14 +63,13 @@ contract RouterState is
         hpa = reserves[id].getEffectiveHPA();
     }
 
-    function initialize(address config, address moduleCore, address _univ2Router) external initializer {
+    function initialize(address config, address moduleCore) external initializer {
         __AccessControl_init();
         __UUPSUpgradeable_init();
 
         _grantRole(MODULE_CORE, moduleCore);
         _grantRole(CONFIG, config);
 
-        univ2Router = IUniswapV2Router02(_univ2Router);
         _moduleCore = moduleCore;
     }
 

@@ -1,7 +1,7 @@
 pragma solidity 0.8.24;
 
-import {IUniswapV2Factory} from "uniswap-v2/contracts/interfaces/IUniswapV2Factory.sol";
-import {IUniswapV2Router02} from "uniswap-v2-periphery/contracts/interfaces/IUniswapV2Router02.sol";
+import {IUniswapV2Factory} from "v2-core/interfaces/IUniswapV2Factory.sol";
+import {IUniswapV2Router02} from "v2-periphery/interfaces/IUniswapV2Router02.sol";
 
 import {Script, console} from "forge-std/Script.sol";
 import {ERC1967Proxy} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
@@ -125,16 +125,22 @@ contract DeployScript is Script {
         univ2Router = IUniswapV2Router02(_router);
         console.log("Univ2 Router                    : ", _router);
 
-        // Deploy the ModuleCore contract
-        moduleCore = new ModuleCore(
-            address(assetFactory), _factory, address(flashswapRouter), _router, address(config), base_redemption_fee
-        );
+        // Deploy the ModuleCore implementation (logic) contract
+        ModuleCore moduleCoreImplementation = new ModuleCore();
+        console.log("ModuleCore Router Implementation : ", address(moduleCoreImplementation));
+
+        // Deploy the ModuleCore Proxy contract
+        data = abi.encodeWithSelector(moduleCoreImplementation.initialize.selector);
+        ERC1967Proxy moduleCoreProxy = new ERC1967Proxy(address(routerImplementation), data);
+        moduleCore = ModuleCore(address(moduleCoreProxy));
+
         console.log("Module Core                     : ", address(moduleCore));
         console.log("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-");
 
         // Transfer Ownership to moduleCore
         assetFactory.transferOwnership(address(moduleCore));
-        flashswapRouter.transferOwnership(address(moduleCore));
+        // TODO
+        // flashswapRouter.transferOwnership(address(moduleCore));
         console.log("Transferred ownerships to Modulecore");
 
         config.setModuleCore(address(moduleCore));
@@ -167,7 +173,9 @@ contract DeployScript is Script {
             id,
             block.timestamp + 180 days, // 6 months
             1 ether, // exchange rate = 1:1
-            repurchaseFee
+            repurchaseFee,
+            10, // TODO
+            block.timestamp + 180 days // 6 months // TODO
         );
         console.log("New DS issued");
         console.log("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-");

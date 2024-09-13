@@ -52,13 +52,13 @@ abstract contract Helper is Test, SigUtils {
     }
 
     function initializeAssetFactory() internal {
-        assetFactory.initialize(address(moduleCore));
+        assetFactory.initialize();
     }
 
     function deployUniswapRouter(address uniswapfactory, address _flashSwapRouter) internal {
         bytes memory constructorArgs = abi.encode(uniswapfactory, weth, _flashSwapRouter);
 
-        address addr = deployCode("test/helper/ext-abi/uni-v2-router.json", constructorArgs);
+        address addr = deployCode("test/helper/ext-abi/foundry/uni-v2-router.json", constructorArgs);
 
         console.logAddress(addr);
 
@@ -70,7 +70,7 @@ abstract contract Helper is Test, SigUtils {
     function deployUniswapFactory(address feeToSetter, address _flashSwapRouter) internal {
         bytes memory constructorArgs = abi.encode(feeToSetter, _flashSwapRouter);
 
-        address addr = deployCode("test/helper/ext-abi/uni-v2-factory.json", constructorArgs);
+        address addr = deployCode("test/helper/ext-abi/foundry/uni-v2-factory.json", constructorArgs);
 
         uniswapFactory = IUniswapV2Factory(addr);
     }
@@ -161,7 +161,18 @@ abstract contract Helper is Test, SigUtils {
     }
 
     function initializeFlashSwapRouter() internal {
-        flashSwapRouter.initialize(address(corkConfig), address(moduleCore), address(uniswapRouter));
+        flashSwapRouter.initialize(address(corkConfig), address(moduleCore));
+    }
+
+    function initializeModuleCore(uint256 fees) internal {
+        moduleCore.initialize(
+            address(assetFactory),
+            address(uniswapFactory),
+            address(flashSwapRouter),
+            address(uniswapRouter),
+            address(corkConfig),
+            fees
+        );
     }
 
     function deployModuleCore() internal {
@@ -171,17 +182,11 @@ abstract contract Helper is Test, SigUtils {
         deployUniswapFactory(address(0), address(flashSwapRouter));
         deployUniswapRouter(address(uniswapFactory), address(flashSwapRouter));
 
-        moduleCore = new TestModuleCore(
-            address(assetFactory),
-            address(uniswapFactory),
-            address(flashSwapRouter),
-            address(uniswapRouter),
-            address(corkConfig),
-            DEFAULT_EXCHANGE_RATES
-        );
+        moduleCore = new TestModuleCore();
         initializeAssetFactory();
         initializeConfig();
         initializeFlashSwapRouter();
+        initializeModuleCore(DEFAULT_EXCHANGE_RATES);
     }
 
     function deployModuleCore(uint256 psmBaseRedemptionFee) internal {
@@ -191,16 +196,10 @@ abstract contract Helper is Test, SigUtils {
         deployUniswapFactory(address(0), address(flashSwapRouter));
         deployUniswapRouter(address(uniswapFactory), address(flashSwapRouter));
 
-        moduleCore = new TestModuleCore(
-            address(assetFactory),
-            address(uniswapFactory),
-            address(flashSwapRouter),
-            address(uniswapRouter),
-            address(corkConfig),
-            psmBaseRedemptionFee
-        );
+        moduleCore = new TestModuleCore();
         initializeAssetFactory();
         initializeConfig();
         initializeFlashSwapRouter();
+        initializeModuleCore(psmBaseRedemptionFee);
     }
 }

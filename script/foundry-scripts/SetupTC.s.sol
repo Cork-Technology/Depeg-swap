@@ -1,7 +1,7 @@
 pragma solidity 0.8.24;
 
-import {IUniswapV2Factory} from "uniswap-v2/contracts/interfaces/IUniswapV2Factory.sol";
-import {IUniswapV2Router02} from "uniswap-v2-periphery/contracts/interfaces/IUniswapV2Router02.sol";
+import {IUniswapV2Factory} from "v2-core/interfaces/IUniswapV2Factory.sol";
+import {IUniswapV2Router02} from "v2-periphery/interfaces/IUniswapV2Router02.sol";
 
 import {Script, console} from "forge-std/Script.sol";
 import {ERC1967Proxy} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
@@ -93,7 +93,9 @@ contract SetupTCScript is Script {
             id,
             block.timestamp + 180 days, // 6 months
             1 ether, // exchange rate = 1:1
-            repurchaseFee
+            repurchaseFee,
+            10, // TODO
+            block.timestamp + 180 days // 6 months // TODO
         );
         console.log("New DS issued");
         console.log("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-");
