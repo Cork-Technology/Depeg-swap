@@ -70,4 +70,6 @@ AFter that, you should see something like this on your terminal :
   Univ2 Router                    :  0x2eAc54667957a8a4312c92532df47eEBAE7bc36e
   Module Core                     :  0xa97e7b244B1C853b5981E2F74C133a68d9941F03
   -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+  Funder Contract                 :  0xd301e625fAFF0C21e157f3b9154CFF44DD963728
+  -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 ```
