@@ -185,9 +185,16 @@ export async function deployModuleCore(
   const { defaultSigner } = getSigners(signers);
 
   const mathLib = await hre.viem.deployContract("MathHelper");
+  const psm = await hre.viem.deployContract("PsmLibrary", [], {
+    libraries: {
+      MathHelper: mathLib.address,
+    },
+  });
+
   const vault = await hre.viem.deployContract("VaultLibrary", [], {
     libraries: {
       MathHelper: mathLib.address,
+      PsmLibrary: psm.address,
     },
   });
 
@@ -207,8 +214,8 @@ export async function deployModuleCore(
       wallet: defaultSigner,
     },
     libraries: {
-      MathHelper: mathLib.address,
       VaultLibrary: vault.address,
+      PsmLibrary: psm.address,
     },
   });
 
@@ -223,7 +230,7 @@ export async function deployModuleCore(
 
   await dsFlashSwapRouter.contract.write.initialize([
     dsFlashSwapRouter.contract.address,
-    contract.address
+    contract.address,
   ]);
   // await dsFlashSwapRouter.contract.write.transferOwnership([contract.address]);
 

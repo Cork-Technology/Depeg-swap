@@ -77,9 +77,15 @@ describe("Module Core", function () {
 
   it("should deploy", async function () {
     const mathLib = await hre.viem.deployContract("MathHelper");
+    const psm = await hre.viem.deployContract("PsmLibrary", [], {
+      libraries: {
+        MathHelper: mathLib.address,
+      },
+    });
     const vault = await hre.viem.deployContract("VaultLibrary", [], {
       libraries: {
         MathHelper: mathLib.address,
+        PsmLibrary: psm.address,
       },
     });
 
@@ -103,7 +109,7 @@ describe("Module Core", function () {
         wallet: defaultSigner,
       },
       libraries: {
-        MathHelper: mathLib.address,
+        PsmLibrary: psm.address,
         VaultLibrary: vault.address,
       },
     });

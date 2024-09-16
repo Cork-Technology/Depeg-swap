@@ -53,14 +53,13 @@ abstract contract Helper is Test, SigUtils {
 
     function initializeAssetFactory() internal {
         assetFactory.initialize();
+        assetFactory.transferOwnership(address(moduleCore));
     }
 
     function deployUniswapRouter(address uniswapfactory, address _flashSwapRouter) internal {
         bytes memory constructorArgs = abi.encode(uniswapfactory, weth, _flashSwapRouter);
 
         address addr = deployCode("test/helper/ext-abi/foundry/uni-v2-router.json", constructorArgs);
-
-        console.logAddress(addr);
 
         require(addr != address(0), "Router deployment failed");
 
