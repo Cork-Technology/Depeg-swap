@@ -1,4 +1,4 @@
-pragma solidity 0.8.24;
+pragma solidity ^0.8.24;
 
 import {DepegSwap, DepegSwapLibrary} from "./DepegSwapLib.sol";
 import {LvAsset, LvAssetLibrary} from "./LvAssetLib.sol";

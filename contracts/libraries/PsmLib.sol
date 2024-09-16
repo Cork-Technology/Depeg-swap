@@ -1,4 +1,4 @@
-pragma solidity 0.8.24;
+pragma solidity ^0.8.24;
 
 import {Asset, ERC20Burnable} from "../core/assets/Asset.sol";
 import {Pair, PairLibrary} from "./Pair.sol";

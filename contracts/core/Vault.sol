@@ -1,4 +1,4 @@
-pragma solidity 0.8.24;
+pragma solidity ^0.8.24;
 
 import {VaultLibrary} from "../libraries/VaultLib.sol";
 import {Id, Pair, PairLibrary} from "../libraries/Pair.sol";

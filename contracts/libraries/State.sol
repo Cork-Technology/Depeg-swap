@@ -1,4 +1,4 @@
-pragma solidity 0.8.24;
+pragma solidity ^0.8.24;
 
 import {Pair} from "./Pair.sol";
 import {PsmRedemptionAssetManager} from "./RedemptionAssetManagerLib.sol";

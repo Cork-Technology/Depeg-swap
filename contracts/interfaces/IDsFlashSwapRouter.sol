@@ -1,4 +1,4 @@
-pragma solidity 0.8.24;
+pragma solidity ^0.8.24;
 
 import {Id} from "../libraries/Pair.sol";
 import {IUniswapV2Pair} from "./uniswap-v2/pair.sol";

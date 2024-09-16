@@ -1,4 +1,4 @@
-pragma solidity 0.8.24;
+pragma solidity ^0.8.24;
 
 import {ICommon} from "../interfaces/ICommon.sol";
 import {VaultConfig} from "./State.sol";
