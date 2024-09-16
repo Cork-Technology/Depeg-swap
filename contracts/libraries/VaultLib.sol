@@ -18,12 +18,12 @@ import {DepegSwap, DepegSwapLibrary} from "./DepegSwapLib.sol";
 import {Asset, ERC20, ERC20Burnable} from "../core/assets/Asset.sol";
 import {ICommon} from "../interfaces/ICommon.sol";
 import {SafeERC20, IERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-
 /**
  * @title Vault Library Contract
  * @author Cork Team
  * @notice Vault Library implements features for  LVCore(liquidity Vault Core)
  */
+
 library VaultLibrary {
     using VaultConfigLibrary for VaultConfig;
     using PairLibrary for Pair;
@@ -167,7 +167,7 @@ library VaultLibrary {
         uint256 exchangeRate,
         bool isRollover,
         uint256 dsId
-    ) internal view returns (uint256 ratio) {
+    ) internal pure returns (uint256 ratio) {
         // fallback to initial ds price ratio if hpa is 0, and market ratio is 0
         // usually happens when there's no trade on the router AND is not the first issuance
         // OR it's the first issuance

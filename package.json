@@ -7,6 +7,7 @@
   "scripts": {
     "test": "npx hardhat test",
     "build": "npx hardhat compile",
+    "compile:organise":"npx hardhat clean && npx hardhat compile && node script/node-scripts/organiseArtifacts.js",
     "lint:contract": "npx solhint 'contracts/**/*.sol'",
     "lint:contract:fix": "npx solhint 'contracts/**/*.sol' --fix"
   },

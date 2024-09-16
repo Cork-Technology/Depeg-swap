@@ -2,7 +2,15 @@ pragma solidity 0.8.24;
 
 import {ModuleCore} from "./../../contracts/core/ModuleCore.sol";
 import {Id, Pair} from "../../contracts/libraries/Pair.sol";
-import {State, PsmPoolArchive, VaultState, VaultAmmLiquidityPool, Balances, VaultConfig, VaultWithdrawalPool} from "../../contracts/libraries/State.sol";
+import {
+    State,
+    PsmPoolArchive,
+    VaultState,
+    VaultAmmLiquidityPool,
+    Balances,
+    VaultConfig,
+    VaultWithdrawalPool
+} from "../../contracts/libraries/State.sol";
 import {BitMaps} from "@openzeppelin/contracts/utils/structs/BitMaps.sol";
 import {DepegSwap} from "../../contracts/libraries/DepegSwapLib.sol";
 import {LvAsset} from "../../contracts/libraries/LvAssetLib.sol";
@@ -11,14 +19,7 @@ import {LvAsset} from "../../contracts/libraries/LvAssetLib.sol";
 contract TestModuleCore is ModuleCore {
     using BitMaps for BitMaps.BitMap;
 
-    constructor(
-        address assetFactory,
-        address uniswapFactory,
-        address flashSwapRouter,
-        address uniswapRouter,
-        address corkConfig,
-        uint256 psmRedemptionFee
-    ) ModuleCore(assetFactory, uniswapFactory, flashSwapRouter, uniswapRouter, corkConfig, psmRedemptionFee) {}
+    constructor() {}
 
     // ------------------------------ GLOBAL GETTERS ------------------------------
     function getDsId(Id id) external view returns (uint256) {
@@ -32,7 +33,7 @@ contract TestModuleCore is ModuleCore {
     function getDs(Id id, uint256 dsId) external view returns (DepegSwap memory) {
         return states[id].ds[dsId];
     }
-    //-------------------------------------------------------------------------------- 
+    //--------------------------------------------------------------------------------
 
     // ------------------------------ PSM GETTERS ------------------------------
     function getPsmBalances(Id id) external view returns (Balances memory) {
@@ -78,7 +79,7 @@ contract TestModuleCore is ModuleCore {
     function getPsmIsWithdrawalPaused(Id id) external view returns (bool) {
         return states[id].psm.isWithdrawalPaused;
     }
-    //--------------------------------------------------------------------------------  
+    //--------------------------------------------------------------------------------
 
     // ------------------------------ VAULT GETTERS ------------------------------
     function getVaultBalances(Id id) external view returns (Balances memory) {
@@ -109,5 +110,4 @@ contract TestModuleCore is ModuleCore {
         return states[id].vault.pool.withdrawEligible[user];
     }
     // --------------------------------------------------------------------------------
-
 }

@@ -42,7 +42,7 @@ describe("Asset Factory", function () {
     ) as Address;
     assetFactory = await loadFixture(deployFactory);
 
-    await assetFactory.write.initialize([defaultSigner.account.address], {
+    await assetFactory.write.initialize({
       account: defaultSigner.account,
     });
   });
@@ -55,7 +55,7 @@ describe("Asset Factory", function () {
   describe("initialize", function () {
     it("Revert initialize when Already initialized", async function () {
       await expect(
-        assetFactory.write.initialize([defaultSigner.account.address], {
+        assetFactory.write.initialize({
           account: defaultSigner.account,
         })
       ).to.be.rejectedWith(`InvalidInitialization`);
@@ -281,7 +281,8 @@ describe("Asset Factory", function () {
     it("should correctly return empty array when queried more than current assets", async function () {
       const { ra, pa } = await helper.backedAssets();
       const assets = await assetFactory.read.getDeployedSwapAssets([
-        ra.address,pa.address,
+        ra.address,
+        pa.address,
         7,
         10,
       ]);
@@ -292,7 +293,7 @@ describe("Asset Factory", function () {
     it("Revert getDeployedSwapAssets when passed limit is more than max allowed value", async function () {
       const { ra, pa } = await helper.backedAssets();
       await expect(
-        assetFactory.read.getDeployedSwapAssets([ra.address,pa.address, 1, 11])
+        assetFactory.read.getDeployedSwapAssets([ra.address, pa.address, 1, 11])
       ).to.be.rejectedWith(`LimitTooLong(10, 11)`);
     });
   });

@@ -13,8 +13,8 @@ import {
   verifyTypedData,
   WalletClient,
 } from "viem";
-import UNIV2FACTORY from "./ext-abi/uni-v2-factory.json";
-import UNIV2ROUTER from "./ext-abi/uni-v2-router.json";
+import UNIV2FACTORY from "./ext-abi/hardhat/uni-v2-factory.json";
+import UNIV2ROUTER from "./ext-abi/hardhat/uni-v2-router.json";
 import { ethers } from "ethers";
 
 const DEVISOR = BigInt(1e18);
@@ -185,9 +185,16 @@ export async function deployModuleCore(
   const { defaultSigner } = getSigners(signers);
 
   const mathLib = await hre.viem.deployContract("MathHelper");
+  const psm = await hre.viem.deployContract("PsmLibrary", [], {
+    libraries: {
+      MathHelper: mathLib.address,
+    },
+  });
+
   const vault = await hre.viem.deployContract("VaultLibrary", [], {
     libraries: {
       MathHelper: mathLib.address,
+      PsmLibrary: psm.address,
     },
   });
 
@@ -207,8 +214,8 @@ export async function deployModuleCore(
       wallet: defaultSigner,
     },
     libraries: {
-      MathHelper: mathLib.address,
       VaultLibrary: vault.address,
+      PsmLibrary: psm.address,
     },
   });
 
@@ -224,8 +231,8 @@ export async function deployModuleCore(
   await dsFlashSwapRouter.contract.write.initialize([
     dsFlashSwapRouter.contract.address,
     contract.address,
-    univ2Router,
   ]);
+  // await dsFlashSwapRouter.contract.write.transferOwnership([contract.address]);
 
   return {
     contract,
@@ -470,7 +477,8 @@ export async function onlymoduleCoreWithFactory(basePsmRedemptionFee: bigint) {
       basePsmRedemptionFee
     );
   const moduleCore = contract;
-  await factory.contract.write.initialize([moduleCore.address]);
+  await factory.contract.write.initialize();
+  await factory.contract.write.transferOwnership([moduleCore.address]);
 
   return {
     factory,

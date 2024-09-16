@@ -36,25 +36,25 @@ library PsmLibrary {
     /// @notice thrown when trying to rollover while no active issuance
     error NoActiveIssuance();
 
-    function isInitialized(State storage self) internal view returns (bool status) {
+    function isInitialized(State storage self) external view returns (bool status) {
         status = self.info.isInitialized();
     }
 
-    function initialize(State storage self, Pair memory key) internal {
+    function initialize(State storage self, Pair memory key) external {
         self.info = key;
         self.psm.balances.ra = RedemptionAssetManagerLibrary.initialize(key.redemptionAsset());
     }
 
-    function updateAutoSell(State storage self, address user, bool status) internal {
+    function updateAutoSell(State storage self, address user, bool status) external {
         self.psm.autoSell[user] = status;
     }
 
-    function acceptRolloverProfit(State storage self, uint256 amount) internal {
+    function acceptRolloverProfit(State storage self, uint256 amount) external {
         self.psm.poolArchive[self.globalAssetIdx].rolloverProfit += amount;
     }
 
     function tranferRolloverClaims(State storage self, address from, address to, uint256 amount, uint256 dsId)
-        internal
+        external
     {
         if (self.psm.poolArchive[dsId].rolloverClaims[from] < amount) {
             revert InsufficientRolloverBalance(from, amount, self.psm.poolArchive[dsId].rolloverClaims[from]);
@@ -72,7 +72,7 @@ library PsmLibrary {
         IDsFlashSwapCore flashSwapRouter,
         bytes memory rawCtPermitSig,
         uint256 ctDeadline
-    ) internal returns (uint256 ctReceived, uint256 dsReceived, uint256 _exchangeRate, uint256 paReceived) {
+    ) external returns (uint256 ctReceived, uint256 dsReceived, uint256 _exchangeRate, uint256 paReceived) {
         if (rawCtPermitSig.length > 0 && ctDeadline != 0) {
             DepegSwapLibrary.permit(self.ds[dsId].ct, rawCtPermitSig, owner, address(this), amount, ctDeadline);
         }
@@ -86,7 +86,7 @@ library PsmLibrary {
         address owner,
         uint256 dsId,
         uint256 amount
-    ) internal returns (uint256 profit, uint256 remainingDsReceived) {
+    ) external returns (uint256 profit, uint256 remainingDsReceived) {
         (profit, remainingDsReceived) =
             _claimRolloverProfit(self, self.psm.poolArchive[dsId], flashSwapRouter, owner, amount, dsId);
     }
@@ -293,7 +293,7 @@ library PsmLibrary {
     /// @notice deposit RA to the PSM
     /// @dev the user must approve the PSM to spend their RA
     function deposit(State storage self, address depositor, uint256 amount)
-        internal
+        external
         returns (uint256 dsId, uint256 received, uint256 _exchangeRate)
     {
         if (amount == 0) {
@@ -358,7 +358,7 @@ library PsmLibrary {
     /// @dev since we mint 1:1, we return the same amount,
     /// since rate only effective when redeeming with CT
     function previewDeposit(State storage self, uint256 amount)
-        internal
+        external
         view
         returns (uint256 ctReceived, uint256 dsReceived, uint256 dsId)
     {
@@ -377,7 +377,7 @@ library PsmLibrary {
     }
 
     function previewRedeemRaWithCtDs(State storage self, uint256 amount)
-        internal
+        external
         view
         returns (uint256 ra, uint256 dsId, uint256 rates)
     {
@@ -411,7 +411,7 @@ library PsmLibrary {
         uint256 dsDeadline,
         bytes memory rawCtPermitSig,
         uint256 ctDeadline
-    ) internal returns (uint256 ra, uint256 dsId, uint256 rates) {
+    ) external returns (uint256 ra, uint256 dsId, uint256 rates) {
         dsId = self.globalAssetIdx;
         DepegSwap storage ds = self.ds[dsId];
         Guard.safeBeforeExpired(ds);
@@ -423,7 +423,7 @@ library PsmLibrary {
         (ra, rates) = _redeemRaWithCtDs(self, ds, owner, amount);
     }
 
-    function availableForRepurchase(State storage self) internal view returns (uint256 pa, uint256 ds, uint256 dsId) {
+    function availableForRepurchase(State storage self) external view returns (uint256 pa, uint256 ds, uint256 dsId) {
         dsId = self.globalAssetIdx;
         DepegSwap storage _ds = self.ds[dsId];
         Guard.safeBeforeExpired(_ds);
@@ -432,7 +432,7 @@ library PsmLibrary {
         ds = self.psm.balances.dsBalance;
     }
 
-    function repurchaseRates(State storage self) internal view returns (uint256 rates) {
+    function repurchaseRates(State storage self) external view returns (uint256 rates) {
         uint256 dsId = self.globalAssetIdx;
         DepegSwap storage ds = self.ds[dsId];
         Guard.safeBeforeExpired(ds);
@@ -440,11 +440,11 @@ library PsmLibrary {
         rates = ds.exchangeRate();
     }
 
-    function repurchaseFeePrecentage(State storage self) internal view returns (uint256 rates) {
+    function repurchaseFeePrecentage(State storage self) external view returns (uint256 rates) {
         rates = self.psm.repurchaseFeePrecentage;
     }
 
-    function updateRepurchaseFeePercentage(State storage self, uint256 newFees) internal {
+    function updateRepurchaseFeePercentage(State storage self, uint256 newFees) external {
         if (newFees > 5 ether) {
             revert ICommon.InvalidFees();
         }
@@ -457,7 +457,7 @@ library PsmLibrary {
         bool isPSMWithdrawalPaused,
         bool isLVDepositPaused,
         bool isLVWithdrawalPaused
-    ) internal {
+    ) external{
         self.psm.isDepositPaused = isPSMDepositPaused;
         self.psm.isWithdrawalPaused = isPSMWithdrawalPaused;
         self.vault.config.isDepositPaused = isLVDepositPaused;
@@ -465,7 +465,7 @@ library PsmLibrary {
     }
 
     function previewRepurchase(State storage self, uint256 amount)
-        internal
+        public
         view
         returns (
             uint256 dsId,
@@ -506,7 +506,7 @@ library PsmLibrary {
         uint256 amount,
         IDsFlashSwapCore flashSwapRouter,
         IUniswapV2Router02 ammRouter
-    ) internal returns (uint256 dsId, uint256 received, uint256 feePrecentage, uint256 fee, uint256 exchangeRates) {
+    ) external returns (uint256 dsId, uint256 received, uint256 feePrecentage, uint256 fee, uint256 exchangeRates) {
         DepegSwap storage ds;
 
         (dsId, received, feePrecentage, fee, exchangeRates, ds) = previewRepurchase(self, amount);
@@ -528,7 +528,7 @@ library PsmLibrary {
         IERC20(ds._address).transfer(buyer, received);
 
         // Provide liquidity
-        VaultLibrary.provideLiquidityWithFee(self, fee, flashSwapRouter, ammRouter);
+        VaultLibrary.__provideLiquidityWithRatio(self, fee, flashSwapRouter, ds.ct,ammRouter);
     }
 
     function _redeemDs(Balances storage self, uint256 amount) internal {
@@ -556,11 +556,11 @@ library PsmLibrary {
         self.psm.balances.ra.unlockTo(owner, received);
     }
 
-    function valueLocked(State storage self) internal view returns (uint256) {
+    function valueLocked(State storage self) external view returns (uint256) {
         return self.psm.balances.ra.locked;
     }
 
-    function exchangeRate(State storage self) internal view returns (uint256 rates) {
+    function exchangeRate(State storage self) external view returns (uint256 rates) {
         uint256 dsId = self.globalAssetIdx;
         DepegSwap storage ds = self.ds[dsId];
         rates = ds.exchangeRate();
@@ -579,7 +579,7 @@ library PsmLibrary {
         bytes memory rawDsPermitSig,
         uint256 deadline,
         uint256 feePrecentage
-    ) internal returns (uint256 received, uint256 _exchangeRate, uint256 fee) {
+    ) external returns (uint256 received, uint256 _exchangeRate, uint256 fee) {
         DepegSwap storage ds = self.ds[dsId];
         Guard.safeBeforeExpired(ds);
         if (deadline != 0) {
@@ -592,7 +592,7 @@ library PsmLibrary {
     /// @notice simulate a ds redeem.
     /// @return assets how much RA the user would receive
     function previewRedeemWithDs(State storage self, uint256 dsId, uint256 amount)
-        internal
+        external
         view
         returns (uint256 assets)
     {
@@ -605,7 +605,7 @@ library PsmLibrary {
     }
 
     /// @notice return the next depeg swap expiry
-    function nextExpiry(State storage self) internal view returns (uint256 expiry) {
+    function nextExpiry(State storage self) external view returns (uint256 expiry) {
         uint256 idx = self.globalAssetIdx;
 
         DepegSwap storage ds = self.ds[idx];
@@ -662,7 +662,7 @@ library PsmLibrary {
         uint256 dsId,
         bytes memory rawCtPermitSig,
         uint256 deadline
-    ) internal returns (uint256 accruedPa, uint256 accruedRa) {
+    ) external returns (uint256 accruedPa, uint256 accruedRa) {
         DepegSwap storage ds = self.ds[dsId];
         Guard.safeAfterExpired(ds);
         if (deadline != 0) {
@@ -684,7 +684,7 @@ library PsmLibrary {
     /// @return accruedPa the amount of PA the user would receive
     /// @return accruedRa the amount of RA the user would receive
     function previewRedeemWithCt(State storage self, uint256 dsId, uint256 amount)
-        internal
+        external
         view
         returns (uint256 accruedPa, uint256 accruedRa)
     {
