@@ -127,7 +127,7 @@ contract DeployScript is Script {
         console.log("ModuleCore Router Implementation : ", address(moduleCoreImplementation));
 
         // Deploy the ModuleCore Proxy contract
-        data = abi.encodeWithSelector(moduleCoreImplementation.initialize.selector);
+        data = abi.encodeWithSelector(moduleCoreImplementation.initialize.selector, address(assetFactory), address(factory), address(flashswapRouter), address(univ2Router), address(config), 0.2 ether); // 0.2 base redemptionfee
         ERC1967Proxy moduleCoreProxy = new ERC1967Proxy(address(moduleCoreImplementation), data);
         moduleCore = ModuleCore(address(moduleCoreProxy));
 
@@ -145,10 +145,10 @@ contract DeployScript is Script {
         console.log("Modulecore configured in Config contract");
         console.log("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-");
 
-        issueDSAndAddLiquidity(mlETH, ceth, 300_000 ether, 0.2 ether, 0.2 ether, 1 ether); // EarlyRedemptionFee = 0.2%,  DSPrice=0.2%(or 20%)  repurchaseFee = 1%
-        issueDSAndAddLiquidity(lbETH, ceth, 300_000 ether, 0.2 ether, 0.3 ether, 0.5 ether); // EarlyRedemptionFee = 0.2%,  DSPrice=0.3%(or 30%)  repurchaseFee = 0.5%
-        issueDSAndAddLiquidity(bsETH, ceth, 300_000 ether, 0.2 ether, 0.7 ether, 0); // EarlyRedemptionFee = 0.2%,  DSPrice=0.7%(or 70%)  repurchaseFee = 0%
-        issueDSAndAddLiquidity(wamuETH, ceth, 500_000 ether, 0.2 ether, 0.3 ether, 0.25 ether); // EarlyRedemptionFee = 0.2%,  DSPrice=0.3%(or 30%)  repurchaseFee = 0.25%
+        issueDSAndAddLiquidity(mlETH, ceth, 300_000 ether, 0.4 ether, 0.2 ether, 1 ether); // EarlyRedemptionFee = 0.4%,  DSPrice=0.2%(or 20%)  repurchaseFee = 1%
+        issueDSAndAddLiquidity(lbETH, ceth, 300_000 ether, 0.4 ether, 0.3 ether, 0.5 ether); // EarlyRedemptionFee = 0.4%,  DSPrice=0.3%(or 30%)  repurchaseFee = 0.5%
+        issueDSAndAddLiquidity(bsETH, ceth, 300_000 ether, 0.4 ether, 0.7 ether, 0); // EarlyRedemptionFee = 0.4%,  DSPrice=0.7%(or 70%)  repurchaseFee = 0%
+        issueDSAndAddLiquidity(wamuETH, ceth, 500_000 ether, 0.4 ether, 0.3 ether, 0.25 ether); // EarlyRedemptionFee = 0.4%,  DSPrice=0.3%(or 30%)  repurchaseFee = 0.25%
 
         // moduleCore.redeemEarlyLv(id, msg.sender, 10 ether);
         // uint256 result = flashswapRouter.previewSwapRaforDs(id, 1, 100 ether);
