@@ -1,4 +1,4 @@
-pragma solidity 0.8.24;
+pragma solidity ^0.8.24;
 
 
 import {IUniswapV2Pair} from "../interfaces/uniswap-v2/pair.sol";

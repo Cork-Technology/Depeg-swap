@@ -1,4 +1,4 @@
-pragma solidity 0.8.24;
+pragma solidity ^0.8.24;
 
 import {PsmLibrary} from "../libraries/PsmLib.sol";
 import {VaultLibrary} from "../libraries/VaultLib.sol";
