@@ -2,7 +2,7 @@ pragma solidity 0.8.24;
 
 import {State, VaultState, VaultConfig, VaultWithdrawalPool, VaultAmmLiquidityPool} from "./State.sol";
 import {VaultConfigLibrary} from "./VaultConfig.sol";
-import {Pair, PairLibrary} from "./Pair.sol";
+import {Pair, PairLibrary, Id} from "./Pair.sol";
 import {LvAsset, LvAssetLibrary} from "./LvAssetLib.sol";
 import {PsmLibrary} from "./PsmLib.sol";
 import {PsmRedemptionAssetManager, RedemptionAssetManagerLibrary} from "./RedemptionAssetManagerLib.sol";
@@ -81,14 +81,14 @@ library VaultLibrary {
         self.vault.config.lpBalance += lp;
     }
 
-    function _addFlashSwapReserve(
+    function _addFlashSwapReserveLv(
         State storage self,
         IDsFlashSwapCore flashSwapRouter,
         DepegSwap storage ds,
         uint256 amount
     ) internal {
         Asset(ds._address).approve(address(flashSwapRouter), amount);
-        flashSwapRouter.addReserve(self.info.toId(), self.globalAssetIdx, amount);
+        flashSwapRouter.addReserveLv(self.info.toId(), self.globalAssetIdx, amount);
     }
 
     // MUST be called on every new DS issuance
@@ -144,13 +144,50 @@ library VaultLibrary {
         view
         returns (uint256 ratio)
     {
-        // This basically means that if the reserve is empty, then we use the default ratio supplied at deployment
-        ratio = self.ds[dsId].exchangeRate() - self.vault.initialDsPrice;
+        Id id = self.info.toId();
+        uint256 exchangeRate = self.ds[dsId].exchangeRate();
+        uint256 hpa = flashSwapRouter.getCurrentEffectiveHPA(id);
+        bool isRollover = flashSwapRouter.isRolloverSale(id, dsId);
 
-        // will always fail for the first deposit
-        try flashSwapRouter.getCurrentPriceRatio(self.info.toId(), dsId) returns (uint256, uint256 _ctRatio) {
-            ratio = _ctRatio;
-        } catch {}
+        uint256 marketRatio;
+
+        try flashSwapRouter.getCurrentPriceRatio(id, dsId) returns (uint256, uint256 _marketRatio) {
+            marketRatio = _marketRatio;
+        } catch {
+            marketRatio = 0;
+        }
+
+        ratio = _determineRatio(hpa, marketRatio, self.vault.initialDsPrice, exchangeRate, isRollover, dsId);
+    }
+
+    function _determineRatio(
+        uint256 hpa,
+        uint256 marketRatio,
+        uint256 initialDsPrice,
+        uint256 exchangeRate,
+        bool isRollover,
+        uint256 dsId
+    ) internal view returns (uint256 ratio) {
+        // fallback to initial ds price ratio if hpa is 0, and market ratio is 0
+        // usually happens when there's no trade on the router AND is not the first issuance
+        // OR it's the first issuance
+        if (hpa == 0 && marketRatio == 0) {
+            ratio = exchangeRate - initialDsPrice;
+            return ratio;
+        }
+
+        // this will return the hpa as ratio when it's basically not the first issuance, and there's actually an hpa to rely on
+        // we must specifically check for market ratio since, we want to trigger this only when there's no market ratio(i.e freshly after a rollover)
+        if (dsId != 1 && isRollover && hpa != 0 && marketRatio == 0) {
+            ratio = exchangeRate - hpa;
+            return ratio;
+        }
+
+        // this will be the default ratio to use
+        if (marketRatio != 0) {
+            ratio = marketRatio;
+            return ratio;
+        }
     }
 
     function __provideLiquidity(
@@ -171,7 +208,7 @@ library VaultLibrary {
 
         __addLiquidityToAmmUnchecked(self, raAmount, ctAmount, self.info.redemptionAsset(), ctAddress, ammRouter);
 
-        _addFlashSwapReserve(self, flashSwapRouter, self.ds[dsId], ctAmount);
+        _addFlashSwapReserveLv(self, flashSwapRouter, self.ds[dsId], ctAmount);
     }
 
     function __provideAmmLiquidityFromPool(
@@ -329,7 +366,7 @@ library VaultLibrary {
 
         uint256 redeemAmount = reservedDs >= ammCtBalance ? ammCtBalance : reservedDs;
 
-        flashSwapRouter.emptyReservePartial(self.info.toId(), dsId, redeemAmount);
+        flashSwapRouter.emptyReservePartialLv(self.info.toId(), dsId, redeemAmount);
 
         ra += redeemAmount;
         PsmLibrary.lvRedeemRaWithCtDs(self, redeemAmount, dsId);
@@ -374,7 +411,7 @@ library VaultLibrary {
             self, self.info.pair1, self.ds[dsId].ct, ammRouter, IUniswapV2Pair(ds.ammPair), self.vault.config.lpBalance
         );
 
-        uint256 reservedDs = flashSwapRouter.emptyReserve(self.info.toId(), dsId);
+        uint256 reservedDs = flashSwapRouter.emptyReserveLv(self.info.toId(), dsId);
 
         uint256 redeemAmount = reservedDs >= ctAmm ? ctAmm : reservedDs;
         redeemAmount = PsmLibrary.lvRedeemRaWithCtDs(self, redeemAmount, dsId);

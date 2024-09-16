@@ -18,17 +18,17 @@ abstract contract ModuleState is ICommon {
     using PsmLibrary for State;
 
     mapping(Id => State) internal states;
-    address internal immutable SWAP_ASSET_FACTORY;
+    address internal SWAP_ASSET_FACTORY;
 
     /// @dev in this case is uni v2
-    address internal immutable AMM_FACTORY;
+    address internal AMM_FACTORY;
 
-    address internal immutable DS_FLASHSWAP_ROUTER;
+    address internal DS_FLASHSWAP_ROUTER;
 
     /// @dev in this case is uni v2
-    address internal immutable AMM_ROUTER;
+    address internal AMM_ROUTER;
 
-    address internal immutable CONFIG;
+    address internal CONFIG;
 
     uint256 internal psmBaseRedemptionFeePrecentage;
 
@@ -46,14 +46,14 @@ abstract contract ModuleState is ICommon {
         return SWAP_ASSET_FACTORY;
     }
 
-    constructor(
+    function initializeModuleState(
         address _swapAssetFactory,
         address _ammFactory,
         address _dsFlashSwapRouter,
         address _ammRouter,
         address _config,
         uint256 _psmBaseRedemptionFeePrecentage
-    ) {
+    ) internal {
         if (psmBaseRedemptionFeePrecentage > 5 ether) {
             revert InvalidFees();
         }

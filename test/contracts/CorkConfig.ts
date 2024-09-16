@@ -159,7 +159,14 @@ describe("CorkConfig", function () {
     it("issueNewDs should work correctly", async function () {
       await expect(
         await corkConfig.write.issueNewDs(
-          [Id, BigInt(expiryTime), parseEther("1"), parseEther("5")],
+          [
+            Id,
+            BigInt(expiryTime),
+            parseEther("1"),
+            parseEther("5"),
+            parseEther("1"),
+            10n,
+          ],
           {
             account: defaultSigner.account,
           }
@@ -174,7 +181,14 @@ describe("CorkConfig", function () {
 
       await expect(
         corkConfig.write.issueNewDs(
-          [Id, BigInt(expiryTime), parseEther("1"), parseEther("10")],
+          [
+            Id,
+            BigInt(expiryTime),
+            parseEther("1"),
+            parseEther("10"),
+            parseEther("1"),
+            10n,
+          ],
           {
             account: secondSigner.account,
           }
@@ -189,6 +203,8 @@ describe("CorkConfig", function () {
           BigInt(expiryTime),
           parseEther("1"),
           parseEther("5.00000001"),
+          parseEther("1"),
+          10n,
         ])
       ).to.be.rejectedWith("InvalidFees()");
     });
@@ -196,7 +212,14 @@ describe("CorkConfig", function () {
     it("Revert when non MANAGER call issueNewDs", async function () {
       await expect(
         corkConfig.write.issueNewDs(
-          [Id, BigInt(expiryTime), parseEther("1"), parseEther("10")],
+          [
+            Id,
+            BigInt(expiryTime),
+            parseEther("1"),
+            parseEther("10"),
+            parseEther("1"),
+            10n,
+          ],
           {
             account: secondSigner.account,
           }

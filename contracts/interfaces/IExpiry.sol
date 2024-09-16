@@ -14,4 +14,7 @@ interface IExpiry {
 
     ///@notice returns the expiry timestamp if 0 then it means it never expires
     function expiry() external view returns (uint256);
+
+    ///@notice returns the timestamp when the asset was issued
+    function issuedAt() external view returns (uint256);
 }

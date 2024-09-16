@@ -306,4 +306,62 @@ abstract contract PsmCore is IPSMcore, ModuleState, Context {
     function baseRedemptionFee() external view override returns (uint256) {
         return psmBaseRedemptionFeePrecentage;
     }
+
+    function psmAcceptFlashSwapProfit(Id id, uint256 profit) external onlyFlashSwapRouter {
+        State storage state = states[id];
+        state.acceptRolloverProfit(profit);
+    }
+
+    function rolloverCt(
+        Id id,
+        address owner,
+        uint256 amount,
+        uint256 dsId,
+        bytes memory rawCtPermitSig,
+        uint256 ctDeadline
+    )
+        external
+        PSMDepositNotPaused(id)
+        returns (uint256 ctReceived, uint256 dsReceived, uint256 _exchangeRate, uint256 paReceived)
+    {
+        State storage state = states[id];
+        (ctReceived, dsReceived, _exchangeRate, paReceived) =
+            state.rolloverCt(owner, amount, dsId, getRouterCore(), rawCtPermitSig, ctDeadline);
+        emit RolledOver(
+            id, state.globalAssetIdx, _msgSender(), dsId, amount, dsReceived, ctReceived, paReceived, _exchangeRate
+        );
+    }
+
+    function rolloverCt(Id id, address owner, uint256 amount, uint256 dsId)
+        external
+        PSMDepositNotPaused(id)
+        returns (uint256 ctReceived, uint256 dsReceived, uint256 _exchangeRate, uint256 paReceived)
+    {
+        State storage state = states[id];
+        bytes memory signaturePlaceHolder;
+        (ctReceived, dsReceived, _exchangeRate, paReceived) =
+            state.rolloverCt(owner, amount, dsId, getRouterCore(), signaturePlaceHolder, 0);
+        emit RolledOver(
+            id, state.globalAssetIdx, _msgSender(), dsId, amount, dsReceived, ctReceived, paReceived, _exchangeRate
+        );
+    }
+
+    function claimRolloverProfit(Id id, uint256 dsId, uint256 amount)
+        external
+        returns (uint256 profit, uint256 dsReceived)
+    {
+        State storage state = states[id];
+        (profit, dsReceived) = state.claimRolloverProfit(getRouterCore(), _msgSender(), dsId, amount);
+        emit RolloverProfitClaimed(id, dsId, _msgSender(), amount, profit, dsReceived);
+    }
+
+    function rolloverProfitRemaining(Id id, uint256 dsId) external view returns (uint256) {
+        State storage state = states[id];
+        return state.psm.poolArchive[dsId].rolloverClaims[msg.sender];
+    }
+
+    function updatePsmAutoSellStatus(Id id, address user, bool status) external {
+        State storage state = states[id];
+        state.updateAutoSell(user, status);
+    }
 }

@@ -29,9 +29,10 @@ struct PsmState {
     BitMaps.BitMap liquiditySeparated;
     /// @dev dsId => PsmPoolArchive
     mapping(uint256 => PsmPoolArchive) poolArchive;
+    mapping(address => bool) autoSell;
     bool isDepositPaused;
     bool isWithdrawalPaused;
-}
+ }
 
 /**
  * @dev PsmPoolArchive structure for PSM Pools
@@ -40,6 +41,10 @@ struct PsmPoolArchive {
     uint256 raAccrued;
     uint256 paAccrued;
     uint256 ctAttributed;
+    uint256 attributedToRolloverProfit;
+    /// @dev user => amount
+    mapping(address => uint256) rolloverClaims;
+    uint256 rolloverProfit;
 }
 
 /**
