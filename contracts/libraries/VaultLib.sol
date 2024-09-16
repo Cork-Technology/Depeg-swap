@@ -164,7 +164,7 @@ library VaultLibrary {
         uint256 exchangeRate,
         bool isRollover,
         uint256 dsId
-    ) internal view returns (uint256 ratio) {
+    ) internal pure returns (uint256 ratio) {
         // fallback to initial ds price ratio if hpa is 0, and market ratio is 0
         // usually happens when there's no trade on the router AND is not the first issuance
         // OR it's the first issuance
