@@ -1,11 +1,11 @@
 import hre from "hardhat";
 import dotenv from "dotenv";
 
-import * as core from "../ignition/modules/core";
-import * as lib from "../ignition/modules/lib";
-import * as uniV2 from "../ignition/modules/uniV2";
-import UNIV2FACTORY from "../test/helper/ext-abi/uni-v2-factory.json";
-import UNIV2ROUTER from "../test/helper/ext-abi/uni-v2-router.json";
+import * as core from "../../ignition/modules/core";
+import * as lib from "../../ignition/modules/lib";
+import * as uniV2 from "../../ignition/modules/uniV2";
+import UNIV2FACTORY from "../../test/helper/ext-abi/hardhat/uni-v2-factory.json";
+import UNIV2ROUTER from "../../test/helper/ext-abi/hardhat/uni-v2-router.json";
 
 import { Address, isAddress } from "viem";
 
@@ -112,11 +112,11 @@ async function main() {
     },
   });
 
-  await assetFactory.write.initialize([ModuleCore.address]);
-  await FlashSwapRouter.write.initialize([
-    ModuleCore.address,
-    UniV2Factory.address as Address,
-  ]);
+  await assetFactory.write.initialize();
+  await FlashSwapRouter.write.initialize();
+
+  await assetFactory.write.transferOwnership([ModuleCore.address]);
+  await FlashSwapRouter.write.transferOwnership([ModuleCore.address]);
 
   console.log("ModuleCore deployed to       :", ModuleCore.address);
 }

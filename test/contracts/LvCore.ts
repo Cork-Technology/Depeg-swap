@@ -514,8 +514,20 @@ describe("LvCore", function () {
         signer: defaultSigner,
       });
 
+      const [preview, ,] = await moduleCore.read.previewRedeemEarlyLv([
+        Id,
+        redeemAmount,
+      ]);
+
       await moduleCore.write.redeemEarlyLv(
-        [Id, defaultSigner.account.address, redeemAmount, msgPermit, deadline],
+        [
+          Id,
+          defaultSigner.account.address,
+          redeemAmount,
+          msgPermit,
+          deadline,
+          preview,
+        ],
         {
           account: defaultSigner.account,
         }
@@ -562,10 +574,16 @@ describe("LvCore", function () {
 
       await moduleCore.write.depositLv([Id, depositAmount]);
       await fixture.lv.write.approve([moduleCore.address, depositAmount]);
+
+      const [preview, ,] = await moduleCore.read.previewRedeemEarlyLv([
+        Id,
+        redeemAmount,
+      ]);
       await moduleCore.write.redeemEarlyLv([
         Id,
         defaultSigner.account.address,
         redeemAmount,
+        preview,
       ]);
       const event = await moduleCore.getEvents
         .LvRedeemEarly({
@@ -596,7 +614,6 @@ describe("LvCore", function () {
     });
 
     it("Revert redeemEarlyLv when withdrawals paused", async function () {
-      await pauseAllPools();
       const msgPermit = await helper.permit({
         amount: depositAmount,
         deadline,
@@ -604,6 +621,11 @@ describe("LvCore", function () {
         psmAddress: moduleCore.address,
         signer: secondSigner,
       });
+
+      // don't actually matter right now
+      const preview = 0n;
+
+      await pauseAllPools();
       await expect(
         moduleCore.write.redeemEarlyLv([
           Id,
@@ -611,6 +633,7 @@ describe("LvCore", function () {
           redeemAmount,
           msgPermit,
           deadline,
+          preview,
         ])
       ).to.be.rejectedWith("LVWithdrawalPaused()");
       await expect(
@@ -618,9 +641,30 @@ describe("LvCore", function () {
           Id,
           defaultSigner.account.address,
           redeemAmount,
+          preview,
         ])
       ).to.be.rejectedWith("LVWithdrawalPaused()");
     });
+  });
+
+  it("revert redeem early when slippage to high ", async function () {
+    const { Id } = await issueNewSwapAssets(expiry);
+
+    await moduleCore.write.depositLv([Id, depositAmount]);
+    await fixture.lv.write.approve([moduleCore.address, depositAmount]);
+    const [preview, ,] = await moduleCore.read.previewRedeemEarlyLv([
+      Id,
+      redeemAmount,
+    ]);
+
+    await expect(
+      moduleCore.write.redeemEarlyLv([
+        Id,
+        defaultSigner.account.address,
+        redeemAmount,
+        preview + 1n,
+      ])
+    ).to.be.rejected;
   });
 
   // @yusak found this bug, cannot withdraw early if there's only 1 WA left in the pool
@@ -629,10 +673,16 @@ describe("LvCore", function () {
 
     await moduleCore.write.depositLv([Id, depositAmount]);
     await fixture.lv.write.approve([moduleCore.address, depositAmount]);
+    const [preview, ,] = await moduleCore.read.previewRedeemEarlyLv([
+      Id,
+      redeemAmount,
+    ]);
+
     await moduleCore.write.redeemEarlyLv([
       Id,
       defaultSigner.account.address,
       redeemAmount,
+      preview,
     ]);
 
     const event = await moduleCore.getEvents

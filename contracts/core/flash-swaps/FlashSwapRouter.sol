@@ -8,7 +8,6 @@ import {IDsFlashSwapCore, IDsFlashSwapUtility} from "../../interfaces/IDsFlashSw
 import {AccessControlUpgradeable} from "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
 import {UUPSUpgradeable} from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import {IUniswapV2Callee} from "../../interfaces/uniswap-v2/callee.sol";
-import {IUniswapV2Router02} from "../../interfaces/uniswap-v2/RouterV2.sol";
 import {IUniswapV2Pair} from "../../interfaces/uniswap-v2/pair.sol";
 import {MinimalUniswapV2Library} from "../../libraries/uni-v2/UniswapV2Library.sol";
 import {IPSMcore} from "../../interfaces/IPSMcore.sol";
@@ -36,7 +35,6 @@ contract RouterState is
     bytes32 public constant MODULE_CORE = keccak256("MODULE_CORE");
     bytes32 public constant CONFIG = keccak256("CONFIG");
 
-    IUniswapV2Router02 internal univ2Router;
     address public _moduleCore;
 
     modifier onlyModuleCore() {
@@ -65,14 +63,13 @@ contract RouterState is
         hpa = reserves[id].getEffectiveHPA();
     }
 
-    function initialize(address config, address moduleCore, address _univ2Router) external initializer {
+    function initialize(address config, address moduleCore) external initializer {
         __AccessControl_init();
         __UUPSUpgradeable_init();
 
         _grantRole(MODULE_CORE, moduleCore);
         _grantRole(CONFIG, config);
 
-        univ2Router = IUniswapV2Router02(_univ2Router);
         _moduleCore = moduleCore;
     }
 

@@ -18,12 +18,12 @@ import {DepegSwap, DepegSwapLibrary} from "./DepegSwapLib.sol";
 import {Asset, ERC20, ERC20Burnable} from "../core/assets/Asset.sol";
 import {ICommon} from "../interfaces/ICommon.sol";
 import {SafeERC20, IERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-
 /**
  * @title Vault Library Contract
  * @author Cork Team
  * @notice Vault Library implements features for  LVCore(liquidity Vault Core)
  */
+
 library VaultLibrary {
     using VaultConfigLibrary for VaultConfig;
     using PairLibrary for Pair;
@@ -41,6 +41,9 @@ library VaultLibrary {
 
     /// @notice inssuficient balance to perform expiry redeem(e.g requesting 5 LV to redeem but trying to redeem 10)
     error InsufficientBalance(address caller, uint256 requested, uint256 balance);
+
+    /// @notice insufficient output amount, e.g trying to redeem 100 LV whcih you expect 100 RA but only received 50 RA
+    error InsufficientOutputAmount(uint256 amountOutMin, uint256 received);
 
     function initialize(VaultState storage self, address lv, uint256 fee, address ra, uint256 initialDsPrice)
         external
@@ -164,7 +167,7 @@ library VaultLibrary {
         uint256 exchangeRate,
         bool isRollover,
         uint256 dsId
-    ) internal view returns (uint256 ratio) {
+    ) internal pure returns (uint256 ratio) {
         // fallback to initial ds price ratio if hpa is 0, and market ratio is 0
         // usually happens when there's no trade on the router AND is not the first issuance
         // OR it's the first issuance
@@ -464,7 +467,13 @@ library VaultLibrary {
         view
         returns (uint256 totalRa, uint256 ammCtBalance)
     {
-        (uint256 raReserve, uint256 ctReserve,) = flashSwapRouter.getUniV2pair(self.info.toId(), dsId).getReserves();
+        IUniswapV2Pair ammPair = flashSwapRouter.getUniV2pair(self.info.toId(), dsId);
+
+        (uint256 raReserve, uint256 ctReserve,) = ammPair.getReserves();
+
+        (raReserve, ctReserve) = MinimalUniswapV2Library.reverseSortWithAmount224(
+            ammPair.token0(), ammPair.token1(), self.info.pair1, self.ds[dsId].ct, raReserve, ctReserve
+        );
 
         (,,,, totalRa, ammCtBalance) = __calculateTotalRaAndCtBalanceWithReserve(
             self, raReserve, ctReserve, flashSwapRouter.getLvReserve(self.info.toId(), dsId)
@@ -478,6 +487,15 @@ library VaultLibrary {
         returns (uint256 raPerLv, uint256 ctPerLv, uint256 raPerLp, uint256 ctPerLp)
     {
         (uint256 raReserve, uint256 ctReserve,) = flashSwapRouter.getUniV2pair(self.info.toId(), dsId).getReserves();
+
+        (raReserve, ctReserve) = MinimalUniswapV2Library.reverseSortWithAmount224(
+            flashSwapRouter.getUniV2pair(self.info.toId(), dsId).token0(),
+            flashSwapRouter.getUniV2pair(self.info.toId(), dsId).token1(),
+            self.info.pair1,
+            self.ds[dsId].ct,
+            raReserve,
+            ctReserve
+        );
 
         (,, raPerLv, ctPerLv, raPerLp, ctPerLp) = __calculateTotalRaAndCtBalanceWithReserve(
             self, raReserve, ctReserve, flashSwapRouter.getLvReserve(self.info.toId(), dsId)
@@ -512,24 +530,45 @@ library VaultLibrary {
         IDsFlashSwapCore flashSwapRouter,
         uint256 lvRedeemed
     ) internal view returns (uint256 totalRa, uint256 lpLiquidated) {
-        (uint256 raPerLv, uint256 ctPerLv, uint256 raPerLp, uint256 ctPerLp) =
-            __calculateCtBalanceWithRate(self, flashSwapRouter, dsId);
+        uint256 lvReserve = flashSwapRouter.getLvReserve(self.info.toId(), dsId);
 
-        totalRa = (raPerLv * lvRedeemed) / 1e18;
-        uint256 ammCtBalance = (ctPerLv * lvRedeemed) / 1e18;
+        (uint256 raPerLv,, uint256 raPerLp,) = __calculateCtBalanceWithRate(self, flashSwapRouter, dsId);
 
+        (uint256 raReserve, uint256 ctReserve) = _getRaCtReserveSorted(self, flashSwapRouter, dsId);
+
+        // calculate how much LP we need to liquidate to redeem the LV
         lpLiquidated = MathHelper.convertToLp(raPerLv, raPerLp, lvRedeemed);
 
+        uint256 lpTotalSupply = flashSwapRouter.getUniV2pair(self.info.toId(), dsId).totalSupply();
+        // totalRa we remove
+        totalRa = lpLiquidated * raReserve / lpTotalSupply;
+
+        // total Ct we remove
+        uint256 ammCtBalance = lpLiquidated * ctReserve / lpTotalSupply;
+
         // pair DS and CT to redeem RA
-        totalRa += flashSwapRouter.getLvReserve(self.info.toId(), dsId) > ammCtBalance
-            ? ammCtBalance
-            : flashSwapRouter.getLvReserve(self.info.toId(), dsId);
+        totalRa += lvReserve > ammCtBalance ? ammCtBalance : lvReserve;
 
-        uint256 excessCt = flashSwapRouter.getLvReserve(self.info.toId(), dsId) > ammCtBalance
-            ? 0
-            : ammCtBalance - flashSwapRouter.getLvReserve(self.info.toId(), dsId);
+        uint256 excessCt = lvReserve > ammCtBalance ? 0 : ammCtBalance - lvReserve;
 
-        totalRa += _trySellCtToAmm(self, dsId, flashSwapRouter, excessCt, ctPerLp);
+        totalRa += _trySellCtToAmm(self, dsId, flashSwapRouter, excessCt, lpLiquidated, lpTotalSupply);
+    }
+
+    function _getRaCtReserveSorted(State storage self, IDsFlashSwapCore flashSwapRouter, uint256 dsId)
+        internal
+        view
+        returns (uint256 raReserve, uint256 ctReserve)
+    {
+        (raReserve, ctReserve,) = flashSwapRouter.getUniV2pair(self.info.toId(), dsId).getReserves();
+
+        (raReserve, ctReserve) = MinimalUniswapV2Library.reverseSortWithAmount224(
+            flashSwapRouter.getUniV2pair(self.info.toId(), dsId).token0(),
+            flashSwapRouter.getUniV2pair(self.info.toId(), dsId).token1(),
+            self.info.pair1,
+            self.ds[dsId].ct,
+            raReserve,
+            ctReserve
+        );
     }
 
     function _trySellCtToAmm(
@@ -537,15 +576,18 @@ library VaultLibrary {
         uint256 dsId,
         IDsFlashSwapCore flashSwapRouter,
         uint256 excessCt,
-        uint256 ctPerLp
+        uint256 lpLiquidated,
+        uint256 lpTotalSupply
     ) internal view returns (uint256 ra) {
         if (excessCt == 0) {
             return 0;
         }
 
-        (uint256 raReserve, uint256 ctReserve,) = flashSwapRouter.getUniV2pair(self.info.toId(), dsId).getReserves();
-        uint256 ct = (excessCt * ctPerLp) / 1e18;
-        ra = MinimalUniswapV2Library.getAmountOut(ct, ctReserve, raReserve);
+        (uint256 raReserve, uint256 ctReserve) = _getRaCtReserveSorted(self, flashSwapRouter, dsId);
+        raReserve -= (lpLiquidated * raReserve) / lpTotalSupply;
+        ctReserve -= (lpLiquidated * ctReserve) / lpTotalSupply;
+
+        ra = MinimalUniswapV2Library.getAmountOut(excessCt, ctReserve, raReserve);
     }
 
     function redeemExpired(
@@ -644,7 +686,6 @@ library VaultLibrary {
     ) public {
         __provideLiquidityWithRatio(self, amount, flashSwapRouter, self.ds[self.globalAssetIdx].ct, ammRouter);
     }
-
     // taken directly from spec document, technically below is what should happen in this function
     //
     // '#' refers to the total circulation supply of that token.
@@ -673,6 +714,7 @@ library VaultLibrary {
     //
     // final amount(Fa) :
     // Fa = rA - fee(rA)
+
     function redeemEarly(
         State storage self,
         address owner,
@@ -681,7 +723,8 @@ library VaultLibrary {
         IDsFlashSwapCore flashSwapRouter,
         IUniswapV2Router02 ammRouter,
         bytes memory rawLvPermitSig,
-        uint256 deadline
+        uint256 deadline,
+        uint256 amountOutMin
     ) external returns (uint256 received, uint256 fee, uint256 feePrecentage) {
         safeBeforeExpired(self);
         if (deadline != 0) {
@@ -696,6 +739,10 @@ library VaultLibrary {
 
         provideLiquidityWithFee(self, fee, flashSwapRouter, ammRouter);
         received = received - fee;
+
+        if (received < amountOutMin) {
+            revert InsufficientOutputAmount(amountOutMin, received);
+        }
 
         ERC20Burnable(self.vault.lv._address).burnFrom(owner, amount);
         self.vault.balances.ra.unlockToUnchecked(received, receiver);

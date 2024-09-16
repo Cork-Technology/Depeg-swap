@@ -21,7 +21,7 @@ describe("CorkConfig", function () {
   let moduleCore: Awaited<ReturnType<typeof getModuleCore>>;
   let corkConfig: Awaited<ReturnType<typeof getCorkConfig>>;
   let pa: Awaited<ReturnType<typeof getPA>>;
-  
+
   const initialDsPrice = parseEther("0.1");
 
   let Id: Awaited<ReturnType<typeof moduleCore.read.getId>>;
@@ -309,6 +309,9 @@ describe("CorkConfig", function () {
       );
       await fixture.moduleCore.write.depositPsm([fixture.Id, depositAmount]);
 
+      // don't actually matter in this context
+      const preview = 0n;
+
       expect(
         await corkConfig.write.updatePoolsStatus([Id, true, true, true, true], {
           account: defaultSigner.account,
@@ -360,6 +363,7 @@ describe("CorkConfig", function () {
           fixture.Id,
           defaultSigner.account.address,
           parseEther("1"),
+          preview
         ])
       ).to.be.rejectedWith("LVWithdrawalPaused()");
     });
