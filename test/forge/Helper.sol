@@ -1,4 +1,4 @@
-pragma solidity 0.8.24;
+pragma solidity ^0.8.24;
 
 import {ModuleCore} from "./../../contracts/core/ModuleCore.sol";
 import {AssetFactory} from "./../../contracts/core/assets/AssetFactory.sol";

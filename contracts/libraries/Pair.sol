@@ -1,4 +1,4 @@
-pragma solidity 0.8.24;
+pragma solidity ^0.8.24;
 
 import {PeggedAsset, PeggedAssetLibrary} from "./PeggedAssetLib.sol";
 
