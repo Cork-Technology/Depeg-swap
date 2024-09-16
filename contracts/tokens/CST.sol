@@ -15,9 +15,17 @@ contract CST is ERC20, Ownable {
 
     IERC20 public ceth;
     address public admin;
+    uint256 public withdrawalDelay; // Delay time in seconds
 
-    /* ========== EVENTS ========== */
-    /// @notice error thrown when Address is Zero Address
+    struct WithdrawalRequest {
+        uint256 amount;
+        uint256 requestTime;
+    }
+
+    mapping(address => WithdrawalRequest) public requestedWithdrawals;
+    address[] public pendingUsers;  // List of users with pending withdrawal requests
+    mapping(address => bool) public isUserPending;  // Tracks if user is already in the pendingUsers list
+
     error ZeroAddressNotAllowed();
 
     /// @notice error thrown when passed Amount is zero
@@ -32,7 +40,7 @@ contract CST is ERC20, Ownable {
     /// @notice error thrown when total supply of CST is 0
     error ZeroCSTSupply();
 
-    constructor(string memory name, string memory symbol, address _ceth, address _admin)
+    constructor(string memory name, string memory symbol, address _ceth, address _admin, uint256 _withdrawalDelay)
         ERC20(name, symbol)
         Ownable(_admin)
     {
@@ -41,6 +49,7 @@ contract CST is ERC20, Ownable {
         }
         ceth = IERC20(_ceth);
         admin = _admin;
+        withdrawalDelay = _withdrawalDelay; // Initialize the withdrawal delay time
     }
 
     /**
@@ -56,29 +65,64 @@ contract CST is ERC20, Ownable {
     }
 
     /**
-     * @dev User can withdraw their pro-rata share of CETH by burning CST tokens
-     * @param amount number of Cork ETH to be withdrawn
+     * @dev User requests withdrawal, amount is locked and a withdrawal request is recorded
+     * @param amount number of Cork ETH to be requested for withdrawal
      */
-    function withdraw(uint256 amount) public {
+    function requestWithdrawal(uint256 amount) public {
         if (amount == 0) {
             revert ZeroAmountNotAllowed();
         }
         if (amount > balanceOf(msg.sender)) {
             revert InsufficientCSTBalance();
         }
+
+        // Record the withdrawal request with the amount and timestamp
+        requestedWithdrawals[msg.sender] = WithdrawalRequest(amount, block.timestamp);
+
+        // Add user to pendingUsers list if not already added
+        if (!isUserPending[msg.sender]) {
+            pendingUsers.push(msg.sender);
+            isUserPending[msg.sender] = true;
+        }
+    }
+
+    /**
+     * @dev Processes withdrawals for all users with pending requests whose delay period has passed
+     */
+    function processAllWithdrawals() public {
         uint256 totalCSTSupply = totalSupply();
         if (totalCSTSupply == 0) {
             revert ZeroCSTSupply();
         }
 
-        // Calculate the amount of CETH to withdraw based on the user's CST balance
-        uint256 cethAmount = (amount * ceth.balanceOf(address(this))) / totalCSTSupply;
+        uint256 cethBalance = ceth.balanceOf(address(this));
 
-        // Burn the CST tokens from the sender
-        _burn(msg.sender, amount);
+        // Iterate through all users with pending withdrawals
+        for (uint256 i = 0; i < pendingUsers.length; i++) {
+            address user = pendingUsers[i];
+            WithdrawalRequest memory request = requestedWithdrawals[user];
 
-        // Transfer the corresponding amount of CETH to the sender
-        ceth.safeTransfer(msg.sender, cethAmount);
+            // Check if the withdrawal delay has passed
+            if (request.amount > 0 && block.timestamp >= request.requestTime + withdrawalDelay) {
+                // Calculate the amount of CETH to withdraw based on the user's CST balance
+                uint256 cethAmount = (request.amount * cethBalance) / totalCSTSupply;
+
+                // Burn the CST tokens from the user
+                _burn(user, request.amount);
+
+                // Transfer the corresponding amount of CETH to the user
+                ceth.safeTransfer(user, cethAmount);
+
+                // Clear the withdrawal request after successful withdrawal
+                delete requestedWithdrawals[user];
+
+                // Remove the user from the pendingUsers list
+                pendingUsers[i] = pendingUsers[pendingUsers.length - 1];
+                pendingUsers.pop();
+                isUserPending[user] = false;
+                i--;  // Adjust the index after removal
+            }
+        }
     }
 
     /**

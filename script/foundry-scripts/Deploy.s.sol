@@ -47,6 +47,7 @@ contract DeployScript is Script {
     uint256 mintAmount = 1_000_000_000_000 ether;
     uint256 depositLVAmt = 5000 ether;
     uint256 liquidityAmt = 1_000_000 ether;
+    uint256 withdrawalDelay = 60 minutes;
 
     function setUp() public {}
 
@@ -60,25 +61,25 @@ contract DeployScript is Script {
             console.log("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-");
             console.log("CETH                            : ", address(cETH));
 
-            CST bsETHCST = new CST("Bear Sterns Restaked ETH", "bsETH", ceth, msg.sender);
+            CST bsETHCST = new CST("Bear Sterns Restaked ETH", "bsETH", ceth, msg.sender, withdrawalDelay);
             bsETH = address(bsETHCST);
             cETH.approve(bsETH, depositAmt);
             bsETHCST.deposit(depositAmt);
             console.log("bsETH                           : ", address(bsETH));
 
-            CST lbETHCST = new CST("Lehman Brothers Restaked ETH", "lbETH", ceth, msg.sender);
+            CST lbETHCST = new CST("Lehman Brothers Restaked ETH", "lbETH", ceth, msg.sender, withdrawalDelay);
             lbETH = address(lbETHCST);
             cETH.approve(lbETH, depositAmt);
             lbETHCST.deposit(depositAmt);
             console.log("lbETH                           : ", address(lbETH));
 
-            CST wamuETHCST = new CST("Washington Mutual restaked ETH", "wamuETH", ceth, msg.sender);
+            CST wamuETHCST = new CST("Washington Mutual restaked ETH", "wamuETH", ceth, msg.sender, withdrawalDelay);
             wamuETH = address(wamuETHCST);
             cETH.approve(wamuETH, depositAmt);
             wamuETHCST.deposit(depositAmt);
             console.log("wamuETH                         : ", address(wamuETH));
 
-            CST mlETHCST = new CST("Merrill Lynch staked ETH", "mlETH", ceth, msg.sender);
+            CST mlETHCST = new CST("Merrill Lynch staked ETH", "mlETH", ceth, msg.sender, withdrawalDelay);
             mlETH = address(mlETHCST);
             cETH.approve(mlETH, depositAmt);
             mlETHCST.deposit(depositAmt);
