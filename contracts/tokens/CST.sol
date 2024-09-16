@@ -89,7 +89,7 @@ contract CST is ERC20, Ownable {
     /**
      * @dev Processes withdrawals for all users with pending requests whose delay period has passed
      */
-    function processAllWithdrawals() public {
+    function processWithdrawals(uint usersToProcess) public {
         uint256 totalCSTSupply = totalSupply();
         if (totalCSTSupply == 0) {
             revert ZeroCSTSupply();
@@ -98,7 +98,7 @@ contract CST is ERC20, Ownable {
         uint256 cethBalance = ceth.balanceOf(address(this));
 
         // Iterate through all users with pending withdrawals
-        for (uint256 i = 0; i < pendingUsers.length; i++) {
+        for (uint256 i = 0; i < usersToProcess; i++) {
             address user = pendingUsers[i];
             WithdrawalRequest memory request = requestedWithdrawals[user];
 
@@ -134,5 +134,17 @@ contract CST is ERC20, Ownable {
             revert InsufficientBalance();
         }
         ceth.safeTransfer(admin, amount);
+    }
+
+    function withdrawalQueueLength() public view returns (uint){
+        return pendingUsers.length;
+    }
+
+    function getWithdrawDelay() public view returns (uint) {
+        return withdrawalDelay;
+    }
+
+    function setWithdrawDelay(uint _withdrawalDelay) public onlyOwner{
+            withdrawalDelay = _withdrawalDelay; 
     }
 }
