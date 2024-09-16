@@ -160,7 +160,8 @@ abstract contract Helper is Test, SigUtils {
     }
 
     function initializeFlashSwapRouter() internal {
-        flashSwapRouter.initialize(address(corkConfig), address(moduleCore));
+        flashSwapRouter.initialize(address(corkConfig));
+        flashSwapRouter.setModuleCore(address(moduleCore));
     }
 
     function initializeModuleCore(uint256 fees) internal {

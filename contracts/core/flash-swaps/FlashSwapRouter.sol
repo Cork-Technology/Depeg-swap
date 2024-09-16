@@ -37,6 +37,13 @@ contract RouterState is
 
     address public _moduleCore;
 
+    modifier onlyDefaultAdmin() {
+        if (!hasRole(DEFAULT_ADMIN_ROLE, msg.sender)) {
+            revert NotDefaultAdmin();
+        }
+        _;
+    }
+
     modifier onlyModuleCore() {
         if (!hasRole(MODULE_CORE, msg.sender)) {
             revert NotModuleCore();
@@ -63,19 +70,21 @@ contract RouterState is
         hpa = reserves[id].getEffectiveHPA();
     }
 
-    function initialize(address config, address moduleCore) external initializer {
+    function initialize(address config) external initializer {
         __AccessControl_init();
         __UUPSUpgradeable_init();
-
-        _grantRole(MODULE_CORE, moduleCore);
+        _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
         _grantRole(CONFIG, config);
-
-        _moduleCore = moduleCore;
     }
 
     mapping(Id => ReserveState) internal reserves;
 
     function _authorizeUpgrade(address newImplementation) internal override onlyConfig {}
+
+    function setModuleCore(address moduleCore) external onlyDefaultAdmin {
+        _moduleCore = moduleCore;
+        _grantRole(MODULE_CORE, moduleCore);
+    }
 
     function onNewIssuance(
         Id reserveId,

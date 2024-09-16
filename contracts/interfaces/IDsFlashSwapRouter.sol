@@ -88,6 +88,7 @@ interface IDsFlashSwapCore is IDsFlashSwapUtility {
     /// @notice thrown when the swap somehow got into rollover period, but the rollover period is not active
     error RolloverNotActive();
 
+    error NotDefaultAdmin();
     /**
      * @notice Emitted when DS is swapped for RA
      * @param reserveId the reserve id same as the id on PSM and LV

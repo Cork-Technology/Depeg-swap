@@ -128,7 +128,7 @@ contract DeployScript is Script {
 
         // Deploy the ModuleCore Proxy contract
         data = abi.encodeWithSelector(moduleCoreImplementation.initialize.selector);
-        ERC1967Proxy moduleCoreProxy = new ERC1967Proxy(address(routerImplementation), data);
+        ERC1967Proxy moduleCoreProxy = new ERC1967Proxy(address(moduleCoreImplementation), data);
         moduleCore = ModuleCore(address(moduleCoreProxy));
 
         console.log("Module Core                     : ", address(moduleCore));
@@ -141,6 +141,7 @@ contract DeployScript is Script {
         console.log("Transferred ownerships to Modulecore");
 
         config.setModuleCore(address(moduleCore));
+        flashswapRouter.setModuleCore(address(moduleCore));
         console.log("Modulecore configured in Config contract");
         console.log("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-");
 
