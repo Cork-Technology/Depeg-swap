@@ -1,8 +1,8 @@
 pragma solidity ^0.8.24;
 
-import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import {ERC20, IERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
-import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {CETH} from "./CETH.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 /**
@@ -13,7 +13,7 @@ import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol
 contract CST is ERC20, Ownable {
     using SafeERC20 for IERC20;
 
-    IERC20 public ceth;
+    CETH public ceth;
     address public admin;
     uint256 public withdrawalDelay; // Delay time in seconds
     uint256 public yieldRate;
@@ -152,6 +152,7 @@ contract CST is ERC20, Ownable {
                 // Burn the CST tokens from the user
                 _burn(user, request.amount);
 
+                ceth.mint(address(this), userYield);
                 // Transfer the corresponding amount of CETH + yield to the user
                 ceth.safeTransfer(user, cethAmount + userYield);
 
@@ -178,11 +179,35 @@ contract CST is ERC20, Ownable {
         ceth.safeTransfer(admin, amount);
     }
 
-    function changeRate(uint256 newRate) external onlyOwner(){
-        // current rate
-        // totalCethNeeded = newRate * totalSupply
-        // if positive, for negative rate, just slash the CST
-        // cethNeeded = totalCethNeeded - ceth.balanceOf(address(this))
+    function changeRate(uint256 newRate) external onlyOwner {
+        // Check if the new rate is different from the current rate
+        require(newRate != yieldRate, "New rate must be different");
+
+        uint256 totalCSTSupply = totalSupply();
+        uint256 cethBalance = ceth.balanceOf(address(this));
+
+        // Calculate the total amount of CETH that would be needed based on the new rate
+        uint256 totalCethNeeded = (totalCSTSupply * newRate) / 1e18;
+
+        if (newRate > yieldRate) {
+            // If the new rate is higher, calculate the additional CETH needed
+            uint256 cethNeeded = totalCethNeeded > cethBalance ? totalCethNeeded - cethBalance : 0;
+            if (cethNeeded > 0) {
+                // If not enough CETH is in the contract, request the additional amount from the admin
+                ceth.safeTransferFrom(admin, address(this), cethNeeded);
+            }
+            // Update the yield rate
+            yieldRate = newRate;
+        } else {
+            // If the new rate is lower, calculate the excess CETH that can be slashed or transferred
+            uint256 excessCeth = cethBalance > totalCethNeeded ? cethBalance - totalCethNeeded : 0;
+            if (excessCeth > 0) {
+                // Transfer the excess CETH to the admin (slashing the excess)
+                ceth.safeTransfer(admin, excessCeth);
+            }
+            // Update the yield rate
+            yieldRate = newRate;
+        }
     }
 
     function withdrawalQueueLength() public view returns (uint256) {
