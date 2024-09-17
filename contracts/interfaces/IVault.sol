@@ -64,7 +64,7 @@ interface IVault {
      * @param id The Module id that is used to reference both psm and lv of a given pair
      * @param amount The amount of the redemption asset(ra) deposited
      */
-    function depositLv(Id id, uint256 amount) external;
+    function depositLv(Id id, uint256 amount) external returns (uint256 received);
 
     /**
      * @notice Preview the amount of lv that will be deposited
@@ -142,9 +142,14 @@ interface IVault {
      * @param rawLvPermitSig Raw signature for LV approval permit
      * @param deadline deadline for Approval permit signature
      */
-    function redeemEarlyLv(Id id, address receiver, uint256 amount, bytes memory rawLvPermitSig, uint256 deadline, uint256 amountOutMin)
-        external
-        returns (uint256 received, uint256 fee, uint256 feePrecentage);
+    function redeemEarlyLv(
+        Id id,
+        address receiver,
+        uint256 amount,
+        bytes memory rawLvPermitSig,
+        uint256 deadline,
+        uint256 amountOutMin
+    ) external returns (uint256 received, uint256 fee, uint256 feePrecentage);
 
     /**
      * @notice Redeem lv before expiry
@@ -198,6 +203,6 @@ interface IVault {
      * @param id The Module id that is used to reference both psm and lv of a given pair
      */
     function vaultLp(Id id) external view returns (uint256);
-    
+
     function lvAcceptRolloverProfit(Id id, uint256 amount) external;
 }
