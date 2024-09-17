@@ -41,8 +41,8 @@ abstract contract Helper is Test, SigUtils {
     // 10 block rollover period
     uint256 internal constant DEFAULT_ROLLOVER_PERIOD = 100000;
 
-    // 1% liquidity vault early fee
-    uint256 internal constant DEFAULT_LV_FEE = 1 ether;
+    // 0% liquidity vault early fee
+    uint256 internal constant DEFAULT_LV_FEE = 0 ether;
 
     // 1% initial ds price
     uint256 internal constant DEFAULT_INITIAL_DS_PRICE = 0.1 ether;
