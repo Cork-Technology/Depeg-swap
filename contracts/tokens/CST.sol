@@ -61,7 +61,7 @@ contract CST is ERC20, Ownable {
         if (_ceth == address(0)) {
             revert ZeroAddressNotAllowed();
         }
-        ceth = IERC20(_ceth);
+        ceth = CETH(_ceth);
         admin = _admin;
         withdrawalDelay = _withdrawalDelay; // Initialize the withdrawal delay time
         yieldRate = _yieldRate;
