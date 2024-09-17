@@ -16,12 +16,19 @@ contract CST is ERC20, Ownable {
     IERC20 public ceth;
     address public admin;
     uint256 public withdrawalDelay; // Delay time in seconds
+    uint256 public yieldRate;
+
+    struct Deposit {
+        uint256 amount;
+        uint256 timestamp;
+    }
 
     struct WithdrawalRequest {
         uint256 amount;
         uint256 requestTime;
     }
 
+    mapping(address => Deposit[]) public userDeposits;
     mapping(address => WithdrawalRequest) public requestedWithdrawals;
     address[] public pendingUsers; // List of users with pending withdrawal requests
     mapping(address => bool) public isUserPending; // Tracks if user is already in the pendingUsers list
@@ -40,7 +47,7 @@ contract CST is ERC20, Ownable {
     /// @notice error thrown when total supply of CST is 0
     error ZeroCSTSupply();
 
-    constructor(string memory name, string memory symbol, address _ceth, address _admin, uint256 _withdrawalDelay)
+    constructor(string memory name, string memory symbol, address _ceth, address _admin, uint256 _withdrawalDelay, uint256 _yieldRate)
         ERC20(name, symbol)
         Ownable(_admin)
     {
@@ -50,6 +57,7 @@ contract CST is ERC20, Ownable {
         ceth = IERC20(_ceth);
         admin = _admin;
         withdrawalDelay = _withdrawalDelay; // Initialize the withdrawal delay time
+        yieldRate = _yieldRate;
     }
 
     /**
@@ -60,13 +68,38 @@ contract CST is ERC20, Ownable {
         if (amount == 0) {
             revert ZeroAmountNotAllowed();
         }
+
+        // Transfer CETH to the contract
         ceth.safeTransferFrom(msg.sender, address(this), amount);
+        // Record the new deposit with the current timestamp
+        userDeposits[msg.sender].push(Deposit(amount, block.timestamp));
 
-        // calculate the rate of ceth to cst
-        // rate = amountCeth / totalSupply
-        // mint(rate * amountCeth)
+        // Mint CST tokens in proportion to the deposit
+        uint256 totalCSTSupply = totalSupply();
+        uint256 cethBalance = ceth.balanceOf(address(this));
 
-        _mint(msg.sender, amount);
+        if (totalCSTSupply == 0) {
+            _mint(msg.sender, amount);
+        } else {
+            _mint(msg.sender, (amount * totalCSTSupply) / cethBalance);
+        }
+    }
+
+    function calculateYield(address user) public view returns (uint256) {
+        uint256 totalYield = 0;
+        uint256 currentTime = block.timestamp;
+
+        // Iterate through each deposit
+        for (uint256 i = 0; i < userDeposits[user].length; i++) {
+            Deposit memory depositObj = userDeposits[user][i];
+            uint256 timeStaked = currentTime - depositObj.timestamp;
+
+            // Calculate yield for this deposit
+            uint256 yieldForDeposit = (depositObj.amount * yieldRate * timeStaked) / 1e18; // assuming yieldRate is in wei format (e.g., 0.05e18 = 5%)
+            totalYield += yieldForDeposit;
+        }
+
+        return totalYield;
     }
 
     /**
@@ -109,19 +142,18 @@ contract CST is ERC20, Ownable {
 
             // Check if the withdrawal delay has passed
             if (request.amount > 0 && block.timestamp >= request.requestTime + withdrawalDelay) {
-                // Calculate the amount of CETH to withdraw based on the user's CST balance
+                
+                // Calculate user's proportional CETH amount
                 uint256 cethAmount = (request.amount * cethBalance) / totalCSTSupply;
-                // calculate how much apy user attributed to
-                // apyAtrtibuted = apy% x cethAmount
 
-                // mint ceth apyAttributed to user
-                // mint(apyAttributed)
+                // Calculate accumulated yield for the user
+                uint256 userYield = calculateYield(user);
 
                 // Burn the CST tokens from the user
                 _burn(user, request.amount);
 
-                // Transfer the corresponding amount of CETH to the user
-                ceth.safeTransfer(user, cethAmount);
+                // Transfer the corresponding amount of CETH + yield to the user
+                ceth.safeTransfer(user, cethAmount + userYield);
 
                 // Clear the withdrawal request after successful withdrawal
                 delete requestedWithdrawals[user];

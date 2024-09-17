@@ -57,7 +57,7 @@ contract DeployScript is Script {
             console.log("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-");
             console.log("CETH                            : ", address(cETH));
 
-            CST bsETHCST = new CST("Bear Sterns Restaked ETH", "bsETH", ceth, msg.sender, 48 hours);
+            CST bsETHCST = new CST("Bear Sterns Restaked ETH", "bsETH", ceth, msg.sender, 480 hours);
             bsETH = address(bsETHCST);
             cETH.approve(bsETH, 500_000 ether);
             bsETHCST.deposit(500_000 ether);
