@@ -41,6 +41,10 @@ contract AssetFactory is IAssetFactory, OwnableUpgradeable, UUPSUpgradeable {
         _;
     }
 
+    function getLv(address ra, address pa) external view override returns (address) {
+        return lvs[Pair(pa, ra).toId()];
+    }
+    
     /**
      * @notice initializes asset factory contract and setup owner
      */
