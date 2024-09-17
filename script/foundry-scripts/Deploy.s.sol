@@ -57,26 +57,30 @@ contract DeployScript is Script {
             console.log("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-");
             console.log("CETH                            : ", address(cETH));
 
-            CST bsETHCST = new CST("Bear Sterns Restaked ETH", "bsETH", ceth, msg.sender, 480 hours);
+            CST bsETHCST = new CST("Bear Sterns Restaked ETH", "bsETH", ceth, msg.sender, 480 hours, 7.5 ether);
             bsETH = address(bsETHCST);
+            cETH.addMinter(bsETH);
             cETH.approve(bsETH, 500_000 ether);
             bsETHCST.deposit(500_000 ether);
             console.log("bsETH                           : ", address(bsETH));
 
-            CST lbETHCST = new CST("Lehman Brothers Restaked ETH", "lbETH", ceth, msg.sender, 10 hours);
+            CST lbETHCST = new CST("Lehman Brothers Restaked ETH", "lbETH", ceth, msg.sender, 10 hours, 7,5 ether);
             lbETH = address(lbETHCST);
+            cETH.addMinter(lbETH);
             cETH.approve(lbETH, 500_000 ether);
             lbETHCST.deposit(500_000 ether);
             console.log("lbETH                           : ", address(lbETH));
 
-            CST wamuETHCST = new CST("Washington Mutual restaked ETH", "wamuETH", ceth, msg.sender, 1 seconds);
+            CST wamuETHCST = new CST("Washington Mutual restaked ETH", "wamuETH", ceth, msg.sender, 1 seconds, 3 ether);
             wamuETH = address(wamuETHCST);
+            cETH.addMinter(wamuETH);
             cETH.approve(wamuETH, 500_000 ether);
             wamuETHCST.deposit(500_000 ether);
             console.log("wamuETH                         : ", address(wamuETH));
 
-            CST mlETHCST = new CST("Merrill Lynch staked ETH", "mlETH", ceth, msg.sender, 5 hours);
+            CST mlETHCST = new CST("Merrill Lynch staked ETH", "mlETH", ceth, msg.sender, 5 hours, 7.5 ether);
             mlETH = address(mlETHCST);
+            cETH.addMinter(mlETH);
             cETH.approve(mlETH, 10_000_000 ether);
             mlETHCST.deposit(10_000_000 ether);
             console.log("mlETH                           : ", address(mlETH));
