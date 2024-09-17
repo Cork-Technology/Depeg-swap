@@ -18,12 +18,12 @@ import {DepegSwap, DepegSwapLibrary} from "./DepegSwapLib.sol";
 import {Asset, ERC20, ERC20Burnable} from "../core/assets/Asset.sol";
 import {ICommon} from "../interfaces/ICommon.sol";
 import {SafeERC20, IERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+
 /**
  * @title Vault Library Contract
  * @author Cork Team
  * @notice Vault Library implements features for  LVCore(liquidity Vault Core)
  */
-
 library VaultLibrary {
     using VaultConfigLibrary for VaultConfig;
     using PairLibrary for Pair;
@@ -69,15 +69,21 @@ library VaultLibrary {
         ERC20(raAddress).approve(address(ammRouter), raAmount);
         ERC20(ctAddress).approve(address(ammRouter), ctAmount);
 
-        (address token0, address token1, uint256 token0Amount, uint256 token1Amount) =
-            MinimalUniswapV2Library.sortTokensUnsafeWithAmount(raAddress, ctAddress, raAmount, ctAmount);
-        (,, uint256 token0Tolerance, uint256 token1Tolerance) =
-            MinimalUniswapV2Library.sortTokensUnsafeWithAmount(raAddress, ctAddress, raTolerance, ctTolerance);
-
-        (,, uint256 lp) = ammRouter.addLiquidity(
-            token0, token1, token0Amount, token1Amount, token0Tolerance, token1Tolerance, address(this), block.timestamp
+        (uint256 raAdded, uint256 ctAdded, uint256 lp) = ammRouter.addLiquidity(
+            raAddress, ctAddress, raAmount, ctAmount, raTolerance, ctTolerance, address(this), block.timestamp
         );
 
+        uint256 dustCt = ctAmount - ctAdded;
+
+        if (dustCt > 0) {
+            SafeERC20.safeTransfer(IERC20(ctAddress), msg.sender, dustCt);
+        }
+
+        uint256 dustRa = raAmount - raAdded;
+
+        if (dustRa > 0) {
+            SafeERC20.safeTransfer(IERC20(raAddress), msg.sender, dustCt);
+        }
         self.vault.config.lpBalance += lp;
     }
 
@@ -234,77 +240,56 @@ library VaultLibrary {
         uint256 amount,
         IDsFlashSwapCore flashSwapRouter,
         IUniswapV2Router02 ammRouter
-    ) external {
+    ) external returns (uint256 received) {
         if (amount == 0) {
             revert ICommon.ZeroDeposit();
         }
-
         safeBeforeExpired(self);
         self.vault.balances.ra.lockUnchecked(amount, from);
         __provideLiquidityWithRatio(self, amount, flashSwapRouter, self.ds[self.globalAssetIdx].ct, ammRouter);
+
+        uint256 exchangeRate;
+
+        // we mint 1:1 if it's the first deposit
+        if (!self.vault.initialized) {
+            exchangeRate = 1 ether;
+            self.vault.initialized = true;
+        } else {
+            // else we get the current exchange rate of LV
+            (exchangeRate,,) = previewRedeemEarly(self, 1 ether, flashSwapRouter);
+        }
+
+        // then we calculate how much LV we will get for the amount of RA we deposited with the exchange rate
+        // this is to seprate the yield vs the actual deposit amount. so when a user withdraws their LV, they get their accrued yield properly
+        amount = MathHelper.calculateDepositAmountWithExchangeRate(amount, exchangeRate);
+
         self.vault.lv.issue(from, amount);
+
+        received = amount;
     }
 
     // preview a deposit action with current exchange rate,
     // returns the amount of shares(share pool token) that user will receive
-    function previewDeposit(uint256 amount) external pure returns (uint256 lvReceived) {
-        if (amount == 0) {
-            revert ICommon.ZeroDeposit();
+    function previewDeposit(State storage self, IDsFlashSwapCore flashSwapRouter, uint256 amount)
+        external
+        view
+        returns (uint256 lvReceived)
+    {
+        uint256 exchangeRate;
+
+        // we mint 1:1 if it's the first deposit
+        if (!self.vault.initialized) {
+            exchangeRate = 1 ether;
+        } else {
+            // else we get the current exchange rate of LV
+            (exchangeRate,,) = previewRedeemEarly(self, 1 ether, flashSwapRouter);
         }
+
+        // then we calculate how much LV we will get for the amount of RA we deposited with the exchange rate
+        // this is to seprate the yield vs the actual deposit amount. so when a user withdraws their LV, they get their accrued yield properly
+        amount = MathHelper.calculateDepositAmountWithExchangeRate(amount, exchangeRate);
 
         lvReceived = amount;
-    }
-
-    function requestRedemption(
-        State storage self,
-        address owner,
-        uint256 amount,
-        bytes memory rawLvPermitSig,
-        uint256 deadline
-    ) external {
-        safeBeforeExpired(self);
-        if (deadline != 0) {
-            DepegSwapLibrary.permit(self.vault.lv._address, rawLvPermitSig, owner, address(this), amount, deadline);
-        }
-        self.vault.pool.withdrawEligible[owner] += amount;
-        self.vault.pool.withdrawalPool.atrributedLv += amount;
-        self.vault.lv.lockFrom(amount, owner);
-    }
-
-    function lvLockedFor(State storage self, address owner) external view returns (uint256) {
-        return self.vault.pool.withdrawEligible[owner];
-    }
-
-    function cancelRedemptionRequest(State storage self, address owner, uint256 amount) external {
-        safeBeforeExpired(self);
-        uint256 userEligible = self.vault.pool.withdrawEligible[owner];
-
-        if (userEligible == 0) {
-            revert Unauthorized(msg.sender);
-        }
-
-        if (userEligible < amount) {
-            revert InsufficientBalance(owner, amount, userEligible);
-        }
-
-        self.vault.pool.withdrawEligible[owner] -= amount;
-        self.vault.pool.withdrawalPool.atrributedLv -= amount;
-        self.vault.lv.unlockTo(amount, owner);
-    }
-
-    function transferRedemptionRights(State storage self, address from, address to, uint256 amount) external {
-        uint256 initialOwneramount = self.vault.pool.withdrawEligible[from];
-
-        if (initialOwneramount == 0) {
-            revert Unauthorized(msg.sender);
-        }
-
-        if (initialOwneramount < amount) {
-            revert InsufficientBalance(from, amount, initialOwneramount);
-        }
-
-        self.vault.pool.withdrawEligible[to] += amount;
-        self.vault.pool.withdrawEligible[from] -= amount;
     }
 
     function __liquidateUnchecked(
@@ -320,10 +305,6 @@ library VaultLibrary {
         // amountAMin & amountBMin = 0 for 100% tolerence
         (raReceived, ctReceived) =
             ammRouter.removeLiquidity(raAddress, ctAddress, lp, 0, 0, address(this), block.timestamp);
-
-        (raReceived, ctReceived) = MinimalUniswapV2Library.reverseSortWithAmount224(
-            ammPair.token0(), ammPair.token1(), raAddress, ctAddress, raReceived, ctReceived
-        );
 
         self.vault.config.lpBalance -= lp;
     }
@@ -371,7 +352,8 @@ library VaultLibrary {
         ra += redeemAmount;
         PsmLibrary.lvRedeemRaWithCtDs(self, redeemAmount, dsId);
 
-        uint256 ctSellAmount = reservedDs >= ammCtBalance ? 0 : ammCtBalance - redeemAmount;
+        // we subtract redeem amount since we already liquidate it from the router
+        uint256 ctSellAmount = reservedDs - redeemAmount >= ammCtBalance ? 0 : ammCtBalance - redeemAmount;
 
         DepegSwap storage ds = self.ds[dsId];
         address[] memory path = new address[](2);
@@ -430,11 +412,6 @@ library VaultLibrary {
         psmRa += redeemAmount;
 
         self.vault.pool.reserve(self.vault.lv.totalIssued(), raAmm + psmRa, psmPa);
-    }
-
-    function reservedForWithdrawal(State storage self) external view returns (uint256 ra, uint256 pa) {
-        ra = self.vault.pool.withdrawalPool.raBalance;
-        pa = self.vault.pool.withdrawalPool.paBalance;
     }
 
     function _tryLiquidateLpAndRedeemCtToPsm(State storage self, uint256 dsId, IDsFlashSwapCore flashSwapRouter)
@@ -590,93 +567,6 @@ library VaultLibrary {
         ra = MinimalUniswapV2Library.getAmountOut(excessCt, ctReserve, raReserve);
     }
 
-    function redeemExpired(
-        State storage self,
-        address owner,
-        address receiver,
-        uint256 amount,
-        IUniswapV2Router02 ammRouter,
-        IDsFlashSwapCore flashSwapRouter,
-        bytes memory rawLvPermitSig,
-        uint256 deadline
-    ) external returns (uint256 attributedRa, uint256 attributedPa) {
-        {
-            uint256 dsId = self.globalAssetIdx;
-            DepegSwap storage ds = self.ds[dsId];
-
-            uint256 userEligible = self.vault.pool.withdrawEligible[owner];
-
-            if (userEligible == 0 && !ds.isExpired()) {
-                revert Unauthorized(owner);
-            }
-
-            // user can only redeem up to the amount they requested, when there's a DS active
-            // if there's no DS active, then there's no cap on the amount of LV that can be redeemed
-            if (!ds.isExpired() && userEligible < amount) {
-                revert InsufficientBalance(owner, amount, userEligible);
-            }
-
-            if (ds.isExpired() && !self.vault.lpLiquidated.get(dsId)) {
-                _liquidatedLp(self, dsId, ammRouter, flashSwapRouter);
-                assert(self.vault.balances.ra.locked == 0);
-            }
-        }
-
-        uint256 burnUserAmount;
-        uint256 burnSelfAmount;
-
-        (attributedRa, attributedPa, burnUserAmount, burnSelfAmount) = self.vault.pool.redeem(amount, owner);
-        assert(burnSelfAmount + burnUserAmount == amount);
-
-        if (deadline != 0) {
-            DepegSwapLibrary.permit(
-                self.vault.lv._address, rawLvPermitSig, owner, address(this), burnUserAmount, deadline
-            );
-        }
-        //ra
-        IERC20(self.info.pair1).safeTransfer(receiver, attributedRa);
-        //pa
-        IERC20(self.info.pair0).safeTransfer(receiver, attributedPa);
-
-        self.vault.lv.burnSelf(burnSelfAmount);
-
-        if (burnUserAmount != 0) {
-            ERC20Burnable(self.vault.lv._address).burnFrom(owner, burnUserAmount);
-        }
-    }
-
-    function previewRedeemExpired(State storage self, uint256 amount, address owner, IDsFlashSwapCore flashSwapRouter)
-        external
-        view
-        returns (uint256 attributedRa, uint256 attributedPa, uint256 approvedAmount)
-    {
-        DepegSwap storage ds = self.ds[self.globalAssetIdx];
-
-        if (self.vault.pool.withdrawEligible[owner] == 0 && !ds.isExpired()) {
-            revert Unauthorized(owner);
-        }
-
-        // user can only redeem up to the amount they requested, when there's a DS active
-        // if there's no DS active, then there's no cap on the amount of LV that can be redeemed
-        if (!ds.isExpired() && self.vault.pool.withdrawEligible[owner] < amount) {
-            revert InsufficientBalance(owner, amount, self.vault.pool.withdrawEligible[owner]);
-        }
-
-        VaultWithdrawalPool memory withdrawalPool = self.vault.pool.withdrawalPool;
-
-        VaultAmmLiquidityPool memory ammLiquidityPool = self.vault.pool.ammLiquidityPool;
-
-        if (ds.isExpired() && !self.vault.lpLiquidated.get(self.globalAssetIdx)) {
-            (uint256 totalRa, uint256 pa) = _tryLiquidateLpAndRedeemCtToPsm(self, self.globalAssetIdx, flashSwapRouter);
-
-            VaultPoolLibrary.tryReserve(withdrawalPool, ammLiquidityPool, self.vault.lv.totalIssued(), totalRa, pa);
-        }
-
-        (attributedRa, attributedPa, approvedAmount) = VaultPoolLibrary.tryRedeem(
-            self.vault.pool.withdrawEligible, withdrawalPool, ammLiquidityPool, amount, owner
-        );
-    }
-
     // IMPORTANT : only psm, flash swap router and early redeem LV can call this function
     function provideLiquidityWithFee(
         State storage self,
@@ -737,8 +627,10 @@ library VaultLibrary {
 
         fee = MathHelper.calculatePrecentageFee(received, feePrecentage);
 
-        provideLiquidityWithFee(self, fee, flashSwapRouter, ammRouter);
-        received = received - fee;
+        if (fee != 0) {
+            provideLiquidityWithFee(self, fee, flashSwapRouter, ammRouter);
+            received = received - fee;
+        }
 
         if (received < amountOutMin) {
             revert InsufficientOutputAmount(amountOutMin, received);
@@ -749,7 +641,7 @@ library VaultLibrary {
     }
 
     function previewRedeemEarly(State storage self, uint256 amount, IDsFlashSwapCore flashSwapRouter)
-        external
+        public
         view
         returns (uint256 received, uint256 fee, uint256 feePrecentage)
     {

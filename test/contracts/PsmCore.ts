@@ -956,8 +956,6 @@ describe("PSM core", function () {
         parseEther("10"),
       ]);
 
-      await fixture.moduleCore.write.requestRedemption([Id, parseEther("1")]);
-
       expect(events.length).to.equal(1);
 
       await time.increaseTo(expiry);

@@ -82,4 +82,6 @@ interface IAssetFactory {
      * @return lv new LV contract address
      */
     function deployLv(address ra, address pa, address owner) external returns (address lv);
+
+    function getLv(address ra, address pa) external view returns (address);
 }
