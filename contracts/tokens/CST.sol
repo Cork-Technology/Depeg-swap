@@ -3,7 +3,6 @@ pragma solidity ^0.8.24;
 import {ERC20, IERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {CETH} from "./CETH.sol";
-import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 /**
  * @title CST Contract
@@ -11,8 +10,6 @@ import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol
  * @notice CST contract represents Staked Ethereum
  */
 contract CST is ERC20, Ownable {
-    using SafeERC20 for CETH;
-
     CETH public ceth;
     address public admin;
     uint256 public withdrawalDelay; // Delay time in seconds
@@ -77,7 +74,7 @@ contract CST is ERC20, Ownable {
         }
 
         // Transfer CETH to the contract
-        IERC20(address(ceth)).safeTransferFrom(msg.sender, address(this), amount);
+        IERC20(address(ceth)).transferFrom(msg.sender, address(this), amount);
         // Record the new deposit with the current timestamp
         userDeposits[msg.sender].push(Deposit(amount, block.timestamp));
 
@@ -160,7 +157,7 @@ contract CST is ERC20, Ownable {
 
                 ceth.mint(address(this), userYield);
                 // Transfer the corresponding amount of CETH + yield to the user
-                IERC20(address(ceth)).safeTransfer(user, cethAmount + userYield);
+                IERC20(address(ceth)).transfer(user, cethAmount + userYield);
 
                 // Clear the withdrawal request after successful withdrawal
                 delete requestedWithdrawals[user];
@@ -182,7 +179,7 @@ contract CST is ERC20, Ownable {
         if (amount > ceth.balanceOf(address(this))) {
             revert InsufficientBalance();
         }
-        IERC20(address(ceth)).safeTransfer(admin, amount);
+        IERC20(address(ceth)).transfer(admin, amount);
     }
 
     function changeRate(uint256 newRate) external onlyOwner {
@@ -209,7 +206,7 @@ contract CST is ERC20, Ownable {
             uint256 excessCeth = cethBalance > totalCethNeeded ? cethBalance - totalCethNeeded : 0;
             if (excessCeth > 0) {
                 // Transfer the excess CETH to the admin (slashing the excess)
-                IERC20(address(ceth)).safeTransfer(admin, excessCeth);
+                IERC20(address(ceth)).transfer(admin, excessCeth);
             }
             // Update the yield rate
             yieldRate = newRate;
