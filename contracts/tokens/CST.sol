@@ -47,10 +47,17 @@ contract CST is ERC20, Ownable {
     /// @notice error thrown when total supply of CST is 0
     error ZeroCSTSupply();
 
-    constructor(string memory name, string memory symbol, address _ceth, address _admin, uint256 _withdrawalDelay, uint256 _yieldRate)
-        ERC20(name, symbol)
-        Ownable(_admin)
-    {
+    /// @notice thrown when trying to set negative rate
+    error NoNegativeRate();
+
+    constructor(
+        string memory name,
+        string memory symbol,
+        address _ceth,
+        address _admin,
+        uint256 _withdrawalDelay,
+        uint256 _yieldRate
+    ) ERC20(name, symbol) Ownable(_admin) {
         if (_ceth == address(0)) {
             revert ZeroAddressNotAllowed();
         }
@@ -142,7 +149,6 @@ contract CST is ERC20, Ownable {
 
             // Check if the withdrawal delay has passed
             if (request.amount > 0 && block.timestamp >= request.requestTime + withdrawalDelay) {
-                
                 // Calculate user's proportional CETH amount
                 uint256 cethAmount = (request.amount * cethBalance) / totalCSTSupply;
 
