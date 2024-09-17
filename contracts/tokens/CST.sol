@@ -11,7 +11,7 @@ import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol
  * @notice CST contract represents Staked Ethereum
  */
 contract CST is ERC20, Ownable {
-    using SafeERC20 for IERC20;
+    using SafeERC20 for CETH;
 
     CETH public ceth;
     address public admin;

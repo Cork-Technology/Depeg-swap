@@ -64,7 +64,7 @@ contract DeployScript is Script {
             bsETHCST.deposit(500_000 ether);
             console.log("bsETH                           : ", address(bsETH));
 
-            CST lbETHCST = new CST("Lehman Brothers Restaked ETH", "lbETH", ceth, msg.sender, 10 hours, 7,5 ether);
+            CST lbETHCST = new CST("Lehman Brothers Restaked ETH", "lbETH", ceth, msg.sender, 10 hours, 7.5 ether);
             lbETH = address(lbETHCST);
             cETH.addMinter(lbETH);
             cETH.approve(lbETH, 500_000 ether);
