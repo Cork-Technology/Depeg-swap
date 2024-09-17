@@ -77,7 +77,7 @@ contract CST is ERC20, Ownable {
         }
 
         // Transfer CETH to the contract
-        ceth.safeTransferFrom(msg.sender, address(this), amount);
+        IERC20(address(ceth)).safeTransferFrom(msg.sender, address(this), amount);
         // Record the new deposit with the current timestamp
         userDeposits[msg.sender].push(Deposit(amount, block.timestamp));
 
@@ -160,7 +160,7 @@ contract CST is ERC20, Ownable {
 
                 ceth.mint(address(this), userYield);
                 // Transfer the corresponding amount of CETH + yield to the user
-                ceth.safeTransfer(user, cethAmount + userYield);
+                IERC20(address(ceth)).safeTransfer(user, cethAmount + userYield);
 
                 // Clear the withdrawal request after successful withdrawal
                 delete requestedWithdrawals[user];
@@ -182,7 +182,7 @@ contract CST is ERC20, Ownable {
         if (amount > ceth.balanceOf(address(this))) {
             revert InsufficientBalance();
         }
-        ceth.safeTransfer(admin, amount);
+        IERC20(address(ceth)).safeTransfer(admin, amount);
     }
 
     function changeRate(uint256 newRate) external onlyOwner {
@@ -209,7 +209,7 @@ contract CST is ERC20, Ownable {
             uint256 excessCeth = cethBalance > totalCethNeeded ? cethBalance - totalCethNeeded : 0;
             if (excessCeth > 0) {
                 // Transfer the excess CETH to the admin (slashing the excess)
-                ceth.safeTransfer(admin, excessCeth);
+                IERC20(address(ceth)).safeTransfer(admin, excessCeth);
             }
             // Update the yield rate
             yieldRate = newRate;
