@@ -200,7 +200,7 @@ contract CST is ERC20, Ownable {
             uint256 cethNeeded = totalCethNeeded > cethBalance ? totalCethNeeded - cethBalance : 0;
             if (cethNeeded > 0) {
                 // If not enough CETH is in the contract, request the additional amount from the admin
-                ceth.safeTransferFrom(admin, address(this), cethNeeded);
+                ceth.mint(address(this), cethNeeded);
             }
             // Update the yield rate
             yieldRate = newRate;
