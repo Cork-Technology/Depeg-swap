@@ -15,10 +15,10 @@ contract CETH is ERC20, AccessControl {
 
     constructor() ERC20("Cork ETH", "CETH") {
         // Grant the contract deployer the default admin role: they can grant and revoke roles
-        _setupRole(DEFAULT_ADMIN_ROLE, msg.sender);
+        _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
 
         // Grant the contract deployer the minter role so they can mint initially
-        _setupRole(MINTER_ROLE, msg.sender);
+        _grantRole(MINTER_ROLE, msg.sender);
     }
 
     /**
