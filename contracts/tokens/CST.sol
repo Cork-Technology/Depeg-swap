@@ -23,8 +23,8 @@ contract CST is ERC20, Ownable {
     }
 
     mapping(address => WithdrawalRequest) public requestedWithdrawals;
-    address[] public pendingUsers;  // List of users with pending withdrawal requests
-    mapping(address => bool) public isUserPending;  // Tracks if user is already in the pendingUsers list
+    address[] public pendingUsers; // List of users with pending withdrawal requests
+    mapping(address => bool) public isUserPending; // Tracks if user is already in the pendingUsers list
 
     error ZeroAddressNotAllowed();
 
@@ -61,6 +61,11 @@ contract CST is ERC20, Ownable {
             revert ZeroAmountNotAllowed();
         }
         ceth.safeTransferFrom(msg.sender, address(this), amount);
+
+        // calculate the rate of ceth to cst
+        // rate = amountCeth / totalSupply
+        // mint(rate * amountCeth)
+
         _mint(msg.sender, amount);
     }
 
@@ -89,7 +94,7 @@ contract CST is ERC20, Ownable {
     /**
      * @dev Processes withdrawals for all users with pending requests whose delay period has passed
      */
-    function processWithdrawals(uint usersToProcess) public {
+    function processWithdrawals(uint256 usersToProcess) public {
         uint256 totalCSTSupply = totalSupply();
         if (totalCSTSupply == 0) {
             revert ZeroCSTSupply();
@@ -106,6 +111,11 @@ contract CST is ERC20, Ownable {
             if (request.amount > 0 && block.timestamp >= request.requestTime + withdrawalDelay) {
                 // Calculate the amount of CETH to withdraw based on the user's CST balance
                 uint256 cethAmount = (request.amount * cethBalance) / totalCSTSupply;
+                // calculate how much apy user attributed to
+                // apyAtrtibuted = apy% x cethAmount
+
+                // mint ceth apyAttributed to user
+                // mint(apyAttributed)
 
                 // Burn the CST tokens from the user
                 _burn(user, request.amount);
@@ -120,7 +130,7 @@ contract CST is ERC20, Ownable {
                 pendingUsers[i] = pendingUsers[pendingUsers.length - 1];
                 pendingUsers.pop();
                 isUserPending[user] = false;
-                i--;  // Adjust the index after removal
+                i--; // Adjust the index after removal
             }
         }
     }
@@ -136,15 +146,22 @@ contract CST is ERC20, Ownable {
         ceth.safeTransfer(admin, amount);
     }
 
-    function withdrawalQueueLength() public view returns (uint){
+    function changeRate(uint256 newRate) external onlyOwner(){
+        // current rate
+        // totalCethNeeded = newRate * totalSupply
+        // if positive, for negative rate, just slash the CST
+        // cethNeeded = totalCethNeeded - ceth.balanceOf(address(this))
+    }
+
+    function withdrawalQueueLength() public view returns (uint256) {
         return pendingUsers.length;
     }
 
-    function getWithdrawDelay() public view returns (uint) {
+    function getWithdrawDelay() public view returns (uint256) {
         return withdrawalDelay;
     }
 
-    function setWithdrawDelay(uint _withdrawalDelay) public onlyOwner{
-            withdrawalDelay = _withdrawalDelay; 
+    function setWithdrawDelay(uint256 _withdrawalDelay) public onlyOwner {
+        withdrawalDelay = _withdrawalDelay;
     }
 }
