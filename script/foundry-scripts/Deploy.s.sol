@@ -149,10 +149,10 @@ contract DeployScript is Script {
         console.log("Modulecore configured in Config contract");
         console.log("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-");
 
-        issueDSAndAddLiquidity(mlETH, ceth, 300_000 ether, 0, 0.2 ether, 1 ether, 4 days); // EarlyRedemptionFee = 0%,  DSPrice=0.2%(or 20%)  repurchaseFee = 1%
-        issueDSAndAddLiquidity(lbETH, ceth, 300_000 ether, 0, 0.3 ether, 0.5 ether, 4 days); // EarlyRedemptionFee = 0%,  DSPrice=0.3%(or 30%)  repurchaseFee = 0.5%
-        issueDSAndAddLiquidity(bsETH, ceth, 300_000 ether, 0, 0.7 ether, 0, 4 days); // EarlyRedemptionFee = 0%,  DSPrice=0.7%(or 70%)  repurchaseFee = 0%
-        issueDSAndAddLiquidity(wamuETH, ceth, 500_000 ether, 0, 0.3 ether, 0.25 ether, 6 days); // EarlyRedemptionFee = 0%,  DSPrice=0.3%(or 30%)  repurchaseFee = 0.25%
+        issueDSAndAddLiquidity(mlETH, ceth, 300_000 ether, 0, 0.005 ether, 1 ether, 4 days); // EarlyRedemptionFee = 0%,  DSPrice=0.2%(or 20%)  repurchaseFee = 1%
+        issueDSAndAddLiquidity(lbETH, ceth, 300_000 ether, 0, 0.0075 ether, 0.5 ether, 4 days); // EarlyRedemptionFee = 0%,  DSPrice=0.3%(or 30%)  repurchaseFee = 0.5%
+        issueDSAndAddLiquidity(bsETH, ceth, 300_000 ether, 0, 0.0175 ether, 0, 4 days); // EarlyRedemptionFee = 0%,  DSPrice=0.7%(or 70%)  repurchaseFee = 0%
+        issueDSAndAddLiquidity(wamuETH, ceth, 500_000 ether, 0, 0.0045 ether, 0.25 ether, 6 days); // EarlyRedemptionFee = 0%,  DSPrice=0.3%(or 30%)  repurchaseFee = 0.25%
 
         // moduleCore.redeemEarlyLv(id, msg.sender, 10 ether);
         // uint256 result = flashswapRouter.previewSwapRaforDs(id, 1, 100 ether);
