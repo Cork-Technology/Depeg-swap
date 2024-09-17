@@ -29,11 +29,12 @@ abstract contract VaultCore is ModuleState, Context, IVault {
      * @notice Deposit a wrapped asset into a given vault
      * @param id The Module id that is used to reference both psm and lv of a given pair
      * @param amount The amount of the redemption asset(ra) deposited
+     * @return received The amount of lv received
      */
-    function depositLv(Id id, uint256 amount) external override LVDepositNotPaused(id) {
+    function depositLv(Id id, uint256 amount) external override LVDepositNotPaused(id) returns (uint256 received) {
         State storage state = states[id];
-        state.deposit(_msgSender(), amount, getRouterCore(), getAmmRouter());
-        emit LvDeposited(id, _msgSender(), amount);
+        received = state.deposit(_msgSender(), amount, getRouterCore(), getAmmRouter());
+        emit LvDeposited(id, _msgSender(), received);
     }
 
     /**
@@ -177,7 +178,14 @@ abstract contract VaultCore is ModuleState, Context, IVault {
      * @param deadline deadline for Approval permit signature
      * @param amountOutMin The minimum amount of the asset to be received
      */
-    function redeemEarlyLv(Id id, address receiver, uint256 amount, bytes memory rawLvPermitSig, uint256 deadline, uint256 amountOutMin)
+    function redeemEarlyLv(
+        Id id,
+        address receiver,
+        uint256 amount,
+        bytes memory rawLvPermitSig,
+        uint256 deadline,
+        uint256 amountOutMin
+    )
         external
         override
         nonReentrant
@@ -206,8 +214,9 @@ abstract contract VaultCore is ModuleState, Context, IVault {
         returns (uint256 received, uint256 fee, uint256 feePrecentage)
     {
         State storage state = states[id];
-        (received, fee, feePrecentage) =
-            state.redeemEarly(_msgSender(), receiver, amount, getRouterCore(), getAmmRouter(), bytes(""), 0, amountOutMin);
+        (received, fee, feePrecentage) = state.redeemEarly(
+            _msgSender(), receiver, amount, getRouterCore(), getAmmRouter(), bytes(""), 0, amountOutMin
+        );
 
         emit LvRedeemEarly(id, _msgSender(), receiver, received, fee, feePrecentage);
     }
