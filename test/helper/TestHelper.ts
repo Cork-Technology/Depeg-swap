@@ -194,7 +194,6 @@ export async function deployModuleCore(
   const vault = await hre.viem.deployContract("VaultLibrary", [], {
     libraries: {
       MathHelper: mathLib.address,
-      PsmLibrary: psm.address,
     },
   });
 

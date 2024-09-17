@@ -347,18 +347,6 @@ describe("CorkConfig", function () {
       ).to.be.rejectedWith("LVDepositPaused()");
 
       await expect(
-        fixture.moduleCore.write.requestRedemption([Id, depositAmount])
-      ).to.be.rejectedWith("LVWithdrawalPaused()");
-
-      await expect(
-        fixture.moduleCore.write.redeemExpiredLv([
-          fixture.Id,
-          secondSigner.account.address,
-          depositAmount + BigInt(1),
-        ])
-      ).to.be.rejectedWith("LVWithdrawalPaused()");
-
-      await expect(
         fixture.moduleCore.write.redeemEarlyLv([
           fixture.Id,
           defaultSigner.account.address,
