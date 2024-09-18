@@ -279,6 +279,8 @@ contract RouterState is
             // sell the DS tokens from the reserve and accrue value to LV holders
             // it's safe to transfer all profit to the module core since the profit for each PSM and LV is calculated separately and we invoke
             // the profit acceptance function for each of them
+            //
+            // this function can fail, if there's not enough CT liquidity to sell the DS tokens, in that case, we skip the selling part and let user buy the DS tokens
             (uint256 profitRa,, bool success) =
                 __swapDsforRa(assetPair, reserveId, dsId, amountSellFromReserve, 0, _moduleCore);
 
