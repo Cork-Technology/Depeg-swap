@@ -1,0 +1,108 @@
+pragma solidity ^0.8.24;
+
+import "./../../contracts/core/flash-swaps/FlashSwapRouter.sol";
+import {Helper} from "./Helper.sol";
+import {DummyWETH} from "./../../contracts/dummy/DummyWETH.sol";
+import "./../../contracts/core/assets/Asset.sol";
+import {Id, Pair, PairLibrary} from "./../../contracts/libraries/Pair.sol";
+import "./../../contracts/interfaces/IPSMcore.sol";
+import "./../../contracts/interfaces/IDsFlashSwapRouter.sol";
+import "forge-std/console.sol";
+
+contract RolloverTest is Helper {
+    DummyWETH internal ra;
+    DummyWETH internal pa;
+    Id public currencyId;
+
+    uint256 public DEFAULT_DEPOSIT_AMOUNT = 300_000 ether;
+
+    uint256 public dsId;
+
+    address public ct;
+    address public ds;
+
+    function setUp() public {
+        vm.startPrank(DEFAULT_ADDRESS);
+
+        deployModuleCore();
+
+        (ra, pa, currencyId) = initializeAndIssueNewDs(block.timestamp + 1 days);
+        vm.deal(DEFAULT_ADDRESS, 100_000_000_000 ether);
+        ra.deposit{value: 1_000_000_000 ether}();
+        pa.deposit{value: 1_000_000_000 ether}();
+
+        // 10000 for psm 10000 for LV
+        ra.approve(address(moduleCore), 100_000_000_000 ether);
+
+        moduleCore.depositPsm(currencyId, DEFAULT_DEPOSIT_AMOUNT);
+        moduleCore.depositLv(currencyId, DEFAULT_DEPOSIT_AMOUNT);
+
+        // save initial data
+        fetchProtocolGeneralInfo();
+    }
+
+    function fetchProtocolGeneralInfo() internal {
+        dsId = moduleCore.lastDsId(currencyId);
+        (ct, ds) = moduleCore.swapAsset(currencyId, dsId);
+    }
+
+    // ff to expiry and update infos
+    function ff_expired() internal {
+        // fast forward to expiry
+        uint256 expiry = Asset(ds).expiry();
+        vm.warp(expiry);
+
+        uint256 rolloverBlocks = flashSwapRouter.getRolloverEndInBlockNumber(currencyId);
+        vm.roll(block.number + rolloverBlocks);
+
+        Asset(ct).approve(address(moduleCore), DEFAULT_DEPOSIT_AMOUNT);
+
+        issueNewDs(currencyId, block.timestamp + 1 days);
+
+        fetchProtocolGeneralInfo();
+    }
+
+    function test_buyBack() external {
+        uint256 prevDsId = dsId;
+        uint256 amountOutMin = flashSwapRouter.previewSwapRaforDs(currencyId, dsId, 1 ether);
+
+        ra.approve(address(flashSwapRouter), type(uint256).max);
+
+        uint256 amountOut = flashSwapRouter.swapRaforDs(currencyId, dsId, 1 ether, amountOutMin);
+        uint256 hpaCummulated = flashSwapRouter.getHpaCumulated(currencyId);
+        uint256 vhpaCummulated = flashSwapRouter.getVhpaCumulated(currencyId);
+
+        // we fetch the hpa after expiry so that it's calculated
+        uint256 hpa = flashSwapRouter.getHpa(currencyId);
+
+        IPSMcore(moduleCore).updatePsmAutoSellStatus(currencyId, DEFAULT_ADDRESS, true);
+
+        amountOutMin = flashSwapRouter.previewSwapRaforDs(currencyId, dsId, 0.1 ether);
+
+        // should fail, not enough liquidity
+        vm.expectRevert();
+        uint256 amountOutSell = flashSwapRouter.previewSwapDsforRa(currencyId, dsId, 1000 ether);
+
+        // should work, even though there's insfuicient liquidity to sell the LV reserves
+        amountOut = flashSwapRouter.swapRaforDs(currencyId, dsId, 100 ether, amountOutMin);
+
+        uint256 lvReserve = flashSwapRouter.getLvReserve(currencyId, dsId);
+
+        uint256 raBalanceBefore = ra.balanceOf(DEFAULT_ADDRESS);
+        Asset(ds).approve(address(flashSwapRouter), 1000 ether);
+        amountOutSell = flashSwapRouter.swapDsforRa(currencyId, dsId, 1000 ether, 0);
+        uint256 raBalanceAfter = ra.balanceOf(DEFAULT_ADDRESS);
+
+        vm.assertEq(raBalanceAfter, raBalanceBefore + amountOutSell);
+
+        // add more liquidity to the router and AMM
+        moduleCore.depositLv(currencyId, 10_000 ether);
+
+        // now if buy, it should sell from reserves
+        uint256 lvReserveBefore = flashSwapRouter.getLvReserve(currencyId, dsId);
+        amountOut = flashSwapRouter.swapRaforDs(currencyId, dsId, 10 ether, amountOutMin);
+        uint256 lvReserveAfter = flashSwapRouter.getLvReserve(currencyId, dsId);
+
+        vm.assertTrue(lvReserveAfter < lvReserveBefore);
+    }
+}
