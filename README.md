@@ -55,21 +55,21 @@ AFter that, you should see something like this on your terminal :
   Chain Id                     : 11155111
   Deployer                     : 0xFFB6b6896D469798cE64136fd3129979411B5514
  -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-  CETH                            :  0x042Ab9F32E0f403C2094b7e50a2eb947215f6443
-  bsETH                           :  0xA65334d8cBec2804665380313a614Bd320d2B57F
-  lbETH                           :  0x1151519A2473CfA6186E74e37cf1F35AEC957Fe9
-  wamuETH                         :  0x0287496b4d221F671b040829A257e9d24e87129f
-  mlETH                           :  0x76798E8e2A8e57075ae8b54057163F6E7e583cB4
+  CETH                            :  0x93D16d90490d812ca6fBFD29E8eF3B31495d257D
+  bsETH                           :  0xb194fc7C6ab86dCF5D96CF8525576245d0459ea9
+  lbETH                           :  0xF24177162B1604e56EB338dd9775d75CC79DaC2B
+  wamuETH                         :  0x38B61B429a3526cC6C446400DbfcA4c1ae61F11B
+  mlETH                           :  0xCDc1133148121F43bE5F1CfB3a6426BbC01a9AF6
   -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-  Asset Factory Implementation    :  0xc77426230D5c8ceBeE4D129b25a4595ED9C79C7b
-  Asset Factory                   :  0xED909448Dd107a8854A7E3f81126357145Dc54b9
-  Cork Config                     :  0x8D890e7c1CC58Ae039E899A30a5345ac90B8704F
-  Flashswap Router Implementation :  0x188c0D656eAEe1a854092AdE9d88D2CEEb04bdC5
-  Flashswap Router Proxy          :  0x8AA0e75898BCd2B9979e825Aecf2a349E82452EC
-  Univ2 Factory                   :  0x995914a885927b35F74bC2d68a11Bf24941EB40b
-  Univ2 Router                    :  0x8c44A71d4f159d9cB495eF77Ab911da15d83DFe0
-  ModuleCore Router Implementation :  0x5A64B6Ab6BF994871a1f662162bFD03866876fc9
-  Module Core                     :  0x08d8FcCb67B63fC6d89B0fF473FE94818aF40C99
+  Asset Factory Implementation    :  0x92D8b534237C5Be34753b975D53a14b494b96Ef4
+  Asset Factory                   :  0xbdfc069558B9d87Df40f9A4876Fa7c52f6492788
+  Cork Config                     :  0x8c996E7f76fB033cDb83CE1de7c3A134e17Cc227
+  Flashswap Router Implementation :  0xE6F58Dd84869542d7Ec1c0153417E20Fa220B63d
+  Flashswap Router Proxy          :  0x6629e017455CB886669e725AF1BC826b65cB6f24
+  Univ2 Factory                   :  0x8fD48F4ec9cB04540134c02f4dAa5f68585c3936
+  Univ2 Router                    :  0x363E8886E8FF30b6f6770712Cf4e758e2Bf3E353
+  ModuleCore Router Implementation :  0x26De252a30812645960846cEA402E4B34A8eaD89
+  Module Core                     :  0xe56565c208d0a8Ca28FB632aD7F6518f273B8B9f
   -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
   Transferred ownerships to Modulecore
   Modulecore configured in Config contract
@@ -84,6 +84,6 @@ AFter that, you should see something like this on your terminal :
   Liquidity Added to AMM
   New DS issued
   -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-  Funder Contract                 :  0xd301e625fAFF0C21e157f3b9154CFF44DD963728
+  Funder Contract                 :  0xdAD2E0651F88D5EA6725274153209Fe94DF8c829
   -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 ```
