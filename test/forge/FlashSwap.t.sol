@@ -9,17 +9,22 @@ import "./../../contracts/interfaces/IPSMcore.sol";
 import "./../../contracts/interfaces/IDsFlashSwapRouter.sol";
 import "forge-std/console.sol";
 
-contract RolloverTest is Helper {
+contract FlashSwapTest is Helper {
     DummyWETH internal ra;
     DummyWETH internal pa;
     Id public currencyId;
 
     uint256 public DEFAULT_DEPOSIT_AMOUNT = 300_000 ether;
+    uint256 internal constant MERRYL_LYNCH_DEFAULT_INITIAL_DS_PRICE = 0.005 ether;
 
     uint256 public dsId;
 
     address public ct;
     address public ds;
+
+    function defaultInitialDsPrice() internal pure override returns (uint256) {
+        return MERRYL_LYNCH_DEFAULT_INITIAL_DS_PRICE;
+    }
 
     function setUp() public {
         vm.startPrank(DEFAULT_ADDRESS);
