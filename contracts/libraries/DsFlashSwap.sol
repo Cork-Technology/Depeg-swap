@@ -5,7 +5,6 @@ import {Asset} from "../core/assets/Asset.sol";
 import {SwapperMathLibrary} from "./DsSwapperMathLib.sol";
 import {MinimalUniswapV2Library} from "./uni-v2/UniswapV2Library.sol";
 import {PermitChecker} from "./PermitChecker.sol";
-import "forge-std/console.sol";
 
 /**
  * @dev AssetPair structure for Asset Pairs
