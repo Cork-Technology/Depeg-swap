@@ -45,7 +45,7 @@ abstract contract Helper is Test, SigUtils {
     uint256 internal constant DEFAULT_LV_FEE = 0 ether;
 
     // 1% initial ds price
-    uint256 internal constant DEFAULT_INITIAL_DS_PRICE = 0.1 ether;
+    uint256 internal constant DEFAULT_INITIAL_DS_PRICE = 0.005 ether;
 
     function deployAssetFactory() internal {
         assetFactory = new AssetFactory();

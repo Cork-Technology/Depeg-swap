@@ -89,6 +89,10 @@ interface IDsFlashSwapCore is IDsFlashSwapUtility {
     error RolloverNotActive();
 
     error NotDefaultAdmin();
+
+    /// @notice thrown when there's not enough liquidity to perform flash swap
+    error InsufficientLiquidity(uint256 raReserve, uint256 ctReserve, uint256 amountRepayment);
+
     /**
      * @notice Emitted when DS is swapped for RA
      * @param reserveId the reserve id same as the id on PSM and LV
@@ -205,7 +209,7 @@ interface IDsFlashSwapCore is IDsFlashSwapUtility {
     function emptyReservePsm(Id reserveId, uint256 dsId) external returns (uint256 amount);
 
     function emptyReservePartialPsm(Id reserveId, uint256 dsId, uint256 amount) external returns (uint256 emptied);
-    
+
     /**
      * @notice empty some or all DS reserve to liquidity vault, can only be called by moduleCore
      * @param reserveId the pair id

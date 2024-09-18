@@ -276,32 +276,33 @@ contract RouterState is
 
         // sell the DS tokens from the reserve if there's any
         if (amountSellFromReserve != 0) {
-            // calculate the amount of DS tokens that will be sold from both reserve
-            uint256 lvReserveUsed =
-                assetPair.lvReserve * amountSellFromReserve * 1e18 / (assetPair.lvReserve + assetPair.psmReserve) / 1e18;
-            uint256 psmReserveUsed = amountSellFromReserve - lvReserveUsed;
-
-            // decrement reserve
-            assetPair.lvReserve -= lvReserveUsed;
-            assetPair.psmReserve -= psmReserveUsed;
-
             // sell the DS tokens from the reserve and accrue value to LV holders
             // it's safe to transfer all profit to the module core since the profit for each PSM and LV is calculated separately and we invoke
             // the profit acceptance function for each of them
-            uint256 profitRa = __swapDsforRa(assetPair, reserveId, dsId, amountSellFromReserve, 0, _moduleCore);
-            // calculate the profit of the liquidity vault
-            uint256 vaultProfit = profitRa * lvReserveUsed / amountSellFromReserve;
-            // calculate the profit of the PSM
-            uint256 psmProfit = profitRa - vaultProfit;
+            (uint256 profitRa,, bool success) =
+                __swapDsforRa(assetPair, reserveId, dsId, amountSellFromReserve, 0, _moduleCore);
 
-            assert(vaultProfit + psmProfit == profitRa);
+            if (success) {
+                // calculate the amount of DS tokens that will be sold from both reserve
+                uint256 lvReserveUsed = assetPair.lvReserve * amountSellFromReserve * 1e18
+                    / (assetPair.lvReserve + assetPair.psmReserve) / 1e18;
+                uint256 psmReserveUsed = amountSellFromReserve - lvReserveUsed;
 
-            // send profit to the vault and PSM
-            IVault(_moduleCore).provideLiquidityWithFlashSwapFee(reserveId, vaultProfit);
-            IPSMcore(_moduleCore).psmAcceptFlashSwapProfit(reserveId, psmProfit);
+                // decrement reserve
+                assetPair.lvReserve -= lvReserveUsed;
+                assetPair.psmReserve -= psmReserveUsed;
 
-            // recalculate the amount of DS tokens attributed, since we sold some from the reserve
-            (amountOut, borrowedAmount,) = assetPair.getAmountOutBuyDS(amount);
+                // calculate the profit of the liquidity vault
+                uint256 vaultProfit = profitRa * lvReserveUsed / amountSellFromReserve;
+
+                // send profit to the vault and PSM
+                IVault(_moduleCore).provideLiquidityWithFlashSwapFee(reserveId, vaultProfit);
+                // send profit to the PSM
+                IPSMcore(_moduleCore).psmAcceptFlashSwapProfit(reserveId, profitRa - vaultProfit);
+
+                // recalculate the amount of DS tokens attributed, since we sold some from the reserve
+                (amountOut, borrowedAmount,) = assetPair.getAmountOutBuyDS(amount);
+            }
         }
 
         if (amountOut < amountOutMin) {
@@ -427,7 +428,12 @@ contract RouterState is
         // we borrow the same amount of CT tokens from the reserve
         ctReserve -= uint112(amountSellFromReserve);
 
-        (uint256 profit, uint256 raAdded) = assetPair.getAmountOutSellDS(amountSellFromReserve);
+        (uint256 profit, uint256 raAdded, bool success) = assetPair.getAmountOutSellDS(amountSellFromReserve);
+
+        if (!success) {
+            revert IDsFlashSwapCore.InsufficientLiquidity(raReserve, ctReserve, raAdded);
+        }
+
         raReserve += uint112(raAdded);
 
         // emulate Vault way of adding liquidity using RA from selling DS reserve
@@ -478,8 +484,15 @@ contract RouterState is
         DepegSwapLibrary.permit(address(assetPair.ds), rawDsPermitSig, msg.sender, address(this), amount, deadline);
         assetPair.ds.transferFrom(msg.sender, address(this), amount);
 
-        amountOut = __swapDsforRa(assetPair, reserveId, dsId, amount, amountOutMin, msg.sender);
+        bool success;
+        uint256 repaymentAmount;
+        (amountOut, repaymentAmount, success) =
+            __swapDsforRa(assetPair, reserveId, dsId, amount, amountOutMin, msg.sender);
 
+        if (!success) {
+            (uint112 raReserve, uint112 ctReserve) = assetPair.getReservesSorted();
+            revert IDsFlashSwapCore.InsufficientLiquidity(raReserve, ctReserve, repaymentAmount);
+        }
         self.recalculateHPA(dsId, amountOut, amount);
 
         emit DsSwapped(reserveId, dsId, msg.sender, amount, amountOut);
@@ -502,7 +515,15 @@ contract RouterState is
 
         assetPair.ds.transferFrom(msg.sender, address(this), amount);
 
-        amountOut = __swapDsforRa(assetPair, reserveId, dsId, amount, amountOutMin, msg.sender);
+        bool success;
+        uint256 repaymentAmount;
+        (amountOut, repaymentAmount, success) =
+            __swapDsforRa(assetPair, reserveId, dsId, amount, amountOutMin, msg.sender);
+
+        if (!success) {
+            (uint112 raReserve, uint112 ctReserve) = assetPair.getReservesSorted();
+            revert IDsFlashSwapCore.InsufficientLiquidity(raReserve, ctReserve, repaymentAmount);
+        }
 
         self.recalculateHPA(dsId, amountOut, amount);
 
@@ -516,8 +537,12 @@ contract RouterState is
         uint256 amount,
         uint256 amountOutMin,
         address caller
-    ) internal returns (uint256 amountOut) {
-        (amountOut,) = assetPair.getAmountOutSellDS(amount);
+    ) internal returns (uint256 amountOut, uint256 repaymentAmount, bool success) {
+        (amountOut, repaymentAmount, success) = assetPair.getAmountOutSellDS(amount);
+
+        if (!success) {
+            return (amountOut, repaymentAmount, success);
+        }
 
         if (amountOut < amountOutMin) {
             revert InsufficientOutputAmount();
@@ -535,7 +560,16 @@ contract RouterState is
      */
     function previewSwapDsforRa(Id reserveId, uint256 dsId, uint256 amount) external view returns (uint256 amountOut) {
         AssetPair storage assetPair = reserves[reserveId].ds[dsId];
-        (amountOut,) = assetPair.getAmountOutSellDS(amount);
+
+        bool success;
+        uint256 repaymentAmount;
+
+        (amountOut, repaymentAmount, success) = assetPair.getAmountOutSellDS(amount);
+
+        if (!success) {
+            (uint112 raReserve, uint112 ctReserve) = assetPair.getReservesSorted();
+            revert IDsFlashSwapCore.InsufficientLiquidity(raReserve, ctReserve, repaymentAmount);
+        }
     }
 
     function __flashSwap(

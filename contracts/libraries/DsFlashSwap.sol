@@ -54,8 +54,6 @@ library DsFlashSwaplibrary {
 
     uint256 public constant FIRST_ISSUANCE = 1;
 
-    error InsufficientLiquidity(uint256 raReserve, uint256 ctReserve, uint256 amountRepayment, uint256 amountOut);
-
     function onNewIssuance(
         ReserveState storage self,
         uint256 dsId,
@@ -212,21 +210,22 @@ library DsFlashSwaplibrary {
     function getAmountOutSellDS(AssetPair storage assetPair, uint256 amount)
         internal
         view
-        returns (uint256 amountOut, uint256 repaymentAmount)
+        returns (uint256 amountOut, uint256 repaymentAmount, bool success)
     {
         (uint112 raReserve, uint112 ctReserve) = getReservesSorted(assetPair);
-        // we calculate the repayment amount based on the imbalanced ct reserve since we borrow CT from the AMM
+        
         repaymentAmount = MinimalUniswapV2Library.getAmountIn(amount, raReserve, ctReserve - amount);
-
-        // the amountOut is essentially what the user receive, we can calculate this by simply subtracting the repayment amount
+        
         // from the amount, since we're getting back the same RA amount as DS user buy, this works. to get the effective price per DS,
         // you would devide this by the DS amount user bought.
         // note that we subtract 1 to enforce uni v2 rules
 
         // dont' have liquidity to do flash swap properly
         if (repaymentAmount > amount) {
-            revert InsufficientLiquidity(raReserve, ctReserve, repaymentAmount, amount);
+            return (0, 0, false);
         }
+
+        success = true;
 
         amountOut = amount - repaymentAmount;
 
