@@ -36,10 +36,10 @@ contract DeployScript is Script {
     address public ceth = vm.envAddress("WETH");
     uint256 public pk = vm.envUint("PRIVATE_KEY");
 
-    address bsETH = 0xcDD25693eb938B3441585eBDB4D766751fd3cdAD;
-    address lbETH = 0xA00B0cC70dC182972289a0625D3E1eFCE6Aac624;
-    address wamuETH = 0x79A8b67B51be1a9d18Cf88b4e287B46c73316d89;
-    address mlETH = 0x68eb9E1bB42feef616BE433b51440D007D86738e;
+    address bsETH = 0xb194fc7C6ab86dCF5D96CF8525576245d0459ea9;
+    address lbETH = 0xF24177162B1604e56EB338dd9775d75CC79DaC2B;
+    address wamuETH = 0x38B61B429a3526cC6C446400DbfcA4c1ae61F11B;
+    address mlETH = 0xCDc1133148121F43bE5F1CfB3a6426BbC01a9AF6;
 
     CETH cETH = CETH(ceth);
 
