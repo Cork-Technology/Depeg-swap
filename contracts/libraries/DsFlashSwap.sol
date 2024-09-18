@@ -1,11 +1,11 @@
 pragma solidity ^0.8.24;
 
-
 import {IUniswapV2Pair} from "../interfaces/uniswap-v2/pair.sol";
 import {Asset} from "../core/assets/Asset.sol";
 import {SwapperMathLibrary} from "./DsSwapperMathLib.sol";
 import {MinimalUniswapV2Library} from "./uni-v2/UniswapV2Library.sol";
 import {PermitChecker} from "./PermitChecker.sol";
+import "forge-std/console.sol";
 
 /**
  * @dev AssetPair structure for Asset Pairs
@@ -54,6 +54,8 @@ library DsFlashSwaplibrary {
     uint256 public constant SUBSEQUENT_RESERVE_SELL_PRESSURE_PRECENTAGE = 80e18;
 
     uint256 public constant FIRST_ISSUANCE = 1;
+
+    error InsufficientLiquidity(uint256 raReserve, uint256 ctReserve, uint256 amountRepayment, uint256 amountOut);
 
     function onNewIssuance(
         ReserveState storage self,
@@ -221,6 +223,12 @@ library DsFlashSwaplibrary {
         // from the amount, since we're getting back the same RA amount as DS user buy, this works. to get the effective price per DS,
         // you would devide this by the DS amount user bought.
         // note that we subtract 1 to enforce uni v2 rules
+
+        // dont' have liquidity to do flash swap properly
+        if (repaymentAmount > amount) {
+            revert InsufficientLiquidity(raReserve, ctReserve, repaymentAmount, amount);
+        }
+
         amountOut = amount - repaymentAmount;
 
         // enforce uni v2 rules, pay 1 wei more
