@@ -241,7 +241,7 @@ interface IDsFlashSwapCore is IDsFlashSwapUtility {
      * @param amount the amount of RA to swap
      * @return amountOut amount of DS that will be received
      */
-    function previewSwapRaforDs(Id reserveId, uint256 dsId, uint256 amount) external returns (uint256 amountOut);
+    function previewSwapRaforDs(Id reserveId, uint256 dsId, uint256 amount) external view returns (uint256 amountOut);
 
     /**
      * @notice Swaps DS for RA
@@ -262,7 +262,7 @@ interface IDsFlashSwapCore is IDsFlashSwapUtility {
      * @param amount the amount of DS to swap
      * @return amountOut amount of RA that will be received
      */
-    function previewSwapDsforRa(Id reserveId, uint256 dsId, uint256 amount) external returns (uint256 amountOut);
+    function previewSwapDsforRa(Id reserveId, uint256 dsId, uint256 amount) external view returns (uint256 amountOut);
 
     /**
      * @notice Updates the discount rate in D days for the pair
