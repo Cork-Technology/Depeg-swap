@@ -130,7 +130,7 @@ contract CST is ERC20, Ownable {
             // Check if the withdrawal delay has passed
             if (request.amount > 0 && block.timestamp >= request.requestTime + withdrawalDelay) {
                 // Calculate user's proportional CETH amount
-                uint256 cethAmount = (request.amount * cethBalance) / totalCSTSupply;
+                uint256 cethAmount = (request.amount * cethBalance * 1e18) / totalCSTSupply / 1e18;
 
                 // Burn the CST tokens from the user
                 _burn(user, request.amount);
@@ -145,6 +145,12 @@ contract CST is ERC20, Ownable {
                 pendingUsers[i] = pendingUsers[pendingUsers.length - 1];
                 pendingUsers.pop();
                 isUserPending[user] = false;
+
+                // edge cases, will throw arithmetic underflow if not handled
+                if (usersToProcess == 1) {
+                    break;
+                }
+
                 i--; // Adjust the index after removal
             }
         }
