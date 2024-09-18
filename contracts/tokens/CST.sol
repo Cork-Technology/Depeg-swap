@@ -89,23 +89,6 @@ contract CST is ERC20, Ownable {
         }
     }
 
-    function calculateYield(address user) public view returns (uint256) {
-        uint256 totalYield = 0;
-        uint256 currentTime = block.timestamp;
-
-        // Iterate through each deposit
-        for (uint256 i = 0; i < userDeposits[user].length; i++) {
-            Deposit memory depositObj = userDeposits[user][i];
-            uint256 timeStaked = currentTime - depositObj.timestamp;
-
-            // Calculate yield for this deposit
-            uint256 yieldForDeposit = (depositObj.amount * yieldRate * timeStaked) / 1e18; // assuming yieldRate is in wei format (e.g., 0.05e18 = 5%)
-            totalYield += yieldForDeposit;
-        }
-
-        return totalYield;
-    }
-
     /**
      * @dev User requests withdrawal, amount is locked and a withdrawal request is recorded
      * @param amount number of Cork ETH to be requested for withdrawal
@@ -149,15 +132,11 @@ contract CST is ERC20, Ownable {
                 // Calculate user's proportional CETH amount
                 uint256 cethAmount = (request.amount * cethBalance) / totalCSTSupply;
 
-                // Calculate accumulated yield for the user
-                uint256 userYield = calculateYield(user);
-
                 // Burn the CST tokens from the user
                 _burn(user, request.amount);
 
-                ceth.mint(address(this), userYield);
                 // Transfer the corresponding amount of CETH + yield to the user
-                IERC20(address(ceth)).transfer(user, cethAmount + userYield);
+                IERC20(address(ceth)).transfer(user, cethAmount);
 
                 // Clear the withdrawal request after successful withdrawal
                 delete requestedWithdrawals[user];
