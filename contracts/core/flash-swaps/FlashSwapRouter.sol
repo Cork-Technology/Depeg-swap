@@ -409,7 +409,11 @@ contract RouterState is
 
         // sell the DS tokens from the reserve if there's any
         if (amountSellFromReserve != 0) {
-            amountOut = _trySellFromReserve(self, assetPair, amountSellFromReserve, dsId, amount);
+            (,, bool success) = assetPair.getAmountOutSellDS(amountSellFromReserve);
+
+            if (success) {
+                amountOut = _trySellFromReserve(self, assetPair, amountSellFromReserve, dsId, amount);
+            }
         }
 
         // add the amount of DS tokens from the rollover, if any
@@ -430,11 +434,7 @@ contract RouterState is
         // we borrow the same amount of CT tokens from the reserve
         ctReserve -= uint112(amountSellFromReserve);
 
-        (uint256 profit, uint256 raAdded, bool success) = assetPair.getAmountOutSellDS(amountSellFromReserve);
-
-        if (!success) {
-            revert IDsFlashSwapCore.InsufficientLiquidity(raReserve, ctReserve, raAdded);
-        }
+        (uint256 profit, uint256 raAdded,) = assetPair.getAmountOutSellDS(amountSellFromReserve);
 
         raReserve += uint112(raAdded);
 

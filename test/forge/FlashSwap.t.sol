@@ -14,7 +14,7 @@ contract FlashSwapTest is Helper {
     DummyWETH internal pa;
     Id public currencyId;
 
-    uint256 public DEFAULT_DEPOSIT_AMOUNT = 300_000 ether;
+    uint256 public DEFAULT_DEPOSIT_AMOUNT = 40_000 ether;
     uint256 internal constant MERRYL_LYNCH_DEFAULT_INITIAL_DS_PRICE = 0.005 ether;
 
     uint256 public dsId;
@@ -73,7 +73,7 @@ contract FlashSwapTest is Helper {
 
         ra.approve(address(flashSwapRouter), type(uint256).max);
 
-        uint256 amountOut = flashSwapRouter.swapRaforDs(currencyId, dsId, 1 ether, amountOutMin);
+        uint256 amountOut = flashSwapRouter.swapRaforDs(currencyId, dsId, 1 ether, 0);
         uint256 hpaCummulated = flashSwapRouter.getHpaCumulated(currencyId);
         uint256 vhpaCummulated = flashSwapRouter.getVhpaCumulated(currencyId);
 
@@ -89,9 +89,13 @@ contract FlashSwapTest is Helper {
         uint256 amountOutSell = flashSwapRouter.previewSwapDsforRa(currencyId, dsId, 1000 ether);
 
         // should work, even though there's insfuicient liquidity to sell the LV reserves
+        uint256 lvReserveBefore = flashSwapRouter.getLvReserve(currencyId, dsId);
+        amountOutMin = flashSwapRouter.previewSwapRaforDs(currencyId, dsId, 100 ether);
         amountOut = flashSwapRouter.swapRaforDs(currencyId, dsId, 100 ether, amountOutMin);
+        uint256 lvReserveAfter = flashSwapRouter.getLvReserve(currencyId, dsId);
 
-        uint256 lvReserve = flashSwapRouter.getLvReserve(currencyId, dsId);
+        vm.assertEq(lvReserveBefore, lvReserveAfter);
+        vm.assertEq(amountOut, amountOutMin);
 
         uint256 raBalanceBefore = ra.balanceOf(DEFAULT_ADDRESS);
         Asset(ds).approve(address(flashSwapRouter), 1000 ether);
@@ -104,9 +108,10 @@ contract FlashSwapTest is Helper {
         moduleCore.depositLv(currencyId, 10_000 ether);
 
         // now if buy, it should sell from reserves
-        uint256 lvReserveBefore = flashSwapRouter.getLvReserve(currencyId, dsId);
-        amountOut = flashSwapRouter.swapRaforDs(currencyId, dsId, 10 ether, amountOutMin);
-        uint256 lvReserveAfter = flashSwapRouter.getLvReserve(currencyId, dsId);
+        lvReserveBefore = flashSwapRouter.getLvReserve(currencyId, dsId);
+        uint256 previewAmountOut = flashSwapRouter.previewSwapRaforDs(currencyId, dsId, 10 ether);
+        amountOut = flashSwapRouter.swapRaforDs(currencyId, dsId, 10 ether, 0);
+        lvReserveAfter = flashSwapRouter.getLvReserve(currencyId, dsId);
 
         vm.assertTrue(lvReserveAfter < lvReserveBefore);
     }
