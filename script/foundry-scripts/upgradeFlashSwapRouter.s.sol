@@ -7,23 +7,21 @@ import {ERC1967Proxy} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.s
 
 contract UpgradeUUPSScript is Script {
     function run() external {
-        // Load the private key to deploy and upgrade 
-        uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY2");
+        // Load the private key to deploy and upgrade
+        uint256 deployerPrivateKey = vm.envUint("PRIVATE_KEY");
 
         // Begin broadcasting (i.e., sending transactions)
         vm.startBroadcast(deployerPrivateKey);
         address flashSwapProxyAddress = 0x6629e017455CB886669e725AF1BC826b65cB6f24;
-
-        bytes32 CONFIG = keccak256("CONFIG");
-        (bool succeed, ) = flashSwapProxyAddress.call(abi.encodeWithSignature("grantRole(bytes,address)", CONFIG, msg.sender));
-        require(succeed, "role not granted");
 
         // Step 1: Deploy the new implementation contract (RouterState)
         RouterState newImplementation = new RouterState();
         console.log("New implementation deployed at:", address(newImplementation));
 
         // Step 2: Upgrade the proxy contract to use the new implementation
-        (bool success, ) = flashSwapProxyAddress.call(abi.encodeWithSignature("upgradeToAndCall(address,bytes)", address(newImplementation), "0x"));
+        (bool success,) = flashSwapProxyAddress.call(
+            abi.encodeWithSignature("upgradeToAndCall(address,bytes)", address(newImplementation), "")
+        );
         require(success, "Upgrade failed");
 
         console.log("Proxy upgraded to new implementation!");

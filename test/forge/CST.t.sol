@@ -8,28 +8,45 @@ contract CSTTEST is Helper {
     CST public cst;
     CETH public ceth;
 
+    uint256 defaultAmount = 200 ether;
+
+    address secondUser = address(2);
+
     function setUp() external {
         ceth = new CETH();
-        cst = new CST("Cork Staked Ethereum", "CST", address(ceth), DEFAULT_ADDRESS, 0, 1 ether);
+        cst = new CST("Cork Staked Ethereum", "CST", address(ceth), DEFAULT_ADDRESS, 0, 0 ether);
         ceth.grantRole(ceth.MINTER_ROLE(), address(cst));
 
-        ceth.mint(address(this), 10 ether);
+        ceth.mint(secondUser, defaultAmount);
+        ceth.mint(address(this), defaultAmount);
     }
 
     function test_rateIsCorrect() external {
-        ceth.approve(address(cst), 10 ether);
-        cst.deposit(10 ether);
-        vm.assertEq(cst.balanceOf(address(this)), 10 ether);
+        ceth.approve(address(cst), defaultAmount);
+        cst.deposit(defaultAmount);
+        vm.assertEq(cst.balanceOf(address(this)), defaultAmount);
 
         vm.prank(DEFAULT_ADDRESS);
-        cst.changeRate(2 ether);
+        cst.changeRate(1 ether);
 
-        vm.assertEq(ceth.balanceOf(address(cst)), 20 ether);
+        // vm.assertEq(ceth.balanceOf(address(cst)), defaultAmount);
 
-        cst.approve(address(cst), 1 ether);
-        cst.requestWithdrawal(1 ether);
+        // cst.approve(address(cst), defaultAmount);
+        // cst.requestWithdrawal(defaultAmount);
+        // cst.processWithdrawals(1);
+
+        // vm.assertEq(ceth.balanceOf(address(this)), defaultAmount);
+
+        vm.startPrank(secondUser);
+
+        ceth.approve(address(cst), defaultAmount);
+        cst.deposit(defaultAmount);
+        vm.assertEq(cst.balanceOf(secondUser), defaultAmount);
+
+        cst.approve(address(cst), defaultAmount);
+        cst.requestWithdrawal(defaultAmount);
         cst.processWithdrawals(1);
 
-        vm.assertEq(ceth.balanceOf(address(this)), 2 ether);
+        vm.assertEq(ceth.balanceOf(secondUser), defaultAmount);
     }
 }

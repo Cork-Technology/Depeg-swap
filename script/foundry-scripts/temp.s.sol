@@ -40,102 +40,102 @@ contract TempScript is Script {
         cETH.transfer(user2, 200 ether);
         cETH.transfer(user3, 200 ether);
         ceth = address(cETH);
-        console.log("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-");
-        console.log("CETH                            : ", address(cETH));
+        console.log("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-"); // solhint-disable-line no-console
+        console.log("CETH                            : ", address(cETH)); // solhint-disable-line no-console
 
         CST bsETHCST = new CST("Bear Sterns Restaked ETH", "bsETH", ceth, msg.sender, 480 hours, 1 ether);
         bsETH = address(bsETHCST);
         cETH.addMinter(bsETH);
         cETH.approve(bsETH, 500_000 ether);
         bsETHCST.deposit(500_000 ether);
-        console.log("bsETH                           : ", address(bsETH));
+        console.log("bsETH                           : ", address(bsETH)); // solhint-disable-line no-console
 
         CST lbETHCST = new CST("Lehman Brothers Restaked ETH", "lbETH", ceth, msg.sender, 10 hours, 1 ether);
         lbETH = address(lbETHCST);
         cETH.addMinter(lbETH);
         cETH.approve(lbETH, 500_000 ether);
         lbETHCST.deposit(500_000 ether);
-        console.log("lbETH                           : ", address(lbETH));
+        console.log("lbETH                           : ", address(lbETH)); // solhint-disable-line no-console
 
         CST wamuETHCST = new CST("Washington Mutual restaked ETH", "wamuETH", ceth, msg.sender, 1 seconds, 1 ether);
         wamuETH = address(wamuETHCST);
         cETH.addMinter(wamuETH);
         cETH.approve(wamuETH, 1_000_000 ether);
         wamuETHCST.deposit(1_000_000 ether);
-        console.log("wamuETH                         : ", address(wamuETH));
+        console.log("wamuETH                         : ", address(wamuETH)); // solhint-disable-line no-console
 
         CST mlETHCST = new CST("Merrill Lynch staked ETH", "mlETH", ceth, msg.sender, 5 hours, 1 ether);
         mlETH = address(mlETHCST);
         cETH.addMinter(mlETH);
         cETH.approve(mlETH, 10_000_000 ether);
         mlETHCST.deposit(10_000_000 ether);
-        console.log("mlETH                           : ", address(mlETH));
-        console.log("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-");
+        console.log("mlETH                           : ", address(mlETH)); // solhint-disable-line no-console
+        console.log("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-"); // solhint-disable-line no-console
         cETH = CETH(ceth);
         vm.stopBroadcast();
 
-        console.log("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-");
-        console.log("cETH of user 1                  : ", cETH.balanceOf(user1));
-        console.log("cETH of user 2                  : ", cETH.balanceOf(user2));
-        console.log("cETH of user 3                  : ", cETH.balanceOf(user3));
-        console.log("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-");
+        console.log("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-"); // solhint-disable-line no-console
+        console.log("cETH of user 1                  : ", cETH.balanceOf(user1)); // solhint-disable-line no-console
+        console.log("cETH of user 2                  : ", cETH.balanceOf(user2)); // solhint-disable-line no-console
+        console.log("cETH of user 3                  : ", cETH.balanceOf(user3)); // solhint-disable-line no-console
+        console.log("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-"); // solhint-disable-line no-console
 
         vm.startBroadcast(pk2);
         cETH.approve(wamuETH, 200 ether);
         wamuETHCST.deposit(200 ether);
         vm.stopBroadcast();
-        console.log("user2 deposited 200 cETH to wamuETH");
-        console.log("user2 wamuETH                  : ", wamuETHCST.balanceOf(user2));
-        console.log("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-");
+        console.log("user2 deposited 200 cETH to wamuETH"); // solhint-disable-line no-console
+        console.log("user2 wamuETH                  : ", wamuETHCST.balanceOf(user2)); // solhint-disable-line no-console
+        console.log("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-"); // solhint-disable-line no-console
 
         vm.startBroadcast(pk3);
         cETH.approve(wamuETH, 200 ether);
         wamuETHCST.deposit(200 ether);
         vm.stopBroadcast();
-        console.log("user3 deposited 200 cETH to wamuETH");
-        console.log("user3 wamuETH                  : ", wamuETHCST.balanceOf(user3));
-        console.log("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-");
+        console.log("user3 deposited 200 cETH to wamuETH"); // solhint-disable-line no-console
+        console.log("user3 wamuETH                  : ", wamuETHCST.balanceOf(user3)); // solhint-disable-line no-console
+        console.log("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-"); // solhint-disable-line no-console
 
-        console.log("cETH of user 1                  : ", cETH.balanceOf(user1));
-        console.log("cETH of user 2                  : ", cETH.balanceOf(user2));
-        console.log("cETH of user 3                  : ", cETH.balanceOf(user3));
-        console.log("wamuETH Total Supply            : ", wamuETHCST.totalSupply());
-        console.log("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-");
+        console.log("cETH of user 1                  : ", cETH.balanceOf(user1)); // solhint-disable-line no-console
+        console.log("cETH of user 2                  : ", cETH.balanceOf(user2)); // solhint-disable-line no-console
+        console.log("cETH of user 3                  : ", cETH.balanceOf(user3)); // solhint-disable-line no-console
+        console.log("wamuETH Total Supply            : ", wamuETHCST.totalSupply()); // solhint-disable-line no-console
+        console.log("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-"); // solhint-disable-line no-console
         vm.startBroadcast(pk2);
         uint256 user2WamuETH = wamuETHCST.balanceOf(user2);
         wamuETHCST.requestWithdrawal(user2WamuETH);
-        console.log("user2 requested wamu withdrawal : ", user2WamuETH);
-        console.log("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-");
+        console.log("user2 requested wamu withdrawal : ", user2WamuETH); // solhint-disable-line no-console
+        console.log("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-"); // solhint-disable-line no-console
         vm.stopBroadcast();
 
         vm.startBroadcast(pk3);
         uint256 user3WamuETH = wamuETHCST.balanceOf(user3);
         wamuETHCST.requestWithdrawal(user3WamuETH);
-        console.log("user3 requested wamu withdrawal : ", user3WamuETH);
-        console.log("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-");
+        console.log("user3 requested wamu withdrawal : ", user3WamuETH); // solhint-disable-line no-console
+        console.log("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-"); // solhint-disable-line no-console
         vm.warp(block.timestamp + 2);
-        console.log("moved time for passing withdrawal delay");
+        console.log("moved time for passing withdrawal delay"); // solhint-disable-line no-console
         vm.stopBroadcast();
 
         vm.startBroadcast(pk);
         wamuETHCST.processWithdrawals(1);
-        console.log("Processes user2 withdrawal by backend");
-        console.log("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-");
-        console.log("user2 remaining wamuETH         : ", wamuETHCST.balanceOf(user2));
-        console.log("cETH of user 2                  : ", cETH.balanceOf(user2));
-        console.log("user3 remaining wamuETH         : ", wamuETHCST.balanceOf(user3));
-        console.log("cETH of user 3                  : ", cETH.balanceOf(user3));
-        console.log("wamuETH Total Supply            : ", wamuETHCST.totalSupply());
-        console.log("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-");
+        console.log("Processes user2 withdrawal by backend"); // solhint-disable-line no-console
+        console.log("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-"); // solhint-disable-line no-console
+        console.log("user2 remaining wamuETH         : ", wamuETHCST.balanceOf(user2)); // solhint-disable-line no-console
+        console.log("cETH of user 2                  : ", cETH.balanceOf(user2)); // solhint-disable-line no-console
+        console.log("user3 remaining wamuETH         : ", wamuETHCST.balanceOf(user3)); // solhint-disable-line no-console
+        console.log("cETH of user 3                  : ", cETH.balanceOf(user3)); // solhint-disable-line no-console
+        console.log("wamuETH Total Supply            : ", wamuETHCST.totalSupply()); // solhint-disable-line no-console
+        console.log("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-"); // solhint-disable-line no-console
 
         wamuETHCST.processWithdrawals(1);
-        console.log("Processes user3 withdrawal by backend");
-        console.log("user2 remaining wamuETH         : ", wamuETHCST.balanceOf(user2));
-        console.log("cETH of user 2                  : ", cETH.balanceOf(user2));
-        console.log("user3 remaining wamuETH         : ", wamuETHCST.balanceOf(user3));
-        console.log("cETH of user 3                  : ", cETH.balanceOf(user3));
-        console.log("wamuETH Total Supply            : ", wamuETHCST.totalSupply());
-        console.log("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-");
+        console.log("Processes user3 withdrawal by backend"); // solhint-disable-line no-console
+        console.log("user2 remaining wamuETH         : ", wamuETHCST.balanceOf(user2)); // solhint-disable-line no-console
+        console.log("cETH of user 2                  : ", cETH.balanceOf(user2)); // solhint-disable-line no-console
+        console.log("user3 remaining wamuETH         : ", wamuETHCST.balanceOf(user3)); // solhint-disable-line no-console
+        console.log("cETH of user 3                  : ", cETH.balanceOf(user3)); // solhint-disable-line no-console
+        console.log("wamuETH Total Supply            : ", wamuETHCST.totalSupply()); // solhint-disable-line no-console
+        console.log("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-"); // solhint-disable-line no-console
         vm.stopBroadcast();
 
         vm.startBroadcast(pk3);
