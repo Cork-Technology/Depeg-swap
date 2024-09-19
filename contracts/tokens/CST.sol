@@ -83,15 +83,8 @@ contract CST is ERC20, Ownable {
         if (totalCSTSupply == 0) {
             _mint(msg.sender, amount);
         } else {
-
-            console.log("totalCSTSupply : ", totalCSTSupply);
-            console.log("cethBalance    : ", cethBalance);
-            console.log("amount         : ", amount);
-            console.log("caller         :", msg.sender);
-
             uint256 mintAmount = (amount * totalCSTSupply) / cethBalance;
 
-            console.log("mintAmount     : ", mintAmount);
             _mint(msg.sender, mintAmount);
         }
 
