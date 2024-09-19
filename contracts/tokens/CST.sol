@@ -73,8 +73,6 @@ contract CST is ERC20, Ownable {
             revert ZeroAmountNotAllowed();
         }
 
-        // Transfer CETH to the contract
-        IERC20(address(ceth)).transferFrom(msg.sender, address(this), amount);
         // Record the new deposit with the current timestamp
         userDeposits[msg.sender].push(Deposit(amount, block.timestamp));
 
@@ -85,8 +83,19 @@ contract CST is ERC20, Ownable {
         if (totalCSTSupply == 0) {
             _mint(msg.sender, amount);
         } else {
-            _mint(msg.sender, (amount * totalCSTSupply) / cethBalance);
+
+            console.log("totalCSTSupply : ", totalCSTSupply);
+            console.log("cethBalance    : ", cethBalance);
+            console.log("amount         : ", amount);
+            console.log("caller         :", msg.sender);
+
+            uint256 mintAmount = (amount * totalCSTSupply) / cethBalance;
+
+            console.log("mintAmount     : ", mintAmount);
+            _mint(msg.sender, mintAmount);
         }
+
+        IERC20(address(ceth)).transferFrom(msg.sender, address(this), amount);
     }
 
     /**
