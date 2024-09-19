@@ -6,6 +6,7 @@
   "license": "MIT",
   "scripts": {
     "test": "npx hardhat test",
+    "test:all": "npx hardhat clean && forge clean && forge test -vvv && npx hardhat test",
     "build": "npx hardhat compile",
     "compile:organise":"npx hardhat clean && npx hardhat compile && node script/node-scripts/organiseArtifacts.js",
     "lint:contract": "npx solhint 'contracts/**/*.sol'",
