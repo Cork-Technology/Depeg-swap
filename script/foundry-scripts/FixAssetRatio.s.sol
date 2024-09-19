@@ -21,8 +21,6 @@ contract FixAssetRatioScript is Script {
     address lbETH = 0xF24177162B1604e56EB338dd9775d75CC79DaC2B;
     address wamuETH = 0x38B61B429a3526cC6C446400DbfcA4c1ae61F11B;
     address mlETH = 0xCDc1133148121F43bE5F1CfB3a6426BbC01a9AF6;
-@Zian pushed script FixAssetRatioScript crosscheck it... looking good to me
-@rob confirm script output so i can make transaction 
     CETH cETH = CETH(ceth);
 
     function setUp() public {}
