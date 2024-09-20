@@ -245,8 +245,6 @@ library VaultLibrary {
             revert ICommon.ZeroDeposit();
         }
         safeBeforeExpired(self);
-        self.vault.balances.ra.lockUnchecked(amount, from);
-        __provideLiquidityWithRatio(self, amount, flashSwapRouter, self.ds[self.globalAssetIdx].ct, ammRouter);
 
         uint256 exchangeRate;
 
@@ -258,6 +256,9 @@ library VaultLibrary {
             // else we get the current exchange rate of LV
             (exchangeRate,,) = previewRedeemEarly(self, 1 ether, flashSwapRouter);
         }
+
+        self.vault.balances.ra.lockUnchecked(amount, from);
+        __provideLiquidityWithRatio(self, amount, flashSwapRouter, self.ds[self.globalAssetIdx].ct, ammRouter);
 
         // then we calculate how much LV we will get for the amount of RA we deposited with the exchange rate
         // this is to seprate the yield vs the actual deposit amount. so when a user withdraws their LV, they get their accrued yield properly
@@ -453,7 +454,7 @@ library VaultLibrary {
         );
 
         (,,,, totalRa, ammCtBalance) = __calculateTotalRaAndCtBalanceWithReserve(
-            self, raReserve, ctReserve, flashSwapRouter.getLvReserve(self.info.toId(), dsId)
+            self, raReserve, ctReserve, flashSwapRouter.getUniV2pair(self.info.toId(), dsId).totalSupply()
         );
     }
 
@@ -475,7 +476,7 @@ library VaultLibrary {
         );
 
         (,, raPerLv, ctPerLv, raPerLp, ctPerLp) = __calculateTotalRaAndCtBalanceWithReserve(
-            self, raReserve, ctReserve, flashSwapRouter.getLvReserve(self.info.toId(), dsId)
+            self, raReserve, ctReserve, flashSwapRouter.getUniV2pair(self.info.toId(), dsId).totalSupply()
         );
     }
 
