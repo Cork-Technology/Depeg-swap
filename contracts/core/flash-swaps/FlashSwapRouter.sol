@@ -307,12 +307,16 @@ contract RouterState is
             }
         }
 
-        if (amountOut < amountOutMin) {
+        // slippage protection, revert if the amount of DS tokens received is less than the minimum amount
+        if (amountOut + dsReceived < amountOutMin) {
             revert InsufficientOutputAmount();
         }
 
         // trigger flash swaps and send the attributed DS tokens to the user
         __flashSwap(assetPair, assetPair.pair, borrowedAmount, 0, dsId, reserveId, true, amountOut, msg.sender);
+
+        // add the amount of DS tokens from the rollover, if any
+        amountOut += dsReceived;
     }
 
     /**
