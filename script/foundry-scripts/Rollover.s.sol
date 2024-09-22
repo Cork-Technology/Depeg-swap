@@ -45,8 +45,8 @@ contract RolloverScript is Script {
 
     uint256 public pk = vm.envUint("PRIVATE_KEY");
 
-    // TODO(confirm with rob): roughly 22 hours
-    uint256 DEFAULT_ROLLOVER_PERIOD = 6600;
+    // roughly 6 hours
+    uint256 DEFAULT_ROLLOVER_PERIOD = 1800;
 
     function issueNewDs(Assets memory asset) internal {
         string memory tokenName = CST(asset.peggedAsset).name();
