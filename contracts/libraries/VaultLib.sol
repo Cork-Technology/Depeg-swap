@@ -278,6 +278,12 @@ library VaultLibrary {
         return self.vault.userLvBalance[user].balance;
     }
 
+    // returns the amount of PA as per price of PA with LV and given LV amount
+    // lv price = paAvailable/lvTotalSupply
+    function _calculatePaPriceForLv(State storage self, uint256 lvAmt) internal view returns (uint256 paAmount) {
+        return lvAmt * ERC20(self.info.pair0).balanceOf(address(this)) / ERC20(self.vault.lv._address).totalSupply();
+    }
+
     // preview a redeem action for PA with up to current amount of LV,
     // returns the amount of PA that user will receive based on his LV deposited
     function previewRedeemPaWithLv(State storage self, address user, uint256 amount) external view returns (uint256) {
@@ -285,7 +291,7 @@ library VaultLibrary {
         if (userLvAmt > amount) {
             return amount;
         } else {
-            return userLvAmt;
+            return _calculatePaPriceForLv(self, amount);
         }
     }
 
@@ -301,8 +307,10 @@ library VaultLibrary {
         }
         ERC20(self.vault.lv._address).transferFrom(user, address(this), amount);
         self.vault.userLvBalance[user].withdrawn += amount;
-        self.vault.pool.withdrawalPool.paBalance += amount;
-        return amount;
+
+        uint256 paAmt = _calculatePaPriceForLv(self, amount);
+        self.vault.pool.withdrawalPool.paBalance += paAmt;
+        return paAmt;
     }
 
     // preview a deposit action with current exchange rate,

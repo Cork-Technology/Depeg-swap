@@ -27,6 +27,7 @@ describe("LvCore", function () {
   let moduleCore: Awaited<ReturnType<typeof getModuleCore>>;
   let corkConfig: Awaited<ReturnType<typeof getCorkConfig>>;
   let Id: Awaited<ReturnType<typeof moduleCore.read.getId>>;
+  let pa: Awaited<ReturnType<typeof getPA>>;
 
   const getModuleCore = async (address: Address) => {
     return await hre.viem.getContractAt("ModuleCore", address);
@@ -34,6 +35,10 @@ describe("LvCore", function () {
 
   const getCorkConfig = async (address: Address) => {
     return await hre.viem.getContractAt("CorkConfig", address);
+  };
+
+  const getPA = async (address: Address) => {
+    return await hre.viem.getContractAt("ERC20", address);
   };
 
   before(async () => {
@@ -60,6 +65,7 @@ describe("LvCore", function () {
       account: secondSigner.account,
     });
     Id = await moduleCore.read.getId([fixture.pa.address, fixture.ra.address]);
+    pa = await getPA(fixture.pa.address);
   });
 
   async function issueNewSwapAssets(expiry: any, options = {}) {
@@ -406,11 +412,17 @@ describe("LvCore", function () {
     it("should return correct preview LV redeem with PA", async function () {
       const { Id } = await issueNewSwapAssets(expiry);
       await moduleCore.write.depositLv([Id, depositAmount]);
+
+      await fixture.pa.write.mint([moduleCore.address, depositAmount]);
+
       let pa = await moduleCore.read.previewRedeemPaWithLv([Id, redeemAmount]);
       expect(pa).to.be.equal(redeemAmount);
 
-      pa = await moduleCore.read.previewRedeemPaWithLv([Id, depositAmount]);
-      expect(pa).to.be.equal(depositAmount);
+      let paAmt = await moduleCore.read.previewRedeemPaWithLv([
+        Id,
+        depositAmount,
+      ]);
+      expect(paAmt).to.be.equal(depositAmount);
     });
   });
 
@@ -418,13 +430,15 @@ describe("LvCore", function () {
     it("redeemPaWithLv should work correctly", async function () {
       const { Id } = await issueNewSwapAssets(expiry);
       await moduleCore.write.depositLv([Id, depositAmount]);
-      await fixture.lv.write.approve([moduleCore.address, redeemAmount]);
+      await fixture.lv.write.approve([moduleCore.address, depositAmount]);
+      await fixture.pa.write.mint([moduleCore.address, depositAmount]);
+
       const preview = await moduleCore.read.previewRedeemPaWithLv([
         Id,
-        redeemAmount,
+        depositAmount,
       ]);
-
-      await moduleCore.write.redeemPaWithLv([Id, redeemAmount], {
+      console.log(preview);
+      await moduleCore.write.redeemPaWithLv([Id, depositAmount], {
         account: defaultSigner.account,
       });
       const event = await moduleCore.getEvents
