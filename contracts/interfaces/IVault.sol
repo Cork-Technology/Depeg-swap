@@ -34,12 +34,20 @@ interface IVault {
     /// @param newEarlyRedemptionFee The new early redemption rate
     event EarlyRedemptionFeeUpdated(Id indexed Id, uint256 indexed newEarlyRedemptionFee);
 
+    event LvRedeemedWithPA(Id indexed id, address indexed redeemer, uint256 pa);
+
     /**
      * @notice Deposit a wrapped asset into a given vault
      * @param id The Module id that is used to reference both psm and lv of a given pair
      * @param amount The amount of the redemption asset(ra) deposited
      */
     function depositLv(Id id, uint256 amount) external returns (uint256 received);
+
+    function previewRedeemPaWithLv(Id id, uint256 amount) external view returns (uint256 pa);
+
+    function redeemablePA(Id id) external view returns (uint256);
+
+    function redeemPaWithLv(Id id, uint256 amount) external returns (uint256 received);
 
     /**
      * @notice Preview the amount of lv that will be deposited

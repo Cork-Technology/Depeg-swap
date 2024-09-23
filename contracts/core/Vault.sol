@@ -110,6 +110,31 @@ abstract contract VaultCore is ModuleState, Context, IVault {
         (received, fee, feePrecentage) = state.previewRedeemEarly(amount, getRouterCore());
     }
 
+    // returns the amount of PA user able to redeem
+    function redeemablePA(Id id) external view override returns (uint256) {
+        return VaultLibrary.redeemablePA(states[id], _msgSender());
+    }
+
+    /**
+     * @notice Preview the amount of PA that will be recieved in exchange for LV
+     * @param amount The amount of the pegged asset(pa) to be received
+     */
+    function previewRedeemPaWithLv(Id id, uint256 amount) external view override returns (uint256 pa) {
+        pa = VaultLibrary.previewRedeemPaWithLv(states[id], _msgSender(), amount);
+    }
+
+    /**
+     * @notice Redeem LV from a given vault in exchange for PA
+     * @param id The Module id that is used to reference both psm and lv of a given pair
+     * @param amount The amount of the LV to be redeemed
+     * @return received The amount of PA received
+     */
+    function redeemPaWithLv(Id id, uint256 amount) external override returns (uint256 received) {
+        State storage state = states[id];
+        received = state.redeemPaWithLv(_msgSender(), amount);
+        emit LvRedeemedWithPA(id, _msgSender(), received);
+    }
+
     /**
      * Returns the early redemption fee percentage
      * @param id The Module id that is used to reference both psm and lv of a given pair

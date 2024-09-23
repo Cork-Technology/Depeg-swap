@@ -45,6 +45,9 @@ library VaultLibrary {
     /// @notice insufficient output amount, e.g trying to redeem 100 LV whcih you expect 100 RA but only received 50 RA
     error InsufficientOutputAmount(uint256 amountOutMin, uint256 received);
 
+    /// @notice insufficient LV deposit amount, e.g trying to redeem 100 LV but only deposited 50 RA total
+    error InsufficientLvDeposit(uint256 lvDeficit);
+
     function initialize(VaultState storage self, address lv, uint256 fee, address ra, uint256 initialDsPrice)
         external
     {
@@ -266,7 +269,40 @@ library VaultLibrary {
 
         self.vault.lv.issue(from, amount);
 
+        self.vault.userLvBalance[from].balance += amount;
         received = amount;
+    }
+
+    // returns the amount of PA user able to redeem
+    function redeemablePA(State storage self, address user) external view returns (uint256) {
+        return self.vault.userLvBalance[user].balance;
+    }
+
+    // preview a redeem action for PA with up to current amount of LV,
+    // returns the amount of PA that user will receive based on his LV deposited
+    function previewRedeemPaWithLv(State storage self, address user, uint256 amount) external view returns (uint256) {
+        uint256 userLvAmt = self.vault.userLvBalance[user].balance;
+        if (userLvAmt > amount) {
+            return amount;
+        } else {
+            return userLvAmt;
+        }
+    }
+
+    // redeem LV for PA with up to current amount of LV,
+    // returns the PA user redeemed with his LV amount
+    function redeemPaWithLv(State storage self, address user, uint256 amount) external returns (uint256) {
+        uint256 userLvAmt = self.vault.userLvBalance[user].balance;
+        if (userLvAmt < amount) {
+            amount = self.vault.userLvBalance[user].balance;
+        }
+        if (self.vault.userLvBalance[user].withdrawn + amount > userLvAmt) {
+            revert InsufficientLvDeposit(self.vault.userLvBalance[user].withdrawn + amount - userLvAmt);
+        }
+        ERC20(self.vault.lv._address).transferFrom(user, address(this), amount);
+        self.vault.userLvBalance[user].withdrawn += amount;
+        self.vault.pool.withdrawalPool.paBalance += amount;
+        return amount;
     }
 
     // preview a deposit action with current exchange rate,

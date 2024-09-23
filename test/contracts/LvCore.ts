@@ -391,6 +391,52 @@ describe("LvCore", function () {
     });
   });
 
+  describe("redeemablePA", function () {
+    it("redeemablePA should work correctly", async function () {
+      expect(await moduleCore.read.redeemablePA([fixture.Id])).to.equal(0n);
+      await issueNewSwapAssets(helper.expiry(1000000));
+      await moduleCore.write.depositLv([Id, depositAmount]);
+      expect(await moduleCore.read.redeemablePA([fixture.Id])).to.equal(
+        depositAmount
+      );
+    });
+  });
+
+  describe("previewRedeemPaWithLv", function () {
+    it("should return correct preview LV redeem with PA", async function () {
+      const { Id } = await issueNewSwapAssets(expiry);
+      await moduleCore.write.depositLv([Id, depositAmount]);
+      let pa = await moduleCore.read.previewRedeemPaWithLv([Id, redeemAmount]);
+      expect(pa).to.be.equal(redeemAmount);
+
+      pa = await moduleCore.read.previewRedeemPaWithLv([Id, depositAmount]);
+      expect(pa).to.be.equal(depositAmount);
+    });
+  });
+
+  describe("redeemPaWithLv", function () {
+    it("redeemPaWithLv should work correctly", async function () {
+      const { Id } = await issueNewSwapAssets(expiry);
+      await moduleCore.write.depositLv([Id, depositAmount]);
+      await fixture.lv.write.approve([moduleCore.address, redeemAmount]);
+      const preview = await moduleCore.read.previewRedeemPaWithLv([
+        Id,
+        redeemAmount,
+      ]);
+
+      await moduleCore.write.redeemPaWithLv([Id, redeemAmount], {
+        account: defaultSigner.account,
+      });
+      const event = await moduleCore.getEvents
+        .LvRedeemedWithPA({
+          Id: Id,
+          redeemer: defaultSigner.account.address,
+          pa: preview,
+        })
+        .then((e) => e[0]);
+    });
+  });
+
   it("cannot issue expired", async function () {
     expiry = helper.expiry(1000000) - helper.nowTimestampInSeconds();
 

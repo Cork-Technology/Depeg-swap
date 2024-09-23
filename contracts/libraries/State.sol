@@ -91,6 +91,17 @@ struct VaultAmmLiquidityPool {
 }
 
 /**
+ * @dev LvInternalBalance structure for handling LV balances of users
+ */
+struct LvInternalBalance {
+    // must only be incremented when every user deposit to LV
+    uint256 balance;
+    // the value must not exceed the current balance.
+    // increment equal to the amount of LV every user withdrawal
+    uint256 withdrawn;
+}
+
+/**
  * @dev VaultState structure for VaultCore
  */
 struct VaultState {
@@ -101,9 +112,10 @@ struct VaultState {
     VaultPool pool;
     uint256 initialDsPrice;
     // will be set to true after first deposit to LV. 
-    // to prevent manipulative behavior when depositing to Lv since we depend on preview redeem eearly to get 
+    // to prevent manipulative behavior when depositing to Lv since we depend on preview redeem early to get 
     // the correct exchange rate of LV
     bool initialized;
+    mapping(address => LvInternalBalance) userLvBalance;
 }
 
 /**
