@@ -58,7 +58,11 @@ contract ModuleCore is OwnableUpgradeable, UUPSUpgradeable, PsmCore, Initialize,
         return PairLibrary.initalize(pa, ra).toId();
     }
 
-    function initializeModuleCore(address pa, address ra, uint256 lvFee, uint256 initialDsPrice) external override onlyConfig {
+    function initializeModuleCore(address pa, address ra, uint256 lvFee, uint256 initialDsPrice)
+        external
+        override
+        onlyConfig
+    {
         Pair memory key = PairLibrary.initalize(pa, ra);
         Id id = key.toId();
 
@@ -85,7 +89,8 @@ contract ModuleCore is OwnableUpgradeable, UUPSUpgradeable, PsmCore, Initialize,
         uint256 repurchaseFeePrecentage,
         uint256 decayDiscountRateInDays,
         // won't have effect on first issuance
-        uint256 rolloverPeriodInblocks
+        uint256 rolloverPeriodInblocks,
+        uint256 ammLiquidationDeadline
     ) external override onlyConfig onlyInitialized(id) {
         if (repurchaseFeePrecentage > 5 ether) {
             revert InvalidFees();
@@ -100,24 +105,27 @@ contract ModuleCore is OwnableUpgradeable, UUPSUpgradeable, PsmCore, Initialize,
         );
 
         // avoid stack to deep error
-        _initOnNewIssuance(id, repurchaseFeePrecentage, ra, ct, ds, expiry);
+        _initOnNewIssuance(id, repurchaseFeePrecentage, ct, ds, expiry);
         // avoid stack to deep error
         getRouterCore().setDecayDiscountAndRolloverPeriodOnNewIssuance(
             id, decayDiscountRateInDays, rolloverPeriodInblocks
         );
-        VaultLibrary.onNewIssuance(state, state.globalAssetIdx - 1, getRouterCore(), getAmmRouter());
+        VaultLibrary.onNewIssuance(
+            state, state.globalAssetIdx - 1, getRouterCore(), getAmmRouter(), ammLiquidationDeadline
+        );
     }
 
     function _initOnNewIssuance(
         Id id,
         uint256 repurchaseFeePrecentage,
-        address ra,
         address ct,
         address ds,
         uint256 expiry
     ) internal {
+        
         State storage state = states[id];
-
+        
+        address ra = state.info.pair1;
         uint256 prevIdx = state.globalAssetIdx++;
         uint256 idx = state.globalAssetIdx;
 
@@ -125,7 +133,7 @@ contract ModuleCore is OwnableUpgradeable, UUPSUpgradeable, PsmCore, Initialize,
 
         PsmLibrary.onNewIssuance(state, ct, ds, ammPair, idx, prevIdx, repurchaseFeePrecentage);
 
-        getRouterCore().onNewIssuance(id, idx, ds, ammPair, 0, ra, ct);
+        getRouterCore().onNewIssuance(id, idx, ds, ammPair, ra, ct);
 
         emit Issued(id, idx, expiry, ds, ct, ammPair);
     }
