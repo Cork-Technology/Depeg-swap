@@ -36,6 +36,19 @@ interface IVault {
 
     event LvRedeemedWithPA(Id indexed id, address indexed redeemer, uint256 pa);
 
+    /// @notice caller is not authorized to perform the action, e.g transfering
+    /// redemption rights to another address while not having the rights
+    error Unauthorized(address caller);
+
+    /// @notice inssuficient balance to perform expiry redeem(e.g requesting 5 LV to redeem but trying to redeem 10)
+    error InsufficientBalance(address caller, uint256 requested, uint256 balance);
+
+    /// @notice insufficient output amount, e.g trying to redeem 100 LV whcih you expect 100 RA but only received 50 RA
+    error InsufficientOutputAmount(uint256 amountOutMin, uint256 received);
+
+    /// @notice when user already withdrawan his deposit
+    error DepositAlreadyRedeemed();
+
     /**
      * @notice Deposit a wrapped asset into a given vault
      * @param id The Module id that is used to reference both psm and lv of a given pair
@@ -43,11 +56,11 @@ interface IVault {
      */
     function depositLv(Id id, uint256 amount) external returns (uint256 received);
 
-    function previewRedeemPaWithLv(Id id, uint256 amount) external view returns (uint256 pa);
+    function previewRedeemPaWithLv(Id id) external view returns (uint256 pa);
 
     function redeemablePA(Id id) external view returns (uint256);
 
-    function redeemPaWithLv(Id id, uint256 amount) external returns (uint256 received);
+    function redeemPaWithLv(Id id) external returns (uint256 received);
 
     /**
      * @notice Preview the amount of lv that will be deposited

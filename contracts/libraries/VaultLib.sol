@@ -17,6 +17,7 @@ import {IUniswapV2Pair} from "../interfaces/uniswap-v2/pair.sol";
 import {DepegSwap, DepegSwapLibrary} from "./DepegSwapLib.sol";
 import {Asset, ERC20, ERC20Burnable} from "../core/assets/Asset.sol";
 import {ICommon} from "../interfaces/ICommon.sol";
+import {IVault} from "../interfaces/IVault.sol";
 import {SafeERC20, IERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 /**
@@ -34,19 +35,6 @@ library VaultLibrary {
     using DepegSwapLibrary for DepegSwap;
     using VaultPoolLibrary for VaultPool;
     using SafeERC20 for IERC20;
-
-    /// @notice caller is not authorized to perform the action, e.g transfering
-    /// redemption rights to another address while not having the rights
-    error Unauthorized(address caller);
-
-    /// @notice inssuficient balance to perform expiry redeem(e.g requesting 5 LV to redeem but trying to redeem 10)
-    error InsufficientBalance(address caller, uint256 requested, uint256 balance);
-
-    /// @notice insufficient output amount, e.g trying to redeem 100 LV whcih you expect 100 RA but only received 50 RA
-    error InsufficientOutputAmount(uint256 amountOutMin, uint256 received);
-
-    /// @notice insufficient LV deposit amount, e.g trying to redeem 100 LV but only deposited 50 RA total
-    error InsufficientLvDeposit(uint256 lvDeficit);
 
     function initialize(VaultState storage self, address lv, uint256 fee, address ra, uint256 initialDsPrice)
         external
@@ -273,9 +261,9 @@ library VaultLibrary {
         received = amount;
     }
 
-    // returns the amount of PA user able to redeem
-    function redeemablePA(State storage self, address user) external view returns (uint256) {
-        return self.vault.userLvBalance[user].balance;
+    // returns the total amount of PA ia available for redeem
+    function redeemablePA(State storage self) external view returns (uint256) {
+        return self.vault.pool.withdrawalPool.paBalance;
     }
 
     // returns the amount of PA as per price of PA with LV and given LV amount
@@ -286,29 +274,23 @@ library VaultLibrary {
 
     // preview a redeem action for PA with up to current amount of LV,
     // returns the amount of PA that user will receive based on his LV deposited
-    function previewRedeemPaWithLv(State storage self, address user, uint256 amount) external view returns (uint256) {
-        uint256 userLvAmt = self.vault.userLvBalance[user].balance;
-        if (userLvAmt > amount) {
-            return amount;
-        } else {
-            return _calculatePaPriceForLv(self, amount);
-        }
+    function previewRedeemPaWithLv(State storage self, address user) external view returns (uint256) {
+        return _calculatePaPriceForLv(self, self.vault.userLvBalance[user].balance);
     }
 
     // redeem LV for PA with up to current amount of LV,
     // returns the PA user redeemed with his LV amount
-    function redeemPaWithLv(State storage self, address user, uint256 amount) external returns (uint256) {
+    function redeemPaWithLv(State storage self, address user) external returns (uint256) {
         uint256 userLvAmt = self.vault.userLvBalance[user].balance;
-        if (userLvAmt < amount) {
-            amount = self.vault.userLvBalance[user].balance;
+        uint256 dsId = self.globalAssetIdx;
+        if (self.vault.userLvBalance[user].isLvWithdrawn.get(dsId) || userLvAmt == 0) {
+            revert IVault.DepositAlreadyRedeemed();
         }
-        if (self.vault.userLvBalance[user].withdrawn + amount > userLvAmt) {
-            revert InsufficientLvDeposit(self.vault.userLvBalance[user].withdrawn + amount - userLvAmt);
-        }
-        ERC20(self.vault.lv._address).transferFrom(user, address(this), amount);
-        self.vault.userLvBalance[user].withdrawn += amount;
+        ERC20(self.vault.lv._address).transferFrom(user, address(this), userLvAmt);
+        self.vault.userLvBalance[user].isLvWithdrawn.set(dsId);
+        self.vault.userLvBalance[user].balance = 0;
 
-        uint256 paAmt = _calculatePaPriceForLv(self, amount);
+        uint256 paAmt = _calculatePaPriceForLv(self, userLvAmt);
         self.vault.pool.withdrawalPool.paBalance += paAmt;
         return paAmt;
     }
@@ -678,7 +660,7 @@ library VaultLibrary {
         }
 
         if (received < amountOutMin) {
-            revert InsufficientOutputAmount(amountOutMin, received);
+            revert IVault.InsufficientOutputAmount(amountOutMin, received);
         }
 
         ERC20Burnable(self.vault.lv._address).burnFrom(owner, amount);
