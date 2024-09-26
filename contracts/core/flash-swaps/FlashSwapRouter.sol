@@ -91,13 +91,12 @@ contract RouterState is
         uint256 dsId,
         address ds,
         address pair,
-        uint256 initialReserve,
         address ra,
         address ct
     ) external override onlyModuleCore {
-        reserves[reserveId].onNewIssuance(dsId, ds, pair, initialReserve, ra, ct);
+        reserves[reserveId].onNewIssuance(dsId, ds, pair, ra, ct);
 
-        emit NewIssuance(reserveId, dsId, ds, pair, initialReserve);
+        emit NewIssuance(reserveId, dsId, ds, pair);
     }
 
     /// @notice set the discount rate rate and rollover for the new issuance

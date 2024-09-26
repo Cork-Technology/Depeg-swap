@@ -54,16 +54,10 @@ library DsFlashSwaplibrary {
 
     uint256 public constant FIRST_ISSUANCE = 1;
 
-    function onNewIssuance(
-        ReserveState storage self,
-        uint256 dsId,
-        address ds,
-        address pair,
-        uint256 initialReserve,
-        address ra,
-        address ct
-    ) internal {
-        self.ds[dsId] = AssetPair(Asset(ra), Asset(ct), Asset(ds), IUniswapV2Pair(pair), initialReserve, 0);
+    function onNewIssuance(ReserveState storage self, uint256 dsId, address ds, address pair, address ra, address ct)
+        internal
+    {
+        self.ds[dsId] = AssetPair(Asset(ra), Asset(ct), Asset(ds), IUniswapV2Pair(pair), 0, 0);
 
         self.reserveSellPressurePrecentage = dsId == FIRST_ISSUANCE
             ? INITIAL_RESERVE_SELL_PRESSURE_PRECENTAGE
@@ -213,9 +207,9 @@ library DsFlashSwaplibrary {
         returns (uint256 amountOut, uint256 repaymentAmount, bool success)
     {
         (uint112 raReserve, uint112 ctReserve) = getReservesSorted(assetPair);
-        
+
         repaymentAmount = MinimalUniswapV2Library.getAmountIn(amount, raReserve, ctReserve - amount);
-        
+
         // from the amount, since we're getting back the same RA amount as DS user buy, this works. to get the effective price per DS,
         // you would devide this by the DS amount user bought.
         // note that we subtract 1 to enforce uni v2 rules
