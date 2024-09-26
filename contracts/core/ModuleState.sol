@@ -106,7 +106,7 @@ abstract contract ModuleState is ICommon {
     }
 
     modifier LVDepositNotPaused(Id id) {
-        if (states[id].vault.config.isWithdrawalPaused) {
+        if (states[id].vault.config.isDepositPaused) {
             revert LVDepositPaused();
         }
         _;
