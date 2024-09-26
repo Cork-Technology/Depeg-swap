@@ -3,7 +3,9 @@
 This repository contains core smart contracts of Depeg Swaps, for higher level specification and flows please see the design [documents](https://corkfi.notion.site/Smart-Contract-Flow-fc170aec36bc43579a7d0429c49e08ab) for now.
 
 # Build
+
 Install required dependencies :
+
 ```bash
 yarn
 ```
@@ -85,5 +87,6 @@ AFter that, you should see something like this on your terminal :
   New DS issued
   -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
   Funder Contract                 :  0xdAD2E0651F88D5EA6725274153209Fe94DF8c829
+  Reader Contract                 :  0xC4736Ba3D54df3725771d889b964114535d4bF2D
   -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 ```

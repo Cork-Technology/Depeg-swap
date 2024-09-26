@@ -19,7 +19,9 @@ contract DeployPriceReaderScript is Script {
 
     function run() public {
         vm.startBroadcast(pk);
-        priceReader = new UniswapPriceReader(0x8fD48F4ec9cB04540134c02f4dAa5f68585c3936);
+        priceReader = new UniswapPriceReader(
+            0x8fD48F4ec9cB04540134c02f4dAa5f68585c3936, 0x363E8886E8FF30b6f6770712Cf4e758e2Bf3E353
+        );
         console.log("Price Reader Contract      : ", address(priceReader));
         console.log("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-==-=-=-=-=-");
 
