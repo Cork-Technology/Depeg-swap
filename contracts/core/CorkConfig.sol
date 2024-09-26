@@ -83,10 +83,17 @@ contract CorkConfig is AccessControl, Pausable {
         uint256 repurchaseFeePrecentage,
         uint256 decayDiscountRateInDays,
         // won't have effect on first issuance
-        uint256 rolloverPeriodInblocks
+        uint256 rolloverPeriodInblocks,
+        uint256 ammLiquidationDeadline
     ) external whenNotPaused onlyManager {
         moduleCore.issueNewDs(
-            id, expiry, exchangeRates, repurchaseFeePrecentage, decayDiscountRateInDays, rolloverPeriodInblocks
+            id,
+            expiry,
+            exchangeRates,
+            repurchaseFeePrecentage,
+            decayDiscountRateInDays,
+            rolloverPeriodInblocks,
+            ammLiquidationDeadline
         );
     }
 
