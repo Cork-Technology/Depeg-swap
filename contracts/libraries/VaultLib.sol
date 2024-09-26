@@ -316,12 +316,26 @@ library VaultLibrary {
         uint256 dsId,
         IDsFlashSwapCore flashSwapRouter,
         IUniswapV2Router02 ammRouter,
-        uint256 lvRedeemed
+        uint256 lvRedeemed,
+        uint256 deadline
     ) internal returns (uint256 ra) {
+        uint256 ammCtBalance;
+
+        (ra, ammCtBalance) = __calculateAndLiquidate(self, dsId, flashSwapRouter, ammRouter, lvRedeemed);
+
+        ra += _redeemCtDsAndSellExcessCt(self, dsId, ammRouter, flashSwapRouter, ammCtBalance, deadline);
+    }
+
+    function __calculateAndLiquidate(
+        State storage self,
+        uint256 dsId,
+        IDsFlashSwapCore flashSwapRouter,
+        IUniswapV2Router02 ammRouter,
+        uint256 lvRedeemed
+    ) private returns (uint256 ra, uint256 ammCtBalance) {
         uint256 raPerLp;
         uint256 ctPerLp;
         uint256 raPerLv;
-        uint256 ammCtBalance;
 
         (raPerLv,, raPerLp, ctPerLp) = __calculateCtBalanceWithRate(self, flashSwapRouter, dsId);
 
@@ -333,8 +347,6 @@ library VaultLibrary {
             IUniswapV2Pair(self.ds[dsId].ammPair),
             MathHelper.convertToLp(raPerLv, raPerLp, lvRedeemed)
         );
-
-        ra += _redeemCtDsAndSellExcessCt(self, dsId, ammRouter, flashSwapRouter, ammCtBalance);
     }
 
     function _redeemCtDsAndSellExcessCt(
@@ -342,7 +354,8 @@ library VaultLibrary {
         uint256 dsId,
         IUniswapV2Router02 ammRouter,
         IDsFlashSwapCore flashSwapRouter,
-        uint256 ammCtBalance
+        uint256 ammCtBalance,
+        uint256 deadline
     ) internal returns (uint256 ra) {
         uint256 reservedDs = flashSwapRouter.getLvReserve(self.info.toId(), dsId);
 
@@ -614,17 +627,18 @@ library VaultLibrary {
         IDsFlashSwapCore flashSwapRouter,
         IUniswapV2Router02 ammRouter,
         bytes memory rawLvPermitSig,
-        uint256 deadline,
-        uint256 amountOutMin
+        uint256 permitDeadline,
+        uint256 amountOutMin,
+        uint256 ammDeadline
     ) external returns (uint256 received, uint256 fee, uint256 feePrecentage) {
         safeBeforeExpired(self);
-        if (deadline != 0) {
-            DepegSwapLibrary.permit(self.vault.lv._address, rawLvPermitSig, owner, address(this), amount, deadline);
+        if (permitDeadline != 0) {
+            DepegSwapLibrary.permit(self.vault.lv._address, rawLvPermitSig, owner, address(this), amount, permitDeadline);
         }
 
         feePrecentage = self.vault.config.fee;
 
-        received = _liquidateLpPartial(self, self.globalAssetIdx, flashSwapRouter, ammRouter, amount);
+        received = _liquidateLpPartial(self, self.globalAssetIdx, flashSwapRouter, ammRouter, amount, ammDeadline);
 
         fee = MathHelper.calculatePrecentageFee(received, feePrecentage);
 

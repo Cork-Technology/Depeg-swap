@@ -57,7 +57,8 @@ abstract contract VaultCore is ModuleState, Context, IVault {
         uint256 amount,
         bytes memory rawLvPermitSig,
         uint256 deadline,
-        uint256 amountOutMin
+        uint256 amountOutMin,
+        uint256 ammDeadline
     )
         external
         override
@@ -66,7 +67,15 @@ abstract contract VaultCore is ModuleState, Context, IVault {
         returns (uint256 received, uint256 fee, uint256 feePrecentage)
     {
         (received, fee, feePrecentage) = states[id].redeemEarly(
-            _msgSender(), receiver, amount, getRouterCore(), getAmmRouter(), rawLvPermitSig, deadline, amountOutMin
+            _msgSender(),
+            receiver,
+            amount,
+            getRouterCore(),
+            getAmmRouter(),
+            rawLvPermitSig,
+            deadline,
+            amountOutMin,
+            ammDeadline
         );
 
         emit LvRedeemEarly(id, _msgSender(), receiver, received, fee, feePrecentage);
@@ -79,16 +88,15 @@ abstract contract VaultCore is ModuleState, Context, IVault {
      * @param amount The amount of the asset to be redeemed
      * @param amountOutMin The minimum amount of the asset to be received
      */
-    function redeemEarlyLv(Id id, address receiver, uint256 amount, uint256 amountOutMin)
+    function redeemEarlyLv(Id id, address receiver, uint256 amount, uint256 amountOutMin, uint256 ammDeadline)
         external
         override
         nonReentrant
         LVWithdrawalNotPaused(id)
         returns (uint256 received, uint256 fee, uint256 feePrecentage)
     {
-        State storage state = states[id];
-        (received, fee, feePrecentage) = state.redeemEarly(
-            _msgSender(), receiver, amount, getRouterCore(), getAmmRouter(), bytes(""), 0, amountOutMin
+        (received, fee, feePrecentage) = states[id].redeemEarly(
+            _msgSender(), receiver, amount, getRouterCore(), getAmmRouter(), bytes(""), 0, amountOutMin, ammDeadline
         );
 
         emit LvRedeemEarly(id, _msgSender(), receiver, received, fee, feePrecentage);

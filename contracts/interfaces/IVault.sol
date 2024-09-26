@@ -61,7 +61,8 @@ interface IVault {
         uint256 amount,
         bytes memory rawLvPermitSig,
         uint256 deadline,
-        uint256 amountOutMin
+        uint256 amountOutMin,
+        uint256 ammDeadline
     ) external returns (uint256 received, uint256 fee, uint256 feePrecentage);
 
     /**
@@ -71,7 +72,7 @@ interface IVault {
      * @param amount The amount of the asset to be redeemed
      * @param amountOutMin The minimum amount of the asset to be received
      */
-    function redeemEarlyLv(Id id, address receiver, uint256 amount, uint256 amountOutMin)
+    function redeemEarlyLv(Id id, address receiver, uint256 amount, uint256 amountOutMin, uint256 ammDeadline)
         external
         returns (uint256 received, uint256 fee, uint256 feePrecentage);
 
