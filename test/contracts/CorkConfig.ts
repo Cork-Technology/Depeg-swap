@@ -166,6 +166,7 @@ describe("CorkConfig", function () {
             parseEther("5"),
             parseEther("1"),
             10n,
+            BigInt(helper.expiry(1000000)),
           ],
           {
             account: defaultSigner.account,
@@ -188,6 +189,7 @@ describe("CorkConfig", function () {
             parseEther("10"),
             parseEther("1"),
             10n,
+            BigInt(helper.expiry(1000000)),
           ],
           {
             account: secondSigner.account,
@@ -205,6 +207,7 @@ describe("CorkConfig", function () {
           parseEther("5.00000001"),
           parseEther("1"),
           10n,
+          BigInt(helper.expiry(1000000)),
         ])
       ).to.be.rejectedWith("InvalidFees()");
     });
@@ -219,6 +222,7 @@ describe("CorkConfig", function () {
             parseEther("10"),
             parseEther("1"),
             10n,
+            BigInt(helper.expiry(1000000)),
           ],
           {
             account: secondSigner.account,

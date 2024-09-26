@@ -124,6 +124,7 @@ describe("PSM core", function () {
         parseEther("5"),
         parseEther("1"),
         10n,
+        BigInt(helper.expiry(1000000)),
       ]);
 
       const events = await moduleCore.getEvents.Issued({
@@ -942,6 +943,7 @@ describe("PSM core", function () {
         parseEther("5"),
         parseEther("1"),
         10n,
+        BigInt(helper.expiry(1000000)),
       ]);
 
       const events = await fixture.moduleCore.getEvents.Issued({

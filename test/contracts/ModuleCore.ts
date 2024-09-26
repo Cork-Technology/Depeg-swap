@@ -203,6 +203,7 @@ describe("Module Core", function () {
         parseEther("5"),
         parseEther("1"),
         10n,
+        BigInt(helper.expiry(1000000)),
       ]);
       const events = await moduleCore.getEvents.Issued({
         Id: fixture.Id,
@@ -232,6 +233,7 @@ describe("Module Core", function () {
           parseEther("10"),
           parseEther("1"),
           10n,
+          BigInt(helper.expiry(1000000)),
         ])
       ).to.be.rejectedWith("Uinitialized()");
     });
@@ -245,6 +247,7 @@ describe("Module Core", function () {
           parseEther("5.000000000001"),
           parseEther("1"),
           10n,
+          BigInt(helper.expiry(1000000)),
         ])
       ).to.be.rejectedWith("InvalidFees()");
     });
@@ -258,6 +261,7 @@ describe("Module Core", function () {
           parseEther("10"),
           parseEther("1"),
           10n,
+          BigInt(helper.expiry(1000000)),
         ])
       ).to.be.rejectedWith("OnlyConfigAllowed()");
     });
@@ -382,6 +386,7 @@ describe("Module Core", function () {
         parseEther("5"),
         parseEther("1"),
         10n,
+        BigInt(helper.expiry(1000000)),
       ]);
       expect(await moduleCore.read.lastDsId([fixture.Id])).to.equal(1n);
     });
