@@ -179,7 +179,8 @@ contract DeployScript is Script {
             1 ether, // exchange rate = 1:1
             repurchaseFee,
             6 ether, // 6% per day TODO
-            block.timestamp + 6600 // 1 block per 12 second and 22 hours rollover during TC = 6600 // TODO
+            block.timestamp + 6600, // 1 block per 12 second and 22 hours rollover during TC = 6600 // TODO
+            block.timestamp + 10 seconds 
         );
         console.log("New DS issued");
         console.log("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-");

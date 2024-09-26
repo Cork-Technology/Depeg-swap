@@ -95,8 +95,11 @@ contract SetupTCScript is Script {
             1 ether, // exchange rate = 1:1
             repurchaseFee,
             10, // TODO
-            block.timestamp + 180 days // 6 months // TODO
+            block.timestamp + 180 days,
+            block.timestamp + 10 seconds
         );
+        // 6 months // TODO
+
         console.log("New DS issued");
         console.log("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-");
 

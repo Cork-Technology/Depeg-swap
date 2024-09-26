@@ -91,7 +91,13 @@ abstract contract Helper is Test, SigUtils {
         uint256 rolloverPeriodInblocks
     ) internal {
         corkConfig.issueNewDs(
-            id, expiryInSeconds, exchangeRates, repurchaseFeePrecentage, decayDiscountRateInDays, rolloverPeriodInblocks
+            id,
+            expiryInSeconds,
+            exchangeRates,
+            repurchaseFeePrecentage,
+            decayDiscountRateInDays,
+            rolloverPeriodInblocks,
+            block.timestamp + 10 seconds
         );
     }
 
