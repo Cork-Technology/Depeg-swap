@@ -66,7 +66,7 @@ contract VaultRedeemTest is Helper {
         uint256 balanceBefore = IERC20(ra).balanceOf(DEFAULT_ADDRESS);
 
         (uint256 received, uint256 fee, uint256 feePercentage) =
-            moduleCore.redeemEarlyLv(currencyId, DEFAULT_ADDRESS, 0.9 ether, 0);
+            moduleCore.redeemEarlyLv(currencyId, DEFAULT_ADDRESS, 0.9 ether, 0, block.timestamp);
 
         vm.assertTrue(received > 0.9 ether, "should accrue value");
 
@@ -81,7 +81,7 @@ contract VaultRedeemTest is Helper {
 
         // redeem early
         IERC20(lv).approve(address(moduleCore), 1 ether);
-        (received, fee, feePercentage) = moduleCore.redeemEarlyLv(currencyId, DEFAULT_ADDRESS, lvReceived, 0);
+        (received, fee, feePercentage) = moduleCore.redeemEarlyLv(currencyId, DEFAULT_ADDRESS, lvReceived, 0, block.timestamp);
 
         // user shouldn't accrue any value, so they will receive their original deposits back
         // not exactly 1 ether cause of uni v2 minimum liquidity

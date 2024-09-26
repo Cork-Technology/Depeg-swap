@@ -164,6 +164,7 @@ describe("LvCore", function () {
           msgPermit,
           deadline,
           preview,
+          BigInt(helper.expiry(1000000)),
         ],
         {
           account: defaultSigner.account,
@@ -221,6 +222,7 @@ describe("LvCore", function () {
         defaultSigner.account.address,
         redeemAmount,
         preview,
+        BigInt(helper.expiry(1000000)),
       ]);
       const event = await moduleCore.getEvents
         .LvRedeemEarly({
@@ -271,6 +273,7 @@ describe("LvCore", function () {
           msgPermit,
           deadline,
           preview,
+          BigInt(helper.expiry(1000000)),
         ])
       ).to.be.rejectedWith("LVWithdrawalPaused()");
       await expect(
@@ -279,6 +282,7 @@ describe("LvCore", function () {
           defaultSigner.account.address,
           redeemAmount,
           preview,
+          BigInt(helper.expiry(1000000)),
         ])
       ).to.be.rejectedWith("LVWithdrawalPaused()");
     });
@@ -300,6 +304,7 @@ describe("LvCore", function () {
         defaultSigner.account.address,
         redeemAmount,
         preview + 1n,
+        BigInt(helper.expiry(1000000)),
       ])
     ).to.be.rejected;
   });
@@ -320,6 +325,7 @@ describe("LvCore", function () {
       defaultSigner.account.address,
       redeemAmount,
       preview,
+      BigInt(helper.expiry(1000000)),
     ]);
 
     const event = await moduleCore.getEvents

@@ -351,7 +351,8 @@ describe("CorkConfig", function () {
           fixture.Id,
           defaultSigner.account.address,
           parseEther("1"),
-          preview
+          preview,
+          BigInt(helper.expiry(1000000)),
         ])
       ).to.be.rejectedWith("LVWithdrawalPaused()");
     });
