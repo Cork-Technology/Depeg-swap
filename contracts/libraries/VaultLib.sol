@@ -266,21 +266,27 @@ library VaultLibrary {
         return self.vault.pool.withdrawalPool.paBalance;
     }
 
-    // returns the amount of PA as per price of PA with LV and given LV amount
-    // lv price = paAvailable/lvTotalSupply
+    // Calculates PA amount as per price of PA with LV total supply, PA balance and given LV amount
+    // lv price = paReserve / lvTotalSupply
+    // PA amount = lvAmount * (PA reserve in contract / total supply of LV)
     function _calculatePaPriceForLv(State storage self, uint256 lvAmt) internal view returns (uint256 paAmount) {
         return lvAmt * self.vault.pool.withdrawalPool.paBalance / ERC20(self.vault.lv._address).totalSupply();
     }
 
-    // preview a redeem action for PA with up to current amount of LV,
+    // preview a redeem action for LV user has,
     // returns the amount of PA that user will receive based on his LV deposited
     function previewRedeemPaWithLv(State storage self, address user) external view returns (uint256) {
-        return _calculatePaPriceForLv(self, self.vault.userLvBalance[user].balance);
+        uint256 userLvAmt = self.vault.userLvBalance[user].balance;
+        uint256 dsId = self.globalAssetIdx;
+        if (self.vault.userLvBalance[user].isLvWithdrawn.get(dsId) || userLvAmt == 0) {
+            revert IVault.DepositAlreadyRedeemed();
+        }
+        return _calculatePaPriceForLv(self, userLvAmt);
     }
 
-    // redeem LV for PA with up to current amount of LV,
+    // redeem LV and gets PA based on current amount of LV user deposited into Vault,
     // returns the PA user redeemed with his LV amount
-    function redeemPaWithLv(State storage self, address user) external returns (uint256) {
+    function redeemPaWithLv(State storage self, address user) external returns (uint256 paAmount) {
         uint256 userLvAmt = self.vault.userLvBalance[user].balance;
         uint256 dsId = self.globalAssetIdx;
         if (self.vault.userLvBalance[user].isLvWithdrawn.get(dsId) || userLvAmt == 0) {
@@ -290,10 +296,9 @@ library VaultLibrary {
         self.vault.userLvBalance[user].isLvWithdrawn.set(dsId);
         self.vault.userLvBalance[user].balance = 0;
 
-        uint256 paAmount = _calculatePaPriceForLv(self, userLvAmt);
+        paAmount = _calculatePaPriceForLv(self, userLvAmt);
         self.vault.pool.withdrawalPool.paBalance -= paAmount;
         ERC20(self.info.pair0).transfer(user, paAmount);
-        return paAmount;
     }
 
     // preview a deposit action with current exchange rate,

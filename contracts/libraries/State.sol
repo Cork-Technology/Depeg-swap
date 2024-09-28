@@ -91,10 +91,11 @@ struct VaultAmmLiquidityPool {
 }
 
 /**
- * @dev LvInternalBalance structure for handling LV balances of users
+ * @dev LvInternalBalance structure for tracking LV balances of users
  */
 struct LvInternalBalance {
-    // must only be incremented when every user deposit to LV
+    // Balance gets incremented when user deposit to LV
+    // Balance gets decremented when user redeem from LV
     uint256 balance;
     BitMaps.BitMap isLvWithdrawn;
 }
