@@ -351,8 +351,7 @@ library VaultLibrary {
 
         flashSwapRouter.emptyReservePartialLv(self.info.toId(), dsId, redeemAmount);
 
-        ra += redeemAmount;
-        PsmLibrary.lvRedeemRaWithCtDs(self, redeemAmount, dsId);
+        ra += PsmLibrary.lvRedeemRaWithCtDs(self, redeemAmount, dsId);
 
         // we subtract redeem amount since we already liquidate it from the router
         uint256 ctSellAmount = reservedDs - redeemAmount >= ammCtBalance ? 0 : ammCtBalance - redeemAmount;
@@ -362,9 +361,8 @@ library VaultLibrary {
         path[0] = ds.ct;
         path[1] = self.info.pair1;
 
-        ERC20(ds.ct).approve(address(ammRouter), ctSellAmount);
-
         if (ctSellAmount != 0) {
+            ERC20(ds.ct).approve(address(ammRouter), ctSellAmount);
             // 100% tolerance, to ensure this not fail
             ra += ammRouter.swapExactTokensForTokens(ctSellAmount, 0, path, address(this), block.timestamp)[1];
         }
