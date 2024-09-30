@@ -4,10 +4,19 @@ This repository contains core smart contracts of Depeg Swaps, for higher level s
 
 # Build
 
-Install required dependencies :
+Install required dependencies :(related to hardhat)
 
 ```bash
 yarn
+```
+
+Install required dependencies :(related to foundry)
+
+```bash
+forge install openzeppelin/openzeppelin-contracts@v5.0.2
+forge install openzeppelin/openzeppelin-contracts-upgradeable@v5.0.2
+forge install Uniswap/v2-core@v1.0.1
+forge install Uniswap/v2-periphery                   
 ```
 
 To build & compile all contracts simply run :
