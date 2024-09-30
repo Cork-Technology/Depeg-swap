@@ -32,6 +32,10 @@ library MathHelper {
         ra = (amountra - (ct * exchangeRate / 1e18));
     }
 
+    function calculateProvideLiquidityAmount(uint256 amountRa, uint256 raDeposited) external pure returns (uint256) {
+        return amountRa - raDeposited;
+    }
+
     /// @dev should only pass ERC20.decimals() onto the decimal field
     /// @dev will output price ratio in 18 decimal precision.
     function calculatePriceRatioUniV4(uint160 sqrtPriceX96, uint8 decimal) external pure returns (uint256) {
@@ -89,7 +93,7 @@ library MathHelper {
      * @param exchangeRate the current exchange rate between RA:(CT+DS)
      */
     function calculateDepositAmountWithExchangeRate(uint256 amount, uint256 exchangeRate)
-        external
+        public
         pure
         returns (uint256 _amount)
     {

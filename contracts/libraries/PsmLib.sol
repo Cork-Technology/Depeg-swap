@@ -324,10 +324,13 @@ library PsmLibrary {
         uint256 dsId = self.globalAssetIdx;
 
         DepegSwap storage ds = self.ds[dsId];
+        uint256 exchangeRate = ds.exchangeRate();
 
         self.psm.balances.ra.incLocked(amount);
 
-        ds.issue(address(this), amount);
+        uint256 received = MathHelper.calculateDepositAmountWithExchangeRate(amount, exchangeRate);
+
+        ds.issue(address(this), received);
     }
 
     function lvRedeemRaWithCtDs(State storage self, uint256 amount, uint256 dsId) internal returns (uint256 ra) {
@@ -457,7 +460,7 @@ library PsmLibrary {
         bool isPSMWithdrawalPaused,
         bool isLVDepositPaused,
         bool isLVWithdrawalPaused
-    ) external{
+    ) external {
         self.psm.isDepositPaused = isPSMDepositPaused;
         self.psm.isWithdrawalPaused = isPSMWithdrawalPaused;
         self.vault.config.isDepositPaused = isLVDepositPaused;
@@ -528,7 +531,7 @@ library PsmLibrary {
         IERC20(ds._address).transfer(buyer, received);
 
         // Provide liquidity
-        VaultLibrary.__provideLiquidityWithRatio(self, fee, flashSwapRouter, ds.ct,ammRouter);
+        VaultLibrary.__provideLiquidityWithRatio(self, fee, flashSwapRouter, ds.ct, ammRouter);
     }
 
     function _redeemDs(Balances storage self, uint256 amount) internal {
@@ -554,6 +557,8 @@ library PsmLibrary {
         IERC20(self.info.peggedAsset().asErc20()).safeTransferFrom(owner, address(this), amount);
 
         self.psm.balances.ra.unlockTo(owner, received);
+        // we decrease the locked value, as we're going to use this to provide liquidity to the LV
+        self.psm.balances.ra.decLocked(fee);
     }
 
     function valueLocked(State storage self) external view returns (uint256) {
