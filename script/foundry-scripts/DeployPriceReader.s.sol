@@ -23,23 +23,23 @@ contract DeployPriceReaderScript is Script {
         priceReader = new UniswapPriceReader(
             0x8fD48F4ec9cB04540134c02f4dAa5f68585c3936, 0x363E8886E8FF30b6f6770712Cf4e758e2Bf3E353
         );
-        console.log("Price Reader Contract      : ", address(priceReader));
+        console.log("Price Reader Contract: ", address(priceReader));
         console.log("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-==-=-=-=-=-");
 
-        console.log("cETH price                 : ", Utils.formatEther(priceReader.getTokenPrice(cETH, bsETH)));
-        console.log("bsETH price                : ", Utils.formatEther(priceReader.getTokenPrice(bsETH, cETH)));
+        console.log("cETH price           : ", Utils.formatEther(priceReader.getTokenPrice(cETH, bsETH)), " bsETH");
+        console.log("bsETH price          : ", Utils.formatEther(priceReader.getTokenPrice(bsETH, cETH)), " cETH");
         console.log("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-==-=-=-=-=-");
 
-        console.log("cETH price                 : ", Utils.formatEther(priceReader.getTokenPrice(cETH, lbETH)));
-        console.log("lbETH price                : ", Utils.formatEther(priceReader.getTokenPrice(lbETH, cETH)));
+        console.log("cETH price           : ", Utils.formatEther(priceReader.getTokenPrice(cETH, lbETH)), " lbETH");
+        console.log("lbETH price          : ", Utils.formatEther(priceReader.getTokenPrice(lbETH, cETH)), " cETH");
         console.log("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-==-=-=-=-=-");
 
-        console.log("cETH price                 : ", Utils.formatEther(priceReader.getTokenPrice(cETH, wamuETH)));
-        console.log("wamuETH price              : ", Utils.formatEther(priceReader.getTokenPrice(wamuETH, cETH)));
+        console.log("cETH price           : ", Utils.formatEther(priceReader.getTokenPrice(cETH, wamuETH)), " wamuETH");
+        console.log("wamuETH price        : ", Utils.formatEther(priceReader.getTokenPrice(wamuETH, cETH)), " cETH");
         console.log("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-==-=-=-=-=-");
 
-        console.log("cETH price                 : ", Utils.formatEther(priceReader.getTokenPrice(cETH, mlETH)));
-        console.log("mlETH price                : ", Utils.formatEther(priceReader.getTokenPrice(mlETH, cETH)));
+        console.log("cETH price           : ", Utils.formatEther(priceReader.getTokenPrice(cETH, mlETH)), " mlETH");
+        console.log("mlETH price          : ", Utils.formatEther(priceReader.getTokenPrice(mlETH, cETH)), " cETH");
         console.log("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-==-=-=-=-=-");
         vm.stopBroadcast();
     }
