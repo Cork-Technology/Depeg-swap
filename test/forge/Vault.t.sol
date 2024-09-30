@@ -9,7 +9,7 @@ import "./../../contracts/interfaces/IPSMcore.sol";
 import "forge-std/console.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
-contract VaultRedeemTest is Helper {
+contract VaultTest is Helper {
     DummyWETH internal ra;
     DummyWETH internal pa;
     Id public currencyId;
@@ -18,10 +18,13 @@ contract VaultRedeemTest is Helper {
 
     uint256 public dsId;
 
+    address public ct;
+    address public ds;
+
     address public lv;
     address user2 = address(30);
 
-    function setUp() public {
+    function setUp() public virtual {
         vm.startPrank(DEFAULT_ADDRESS);
 
         deployModuleCore();
@@ -50,7 +53,34 @@ contract VaultRedeemTest is Helper {
 
         // save initial data
         lv = assetFactory.getLv(address(ra), address(pa));
+        fetchProtocolGeneralInfo();
+    }
+
+    function fetchProtocolGeneralInfo() internal {
         dsId = moduleCore.lastDsId(currencyId);
+        (ct, ds) = moduleCore.swapAsset(currencyId, dsId);
+    }
+
+    // ff to expiry and update infos
+    function ff_expired() internal {
+        // fast forward to expiry
+        uint256 expiry = Asset(ds).expiry();
+        vm.warp(expiry);
+
+        uint256 rolloverBlocks = flashSwapRouter.getRolloverEndInBlockNumber(currencyId);
+        vm.roll(block.number + rolloverBlocks);
+
+        Asset(ct).approve(address(moduleCore), DEFAULT_DEPOSIT_AMOUNT);
+
+        issueNewDs(currencyId, block.timestamp + 1 days);
+
+        fetchProtocolGeneralInfo();
+    }
+}
+
+contract VaultRedeemTest is VaultTest {
+    function setUp() public override {
+        super.setUp();
     }
 
     function test_redeemEarly() external {
