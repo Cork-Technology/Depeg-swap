@@ -18,14 +18,14 @@ contract UniswapPriceReader {
         router = _router;
     }
 
-    // Get the price of tokenA in terms of tokenB
-    function getTokenPrice(address tokenA, address tokenB) public view returns (uint256 price) {
-        address pair = IUniswapV2Factory(factory).getPair(tokenA, tokenB);
+    // Get the price of Destination Token in terms of source token
+    function getTokenPrice(address destToken, address sourceToken) public view returns (uint256 price) {
+        address pair = IUniswapV2Factory(factory).getPair(destToken, sourceToken);
         require(pair != address(0), "Pair doesn't exist");
 
         address[] memory path = new address[](2);
-        path[0] = tokenA;
-        path[1] = tokenB;
+        path[0] = destToken;
+        path[1] = sourceToken;
         price = IUniswapV2Router02(router).getAmountsOut(1e18, path)[1];
     }
 }

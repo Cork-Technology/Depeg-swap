@@ -2,6 +2,7 @@ pragma solidity 0.8.24;
 
 import {Script, console} from "forge-std/Script.sol";
 import {UniswapPriceReader} from "../../contracts/readers/PriceReader.sol";
+import {Utils} from "./Utils/Utils.s.sol"; // Import the Utils contract
 
 contract DeployPriceReaderScript is Script {
     UniswapPriceReader public priceReader;
@@ -25,20 +26,20 @@ contract DeployPriceReaderScript is Script {
         console.log("Price Reader Contract      : ", address(priceReader));
         console.log("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-==-=-=-=-=-");
 
-        console.log("cETH->bsETH                : ", priceReader.getTokenPrice(cETH, bsETH));
-        console.log("bsETH->cETH                : ", priceReader.getTokenPrice(bsETH, cETH));
+        console.log("cETH price                 : ", Utils.formatEther(priceReader.getTokenPrice(cETH, bsETH)));
+        console.log("bsETH price                : ", Utils.formatEther(priceReader.getTokenPrice(bsETH, cETH)));
         console.log("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-==-=-=-=-=-");
 
-        console.log("cETH->lbETH                : ", priceReader.getTokenPrice(cETH, lbETH));
-        console.log("lbETH->cETH                : ", priceReader.getTokenPrice(lbETH, cETH));
+        console.log("cETH price                 : ", Utils.formatEther(priceReader.getTokenPrice(cETH, lbETH)));
+        console.log("lbETH price                : ", Utils.formatEther(priceReader.getTokenPrice(lbETH, cETH)));
         console.log("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-==-=-=-=-=-");
 
-        console.log("cETH->wamuETH              : ", priceReader.getTokenPrice(cETH, wamuETH));
-        console.log("wamuETH->cETH              : ", priceReader.getTokenPrice(wamuETH, cETH));
+        console.log("cETH price                 : ", Utils.formatEther(priceReader.getTokenPrice(cETH, wamuETH)));
+        console.log("wamuETH price              : ", Utils.formatEther(priceReader.getTokenPrice(wamuETH, cETH)));
         console.log("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-==-=-=-=-=-");
 
-        console.log("cETH->mlETH                : ", priceReader.getTokenPrice(cETH, mlETH));
-        console.log("mlETH->cETH                : ", priceReader.getTokenPrice(mlETH, cETH));
+        console.log("cETH price                 : ", Utils.formatEther(priceReader.getTokenPrice(cETH, mlETH)));
+        console.log("mlETH price                : ", Utils.formatEther(priceReader.getTokenPrice(mlETH, cETH)));
         console.log("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-==-=-=-=-=-");
         vm.stopBroadcast();
     }
