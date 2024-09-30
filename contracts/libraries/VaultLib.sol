@@ -140,7 +140,8 @@ library VaultLibrary {
 
         uint256 ctRatio = __getAmmCtPriceRatio(self, flashSwapRouter, dsId);
 
-        (ra, ct) = MathHelper.calculateProvideLiquidityAmountBasedOnCtPrice(amount, ctRatio);
+        (ra, ct) =
+            MathHelper.calculateProvideLiquidityAmountBasedOnCtPrice(amount, ctRatio, self.ds[dsId].exchangeRate());
 
         __provideLiquidity(self, ra, ct, flashSwapRouter, ctAddress, ammRouter, dsId);
     }
@@ -227,7 +228,7 @@ library VaultLibrary {
 
         uint256 ctRatio = __getAmmCtPriceRatio(self, flashSwapRouter, dsId);
 
-        (uint256 ra, uint256 ct) = self.vault.pool.rationedToAmm(ctRatio);
+        (uint256 ra, uint256 ct) = self.vault.pool.rationedToAmm(ctRatio, self.ds[dsId].exchangeRate());
 
         __provideLiquidity(self, ra, ct, flashSwapRouter, ctAddress, ammRouter, dsId);
 
