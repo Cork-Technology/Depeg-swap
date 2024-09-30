@@ -13,10 +13,10 @@ yarn
 Install required dependencies :(related to foundry)
 
 ```bash
-forge install openzeppelin/openzeppelin-contracts@v5.0.2
-forge install openzeppelin/openzeppelin-contracts-upgradeable@v5.0.2
-forge install Uniswap/v2-core@v1.0.1
-forge install Uniswap/v2-periphery                   
+forge install Openzeppelin/openzeppelin-contracts@v5.0.2
+forge install Openzeppelin/openzeppelin-contracts-upgradeable@v5.0.2
+forge install Cork-Technology/v2-core@v1.0.2
+forge install Cork-Technology/v2-periphery@v1.0.1                   
 ```
 
 To build & compile all contracts simply run :
