@@ -1,7 +1,7 @@
 pragma solidity 0.8.24;
 
 import {Script, console} from "forge-std/Script.sol";
-import {Funder} from "../../contracts/tc_utils/Funder.sol";
+import {Funder} from "../../../contracts/tc_utils/Funder.sol";
 
 contract DeployFunderScript is Script {
     Funder public funder;
