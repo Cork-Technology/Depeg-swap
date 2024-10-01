@@ -3,9 +3,20 @@
 This repository contains core smart contracts of Depeg Swaps, for higher level specification and flows please see the design [documents](https://corkfi.notion.site/Smart-Contract-Flow-fc170aec36bc43579a7d0429c49e08ab) for now.
 
 # Build
-Install required dependencies :
+
+Install required dependencies :(related to hardhat)
+
 ```bash
 yarn
+```
+
+Install required dependencies :(related to foundry)
+
+```bash
+forge install Openzeppelin/openzeppelin-contracts@v5.0.2
+forge install Openzeppelin/openzeppelin-contracts-upgradeable@v5.0.2
+forge install Cork-Technology/v2-core@v1.0.2
+forge install Cork-Technology/v2-periphery@v1.0.1                   
 ```
 
 To build & compile all contracts simply run :
@@ -54,22 +65,37 @@ AFter that, you should see something like this on your terminal :
   Network                      : sepolia
   Chain Id                     : 11155111
   Deployer                     : 0xFFB6b6896D469798cE64136fd3129979411B5514
--=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-  CETH                            :  0x3BFE8e8821995737187c0Dfb4F26064679EB7C7F
-  bsETH                           :  0xcDD25693eb938B3441585eBDB4D766751fd3cdAD
-  lbETH                           :  0xA00B0cC70dC182972289a0625D3E1eFCE6Aac624
-  wamuETH                         :  0x79A8b67B51be1a9d18Cf88b4e287B46c73316d89
-  mlETH                           :  0x68eb9E1bB42feef616BE433b51440D007D86738e
+ -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+  CETH                            :  0x93D16d90490d812ca6fBFD29E8eF3B31495d257D
+  bsETH                           :  0xb194fc7C6ab86dCF5D96CF8525576245d0459ea9
+  lbETH                           :  0xF24177162B1604e56EB338dd9775d75CC79DaC2B
+  wamuETH                         :  0x38B61B429a3526cC6C446400DbfcA4c1ae61F11B
+  mlETH                           :  0xCDc1133148121F43bE5F1CfB3a6426BbC01a9AF6
   -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-  Asset Factory Implementation    :  0x87e7edDe42262Fa1B1D5E9812913A8E949905778
-  Asset Factory                   :  0xC4A555D07d61a63cC169fdDE7CeC56eDb534d966
-  Cork Config                     :  0x25F8d3dB6c0cfC8815972C6Faaea875d48d1b401
-  Flashswap Router Implementation :  0x3cb645E348192E8eDB986376B0788C07D66Db625
-  Flashswap Router Proxy          :  0x6F0FFC87FD1695DDBACf39fdCebD8632cc0B1043
-  Univ2 Factory                   :  0x9bF06D55b1ba75b9F7819853958Cb292d700c18F
-  Univ2 Router                    :  0x2eAc54667957a8a4312c92532df47eEBAE7bc36e
-  Module Core                     :  0xa97e7b244B1C853b5981E2F74C133a68d9941F03
+  Asset Factory Implementation    :  0x92D8b534237C5Be34753b975D53a14b494b96Ef4
+  Asset Factory                   :  0xbdfc069558B9d87Df40f9A4876Fa7c52f6492788
+  Cork Config                     :  0x8c996E7f76fB033cDb83CE1de7c3A134e17Cc227
+  Flashswap Router Implementation :  0xE6F58Dd84869542d7Ec1c0153417E20Fa220B63d
+  Flashswap Router Proxy          :  0x6629e017455CB886669e725AF1BC826b65cB6f24
+  Univ2 Factory                   :  0x8fD48F4ec9cB04540134c02f4dAa5f68585c3936
+  Univ2 Router                    :  0x363E8886E8FF30b6f6770712Cf4e758e2Bf3E353
+  ModuleCore Router Implementation :  0x26De252a30812645960846cEA402E4B34A8eaD89
+  Module Core                     :  0xe56565c208d0a8Ca28FB632aD7F6518f273B8B9f
   -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-  Funder Contract                 :  0xd301e625fAFF0C21e157f3b9154CFF44DD963728
+  Transferred ownerships to Modulecore
+  Modulecore configured in Config contract
+  -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+  New DS issued
+  -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+  LV Deposited
+  Liquidity Added to AMM
+  New DS issued
+  -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+  LV Deposited
+  Liquidity Added to AMM
+  New DS issued
+  -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+  Funder Contract                 :  0xdAD2E0651F88D5EA6725274153209Fe94DF8c829
+  Reader Contract                 :  0xC4736Ba3D54df3725771d889b964114535d4bF2D
   -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 ```

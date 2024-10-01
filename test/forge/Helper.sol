@@ -47,6 +47,10 @@ abstract contract Helper is Test, SigUtils {
     // 1% initial ds price
     uint256 internal constant DEFAULT_INITIAL_DS_PRICE = 0.1 ether;
 
+    function defaultInitialDsPrice() internal pure virtual returns (uint256) {
+        return DEFAULT_INITIAL_DS_PRICE;
+    }
+
     function deployAssetFactory() internal {
         assetFactory = new AssetFactory();
     }
@@ -115,7 +119,7 @@ abstract contract Helper is Test, SigUtils {
         Pair memory _id = PairLibrary.initalize(address(pa), address(ra));
         id = PairLibrary.toId(_id);
 
-        initializeNewModuleCore(address(pa), address(ra), DEFAULT_LV_FEE, DEFAULT_INITIAL_DS_PRICE);
+        initializeNewModuleCore(address(pa), address(ra), DEFAULT_LV_FEE, defaultInitialDsPrice());
         issueNewDs(
             id,
             expiryInSeconds,
@@ -160,7 +164,8 @@ abstract contract Helper is Test, SigUtils {
     }
 
     function initializeFlashSwapRouter() internal {
-        flashSwapRouter.initialize(address(corkConfig), address(moduleCore));
+        flashSwapRouter.initialize(address(corkConfig));
+        flashSwapRouter.setModuleCore(address(moduleCore));
     }
 
     function initializeModuleCore(uint256 fees) internal {

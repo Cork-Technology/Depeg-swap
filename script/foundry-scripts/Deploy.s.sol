@@ -36,17 +36,14 @@ contract DeployScript is Script {
     address public ceth = vm.envAddress("WETH");
     uint256 public pk = vm.envUint("PRIVATE_KEY");
 
-    address bsETH = 0xcDD25693eb938B3441585eBDB4D766751fd3cdAD;
-    address lbETH = 0xA00B0cC70dC182972289a0625D3E1eFCE6Aac624;
-    address wamuETH = 0x79A8b67B51be1a9d18Cf88b4e287B46c73316d89;
-    address mlETH = 0x68eb9E1bB42feef616BE433b51440D007D86738e;
+    address bsETH = 0xb194fc7C6ab86dCF5D96CF8525576245d0459ea9;
+    address lbETH = 0xF24177162B1604e56EB338dd9775d75CC79DaC2B;
+    address wamuETH = 0x38B61B429a3526cC6C446400DbfcA4c1ae61F11B;
+    address mlETH = 0xCDc1133148121F43bE5F1CfB3a6426BbC01a9AF6;
 
     CETH cETH = CETH(ceth);
 
-    uint256 depositAmt = 1_000_000_000_000 ether;
-    uint256 mintAmount = 1_000_000_000_000 ether;
-    uint256 depositLVAmt = 5000 ether;
-    uint256 liquidityAmt = 1_000_000 ether;
+    uint256 depositLVAmt = 40_000 ether;
 
     function setUp() public {}
 
@@ -60,28 +57,32 @@ contract DeployScript is Script {
             console.log("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-");
             console.log("CETH                            : ", address(cETH));
 
-            CST bsETHCST = new CST("Bear Sterns Restaked ETH", "bsETH", ceth, msg.sender);
+            CST bsETHCST = new CST("Bear Sterns Restaked ETH", "bsETH", ceth, msg.sender, 480 hours, 7.5 ether);
             bsETH = address(bsETHCST);
-            cETH.approve(bsETH, depositAmt);
-            bsETHCST.deposit(depositAmt);
+            cETH.addMinter(bsETH);
+            cETH.approve(bsETH, 500_000 ether);
+            bsETHCST.deposit(500_000 ether);
             console.log("bsETH                           : ", address(bsETH));
 
-            CST lbETHCST = new CST("Lehman Brothers Restaked ETH", "lbETH", ceth, msg.sender);
+            CST lbETHCST = new CST("Lehman Brothers Restaked ETH", "lbETH", ceth, msg.sender, 10 hours, 7.5 ether);
             lbETH = address(lbETHCST);
-            cETH.approve(lbETH, depositAmt);
-            lbETHCST.deposit(depositAmt);
+            cETH.addMinter(lbETH);
+            cETH.approve(lbETH, 500_000 ether);
+            lbETHCST.deposit(500_000 ether);
             console.log("lbETH                           : ", address(lbETH));
 
-            CST wamuETHCST = new CST("Washington Mutual restaked ETH", "wamuETH", ceth, msg.sender);
+            CST wamuETHCST = new CST("Washington Mutual restaked ETH", "wamuETH", ceth, msg.sender, 1 seconds, 3 ether);
             wamuETH = address(wamuETHCST);
-            cETH.approve(wamuETH, depositAmt);
-            wamuETHCST.deposit(depositAmt);
+            cETH.addMinter(wamuETH);
+            cETH.approve(wamuETH, 500_000 ether);
+            wamuETHCST.deposit(500_000 ether);
             console.log("wamuETH                         : ", address(wamuETH));
 
-            CST mlETHCST = new CST("Merrill Lynch staked ETH", "mlETH", ceth, msg.sender);
+            CST mlETHCST = new CST("Merrill Lynch staked ETH", "mlETH", ceth, msg.sender, 5 hours, 7.5 ether);
             mlETH = address(mlETHCST);
-            cETH.approve(mlETH, depositAmt);
-            mlETHCST.deposit(depositAmt);
+            cETH.addMinter(mlETH);
+            cETH.approve(mlETH, 10_000_000 ether);
+            mlETHCST.deposit(10_000_000 ether);
             console.log("mlETH                           : ", address(mlETH));
             console.log("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-");
         } else {
@@ -110,7 +111,7 @@ contract DeployScript is Script {
         console.log("Flashswap Router Implementation : ", address(routerImplementation));
 
         // Deploy the FlashSwapRouter Proxy contract
-        data = abi.encodeWithSelector(routerImplementation.initialize.selector);
+        data = abi.encodeWithSelector(routerImplementation.initialize.selector, address(config));
         ERC1967Proxy routerProxy = new ERC1967Proxy(address(routerImplementation), data);
         flashswapRouter = RouterState(address(routerProxy));
         console.log("Flashswap Router Proxy          : ", address(flashswapRouter));
@@ -130,8 +131,8 @@ contract DeployScript is Script {
         console.log("ModuleCore Router Implementation : ", address(moduleCoreImplementation));
 
         // Deploy the ModuleCore Proxy contract
-        data = abi.encodeWithSelector(moduleCoreImplementation.initialize.selector);
-        ERC1967Proxy moduleCoreProxy = new ERC1967Proxy(address(routerImplementation), data);
+        data = abi.encodeWithSelector(moduleCoreImplementation.initialize.selector, address(assetFactory), address(factory), address(flashswapRouter), address(univ2Router), address(config), 0.2 ether); // 0.2 base redemptionfee
+        ERC1967Proxy moduleCoreProxy = new ERC1967Proxy(address(moduleCoreImplementation), data);
         moduleCore = ModuleCore(address(moduleCoreProxy));
 
         console.log("Module Core                     : ", address(moduleCore));
@@ -144,13 +145,14 @@ contract DeployScript is Script {
         console.log("Transferred ownerships to Modulecore");
 
         config.setModuleCore(address(moduleCore));
+        flashswapRouter.setModuleCore(address(moduleCore));
         console.log("Modulecore configured in Config contract");
         console.log("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-");
 
-        issueDSAndAddLiquidity(bsETH, ceth, 0.3 ether, 0.2 ether, 1 ether); // EarlyRedemptionFee = 0.3%,  DSPrice=0.2%(or 20%)  repurchaseFee = 1%
-        issueDSAndAddLiquidity(lbETH, ceth, 0.3 ether, 0.3 ether, 0.5 ether); // EarlyRedemptionFee = 0.3%,  DSPrice=0.3%(or 30%)  repurchaseFee = 0.5%
-        issueDSAndAddLiquidity(wamuETH, ceth, 0.3 ether, 0.7 ether, 0); // EarlyRedemptionFee = 0.3%,  DSPrice=0.3%(or 70%)  repurchaseFee = 0%
-        issueDSAndAddLiquidity(mlETH, ceth, 0.3 ether, 0.3 ether, 0.25 ether); // EarlyRedemptionFee = 0.3%,  DSPrice=0.3%(or 30%)  repurchaseFee = 0.25%
+        issueDSAndAddLiquidity(mlETH, ceth, 300_000 ether, 0, 0.005 ether, 1 ether, 4 days); // EarlyRedemptionFee = 0%,  DSPrice=0.2%(or 20%)  repurchaseFee = 1%
+        issueDSAndAddLiquidity(lbETH, ceth, 300_000 ether, 0, 0.0075 ether, 0.5 ether, 4 days); // EarlyRedemptionFee = 0%,  DSPrice=0.3%(or 30%)  repurchaseFee = 0.5%
+        issueDSAndAddLiquidity(bsETH, ceth, 300_000 ether, 0, 0.0175 ether, 0, 4 days); // EarlyRedemptionFee = 0%,  DSPrice=0.7%(or 70%)  repurchaseFee = 0%
+        issueDSAndAddLiquidity(wamuETH, ceth, 500_000 ether, 0, 0.0045 ether, 0.25 ether, 6 days); // EarlyRedemptionFee = 0%,  DSPrice=0.3%(or 30%)  repurchaseFee = 0.25%
 
         // moduleCore.redeemEarlyLv(id, msg.sender, 10 ether);
         // uint256 result = flashswapRouter.previewSwapRaforDs(id, 1, 100 ether);
@@ -162,20 +164,22 @@ contract DeployScript is Script {
     function issueDSAndAddLiquidity(
         address cst,
         address ceth,
+        uint256 liquidityAmt,
         uint256 redmptionFee,
         uint256 dsPrice,
-        uint256 repurchaseFee
+        uint256 repurchaseFee,
+        uint256 expiryPeriod
     ) public {
         config.initializeModuleCore(cst, ceth, redmptionFee, dsPrice);
 
         Id id = moduleCore.getId(cst, ceth);
         config.issueNewDs(
             id,
-            block.timestamp + 180 days, // 6 months
+            block.timestamp + expiryPeriod,
             1 ether, // exchange rate = 1:1
             repurchaseFee,
-            10, // TODO
-            block.timestamp + 180 days // 6 months // TODO
+            6 ether, // 6% per day TODO
+            block.timestamp + 6600 // 1 block per 12 second and 22 hours rollover during TC = 6600 // TODO
         );
         console.log("New DS issued");
         console.log("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-");

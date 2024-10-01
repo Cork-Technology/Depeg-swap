@@ -88,6 +88,11 @@ interface IDsFlashSwapCore is IDsFlashSwapUtility {
     /// @notice thrown when the swap somehow got into rollover period, but the rollover period is not active
     error RolloverNotActive();
 
+    error NotDefaultAdmin();
+
+    /// @notice thrown when there's not enough liquidity to perform flash swap
+    error InsufficientLiquidity(uint256 raReserve, uint256 ctReserve, uint256 amountRepayment);
+
     /**
      * @notice Emitted when DS is swapped for RA
      * @param reserveId the reserve id same as the id on PSM and LV
@@ -204,7 +209,7 @@ interface IDsFlashSwapCore is IDsFlashSwapUtility {
     function emptyReservePsm(Id reserveId, uint256 dsId) external returns (uint256 amount);
 
     function emptyReservePartialPsm(Id reserveId, uint256 dsId, uint256 amount) external returns (uint256 emptied);
-    
+
     /**
      * @notice empty some or all DS reserve to liquidity vault, can only be called by moduleCore
      * @param reserveId the pair id
@@ -236,7 +241,7 @@ interface IDsFlashSwapCore is IDsFlashSwapUtility {
      * @param amount the amount of RA to swap
      * @return amountOut amount of DS that will be received
      */
-    function previewSwapRaforDs(Id reserveId, uint256 dsId, uint256 amount) external returns (uint256 amountOut);
+    function previewSwapRaforDs(Id reserveId, uint256 dsId, uint256 amount) external view returns (uint256 amountOut);
 
     /**
      * @notice Swaps DS for RA
@@ -257,7 +262,7 @@ interface IDsFlashSwapCore is IDsFlashSwapUtility {
      * @param amount the amount of DS to swap
      * @return amountOut amount of RA that will be received
      */
-    function previewSwapDsforRa(Id reserveId, uint256 dsId, uint256 amount) external returns (uint256 amountOut);
+    function previewSwapDsforRa(Id reserveId, uint256 dsId, uint256 amount) external view returns (uint256 amountOut);
 
     /**
      * @notice Updates the discount rate in D days for the pair
