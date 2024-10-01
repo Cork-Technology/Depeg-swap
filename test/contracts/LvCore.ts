@@ -415,13 +415,10 @@ describe("LvCore", function () {
 
       await fixture.pa.write.mint([moduleCore.address, depositAmount]);
 
-      let pa = await moduleCore.read.previewRedeemPaWithLv([Id, redeemAmount]);
+      let pa = await moduleCore.read.previewRedeemPaWithLv([Id]);
       expect(pa).to.be.equal(redeemAmount);
 
-      let paAmt = await moduleCore.read.previewRedeemPaWithLv([
-        Id,
-        depositAmount,
-      ]);
+      let paAmt = await moduleCore.read.previewRedeemPaWithLv([Id]);
       expect(paAmt).to.be.equal(depositAmount);
     });
   });
@@ -433,12 +430,9 @@ describe("LvCore", function () {
       await fixture.lv.write.approve([moduleCore.address, depositAmount]);
       await fixture.pa.write.mint([moduleCore.address, depositAmount]);
 
-      const preview = await moduleCore.read.previewRedeemPaWithLv([
-        Id,
-        depositAmount,
-      ]);
+      const preview = await moduleCore.read.previewRedeemPaWithLv([Id]);
       console.log(preview);
-      await moduleCore.write.redeemPaWithLv([Id, depositAmount], {
+      await moduleCore.write.redeemPaWithLv([Id], {
         account: defaultSigner.account,
       });
       const event = await moduleCore.getEvents
