@@ -19,6 +19,7 @@ import {Asset, ERC20, ERC20Burnable} from "../core/assets/Asset.sol";
 import {ICommon} from "../interfaces/ICommon.sol";
 import {IVault} from "../interfaces/IVault.sol";
 import {SafeERC20, IERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import "forge-std/console.sol";
 
 /**
  * @title Vault Library Contract
@@ -270,6 +271,7 @@ library VaultLibrary {
     // lv price = paReserve / lvTotalSupply
     // PA amount = lvAmount * (PA reserve in contract / total supply of LV)
     function _calculatePaPriceForLv(State storage self, uint256 lvAmt) internal view returns (uint256 paAmount) {
+        console.log(self.vault.pool.withdrawalPool.paBalance);
         return lvAmt * self.vault.pool.withdrawalPool.paBalance / ERC20(self.vault.lv._address).totalSupply();
     }
 
@@ -434,14 +436,16 @@ library VaultLibrary {
         // if the reserved DS is more than the CT that's available from liquidating the AMM LP
         // then there's no CT we can use to effectively redeem RA + PA from the PSM
         uint256 ctAttributedToPa = reservedDs >= ctAmm ? 0 : ctAmm - reservedDs;
-
+        console.log("reservedDs", reservedDs);
+        console.log("ctAmm", ctAmm);
+        console.log("ctAttributedToPa", ctAttributedToPa);
         uint256 psmPa;
         uint256 psmRa;
 
         if (ctAttributedToPa != 0) {
             (psmPa, psmRa) = PsmLibrary.lvRedeemRaPaWithCt(self, ctAttributedToPa, dsId);
         }
-
+        console.log(psmPa, psmRa);
         psmRa += redeemAmount;
 
         self.vault.pool.reserve(self.vault.lv.totalIssued(), raAmm + psmRa, psmPa);
