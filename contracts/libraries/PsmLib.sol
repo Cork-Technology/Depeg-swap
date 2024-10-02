@@ -331,10 +331,22 @@ library PsmLibrary {
     }
 
     function lvRedeemRaWithCtDs(State storage self, uint256 amount, uint256 dsId) internal returns (uint256 ra) {
+        // separate if its hasnt been separated and is expired, if expired withdraw from archive, if not, decrease locked RA
+
         DepegSwap storage ds = self.ds[dsId];
 
         uint256 rates = ds.exchangeRate();
         ra = MathHelper.calculateRedeemAmountWithExchangeRate(amount, rates);
+
+        if (ds.isExpired()) {
+            _separateLiquidity(self, dsId);
+            PsmPoolArchive storage archive = self.psm.poolArchive[dsId];
+            
+            archive.ctAttributed -= amount;
+            archive.raAccrued -= ra;
+        } else {
+            self.psm.balances.ra.decLocked(ra);
+        }
 
         ds.burnBothforSelf(amount);
     }
@@ -457,7 +469,7 @@ library PsmLibrary {
         bool isPSMWithdrawalPaused,
         bool isLVDepositPaused,
         bool isLVWithdrawalPaused
-    ) external{
+    ) external {
         self.psm.isDepositPaused = isPSMDepositPaused;
         self.psm.isWithdrawalPaused = isPSMWithdrawalPaused;
         self.vault.config.isDepositPaused = isLVDepositPaused;
@@ -528,7 +540,7 @@ library PsmLibrary {
         IERC20(ds._address).transfer(buyer, received);
 
         // Provide liquidity
-        VaultLibrary.__provideLiquidityWithRatio(self, fee, flashSwapRouter, ds.ct,ammRouter);
+        VaultLibrary.__provideLiquidityWithRatio(self, fee, flashSwapRouter, ds.ct, ammRouter);
     }
 
     function _redeemDs(Balances storage self, uint256 amount) internal {
