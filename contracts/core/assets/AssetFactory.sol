@@ -83,7 +83,7 @@ contract AssetFactory is IAssetFactory, OwnableUpgradeable, UUPSUpgradeable {
         lv = new address[](arrLen);
 
         for (uint256 i = start; i < end; i++) {
-            Pair storage asset = pairs[i];
+            Pair memory asset = pairs[i];
             uint8 _idx = uint8(i - start);
 
             ra[_idx] = asset.pair1;
@@ -107,7 +107,7 @@ contract AssetFactory is IAssetFactory, OwnableUpgradeable, UUPSUpgradeable {
         withinLimit(limit)
         returns (address[] memory ct, address[] memory ds)
     {
-        Pair[] storage _assets = swapAssets[Pair(pa, ra).toId()];
+        Pair[] memory _assets = swapAssets[Pair(pa, ra).toId()];
 
         uint256 start = uint256(page) * uint256(limit);
         uint256 end = start + uint256(limit);
