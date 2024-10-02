@@ -9,7 +9,7 @@ import "./../../contracts/interfaces/IPSMcore.sol";
 import "forge-std/console.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
-contract VaultRedeemTest is Helper {
+contract VaultTest is Helper {
     DummyWETH internal ra;
     DummyWETH internal pa;
     Id public currencyId;
@@ -18,10 +18,13 @@ contract VaultRedeemTest is Helper {
 
     uint256 public dsId;
 
+    address public ct;
+    address public ds;
+
     address public lv;
     address user2 = address(30);
 
-    function setUp() public {
+    function setUp() public virtual {
         vm.startPrank(DEFAULT_ADDRESS);
 
         deployModuleCore();
@@ -50,7 +53,34 @@ contract VaultRedeemTest is Helper {
 
         // save initial data
         lv = assetFactory.getLv(address(ra), address(pa));
+        fetchProtocolGeneralInfo();
+    }
+
+    function fetchProtocolGeneralInfo() internal {
         dsId = moduleCore.lastDsId(currencyId);
+        (ct, ds) = moduleCore.swapAsset(currencyId, dsId);
+    }
+
+    // ff to expiry and update infos
+    function ff_expired() internal {
+        // fast forward to expiry
+        uint256 expiry = Asset(ds).expiry();
+        vm.warp(expiry);
+
+        uint256 rolloverBlocks = flashSwapRouter.getRolloverEndInBlockNumber(currencyId);
+        vm.roll(block.number + rolloverBlocks);
+
+        Asset(ct).approve(address(moduleCore), DEFAULT_DEPOSIT_AMOUNT);
+
+        issueNewDs(currencyId, block.timestamp + 1 days);
+
+        fetchProtocolGeneralInfo();
+    }
+}
+
+contract VaultRedeemTest is VaultTest {
+    function setUp() public override {
+        super.setUp();
     }
 
     function test_redeemEarly() external {
@@ -86,6 +116,55 @@ contract VaultRedeemTest is Helper {
         // user shouldn't accrue any value, so they will receive their original deposits back
         // not exactly 1 ether cause of uni v2 minimum liquidity
         vm.assertApproxEqAbs(received, 1 ether, 1e9);
+        // save initial data
+    }
+}
+
+contract VaultRedeemLvPaTest is VaultTest {
+    function setUp() public override {
+        super.setUp();
+    }
+
+    function test_redeemLvPa() external {
+        // now we redeem RA by providing DS + PA
+        IERC20(ds).approve(address(moduleCore), DEFAULT_DEPOSIT_AMOUNT);
+        IERC20(pa).approve(address(moduleCore), DEFAULT_DEPOSIT_AMOUNT);
+        moduleCore.redeemRaWithDs(currencyId, dsId, DEFAULT_DEPOSIT_AMOUNT);
+
+        moduleCore.depositPsm(currencyId, DEFAULT_DEPOSIT_AMOUNT);
+        moduleCore.depositLv(currencyId, DEFAULT_DEPOSIT_AMOUNT);
+        ff_expired();
+
+        moduleCore.depositLv(currencyId, DEFAULT_DEPOSIT_AMOUNT);
+
+        // IERC20(lv).approve(address(moduleCore), 0.9 ether);
+        uint256 paModuleCoreBefore = IERC20(pa).balanceOf(address(moduleCore));
+        uint256 paUserBefore = IERC20(pa).balanceOf(address(DEFAULT_ADDRESS));
+        console.log(paModuleCoreBefore);
+        console.log(IERC20(pa).balanceOf(DEFAULT_ADDRESS));
+        console.log(moduleCore.previewRedeemPaWithLv(currencyId));
+
+        // (uint256 received, uint256 fee, uint256 feePercentage) =
+        //     moduleCore.redeemEarlyLv(currencyId, DEFAULT_ADDRESS, 0.9 ether, 0);
+
+        // vm.assertTrue(received > 0.9 ether, "should accrue value");
+
+        vm.stopPrank();
+        // vm.startPrank(user2);
+
+        // // deposit first
+        // ra.approve(address(moduleCore), type(uint256).max);
+        // uint256 lvReceived = moduleCore.depositLv(currencyId, 1 ether);
+
+        // (received, fee, feePercentage) = moduleCore.previewRedeemEarlyLv(currencyId, lvReceived);
+
+        // // redeem early
+        // IERC20(lv).approve(address(moduleCore), 1 ether);
+        // (received, fee, feePercentage) = moduleCore.redeemEarlyLv(currencyId, DEFAULT_ADDRESS, lvReceived, 0);
+
+        // // user shouldn't accrue any value, so they will receive their original deposits back
+        // // not exactly 1 ether cause of uni v2 minimum liquidity
+        // vm.assertApproxEqAbs(received, 1 ether, 1e9);
         // save initial data
     }
 }

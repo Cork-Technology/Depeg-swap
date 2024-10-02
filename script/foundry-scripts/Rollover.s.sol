@@ -43,7 +43,7 @@ contract RolloverScript is Script {
 
     uint256 internal constant DEFAULT_EXCHANGE_RATE = 1 ether;
 
-    uint256 public pk = vm.envUint("PRIVATE_KEY");
+    uint256 public pk = vm.envUint("PRIVATE_KEY3");
 
     // roughly 6 hours
     uint256 DEFAULT_ROLLOVER_PERIOD = 1800;

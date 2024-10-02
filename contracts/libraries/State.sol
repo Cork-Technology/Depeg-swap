@@ -32,7 +32,7 @@ struct PsmState {
     mapping(address => bool) autoSell;
     bool isDepositPaused;
     bool isWithdrawalPaused;
- }
+}
 
 /**
  * @dev PsmPoolArchive structure for PSM Pools
@@ -91,6 +91,16 @@ struct VaultAmmLiquidityPool {
 }
 
 /**
+ * @dev LvInternalBalance structure for tracking LV balances of users
+ */
+struct LvInternalBalance {
+    // Balance gets incremented when user deposit to LV
+    // Balance gets decremented when user redeem from LV
+    uint256 balance;
+    BitMaps.BitMap isLvWithdrawn;
+}
+
+/**
  * @dev VaultState structure for VaultCore
  */
 struct VaultState {
@@ -100,10 +110,11 @@ struct VaultState {
     BitMaps.BitMap lpLiquidated;
     VaultPool pool;
     uint256 initialDsPrice;
-    // will be set to true after first deposit to LV. 
-    // to prevent manipulative behavior when depositing to Lv since we depend on preview redeem eearly to get 
+    // will be set to true after first deposit to LV.
+    // to prevent manipulative behavior when depositing to Lv since we depend on preview redeem early to get
     // the correct exchange rate of LV
     bool initialized;
+    mapping(address => LvInternalBalance) userLvBalance;
 }
 
 /**

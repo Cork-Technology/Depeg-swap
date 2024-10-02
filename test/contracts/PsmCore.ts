@@ -137,8 +137,6 @@ describe("PSM core", function () {
 
   describe("commons", function () {
     it("should deposit", async function () {
-      pa.write.approve([fixture.moduleCore.address, parseEther("10")]);
-
       const { dsId } = await issueNewSwapAssets(
         helper.nowTimestampInSeconds() + 10000
       );
@@ -165,8 +163,6 @@ describe("PSM core", function () {
     it("should redeem DS : Permit", async function () {
       // just to buffer
       const deadline = BigInt(helper.expiry(expiryTime));
-
-      pa.write.approve([fixture.moduleCore.address, parseEther("10")]);
 
       const { dsId, ds, ct } = await issueNewSwapAssets(
         helper.nowTimestampInSeconds() + 1000
