@@ -45,7 +45,7 @@ contract VaultRedeemTest is Helper {
         // 10000 for psm 10000 for LV
         ra.approve(address(moduleCore), type(uint256).max);
 
-        moduleCore.depositPsm(currencyId, DEFAULT_DEPOSIT_AMOUNT);
+        // moduleCore.depositPsm(currencyId, DEFAULT_DEPOSIT_AMOUNT);
         moduleCore.depositLv(currencyId, DEFAULT_DEPOSIT_AMOUNT);
 
         // save initial data
@@ -90,7 +90,7 @@ contract VaultRedeemTest is Helper {
     }
 
     function test_reissueMany() external {
-        for (uint256 i = 0; i < 10; i++) {
+        for (uint256 i = 0; i < 100; i++) {
             console.log("reissue", i);
             ff_expired();
         }
