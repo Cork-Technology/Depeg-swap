@@ -30,7 +30,7 @@ struct AssetPair {
 struct ReserveState {
     /// @dev dsId => [RA, CT, DS]
     mapping(uint256 => AssetPair) ds;
-    uint256 reserveSellPressurePrecentage;
+    uint256 reserveSellPressurePercentage;
     uint256 hpaCumulated;
     uint256 vhpaCumulated;
     uint256 decayDiscountRateInDays;
@@ -44,13 +44,13 @@ struct ReserveState {
  * @notice DsFlashSwap library which implements supporting lib and functions flashswap related features for DS/CT
  */
 library DsFlashSwaplibrary {
-    /// @dev the precentage amount of reserve that will be used to fill buy orders
+    /// @dev the percentage amount of reserve that will be used to fill buy orders
     /// the router will sell in respect to this ratio on first issuance
-    uint256 public constant INITIAL_RESERVE_SELL_PRESSURE_PRECENTAGE = 50e18;
+    uint256 public constant INITIAL_RESERVE_SELL_PRESSURE_PERCENTAGE = 50e18;
 
-    /// @dev the precentage amount of reserve that will be used to fill buy orders
+    /// @dev the percentage amount of reserve that will be used to fill buy orders
     /// the router will sell in respect to this ratio on subsequent issuances
-    uint256 public constant SUBSEQUENT_RESERVE_SELL_PRESSURE_PRECENTAGE = 80e18;
+    uint256 public constant SUBSEQUENT_RESERVE_SELL_PRESSURE_PERCENTAGE = 80e18;
 
     uint256 public constant FIRST_ISSUANCE = 1;
 
@@ -65,9 +65,9 @@ library DsFlashSwaplibrary {
     ) internal {
         self.ds[dsId] = AssetPair(Asset(ra), Asset(ct), Asset(ds), IUniswapV2Pair(pair), initialReserve, 0);
 
-        self.reserveSellPressurePrecentage = dsId == FIRST_ISSUANCE
-            ? INITIAL_RESERVE_SELL_PRESSURE_PRECENTAGE
-            : SUBSEQUENT_RESERVE_SELL_PRESSURE_PRECENTAGE;
+        self.reserveSellPressurePercentage = dsId == FIRST_ISSUANCE
+            ? INITIAL_RESERVE_SELL_PRESSURE_PERCENTAGE
+            : SUBSEQUENT_RESERVE_SELL_PRESSURE_PERCENTAGE;
 
         if (dsId != FIRST_ISSUANCE) {
             try SwapperMathLibrary.calculateHPA(self.hpaCumulated, self.vhpaCumulated) returns (uint256 hpa) {

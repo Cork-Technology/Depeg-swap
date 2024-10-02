@@ -176,7 +176,7 @@ describe("LvCore", function () {
           redeemer: defaultSigner.account.address,
         })
         .then((e) => e[0]);
-      expect(event.args.feePrecentage).to.be.equal(parseEther("5"));
+      expect(event.args.feePercentage).to.be.equal(parseEther("5"));
 
       console.log(
         "event.args.amount                                          :",
@@ -229,7 +229,7 @@ describe("LvCore", function () {
           redeemer: defaultSigner.account.address,
         })
         .then((e) => e[0]);
-      expect(event.args.feePrecentage).to.be.equal(parseEther("5"));
+      expect(event.args.feePercentage).to.be.equal(parseEther("5"));
 
       expect(event.args.amount).to.be.closeTo(
         ethers.BigNumber.from(
@@ -339,7 +339,7 @@ describe("LvCore", function () {
       100
     );
     // 10% fee
-    expect(event.args.feePrecentage).to.be.equal(parseEther("5"));
+    expect(event.args.feePercentage).to.be.equal(parseEther("5"));
     // 10% fee
     expect(event.args.fee).to.be.closeTo(
       ethers.BigNumber.from(parseEther("0.05")),
@@ -355,11 +355,11 @@ describe("LvCore", function () {
       const { Id } = await issueNewSwapAssets(expiry);
 
       await moduleCore.write.depositLv([Id, depositAmount]);
-      const [rcv, fee, precentage] = await moduleCore.read.previewRedeemEarlyLv(
+      const [rcv, fee, percentage] = await moduleCore.read.previewRedeemEarlyLv(
         [Id, redeemAmount]
       );
 
-      expect(precentage).to.be.equal(parseEther("5"));
+      expect(percentage).to.be.equal(parseEther("5"));
       expect(fee).to.be.closeTo(
         ethers.BigNumber.from(parseEther("0.1")),
         // the amount of fee deducted will also slightles less because this is the first issuance,

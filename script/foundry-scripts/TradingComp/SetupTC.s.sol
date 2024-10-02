@@ -23,7 +23,7 @@ contract SetupTCScript is Script {
     IERC20 public cETH;
 
     bool public isProd = vm.envBool("PRODUCTION");
-    uint256 public base_redemption_fee = vm.envUint("PSM_BASE_REDEMPTION_FEE_PRECENTAGE");
+    uint256 public base_redemption_fee = vm.envUint("PSM_BASE_REDEMPTION_FEE_PERCENTAGE");
     address public ceth = vm.envAddress("WETH");
     uint256 public pk = vm.envUint("PRIVATE_KEY");
 

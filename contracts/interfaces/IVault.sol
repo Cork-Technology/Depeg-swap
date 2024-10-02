@@ -19,14 +19,14 @@ interface IVault {
     /// @param receiver The address of the receiver
     /// @param amount The amount of the asset redeemed
     /// @param fee The total fee charged for early redemption
-    /// @param feePrecentage The fee precentage for early redemption, denominated in 1e18 (e.g 100e18 = 100%)
+    /// @param feePercentage The fee percentage for early redemption, denominated in 1e18 (e.g 100e18 = 100%)
     event LvRedeemEarly(
         Id indexed Id,
         address indexed redeemer,
         address indexed receiver,
         uint256 amount,
         uint256 fee,
-        uint256 feePrecentage
+        uint256 feePercentage
     );
 
     /// @notice Emitted when a early redemption fee is updated for a given Vault
@@ -62,7 +62,7 @@ interface IVault {
         bytes memory rawLvPermitSig,
         uint256 deadline,
         uint256 amountOutMin
-    ) external returns (uint256 received, uint256 fee, uint256 feePrecentage);
+    ) external returns (uint256 received, uint256 fee, uint256 feePercentage);
 
     /**
      * @notice Redeem lv before expiry
@@ -73,7 +73,7 @@ interface IVault {
      */
     function redeemEarlyLv(Id id, address receiver, uint256 amount, uint256 amountOutMin)
         external
-        returns (uint256 received, uint256 fee, uint256 feePrecentage);
+        returns (uint256 received, uint256 fee, uint256 feePercentage);
 
     /**
      * @notice preview redeem lv before expiry
@@ -83,7 +83,7 @@ interface IVault {
     function previewRedeemEarlyLv(Id id, uint256 amount)
         external
         view
-        returns (uint256 received, uint256 fee, uint256 feePrecentage);
+        returns (uint256 received, uint256 fee, uint256 feePercentage);
 
     /**
      * Returns the early redemption fee percentage

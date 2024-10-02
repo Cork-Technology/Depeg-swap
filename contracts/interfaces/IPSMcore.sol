@@ -65,7 +65,7 @@ interface IPSMcore is IRepurchase {
     /// @param amount The amount of the DS redeemed
     /// @param received The amount of  asset received
     /// @param dsExchangeRate The exchange rate of DS at the time of redeem
-    /// @param feePrecentage The fee precentage charged for redemption
+    /// @param feePercentage The fee percentage charged for redemption
     /// @param fee The fee charged for redemption
     event DsRedeemed(
         Id indexed Id,
@@ -74,7 +74,7 @@ interface IPSMcore is IRepurchase {
         uint256 amount,
         uint256 received,
         uint256 dsExchangeRate,
-        uint256 feePrecentage,
+        uint256 feePercentage,
         uint256 fee
     );
 

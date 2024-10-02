@@ -30,7 +30,7 @@ abstract contract ModuleState is ICommon {
 
     address internal CONFIG;
 
-    uint256 internal psmBaseRedemptionFeePrecentage;
+    uint256 internal psmBaseRedemptionFeePercentage;
 
     /**
      * @dev checks if caller is config contract or not
@@ -52,9 +52,9 @@ abstract contract ModuleState is ICommon {
         address _dsFlashSwapRouter,
         address _ammRouter,
         address _config,
-        uint256 _psmBaseRedemptionFeePrecentage
+        uint256 _psmBaseRedemptionFeePercentage
     ) internal {
-        if (psmBaseRedemptionFeePrecentage > 5 ether) {
+        if (psmBaseRedemptionFeePercentage > 5 ether) {
             revert InvalidFees();
         }
         SWAP_ASSET_FACTORY = _swapAssetFactory;
@@ -62,7 +62,7 @@ abstract contract ModuleState is ICommon {
         DS_FLASHSWAP_ROUTER = _dsFlashSwapRouter;
         AMM_ROUTER = _ammRouter;
         CONFIG = _config;
-        psmBaseRedemptionFeePrecentage = _psmBaseRedemptionFeePrecentage;
+        psmBaseRedemptionFeePercentage = _psmBaseRedemptionFeePercentage;
     }
 
     function getRouterCore() internal view returns (RouterState) {

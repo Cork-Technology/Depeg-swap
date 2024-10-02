@@ -145,8 +145,8 @@ library SwapperMathLibrary {
         raBorrowed = dsReceived - SignedMath.abs(raProvided);
     }
 
-    function calculatePrecentage(uint256 amount, uint256 precentage) private pure returns (uint256 result) {
-        result = (((amount * 1e18) * precentage) / (100 * 1e18)) / 1e18;
+    function calculatePercentage(uint256 amount, uint256 percentage) private pure returns (uint256 result) {
+        result = (((amount * 1e18) * percentage) / (100 * 1e18)) / 1e18;
     }
 
     /**
@@ -161,7 +161,7 @@ library SwapperMathLibrary {
     ) external pure returns (uint256 cumulatedHPA) {
         uint256 decay = calculateDecayDiscount(decayDiscountInDays, issuanceTimestamp, currentTime);
 
-        cumulatedHPA = calculatePrecentage(effectiveDsPrice * amount / 1e18, decay);
+        cumulatedHPA = calculatePercentage(effectiveDsPrice * amount / 1e18, decay);
     }
 
     function calculateEffectiveDsPrice(uint256 dsAmount, uint256 raProvided)
@@ -180,7 +180,7 @@ library SwapperMathLibrary {
     ) external pure returns (uint256 cumulatedVHPA) {
         uint256 decay = calculateDecayDiscount(decayDiscountInDays, issuanceTimestamp, currentTime);
 
-        cumulatedVHPA = calculatePrecentage(amount, decay);
+        cumulatedVHPA = calculatePercentage(amount, decay);
     }
 
     function calculateHPA(uint256 cumulatedHPA, uint256 cumulatedVHPA) external pure returns (uint256 hpa) {

@@ -30,12 +30,12 @@ contract ModuleCore is OwnableUpgradeable, UUPSUpgradeable, PsmCore, Initialize,
         address _flashSwapRouter,
         address _ammRouter,
         address _config,
-        uint256 _psmBaseRedemptionFeePrecentage
+        uint256 _psmBaseRedemptionFeePercentage
     ) external initializer {
         __Ownable_init(msg.sender);
         __UUPSUpgradeable_init();
         initializeModuleState(
-            _swapAssetFactory, _ammFactory, _flashSwapRouter, _ammRouter, _config, _psmBaseRedemptionFeePrecentage
+            _swapAssetFactory, _ammFactory, _flashSwapRouter, _ammRouter, _config, _psmBaseRedemptionFeePercentage
         );
     }
 
@@ -82,12 +82,12 @@ contract ModuleCore is OwnableUpgradeable, UUPSUpgradeable, PsmCore, Initialize,
         Id id,
         uint256 expiry,
         uint256 exchangeRates,
-        uint256 repurchaseFeePrecentage,
+        uint256 repurchaseFeePercentage,
         uint256 decayDiscountRateInDays,
         // won't have effect on first issuance
         uint256 rolloverPeriodInblocks
     ) external override onlyConfig onlyInitialized(id) {
-        if (repurchaseFeePrecentage > 5 ether) {
+        if (repurchaseFeePercentage > 5 ether) {
             revert InvalidFees();
         }
 
@@ -100,7 +100,7 @@ contract ModuleCore is OwnableUpgradeable, UUPSUpgradeable, PsmCore, Initialize,
         );
 
         // avoid stack to deep error
-        _initOnNewIssuance(id, repurchaseFeePrecentage, ra, ct, ds, expiry);
+        _initOnNewIssuance(id, repurchaseFeePercentage, ra, ct, ds, expiry);
         // avoid stack to deep error
         getRouterCore().setDecayDiscountAndRolloverPeriodOnNewIssuance(
             id, decayDiscountRateInDays, rolloverPeriodInblocks
@@ -110,7 +110,7 @@ contract ModuleCore is OwnableUpgradeable, UUPSUpgradeable, PsmCore, Initialize,
 
     function _initOnNewIssuance(
         Id id,
-        uint256 repurchaseFeePrecentage,
+        uint256 repurchaseFeePercentage,
         address ra,
         address ct,
         address ds,
@@ -123,18 +123,18 @@ contract ModuleCore is OwnableUpgradeable, UUPSUpgradeable, PsmCore, Initialize,
 
         address ammPair = getAmmFactory().createPair(ra, ct);
 
-        PsmLibrary.onNewIssuance(state, ct, ds, ammPair, idx, prevIdx, repurchaseFeePrecentage);
+        PsmLibrary.onNewIssuance(state, ct, ds, ammPair, idx, prevIdx, repurchaseFeePercentage);
 
         getRouterCore().onNewIssuance(id, idx, ds, ammPair, 0, ra, ct);
 
         emit Issued(id, idx, expiry, ds, ct, ammPair);
     }
 
-    function updateRepurchaseFeeRate(Id id, uint256 newRepurchaseFeePrecentage) external onlyConfig {
+    function updateRepurchaseFeeRate(Id id, uint256 newRepurchaseFeePercentage) external onlyConfig {
         State storage state = states[id];
-        PsmLibrary.updateRepurchaseFeePercentage(state, newRepurchaseFeePrecentage);
+        PsmLibrary.updateRepurchaseFeePercentage(state, newRepurchaseFeePercentage);
 
-        emit RepurchaseFeeRateUpdated(id, newRepurchaseFeePrecentage);
+        emit RepurchaseFeeRateUpdated(id, newRepurchaseFeePercentage);
     }
 
     function updateEarlyRedemptionFeeRate(Id id, uint256 newEarlyRedemptionFeeRate) external onlyConfig {
@@ -193,12 +193,12 @@ contract ModuleCore is OwnableUpgradeable, UUPSUpgradeable, PsmCore, Initialize,
 
     /**
      * @notice update value of PSMBaseRedemption fees
-     * @param newPsmBaseRedemptionFeePrecentage new value of fees
+     * @param newPsmBaseRedemptionFeePercentage new value of fees
      */
-    function updatePsmBaseRedemptionFeePrecentage(uint256 newPsmBaseRedemptionFeePrecentage) external onlyConfig {
-        if (newPsmBaseRedemptionFeePrecentage > 5 ether) {
+    function updatePsmBaseRedemptionFeePercentage(uint256 newPsmBaseRedemptionFeePercentage) external onlyConfig {
+        if (newPsmBaseRedemptionFeePercentage > 5 ether) {
             revert InvalidFees();
         }
-        psmBaseRedemptionFeePrecentage = newPsmBaseRedemptionFeePrecentage;
+        psmBaseRedemptionFeePercentage = newPsmBaseRedemptionFeePercentage;
     }
 }

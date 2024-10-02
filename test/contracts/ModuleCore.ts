@@ -118,7 +118,7 @@ describe("Module Core", function () {
       dsFlashSwapRouter.contract.address,
       univ2Router,
       config.contract.address,
-      helper.DEFAULT_BASE_REDEMPTION_PRECENTAGE,
+      helper.DEFAULT_BASE_REDEMPTION_PERCENTAGE,
     ]);
     expect(moduleCore).to.be.ok;
   });
@@ -416,26 +416,26 @@ describe("Module Core", function () {
     });
   });
 
-  describe("updatePsmBaseRedemptionFeePrecentage", function () {
-    it("updatePsmBaseRedemptionFeePrecentage should work correctly", async function () {
+  describe("updatePsmBaseRedemptionFeePercentage", function () {
+    it("updatePsmBaseRedemptionFeePercentage should work correctly", async function () {
       expect(await moduleCore.read.baseRedemptionFee()).to.equal(
         parseEther("5")
       );
-      await corkConfig.write.updatePsmBaseRedemptionFeePrecentage([500n]);
+      await corkConfig.write.updatePsmBaseRedemptionFeePercentage([500n]);
       expect(await moduleCore.read.baseRedemptionFee()).to.equal(500n);
     });
 
-    it("updatePsmBaseRedemptionFeePrecentage should revert when new value is more than 5%", async function () {
+    it("updatePsmBaseRedemptionFeePercentage should revert when new value is more than 5%", async function () {
       await expect(
-        corkConfig.write.updatePsmBaseRedemptionFeePrecentage([
+        corkConfig.write.updatePsmBaseRedemptionFeePercentage([
           parseEther("5.00000000000001"),
         ])
       ).to.be.rejectedWith("InvalidFees()");
     });
 
-    it("updatePsmBaseRedemptionFeePrecentage should revert when not called by Config contract", async function () {
+    it("updatePsmBaseRedemptionFeePercentage should revert when not called by Config contract", async function () {
       await expect(
-        moduleCore.write.updatePsmBaseRedemptionFeePrecentage([500n], {
+        moduleCore.write.updatePsmBaseRedemptionFeePercentage([500n], {
           account: secondSigner.account,
         })
       ).to.be.rejectedWith("OnlyConfigAllowed()");

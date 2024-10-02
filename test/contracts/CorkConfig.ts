@@ -276,13 +276,13 @@ describe("CorkConfig", function () {
     });
   });
 
-  describe("updatePsmBaseRedemptionFeePrecentage", function () {
-    it("updatePsmBaseRedemptionFeePrecentage should work correctly", async function () {
+  describe("updatePsmBaseRedemptionFeePercentage", function () {
+    it("updatePsmBaseRedemptionFeePercentage should work correctly", async function () {
       expect(await moduleCore.read.baseRedemptionFee()).to.be.equals(
         parseEther("5")
       );
       expect(
-        await corkConfig.write.updatePsmBaseRedemptionFeePrecentage([1000n], {
+        await corkConfig.write.updatePsmBaseRedemptionFeePercentage([1000n], {
           account: defaultSigner.account,
         })
       ).to.be.ok;
@@ -291,9 +291,9 @@ describe("CorkConfig", function () {
       );
     });
 
-    it("Revert when non MANAGER call updatePsmBaseRedemptionFeePrecentage", async function () {
+    it("Revert when non MANAGER call updatePsmBaseRedemptionFeePercentage", async function () {
       await expect(
-        corkConfig.write.updatePsmBaseRedemptionFeePrecentage([1000n], {
+        corkConfig.write.updatePsmBaseRedemptionFeePercentage([1000n], {
           account: secondSigner.account,
         })
       ).to.be.rejectedWith("CallerNotManager()");

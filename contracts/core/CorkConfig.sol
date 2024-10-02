@@ -80,23 +80,23 @@ contract CorkConfig is AccessControl, Pausable {
         Id id,
         uint256 expiry,
         uint256 exchangeRates,
-        uint256 repurchaseFeePrecentage,
+        uint256 repurchaseFeePercentage,
         uint256 decayDiscountRateInDays,
         // won't have effect on first issuance
         uint256 rolloverPeriodInblocks
     ) external whenNotPaused onlyManager {
         moduleCore.issueNewDs(
-            id, expiry, exchangeRates, repurchaseFeePrecentage, decayDiscountRateInDays, rolloverPeriodInblocks
+            id, expiry, exchangeRates, repurchaseFeePercentage, decayDiscountRateInDays, rolloverPeriodInblocks
         );
     }
 
     /**
      * @notice Updates fee rates for psm repurchase
      * @param id id of PSM
-     * @param newRepurchaseFeePrecentage new value of repurchase fees, make sure it has 18 decimals(e.g 1% = 1e18)
+     * @param newRepurchaseFeePercentage new value of repurchase fees, make sure it has 18 decimals(e.g 1% = 1e18)
      */
-    function updateRepurchaseFeeRate(Id id, uint256 newRepurchaseFeePrecentage) external onlyManager {
-        moduleCore.updateRepurchaseFeeRate(id, newRepurchaseFeePrecentage);
+    function updateRepurchaseFeeRate(Id id, uint256 newRepurchaseFeePercentage) external onlyManager {
+        moduleCore.updateRepurchaseFeeRate(id, newRepurchaseFeePercentage);
     }
 
     /**
@@ -130,10 +130,10 @@ contract CorkConfig is AccessControl, Pausable {
 
     /**
      * @notice Updates base redemption fee percentage
-     * @param newPsmBaseRedemptionFeePrecentage new value of fees, make sure it has 18 decimals(e.g 1% = 1e18)
+     * @param newPsmBaseRedemptionFeePercentage new value of fees, make sure it has 18 decimals(e.g 1% = 1e18)
      */
-    function updatePsmBaseRedemptionFeePrecentage(uint256 newPsmBaseRedemptionFeePrecentage) external onlyManager {
-        moduleCore.updatePsmBaseRedemptionFeePrecentage(newPsmBaseRedemptionFeePrecentage);
+    function updatePsmBaseRedemptionFeePercentage(uint256 newPsmBaseRedemptionFeePercentage) external onlyManager {
+        moduleCore.updatePsmBaseRedemptionFeePercentage(newPsmBaseRedemptionFeePercentage);
     }
 
     function updateFlashSwapRouterDiscountInDays(Id id, uint256 newDiscountInDays) external onlyManager {

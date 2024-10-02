@@ -213,9 +213,9 @@ describe("PSM core", function () {
         .then((e) => e[0]);
 
       expect(event.args.received!).to.equal(
-        redeemAmount - helper.calculatePrecentage(redeemAmount)
+        redeemAmount - helper.calculatePercentage(redeemAmount)
       );
-      expect(event.args.fee).to.equal(helper.calculatePrecentage(redeemAmount));
+      expect(event.args.fee).to.equal(helper.calculatePercentage(redeemAmount));
     });
 
     it("should redeem DS : Approval", async function () {
@@ -438,7 +438,7 @@ describe("PSM core", function () {
 
       expect(event[0].args.dsExchangeRate).to.equal(rates);
       expect(event[0].args.received).to.equal(
-        depositAmount - helper.calculatePrecentage(depositAmount)
+        depositAmount - helper.calculatePercentage(depositAmount)
       );
     });
 
@@ -709,14 +709,14 @@ describe("PSM core", function () {
       expect(availableDs).to.equal(parseEther("10"));
 
       // remember fee rate is fixed at 10%
-      const [_, received, feePrecentage, fee, exchangeRate] =
+      const [_, received, feePercentage, fee, exchangeRate] =
         await fixture.moduleCore.read.previewRepurchase([
           fixture.Id,
           parseEther("2"),
         ]);
       
       expect(received).to.equal(parseEther("0.95"));
-      expect(feePrecentage).to.equal(parseEther("5"));
+      expect(feePercentage).to.equal(parseEther("5"));
       expect(fee).to.equal(parseEther("0.1"));
       expect(exchangeRate).to.equal(parseEther("2"));
 
@@ -732,7 +732,7 @@ describe("PSM core", function () {
       expect(event.args.received).to.equal(received);
       expect(event.args.fee).to.equal(fee);
       expect(event.args.exchangeRates).to.equal(exchangeRate);
-      expect(event.args.feePrecentage).to.equal(feePrecentage);
+      expect(event.args.feePercentage).to.equal(feePercentage);
     });
 
     it("shouldn't be able to repurchase after expired", async function () {
@@ -1122,14 +1122,14 @@ describe("PSM core", function () {
       ]);
 
       // remember fee rate is fixed at 10%
-      const [_, received, feePrecentage, fee, exchangeRate] =
+      const [_, received, feePercentage, fee, exchangeRate] =
         await fixture.moduleCore.read.previewRepurchase([
           fixture.Id,
           parseEther("2"),
         ]);
 
       expect(received).to.equal(parseEther("0.95"));
-      expect(feePrecentage).to.equal(parseEther("5"));
+      expect(feePercentage).to.equal(parseEther("5"));
       expect(fee).to.equal(parseEther("0.1"));
       expect(exchangeRate).to.equal(parseEther("2"));
     });

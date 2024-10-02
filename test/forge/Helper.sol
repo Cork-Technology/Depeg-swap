@@ -86,12 +86,12 @@ abstract contract Helper is Test, SigUtils {
         Id id,
         uint256 expiryInSeconds,
         uint256 exchangeRates,
-        uint256 repurchaseFeePrecentage,
+        uint256 repurchaseFeePercentage,
         uint256 decayDiscountRateInDays,
         uint256 rolloverPeriodInblocks
     ) internal {
         corkConfig.issueNewDs(
-            id, expiryInSeconds, exchangeRates, repurchaseFeePrecentage, decayDiscountRateInDays, rolloverPeriodInblocks
+            id, expiryInSeconds, exchangeRates, repurchaseFeePercentage, decayDiscountRateInDays, rolloverPeriodInblocks
         );
     }
 
@@ -133,7 +133,7 @@ abstract contract Helper is Test, SigUtils {
     function initializeAndIssueNewDs(
         uint256 expiryInSeconds,
         uint256 exchangeRates,
-        uint256 repurchaseFeePrecentage,
+        uint256 repurchaseFeePercentage,
         uint256 decayDiscountRateInDays,
         uint256 rolloverPeriodInblocks,
         uint256 lvFee,
@@ -147,7 +147,7 @@ abstract contract Helper is Test, SigUtils {
 
         initializeNewModuleCore(address(pa), address(ra), lvFee, initialDsPrice);
         issueNewDs(
-            id, expiryInSeconds, exchangeRates, repurchaseFeePrecentage, decayDiscountRateInDays, rolloverPeriodInblocks
+            id, expiryInSeconds, exchangeRates, repurchaseFeePercentage, decayDiscountRateInDays, rolloverPeriodInblocks
         );
     }
 
