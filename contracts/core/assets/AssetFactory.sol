@@ -44,7 +44,7 @@ contract AssetFactory is IAssetFactory, OwnableUpgradeable, UUPSUpgradeable {
     function getLv(address ra, address pa) external view override returns (address) {
         return lvs[Pair(pa, ra).toId()];
     }
-    
+
     /**
      * @notice initializes asset factory contract and setup owner
      */
@@ -69,7 +69,6 @@ contract AssetFactory is IAssetFactory, OwnableUpgradeable, UUPSUpgradeable {
     {
         uint256 start = uint256(page) * uint256(limit);
         uint256 end = start + uint256(limit);
-        uint256 arrLen = end - start;
 
         if (end > idx) {
             end = idx;
@@ -79,6 +78,7 @@ contract AssetFactory is IAssetFactory, OwnableUpgradeable, UUPSUpgradeable {
             return (ra, lv);
         }
 
+        uint256 arrLen = end - start;
         ra = new address[](arrLen);
         lv = new address[](arrLen);
 
@@ -111,7 +111,6 @@ contract AssetFactory is IAssetFactory, OwnableUpgradeable, UUPSUpgradeable {
 
         uint256 start = uint256(page) * uint256(limit);
         uint256 end = start + uint256(limit);
-        uint256 arrLen = end - start;
 
         if (end > _assets.length) {
             end = _assets.length;
@@ -121,6 +120,7 @@ contract AssetFactory is IAssetFactory, OwnableUpgradeable, UUPSUpgradeable {
             return (ct, ds);
         }
 
+        uint256 arrLen = end - start;
         ct = new address[](arrLen);
         ds = new address[](arrLen);
 
@@ -174,12 +174,7 @@ contract AssetFactory is IAssetFactory, OwnableUpgradeable, UUPSUpgradeable {
      * @param owner Address of asset owners
      * @return lv new LV contract address
      */
-    function deployLv(address ra, address pa, address owner)
-        external
-        override
-        onlyOwner
-        returns (address lv)
-    {
+    function deployLv(address ra, address pa, address owner) external override onlyOwner returns (address lv) {
         lv = address(
             new Asset(LV_PREFIX, string(abi.encodePacked(Asset(ra).name(), "-", Asset(pa).name())), owner, 0, 0)
         );
