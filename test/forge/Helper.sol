@@ -24,9 +24,9 @@ abstract contract Helper is Test, SigUtils {
     DummyWETH internal weth = new DummyWETH();
 
     // 1% base redemption fee
-    uint256 internal DEFAULT_BASE_REDEMPTION_FEE = 1 ether;
+    uint256 internal constant DEFAULT_BASE_REDEMPTION_FEE = 1 ether;
 
-    uint256 internal DEFAULT_EXCHANGE_RATES = 1 ether;
+    uint256 internal constant DEFAULT_EXCHANGE_RATES = 1 ether;
 
     // use this to test functions as user
     uint256 internal DEFAULT_ADDRESS_PK = 1;
@@ -49,6 +49,10 @@ abstract contract Helper is Test, SigUtils {
 
     function defaultInitialDsPrice() internal pure virtual returns (uint256) {
         return DEFAULT_INITIAL_DS_PRICE;
+    }
+
+    function defaultExchangeRate() internal pure virtual returns (uint256) {
+        return DEFAULT_EXCHANGE_RATES;
     }
 
     function deployAssetFactory() internal {
@@ -99,7 +103,7 @@ abstract contract Helper is Test, SigUtils {
         issueNewDs(
             id,
             expiryInSeconds,
-            DEFAULT_EXCHANGE_RATES,
+            defaultExchangeRate(),
             DEFAULT_REPURCHASE_FEE,
             DEFAULT_DECAY_DISCOUNT_RATE,
             block.number + DEFAULT_ROLLOVER_PERIOD

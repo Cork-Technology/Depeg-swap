@@ -88,4 +88,25 @@ contract VaultRedeemTest is Helper {
         vm.assertApproxEqAbs(received, 1 ether, 1e9);
         // save initial data
     }
+
+    function test_reissueMany() external {
+        for (uint256 i = 0; i < 10; i++) {
+            console.log("reissue", i);
+            ff_expired();
+        }
+    }
+
+    function defaultExchangeRate() internal pure override returns (uint256) {
+        return 1.5 ether;
+    }
+
+    function ff_expired() internal {
+        dsId = moduleCore.lastDsId(currencyId);
+        (address ct,) = moduleCore.swapAsset(currencyId, dsId);
+        uint256 expiry = Asset(ct).expiry();
+
+        vm.warp(expiry);
+
+        issueNewDs(currencyId, block.timestamp + 1 days);
+    }
 }
