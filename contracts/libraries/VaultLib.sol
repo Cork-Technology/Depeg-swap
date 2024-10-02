@@ -140,9 +140,10 @@ library VaultLibrary {
 
         uint256 ctRatio = __getAmmCtPriceRatio(self, flashSwapRouter, dsId);
 
-        (ra, ct) = MathHelper.calculateProvideLiquidityAmountBasedOnCtPrice(amount, ctRatio);
+        (ra, ct) =
+            MathHelper.calculateProvideLiquidityAmountBasedOnCtPrice(amount, ctRatio, self.ds[dsId].exchangeRate());
 
-        __provideLiquidity(self, ra, ct, flashSwapRouter, ctAddress, ammRouter, dsId);
+        __provideLiquidity(self, ra, ct, flashSwapRouter, ctAddress, ammRouter, dsId, amount);
     }
 
     function __getAmmCtPriceRatio(State storage self, IDsFlashSwapCore flashSwapRouter, uint256 dsId)
@@ -203,14 +204,15 @@ library VaultLibrary {
         IDsFlashSwapCore flashSwapRouter,
         address ctAddress,
         IUniswapV2Router02 ammRouter,
-        uint256 dsId
+        uint256 dsId,
+        uint256 amountRaOriginal
     ) internal {
         // no need to provide liquidity if the amount is 0
         if (raAmount == 0 && ctAmount == 0) {
             return;
         }
 
-        PsmLibrary.unsafeIssueToLv(self, ctAmount);
+        PsmLibrary.unsafeIssueToLv(self, MathHelper.calculateProvideLiquidityAmount(amountRaOriginal, raAmount));
 
         __addLiquidityToAmmUnchecked(self, raAmount, ctAmount, self.info.redemptionAsset(), ctAddress, ammRouter);
 
@@ -227,9 +229,10 @@ library VaultLibrary {
 
         uint256 ctRatio = __getAmmCtPriceRatio(self, flashSwapRouter, dsId);
 
-        (uint256 ra, uint256 ct) = self.vault.pool.rationedToAmm(ctRatio);
+        (uint256 ra, uint256 ct, uint256 originalBalance) =
+            self.vault.pool.rationedToAmm(ctRatio, self.ds[dsId].exchangeRate());
 
-        __provideLiquidity(self, ra, ct, flashSwapRouter, ctAddress, ammRouter, dsId);
+        __provideLiquidity(self, ra, ct, flashSwapRouter, ctAddress, ammRouter, dsId, originalBalance);
 
         self.vault.pool.resetAmmPool();
     }
@@ -350,8 +353,7 @@ library VaultLibrary {
 
         flashSwapRouter.emptyReservePartialLv(self.info.toId(), dsId, redeemAmount);
 
-        ra += redeemAmount;
-        PsmLibrary.lvRedeemRaWithCtDs(self, redeemAmount, dsId);
+        ra += PsmLibrary.lvRedeemRaWithCtDs(self, redeemAmount, dsId);
 
         // we subtract redeem amount since we already liquidate it from the router
         uint256 ctSellAmount = reservedDs - redeemAmount >= ammCtBalance ? 0 : ammCtBalance - redeemAmount;
@@ -361,9 +363,8 @@ library VaultLibrary {
         path[0] = ds.ct;
         path[1] = self.info.pair1;
 
-        ERC20(ds.ct).approve(address(ammRouter), ctSellAmount);
-
         if (ctSellAmount != 0) {
+            ERC20(ds.ct).approve(address(ammRouter), ctSellAmount);
             // 100% tolerance, to ensure this not fail
             ra += ammRouter.swapExactTokensForTokens(ctSellAmount, 0, path, address(this), block.timestamp)[1];
         }
