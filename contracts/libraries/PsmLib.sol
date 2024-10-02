@@ -320,15 +320,16 @@ library PsmLibrary {
     // IMPORTANT: this is unsafe because by issuing CT, we also lock an equal amount of RA into the PSM.
     // it is a must, that the LV won't count the amount being locked in the PSM as it's balances.
     // doing so would create a mismatch between the accounting balance and the actual token balance.
-    function unsafeIssueToLv(State storage self, uint256 amount) internal {
+    function unsafeIssueToLv(State storage self, uint256 amount) internal returns (uint256 received) {
         uint256 dsId = self.globalAssetIdx;
 
         DepegSwap storage ds = self.ds[dsId];
-        uint256 exchangeRate = ds.exchangeRate();
+        uint256 _exchangeRate = ds.exchangeRate();
 
         self.psm.balances.ra.incLocked(amount);
 
-        uint256 received = MathHelper.calculateDepositAmountWithExchangeRate(amount, exchangeRate);
+        // add 1 for rounding error protection, ensure that the vault always has >= the amount of CT to be transferred
+        received = MathHelper.calculateDepositAmountWithExchangeRate(amount, _exchangeRate) + 1;
 
         ds.issue(address(this), received);
     }
@@ -341,13 +342,17 @@ library PsmLibrary {
         uint256 rates = ds.exchangeRate();
         ra = MathHelper.calculateRedeemAmountWithExchangeRate(amount, rates);
 
+        // separate liquidity if the DS is expired(if hasn't been separated)
         if (ds.isExpired()) {
             _separateLiquidity(self, dsId);
             PsmPoolArchive storage archive = self.psm.poolArchive[dsId];
-            
+
+            // because the PSM treats all CT issued(including to itself) as redeemable, we need to decrease the total amount of CT issued 
             archive.ctAttributed -= amount;
             archive.raAccrued -= ra;
         } else {
+            // else we just decrease the locked RA, since all the RA is still locked state(will turn to attributed when separated at liquidity)
+            // this'll happen when someone redeem early
             self.psm.balances.ra.decLocked(ra);
         }
 
