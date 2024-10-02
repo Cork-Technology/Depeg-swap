@@ -24,14 +24,14 @@ contract AssetFactory is IAssetFactory, OwnableUpgradeable, UUPSUpgradeable {
     mapping(Id => address) internal lvs;
     mapping(uint256 => Pair) internal pairs;
     mapping(Id => Pair[]) internal swapAssets;
-    mapping(address => bool) internal deployed;
+    mapping(address => uint256) internal deployed;
 
     /**
      * @notice for safety checks in psm core, also act as kind of like a registry
      * @param asset the address of Asset contract
      */
     function isDeployed(address asset) external view override returns (bool) {
-        return deployed[asset];
+        return (deployed[asset] == 1 ? true : false);
     }
 
     modifier withinLimit(uint8 limit) {
@@ -44,7 +44,7 @@ contract AssetFactory is IAssetFactory, OwnableUpgradeable, UUPSUpgradeable {
     function getLv(address ra, address pa) external view override returns (address) {
         return lvs[Pair(pa, ra).toId()];
     }
-    
+
     /**
      * @notice initializes asset factory contract and setup owner
      */
@@ -161,8 +161,8 @@ contract AssetFactory is IAssetFactory, OwnableUpgradeable, UUPSUpgradeable {
 
         swapAssets[Pair(pa, ra).toId()].push(Pair(ct, ds));
 
-        deployed[ct] = true;
-        deployed[ds] = true;
+        deployed[ct] = 1;
+        deployed[ds] = 1;
 
         emit AssetDeployed(ra, ct, ds);
     }
@@ -174,12 +174,7 @@ contract AssetFactory is IAssetFactory, OwnableUpgradeable, UUPSUpgradeable {
      * @param owner Address of asset owners
      * @return lv new LV contract address
      */
-    function deployLv(address ra, address pa, address owner)
-        external
-        override
-        onlyOwner
-        returns (address lv)
-    {
+    function deployLv(address ra, address pa, address owner) external override onlyOwner returns (address lv) {
         lv = address(
             new Asset(LV_PREFIX, string(abi.encodePacked(Asset(ra).name(), "-", Asset(pa).name())), owner, 0, 0)
         );
