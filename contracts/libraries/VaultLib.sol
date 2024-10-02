@@ -82,7 +82,7 @@ library VaultLibrary {
         uint256 dustRa = raAmount - raAdded;
 
         if (dustRa > 0) {
-            SafeERC20.safeTransfer(IERC20(raAddress), msg.sender, dustCt);
+            SafeERC20.safeTransfer(IERC20(raAddress), msg.sender, dustRa);
         }
         self.vault.config.lpBalance += lp;
     }
@@ -215,7 +215,6 @@ library VaultLibrary {
         PsmLibrary.unsafeIssueToLv(self, MathHelper.calculateProvideLiquidityAmount(amountRaOriginal, raAmount));
 
         __addLiquidityToAmmUnchecked(self, raAmount, ctAmount, self.info.redemptionAsset(), ctAddress, ammRouter);
-
         _addFlashSwapReserveLv(self, flashSwapRouter, self.ds[dsId], ctAmount);
     }
 
