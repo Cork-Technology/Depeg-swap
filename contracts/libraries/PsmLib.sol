@@ -80,7 +80,7 @@ library PsmLibrary {
         (ctReceived, dsReceived, _exchangeRate, paReceived) = _rolloverCt(self, owner, amount, dsId, flashSwapRouter);
     }
 
-    function claimRolloverProfit(
+    function claimAutoSellProfit(
         State storage self,
         IDsFlashSwapCore flashSwapRouter,
         address owner,
@@ -88,7 +88,7 @@ library PsmLibrary {
         uint256 amount
     ) external returns (uint256 profit, uint256 remainingDsReceived) {
         (profit, remainingDsReceived) =
-            _claimRolloverProfit(self, self.psm.poolArchive[dsId], flashSwapRouter, owner, amount, dsId);
+            _claimAutoSellProfit(self, self.psm.poolArchive[dsId], flashSwapRouter, owner, amount, dsId);
     }
     // 1. check how much expirec CT does use have
     // 2. calculate how much backed RA and PA the user can redeem
@@ -180,7 +180,7 @@ library PsmLibrary {
         ERC20Burnable(prevDs.ct).burnFrom(owner, amount);
     }
 
-    function _claimRolloverProfit(
+    function _claimAutoSellProfit(
         State storage self,
         PsmPoolArchive storage prevArchive,
         IDsFlashSwapCore flashswapRouter,

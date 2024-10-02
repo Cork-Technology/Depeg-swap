@@ -346,12 +346,12 @@ abstract contract PsmCore is IPSMcore, ModuleState, Context {
         );
     }
 
-    function claimRolloverProfit(Id id, uint256 dsId, uint256 amount)
+    function claimAutoSellProfit(Id id, uint256 dsId, uint256 amount)
         external
         returns (uint256 profit, uint256 dsReceived)
     {
         State storage state = states[id];
-        (profit, dsReceived) = state.claimRolloverProfit(getRouterCore(), _msgSender(), dsId, amount);
+        (profit, dsReceived) = state.claimAutoSellProfit(getRouterCore(), _msgSender(), dsId, amount);
         emit RolloverProfitClaimed(id, dsId, _msgSender(), amount, profit, dsReceived);
     }
 
