@@ -51,54 +51,6 @@ library SwapperMathLibrary {
         ctPriceRatio = (uint256(ctPriceRatioUQ) * 1e18) / UQ112x112.Q112;
     }
 
-    function calculateDsPrice(uint112 raReserve, uint112 ctReserve, uint256 dsExchangeRate)
-        public
-        pure
-        returns (uint256 price)
-    {
-        (, uint256 ctPriceRatio) = getPriceRatioUniv2(raReserve, ctReserve);
-
-        price = dsExchangeRate - ctPriceRatio;
-    }
-
-    function getAmountIn(
-        uint256 amountOut, // Amount of DS tokens to buy
-        uint112 raReserve, // Reserve of the input token
-        uint112 ctReserve, // Reserve of the other token (needed for price ratio calculation)
-        uint256 dsExchangeRate // DS exchange rate
-    ) external pure returns (uint256 amountIn) {
-        if (amountOut == 0) {
-            revert InsufficientOutputAmount();
-        }
-
-        if (raReserve == 0 || ctReserve == 0) {
-            revert InsufficientLiquidity();
-        }
-
-        uint256 dsPrice = calculateDsPrice(raReserve, ctReserve, dsExchangeRate);
-
-        amountIn = (amountOut * dsPrice) / 1e18;
-    }
-
-    function getAmountOut(
-        uint256 amountIn, // Amount of input tokens
-        uint112 reserveIn, // Reserve of the input token
-        uint112 reserveOut, // Reserve of the other token (needed for price ratio calculation)
-        uint256 dsExchangeRate // DS exchange rate
-    ) external pure returns (uint256 amountOut) {
-        if (amountIn == 0) {
-            revert InsufficientInputAmount();
-        }
-
-        if (reserveIn == 0 || reserveOut == 0) {
-            revert InsufficientLiquidity();
-        }
-
-        uint256 dsPrice = calculateDsPrice(reserveIn, reserveOut, dsExchangeRate);
-
-        amountOut = amountIn / dsPrice;
-    }
-
     /*
      * S = (E + x - y + sqrt(E^2 + 2E(x + y) + (x - y)^2)) / 2
      *
