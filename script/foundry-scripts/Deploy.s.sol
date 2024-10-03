@@ -131,7 +131,15 @@ contract DeployScript is Script {
         console.log("ModuleCore Router Implementation : ", address(moduleCoreImplementation));
 
         // Deploy the ModuleCore Proxy contract
-        data = abi.encodeWithSelector(moduleCoreImplementation.initialize.selector, address(assetFactory), address(factory), address(flashswapRouter), address(univ2Router), address(config), 0.2 ether); // 0.2 base redemptionfee
+        data = abi.encodeWithSelector(
+            moduleCoreImplementation.initialize.selector,
+            address(assetFactory),
+            address(factory),
+            address(flashswapRouter),
+            address(univ2Router),
+            address(config),
+            0.2 ether
+        ); // 0.2 base redemptionfee
         ERC1967Proxy moduleCoreProxy = new ERC1967Proxy(address(moduleCoreImplementation), data);
         moduleCore = ModuleCore(address(moduleCoreProxy));
 
@@ -186,7 +194,7 @@ contract DeployScript is Script {
         console.log("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-");
 
         cETH.approve(address(moduleCore), depositLVAmt);
-        moduleCore.depositLv(id, depositLVAmt);
+        moduleCore.depositLv(id, depositLVAmt, 0, 0);
         console.log("LV Deposited");
 
         cETH.approve(address(univ2Router), liquidityAmt);

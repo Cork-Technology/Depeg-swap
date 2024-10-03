@@ -39,13 +39,19 @@ interface IVault {
      * @param id The Module id that is used to reference both psm and lv of a given pair
      * @param amount The amount of the redemption asset(ra) deposited
      */
-    function depositLv(Id id, uint256 amount) external returns (uint256 received);
+    function depositLv(Id id, uint256 amount, uint256 raTolerance, uint256 ctTolerance) external returns (uint256 received);
 
     /**
      * @notice Preview the amount of lv that will be deposited
      * @param amount The amount of the redemption asset(ra) to be deposited
+     * @return lv The amount of lv that user will receive
+     * @return raAddedAsLiquidity The amount of ra that will be added as liquidity, use this as a baseline for tolerance when adding depositing to LV
+     * @return ctAddedAsLiquidity The amount of ct that will be added as liquidity, use this as a baseline for tolerance when adding depositing to LV
      */
-    function previewLvDeposit(Id id, uint256 amount) external view returns (uint256 lv);
+    function previewLvDeposit(Id id, uint256 amount)
+        external
+        view
+        returns (uint256 lv, uint256 raAddedAsLiquidity, uint256 ctAddedAsLiquidity);
 
     /**
      * @notice Redeem lv before expiry

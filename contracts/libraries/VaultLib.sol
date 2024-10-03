@@ -61,11 +61,10 @@ library VaultLibrary {
         uint256 ctAmount,
         address raAddress,
         address ctAddress,
-        IUniswapV2Router02 ammRouter
+        IUniswapV2Router02 ammRouter,
+        uint256 raTolerance,
+        uint256 ctTolerance
     ) internal {
-        (uint256 raTolerance, uint256 ctTolerance) =
-            MathHelper.calculateWithTolerance(raAmount, ctAmount, MathHelper.UNIV2_STATIC_TOLERANCE);
-
         ERC20(raAddress).approve(address(ammRouter), raAmount);
         ERC20(ctAddress).approve(address(ammRouter), ctAmount);
 
@@ -135,6 +134,24 @@ library VaultLibrary {
         uint256 amount,
         IDsFlashSwapCore flashSwapRouter,
         address ctAddress,
+        IUniswapV2Router02 ammRouter,
+        uint256 raTolerance,
+        uint256 ctTolerance
+    ) internal returns (uint256 ra, uint256 ct) {
+        uint256 dsId = self.globalAssetIdx;
+
+        uint256 ctRatio = __getAmmCtPriceRatio(self, flashSwapRouter, dsId);
+
+        (ra, ct) = MathHelper.calculateProvideLiquidityAmountBasedOnCtPrice(amount, ctRatio);
+
+        __provideLiquidity(self, ra, ct, flashSwapRouter, ctAddress, ammRouter, dsId, raTolerance, ctTolerance);
+    }
+
+    function __provideLiquidityWithRatio(
+        State storage self,
+        uint256 amount,
+        IDsFlashSwapCore flashSwapRouter,
+        address ctAddress,
         IUniswapV2Router02 ammRouter
     ) internal returns (uint256 ra, uint256 ct) {
         uint256 dsId = self.globalAssetIdx;
@@ -143,7 +160,10 @@ library VaultLibrary {
 
         (ra, ct) = MathHelper.calculateProvideLiquidityAmountBasedOnCtPrice(amount, ctRatio);
 
-        __provideLiquidity(self, ra, ct, flashSwapRouter, ctAddress, ammRouter, dsId);
+        (uint256 raTolerance, uint256 ctTolerance) =
+            MathHelper.calculateWithTolerance(ra, ct, MathHelper.UNIV2_STATIC_TOLERANCE);
+
+        __provideLiquidity(self, ra, ct, flashSwapRouter, ctAddress, ammRouter, dsId, raTolerance, ctTolerance);
     }
 
     function __getAmmCtPriceRatio(State storage self, IDsFlashSwapCore flashSwapRouter, uint256 dsId)
@@ -204,7 +224,9 @@ library VaultLibrary {
         IDsFlashSwapCore flashSwapRouter,
         address ctAddress,
         IUniswapV2Router02 ammRouter,
-        uint256 dsId
+        uint256 dsId,
+        uint256 raTolerance,
+        uint256 ctTolerance
     ) internal {
         // no need to provide liquidity if the amount is 0
         if (raAmount == 0 && ctAmount == 0) {
@@ -213,7 +235,9 @@ library VaultLibrary {
 
         PsmLibrary.unsafeIssueToLv(self, ctAmount);
 
-        __addLiquidityToAmmUnchecked(self, raAmount, ctAmount, self.info.redemptionAsset(), ctAddress, ammRouter);
+        __addLiquidityToAmmUnchecked(
+            self, raAmount, ctAmount, self.info.redemptionAsset(), ctAddress, ammRouter, raTolerance, ctTolerance
+        );
 
         _addFlashSwapReserveLv(self, flashSwapRouter, self.ds[dsId], ctAmount);
     }
@@ -230,7 +254,11 @@ library VaultLibrary {
 
         (uint256 ra, uint256 ct) = self.vault.pool.rationedToAmm(ctRatio);
 
-        __provideLiquidity(self, ra, ct, flashSwapRouter, ctAddress, ammRouter, dsId);
+        // this doesn't really matter tbh, since the amm is fresh and we're the first one to add liquidity to it
+        (uint256 raTolerance, uint256 ctTolerance) =
+            MathHelper.calculateWithTolerance(ra, ct, MathHelper.UNIV2_STATIC_TOLERANCE);
+
+        __provideLiquidity(self, ra, ct, flashSwapRouter, ctAddress, ammRouter, dsId, raTolerance, ctTolerance);
 
         self.vault.pool.resetAmmPool();
     }
@@ -240,7 +268,9 @@ library VaultLibrary {
         address from,
         uint256 amount,
         IDsFlashSwapCore flashSwapRouter,
-        IUniswapV2Router02 ammRouter
+        IUniswapV2Router02 ammRouter,
+        uint256 raTolerance,
+        uint256 ctTolerance
     ) external returns (uint256 received) {
         if (amount == 0) {
             revert ICommon.ZeroDeposit();
@@ -259,7 +289,9 @@ library VaultLibrary {
         }
 
         self.vault.balances.ra.lockUnchecked(amount, from);
-        __provideLiquidityWithRatio(self, amount, flashSwapRouter, self.ds[self.globalAssetIdx].ct, ammRouter);
+        __provideLiquidityWithRatio(
+            self, amount, flashSwapRouter, self.ds[self.globalAssetIdx].ct, ammRouter, raTolerance, ctTolerance
+        );
 
         // then we calculate how much LV we will get for the amount of RA we deposited with the exchange rate
         // this is to seprate the yield vs the actual deposit amount. so when a user withdraws their LV, they get their accrued yield properly
@@ -275,7 +307,7 @@ library VaultLibrary {
     function previewDeposit(State storage self, IDsFlashSwapCore flashSwapRouter, uint256 amount)
         external
         view
-        returns (uint256 lvReceived)
+        returns (uint256 lvReceived, uint256 raAddedAsLiquidity, uint256 ctAddedAsLiquidity)
     {
         uint256 exchangeRate;
 
@@ -290,6 +322,10 @@ library VaultLibrary {
         // then we calculate how much LV we will get for the amount of RA we deposited with the exchange rate
         // this is to seprate the yield vs the actual deposit amount. so when a user withdraws their LV, they get their accrued yield properly
         amount = MathHelper.calculateDepositAmountWithExchangeRate(amount, exchangeRate);
+
+        (raAddedAsLiquidity, ctAddedAsLiquidity) = MathHelper.calculateProvideLiquidityAmountBasedOnCtPrice(
+            amount, __getAmmCtPriceRatio(self, flashSwapRouter, self.globalAssetIdx)
+        );
 
         lvReceived = amount;
     }

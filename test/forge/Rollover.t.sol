@@ -43,7 +43,7 @@ contract RolloverTest is Helper {
         ra.approve(address(moduleCore), 100_000_000 ether);
 
         moduleCore.depositPsm(currencyId, DEFAULT_DEPOSIT_AMOUNT);
-        moduleCore.depositLv(currencyId, DEFAULT_DEPOSIT_AMOUNT);
+        moduleCore.depositLv(currencyId, DEFAULT_DEPOSIT_AMOUNT,0,0);
 
         // save initial data
         fetchProtocolGeneralInfo();

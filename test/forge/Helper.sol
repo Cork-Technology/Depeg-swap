@@ -23,6 +23,8 @@ abstract contract Helper is Test, SigUtils {
     TestFlashSwapRouter internal flashSwapRouter;
     DummyWETH internal weth = new DummyWETH();
 
+    Id defaultCurrencyId;
+
     // 1% base redemption fee
     uint256 internal DEFAULT_BASE_REDEMPTION_FEE = 1 ether;
 
@@ -124,6 +126,8 @@ abstract contract Helper is Test, SigUtils {
 
         Pair memory _id = PairLibrary.initalize(address(pa), address(ra));
         id = PairLibrary.toId(_id);
+
+        defaultCurrencyId = id;
 
         initializeNewModuleCore(address(pa), address(ra), DEFAULT_LV_FEE, defaultInitialDsPrice());
         issueNewDs(
