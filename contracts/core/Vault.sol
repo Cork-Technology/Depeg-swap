@@ -22,9 +22,14 @@ abstract contract VaultCore is ModuleState, Context, IVault {
      * @param amount The amount of the redemption asset(ra) deposited
      * @return received The amount of lv received
      */
-    function depositLv(Id id, uint256 amount) external override LVDepositNotPaused(id) returns (uint256 received) {
+    function depositLv(Id id, uint256 amount, uint256 raTolerance, uint256 ctTolerance)
+        external
+        override
+        LVDepositNotPaused(id)
+        returns (uint256 received)
+    {
         State storage state = states[id];
-        received = state.deposit(_msgSender(), amount, getRouterCore(), getAmmRouter());
+        received = state.deposit(_msgSender(), amount, getRouterCore(), getAmmRouter(), raTolerance, ctTolerance);
         emit LvDeposited(id, _msgSender(), received);
     }
 
@@ -37,9 +42,9 @@ abstract contract VaultCore is ModuleState, Context, IVault {
         view
         override
         LVDepositNotPaused(id)
-        returns (uint256 lv)
+        returns (uint256 lv, uint256 raAddedAsLiquidity, uint256 ctAddedAsLiquidity)
     {
-        lv = VaultLibrary.previewDeposit(states[id], getRouterCore(), amount);
+        (lv, raAddedAsLiquidity, ctAddedAsLiquidity) = VaultLibrary.previewDeposit(states[id], getRouterCore(), amount);
     }
 
     /**
