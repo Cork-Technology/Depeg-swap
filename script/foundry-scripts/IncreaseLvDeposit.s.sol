@@ -56,7 +56,7 @@ contract LiquidityScript is Script {
     function increaseLvDeposit(address cst, uint256 liquidityAmt) public {
         Id id = moduleCore.getId(cst, ceth);
         cETH.approve(address(moduleCore), depositLVAmt);
-        moduleCore.depositLv(id, depositLVAmt);
+        moduleCore.depositLv(id, depositLVAmt, 0, 0);
         console.log("LV Deposited");
         console.log("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-");
     }

@@ -101,7 +101,7 @@ contract SetupTCScript is Script {
         console.log("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-");
 
         cETH.approve(address(moduleCore), depositLVAmt);
-        moduleCore.depositLv(id, depositLVAmt);
+        moduleCore.depositLv(id, depositLVAmt, 0, 0);
         console.log("LV Deposited");
 
         cETH.approve(address(univ2Router), liquidityAmt);

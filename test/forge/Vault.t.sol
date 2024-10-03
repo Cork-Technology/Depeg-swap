@@ -46,7 +46,7 @@ contract VaultRedeemTest is Helper {
         ra.approve(address(moduleCore), type(uint256).max);
 
         moduleCore.depositPsm(currencyId, DEFAULT_DEPOSIT_AMOUNT);
-        moduleCore.depositLv(currencyId, DEFAULT_DEPOSIT_AMOUNT);
+        moduleCore.depositLv(currencyId, DEFAULT_DEPOSIT_AMOUNT, 0, 0);
 
         // save initial data
         lv = assetFactory.getLv(address(ra), address(pa));
@@ -55,7 +55,7 @@ contract VaultRedeemTest is Helper {
 
     function test_redeemEarly() external {
         // we first deposit a lot of RA to LV
-        moduleCore.depositLv(currencyId, 1_000_000_000 ether);
+        moduleCore.depositLv(currencyId, 1_000_000_000 ether, 0, 0);
 
         //now we buy a lot of DS to accrue value to LV holders
         ra.approve(address(flashSwapRouter), type(uint256).max);
@@ -75,7 +75,7 @@ contract VaultRedeemTest is Helper {
 
         // deposit first
         ra.approve(address(moduleCore), type(uint256).max);
-        uint256 lvReceived = moduleCore.depositLv(currencyId, 1 ether);
+        uint256 lvReceived = moduleCore.depositLv(currencyId, 1 ether, 0, 0);
 
         (received, fee, feePercentage) = moduleCore.previewRedeemEarlyLv(currencyId, lvReceived);
 
