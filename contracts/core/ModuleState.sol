@@ -105,6 +105,13 @@ abstract contract ModuleState is ICommon {
         _;
     }
 
+    modifier PSMRepurchaseNotPaused(Id id) {
+        if (states[id].psm.isRepurchasePaused) {
+            revert PSMRepurchasePaused();
+        }
+        _;
+    }
+
     modifier LVDepositNotPaused(Id id) {
         if (states[id].vault.config.isWithdrawalPaused) {
             revert LVDepositPaused();

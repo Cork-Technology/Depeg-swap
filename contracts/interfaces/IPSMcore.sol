@@ -114,12 +114,14 @@ interface IPSMcore is IRepurchase {
     /// @param Id The PSM id
     /// @param isPSMDepositPaused The new value saying if Deposit allowed in PSM or not
     /// @param isPSMWithdrawalPaused The new value saying if Withdrawal allowed in PSM or not
+    /// @param isPSMRepurchasePaused The new value saying if Repurcahse allowed in PSM or not
     /// @param isLVDepositPaused The new value saying if Deposit allowed in LV or not
     /// @param isLVWithdrawalPaused The new value saying if Withdrawal allowed in LV or not
     event PoolsStatusUpdated(
         Id indexed Id,
         bool isPSMDepositPaused,
         bool isPSMWithdrawalPaused,
+        bool isPSMRepurchasePaused,
         bool isLVDepositPaused,
         bool isLVWithdrawalPaused
     );
@@ -289,7 +291,9 @@ interface IPSMcore is IRepurchase {
         external
         returns (uint256 ctReceived, uint256 dsReceived, uint256 _exchangeRate, uint256 paReceived);
 
-    function claimAutoSellProfit(Id id, uint256 prevDsId, uint256 amount) external returns (uint256 profit, uint256 dsReceived);
+    function claimAutoSellProfit(Id id, uint256 prevDsId, uint256 amount)
+        external
+        returns (uint256 profit, uint256 dsReceived);
 
     function updatePsmAutoSellStatus(Id id, address user, bool status) external;
 
