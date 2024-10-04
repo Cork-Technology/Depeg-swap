@@ -32,6 +32,7 @@ struct PsmState {
     mapping(address => bool) autoSell;
     bool isDepositPaused;
     bool isWithdrawalPaused;
+    uint256 psmBaseRedemptionFeePrecentage; // added this 
  }
 
 /**

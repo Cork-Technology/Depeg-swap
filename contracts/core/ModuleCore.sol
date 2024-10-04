@@ -19,7 +19,7 @@ import {ContextUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/Cont
  * @author Cork Team
  * @notice Modulecore contract for integrating abstract modules like PSM and Vault contracts
  */
-contract ModuleCore is OwnableUpgradeable, UUPSUpgradeable, PsmCore, Initialize, VaultCore {
+abstract contract ModuleCore is OwnableUpgradeable, UUPSUpgradeable, PsmCore, Initialize, VaultCore {
     using PsmLibrary for State;
     using PairLibrary for Pair;
 
@@ -29,13 +29,12 @@ contract ModuleCore is OwnableUpgradeable, UUPSUpgradeable, PsmCore, Initialize,
         address _ammFactory,
         address _flashSwapRouter,
         address _ammRouter,
-        address _config,
-        uint256 _psmBaseRedemptionFeePrecentage
+        address _config
     ) external initializer {
         __Ownable_init(msg.sender);
         __UUPSUpgradeable_init();
         initializeModuleState(
-            _swapAssetFactory, _ammFactory, _flashSwapRouter, _ammRouter, _config, _psmBaseRedemptionFeePrecentage
+            _swapAssetFactory, _ammFactory, _flashSwapRouter, _ammRouter, _config
         );
     }
 
@@ -58,7 +57,8 @@ contract ModuleCore is OwnableUpgradeable, UUPSUpgradeable, PsmCore, Initialize,
         return PairLibrary.initalize(pa, ra).toId();
     }
 
-    function initializeModuleCore(address pa, address ra, uint256 lvFee, uint256 initialDsPrice) external override onlyConfig {
+
+     function initialize(address pa, address ra, uint256 lvFee, uint256 initialDsPrice ,  uint256 _psmBaseRedemptionFeePercentage ) external onlyConfig {
         Pair memory key = PairLibrary.initalize(pa, ra);
         Id id = key.toId();
 
@@ -74,8 +74,10 @@ contract ModuleCore is OwnableUpgradeable, UUPSUpgradeable, PsmCore, Initialize,
 
         PsmLibrary.initialize(state, key);
         VaultLibrary.initialize(state.vault, lv, lvFee, ra, initialDsPrice);
+        state.psm.psmBaseRedemptionFeePrecentage = _psmBaseRedemptionFeePercentage;
 
-        emit InitializedModuleCore(id, pa, ra, lv);
+        emit InitializedModuleCore(id, pa, ra, lv );
+
     }
 
     function issueNewDs(
@@ -195,10 +197,12 @@ contract ModuleCore is OwnableUpgradeable, UUPSUpgradeable, PsmCore, Initialize,
      * @notice update value of PSMBaseRedemption fees
      * @param newPsmBaseRedemptionFeePrecentage new value of fees
      */
-    function updatePsmBaseRedemptionFeePrecentage(uint256 newPsmBaseRedemptionFeePrecentage) external onlyConfig {
+    function updatePsmBaseRedemptionFeePrecentage(Id id ,uint256 newPsmBaseRedemptionFeePrecentage) external onlyConfig {
         if (newPsmBaseRedemptionFeePrecentage > 5 ether) {
             revert InvalidFees();
         }
-        psmBaseRedemptionFeePrecentage = newPsmBaseRedemptionFeePrecentage;
+        State storage state = states[id];
+        PsmLibrary.updatePSMBaseRedemptionFeePrecentage(state, newPsmBaseRedemptionFeePrecentage);
+        emit PsmBaseRedemptionFeePrecentageUpdated(id, newPsmBaseRedemptionFeePrecentage);
     }
 }

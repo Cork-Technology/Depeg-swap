@@ -451,6 +451,13 @@ library PsmLibrary {
         self.psm.repurchaseFeePrecentage = newFees;
     }
 
+    function updatePSMBaseRedemptionFeePrecentage(State storage self, uint256 newFees) external {
+        if (newFees > 5 ether) {
+            revert ICommon.InvalidFees();
+        }
+        self.psm.psmBaseRedemptionFeePrecentage = newFees;
+    }
+
     function updatePoolsStatus(
         State storage self,
         bool isPSMDepositPaused,
