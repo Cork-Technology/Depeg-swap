@@ -37,6 +37,9 @@ contract RouterState is
 
     address public _moduleCore;
 
+    /// @notice __gap variable to prevent storage collisions
+    uint256[49] __gap;
+
     modifier onlyDefaultAdmin() {
         if (!hasRole(DEFAULT_ADMIN_ROLE, msg.sender)) {
             revert NotDefaultAdmin();
