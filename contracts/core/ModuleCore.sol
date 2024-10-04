@@ -32,6 +32,10 @@ contract ModuleCore is OwnableUpgradeable, UUPSUpgradeable, PsmCore, Initialize,
         address _config,
         uint256 _psmBaseRedemptionFeePrecentage
     ) external initializer {
+        if(_swapAssetFactory == address(0) || _ammFactory == address(0) || _flashSwapRouter == address(0) || _ammRouter == address(0) || _config == address(0)) {
+            revert ZeroAddress();
+        }
+
         __Ownable_init(msg.sender);
         __UUPSUpgradeable_init();
         initializeModuleState(

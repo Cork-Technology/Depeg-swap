@@ -8,6 +8,9 @@ import {Id} from "../libraries/Pair.sol";
  * @notice Common Interface which provides common errors, events and functions
  */
 interface ICommon {
+    /// @notice Zero Address error, thrown when passed address is 0
+    error ZeroAddress();
+
     /// @notice only flash swap router is allowed to call this function
     error OnlyFlashSwapRouterAllowed();
 
