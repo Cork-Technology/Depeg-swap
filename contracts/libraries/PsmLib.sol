@@ -464,7 +464,7 @@ library PsmLibrary {
         bool isPSMWithdrawalPaused,
         bool isLVDepositPaused,
         bool isLVWithdrawalPaused
-    ) external{
+    ) external {
         self.psm.isDepositPaused = isPSMDepositPaused;
         self.psm.isWithdrawalPaused = isPSMWithdrawalPaused;
         self.vault.config.isDepositPaused = isLVDepositPaused;
@@ -535,7 +535,7 @@ library PsmLibrary {
         IERC20(ds._address).transfer(buyer, received);
 
         // Provide liquidity
-        VaultLibrary.__provideLiquidityWithRatio(self, fee, flashSwapRouter, ds.ct,ammRouter);
+        VaultLibrary.__provideLiquidityWithRatio(self, fee, flashSwapRouter, ds.ct, ammRouter);
     }
 
     function _redeemDs(Balances storage self, uint256 amount) internal {

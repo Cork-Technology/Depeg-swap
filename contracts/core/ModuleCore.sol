@@ -33,9 +33,7 @@ abstract contract ModuleCore is OwnableUpgradeable, UUPSUpgradeable, PsmCore, In
     ) external initializer {
         __Ownable_init(msg.sender);
         __UUPSUpgradeable_init();
-        initializeModuleState(
-            _swapAssetFactory, _ammFactory, _flashSwapRouter, _ammRouter, _config
-        );
+        initializeModuleState(_swapAssetFactory, _ammFactory, _flashSwapRouter, _ammRouter, _config);
     }
 
     /// @notice Authorization function for UUPS proxy upgrades
@@ -57,8 +55,13 @@ abstract contract ModuleCore is OwnableUpgradeable, UUPSUpgradeable, PsmCore, In
         return PairLibrary.initalize(pa, ra).toId();
     }
 
-
-     function initialize(address pa, address ra, uint256 lvFee, uint256 initialDsPrice ,  uint256 _psmBaseRedemptionFeePercentage ) external onlyConfig {
+    function initialize(
+        address pa,
+        address ra,
+        uint256 lvFee,
+        uint256 initialDsPrice,
+        uint256 _psmBaseRedemptionFeePercentage
+    ) external onlyConfig {
         Pair memory key = PairLibrary.initalize(pa, ra);
         Id id = key.toId();
 
@@ -76,8 +79,7 @@ abstract contract ModuleCore is OwnableUpgradeable, UUPSUpgradeable, PsmCore, In
         VaultLibrary.initialize(state.vault, lv, lvFee, ra, initialDsPrice);
         state.psm.psmBaseRedemptionFeePrecentage = _psmBaseRedemptionFeePercentage;
 
-        emit InitializedModuleCore(id, pa, ra, lv );
-
+        emit InitializedModuleCore(id, pa, ra, lv);
     }
 
     function issueNewDs(
@@ -197,7 +199,10 @@ abstract contract ModuleCore is OwnableUpgradeable, UUPSUpgradeable, PsmCore, In
      * @notice update value of PSMBaseRedemption fees
      * @param newPsmBaseRedemptionFeePrecentage new value of fees
      */
-    function updatePsmBaseRedemptionFeePrecentage(Id id ,uint256 newPsmBaseRedemptionFeePrecentage) external onlyConfig {
+    function updatePsmBaseRedemptionFeePrecentage(Id id, uint256 newPsmBaseRedemptionFeePrecentage)
+        external
+        onlyConfig
+    {
         if (newPsmBaseRedemptionFeePrecentage > 5 ether) {
             revert InvalidFees();
         }

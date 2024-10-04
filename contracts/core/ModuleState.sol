@@ -51,7 +51,7 @@ abstract contract ModuleState is ICommon {
         address _ammFactory,
         address _dsFlashSwapRouter,
         address _ammRouter,
-        address _config 
+        address _config
     ) internal {
         if (psmBaseRedemptionFeePrecentage > 5 ether) {
             revert InvalidFees();
@@ -61,7 +61,6 @@ abstract contract ModuleState is ICommon {
         DS_FLASHSWAP_ROUTER = _dsFlashSwapRouter;
         AMM_ROUTER = _ammRouter;
         CONFIG = _config;
-
     }
 
     function getRouterCore() internal view returns (RouterState) {
