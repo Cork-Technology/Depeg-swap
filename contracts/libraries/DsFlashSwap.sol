@@ -5,6 +5,7 @@ import {Asset} from "../core/assets/Asset.sol";
 import {SwapperMathLibrary} from "./DsSwapperMathLib.sol";
 import {MinimalUniswapV2Library} from "./uni-v2/UniswapV2Library.sol";
 import {PermitChecker} from "./PermitChecker.sol";
+import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 
 /**
  * @dev AssetPair structure for Asset Pairs
@@ -166,8 +167,8 @@ library DsFlashSwaplibrary {
     ) internal view returns (uint256 raPriceRatio, uint256 ctPriceRatio) {
         (uint112 raReserve, uint112 ctReserve) = getReservesSorted(self.ds[dsId]);
 
-        raReserve += uint112(raAdded);
-        ctReserve -= uint112(ctSubstracted);
+        raReserve += SafeCast.toUint112(raAdded);
+        ctReserve -= SafeCast.toUint112(ctSubstracted);
 
         (raPriceRatio, ctPriceRatio) = SwapperMathLibrary.getPriceRatioUniv2(raReserve, ctReserve);
     }
