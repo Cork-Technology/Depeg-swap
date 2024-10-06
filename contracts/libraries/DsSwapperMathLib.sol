@@ -196,12 +196,40 @@ library SwapperMathLibrary {
         psmProfit = (psmReserveUsed * hpa) / 1e18;
 
         // for rounding errors
-        lvProfit = lvProfit  + psmProfit + 1 == raProvided ? lvProfit + 1 : lvProfit;
-        
+        lvProfit = lvProfit + psmProfit + 1 == raProvided ? lvProfit + 1 : lvProfit;
+
         // for rounding errors
         psmReserveUsed = lvReserveUsed + psmReserveUsed + 1 == dsReceived ? psmReserveUsed + 1 : psmReserveUsed;
 
         assert(lvProfit + psmProfit == raProvided);
         assert(lvReserveUsed + psmReserveUsed == dsReceived);
     }
+}
+
+/**
+ * @notice  e = r . s - p
+ *          p = (((x*y) / (y-s)) - x)
+ *
+ * @param x Ra reserve
+ * @param y Ct reserve
+ * @param s Amount DS user want to sell
+ * @param r psm exchange rate for RA:CT+DS
+ * @return success true if the operation is successful, false otherwise. happen generally if there's insufficient liquidity
+ * @return e Amount of RA user will receive
+ * @return p amount needed to repay the flash loan
+ */
+function getAmountOutSellDs(uint256 x, uint256 y, uint256 s, uint256 r) returns (bool success, uint256 e, uint256 p) {
+    // calculate the amount of RA user will receive
+    e = r * s;
+
+    // calculate the amount of RA user need to repay the flash loan
+    p = ((x * y) / (y - s)) - x;
+
+    // if the amount of RA user need to repay the flash loan is bigger than the amount of RA user will receive, then the operation is not successful
+    if (p > e) {
+        return (false, 0, 0);
+    }
+
+    success = true;
+    e -= p;
 }
