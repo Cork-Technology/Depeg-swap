@@ -160,6 +160,7 @@ describe("LvCore", function () {
         [
           Id,
           defaultSigner.account.address,
+          defaultSigner.account.address,
           redeemAmount,
           msgPermit,
           deadline,
@@ -266,6 +267,7 @@ describe("LvCore", function () {
       await expect(
         moduleCore.write.redeemEarlyLv([
           Id,
+          defaultSigner.account.address,
           defaultSigner.account.address,
           redeemAmount,
           msgPermit,
