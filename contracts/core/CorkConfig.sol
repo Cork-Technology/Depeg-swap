@@ -69,8 +69,8 @@ contract CorkConfig is AccessControl, Pausable {
      * @param lvFee fees for LV
      * @param initialDsPrice initial price of DS
      */
-    function initializeModuleCore(address pa, address ra, uint256 lvFee, uint256 initialDsPrice) external onlyManager {
-        moduleCore.initializeModuleCore(pa, ra, lvFee, initialDsPrice);
+    function initializeModuleCore(address pa, address ra, uint256 lvFee, uint256 initialDsPrice ,  uint256 _psmBaseRedemptionFeePercentage) external onlyManager {
+        moduleCore.initializeModuleCore(pa, ra, lvFee, initialDsPrice ,  _psmBaseRedemptionFeePercentage);
     }
 
     /**
@@ -132,8 +132,8 @@ contract CorkConfig is AccessControl, Pausable {
      * @notice Updates base redemption fee percentage
      * @param newPsmBaseRedemptionFeePrecentage new value of fees, make sure it has 18 decimals(e.g 1% = 1e18)
      */
-    function updatePsmBaseRedemptionFeePrecentage(uint256 newPsmBaseRedemptionFeePrecentage) external onlyManager {
-        moduleCore.updatePsmBaseRedemptionFeePrecentage(newPsmBaseRedemptionFeePrecentage);
+    function updatePsmBaseRedemptionFeePrecentage(Id id,uint256 newPsmBaseRedemptionFeePrecentage) external onlyManager {
+        moduleCore.updatePsmBaseRedemptionFeePrecentage(id,newPsmBaseRedemptionFeePrecentage);
     }
 
     function updateFlashSwapRouterDiscountInDays(Id id, uint256 newDiscountInDays) external onlyManager {

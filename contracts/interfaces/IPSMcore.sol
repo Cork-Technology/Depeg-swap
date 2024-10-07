@@ -277,7 +277,7 @@ interface IPSMcore is IRepurchase {
     /**
      * @notice returns base redemption fees (1e18 = 1%)
      */
-    function baseRedemptionFee() external view returns (uint256);
+    function baseRedemptionFee(Id id) external view returns (uint256);
 
     function psmAcceptFlashSwapProfit(Id id, uint256 profit) external;
 
