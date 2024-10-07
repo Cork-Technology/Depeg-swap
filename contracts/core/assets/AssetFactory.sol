@@ -28,23 +28,23 @@ contract AssetFactory is IAssetFactory, OwnableUpgradeable, UUPSUpgradeable {
 
     /**
      * @notice for safety checks in psm core, also act as kind of like a registry
-     * @param asset the address of Asset contract
+     * @param _asset the address of Asset contract
      */
-    function isDeployed(address asset) external view override returns (bool) {
-        return deployed[asset];
+    function isDeployed(address _asset) external view override returns (bool) {
+        return deployed[_asset];
     }
 
-    modifier withinLimit(uint8 limit) {
-        if (limit > MAX_LIMIT) {
-            revert LimitTooLong(MAX_LIMIT, limit);
+    modifier withinLimit(uint8 _limit) {
+        if (_limit > MAX_LIMIT) {
+            revert LimitTooLong(MAX_LIMIT, _limit);
         }
         _;
     }
 
-    function getLv(address ra, address pa) external view override returns (address) {
-        return lvs[Pair(pa, ra).toId()];
+    function getLv(address _ra, address _pa) external view override returns (address) {
+        return lvs[Pair(_pa, _ra).toId()];
     }
-    
+
     /**
      * @notice initializes asset factory contract and setup owner
      */
@@ -55,20 +55,20 @@ contract AssetFactory is IAssetFactory, OwnableUpgradeable, UUPSUpgradeable {
 
     /**
      * @notice for getting list of deployed Assets with this factory
-     * @param page page number
-     * @param limit number of entries per page
+     * @param _page page number
+     * @param _limit number of entries per page
      * @return ra list of deployed RA assets
      * @return lv list of deployed LV assets
      */
-    function getDeployedAssets(uint8 page, uint8 limit)
+    function getDeployedAssets(uint8 _page, uint8 _limit)
         external
         view
         override
-        withinLimit(limit)
+        withinLimit(_limit)
         returns (address[] memory ra, address[] memory lv)
     {
-        uint256 start = uint256(page) * uint256(limit);
-        uint256 end = start + uint256(limit);
+        uint256 start = uint256(_page) * uint256(_limit);
+        uint256 end = start + uint256(_limit);
         uint256 arrLen = end - start;
 
         if (end > idx) {
@@ -93,24 +93,24 @@ contract AssetFactory is IAssetFactory, OwnableUpgradeable, UUPSUpgradeable {
 
     /**
      * @notice for getting list of deployed SwapAssets with this factory
-     * @param ra Address of RA
-     * @param pa Address of PA
-     * @param page page number
-     * @param limit number of entries per page
+     * @param _ra Address of RA
+     * @param _pa Address of PA
+     * @param _page page number
+     * @param _limit number of entries per page
      * @return ct list of deployed CT assets
      * @return ds list of deployed DS assets
      */
-    function getDeployedSwapAssets(address ra, address pa, uint8 page, uint8 limit)
+    function getDeployedSwapAssets(address _ra, address _pa, uint8 _page, uint8 _limit)
         external
         view
         override
-        withinLimit(limit)
+        withinLimit(_limit)
         returns (address[] memory ct, address[] memory ds)
     {
-        Pair[] storage _assets = swapAssets[Pair(pa, ra).toId()];
+        Pair[] storage _assets = swapAssets[Pair(_pa, _ra).toId()];
 
-        uint256 start = uint256(page) * uint256(limit);
-        uint256 end = start + uint256(limit);
+        uint256 start = uint256(_page) * uint256(_limit);
+        uint256 end = start + uint256(_limit);
         uint256 arrLen = end - start;
 
         if (end > _assets.length) {
@@ -132,65 +132,60 @@ contract AssetFactory is IAssetFactory, OwnableUpgradeable, UUPSUpgradeable {
 
     /**
      * @notice deploys new Swap Assets for given RA & PA
-     * @param ra Address of RA
-     * @param pa Address of PA
-     * @param owner Address of asset owners
+     * @param _ra Address of RA
+     * @param _pa Address of PA
+     * @param _owner Address of asset owners
      * @param expiry expiry timestamp
      * @param psmExchangeRate exchange rate for this pair
      * @return ct new CT contract address
      * @return ds new DS contract address
      */
-    function deploySwapAssets(address ra, address pa, address owner, uint256 expiry, uint256 psmExchangeRate)
+    function deploySwapAssets(address _ra, address _pa, address _owner, uint256 expiry, uint256 psmExchangeRate)
         external
         override
         onlyOwner
         returns (address ct, address ds)
     {
-        Pair memory asset = Pair(pa, ra);
+        Pair memory asset = Pair(_pa, _ra);
 
         // prevent deploying a swap asset of a non existent pair, logically won't ever happen
         // just to be safe
         if (lvs[asset.toId()] == address(0)) {
-            revert NotExist(ra, pa);
+            revert NotExist(_ra, _pa);
         }
 
-        string memory pairname = string(abi.encodePacked(Asset(ra).name(), "-", Asset(pa).name()));
+        string memory pairname = string(abi.encodePacked(Asset(_ra).name(), "-", Asset(_pa).name()));
 
-        ct = address(new Asset(CT_PREFIX, pairname, owner, expiry, psmExchangeRate));
-        ds = address(new Asset(DS_PREFIX, pairname, owner, expiry, psmExchangeRate));
+        ct = address(new Asset(CT_PREFIX, pairname, _owner, expiry, psmExchangeRate));
+        ds = address(new Asset(DS_PREFIX, pairname, _owner, expiry, psmExchangeRate));
 
-        swapAssets[Pair(pa, ra).toId()].push(Pair(ct, ds));
+        swapAssets[Pair(_pa, _ra).toId()].push(Pair(ct, ds));
 
         deployed[ct] = true;
         deployed[ds] = true;
 
-        emit AssetDeployed(ra, ct, ds);
+        emit AssetDeployed(_ra, ct, ds);
     }
 
     /**
      * @notice deploys new LV Assets for given RA & PA
-     * @param ra Address of RA
-     * @param pa Address of PA
-     * @param owner Address of asset owners
+     * @param _ra Address of RA
+     * @param _pa Address of PA
+     * @param _owner Address of asset owners
      * @return lv new LV contract address
      */
-    function deployLv(address ra, address pa, address owner)
-        external
-        override
-        onlyOwner
-        returns (address lv)
-    {
+    function deployLv(address _ra, address _pa, address _owner) external override onlyOwner returns (address lv) {
         lv = address(
-            new Asset(LV_PREFIX, string(abi.encodePacked(Asset(ra).name(), "-", Asset(pa).name())), owner, 0, 0)
+            new Asset(LV_PREFIX, string(abi.encodePacked(Asset(_ra).name(), "-", Asset(_pa).name())), _owner, 0, 0)
         );
 
         // signal that a pair actually exists. Only after this it's possible to deploy a swap asset for this pair
-        Pair memory pair = Pair(pa, ra);
+        Pair memory pair = Pair(_pa, _ra);
         pairs[idx++] = pair;
 
         lvs[pair.toId()] = lv;
 
-        emit LvAssetDeployed(ra, pa, lv);
+        emit LvAssetDeployed(_ra, _pa, lv);
     }
 
     function _authorizeUpgrade(address newImplementation) internal override onlyOwner notDelegated {}
