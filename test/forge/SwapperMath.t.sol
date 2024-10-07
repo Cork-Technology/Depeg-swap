@@ -3,6 +3,7 @@ pragma solidity ^0.8.24;
 import "./../../contracts/libraries/DsSwapperMathLib.sol";
 import "forge-std/Test.sol";
 import "./../../contracts/libraries/UQ112x112.sol";
+import "forge-std/console.sol";
 
 contract SwapMathTest is Test {
     using UQ112x112 for uint224;
@@ -143,5 +144,20 @@ contract SwapMathTest is Test {
         vm.assertTrue(success);
         // repayment amount should be less than what we got from PSM
         vm.assertTrue(repaymentAmount <= amountToSell * exchangeRates / 1e18);
+    }
+
+    function test_buyDs() external {
+        uint256 ctReserve = 10000 ether;
+        uint256 raReserve = 9000 ether;
+
+        uint256 amountToBuy = 10 ether;
+        uint256 exchangeRates = 1 ether;
+
+        (uint256 dsReceived, uint256 repaymentAmount) =
+            SwapperMathLibrary.getAmountOutBuyDs(raReserve, ctReserve, amountToBuy, exchangeRates);
+
+        console.log("dsReceived         :", dsReceived);
+
+        console.log("repaymentAmount    :", repaymentAmount);
     }
 }

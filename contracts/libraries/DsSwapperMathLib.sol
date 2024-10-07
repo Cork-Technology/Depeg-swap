@@ -11,6 +11,7 @@ import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
  */
 library SwapperMathLibrary {
     using UQ112x112 for uint224;
+    using Math for uint256;
 
     /// @notice thrown when Reserve is Zero
     error ZeroReserve();
@@ -95,6 +96,46 @@ library SwapperMathLibrary {
 
         // R = s - e (should be fine with direct typecasting)
         raBorrowed = dsReceived - SignedMath.abs(raProvided);
+    }
+
+    /**
+     * @notice  S = (x - r * y + sqrt((x - r * y)^2 + 4 * r * E * y)) / (2 * r)
+     *  @param r RA exchange rate for CT:DS
+     *  @param x RA reserve
+     *  @param y CT reserve
+     *  @param e Amount of RA user provided
+     *  @return amount of DS user will receive
+     *  @return borrowed of RA user need to borrow from the AMM
+     */
+    function getAmountOutBuyDs(uint256 r, uint256 x, uint256 y, uint256 e)
+        external
+        pure
+        returns (uint256 amount, uint256 borrowed)
+    {
+        // Step 1: Calculate (x - r * y + E), with possibility that (x - r * y) is negative
+        int256 term1 = int256(x) - int256(r * y / 1e18); // Convert to int256 for possible negative
+        term1 = term1 + int256(e); // Add E to term1
+
+        // Scale term1 up to 18 decimal precision
+        int256 term1_scaled = term1 * int256(1e18);
+
+        // Step 2: Calculate (x - r * y + E)^2
+        uint256 term1Squared = uint256(term1_scaled * term1_scaled) / 1e18;
+
+        // Step 3: Calculate 4 * r * E * y
+        uint256 term2 = 4 * r * e * y;
+
+        // Step 4: Calculate sqrt((x - r * y + E)^2 + 4 * r * E * y)
+        uint256 sqrtTerm = Math.sqrt(term1Squared + term2);
+
+        // Step 5: Calculate the final result: (term1 + sqrtTerm) / (2 * r)
+        // Convert term1 back from int256 to uint256 for further calculations
+        uint256 finalTerm1 = term1 > 0 ? uint256(term1) : 0;
+
+        // Add term1 and sqrtTerm, then divide by (2 * r) with precision scaling
+        amount = (finalTerm1 * 1e18 + sqrtTerm) / (2 * r);
+
+        // borrowed = r * amount / 1e18 - e;
     }
 
     function calculatePrecentage(uint256 amount, uint256 precentage) private pure returns (uint256 result) {
@@ -222,7 +263,6 @@ library SwapperMathLibrary {
         pure
         returns (bool success, uint256 e, uint256 p)
     {
-
         // can't do a swap if we can't borrow an equal amount of CT from the pool
         if (y <= s) {
             return (false, 0, 0);
