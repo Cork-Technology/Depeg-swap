@@ -4,6 +4,7 @@ import "./../../contracts/libraries/DsSwapperMathLib.sol";
 import "forge-std/Test.sol";
 import "./../../contracts/libraries/UQ112x112.sol";
 import "forge-std/console.sol";
+import "./../../contracts/libraries/uni-v2/UniswapV2Library.sol";
 
 contract SwapMathTest is Test {
     using UQ112x112 for uint224;
@@ -148,16 +149,23 @@ contract SwapMathTest is Test {
 
     function test_buyDs() external {
         uint256 ctReserve = 10000 ether;
+        console.log("ctReserve                                                  :", ctReserve);
         uint256 raReserve = 9000 ether;
+        console.log("raReserve                                                  :", raReserve);
 
-        uint256 amountToBuy = 10 ether;
+        uint256 amountToBuy = 1 ether;
+        console.log("ra Provided                                                :", amountToBuy);
         uint256 exchangeRates = 1 ether;
+        console.log("exchangeRates                                              :", exchangeRates, "// basically 1");
 
-        (uint256 dsReceived, uint256 repaymentAmount) =
-            SwapperMathLibrary.getAmountOutBuyDs(raReserve, ctReserve, amountToBuy, exchangeRates);
+        (uint256 dsReceived, uint256 borrowed) =
+            SwapperMathLibrary.getAmountOutBuyDs(exchangeRates, raReserve, ctReserve, amountToBuy);
 
-        console.log("dsReceived         :", dsReceived);
+        console.log("total ds received (amount + borrowed from AMM)             :", borrowed + amountToBuy);
+        console.log("borrowed                                                   :", borrowed);
 
-        console.log("repaymentAmount    :", repaymentAmount);
+        uint256 amountIn = MinimalUniswapV2Library.getAmountIn(borrowed, ctReserve, raReserve);
+
+        console.log("expected by uniswap                                        :", amountIn);
     }
 }

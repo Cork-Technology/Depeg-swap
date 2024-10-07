@@ -3,6 +3,7 @@ pragma solidity ^0.8.24;
 import {UQ112x112} from "./UQ112x112.sol";
 import {SignedMath} from "@openzeppelin/contracts/utils/math/SignedMath.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
+import "forge-std/console.sol";
 
 /**
  * @title SwapperMathLibrary Contract
@@ -52,54 +53,8 @@ library SwapperMathLibrary {
         ctPriceRatio = (uint256(ctPriceRatioUQ) * 1e18) / UQ112x112.Q112;
     }
 
-    /*
-     * S = (E + x - y + sqrt(E^2 + 2E(x + y) + (x - y)^2)) / 2
-     *
-     * Where:
-     *   - s: Amount DS user received
-     *   - e: RA user provided
-     *   - x: RA reserve
-     *   - y: CT reserve
-     *   - r: RA needed to borrow from AMM
-     *
-     */
-    function getAmountOutDs(int256 raReserve, int256 ctReserve, int256 raProvided)
-        external
-        pure
-        returns (uint256 raBorrowed, uint256 dsReceived)
-    {
-        // first we solve the sqrt part of the equation first
-
-        // E^2
-        int256 q1 = raProvided ** 2;
-        // 2E(x + y)
-        int256 q2 = 2 * raProvided * (raReserve + ctReserve);
-        // (x - y)^2
-        int256 q3 = (raReserve - ctReserve) ** 2;
-
-        // q = sqrt(E^2 + 2E(x + y) + (x - y)^2)
-        uint256 q = SignedMath.abs(q1 + q2 + q3);
-        q = Math.sqrt(q);
-
-        // then we substitue back the sqrt part to the main equation
-        // S = (E + x - y + q) / 2
-
-        // r1 = x - y (to absolute, and we reverse the equation)
-        uint256 r1 = SignedMath.abs(raReserve - ctReserve);
-        // r2 = -r1 + q  = q - r1
-        uint256 r2 = q - r1;
-        // E + r2
-        uint256 r3 = r2 + SignedMath.abs(raProvided);
-
-        // S = r3/2 (we multiply by 1e18 to have 18 decimals precision)
-        dsReceived = (r3 * 1e18) / 2e18;
-
-        // R = s - e (should be fine with direct typecasting)
-        raBorrowed = dsReceived - SignedMath.abs(raProvided);
-    }
-
     /**
-     * @notice  S = (x - r * y + sqrt((x - r * y)^2 + 4 * r * E * y)) / (2 * r)
+     * @notice  S = (x - r * y + E) + sqrt((x - r * y)^2 + 4 * r * E * y)) / (2 * r)
      *  @param r RA exchange rate for CT:DS
      *  @param x RA reserve
      *  @param y CT reserve
@@ -116,26 +71,25 @@ library SwapperMathLibrary {
         int256 term1 = int256(x) - int256(r * y / 1e18); // Convert to int256 for possible negative
         term1 = term1 + int256(e); // Add E to term1
 
-        // Scale term1 up to 18 decimal precision
-        int256 term1_scaled = term1 * int256(1e18);
-
         // Step 2: Calculate (x - r * y + E)^2
-        uint256 term1Squared = uint256(term1_scaled * term1_scaled) / 1e18;
+        uint256 term1Squared = uint256(term1 ** 2);
 
         // Step 3: Calculate 4 * r * E * y
-        uint256 term2 = 4 * r * e * y;
+        uint256 term2 = 4 * r * e * y / 1e18;
 
         // Step 4: Calculate sqrt((x - r * y + E)^2 + 4 * r * E * y)
-        uint256 sqrtTerm = Math.sqrt(term1Squared + term2);
+        uint256 sqrtTerm = term1Squared + term2;
+        sqrtTerm = Math.sqrt(term1Squared + term2);
 
-        // Step 5: Calculate the final result: (term1 + sqrtTerm) / (2 * r)
-        // Convert term1 back from int256 to uint256 for further calculations
-        uint256 finalTerm1 = term1 > 0 ? uint256(term1) : 0;
+        // Add term1 and sqrtTerm, then divide by (2 * r) with precision scaling with reversed equation
+        // since generally x < y
+        amount = sqrtTerm - SignedMath.abs(term1);
 
-        // Add term1 and sqrtTerm, then divide by (2 * r) with precision scaling
-        amount = (finalTerm1 * 1e18 + sqrtTerm) / (2 * r);
+        amount = amount * 1e18 / (2 * r);
+        borrowed = (r * amount - e) / 1e18;
 
-        // borrowed = r * amount / 1e18 - e;
+        // pay 1 wei more to account for rounding errors
+        amount -= 1;
     }
 
     function calculatePrecentage(uint256 amount, uint256 precentage) private pure returns (uint256 result) {

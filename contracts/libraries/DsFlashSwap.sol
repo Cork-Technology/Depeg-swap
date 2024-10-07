@@ -230,11 +230,13 @@ library DsFlashSwaplibrary {
         returns (uint256 amountOut, uint256 borrowedAmount, uint256 repaymentAmount)
     {
         (uint112 raReserve, uint112 ctReserve) = getReservesSorted(assetPair);
+        uint256 exchangeRates = assetPair.ds.exchangeRate();
 
-        (borrowedAmount, amountOut) =
-            SwapperMathLibrary.getAmountOutDs(int256(uint256(raReserve)), int256(uint256(ctReserve)), int256(amount));
+        (amountOut, borrowedAmount) =
+            SwapperMathLibrary.getAmountOutBuyDs(exchangeRates, uint256(raReserve), uint256(ctReserve), amount);
 
-        repaymentAmount = MinimalUniswapV2Library.getAmountIn(borrowedAmount, ctReserve, raReserve - borrowedAmount);
+        repaymentAmount = amountOut;
+        repaymentAmount = MinimalUniswapV2Library.getAmountIn(borrowedAmount, ctReserve, raReserve);
     }
 
     function isRAsupportsPermit(address token) internal view returns (bool) {
