@@ -19,7 +19,7 @@ import {ContextUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/Cont
  * @author Cork Team
  * @notice Modulecore contract for integrating abstract modules like PSM and Vault contracts
  */
-abstract contract ModuleCore is OwnableUpgradeable, UUPSUpgradeable, PsmCore, Initialize, VaultCore {
+contract ModuleCore is OwnableUpgradeable, UUPSUpgradeable, PsmCore, Initialize, VaultCore {
     using PsmLibrary for State;
     using PairLibrary for Pair;
 
@@ -29,8 +29,7 @@ abstract contract ModuleCore is OwnableUpgradeable, UUPSUpgradeable, PsmCore, In
         address _ammFactory,
         address _flashSwapRouter,
         address _ammRouter,
-        address _config,
-        uint256 _psmBaseRedemptionFeePrecentage
+        address _config
     ) external initializer {
         __Ownable_init(msg.sender);
         __UUPSUpgradeable_init();
@@ -56,13 +55,13 @@ abstract contract ModuleCore is OwnableUpgradeable, UUPSUpgradeable, PsmCore, In
         return PairLibrary.initalize(pa, ra).toId();
     }
 
-    function initialize(
+    function initializeModuleCore(
         address pa,
         address ra,
         uint256 lvFee,
         uint256 initialDsPrice,
         uint256 _psmBaseRedemptionFeePercentage
-    ) external onlyConfig {
+    ) external override onlyConfig {
         Pair memory key = PairLibrary.initalize(pa, ra);
         Id id = key.toId();
 
@@ -78,7 +77,7 @@ abstract contract ModuleCore is OwnableUpgradeable, UUPSUpgradeable, PsmCore, In
 
         PsmLibrary.initialize(state, key);
         VaultLibrary.initialize(state.vault, lv, lvFee, ra, initialDsPrice);
-
+        state.psm.psmBaseRedemptionFeePrecentage = _psmBaseRedemptionFeePercentage; 
         emit InitializedModuleCore(id, pa, ra, lv);
     }
 

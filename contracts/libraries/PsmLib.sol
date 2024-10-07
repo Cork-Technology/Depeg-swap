@@ -704,4 +704,12 @@ library PsmLibrary {
 
         (accruedPa, accruedRa) = _calcRedeemAmount(amount, totalCtIssued, availableRa, availablePa);
     }
+
+    function updatePSMBaseRedemptionFeePrecentage(State storage self, uint256 newFees) external {
+        if (newFees > 5 ether) {
+            revert ICommon.InvalidFees();
+        }
+        self.psm.psmBaseRedemptionFeePrecentage = newFees;
+    }
+
 }

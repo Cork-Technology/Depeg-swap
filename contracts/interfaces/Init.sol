@@ -16,7 +16,7 @@ interface Initialize {
      * @param initialDsPrice initial target price of DS, will be used to derive optimal ratio to provide AMM from liquidity vault, make sure it has 18 decimals(e.g 0.1 = 1e17)
      *
      */
-    function initializeModuleCore(address pa, address ra, uint256 lvFee, uint256 initialDsPrice) external;
+    function initializeModuleCore(address pa, address ra, uint256 lvFee, uint256 initialDsPrice, uint256 _psmBaseRedemptionFeePercentage) external;
 
     /**
      * @notice issue a new DS, can only be done after the previous DS has expired(if any). will deploy CT, DS and initialize new AMM and increment ds Id
@@ -71,5 +71,5 @@ interface Initialize {
      * @notice update PSM base redemption fee precentage
      * @param newPsmBaseRedemptionFeePrecentage new value of base redemption fees, make sure it has 18 decimals(e.g 1% = 1e18)
      */
-    function updatePsmBaseRedemptionFeePrecentage(uint256 newPsmBaseRedemptionFeePrecentage) external;
+    function updatePsmBaseRedemptionFeePrecentage(Id id,uint256 newPsmBaseRedemptionFeePrecentage) external;
 }

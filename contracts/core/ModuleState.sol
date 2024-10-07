@@ -30,8 +30,6 @@ abstract contract ModuleState is ICommon {
 
     address internal CONFIG;
 
-    uint256 internal psmBaseRedemptionFeePrecentage;
-
     /**
      * @dev checks if caller is config contract or not
      */
