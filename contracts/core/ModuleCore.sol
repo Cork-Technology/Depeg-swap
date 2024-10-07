@@ -34,9 +34,7 @@ abstract contract ModuleCore is OwnableUpgradeable, UUPSUpgradeable, PsmCore, In
     ) external initializer {
         __Ownable_init(msg.sender);
         __UUPSUpgradeable_init();
-        initializeModuleState(
-            _swapAssetFactory, _ammFactory, _flashSwapRouter, _ammRouter, _config
-        );
+        initializeModuleState(_swapAssetFactory, _ammFactory, _flashSwapRouter, _ammRouter, _config);
     }
 
     /// @notice Authorization function for UUPS proxy upgrades
@@ -82,7 +80,6 @@ abstract contract ModuleCore is OwnableUpgradeable, UUPSUpgradeable, PsmCore, In
         VaultLibrary.initialize(state.vault, lv, lvFee, ra, initialDsPrice);
 
         emit InitializedModuleCore(id, pa, ra, lv);
-      
     }
 
     function issueNewDs(
