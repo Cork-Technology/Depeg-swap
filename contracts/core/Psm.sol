@@ -34,6 +34,7 @@ abstract contract PsmCore is IPSMcore, ModuleState, Context {
     function repurchase(Id id, uint256 amount)
         external
         override
+        PSMWithdrawalNotPaused(id)
         returns (uint256 dsId, uint256 received, uint256 feePrecentage, uint256 fee, uint256 exchangeRates)
     {
         State storage state = states[id];
