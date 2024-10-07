@@ -204,32 +204,42 @@ library SwapperMathLibrary {
         assert(lvProfit + psmProfit == raProvided);
         assert(lvReserveUsed + psmReserveUsed == dsReceived);
     }
-}
 
-/**
- * @notice  e = r . s - p
- *          p = (((x*y) / (y-s)) - x)
- *
- * @param x Ra reserve
- * @param y Ct reserve
- * @param s Amount DS user want to sell
- * @param r psm exchange rate for RA:CT+DS
- * @return success true if the operation is successful, false otherwise. happen generally if there's insufficient liquidity
- * @return e Amount of RA user will receive
- * @return p amount needed to repay the flash loan
- */
-function getAmountOutSellDs(uint256 x, uint256 y, uint256 s, uint256 r) returns (bool success, uint256 e, uint256 p) {
-    // calculate the amount of RA user will receive
-    e = r * s;
+    /**
+     * @notice  e = r . s - p
+     *          p = (((x*y) / (y-s)) - x)
+     *
+     * @param x Ra reserve
+     * @param y Ct reserve
+     * @param s Amount DS user want to sell and how much CT we should borrow from the AMM
+     * @param r psm exchange rate for RA:CT+DS
+     * @return success true if the operation is successful, false otherwise. happen generally if there's insufficient liquidity
+     * @return e Amount of RA user will receive
+     * @return p amount needed to repay the flash loan
+     */
+    function getAmountOutSellDs(uint256 x, uint256 y, uint256 s, uint256 r)
+        external
+        pure
+        returns (bool success, uint256 e, uint256 p)
+    {
 
-    // calculate the amount of RA user need to repay the flash loan
-    p = ((x * y) / (y - s)) - x;
+        // can't do a swap if we can't borrow an equal amount of CT from the pool
+        if (y <= s) {
+            return (false, 0, 0);
+        }
 
-    // if the amount of RA user need to repay the flash loan is bigger than the amount of RA user will receive, then the operation is not successful
-    if (p > e) {
-        return (false, 0, 0);
+        // calculate the amount of RA user will receive
+        e = r * s / 1e18;
+
+        // calculate the amount of RA user need to repay the flash loan
+        p = ((x * y) / (y - s)) - x;
+
+        // if the amount of RA user need to repay the flash loan is bigger than the amount of RA user will receive, then the operation is not successful
+        if (p > e) {
+            return (false, 0, 0);
+        }
+
+        success = true;
+        e -= p;
     }
-
-    success = true;
-    e -= p;
 }
