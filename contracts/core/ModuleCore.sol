@@ -199,13 +199,12 @@ abstract contract ModuleCore is OwnableUpgradeable, UUPSUpgradeable, PsmCore, In
      * @notice update value of PSMBaseRedemption fees
      * @param newPsmBaseRedemptionFeePrecentage new value of fees
      */
-    function updatePsmBaseRedemptionFeePrecentage(Id id, uint256 newPsmBaseRedemptionFeePrecentage)
-        external
-        onlyConfig
-    {
+    function updatePsmBaseRedemptionFeePrecentage(Id id ,uint256 newPsmBaseRedemptionFeePrecentage) external onlyConfig {
         if (newPsmBaseRedemptionFeePrecentage > 5 ether) {
             revert InvalidFees();
         }
-        psmBaseRedemptionFeePrecentage = newPsmBaseRedemptionFeePrecentage;
+        State storage state = states[id];
+        PsmLibrary.updatePSMBaseRedemptionFeePrecentage(state, newPsmBaseRedemptionFeePrecentage);
+        emit PsmBaseRedemptionFeePrecentageUpdated(id, newPsmBaseRedemptionFeePrecentage);
     }
 }
