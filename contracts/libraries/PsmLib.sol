@@ -598,10 +598,9 @@ library PsmLibrary {
     {
         DepegSwap storage ds = self.ds[dsId];
         Guard.safeBeforeExpired(ds);
-
-        uint256 normalizedRateAmount = MathHelper.calculateRedeemAmountWithExchangeRate(amount, ds.exchangeRate());
-
-        assets = normalizedRateAmount;
+        assets = MathHelper.calculateRedeemAmountWithExchangeRate(amount, ds.exchangeRate());
+        uint256 fee = MathHelper.calculatePrecentageFee(assets, self.psm.repurchaseFeePrecentage);
+        assets -= fee;
     }
 
     /// @notice return the next depeg swap expiry
