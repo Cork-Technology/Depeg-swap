@@ -139,7 +139,7 @@ abstract contract PsmCore is IPSMcore, ModuleState, Context {
         uint256 feePrecentage = state.psm.psmBaseRedemptionFeePrecentage;
 
         (received, _exchangeRate, fee) =
-            state.redeemWithDs(redeemer, amount, dsId, rawDsPermitSig, deadline, psmBaseRedemptionFeePrecentage);
+            state.redeemWithDs(redeemer, amount, dsId, rawDsPermitSig, deadline, feePrecentage);
 
         VaultLibrary.provideLiquidityWithFee(state, fee, getRouterCore(), getAmmRouter());
 
