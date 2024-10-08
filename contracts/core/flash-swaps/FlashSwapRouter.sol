@@ -15,7 +15,6 @@ import {IVault} from "../../interfaces/IVault.sol";
 import {Asset} from "../assets/Asset.sol";
 import {DepegSwapLibrary} from "../../libraries/DepegSwapLib.sol";
 import {SafeERC20, IERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 
 /**
  * @title Router contract for Flashswap
@@ -37,6 +36,9 @@ contract RouterState is
     bytes32 public constant CONFIG = keccak256("CONFIG");
 
     address public _moduleCore;
+
+    /// @notice __gap variable to prevent storage collisions
+    uint256[49] __gap;
 
     modifier onlyDefaultAdmin() {
         if (!hasRole(DEFAULT_ADMIN_ROLE, msg.sender)) {
@@ -434,11 +436,11 @@ contract RouterState is
         (uint112 raReserve, uint112 ctReserve) = assetPair.getReservesSorted();
 
         // we borrow the same amount of CT tokens from the reserve
-        ctReserve -= SafeCast.toUint112(amountSellFromReserve);
+        ctReserve -= uint112(amountSellFromReserve);
 
         (uint256 profit, uint256 raAdded,) = assetPair.getAmountOutSellDS(amountSellFromReserve);
 
-        raReserve += SafeCast.toUint112(raAdded);
+        raReserve += uint112(raAdded);
 
         // emulate Vault way of adding liquidity using RA from selling DS reserve
         (, uint256 ratio) = self.tryGetPriceRatioAfterSellDs(dsId, amountSellFromReserve, raAdded);
@@ -453,8 +455,8 @@ contract RouterState is
         (raAdded, ctAdded) =
             MathHelper.calculateProvideLiquidityAmountBasedOnCtPrice(profit, ratio, assetPair.ds.exchangeRate());
 
-        raReserve += SafeCast.toUint112(raAdded);
-        ctReserve += SafeCast.toUint112(ctAdded);
+        raReserve += uint112(raAdded);
+        ctReserve += uint112(ctAdded);
 
         // update amountOut since we sold some from the reserve
         uint256 exchangeRates = assetPair.ds.exchangeRate();

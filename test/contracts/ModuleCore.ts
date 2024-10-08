@@ -117,7 +117,7 @@ describe("Module Core", function () {
       univ2Factory,
       dsFlashSwapRouter.contract.address,
       univ2Router,
-      config.contract.address
+      config.contract.address,
     ]);
     expect(tx).to.be.ok;
   });
@@ -134,6 +134,80 @@ describe("Module Core", function () {
       )
     );
     expect(Id).to.equal(expectedKey);
+  });
+
+  describe("initialize", function () {
+    it("initialize should revert when passed Zero Addresses", async function () {
+      const mathLib = await hre.viem.deployContract("MathHelper");
+      const psm = await hre.viem.deployContract("PsmLibrary", [], {
+        libraries: {
+          MathHelper: mathLib.address,
+        },
+      });
+      const vault = await hre.viem.deployContract("VaultLibrary", [], {
+        libraries: {
+          MathHelper: mathLib.address,
+        },
+      });
+      const moduleCore1 = await hre.viem.deployContract("ModuleCore", [], {
+        client: {
+          wallet: defaultSigner,
+        },
+        libraries: {
+          VaultLibrary: vault.address,
+          PsmLibrary: psm.address,
+        },
+      });
+      await expect(
+        moduleCore1.write.initialize([
+          zeroAddress,
+          defaultSigner.account.address,
+          defaultSigner.account.address,
+          defaultSigner.account.address,
+          defaultSigner.account.address,
+        ])
+      ).to.be.rejectedWith("ZeroAddress()");
+
+      await expect(
+        moduleCore1.write.initialize([
+          defaultSigner.account.address,
+          zeroAddress,
+          defaultSigner.account.address,
+          defaultSigner.account.address,
+          defaultSigner.account.address,
+        ])
+      ).to.be.rejectedWith("ZeroAddress()");
+
+      await expect(
+        moduleCore1.write.initialize([
+          defaultSigner.account.address,
+          defaultSigner.account.address,
+          zeroAddress,
+          defaultSigner.account.address,
+          defaultSigner.account.address,
+        ])
+      ).to.be.rejectedWith("ZeroAddress()");
+
+      await expect(
+        moduleCore1.write.initialize([
+          defaultSigner.account.address,
+          defaultSigner.account.address,
+          defaultSigner.account.address,
+          zeroAddress,
+          defaultSigner.account.address,
+        ])
+      ).to.be.rejectedWith("ZeroAddress()");
+
+      await expect(
+        moduleCore1.write.initialize([
+          defaultSigner.account.address,
+          defaultSigner.account.address,
+          defaultSigner.account.address,
+          defaultSigner.account.address,
+          zeroAddress,
+        ])
+      ).to.be.rejectedWith("ZeroAddress()");
+    });
   });
 
   describe("initializeModuleCore", function () {

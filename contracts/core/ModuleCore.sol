@@ -20,6 +20,9 @@ import {ContextUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/Cont
  * @notice Modulecore contract for integrating abstract modules like PSM and Vault contracts
  */
 contract ModuleCore is OwnableUpgradeable, UUPSUpgradeable, PsmCore, Initialize, VaultCore {
+    /// @notice __gap variable to prevent storage collisions
+    uint256[49] __gap;
+
     using PsmLibrary for State;
     using PairLibrary for Pair;
 
@@ -31,6 +34,10 @@ contract ModuleCore is OwnableUpgradeable, UUPSUpgradeable, PsmCore, Initialize,
         address _ammRouter,
         address _config
     ) external initializer {
+        if(_swapAssetFactory == address(0) || _ammFactory == address(0) || _flashSwapRouter == address(0) || _ammRouter == address(0) || _config == address(0)) {
+            revert ZeroAddress();
+        }
+
         __Ownable_init(msg.sender);
         __UUPSUpgradeable_init();
         initializeModuleState(_swapAssetFactory, _ammFactory, _flashSwapRouter, _ammRouter, _config);
