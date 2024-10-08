@@ -56,6 +56,7 @@ interface Initialize {
      * @param id id of the pair
      * @param isPSMDepositPaused set to true if you want to pause PSM deposits
      * @param isPSMWithdrawalPaused set to true if you want to pause PSM withdrawals
+     * @param isPSMRepurchasePaused set to true if you want to pause PSM repurchases
      * @param isLVDepositPaused set to true if you want to pause LV deposits
      * @param isLVWithdrawalPaused set to true if you want to pause LV withdrawals
      */
@@ -63,6 +64,7 @@ interface Initialize {
         Id id,
         bool isPSMDepositPaused,
         bool isPSMWithdrawalPaused,
+        bool isPSMRepurchasePaused,
         bool isLVDepositPaused,
         bool isLVWithdrawalPaused
     ) external;

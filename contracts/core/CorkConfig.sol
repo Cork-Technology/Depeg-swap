@@ -113,6 +113,7 @@ contract CorkConfig is AccessControl, Pausable {
      * @param id id of PSM
      * @param isPSMDepositPaused new value of isPSMDepositPaused
      * @param isPSMWithdrawalPaused new value of isPSMWithdrawalPaused
+     * @param isPSMRepurchasePaused new value of isPSMRepurchasePaused
      * @param isLVDepositPaused new value of isLVDepositPaused
      * @param isLVWithdrawalPaused new value of isLVWithdrawalPaused
      */
@@ -120,11 +121,17 @@ contract CorkConfig is AccessControl, Pausable {
         Id id,
         bool isPSMDepositPaused,
         bool isPSMWithdrawalPaused,
+        bool isPSMRepurchasePaused,
         bool isLVDepositPaused,
         bool isLVWithdrawalPaused
     ) external onlyManager {
         moduleCore.updatePoolsStatus(
-            id, isPSMDepositPaused, isPSMWithdrawalPaused, isLVDepositPaused, isLVWithdrawalPaused
+            id,
+            isPSMDepositPaused,
+            isPSMWithdrawalPaused,
+            isPSMRepurchasePaused,
+            isLVDepositPaused,
+            isLVWithdrawalPaused
         );
     }
 

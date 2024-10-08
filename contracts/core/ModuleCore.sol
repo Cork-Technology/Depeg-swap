@@ -151,15 +151,28 @@ contract ModuleCore is OwnableUpgradeable, UUPSUpgradeable, PsmCore, Initialize,
         Id id,
         bool isPSMDepositPaused,
         bool isPSMWithdrawalPaused,
+        bool isPSMRepurchasePaused,
         bool isLVDepositPaused,
         bool isLVWithdrawalPaused
     ) external onlyConfig {
         State storage state = states[id];
         PsmLibrary.updatePoolsStatus(
-            state, isPSMDepositPaused, isPSMWithdrawalPaused, isLVDepositPaused, isLVWithdrawalPaused
+            state,
+            isPSMDepositPaused,
+            isPSMWithdrawalPaused,
+            isPSMRepurchasePaused,
+            isLVDepositPaused,
+            isLVWithdrawalPaused
         );
 
-        emit PoolsStatusUpdated(id, isPSMDepositPaused, isPSMWithdrawalPaused, isLVDepositPaused, isLVWithdrawalPaused);
+        emit PoolsStatusUpdated(
+            id,
+            isPSMDepositPaused,
+            isPSMWithdrawalPaused,
+            isPSMRepurchasePaused,
+            isLVDepositPaused,
+            isLVWithdrawalPaused
+        );
     }
 
     /**

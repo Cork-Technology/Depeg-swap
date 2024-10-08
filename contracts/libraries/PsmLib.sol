@@ -80,7 +80,7 @@ library PsmLibrary {
         (ctReceived, dsReceived, _exchangeRate, paReceived) = _rolloverCt(self, owner, amount, dsId, flashSwapRouter);
     }
 
-    function claimRolloverProfit(
+    function claimAutoSellProfit(
         State storage self,
         IDsFlashSwapCore flashSwapRouter,
         address owner,
@@ -88,7 +88,7 @@ library PsmLibrary {
         uint256 amount
     ) external returns (uint256 profit, uint256 remainingDsReceived) {
         (profit, remainingDsReceived) =
-            _claimRolloverProfit(self, self.psm.poolArchive[dsId], flashSwapRouter, owner, amount, dsId);
+            _claimAutoSellProfit(self, self.psm.poolArchive[dsId], flashSwapRouter, owner, amount, dsId);
     }
     // 1. check how much expirec CT does use have
     // 2. calculate how much backed RA and PA the user can redeem
@@ -180,7 +180,7 @@ library PsmLibrary {
         ERC20Burnable(prevDs.ct).burnFrom(owner, amount);
     }
 
-    function _claimRolloverProfit(
+    function _claimAutoSellProfit(
         State storage self,
         PsmPoolArchive storage prevArchive,
         IDsFlashSwapCore flashswapRouter,
@@ -455,11 +455,13 @@ library PsmLibrary {
         State storage self,
         bool isPSMDepositPaused,
         bool isPSMWithdrawalPaused,
+        bool isPSMRepurchasePaused,
         bool isLVDepositPaused,
         bool isLVWithdrawalPaused
     ) external {
         self.psm.isDepositPaused = isPSMDepositPaused;
         self.psm.isWithdrawalPaused = isPSMWithdrawalPaused;
+        self.psm.isRepurchasePaused = isPSMRepurchasePaused;
         self.vault.config.isDepositPaused = isLVDepositPaused;
         self.vault.config.isWithdrawalPaused = isLVWithdrawalPaused;
     }
@@ -598,10 +600,9 @@ library PsmLibrary {
     {
         DepegSwap storage ds = self.ds[dsId];
         Guard.safeBeforeExpired(ds);
-
-        uint256 normalizedRateAmount = MathHelper.calculateRedeemAmountWithExchangeRate(amount, ds.exchangeRate());
-
-        assets = normalizedRateAmount;
+        assets = MathHelper.calculateRedeemAmountWithExchangeRate(amount, ds.exchangeRate());
+        uint256 fee = MathHelper.calculatePrecentageFee(assets, self.psm.repurchaseFeePrecentage);
+        assets -= fee;
     }
 
     /// @notice return the next depeg swap expiry

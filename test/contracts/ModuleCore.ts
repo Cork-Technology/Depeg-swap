@@ -123,8 +123,7 @@ describe("Module Core", function () {
     expect(moduleCore).to.be.ok;
   });
 
-  describe("getId", function () {
-    it("getId should work correctly", async function () {
+  it("getId should work correctly", async function () {
       let Id = await moduleCore.read.getId([
         fixture.pa.address,
         fixture.ra.address,
@@ -137,7 +136,6 @@ describe("Module Core", function () {
       );
       expect(Id).to.equal(expectedKey);
     });
-  });
 
   describe("initializeModuleCore", function () {
     it("initializeModuleCore should work correctly", async function () {
@@ -348,6 +346,7 @@ describe("Module Core", function () {
         true,
         true,
         true,
+        true,
       ]);
       const events = await moduleCore.getEvents.PoolsStatusUpdated({
         Id: fixture.Id,
@@ -356,6 +355,7 @@ describe("Module Core", function () {
       expect(events[0].args.Id).to.equal(fixture.Id);
       expect(events[0].args.isPSMDepositPaused).to.equal(true);
       expect(events[0].args.isPSMWithdrawalPaused).to.equal(true);
+      expect(events[0].args.isPSMRepurchasePaused).to.equal(true);
       expect(events[0].args.isLVDepositPaused).to.equal(true);
       expect(events[0].args.isLVWithdrawalPaused).to.equal(true);
     });
@@ -363,7 +363,7 @@ describe("Module Core", function () {
     it("updatePoolsStatus should revert when not called by Config contract", async function () {
       await expect(
         moduleCore.write.updatePoolsStatus(
-          [fixture.Id, true, true, true, true],
+          [fixture.Id, true, true, true, true, true],
           {
             account: secondSigner.account,
           }
