@@ -557,6 +557,8 @@ library PsmLibrary {
         IERC20(self.info.peggedAsset().asErc20()).safeTransferFrom(owner, address(this), amount);
 
         self.psm.balances.ra.unlockTo(owner, received);
+        // we also reduce the fee from the RA, as we use the fee to provide liquidity
+        self.psm.balances.ra.decLocked(fee);
     }
 
     function valueLocked(State storage self) external view returns (uint256) {
