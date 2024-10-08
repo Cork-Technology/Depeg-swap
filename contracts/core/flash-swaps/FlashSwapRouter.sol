@@ -87,14 +87,11 @@ contract RouterState is
         _grantRole(MODULE_CORE, moduleCore);
     }
 
-    function onNewIssuance(
-        Id reserveId,
-        uint256 dsId,
-        address ds,
-        address pair,
-        address ra,
-        address ct
-    ) external override onlyModuleCore {
+    function onNewIssuance(Id reserveId, uint256 dsId, address ds, address pair, address ra, address ct)
+        external
+        override
+        onlyModuleCore
+    {
         reserves[reserveId].onNewIssuance(dsId, ds, pair, ra, ct);
 
         emit NewIssuance(reserveId, dsId, ds, pair);
@@ -453,15 +450,15 @@ contract RouterState is
         profit = profit * lvReserveUsed / amountSellFromReserve;
 
         // use the vault profit
-        (raAdded, ctAdded) = MathHelper.calculateProvideLiquidityAmountBasedOnCtPrice(profit, ratio, assetPair.ds.exchangeRate());
+        (raAdded, ctAdded) =
+            MathHelper.calculateProvideLiquidityAmountBasedOnCtPrice(profit, ratio, assetPair.ds.exchangeRate());
 
         raReserve += SafeCast.toUint112(raAdded);
         ctReserve += SafeCast.toUint112(ctAdded);
 
         // update amountOut since we sold some from the reserve
-        (, amountOut) = SwapperMathLibrary.getAmountOutDs(
-            SafeCast.toInt256(uint256(raReserve)), SafeCast.toInt256(uint256(ctReserve)), SafeCast.toInt256(amount)
-        );
+        uint256 exchangeRates = assetPair.ds.exchangeRate();
+        (amountOut,) = SwapperMathLibrary.getAmountOutBuyDs(exchangeRates, raReserve, ctReserve, amount);
     }
 
     function isRolloverSale(Id id, uint256 dsId) external view returns (bool) {
@@ -495,8 +492,7 @@ contract RouterState is
 
         bool success;
         uint256 repaymentAmount;
-        (amountOut, repaymentAmount, success) =
-            __swapDsforRa(assetPair, reserveId, dsId, amount, amountOutMin, user);
+        (amountOut, repaymentAmount, success) = __swapDsforRa(assetPair, reserveId, dsId, amount, amountOutMin, user);
 
         if (!success) {
             (uint112 raReserve, uint112 ctReserve) = assetPair.getReservesSorted();

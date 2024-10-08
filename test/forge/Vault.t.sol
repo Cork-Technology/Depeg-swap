@@ -26,7 +26,7 @@ contract VaultRedeemTest is Helper {
 
         deployModuleCore();
 
-        (ra, pa, currencyId) = initializeAndIssueNewDs(block.timestamp + 1 days);
+        (ra, pa, currencyId) = initializeAndIssueNewDs(block.timestamp + 1 days, 1 ether);
         vm.deal(DEFAULT_ADDRESS, type(uint256).max);
 
         ra.deposit{value: type(uint128).max}();
@@ -91,7 +91,6 @@ contract VaultRedeemTest is Helper {
 
     function test_reissueMany() external {
         for (uint256 i = 0; i < 100; i++) {
-            console.log("reissue", i);
             ff_expired();
         }
     }

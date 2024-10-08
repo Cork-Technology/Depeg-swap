@@ -3,6 +3,8 @@ pragma solidity ^0.8.24;
 import "./../../contracts/libraries/DsSwapperMathLib.sol";
 import "forge-std/Test.sol";
 import "./../../contracts/libraries/UQ112x112.sol";
+import "forge-std/console.sol";
+import "./../../contracts/libraries/uni-v2/UniswapV2Library.sol";
 
 contract SwapMathTest is Test {
     using UQ112x112 for uint224;
@@ -106,4 +108,42 @@ contract SwapMathTest is Test {
 
         vm.assertEq(hpa, 2 ether);
     }
-}
+
+    function test_sellDs() external {
+        uint256 ctReserve = 10000 ether;
+        uint256 raReserve = 9000 ether;
+
+        uint256 amountToSell = 10 ether;
+        uint256 exchangeRates = 1 ether;
+
+        (bool success, uint256 raReceived, uint256 repaymentAmount) =
+            SwapperMathLibrary.getAmountOutSellDs(raReserve, ctReserve, amountToSell, exchangeRates);
+
+        vm.assertEq(success, true);
+        vm.assertApproxEqAbs(raReceived, 1 ether, 0.03 ether);
+
+        exchangeRates = 0.5 ether;
+
+        // can't sell if exchange rate is below 1
+        (success, raReceived, repaymentAmount) =
+            SwapperMathLibrary.getAmountOutSellDs(raReserve, ctReserve, amountToSell, exchangeRates);
+
+        vm.assertEq(success, false);
+    }
+
+    function testFuzz_sellDs(uint256 amountToSell, uint256 exchangeRates) external {
+        // 0.001 DS price
+        uint256 ctReserve = 10000000 ether;
+        uint256 raReserve = 9990000 ether;
+
+        amountToSell = bound(amountToSell, 1 ether, ctReserve - raReserve);
+        exchangeRates = bound(exchangeRates, 1 ether, 2 ether);
+
+        (bool success,, uint256 repaymentAmount) =
+            SwapperMathLibrary.getAmountOutSellDs(raReserve, ctReserve, amountToSell, exchangeRates);
+
+        vm.assertTrue(success);
+        // repayment amount should be less than what we got from PSM
+        vm.assertTrue(repaymentAmount <= amountToSell * exchangeRates / 1e18);
+    }
+   }

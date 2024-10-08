@@ -209,26 +209,14 @@ library DsFlashSwaplibrary {
     {
         (uint112 raReserve, uint112 ctReserve) = getReservesSorted(assetPair);
 
-        repaymentAmount = MinimalUniswapV2Library.getAmountIn(amount, raReserve, ctReserve - amount);
+        uint256 exchangeRate = assetPair.ds.exchangeRate();
+        (success, amountOut, repaymentAmount) =
+            SwapperMathLibrary.getAmountOutSellDs(raReserve, ctReserve, amount, exchangeRate);
 
-        // from the amount, since we're getting back the same RA amount as DS user buy, this works. to get the effective price per DS,
-        // you would devide this by the DS amount user bought.
-        // note that we subtract 1 to enforce uni v2 rules
-
-        // dont' have liquidity to do flash swap properly
-        if (repaymentAmount > amount) {
-            return (0, 0, false);
+        if (success) {
+            amountOut -= 1;
+            repaymentAmount += 1;
         }
-
-        success = true;
-
-        amountOut = amount - repaymentAmount;
-
-        // enforce uni v2 rules, pay 1 wei more
-        amountOut -= 1;
-        repaymentAmount += 1;
-
-        assert(amountOut + repaymentAmount == amount);
     }
 
     function getAmountOutBuyDS(AssetPair storage assetPair, uint256 amount)
@@ -237,12 +225,16 @@ library DsFlashSwaplibrary {
         returns (uint256 amountOut, uint256 borrowedAmount, uint256 repaymentAmount)
     {
         (uint112 raReserve, uint112 ctReserve) = getReservesSorted(assetPair);
+        uint256 exchangeRates = assetPair.ds.exchangeRate();
 
-        (borrowedAmount, amountOut) = SwapperMathLibrary.getAmountOutDs(
-            SafeCast.toInt256(uint256(raReserve)), SafeCast.toInt256(uint256(ctReserve)), SafeCast.toInt256(amount)
+        (borrowedAmount, amountOut) = SwapperMathLibrary.getAmountOutBuyDs(
+            exchangeRates,
+            raReserve,
+            ctReserve,
+            amount
         );
 
-        repaymentAmount = MinimalUniswapV2Library.getAmountIn(borrowedAmount, ctReserve, raReserve - borrowedAmount);
+        repaymentAmount = amountOut;
     }
 
     function isRAsupportsPermit(address token) internal view returns (bool) {

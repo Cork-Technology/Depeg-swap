@@ -12,6 +12,7 @@ import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
  */
 library SwapperMathLibrary {
     using UQ112x112 for uint224;
+    using Math for uint256;
 
     /// @notice thrown when Reserve is Zero
     error ZeroReserve();
@@ -52,98 +53,42 @@ library SwapperMathLibrary {
         ctPriceRatio = (uint256(ctPriceRatioUQ) * 1e18) / UQ112x112.Q112;
     }
 
-    function calculateDsPrice(uint112 raReserve, uint112 ctReserve, uint256 dsExchangeRate)
-        public
-        pure
-        returns (uint256 price)
-    {
-        (, uint256 ctPriceRatio) = getPriceRatioUniv2(raReserve, ctReserve);
-
-        price = dsExchangeRate - ctPriceRatio;
-    }
-
-    function getAmountIn(
-        uint256 amountOut, // Amount of DS tokens to buy
-        uint112 raReserve, // Reserve of the input token
-        uint112 ctReserve, // Reserve of the other token (needed for price ratio calculation)
-        uint256 dsExchangeRate // DS exchange rate
-    ) external pure returns (uint256 amountIn) {
-        if (amountOut == 0) {
-            revert InsufficientOutputAmount();
-        }
-
-        if (raReserve == 0 || ctReserve == 0) {
-            revert InsufficientLiquidity();
-        }
-
-        uint256 dsPrice = calculateDsPrice(raReserve, ctReserve, dsExchangeRate);
-
-        amountIn = (amountOut * dsPrice) / 1e18;
-    }
-
-    function getAmountOut(
-        uint256 amountIn, // Amount of input tokens
-        uint112 reserveIn, // Reserve of the input token
-        uint112 reserveOut, // Reserve of the other token (needed for price ratio calculation)
-        uint256 dsExchangeRate // DS exchange rate
-    ) external pure returns (uint256 amountOut) {
-        if (amountIn == 0) {
-            revert InsufficientInputAmount();
-        }
-
-        if (reserveIn == 0 || reserveOut == 0) {
-            revert InsufficientLiquidity();
-        }
-
-        uint256 dsPrice = calculateDsPrice(reserveIn, reserveOut, dsExchangeRate);
-
-        amountOut = amountIn / dsPrice;
-    }
-
-    /*
-     * S = (E + x - y + sqrt(E^2 + 2E(x + y) + (x - y)^2)) / 2
-     *
-     * Where:
-     *   - s: Amount DS user received
-     *   - e: RA user provided
-     *   - x: RA reserve
-     *   - y: CT reserve
-     *   - r: RA needed to borrow from AMM
-     *
+    /**
+     * @notice  S = (x - r * y + E) + sqrt((x - r * y)^2 + 4 * r * E * y)) / (2 * r)
+     *  @param r RA exchange rate for CT:DS
+     *  @param x RA reserve
+     *  @param y CT reserve
+     *  @param e Amount of RA user provided
+     *  @return borrowed of RA user need to borrow from the AMM
+     *  @return amount of DS user will receive
      */
-    function getAmountOutDs(int256 raReserve, int256 ctReserve, int256 raProvided)
+    function getAmountOutBuyDs(uint256 r, uint256 x, uint256 y, uint256 e)
         external
         pure
-        returns (uint256 raBorrowed, uint256 dsReceived)
+        returns (uint256 borrowed, uint256 amount)
     {
-        // first we solve the sqrt part of the equation first
+        // Step 1: Calculate (x - r * y + E), with possibility that (x - r * y) is negative
+        int256 term1 = int256(x) - int256(r * y / 1e18); // Convert to int256 for possible negative
+        term1 = term1 + int256(e); // Add E to term1
 
-        // E^2
-        int256 q1 = raProvided ** 2;
-        // 2E(x + y)
-        int256 q2 = 2 * raProvided * (raReserve + ctReserve);
-        // (x - y)^2
-        int256 q3 = (raReserve - ctReserve) ** 2;
+        // Step 2: Calculate (x - r * y + E)^2
+        uint256 term1Squared = uint256(term1 ** 2);
 
-        // q = sqrt(E^2 + 2E(x + y) + (x - y)^2)
-        uint256 q = SignedMath.abs(q1 + q2 + q3);
-        q = Math.sqrt(q);
+        // Step 3: Calculate 4 * r * E * y
+        uint256 term2 = 4 * r * e * y / 1e18;
 
-        // then we substitue back the sqrt part to the main equation
-        // S = (E + x - y + q) / 2
+        // Step 4: Calculate sqrt((x - r * y + E)^2 + 4 * r * E * y)
+        uint256 sqrtTerm = term1Squared + term2;
+        sqrtTerm = Math.sqrt(term1Squared + term2);
 
-        // r1 = x - y (to absolute, and we reverse the equation)
-        uint256 r1 = SignedMath.abs(raReserve - ctReserve);
-        // r2 = -r1 + q  = q - r1
-        uint256 r2 = q - r1;
-        // E + r2
-        uint256 r3 = r2 + SignedMath.abs(raProvided);
+        // Add term1 and sqrtTerm, then divide by (2 * r) with precision scaling with reversed equation
+        // since generally x < y
+        amount = sqrtTerm - SignedMath.abs(term1);
 
-        // S = r3/2 (we multiply by 1e18 to have 18 decimals precision)
-        dsReceived = (r3 * 1e18) / 2e18;
-
-        // R = s - e (should be fine with direct typecasting)
-        raBorrowed = dsReceived - SignedMath.abs(raProvided);
+        
+        amount = amount * 1e18 / (2 * r);
+        
+        borrowed = (r * (amount - e)) / 1e18;
     }
 
     function calculatePercentage(uint256 amount, uint256 percentage) private pure returns (uint256 result) {
@@ -245,12 +190,49 @@ library SwapperMathLibrary {
         psmProfit = (psmReserveUsed * hpa) / 1e18;
 
         // for rounding errors
-        lvProfit = lvProfit  + psmProfit + 1 == raProvided ? lvProfit + 1 : lvProfit;
-        
+        lvProfit = lvProfit + psmProfit + 1 == raProvided ? lvProfit + 1 : lvProfit;
+
         // for rounding errors
         psmReserveUsed = lvReserveUsed + psmReserveUsed + 1 == dsReceived ? psmReserveUsed + 1 : psmReserveUsed;
 
         assert(lvProfit + psmProfit == raProvided);
         assert(lvReserveUsed + psmReserveUsed == dsReceived);
+    }
+
+    /**
+     * @notice  e = r . s - p
+     *          p = (((x*y) / (y-s)) - x)
+     *
+     * @param x Ra reserve
+     * @param y Ct reserve
+     * @param s Amount DS user want to sell and how much CT we should borrow from the AMM
+     * @param r psm exchange rate for RA:CT+DS
+     * @return success true if the operation is successful, false otherwise. happen generally if there's insufficient liquidity
+     * @return e Amount of RA user will receive
+     * @return p amount needed to repay the flash loan
+     */
+    function getAmountOutSellDs(uint256 x, uint256 y, uint256 s, uint256 r)
+        external
+        pure
+        returns (bool success, uint256 e, uint256 p)
+    {
+        // can't do a swap if we can't borrow an equal amount of CT from the pool
+        if (y <= s) {
+            return (false, 0, 0);
+        }
+
+        // calculate the amount of RA user will receive
+        e = r * s / 1e18;
+
+        // calculate the amount of RA user need to repay the flash loan
+        p = ((x * y) / (y - s)) - x;
+
+        // if the amount of RA user need to repay the flash loan is bigger than the amount of RA user will receive, then the operation is not successful
+        if (p > e) {
+            return (false, 0, 0);
+        }
+
+        success = true;
+        e -= p;
     }
 }
