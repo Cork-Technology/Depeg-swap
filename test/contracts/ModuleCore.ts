@@ -123,8 +123,7 @@ describe("Module Core", function () {
     expect(moduleCore).to.be.ok;
   });
 
-  describe("getId", function () {
-    it("getId should work correctly", async function () {
+  it("getId should work correctly", async function () {
       let Id = await moduleCore.read.getId([
         fixture.pa.address,
         fixture.ra.address,
@@ -137,7 +136,6 @@ describe("Module Core", function () {
       );
       expect(Id).to.equal(expectedKey);
     });
-  });
 
   describe("initializeModuleCore", function () {
     it("initializeModuleCore should work correctly", async function () {

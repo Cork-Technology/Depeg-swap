@@ -471,10 +471,7 @@ describe("PSM core", function () {
         dsId!,
         expectedAMount,
       ]);
-      const feePercentage = await fixture.moduleCore.read.baseRedemptionFee(fixture.Id);
-      const expectedFee = (depositAmount*(feePercentage))/(parseEther("1"));
-      const expectedRaReceived = depositAmount - expectedFee;  
-      expect(raReceived).to.equal(expectedRaReceived);
+      expect(raReceived).to.equal(parseEther("9.5"));
     });
 
   });
