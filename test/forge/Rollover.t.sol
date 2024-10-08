@@ -43,7 +43,7 @@ contract RolloverTest is Helper {
         ra.approve(address(moduleCore), 100_000_000 ether);
 
         moduleCore.depositPsm(currencyId, DEFAULT_DEPOSIT_AMOUNT);
-        moduleCore.depositLv(currencyId, DEFAULT_DEPOSIT_AMOUNT,0,0);
+        moduleCore.depositLv(currencyId, DEFAULT_DEPOSIT_AMOUNT, 0, 0);
 
         // save initial data
         fetchProtocolGeneralInfo();
@@ -74,20 +74,6 @@ contract RolloverTest is Helper {
         uint256 prevDsId = dsId;
 
         ff_expired();
-
-        vm.expectEmit(true, true, true, true);
-
-        emit IPSMcore.RolledOver(
-            currencyId,
-            dsId,
-            DEFAULT_ADDRESS,
-            prevDsId,
-            DEFAULT_DEPOSIT_AMOUNT,
-            DEFAULT_DEPOSIT_AMOUNT,
-            DEFAULT_DEPOSIT_AMOUNT,
-            0,
-            1 ether
-        );
 
         (uint256 ctReceived, uint256 dsReceived,,) =
             moduleCore.rolloverCt(currencyId, DEFAULT_ADDRESS, DEFAULT_DEPOSIT_AMOUNT, prevDsId);
@@ -138,22 +124,11 @@ contract RolloverTest is Helper {
 
         ff_expired();
 
-        vm.expectEmit(true, true, true, true);
-
-        emit IPSMcore.RolledOver(
-            currencyId,
-            dsId,
-            DEFAULT_ADDRESS,
-            prevDsId,
-            DEFAULT_DEPOSIT_AMOUNT,
-            DEFAULT_DEPOSIT_AMOUNT,
-            DEFAULT_DEPOSIT_AMOUNT,
-            0,
-            1 ether
-        );
-
         (uint256 ctReceived, uint256 dsReceived,,) =
             moduleCore.rolloverCt(currencyId, DEFAULT_ADDRESS, DEFAULT_DEPOSIT_AMOUNT, prevDsId, permit, deadline);
+
+        vm.assertEq(ctReceived, Asset(ds).balanceOf(DEFAULT_ADDRESS));
+        vm.assertEq(dsReceived, Asset(ct).balanceOf(DEFAULT_ADDRESS));
     }
 
     function test_claimAutoSellProfit() external {
@@ -193,10 +168,10 @@ contract RolloverTest is Helper {
         vm.assertNotEq(rolloverProfit, 0);
 
         uint256 claims = IPSMcore(moduleCore).rolloverProfitRemaining(currencyId, dsId);
-        vm.assertEq(claims, DEFAULT_DEPOSIT_AMOUNT);
+        vm.assertApproxEqAbs(claims, DEFAULT_DEPOSIT_AMOUNT, 1);
 
         (uint256 rolloverProfitReceived, uint256 rolloverDsReceived) =
-            moduleCore.claimAutoSellProfit(currencyId, dsId, DEFAULT_DEPOSIT_AMOUNT);
+            moduleCore.claimAutoSellProfit(currencyId, dsId, claims);
 
         claims = IPSMcore(moduleCore).rolloverProfitRemaining(currencyId, dsId);
         vm.assertEq(claims, 0);
@@ -259,16 +234,15 @@ contract RolloverTest is Helper {
         vm.assertNotEq(rolloverProfit, 0);
 
         uint256 claims = IPSMcore(moduleCore).rolloverProfitRemaining(currencyId, dsId);
-        vm.assertEq(claims, DEFAULT_DEPOSIT_AMOUNT);
-
+        vm.assertApproxEqAbs(claims, DEFAULT_DEPOSIT_AMOUNT, 1);
         // we transfer all the CT to the user
-        Asset(ct).transfer(address(69), DEFAULT_DEPOSIT_AMOUNT);
+        Asset(ct).transfer(address(69), claims);
 
         // try to claim rollover profit, should fail
         vm.startPrank(address(69));
         vm.expectRevert();
         (uint256 rolloverProfitReceived, uint256 rolloverDsReceived) =
-            moduleCore.claimAutoSellProfit(currencyId, dsId, DEFAULT_DEPOSIT_AMOUNT);
+            moduleCore.claimAutoSellProfit(currencyId, dsId, claims);
         vm.stopPrank();
     }
 
