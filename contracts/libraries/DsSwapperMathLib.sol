@@ -3,7 +3,6 @@ pragma solidity ^0.8.24;
 import {UQ112x112} from "./UQ112x112.sol";
 import {SignedMath} from "@openzeppelin/contracts/utils/math/SignedMath.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
-import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 
 /**
  * @title SwapperMathLibrary Contract
@@ -202,7 +201,7 @@ library SwapperMathLibrary {
             revert TooBig();
         }
 
-        uint224 discPerSec = UQ112x112.encode(SafeCast.toUint112(decayDiscountInDays)) / 1 days;
+        uint224 discPerSec = UQ112x112.encode(uint112(decayDiscountInDays)) / 1 days;
         uint256 t = currentTime - issuanceTime;
         uint256 discount = (discPerSec * t / UQ112x112.Q112) + 1;
 
