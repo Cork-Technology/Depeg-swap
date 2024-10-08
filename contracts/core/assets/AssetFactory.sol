@@ -70,7 +70,6 @@ contract AssetFactory is IAssetFactory, OwnableUpgradeable, UUPSUpgradeable {
     {
         uint256 start = uint256(_page) * uint256(_limit);
         uint256 end = start + uint256(_limit);
-        uint256 arrLen = end - start;
 
         if (end > idx) {
             end = idx;
@@ -80,6 +79,7 @@ contract AssetFactory is IAssetFactory, OwnableUpgradeable, UUPSUpgradeable {
             return (ra, lv);
         }
 
+        uint256 arrLen = end - start;
         ra = new address[](arrLen);
         lv = new address[](arrLen);
 
@@ -112,7 +112,6 @@ contract AssetFactory is IAssetFactory, OwnableUpgradeable, UUPSUpgradeable {
 
         uint256 start = uint256(_page) * uint256(_limit);
         uint256 end = start + uint256(_limit);
-        uint256 arrLen = end - start;
 
         if (end > _assets.length) {
             end = _assets.length;
@@ -122,6 +121,7 @@ contract AssetFactory is IAssetFactory, OwnableUpgradeable, UUPSUpgradeable {
             return (ct, ds);
         }
 
+        uint256 arrLen = end - start;
         ct = new address[](arrLen);
         ds = new address[](arrLen);
 
