@@ -61,7 +61,11 @@ contract ModuleCore is OwnableUpgradeable, UUPSUpgradeable, PsmCore, Initialize,
         uint256 lvFee,
         uint256 initialDsPrice,
         uint256 psmBaseRedemptionFeePercentage
-    ) external override onlyConfig {
+    )
+        external
+        override
+        onlyConfig
+    {
         Pair memory key = PairLibrary.initalize(pa, ra);
         Id id = key.toId();
 
