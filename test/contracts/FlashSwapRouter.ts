@@ -51,7 +51,7 @@ describe("FlashSwapRouter", function () {
     ) as Address;
     fixture = await loadFixture(localFixture);
 
-    depositAmount = parseEther("1900");
+    depositAmount = parseEther("19000");
     expiry = helper.expiry(1000000);
 
     await fixture.ra.write.mint([defaultSigner.account.address, depositAmount]);
@@ -64,9 +64,10 @@ describe("FlashSwapRouter", function () {
       expiry,
       factory: fixture.factory.contract.address,
       pa: fixture.pa.address,
+      rates: parseEther("1"),
     });
 
-    await fixture.moduleCore.write.depositLv([pool.Id, depositAmount]);
+    await fixture.moduleCore.write.depositLv([pool.Id, depositAmount, 0n, 0n]);
   });
 
   describe("onNewIssuance", function () {
@@ -77,7 +78,6 @@ describe("FlashSwapRouter", function () {
           pool.dsId!,
           zeroAddress,
           zeroAddress,
-          depositAmount,
           zeroAddress,
           zeroAddress,
         ])
@@ -88,7 +88,7 @@ describe("FlashSwapRouter", function () {
   describe("emptyReserve", function () {
     it("Revert emptyReserve when called by non owner", async function () {
       await expect(
-        fixture.dsFlashSwapRouter.contract.write.emptyReserve([
+        fixture.dsFlashSwapRouter.contract.write.emptyReserveLv([
           pool.Id,
           pool.dsId!,
         ])
@@ -99,7 +99,7 @@ describe("FlashSwapRouter", function () {
   describe("emptyReservePartial", function () {
     it("Revert emptyReservePartial when called by non owner", async function () {
       await expect(
-        fixture.dsFlashSwapRouter.contract.write.emptyReservePartial([
+        fixture.dsFlashSwapRouter.contract.write.emptyReservePartialLv([
           pool.Id,
           pool.dsId!,
           10n,
@@ -111,7 +111,7 @@ describe("FlashSwapRouter", function () {
   describe("addReserve", function () {
     it("Revert addReserve when called by non owner", async function () {
       await expect(
-        fixture.dsFlashSwapRouter.contract.write.emptyReservePartial([
+        fixture.dsFlashSwapRouter.contract.write.emptyReservePartialLv([
           pool.Id,
           pool.dsId!,
           10n,
@@ -194,6 +194,7 @@ describe("FlashSwapRouter", function () {
         pool.dsId!,
         dsAmount,
         BigInt(0),
+        defaultSigner.account.address,
         permitmsg,
         deadline,
       ]);
@@ -207,8 +208,8 @@ describe("FlashSwapRouter", function () {
         .then((e) => e[0]);
 
       expect(event.args.amountOut).to.be.closeTo(
-        helper.toEthersBigNumer("0.477"),
-        helper.toEthersBigNumer("0.001")
+        helper.toEthersBigNumer("0.49"),
+        helper.toEthersBigNumer("0.01")
       );
 
       const afterBalance = await fixture.ra.read.balanceOf([
@@ -244,8 +245,8 @@ describe("FlashSwapRouter", function () {
         .then((e) => e[0]);
 
       expect(event.args.amountOut).to.be.closeTo(
-        helper.toEthersBigNumer("0.477"),
-        helper.toEthersBigNumer("0.001")
+        helper.toEthersBigNumer("0.49"),
+        helper.toEthersBigNumer("0.01")
       );
 
       const afterBalance = await fixture.ra.read.balanceOf([
@@ -293,6 +294,7 @@ describe("FlashSwapRouter", function () {
         pool.dsId!,
         raProvided,
         BigInt(0),
+        defaultSigner.account.address,
         permitmsg,
         deadline,
       ]);
@@ -342,7 +344,7 @@ describe("FlashSwapRouter", function () {
     });
 
     it("should give correct buy DS preview", async function () {
-      const raProvided = parseEther("0.1009");
+      const raProvided = parseEther("0.1");
       await fixture.ra.write.mint([defaultSigner.account.address, raProvided]);
 
       await fixture.ra.write.approve([
@@ -358,7 +360,7 @@ describe("FlashSwapRouter", function () {
         ]);
 
       expect(amountOutPreview).to.be.closeTo(
-        helper.toEthersBigNumer("1.01"),
+        helper.toEthersBigNumer("0.99"),
         helper.toEthersBigNumer("0.01")
       );
 

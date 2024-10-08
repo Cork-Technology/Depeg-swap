@@ -64,8 +64,8 @@ contract TestModuleCore is ModuleCore {
         return states[id].psm.poolArchive[dsId].rolloverProfit;
     }
 
-    function getPsmRepurchaseFeePrecentage(Id id) external view returns (uint256) {
-        return states[id].psm.repurchaseFeePrecentage;
+    function getPsmRepurchaseFeePercentage(Id id) external view returns (uint256) {
+        return states[id].psm.repurchaseFeePercentage;
     }
 
     function getPsmLiquiditySeparated(Id id, uint256 dsId) external view returns (bool) {

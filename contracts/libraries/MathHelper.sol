@@ -13,7 +13,7 @@ library MathHelper {
 
     // this is used to calculate tolerance level when adding liqudity to AMM pair
     /// @dev 1e18 == 1%.
-    uint256 internal constant UNIV2_STATIC_TOLERANCE = 1e18;
+    uint256 internal constant UNIV2_STATIC_TOLERANCE = 5e18;
 
     /**
      * @dev calculate the amount of ra and ct needed to provide AMM with liquidity in respect to the price ratio
@@ -23,15 +23,17 @@ library MathHelper {
      * @return ra the amount of ra needed to provide AMM with liquidity
      * @return ct the amount of ct needed to provide AMM with liquidity, also the amount of how much ra should be converted to ct
      */
-    function calculateProvideLiquidityAmountBasedOnCtPrice(uint256 amountra, uint256 priceRatio)
+    function calculateProvideLiquidityAmountBasedOnCtPrice(uint256 amountra, uint256 priceRatio, uint256 exchangeRate)
         external
         pure
         returns (uint256 ra, uint256 ct)
     {
-        ct = (amountra * 1e18) / (priceRatio + 1e18);
-        ra = (amountra - ct);
+        ct = (amountra * 1e18) / (priceRatio + exchangeRate);
+        ra = (amountra - (ct * exchangeRate / 1e18));
+    }
 
-        assert((ct + ra) == amountra);
+    function calculateProvideLiquidityAmount(uint256 amountRa, uint256 raDeposited) external pure returns (uint256) {
+        return amountRa - raDeposited;
     }
 
     /// @dev should only pass ERC20.decimals() onto the decimal field
@@ -81,8 +83,8 @@ library MathHelper {
      * @param fee1e18 the fee in 1e18
      * @param amount the amount of lv user want to withdraw
      */
-    function calculatePrecentageFee(uint256 fee1e18, uint256 amount) external pure returns (uint256 precentage) {
-        precentage = (((amount * 1e18) * fee1e18) / (100 * 1e18)) / 1e18;
+    function calculatePercentageFee(uint256 fee1e18, uint256 amount) external pure returns (uint256 percentage) {
+        percentage = (((amount * 1e18) * fee1e18) / (100 * 1e18)) / 1e18;
     }
 
     /**
@@ -91,7 +93,7 @@ library MathHelper {
      * @param exchangeRate the current exchange rate between RA:(CT+DS)
      */
     function calculateDepositAmountWithExchangeRate(uint256 amount, uint256 exchangeRate)
-        external
+        public
         pure
         returns (uint256 _amount)
     {
@@ -130,13 +132,13 @@ library MathHelper {
         pure
         returns (uint256 attributedWithdrawal, uint256 attributedAmm, uint256 ratePerLv)
     {
-        // with 1e18 precision
-        ratePerLv = ((totalAmount * 1e18) / totalLvIssued);
-
         // attribute all to AMM if no lv issued or withdrawn
         if (totalLvIssued == 0 || totalLvWithdrawn == 0) {
-            return (0, totalAmount, ratePerLv);
+            return (0, totalAmount, 0);
         }
+
+        // with 1e18 precision
+        ratePerLv = ((totalAmount * 1e18) / totalLvIssued);
 
         attributedWithdrawal = (ratePerLv * totalLvWithdrawn) / 1e18;
         attributedAmm = totalAmount - attributedWithdrawal;
