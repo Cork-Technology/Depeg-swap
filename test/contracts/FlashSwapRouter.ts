@@ -88,7 +88,7 @@ describe("FlashSwapRouter", function () {
   describe("emptyReserve", function () {
     it("Revert emptyReserve when called by non owner", async function () {
       await expect(
-        fixture.dsFlashSwapRouter.contract.write.emptyReserve([
+        fixture.dsFlashSwapRouter.contract.write.emptyReserveLv([
           pool.Id,
           pool.dsId!,
         ])
@@ -99,7 +99,7 @@ describe("FlashSwapRouter", function () {
   describe("emptyReservePartial", function () {
     it("Revert emptyReservePartial when called by non owner", async function () {
       await expect(
-        fixture.dsFlashSwapRouter.contract.write.emptyReservePartial([
+        fixture.dsFlashSwapRouter.contract.write.emptyReservePartialLv([
           pool.Id,
           pool.dsId!,
           10n,
@@ -111,7 +111,7 @@ describe("FlashSwapRouter", function () {
   describe("addReserve", function () {
     it("Revert addReserve when called by non owner", async function () {
       await expect(
-        fixture.dsFlashSwapRouter.contract.write.emptyReservePartial([
+        fixture.dsFlashSwapRouter.contract.write.emptyReservePartialLv([
           pool.Id,
           pool.dsId!,
           10n,

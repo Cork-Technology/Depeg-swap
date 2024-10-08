@@ -34,6 +34,7 @@ abstract contract PsmCore is IPSMcore, ModuleState, Context {
     function repurchase(Id id, uint256 amount)
         external
         override
+        PSMRepurchaseNotPaused(id)
         returns (uint256 dsId, uint256 received, uint256 feePrecentage, uint256 fee, uint256 exchangeRates)
     {
         State storage state = states[id];
@@ -57,6 +58,7 @@ abstract contract PsmCore is IPSMcore, ModuleState, Context {
         external
         view
         override
+        PSMRepurchaseNotPaused(id)
         returns (uint256 dsId, uint256 received, uint256 feePrecentage, uint256 fee, uint256 exchangeRates)
     {
         State storage state = states[id];
@@ -133,6 +135,8 @@ abstract contract PsmCore is IPSMcore, ModuleState, Context {
         returns (uint256 received, uint256 _exchangeRate, uint256 fee)
     {
         State storage state = states[id];
+        // gas savings
+        uint256 feePrecentage = state.psm.psmBaseRedemptionFeePrecentage;
 
         (received, _exchangeRate, fee) =
             state.redeemWithDs(redeemer, amount, dsId, rawDsPermitSig, deadline, psmBaseRedemptionFeePrecentage);
@@ -152,7 +156,7 @@ abstract contract PsmCore is IPSMcore, ModuleState, Context {
     {
         State storage state = states[id];
         // gas savings
-        uint256 feePrecentage = psmBaseRedemptionFeePrecentage;
+        uint256 feePrecentage = state.psm.psmBaseRedemptionFeePrecentage;
 
         (received, _exchangeRate, fee) = state.redeemWithDs(_msgSender(), amount, dsId, bytes(""), 0, feePrecentage);
 
@@ -177,10 +181,12 @@ abstract contract PsmCore is IPSMcore, ModuleState, Context {
         override
         onlyInitialized(id)
         PSMWithdrawalNotPaused(id)
-        returns (uint256 assets)
+        returns (uint256 assets, uint256 fee, uint256 feePercentage)
     {
         State storage state = states[id];
-        assets = state.previewRedeemWithDs(dsId, amount);
+        
+        feePercentage = state.psm.psmBaseRedemptionFeePrecentage;
+        (assets, fee) = state.previewRedeemWithDs(dsId, amount);
     }
 
     function redeemWithCT(Id id, uint256 dsId, uint256 amount, address redeemer, bytes memory rawCtPermitSig, uint256 deadline)
@@ -302,8 +308,9 @@ abstract contract PsmCore is IPSMcore, ModuleState, Context {
     /**
      * @notice returns base redemption fees (1e18 = 1%)
      */
-    function baseRedemptionFee() external view override returns (uint256) {
-        return psmBaseRedemptionFeePrecentage;
+    function baseRedemptionFee(Id id) external view override returns (uint256) {
+        State storage state = states[id];
+        return state.psm.psmBaseRedemptionFeePrecentage;
     }
 
     function psmAcceptFlashSwapProfit(Id id, uint256 profit) external onlyFlashSwapRouter {

@@ -474,9 +474,9 @@ describe("PSM core", function () {
         dsId!,
         expectedAMount,
       ]);
-
-      expect(raReceived).to.equal(depositAmount);
+      expect(raReceived).to.equal(parseEther("9.5"));
     });
+
   });
 
   describe("cancel position", function () {

@@ -78,8 +78,18 @@ abstract contract Helper is Test, SigUtils {
         uniswapFactory = IUniswapV2Factory(addr);
     }
 
+    function initializeNewModuleCore(
+        address pa,
+        address ra,
+        uint256 lvFee,
+        uint256 initialDsPrice,
+        uint256 baseRedemptionFee
+    ) internal {
+        corkConfig.initializeModuleCore(pa, ra, lvFee, initialDsPrice, baseRedemptionFee);
+    }
+
     function initializeNewModuleCore(address pa, address ra, uint256 lvFee, uint256 initialDsPrice) internal {
-        corkConfig.initializeModuleCore(pa, ra, lvFee, initialDsPrice);
+        corkConfig.initializeModuleCore(pa, ra, lvFee, initialDsPrice, DEFAULT_BASE_REDEMPTION_FEE);
     }
 
     function issueNewDs(
@@ -119,7 +129,36 @@ abstract contract Helper is Test, SigUtils {
         Pair memory _id = PairLibrary.initalize(address(pa), address(ra));
         id = PairLibrary.toId(_id);
 
-        initializeNewModuleCore(address(pa), address(ra), DEFAULT_LV_FEE, defaultInitialDsPrice());
+        initializeNewModuleCore(
+            address(pa), address(ra), DEFAULT_LV_FEE, defaultInitialDsPrice(), DEFAULT_BASE_REDEMPTION_FEE
+        );
+        issueNewDs(
+            id,
+            expiryInSeconds,
+            DEFAULT_EXCHANGE_RATES,
+            DEFAULT_REPURCHASE_FEE,
+            DEFAULT_DECAY_DISCOUNT_RATE,
+            DEFAULT_ROLLOVER_PERIOD
+        );
+    }
+
+    function initializeAndIssueNewDs(uint256 expiryInSeconds, uint256 baseRedemptionFee)
+        internal
+        returns (DummyWETH ra, DummyWETH pa, Id id)
+    {
+        if (block.timestamp + expiryInSeconds > block.timestamp + 100 days) {
+            revert(
+                "Expiry too far in the future, specify a default decay rate, this will cause the discount to exceed 100!"
+            );
+        }
+
+        ra = new DummyWETH();
+        pa = new DummyWETH();
+
+        Pair memory _id = PairLibrary.initalize(address(pa), address(ra));
+        id = PairLibrary.toId(_id);
+
+        initializeNewModuleCore(address(pa), address(ra), DEFAULT_LV_FEE, defaultInitialDsPrice(), baseRedemptionFee);
         issueNewDs(
             id,
             expiryInSeconds,
@@ -168,14 +207,13 @@ abstract contract Helper is Test, SigUtils {
         flashSwapRouter.setModuleCore(address(moduleCore));
     }
 
-    function initializeModuleCore(uint256 fees) internal {
+    function initializeModuleCore() internal {
         moduleCore.initialize(
             address(assetFactory),
             address(uniswapFactory),
             address(flashSwapRouter),
             address(uniswapRouter),
-            address(corkConfig),
-            fees
+            address(corkConfig)
         );
     }
 
@@ -190,20 +228,6 @@ abstract contract Helper is Test, SigUtils {
         initializeAssetFactory();
         initializeConfig();
         initializeFlashSwapRouter();
-        initializeModuleCore(DEFAULT_EXCHANGE_RATES);
-    }
-
-    function deployModuleCore(uint256 psmBaseRedemptionFee) internal {
-        deployConfig();
-        deployFlashSwapRouter();
-        deployAssetFactory();
-        deployUniswapFactory(address(0), address(flashSwapRouter));
-        deployUniswapRouter(address(uniswapFactory), address(flashSwapRouter));
-
-        moduleCore = new TestModuleCore();
-        initializeAssetFactory();
-        initializeConfig();
-        initializeFlashSwapRouter();
-        initializeModuleCore(psmBaseRedemptionFee);
+        initializeModuleCore();
     }
 }
