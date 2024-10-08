@@ -15,6 +15,7 @@ import {IVault} from "../../interfaces/IVault.sol";
 import {Asset} from "../assets/Asset.sol";
 import {DepegSwapLibrary} from "../../libraries/DepegSwapLib.sol";
 import {SafeERC20, IERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 
 /**
  * @title Router contract for Flashswap
@@ -437,11 +438,11 @@ contract RouterState is
         (uint112 raReserve, uint112 ctReserve) = assetPair.getReservesSorted();
 
         // we borrow the same amount of CT tokens from the reserve
-        ctReserve -= uint112(amountSellFromReserve);
+        ctReserve -= SafeCast.toUint112(amountSellFromReserve);
 
         (uint256 profit, uint256 raAdded,) = assetPair.getAmountOutSellDS(amountSellFromReserve);
 
-        raReserve += uint112(raAdded);
+        raReserve += SafeCast.toUint112(raAdded);
 
         // emulate Vault way of adding liquidity using RA from selling DS reserve
         (, uint256 ratio) = self.tryGetPriceRatioAfterSellDs(dsId, amountSellFromReserve, raAdded);
@@ -455,12 +456,13 @@ contract RouterState is
         // use the vault profit
         (raAdded, ctAdded) = MathHelper.calculateProvideLiquidityAmountBasedOnCtPrice(profit, ratio);
 
-        raReserve += uint112(raAdded);
-        ctReserve += uint112(ctAdded);
+        raReserve += SafeCast.toUint112(raAdded);
+        ctReserve += SafeCast.toUint112(ctAdded);
 
         // update amountOut since we sold some from the reserve
-        (, amountOut) =
-            SwapperMathLibrary.getAmountOutDs(int256(uint256(raReserve)), int256(uint256(ctReserve)), int256(amount));
+        (, amountOut) = SwapperMathLibrary.getAmountOutDs(
+            SafeCast.toInt256(uint256(raReserve)), SafeCast.toInt256(uint256(ctReserve)), SafeCast.toInt256(amount)
+        );
     }
 
     function isRolloverSale(Id id, uint256 dsId) external view returns (bool) {
