@@ -267,7 +267,7 @@ contract RouterState is
 
         // calculate the amount of DS tokens that will be sold from reserve
         uint256 amountSellFromReserve =
-            amountOut - MathHelper.calculatePrecentageFee(self.reserveSellPressurePrecentage, amountOut);
+            amountOut - MathHelper.calculatePercentageFee(self.reserveSellPressurePercentage, amountOut);
 
         // sell all tokens if the sell amount is higher than the available reserve
         amountSellFromReserve = assetPair.lvReserve + assetPair.psmReserve < amountSellFromReserve
@@ -405,7 +405,7 @@ contract RouterState is
 
         // calculate the amount of DS tokens that will be sold from reserve
         uint256 amountSellFromReserve =
-            amountOut - MathHelper.calculatePrecentageFee(self.reserveSellPressurePrecentage, amountOut);
+            amountOut - MathHelper.calculatePercentageFee(self.reserveSellPressurePercentage, amountOut);
 
         // sell all tokens if the sell amount is higher than the available reserve
         amountSellFromReserve = assetPair.lvReserve + assetPair.psmReserve < amountSellFromReserve

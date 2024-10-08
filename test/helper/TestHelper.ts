@@ -18,11 +18,11 @@ import UNIV2ROUTER from "./ext-abi/hardhat/uni-v2-router.json";
 import { ethers } from "ethers";
 
 const DEVISOR = BigInt(1e18);
-export const DEFAULT_BASE_REDEMPTION_PRECENTAGE = parseEther("5");
+export const DEFAULT_BASE_REDEMPTION_PERCENTAGE = parseEther("5");
 
-export function calculatePrecentage(
+export function calculatePercentage(
   number: bigint,
-  percent: bigint = DEFAULT_BASE_REDEMPTION_PRECENTAGE
+  percent: bigint = DEFAULT_BASE_REDEMPTION_PERCENTAGE
 ) {
   return (number * DEVISOR * percent) / parseEther("100") / DEVISOR;
 }
@@ -498,7 +498,7 @@ export async function onlymoduleCoreWithFactory(basePsmRedemptionFee: bigint) {
 }
 
 export async function ModuleCoreWithInitializedPsmLv(
-  basePsmRedemptionFee: bigint = DEFAULT_BASE_REDEMPTION_PRECENTAGE
+  basePsmRedemptionFee: bigint = DEFAULT_BASE_REDEMPTION_PERCENTAGE
 ) {
   const {
     factory,

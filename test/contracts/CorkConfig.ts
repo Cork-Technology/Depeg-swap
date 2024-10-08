@@ -292,13 +292,13 @@ describe("CorkConfig", function () {
     });
   });
 
-  describe("updatePsmBaseRedemptionFeePrecentage", function () {
-    it("updatePsmBaseRedemptionFeePrecentage should work correctly", async function () {
+  describe("updatePsmBaseRedemptionFeePercentage", function () {
+    it("updatePsmBaseRedemptionFeePercentage should work correctly", async function () {
       expect(
         await moduleCore.read.baseRedemptionFee([fixture.Id])
       ).to.be.equals(parseEther("5"));
       expect(
-        await corkConfig.write.updatePsmBaseRedemptionFeePrecentage(
+        await corkConfig.write.updatePsmBaseRedemptionFeePercentage(
           [fixture.Id, 1000n],
           {
             account: defaultSigner.account,
@@ -310,9 +310,9 @@ describe("CorkConfig", function () {
       ).to.be.equals(parseUnits("1000", 0));
     });
 
-    it("Revert when non MANAGER call updatePsmBaseRedemptionFeePrecentage", async function () {
+    it("Revert when non MANAGER call updatePsmBaseRedemptionFeePercentage", async function () {
       await expect(
-        corkConfig.write.updatePsmBaseRedemptionFeePrecentage(
+        corkConfig.write.updatePsmBaseRedemptionFeePercentage(
           [fixture.Id, 1000n],
           {
             account: secondSigner.account,

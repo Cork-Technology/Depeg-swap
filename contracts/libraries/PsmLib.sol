@@ -43,7 +43,7 @@ library PsmLibrary {
     function initialize(State storage self, Pair memory key, uint256 psmBaseRedemptionFee) external {
         self.info = key;
         self.psm.balances.ra = RedemptionAssetManagerLibrary.initialize(key.redemptionAsset());
-        self.psm.psmBaseRedemptionFeePrecentage = psmBaseRedemptionFee;
+        self.psm.psmBaseRedemptionFeePercentage = psmBaseRedemptionFee;
     }
 
     function updateAutoSell(State storage self, address user, bool status) external {
@@ -263,7 +263,7 @@ library PsmLibrary {
         // essentially burn unpurchased ds as we're going in with a new issuance
         self.psm.balances.dsBalance = 0;
 
-        self.psm.repurchaseFeePrecentage = repurchaseFeePercent;
+        self.psm.repurchaseFeePercentage = repurchaseFeePercent;
         self.ds[idx] = DepegSwapLibrary.initialize(ds, ct, ammPair);
     }
 
@@ -461,15 +461,15 @@ library PsmLibrary {
         rates = ds.exchangeRate();
     }
 
-    function repurchaseFeePrecentage(State storage self) external view returns (uint256 rates) {
-        rates = self.psm.repurchaseFeePrecentage;
+    function repurchaseFeePercentage(State storage self) external view returns (uint256 rates) {
+        rates = self.psm.repurchaseFeePercentage;
     }
 
     function updateRepurchaseFeePercentage(State storage self, uint256 newFees) external {
         if (newFees > 5 ether) {
             revert ICommon.InvalidFees();
         }
-        self.psm.repurchaseFeePrecentage = newFees;
+        self.psm.repurchaseFeePercentage = newFees;
     }
 
     function updatePoolsStatus(
@@ -493,7 +493,7 @@ library PsmLibrary {
         returns (
             uint256 dsId,
             uint256 received,
-            uint256 feePrecentage,
+            uint256 feePercentage,
             uint256 fee,
             uint256 exchangeRates,
             DepegSwap storage ds
@@ -507,8 +507,8 @@ library PsmLibrary {
         exchangeRates = ds.exchangeRate();
 
         // the fee is taken directly from RA before it's even converted to DS
-        feePrecentage = self.psm.repurchaseFeePrecentage;
-        fee = MathHelper.calculatePrecentageFee(amount, feePrecentage);
+        feePercentage = self.psm.repurchaseFeePercentage;
+        fee = MathHelper.calculatePercentageFee(amount, feePercentage);
         amount = amount - fee;
 
         // we use deposit here because technically the user deposit RA to the PSM when repurchasing
@@ -529,10 +529,10 @@ library PsmLibrary {
         uint256 amount,
         IDsFlashSwapCore flashSwapRouter,
         IUniswapV2Router02 ammRouter
-    ) external returns (uint256 dsId, uint256 received, uint256 feePrecentage, uint256 fee, uint256 exchangeRates) {
+    ) external returns (uint256 dsId, uint256 received, uint256 feePercentage, uint256 fee, uint256 exchangeRates) {
         DepegSwap storage ds;
 
-        (dsId, received, feePrecentage, fee, exchangeRates, ds) = previewRepurchase(self, amount);
+        (dsId, received, feePercentage, fee, exchangeRates, ds) = previewRepurchase(self, amount);
 
         // decrease PSM balance
         // we also include the fee here to separate the accumulated fee from the repurchase
@@ -571,14 +571,14 @@ library PsmLibrary {
         DepegSwap storage ds,
         address owner,
         uint256 amount,
-        uint256 feePrecentage
+        uint256 feePercentage
     ) internal returns (uint256 received, uint256 _exchangeRate, uint256 fee) {
         IERC20(ds._address).safeTransferFrom(owner, address(this), amount);
 
         _exchangeRate = ds.exchangeRate();
         received = MathHelper.calculateRedeemAmountWithExchangeRate(amount, _exchangeRate);
 
-        fee = MathHelper.calculatePrecentageFee(received, feePrecentage);
+        fee = MathHelper.calculatePercentageFee(received, feePercentage);
         received -= fee;
 
         IERC20(self.info.peggedAsset().asErc20()).safeTransferFrom(owner, address(this), amount);
@@ -617,7 +617,7 @@ library PsmLibrary {
             DepegSwapLibrary.permit(ds._address, rawDsPermitSig, owner, address(this), amount, deadline);
         }
         _redeemDs(self.psm.balances, amount);
-        (received, _exchangeRate, fee) = _afterRedeemWithDs(self, ds, owner, amount, self.psm.psmBaseRedemptionFeePrecentage);
+        (received, _exchangeRate, fee) = _afterRedeemWithDs(self, ds, owner, amount, self.psm.psmBaseRedemptionFeePercentage);
     }
 
     /// @notice simulate a ds redeem.
@@ -630,7 +630,7 @@ library PsmLibrary {
         DepegSwap storage ds = self.ds[dsId];
         Guard.safeBeforeExpired(ds);
         assets = MathHelper.calculateRedeemAmountWithExchangeRate(amount, ds.exchangeRate());
-        fee = MathHelper.calculatePrecentageFee(assets, self.psm.psmBaseRedemptionFeePrecentage);
+        fee = MathHelper.calculatePercentageFee(assets, self.psm.psmBaseRedemptionFeePercentage);
         assets -= fee;
     }
 
@@ -735,11 +735,11 @@ library PsmLibrary {
         (accruedPa, accruedRa) = _calcRedeemAmount(amount, totalCtIssued, availableRa, availablePa);
     }
 
-    function updatePSMBaseRedemptionFeePrecentage(State storage self, uint256 newFees) external {
+    function updatePSMBaseRedemptionFeePercentage(State storage self, uint256 newFees) external {
         if (newFees > 5 ether) {
             revert ICommon.InvalidFees();
         }
-        self.psm.psmBaseRedemptionFeePrecentage = newFees;
+        self.psm.psmBaseRedemptionFeePercentage = newFees;
     }
 
 }

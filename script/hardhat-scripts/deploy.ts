@@ -32,10 +32,10 @@ function inferWeth() {
 }
 
 function inferBaseRedemptionFee() {
-  const fee = process.env.PSM_BASE_REDEMPTION_FEE_PRECENTAGE;
+  const fee = process.env.PSM_BASE_REDEMPTION_FEE_PERCENTAGE;
 
   if (fee == undefined || fee == "") {
-    throw new Error("PSM_BASE_REDEMPTION_FEE_PRECENTAGE not provided");
+    throw new Error("PSM_BASE_REDEMPTION_FEE_PERCENTAGE not provided");
   }
 
   return fee;

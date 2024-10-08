@@ -83,8 +83,8 @@ library MathHelper {
      * @param fee1e18 the fee in 1e18
      * @param amount the amount of lv user want to withdraw
      */
-    function calculatePrecentageFee(uint256 fee1e18, uint256 amount) external pure returns (uint256 precentage) {
-        precentage = (((amount * 1e18) * fee1e18) / (100 * 1e18)) / 1e18;
+    function calculatePercentageFee(uint256 fee1e18, uint256 amount) external pure returns (uint256 percentage) {
+        percentage = (((amount * 1e18) * fee1e18) / (100 * 1e18)) / 1e18;
     }
 
     /**

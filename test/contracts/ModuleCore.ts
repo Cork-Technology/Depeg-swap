@@ -75,7 +75,53 @@ describe("Module Core", function () {
     });
   }
 
-  
+  it("should deploy", async function () {
+    const mathLib = await hre.viem.deployContract("MathHelper");
+    const psm = await hre.viem.deployContract("PsmLibrary", [], {
+      libraries: {
+        MathHelper: mathLib.address,
+      },
+    });
+    const vault = await hre.viem.deployContract("VaultLibrary", [], {
+      libraries: {
+        MathHelper: mathLib.address,
+      },
+    });
+
+    const dsFlashSwapRouter = await helper.deployFlashSwapRouter(
+      mathLib.address
+    );
+    const univ2Factory = await helper.deployUniV2Factory(
+      dsFlashSwapRouter.contract.address
+    );
+    const weth = await helper.deployWeth();
+    const univ2Router = await helper.deployUniV2Router(
+      weth.contract.address,
+      univ2Factory,
+      dsFlashSwapRouter.contract.address
+    );
+    const swapAssetFactory = await helper.deployAssetFactory();
+    const config = await helper.deployCorkConfig();
+
+    const moduleCore = await hre.viem.deployContract("ModuleCore", [], {
+      client: {
+        wallet: defaultSigner,
+      },
+      libraries: {
+        PsmLibrary: psm.address,
+        VaultLibrary: vault.address,
+      },
+    });
+    let tx = await moduleCore.write.initialize([
+      swapAssetFactory.contract.address,
+      univ2Factory,
+      dsFlashSwapRouter.contract.address,
+      univ2Router,
+      config.contract.address
+    ]);
+    expect(tx).to.be.ok;
+  });
+
   it("getId should work correctly", async function () {
     let Id = await moduleCore.read.getId([
       fixture.pa.address,
@@ -377,12 +423,12 @@ describe("Module Core", function () {
     });
   });
 
-  describe("updatePsmBaseRedemptionFeePrecentage", function () {
-    it("updatePsmBaseRedemptionFeePrecentage should work correctly", async function () {
+  describe("updatePsmBaseRedemptionFeePercentage", function () {
+    it("updatePsmBaseRedemptionFeePercentage should work correctly", async function () {
       expect(await moduleCore.read.baseRedemptionFee([fixture.Id])).to.equal(
         parseEther("5")
       );
-      await corkConfig.write.updatePsmBaseRedemptionFeePrecentage([
+      await corkConfig.write.updatePsmBaseRedemptionFeePercentage([
         fixture.Id,
         500n,
       ]);
@@ -391,18 +437,18 @@ describe("Module Core", function () {
       );
     });
 
-    it("updatePsmBaseRedemptionFeePrecentage should revert when new value is more than 5%", async function () {
+    it("updatePsmBaseRedemptionFeePercentage should revert when new value is more than 5%", async function () {
       await expect(
-        corkConfig.write.updatePsmBaseRedemptionFeePrecentage([
+        corkConfig.write.updatePsmBaseRedemptionFeePercentage([
           fixture.Id,
           parseEther("5.00000000000001"),
         ])
       ).to.be.rejectedWith("InvalidFees()");
     });
 
-    it("updatePsmBaseRedemptionFeePrecentage should revert when not called by Config contract", async function () {
+    it("updatePsmBaseRedemptionFeePercentage should revert when not called by Config contract", async function () {
       await expect(
-        moduleCore.write.updatePsmBaseRedemptionFeePrecentage(
+        moduleCore.write.updatePsmBaseRedemptionFeePercentage(
           [fixture.Id, 500n],
           {
             account: secondSigner.account,

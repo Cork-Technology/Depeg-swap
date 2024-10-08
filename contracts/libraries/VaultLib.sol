@@ -698,7 +698,7 @@ library VaultLibrary {
         uint256 permitDeadline,
         uint256 amountOutMin,
         uint256 ammDeadline
-    ) external returns (uint256 received, uint256 fee, uint256 feePrecentage) {
+    ) external returns (uint256 received, uint256 fee, uint256 feePercentage) {
         safeBeforeExpired(self);
         if (permitDeadline != 0) {
             DepegSwapLibrary.permit(
@@ -706,11 +706,11 @@ library VaultLibrary {
             );
         }
 
-        feePrecentage = self.vault.config.fee;
+        feePercentage = self.vault.config.fee;
 
         received = _liquidateLpPartial(self, self.globalAssetIdx, flashSwapRouter, ammRouter, amount, ammDeadline);
 
-        fee = MathHelper.calculatePrecentageFee(received, feePrecentage);
+        fee = MathHelper.calculatePercentageFee(received, feePercentage);
 
         if (fee != 0) {
             provideLiquidityWithFee(self, fee, flashSwapRouter, ammRouter);
@@ -728,15 +728,15 @@ library VaultLibrary {
     function previewRedeemEarly(State storage self, uint256 amount, IDsFlashSwapCore flashSwapRouter)
         public
         view
-        returns (uint256 received, uint256 fee, uint256 feePrecentage)
+        returns (uint256 received, uint256 fee, uint256 feePercentage)
     {
         safeBeforeExpired(self);
 
-        feePrecentage = self.vault.config.fee;
+        feePercentage = self.vault.config.fee;
 
         (received,) = _tryLiquidateLpAndSellCtToAmm(self, self.globalAssetIdx, flashSwapRouter, amount);
 
-        fee = MathHelper.calculatePrecentageFee(received, feePrecentage);
+        fee = MathHelper.calculatePercentageFee(received, feePercentage);
 
         received -= fee;
     }

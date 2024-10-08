@@ -84,13 +84,13 @@ contract ModuleCore is OwnableUpgradeable, UUPSUpgradeable, PsmCore, Initialize,
         Id id,
         uint256 expiry,
         uint256 exchangeRates,
-        uint256 repurchaseFeePrecentage,
+        uint256 repurchaseFeePercentage,
         uint256 decayDiscountRateInDays,
         // won't have effect on first issuance
         uint256 rolloverPeriodInblocks,
         uint256 ammLiquidationDeadline
     ) external override onlyConfig onlyInitialized(id) {
-        if (repurchaseFeePrecentage > 5 ether) {
+        if (repurchaseFeePercentage > 5 ether) {
             revert InvalidFees();
         }
 
@@ -103,7 +103,7 @@ contract ModuleCore is OwnableUpgradeable, UUPSUpgradeable, PsmCore, Initialize,
         );
 
         // avoid stack to deep error
-        _initOnNewIssuance(id, repurchaseFeePrecentage, ct, ds, expiry);
+        _initOnNewIssuance(id, repurchaseFeePercentage, ct, ds, expiry);
         // avoid stack to deep error
         getRouterCore().setDecayDiscountAndRolloverPeriodOnNewIssuance(
             id, decayDiscountRateInDays, rolloverPeriodInblocks
@@ -115,7 +115,7 @@ contract ModuleCore is OwnableUpgradeable, UUPSUpgradeable, PsmCore, Initialize,
 
     function _initOnNewIssuance(
         Id id,
-        uint256 repurchaseFeePrecentage,
+        uint256 repurchaseFeePercentage,
         address ct,
         address ds,
         uint256 expiry
@@ -129,18 +129,18 @@ contract ModuleCore is OwnableUpgradeable, UUPSUpgradeable, PsmCore, Initialize,
 
         address ammPair = getAmmFactory().createPair(ra, ct);
 
-        PsmLibrary.onNewIssuance(state, ct, ds, ammPair, idx, prevIdx, repurchaseFeePrecentage);
+        PsmLibrary.onNewIssuance(state, ct, ds, ammPair, idx, prevIdx, repurchaseFeePercentage);
 
         getRouterCore().onNewIssuance(id, idx, ds, ammPair, ra, ct);
 
         emit Issued(id, idx, expiry, ds, ct, ammPair);
     }
 
-    function updateRepurchaseFeeRate(Id id, uint256 newRepurchaseFeePrecentage) external onlyConfig {
+    function updateRepurchaseFeeRate(Id id, uint256 newRepurchaseFeePercentage) external onlyConfig {
         State storage state = states[id];
-        PsmLibrary.updateRepurchaseFeePercentage(state, newRepurchaseFeePrecentage);
+        PsmLibrary.updateRepurchaseFeePercentage(state, newRepurchaseFeePercentage);
 
-        emit RepurchaseFeeRateUpdated(id, newRepurchaseFeePrecentage);
+        emit RepurchaseFeeRateUpdated(id, newRepurchaseFeePercentage);
     }
 
     function updateEarlyRedemptionFeeRate(Id id, uint256 newEarlyRedemptionFeeRate) external onlyConfig {
@@ -212,17 +212,17 @@ contract ModuleCore is OwnableUpgradeable, UUPSUpgradeable, PsmCore, Initialize,
 
     /**
      * @notice update value of PSMBaseRedemption fees
-     * @param newPsmBaseRedemptionFeePrecentage new value of fees
+     * @param newPsmBaseRedemptionFeePercentage new value of fees
      */
-    function updatePsmBaseRedemptionFeePrecentage(Id id, uint256 newPsmBaseRedemptionFeePrecentage)
+    function updatePsmBaseRedemptionFeePercentage(Id id, uint256 newPsmBaseRedemptionFeePercentage)
         external
         onlyConfig
     {
-        if (newPsmBaseRedemptionFeePrecentage > 5 ether) {
+        if (newPsmBaseRedemptionFeePercentage > 5 ether) {
             revert InvalidFees();
         }
         State storage state = states[id];
-        PsmLibrary.updatePSMBaseRedemptionFeePrecentage(state, newPsmBaseRedemptionFeePrecentage);
-        emit PsmBaseRedemptionFeePrecentageUpdated(id, newPsmBaseRedemptionFeePrecentage);
+        PsmLibrary.updatePSMBaseRedemptionFeePercentage(state, newPsmBaseRedemptionFeePercentage);
+        emit PsmBaseRedemptionFeePercentageUpdated(id, newPsmBaseRedemptionFeePercentage);
     }
 }
