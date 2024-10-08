@@ -334,6 +334,7 @@ contract RouterState is
         uint256 dsId,
         uint256 amount,
         uint256 amountOutMin,
+        address user,
         bytes memory rawRaPermitSig,
         uint256 deadline
     ) external returns (uint256 amountOut) {
@@ -344,14 +345,14 @@ contract RouterState is
             revert PermitNotSupported();
         }
 
-        DepegSwapLibrary.permit(address(assetPair.ra), rawRaPermitSig, msg.sender, address(this), amount, deadline);
-        IERC20(assetPair.ra).safeTransferFrom(msg.sender, address(this), amount);
+        DepegSwapLibrary.permit(address(assetPair.ra), rawRaPermitSig, user, address(this), amount, deadline);
+        IERC20(assetPair.ra).safeTransferFrom(user, address(this), amount);
 
         amountOut = _swapRaforDs(self, assetPair, reserveId, dsId, amount, amountOutMin);
 
         self.recalculateHPA(dsId, amount, amountOut);
 
-        emit RaSwapped(reserveId, dsId, msg.sender, amount, amountOut);
+        emit RaSwapped(reserveId, dsId, user, amount, amountOut);
     }
 
     /**
@@ -481,19 +482,20 @@ contract RouterState is
         uint256 dsId,
         uint256 amount,
         uint256 amountOutMin,
+        address user,
         bytes memory rawDsPermitSig,
         uint256 deadline
     ) external returns (uint256 amountOut) {
         ReserveState storage self = reserves[reserveId];
         AssetPair storage assetPair = self.ds[dsId];
 
-        DepegSwapLibrary.permit(address(assetPair.ds), rawDsPermitSig, msg.sender, address(this), amount, deadline);
-        assetPair.ds.transferFrom(msg.sender, address(this), amount);
+        DepegSwapLibrary.permit(address(assetPair.ds), rawDsPermitSig, user, address(this), amount, deadline);
+        assetPair.ds.transferFrom(user, address(this), amount);
 
         bool success;
         uint256 repaymentAmount;
         (amountOut, repaymentAmount, success) =
-            __swapDsforRa(assetPair, reserveId, dsId, amount, amountOutMin, msg.sender);
+            __swapDsforRa(assetPair, reserveId, dsId, amount, amountOutMin, user);
 
         if (!success) {
             (uint112 raReserve, uint112 ctReserve) = assetPair.getReservesSorted();
@@ -501,7 +503,7 @@ contract RouterState is
         }
         self.recalculateHPA(dsId, amountOut, amount);
 
-        emit DsSwapped(reserveId, dsId, msg.sender, amount, amountOut);
+        emit DsSwapped(reserveId, dsId, user, amount, amountOut);
     }
 
     /**

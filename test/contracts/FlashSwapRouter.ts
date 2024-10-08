@@ -194,6 +194,7 @@ describe("FlashSwapRouter", function () {
         pool.dsId!,
         dsAmount,
         BigInt(0),
+        defaultSigner.account.address,
         permitmsg,
         deadline,
       ]);
@@ -293,6 +294,7 @@ describe("FlashSwapRouter", function () {
         pool.dsId!,
         raProvided,
         BigInt(0),
+        defaultSigner.account.address,
         permitmsg,
         deadline,
       ]);
