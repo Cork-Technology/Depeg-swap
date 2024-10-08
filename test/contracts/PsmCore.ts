@@ -201,6 +201,7 @@ describe("PSM core", function () {
         fixture.Id,
         dsId!,
         redeemAmount,
+        defaultSigner.account.address,
         permitmsg,
         deadline,
       ]);
@@ -303,6 +304,7 @@ describe("PSM core", function () {
         fixture.Id,
         dsId!,
         redeemAmount,
+        defaultSigner.account.address,
         msgPermit,
         deadline,
       ]);
@@ -427,6 +429,7 @@ describe("PSM core", function () {
         fixture.Id,
         dsId!,
         expectedAMount,
+        defaultSigner.account.address,
         permitmsg,
         deadline,
       ]);
@@ -472,9 +475,9 @@ describe("PSM core", function () {
         dsId!,
         expectedAMount,
       ]);
-
-      expect(raReceived).to.equal(depositAmount);
+      expect(raReceived).to.equal(parseEther("9.5"));
     });
+
   });
 
   describe("cancel position", function () {
@@ -526,6 +529,7 @@ describe("PSM core", function () {
       await fixture.moduleCore.write.redeemRaWithCtDs([
         fixture.Id,
         parseEther("2"),
+        defaultSigner.account.address,
         msgPermit1,
         deadline,
         msgPermit2,
@@ -699,6 +703,7 @@ describe("PSM core", function () {
         fixture.Id,
         dsId!,
         parseEther("10"),
+        defaultSigner.account.address,
         permitmsg,
         deadline,
       ]);
@@ -779,6 +784,7 @@ describe("PSM core", function () {
         fixture.Id,
         dsId!,
         parseEther("10"),
+        defaultSigner.account.address,
         permitmsg,
         deadline,
       ]);
@@ -839,6 +845,7 @@ describe("PSM core", function () {
         fixture.Id,
         dsId!,
         parseEther("50"),
+        defaultSigner.account.address,
         permitmsg,
         deadline,
       ]);
@@ -877,6 +884,7 @@ describe("PSM core", function () {
         fixture.Id,
         dsId!,
         parseEther("1"),
+        defaultSigner.account.address,
         permitmsg2,
         deadline2,
       ]);
@@ -1022,6 +1030,7 @@ describe("PSM core", function () {
         fixture.Id,
         dsId!,
         parseEther("100"),
+        defaultSigner.account.address,
         msgPermit,
         deadline,
       ]);
@@ -1119,6 +1128,7 @@ describe("PSM core", function () {
         fixture.Id,
         dsId!,
         parseEther("10"),
+        defaultSigner.account.address,
         permitmsg,
         deadline,
       ]);

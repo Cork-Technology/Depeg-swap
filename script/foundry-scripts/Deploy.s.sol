@@ -178,7 +178,7 @@ contract DeployScript is Script {
         uint256 repurchaseFee,
         uint256 expiryPeriod
     ) public {
-        config.initializeModuleCore(cst, ceth, redmptionFee, dsPrice);
+        config.initializeModuleCore(cst, ceth, redmptionFee, dsPrice, base_redemption_fee);
 
         Id id = moduleCore.getId(cst, ceth);
         config.issueNewDs(

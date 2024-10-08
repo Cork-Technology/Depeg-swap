@@ -1,9 +1,9 @@
 pragma solidity 0.8.24;
 
 import {Script, console} from "forge-std/Script.sol";
-import {CETH} from "../../contracts/tokens/CETH.sol";
-import {CST} from "../../contracts/tokens/CST.sol";
-import {Id} from "../../contracts/libraries/Pair.sol";
+import {CETH} from "../../../contracts/tokens/CETH.sol";
+import {CST} from "../../../contracts/tokens/CST.sol";
+import {Id} from "../../../contracts/libraries/Pair.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
 contract FixAssetRatioScript is Script {

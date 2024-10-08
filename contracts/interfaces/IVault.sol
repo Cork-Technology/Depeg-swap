@@ -56,6 +56,7 @@ interface IVault {
     /**
      * @notice Redeem lv before expiry
      * @param id The Module id that is used to reference both psm and lv of a given pair
+     * @param redeemer The address of the redeemer 
      * @param receiver The address of the receiver
      * @param amount The amount of the asset to be redeemed
      * @param rawLvPermitSig Raw signature for LV approval permit
@@ -63,6 +64,7 @@ interface IVault {
      */
     function redeemEarlyLv(
         Id id,
+        address redeemer,
         address receiver,
         uint256 amount,
         bytes memory rawLvPermitSig,

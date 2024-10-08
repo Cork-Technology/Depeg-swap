@@ -65,8 +65,8 @@ library VaultLibrary {
         uint256 raTolerance,
         uint256 ctTolerance
     ) internal {
-        ERC20(raAddress).approve(address(ammRouter), raAmount);
-        ERC20(ctAddress).approve(address(ammRouter), ctAmount);
+        IERC20(raAddress).safeIncreaseAllowance(address(ammRouter), raAmount);
+        IERC20(ctAddress).safeIncreaseAllowance(address(ammRouter), ctAmount);
 
         (uint256 raAdded, uint256 ctAdded, uint256 lp) = ammRouter.addLiquidity(
             raAddress, ctAddress, raAmount, ctAmount, raTolerance, ctTolerance, address(this), block.timestamp
@@ -92,7 +92,7 @@ library VaultLibrary {
         DepegSwap storage ds,
         uint256 amount
     ) internal {
-        Asset(ds._address).approve(address(flashSwapRouter), amount);
+        IERC20(ds._address).safeIncreaseAllowance(address(flashSwapRouter), amount);
         flashSwapRouter.addReserveLv(self.info.toId(), self.globalAssetIdx, amount);
     }
 
@@ -418,7 +418,7 @@ library VaultLibrary {
         path[0] = ds.ct;
         path[1] = self.info.pair1;
 
-        ERC20(ds.ct).approve(address(ammRouter), ctSellAmount);
+        IERC20(ds.ct).safeIncreaseAllowance(address(ammRouter), ctSellAmount);
 
         if (ctSellAmount != 0) {
             // 100% tolerance, to ensure this not fail

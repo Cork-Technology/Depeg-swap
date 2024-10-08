@@ -50,6 +50,7 @@ abstract contract VaultCore is ModuleState, Context, IVault {
     /**
      * @notice Redeem lv before expiry
      * @param id The Module id that is used to reference both psm and lv of a given pair
+     * @param redeemer The address of the redeemer
      * @param receiver The address of the receiver
      * @param amount The amount of the asset to be redeemed
      * @param rawLvPermitSig Raw signature for LV approval permit
@@ -58,6 +59,7 @@ abstract contract VaultCore is ModuleState, Context, IVault {
      */
     function redeemEarlyLv(
         Id id,
+        address redeemer,
         address receiver,
         uint256 amount,
         bytes memory rawLvPermitSig,
@@ -83,7 +85,7 @@ abstract contract VaultCore is ModuleState, Context, IVault {
             ammDeadline
         );
 
-        emit LvRedeemEarly(id, _msgSender(), receiver, received, fee, feePrecentage);
+        emit LvRedeemEarly(id, redeemer, receiver, received, fee, feePrecentage);
     }
 
     /**

@@ -156,7 +156,7 @@ contract RolloverTest is Helper {
             moduleCore.rolloverCt(currencyId, DEFAULT_ADDRESS, DEFAULT_DEPOSIT_AMOUNT, prevDsId, permit, deadline);
     }
 
-    function test_ClaimRolloverProfit() external {
+    function test_claimAutoSellProfit() external {
         uint256 prevDsId = dsId;
         uint256 amountOutMin = flashSwapRouter.previewSwapRaforDs(currencyId, dsId, 1 ether);
 
@@ -196,7 +196,7 @@ contract RolloverTest is Helper {
         vm.assertEq(claims, DEFAULT_DEPOSIT_AMOUNT);
 
         (uint256 rolloverProfitReceived, uint256 rolloverDsReceived) =
-            moduleCore.claimRolloverProfit(currencyId, dsId, DEFAULT_DEPOSIT_AMOUNT);
+            moduleCore.claimAutoSellProfit(currencyId, dsId, DEFAULT_DEPOSIT_AMOUNT);
 
         claims = IPSMcore(moduleCore).rolloverProfitRemaining(currencyId, dsId);
         vm.assertEq(claims, 0);
@@ -268,7 +268,7 @@ contract RolloverTest is Helper {
         vm.startPrank(address(69));
         vm.expectRevert();
         (uint256 rolloverProfitReceived, uint256 rolloverDsReceived) =
-            moduleCore.claimRolloverProfit(currencyId, dsId, DEFAULT_DEPOSIT_AMOUNT);
+            moduleCore.claimAutoSellProfit(currencyId, dsId, DEFAULT_DEPOSIT_AMOUNT);
         vm.stopPrank();
     }
 

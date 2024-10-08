@@ -75,7 +75,7 @@ describe("LvCore", function () {
   }
 
   async function pauseAllPools() {
-    await corkConfig.write.updatePoolsStatus([Id, true, true, true, true], {
+    await corkConfig.write.updatePoolsStatus([Id, true, true, true, true, true], {
       account: defaultSigner.account,
     });
   }
@@ -159,6 +159,7 @@ describe("LvCore", function () {
       await moduleCore.write.redeemEarlyLv(
         [
           Id,
+          defaultSigner.account.address,
           defaultSigner.account.address,
           redeemAmount,
           msgPermit,
@@ -268,6 +269,7 @@ describe("LvCore", function () {
       await expect(
         moduleCore.write.redeemEarlyLv([
           Id,
+          defaultSigner.account.address,
           defaultSigner.account.address,
           redeemAmount,
           msgPermit,

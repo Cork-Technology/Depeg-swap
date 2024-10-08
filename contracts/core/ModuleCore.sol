@@ -29,14 +29,11 @@ contract ModuleCore is OwnableUpgradeable, UUPSUpgradeable, PsmCore, Initialize,
         address _ammFactory,
         address _flashSwapRouter,
         address _ammRouter,
-        address _config,
-        uint256 _psmBaseRedemptionFeePrecentage
+        address _config
     ) external initializer {
         __Ownable_init(msg.sender);
         __UUPSUpgradeable_init();
-        initializeModuleState(
-            _swapAssetFactory, _ammFactory, _flashSwapRouter, _ammRouter, _config, _psmBaseRedemptionFeePrecentage
-        );
+        initializeModuleState(_swapAssetFactory, _ammFactory, _flashSwapRouter, _ammRouter, _config);
     }
 
     /// @notice Authorization function for UUPS proxy upgrades
@@ -58,11 +55,13 @@ contract ModuleCore is OwnableUpgradeable, UUPSUpgradeable, PsmCore, Initialize,
         return PairLibrary.initalize(pa, ra).toId();
     }
 
-    function initializeModuleCore(address pa, address ra, uint256 lvFee, uint256 initialDsPrice)
-        external
-        override
-        onlyConfig
-    {
+    function initializeModuleCore(
+        address pa,
+        address ra,
+        uint256 lvFee,
+        uint256 initialDsPrice,
+        uint256 psmBaseRedemptionFeePercentage
+    ) external override onlyConfig {
         Pair memory key = PairLibrary.initalize(pa, ra);
         Id id = key.toId();
 
@@ -76,9 +75,8 @@ contract ModuleCore is OwnableUpgradeable, UUPSUpgradeable, PsmCore, Initialize,
 
         address lv = assetsFactory.deployLv(ra, pa, address(this));
 
-        PsmLibrary.initialize(state, key);
+        PsmLibrary.initialize(state, key, psmBaseRedemptionFeePercentage);
         VaultLibrary.initialize(state.vault, lv, lvFee, ra, initialDsPrice);
-
         emit InitializedModuleCore(id, pa, ra, lv);
     }
 
@@ -156,15 +154,28 @@ contract ModuleCore is OwnableUpgradeable, UUPSUpgradeable, PsmCore, Initialize,
         Id id,
         bool isPSMDepositPaused,
         bool isPSMWithdrawalPaused,
+        bool isPSMRepurchasePaused,
         bool isLVDepositPaused,
         bool isLVWithdrawalPaused
     ) external onlyConfig {
         State storage state = states[id];
         PsmLibrary.updatePoolsStatus(
-            state, isPSMDepositPaused, isPSMWithdrawalPaused, isLVDepositPaused, isLVWithdrawalPaused
+            state,
+            isPSMDepositPaused,
+            isPSMWithdrawalPaused,
+            isPSMRepurchasePaused,
+            isLVDepositPaused,
+            isLVWithdrawalPaused
         );
 
-        emit PoolsStatusUpdated(id, isPSMDepositPaused, isPSMWithdrawalPaused, isLVDepositPaused, isLVWithdrawalPaused);
+        emit PoolsStatusUpdated(
+            id,
+            isPSMDepositPaused,
+            isPSMWithdrawalPaused,
+            isPSMRepurchasePaused,
+            isLVDepositPaused,
+            isLVWithdrawalPaused
+        );
     }
 
     /**
@@ -203,10 +214,15 @@ contract ModuleCore is OwnableUpgradeable, UUPSUpgradeable, PsmCore, Initialize,
      * @notice update value of PSMBaseRedemption fees
      * @param newPsmBaseRedemptionFeePrecentage new value of fees
      */
-    function updatePsmBaseRedemptionFeePrecentage(uint256 newPsmBaseRedemptionFeePrecentage) external onlyConfig {
+    function updatePsmBaseRedemptionFeePrecentage(Id id, uint256 newPsmBaseRedemptionFeePrecentage)
+        external
+        onlyConfig
+    {
         if (newPsmBaseRedemptionFeePrecentage > 5 ether) {
             revert InvalidFees();
         }
-        psmBaseRedemptionFeePrecentage = newPsmBaseRedemptionFeePrecentage;
+        State storage state = states[id];
+        PsmLibrary.updatePSMBaseRedemptionFeePrecentage(state, newPsmBaseRedemptionFeePrecentage);
+        emit PsmBaseRedemptionFeePrecentageUpdated(id, newPsmBaseRedemptionFeePrecentage);
     }
 }

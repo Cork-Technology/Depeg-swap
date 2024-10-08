@@ -4,14 +4,10 @@ import {IUniswapV2Factory} from "v2-core/interfaces/IUniswapV2Factory.sol";
 import {IUniswapV2Router02} from "v2-periphery/interfaces/IUniswapV2Router02.sol";
 
 import {Script, console} from "forge-std/Script.sol";
-import {ERC1967Proxy} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
-import {AssetFactory} from "../../contracts/core/assets/AssetFactory.sol";
-import {CorkConfig} from "../../contracts/core/CorkConfig.sol";
-import {RouterState} from "../../contracts/core/flash-swaps/FlashSwapRouter.sol";
-import {ModuleCore} from "../../contracts/core/ModuleCore.sol";
-import {DummyWETH} from "../../contracts/dummy/DummyWETH.sol";
+import {CorkConfig} from "../../../contracts/core/CorkConfig.sol";
+import {ModuleCore} from "../../../contracts/core/ModuleCore.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
-import {Id} from "../../contracts/libraries/Pair.sol";
+import {Id} from "../../../contracts/libraries/Pair.sol";
 
 interface ICST {
     function deposit(uint256 amount) external;
@@ -21,9 +17,7 @@ contract SetupTCScript is Script {
     IUniswapV2Factory public factory;
     IUniswapV2Router02 public univ2Router;
 
-    AssetFactory public assetFactory;
     CorkConfig public config;
-    RouterState public flashswapRouter;
     ModuleCore public moduleCore;
     ICST public cst;
     IERC20 public cETH;
@@ -86,7 +80,7 @@ contract SetupTCScript is Script {
         uint256 dsPrice,
         uint256 repurchaseFee
     ) public {
-        config.initializeModuleCore(cst, ceth, redmptionFee, dsPrice);
+        config.initializeModuleCore(cst, ceth, redmptionFee, dsPrice, base_redemption_fee);
 
         Id id = moduleCore.getId(cst, ceth);
         config.issueNewDs(
