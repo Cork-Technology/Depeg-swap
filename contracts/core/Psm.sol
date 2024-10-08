@@ -18,12 +18,12 @@ abstract contract PsmCore is IPSMcore, ModuleState, Context {
     using PairLibrary for Pair;
 
     /**
-     * @notice returns the fee precentage for repurchasing(1e18 = 1%)
+     * @notice returns the fee percentage for repurchasing(1e18 = 1%)
      * @param id the id of PSM
      */
     function repurchaseFee(Id id) external view override returns (uint256) {
         State storage state = states[id];
-        return state.repurchaseFeePrecentage();
+        return state.repurchaseFeePercentage();
     }
 
     /**
@@ -35,13 +35,13 @@ abstract contract PsmCore is IPSMcore, ModuleState, Context {
         external
         override
         PSMRepurchaseNotPaused(id)
-        returns (uint256 dsId, uint256 received, uint256 feePrecentage, uint256 fee, uint256 exchangeRates)
+        returns (uint256 dsId, uint256 received, uint256 feePercentage, uint256 fee, uint256 exchangeRates)
     {
         State storage state = states[id];
-        (dsId, received, feePrecentage, fee, exchangeRates) =
+        (dsId, received, feePercentage, fee, exchangeRates) =
             state.repurchase(_msgSender(), amount, getRouterCore(), getAmmRouter());
 
-        emit Repurchased(id, _msgSender(), dsId, amount, received, feePrecentage, fee, exchangeRates);
+        emit Repurchased(id, _msgSender(), dsId, amount, received, feePercentage, fee, exchangeRates);
     }
 
     /**
@@ -50,7 +50,7 @@ abstract contract PsmCore is IPSMcore, ModuleState, Context {
      * @param amount the amount of RA to use
      * @return dsId the id of the DS
      * @return received the amount of RA received
-     * @return feePrecentage the fee in precentage
+     * @return feePercentage the fee in percentage
      * @return fee the fee charged
      * @return exchangeRates the effective DS exchange rate at the time of repurchase
      */
@@ -59,10 +59,10 @@ abstract contract PsmCore is IPSMcore, ModuleState, Context {
         view
         override
         PSMRepurchaseNotPaused(id)
-        returns (uint256 dsId, uint256 received, uint256 feePrecentage, uint256 fee, uint256 exchangeRates)
+        returns (uint256 dsId, uint256 received, uint256 feePercentage, uint256 fee, uint256 exchangeRates)
     {
         State storage state = states[id];
-        (dsId, received, feePrecentage, fee, exchangeRates,) = state.previewRepurchase(amount);
+        (dsId, received, feePercentage, fee, exchangeRates,) = state.previewRepurchase(amount);
     }
 
     /**
@@ -141,7 +141,7 @@ abstract contract PsmCore is IPSMcore, ModuleState, Context {
 
         VaultLibrary.provideLiquidityWithFee(state, fee, getRouterCore(), getAmmRouter());
 
-        emit DsRedeemed(id, dsId, redeemer, amount, received, _exchangeRate, state.psm.psmBaseRedemptionFeePrecentage, fee);
+        emit DsRedeemed(id, dsId, redeemer, amount, received, _exchangeRate, state.psm.psmBaseRedemptionFeePercentage, fee);
     }
 
     function redeemRaWithDs(Id id, uint256 dsId, uint256 amount)
@@ -158,7 +158,7 @@ abstract contract PsmCore is IPSMcore, ModuleState, Context {
 
         VaultLibrary.provideLiquidityWithFee(state, fee, getRouterCore(), getAmmRouter());
 
-        emit DsRedeemed(id, dsId, _msgSender(), amount, received, _exchangeRate, state.psm.psmBaseRedemptionFeePrecentage, fee);
+        emit DsRedeemed(id, dsId, _msgSender(), amount, received, _exchangeRate, state.psm.psmBaseRedemptionFeePercentage, fee);
     }
 
     /**
@@ -181,7 +181,7 @@ abstract contract PsmCore is IPSMcore, ModuleState, Context {
     {
         State storage state = states[id];
         
-        feePercentage = state.psm.psmBaseRedemptionFeePrecentage;
+        feePercentage = state.psm.psmBaseRedemptionFeePercentage;
         (assets, fee) = state.previewRedeemWithDs(dsId, amount);
     }
 
@@ -306,7 +306,7 @@ abstract contract PsmCore is IPSMcore, ModuleState, Context {
      */
     function baseRedemptionFee(Id id) external view override returns (uint256) {
         State storage state = states[id];
-        return state.psm.psmBaseRedemptionFeePrecentage;
+        return state.psm.psmBaseRedemptionFeePercentage;
     }
 
     function psmAcceptFlashSwapProfit(Id id, uint256 profit) external onlyFlashSwapRouter {

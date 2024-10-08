@@ -65,7 +65,7 @@ interface IPSMcore is IRepurchase {
     /// @param amount The amount of the DS redeemed
     /// @param received The amount of  asset received
     /// @param dsExchangeRate The exchange rate of DS at the time of redeem
-    /// @param feePrecentage The fee precentage charged for redemption
+    /// @param feePercentage The fee percentage charged for redemption
     /// @param fee The fee charged for redemption
     event DsRedeemed(
         Id indexed Id,
@@ -74,7 +74,7 @@ interface IPSMcore is IRepurchase {
         uint256 amount,
         uint256 received,
         uint256 dsExchangeRate,
-        uint256 feePrecentage,
+        uint256 feePercentage,
         uint256 fee
     );
 
@@ -131,10 +131,10 @@ interface IPSMcore is IRepurchase {
     /// @param earlyRedemptionFeeRate The new value of early redemption fee rate
     event EarlyRedemptionFeeRateUpdated(Id indexed Id, uint256 earlyRedemptionFeeRate);
 
-    /// @notice Emmitted when psmBaseRedemptionFeePrecentage is updated
+    /// @notice Emmitted when psmBaseRedemptionFeePercentage is updated
     /// @param id the PSM id
-    /// @param psmBaseRedemptionFeePrecentage the new psmBaseRedemptionFeePrecentage
-    event PsmBaseRedemptionFeePrecentageUpdated(Id indexed id, uint256 indexed psmBaseRedemptionFeePrecentage);
+    /// @param psmBaseRedemptionFeePercentage the new psmBaseRedemptionFeePercentage
+    event PsmBaseRedemptionFeePercentageUpdated(Id indexed id, uint256 indexed psmBaseRedemptionFeePercentage);
 
     /**
      * @notice returns the amount of CT and DS tokens that will be received after deposit

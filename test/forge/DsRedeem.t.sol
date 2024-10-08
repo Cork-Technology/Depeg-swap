@@ -55,7 +55,7 @@ contract VaultRedeemTest is Helper {
             moduleCore.previewRedeemRaWithDs(currencyId, dsId, redeemAmount);
 
         vm.assertEq(feePercentage, redemptionFeePercentage);
-        uint256 expectedFee = MathHelper.calculatePrecentageFee(feePercentage, redeemAmount);
+        uint256 expectedFee = MathHelper.calculatePercentageFee(feePercentage, redeemAmount);
 
         vm.assertEq(fee, expectedFee);
         vm.assertEq(assets, redeemAmount - fee);

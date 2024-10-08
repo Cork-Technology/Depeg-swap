@@ -71,9 +71,9 @@ abstract contract VaultCore is ModuleState, Context, IVault {
         override
         nonReentrant
         LVWithdrawalNotPaused(id)
-        returns (uint256 received, uint256 fee, uint256 feePrecentage)
+        returns (uint256 received, uint256 fee, uint256 feePercentage)
     {
-        (received, fee, feePrecentage) = states[id].redeemEarly(
+        (received, fee, feePercentage) = states[id].redeemEarly(
             _msgSender(),
             receiver,
             amount,
@@ -85,7 +85,7 @@ abstract contract VaultCore is ModuleState, Context, IVault {
             ammDeadline
         );
 
-        emit LvRedeemEarly(id, redeemer, receiver, received, fee, feePrecentage);
+        emit LvRedeemEarly(id, redeemer, receiver, received, fee, feePercentage);
     }
 
     /**
@@ -100,13 +100,13 @@ abstract contract VaultCore is ModuleState, Context, IVault {
         override
         nonReentrant
         LVWithdrawalNotPaused(id)
-        returns (uint256 received, uint256 fee, uint256 feePrecentage)
+        returns (uint256 received, uint256 fee, uint256 feePercentage)
     {
-        (received, fee, feePrecentage) = states[id].redeemEarly(
+        (received, fee, feePercentage) = states[id].redeemEarly(
             _msgSender(), receiver, amount, getRouterCore(), getAmmRouter(), bytes(""), 0, amountOutMin, ammDeadline
         );
 
-        emit LvRedeemEarly(id, _msgSender(), receiver, received, fee, feePrecentage);
+        emit LvRedeemEarly(id, _msgSender(), receiver, received, fee, feePercentage);
     }
 
     /**
@@ -119,10 +119,10 @@ abstract contract VaultCore is ModuleState, Context, IVault {
         view
         override
         LVWithdrawalNotPaused(id)
-        returns (uint256 received, uint256 fee, uint256 feePrecentage)
+        returns (uint256 received, uint256 fee, uint256 feePercentage)
     {
         State storage state = states[id];
-        (received, fee, feePrecentage) = state.previewRedeemEarly(amount, getRouterCore());
+        (received, fee, feePercentage) = state.previewRedeemEarly(amount, getRouterCore());
     }
 
     /**
