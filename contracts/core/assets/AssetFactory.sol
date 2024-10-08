@@ -5,6 +5,7 @@ import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/Own
 import {UUPSUpgradeable} from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import {Id, Pair, PairLibrary} from "../../libraries/Pair.sol";
 import {Asset} from "./Asset.sol";
+import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 
 /**
  * @title Factory contract for Assets
@@ -84,7 +85,7 @@ contract AssetFactory is IAssetFactory, OwnableUpgradeable, UUPSUpgradeable {
 
         for (uint256 i = start; i < end; i++) {
             Pair storage asset = pairs[i];
-            uint8 _idx = uint8(i - start);
+            uint8 _idx = SafeCast.toUint8(i - start);
 
             ra[_idx] = asset.pair1;
             lv[_idx] = lvs[asset.toId()];
