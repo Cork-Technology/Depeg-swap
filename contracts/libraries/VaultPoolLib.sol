@@ -11,7 +11,6 @@ import {MathHelper} from "./MathHelper.sol";
 library VaultPoolLibrary {
     function reserve(VaultPool storage self, uint256 totalLvIssued, uint256 addedRa, uint256 addedPa) internal {
         uint256 totalLvWithdrawn = self.withdrawalPool.atrributedLv;
-        self.withdrawalPool.atrributedLv = totalLvWithdrawn;
 
         // RA
         uint256 totalRa = self.withdrawalPool.raBalance + addedRa;
@@ -42,7 +41,6 @@ library VaultPoolLibrary {
         uint256 addedPa
     ) internal pure {
         uint256 totalLvWithdrawn = withdrawalPool.atrributedLv;
-        withdrawalPool.atrributedLv = totalLvWithdrawn;
 
         // RA
         uint256 totalRa = withdrawalPool.raBalance + addedRa;

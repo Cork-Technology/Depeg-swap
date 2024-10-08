@@ -179,7 +179,6 @@ export async function deployUniV2Router(
 export async function deployModuleCore(
   swapAssetFactory: Address,
   config: Address,
-  basePsmRedemptionFee: bigint
 ) {
   const signers = await hre.viem.getWalletClients();
   const { defaultSigner } = getSigners(signers);
@@ -224,11 +223,10 @@ export async function deployModuleCore(
     dsFlashSwapRouter.contract.address,
     univ2Router,
     config,
-    basePsmRedemptionFee,
   ]);
 
   await dsFlashSwapRouter.contract.write.initialize([
-    dsFlashSwapRouter.contract.address
+    dsFlashSwapRouter.contract.address,
   ]);
   await dsFlashSwapRouter.contract.write.setModuleCore([contract.address]);
   // await dsFlashSwapRouter.contract.write.transferOwnership([contract.address]);
@@ -250,6 +248,7 @@ export type InitializeNewPsmArg = {
   ra: Address;
   lvFee: bigint;
   initialDsPrice?: bigint;
+  rates: bigint;
 };
 
 export async function initializeNewPsmLv(arg: InitializeNewPsmArg) {
@@ -269,6 +268,7 @@ export async function initializeNewPsmLv(arg: InitializeNewPsmArg) {
     arg.ra,
     arg.lvFee,
     dsPrice,
+    arg.rates
   ]);
   const events = await contract.getEvents.InitializedModuleCore({
     pa: arg.pa,
@@ -309,7 +309,15 @@ export async function issueNewSwapAssets(arg: IssueNewSwapAssetsArg) {
 
   const configContract = await hre.viem.getContractAt("CorkConfig", arg.config);
   await configContract.write.issueNewDs(
-    [Id, BigInt(arg.expiry), rate, repurchaseFeePercent, parseEther("1"), 10n],
+    [
+      Id,
+      BigInt(arg.expiry),
+      rate,
+      repurchaseFeePercent,
+      parseEther("1"),
+      10n,
+      BigInt(expiry(1000000)),
+    ],
     {
       account: defaultSigner.account,
     }
@@ -473,7 +481,6 @@ export async function onlymoduleCoreWithFactory(basePsmRedemptionFee: bigint) {
     await deployModuleCore(
       factory.contract.address,
       config.contract.address,
-      basePsmRedemptionFee
     );
   const moduleCore = contract;
   await factory.contract.write.initialize();
@@ -513,6 +520,7 @@ export async function ModuleCoreWithInitializedPsmLv(
     pa: pa.address,
     ra: ra.address,
     lvFee: fee,
+    rates: basePsmRedemptionFee,
   });
 
   return {
