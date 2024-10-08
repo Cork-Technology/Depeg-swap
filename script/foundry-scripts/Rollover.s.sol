@@ -85,7 +85,8 @@ contract RolloverScript is Script {
             DEFAULT_EXCHANGE_RATE,
             asset.repruchaseFee,
             DEFAULT_DECAY_DISCOUNT_RATE,
-            DEFAULT_ROLLOVER_PERIOD
+            DEFAULT_ROLLOVER_PERIOD,
+            block.timestamp + 10 seconds 
         );
 
         uint256 afterDsId = moduleCore.lastDsId(id);

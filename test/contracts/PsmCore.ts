@@ -124,6 +124,7 @@ describe("PSM core", function () {
         parseEther("5"),
         parseEther("1"),
         10n,
+        BigInt(helper.expiry(1000000)),
       ]);
 
       const events = await moduleCore.getEvents.Issued({
@@ -200,6 +201,7 @@ describe("PSM core", function () {
         fixture.Id,
         dsId!,
         redeemAmount,
+        defaultSigner.account.address,
         permitmsg,
         deadline,
       ]);
@@ -302,6 +304,7 @@ describe("PSM core", function () {
         fixture.Id,
         dsId!,
         redeemAmount,
+        defaultSigner.account.address,
         msgPermit,
         deadline,
       ]);
@@ -426,6 +429,7 @@ describe("PSM core", function () {
         fixture.Id,
         dsId!,
         expectedAMount,
+        defaultSigner.account.address,
         permitmsg,
         deadline,
       ]);
@@ -466,13 +470,12 @@ describe("PSM core", function () {
         depositor: defaultSigner.account.address,
       });
 
-      const raReceived = await fixture.moduleCore.read.previewRedeemRaWithDs([
+      const [raReceived] = await fixture.moduleCore.read.previewRedeemRaWithDs([
         fixture.Id,
         dsId!,
         expectedAMount,
       ]);
-
-      expect(raReceived).to.equal(depositAmount);
+      expect(raReceived).to.equal(parseEther("9.5"));
     });
   });
 
@@ -525,6 +528,7 @@ describe("PSM core", function () {
       await fixture.moduleCore.write.redeemRaWithCtDs([
         fixture.Id,
         parseEther("2"),
+        defaultSigner.account.address,
         msgPermit1,
         deadline,
         msgPermit2,
@@ -698,6 +702,7 @@ describe("PSM core", function () {
         fixture.Id,
         dsId!,
         parseEther("10"),
+        defaultSigner.account.address,
         permitmsg,
         deadline,
       ]);
@@ -714,7 +719,7 @@ describe("PSM core", function () {
           fixture.Id,
           parseEther("2"),
         ]);
-      
+
       expect(received).to.equal(parseEther("0.95"));
       expect(feePrecentage).to.equal(parseEther("5"));
       expect(fee).to.equal(parseEther("0.1"));
@@ -778,6 +783,7 @@ describe("PSM core", function () {
         fixture.Id,
         dsId!,
         parseEther("10"),
+        defaultSigner.account.address,
         permitmsg,
         deadline,
       ]);
@@ -838,6 +844,7 @@ describe("PSM core", function () {
         fixture.Id,
         dsId!,
         parseEther("50"),
+        defaultSigner.account.address,
         permitmsg,
         deadline,
       ]);
@@ -876,6 +883,7 @@ describe("PSM core", function () {
         fixture.Id,
         dsId!,
         parseEther("1"),
+        defaultSigner.account.address,
         permitmsg2,
         deadline2,
       ]);
@@ -942,6 +950,7 @@ describe("PSM core", function () {
         parseEther("5"),
         parseEther("1"),
         10n,
+        BigInt(helper.expiry(1000000)),
       ]);
 
       const events = await fixture.moduleCore.getEvents.Issued({
@@ -949,7 +958,7 @@ describe("PSM core", function () {
         expiry: BigInt(expiry),
       });
 
-      await fixture.moduleCore.write.depositLv([Id, parseEther("10")]);
+      await fixture.moduleCore.write.depositLv([Id, parseEther("10"), 0n, 0n]);
 
       await fixture.lv.write.approve([
         fixture.moduleCore.address,
@@ -1020,6 +1029,7 @@ describe("PSM core", function () {
         fixture.Id,
         dsId!,
         parseEther("100"),
+        defaultSigner.account.address,
         msgPermit,
         deadline,
       ]);
@@ -1117,6 +1127,7 @@ describe("PSM core", function () {
         fixture.Id,
         dsId!,
         parseEther("10"),
+        defaultSigner.account.address,
         permitmsg,
         deadline,
       ]);

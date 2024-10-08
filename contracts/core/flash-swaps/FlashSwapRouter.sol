@@ -15,6 +15,7 @@ import {IVault} from "../../interfaces/IVault.sol";
 import {Asset} from "../assets/Asset.sol";
 import {DepegSwapLibrary} from "../../libraries/DepegSwapLib.sol";
 import {SafeERC20, IERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 
 /**
  * @title Router contract for Flashswap
@@ -91,13 +92,12 @@ contract RouterState is
         uint256 dsId,
         address ds,
         address pair,
-        uint256 initialReserve,
         address ra,
         address ct
     ) external override onlyModuleCore {
-        reserves[reserveId].onNewIssuance(dsId, ds, pair, initialReserve, ra, ct);
+        reserves[reserveId].onNewIssuance(dsId, ds, pair, ra, ct);
 
-        emit NewIssuance(reserveId, dsId, ds, pair, initialReserve);
+        emit NewIssuance(reserveId, dsId, ds, pair);
     }
 
     /// @notice set the discount rate rate and rollover for the new issuance
@@ -334,6 +334,7 @@ contract RouterState is
         uint256 dsId,
         uint256 amount,
         uint256 amountOutMin,
+        address user,
         bytes memory rawRaPermitSig,
         uint256 deadline
     ) external returns (uint256 amountOut) {
@@ -344,14 +345,14 @@ contract RouterState is
             revert PermitNotSupported();
         }
 
-        DepegSwapLibrary.permit(address(assetPair.ra), rawRaPermitSig, msg.sender, address(this), amount, deadline);
-        IERC20(assetPair.ra).safeTransferFrom(msg.sender, address(this), amount);
+        DepegSwapLibrary.permit(address(assetPair.ra), rawRaPermitSig, user, address(this), amount, deadline);
+        IERC20(assetPair.ra).safeTransferFrom(user, address(this), amount);
 
         amountOut = _swapRaforDs(self, assetPair, reserveId, dsId, amount, amountOutMin);
 
         self.recalculateHPA(dsId, amount, amountOut);
 
-        emit RaSwapped(reserveId, dsId, msg.sender, amount, amountOut);
+        emit RaSwapped(reserveId, dsId, user, amount, amountOut);
     }
 
     /**
@@ -436,11 +437,11 @@ contract RouterState is
         (uint112 raReserve, uint112 ctReserve) = assetPair.getReservesSorted();
 
         // we borrow the same amount of CT tokens from the reserve
-        ctReserve -= uint112(amountSellFromReserve);
+        ctReserve -= SafeCast.toUint112(amountSellFromReserve);
 
         (uint256 profit, uint256 raAdded,) = assetPair.getAmountOutSellDS(amountSellFromReserve);
 
-        raReserve += uint112(raAdded);
+        raReserve += SafeCast.toUint112(raAdded);
 
         // emulate Vault way of adding liquidity using RA from selling DS reserve
         (, uint256 ratio) = self.tryGetPriceRatioAfterSellDs(dsId, amountSellFromReserve, raAdded);
@@ -454,12 +455,13 @@ contract RouterState is
         // use the vault profit
         (raAdded, ctAdded) = MathHelper.calculateProvideLiquidityAmountBasedOnCtPrice(profit, ratio);
 
-        raReserve += uint112(raAdded);
-        ctReserve += uint112(ctAdded);
+        raReserve += SafeCast.toUint112(raAdded);
+        ctReserve += SafeCast.toUint112(ctAdded);
 
         // update amountOut since we sold some from the reserve
-        (, amountOut) =
-            SwapperMathLibrary.getAmountOutDs(int256(uint256(raReserve)), int256(uint256(ctReserve)), int256(amount));
+        (, amountOut) = SwapperMathLibrary.getAmountOutDs(
+            SafeCast.toInt256(uint256(raReserve)), SafeCast.toInt256(uint256(ctReserve)), SafeCast.toInt256(amount)
+        );
     }
 
     function isRolloverSale(Id id, uint256 dsId) external view returns (bool) {
@@ -481,19 +483,20 @@ contract RouterState is
         uint256 dsId,
         uint256 amount,
         uint256 amountOutMin,
+        address user,
         bytes memory rawDsPermitSig,
         uint256 deadline
     ) external returns (uint256 amountOut) {
         ReserveState storage self = reserves[reserveId];
         AssetPair storage assetPair = self.ds[dsId];
 
-        DepegSwapLibrary.permit(address(assetPair.ds), rawDsPermitSig, msg.sender, address(this), amount, deadline);
-        assetPair.ds.transferFrom(msg.sender, address(this), amount);
+        DepegSwapLibrary.permit(address(assetPair.ds), rawDsPermitSig, user, address(this), amount, deadline);
+        assetPair.ds.transferFrom(user, address(this), amount);
 
         bool success;
         uint256 repaymentAmount;
         (amountOut, repaymentAmount, success) =
-            __swapDsforRa(assetPair, reserveId, dsId, amount, amountOutMin, msg.sender);
+            __swapDsforRa(assetPair, reserveId, dsId, amount, amountOutMin, user);
 
         if (!success) {
             (uint112 raReserve, uint112 ctReserve) = assetPair.getReservesSorted();
@@ -501,7 +504,7 @@ contract RouterState is
         }
         self.recalculateHPA(dsId, amountOut, amount);
 
-        emit DsSwapped(reserveId, dsId, msg.sender, amount, amountOut);
+        emit DsSwapped(reserveId, dsId, user, amount, amountOut);
     }
 
     /**
@@ -628,7 +631,7 @@ contract RouterState is
         uint256 dsAttributed
     ) internal {
         AssetPair storage assetPair = self.ds[dsId];
-        assetPair.ra.approve(_moduleCore, dsAttributed);
+        IERC20(assetPair.ra).safeIncreaseAllowance(_moduleCore, dsAttributed);
 
         IPSMcore psm = IPSMcore(_moduleCore);
         psm.depositPsm(reserveId, dsAttributed);
@@ -652,8 +655,8 @@ contract RouterState is
         uint256 raAttributed
     ) internal {
         AssetPair storage assetPair = self.ds[dsId];
-        assetPair.ds.approve(_moduleCore, ctAmount);
-        assetPair.ct.approve(_moduleCore, ctAmount);
+        IERC20(assetPair.ds).safeIncreaseAllowance(_moduleCore, ctAmount);
+        IERC20(assetPair.ct).safeIncreaseAllowance(_moduleCore, ctAmount);
 
         IPSMcore psm = IPSMcore(_moduleCore);
 
