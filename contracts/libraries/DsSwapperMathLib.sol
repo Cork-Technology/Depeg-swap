@@ -85,9 +85,8 @@ library SwapperMathLibrary {
         // since generally x < y
         amount = sqrtTerm - SignedMath.abs(term1);
 
-        
         amount = amount * 1e18 / (2 * r);
-        
+
         borrowed = (r * (amount - e)) / 1e18;
     }
 
