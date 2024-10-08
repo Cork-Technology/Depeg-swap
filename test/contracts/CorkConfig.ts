@@ -403,7 +403,7 @@ describe("CorkConfig", function () {
       ).to.be.rejectedWith("PSMWithdrawalPaused()");
 
       await expect(
-        fixture.moduleCore.write.depositLv([fixture.Id, parseEther("2")])
+        fixture.moduleCore.write.depositLv([fixture.Id, parseEther("2"), 0n, 0n])
       ).to.be.rejectedWith("LVDepositPaused()");
 
       await expect(

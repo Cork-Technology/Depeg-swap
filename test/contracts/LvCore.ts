@@ -75,16 +75,24 @@ describe("LvCore", function () {
   }
 
   async function pauseAllPools() {
-    await corkConfig.write.updatePoolsStatus([Id, true, true, true, true, true], {
-      account: defaultSigner.account,
-    });
+    await corkConfig.write.updatePoolsStatus(
+      [Id, true, true, true, true, true],
+      {
+        account: defaultSigner.account,
+      }
+    );
   }
 
   describe("depositLv", function () {
     it("depositLv should work correctly", async function () {
       await issueNewSwapAssets(helper.expiry(1000000));
 
-      const result = await moduleCore.write.depositLv([Id, depositAmount]);
+      const result = await moduleCore.write.depositLv([
+        Id,
+        depositAmount,
+        0n,
+        0n,
+      ]);
 
       expect(result).to.be.ok;
 
@@ -107,7 +115,7 @@ describe("LvCore", function () {
     it("Revert depositLv when deposits paused", async function () {
       await pauseAllPools();
       await expect(
-        moduleCore.write.depositLv([Id, depositAmount])
+        moduleCore.write.depositLv([Id, depositAmount, 0n, 0n])
       ).to.be.rejectedWith("LVDepositPaused()");
     });
   });
@@ -115,16 +123,16 @@ describe("LvCore", function () {
   it("revert when depositing 0", async function () {
     await issueNewSwapAssets(helper.expiry(1000000));
 
-    await expect(moduleCore.write.depositLv([Id, 0n])).to.be.rejectedWith(
-      "ZeroDeposit()"
-    );
+    await expect(
+      moduleCore.write.depositLv([Id, 0n, 0n, 0n])
+    ).to.be.rejectedWith("ZeroDeposit()");
   });
 
   describe("previewLvDeposit", function () {
     it("previewLvDeposit should work correctly", async function () {
       await issueNewSwapAssets(helper.expiry(1000000));
 
-      const result = await moduleCore.read.previewLvDeposit([
+      const [result] = await moduleCore.read.previewLvDeposit([
         Id,
         depositAmount,
       ]);
@@ -142,7 +150,7 @@ describe("LvCore", function () {
   describe("redeemEarlyLv", function () {
     it("should redeem early : Permit", async function () {
       const { Id } = await issueNewSwapAssets(expiry);
-      await moduleCore.write.depositLv([Id, depositAmount]);
+      await moduleCore.write.depositLv([Id, depositAmount, 0n, 0n]);
       const msgPermit = await helper.permit({
         amount: redeemAmount,
         deadline,
@@ -211,7 +219,7 @@ describe("LvCore", function () {
     it("should redeem early : Approval", async function () {
       const { Id } = await issueNewSwapAssets(expiry);
 
-      await moduleCore.write.depositLv([Id, depositAmount]);
+      await moduleCore.write.depositLv([Id, depositAmount, 0n, 0n]);
       await fixture.lv.write.approve([moduleCore.address, depositAmount]);
 
       const [preview, ,] = await moduleCore.read.previewRedeemEarlyLv([
@@ -293,7 +301,7 @@ describe("LvCore", function () {
   it("revert redeem early when slippage to high ", async function () {
     const { Id } = await issueNewSwapAssets(expiry);
 
-    await moduleCore.write.depositLv([Id, depositAmount]);
+    await moduleCore.write.depositLv([Id, depositAmount, 0n, 0n]);
     await fixture.lv.write.approve([moduleCore.address, depositAmount]);
     const [preview, ,] = await moduleCore.read.previewRedeemEarlyLv([
       Id,
@@ -315,7 +323,7 @@ describe("LvCore", function () {
   it("should redeem early(cannot withdraw early if there's only 1 RA left in the pool)", async function () {
     const { Id } = await issueNewSwapAssets(expiry);
 
-    await moduleCore.write.depositLv([Id, depositAmount]);
+    await moduleCore.write.depositLv([Id, depositAmount, 0n, 0n]);
     await fixture.lv.write.approve([moduleCore.address, depositAmount]);
     const [preview, ,] = await moduleCore.read.previewRedeemEarlyLv([
       Id,
@@ -362,7 +370,7 @@ describe("LvCore", function () {
     it("should return correct preview early redeem", async function () {
       const { Id } = await issueNewSwapAssets(expiry);
 
-      await moduleCore.write.depositLv([Id, depositAmount]);
+      await moduleCore.write.depositLv([Id, depositAmount, 0n, 0n]);
       const [rcv, fee, precentage] = await moduleCore.read.previewRedeemEarlyLv(
         [Id, redeemAmount]
       );
@@ -409,7 +417,7 @@ describe("LvCore", function () {
 
     await expect(
       moduleCore.write.issueNewDs(
-        [Id, BigInt(expiry), parseEther("1"), parseEther("1"), 0n, 0n],
+        [Id, BigInt(expiry), parseEther("1"), parseEther("1"), 0n, 0n, 0n],
         {
           account: defaultSigner.account,
         }

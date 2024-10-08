@@ -135,15 +135,13 @@ abstract contract PsmCore is IPSMcore, ModuleState, Context {
         returns (uint256 received, uint256 _exchangeRate, uint256 fee)
     {
         State storage state = states[id];
-        // gas savings
-        uint256 feePrecentage = state.psm.psmBaseRedemptionFeePrecentage;
 
         (received, _exchangeRate, fee) =
-            state.redeemWithDs(redeemer, amount, dsId, rawDsPermitSig, deadline, feePrecentage);
+            state.redeemWithDs(redeemer, amount, dsId, rawDsPermitSig, deadline);
 
         VaultLibrary.provideLiquidityWithFee(state, fee, getRouterCore(), getAmmRouter());
 
-        emit DsRedeemed(id, dsId, redeemer, amount, received, _exchangeRate, psmBaseRedemptionFeePrecentage, fee);
+        emit DsRedeemed(id, dsId, redeemer, amount, received, _exchangeRate, state.psm.psmBaseRedemptionFeePrecentage, fee);
     }
 
     function redeemRaWithDs(Id id, uint256 dsId, uint256 amount)
@@ -155,14 +153,12 @@ abstract contract PsmCore is IPSMcore, ModuleState, Context {
         returns (uint256 received, uint256 _exchangeRate, uint256 fee)
     {
         State storage state = states[id];
-        // gas savings
-        uint256 feePrecentage = state.psm.psmBaseRedemptionFeePrecentage;
 
-        (received, _exchangeRate, fee) = state.redeemWithDs(_msgSender(), amount, dsId, bytes(""), 0, feePrecentage);
+        (received, _exchangeRate, fee) = state.redeemWithDs(_msgSender(), amount, dsId, bytes(""), 0);
 
         VaultLibrary.provideLiquidityWithFee(state, fee, getRouterCore(), getAmmRouter());
 
-        emit DsRedeemed(id, dsId, _msgSender(), amount, received, _exchangeRate, feePrecentage, fee);
+        emit DsRedeemed(id, dsId, _msgSender(), amount, received, _exchangeRate, state.psm.psmBaseRedemptionFeePrecentage, fee);
     }
 
     /**

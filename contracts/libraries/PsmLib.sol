@@ -582,8 +582,7 @@ library PsmLibrary {
         uint256 amount,
         uint256 dsId,
         bytes memory rawDsPermitSig,
-        uint256 deadline,
-        uint256 feePrecentage
+        uint256 deadline
     ) external returns (uint256 received, uint256 _exchangeRate, uint256 fee) {
         DepegSwap storage ds = self.ds[dsId];
         Guard.safeBeforeExpired(ds);
@@ -591,7 +590,7 @@ library PsmLibrary {
             DepegSwapLibrary.permit(ds._address, rawDsPermitSig, owner, address(this), amount, deadline);
         }
         _redeemDs(self.psm.balances, amount);
-        (received, _exchangeRate, fee) = _afterRedeemWithDs(self, ds, owner, amount, feePrecentage);
+        (received, _exchangeRate, fee) = _afterRedeemWithDs(self, ds, owner, amount, self.psm.psmBaseRedemptionFeePrecentage);
     }
 
     /// @notice simulate a ds redeem.
