@@ -55,16 +55,10 @@ library DsFlashSwaplibrary {
 
     uint256 public constant FIRST_ISSUANCE = 1;
 
-    function onNewIssuance(
-        ReserveState storage self,
-        uint256 dsId,
-        address ds,
-        address pair,
-        uint256 initialReserve,
-        address ra,
-        address ct
-    ) internal {
-        self.ds[dsId] = AssetPair(Asset(ra), Asset(ct), Asset(ds), IUniswapV2Pair(pair), initialReserve, 0);
+    function onNewIssuance(ReserveState storage self, uint256 dsId, address ds, address pair, address ra, address ct)
+        internal
+    {
+        self.ds[dsId] = AssetPair(Asset(ra), Asset(ct), Asset(ds), IUniswapV2Pair(pair), 0, 0);
 
         self.reserveSellPressurePrecentage = dsId == FIRST_ISSUANCE
             ? INITIAL_RESERVE_SELL_PRESSURE_PRECENTAGE

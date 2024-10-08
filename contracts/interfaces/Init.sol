@@ -34,7 +34,8 @@ interface Initialize {
         uint256 repurchaseFeePrecentage,
         uint256 decayDiscountRateInDays,
         // won't have effect on first issuance
-        uint256 rolloverPeriodInblocks
+        uint256 rolloverPeriodInblocks,
+        uint256 ammLiquidationDeadline
     ) external;
 
     /**

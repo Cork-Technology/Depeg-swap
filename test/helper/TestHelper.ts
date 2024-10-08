@@ -226,7 +226,7 @@ export async function deployModuleCore(
   ]);
 
   await dsFlashSwapRouter.contract.write.initialize([
-    dsFlashSwapRouter.contract.address
+    dsFlashSwapRouter.contract.address,
   ]);
   await dsFlashSwapRouter.contract.write.setModuleCore([contract.address]);
   // await dsFlashSwapRouter.contract.write.transferOwnership([contract.address]);
@@ -309,7 +309,15 @@ export async function issueNewSwapAssets(arg: IssueNewSwapAssetsArg) {
 
   const configContract = await hre.viem.getContractAt("CorkConfig", arg.config);
   await configContract.write.issueNewDs(
-    [Id, BigInt(arg.expiry), rate, repurchaseFeePercent, parseEther("1"), 10n],
+    [
+      Id,
+      BigInt(arg.expiry),
+      rate,
+      repurchaseFeePercent,
+      parseEther("1"),
+      10n,
+      BigInt(expiry(1000000)),
+    ],
     {
       account: defaultSigner.account,
     }

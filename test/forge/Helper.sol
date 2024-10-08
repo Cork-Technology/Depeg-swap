@@ -23,6 +23,8 @@ abstract contract Helper is Test, SigUtils {
     TestFlashSwapRouter internal flashSwapRouter;
     DummyWETH internal weth = new DummyWETH();
 
+    Id defaultCurrencyId;
+
     // 1% base redemption fee
     uint256 internal DEFAULT_BASE_REDEMPTION_FEE = 1 ether;
 
@@ -101,7 +103,13 @@ abstract contract Helper is Test, SigUtils {
         uint256 rolloverPeriodInblocks
     ) internal {
         corkConfig.issueNewDs(
-            id, expiryInSeconds, exchangeRates, repurchaseFeePrecentage, decayDiscountRateInDays, rolloverPeriodInblocks
+            id,
+            expiryInSeconds,
+            exchangeRates,
+            repurchaseFeePrecentage,
+            decayDiscountRateInDays,
+            rolloverPeriodInblocks,
+            block.timestamp + 10 seconds
         );
     }
 
@@ -128,6 +136,8 @@ abstract contract Helper is Test, SigUtils {
 
         Pair memory _id = PairLibrary.initalize(address(pa), address(ra));
         id = PairLibrary.toId(_id);
+
+        defaultCurrencyId = id;
 
         initializeNewModuleCore(
             address(pa), address(ra), DEFAULT_LV_FEE, defaultInitialDsPrice(), DEFAULT_BASE_REDEMPTION_FEE
@@ -157,6 +167,9 @@ abstract contract Helper is Test, SigUtils {
 
         Pair memory _id = PairLibrary.initalize(address(pa), address(ra));
         id = PairLibrary.toId(_id);
+
+                defaultCurrencyId = id;
+
 
         initializeNewModuleCore(address(pa), address(ra), DEFAULT_LV_FEE, defaultInitialDsPrice(), baseRedemptionFee);
         issueNewDs(
@@ -217,7 +230,7 @@ abstract contract Helper is Test, SigUtils {
         );
     }
 
-    function deployModuleCore() internal {
+   function deployModuleCore() internal {
         deployConfig();
         deployFlashSwapRouter();
         deployAssetFactory();

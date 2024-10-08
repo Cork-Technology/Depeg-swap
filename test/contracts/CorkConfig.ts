@@ -178,6 +178,7 @@ describe("CorkConfig", function () {
             parseEther("5"),
             parseEther("1"),
             10n,
+            BigInt(helper.expiry(1000000)),
           ],
           {
             account: defaultSigner.account,
@@ -200,6 +201,7 @@ describe("CorkConfig", function () {
             parseEther("10"),
             parseEther("1"),
             10n,
+            BigInt(helper.expiry(1000000)),
           ],
           {
             account: secondSigner.account,
@@ -217,6 +219,7 @@ describe("CorkConfig", function () {
           parseEther("5.00000001"),
           parseEther("1"),
           10n,
+          BigInt(helper.expiry(1000000)),
         ])
       ).to.be.rejectedWith("InvalidFees()");
     });
@@ -231,6 +234,7 @@ describe("CorkConfig", function () {
             parseEther("10"),
             parseEther("1"),
             10n,
+            BigInt(helper.expiry(1000000)),
           ],
           {
             account: secondSigner.account,
@@ -399,7 +403,7 @@ describe("CorkConfig", function () {
       ).to.be.rejectedWith("PSMWithdrawalPaused()");
 
       await expect(
-        fixture.moduleCore.write.depositLv([fixture.Id, parseEther("2")])
+        fixture.moduleCore.write.depositLv([fixture.Id, parseEther("2"), 0n, 0n])
       ).to.be.rejectedWith("LVDepositPaused()");
 
       await expect(
@@ -412,13 +416,7 @@ describe("CorkConfig", function () {
           defaultSigner.account.address,
           parseEther("1"),
           preview,
-        ])
-      ).to.be.rejectedWith("LVWithdrawalPaused()");
-
-      await expect(
-        fixture.moduleCore.read.previewRedeemEarlyLv([
-          fixture.Id,
-          parseEther("1"),
+          BigInt(helper.expiry(1000000)),
         ])
       ).to.be.rejectedWith("LVWithdrawalPaused()");
     });

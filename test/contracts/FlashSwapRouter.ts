@@ -66,7 +66,7 @@ describe("FlashSwapRouter", function () {
       pa: fixture.pa.address,
     });
 
-    await fixture.moduleCore.write.depositLv([pool.Id, depositAmount]);
+    await fixture.moduleCore.write.depositLv([pool.Id, depositAmount, 0n, 0n]);
   });
 
   describe("onNewIssuance", function () {
@@ -77,7 +77,6 @@ describe("FlashSwapRouter", function () {
           pool.dsId!,
           zeroAddress,
           zeroAddress,
-          depositAmount,
           zeroAddress,
           zeroAddress,
         ])

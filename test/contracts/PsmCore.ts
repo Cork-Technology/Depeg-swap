@@ -124,6 +124,7 @@ describe("PSM core", function () {
         parseEther("5"),
         parseEther("1"),
         10n,
+        BigInt(helper.expiry(1000000)),
       ]);
 
       const events = await moduleCore.getEvents.Issued({
@@ -469,14 +470,13 @@ describe("PSM core", function () {
         depositor: defaultSigner.account.address,
       });
 
-      const raReceived = await fixture.moduleCore.read.previewRedeemRaWithDs([
+      const [raReceived] = await fixture.moduleCore.read.previewRedeemRaWithDs([
         fixture.Id,
         dsId!,
         expectedAMount,
       ]);
       expect(raReceived).to.equal(parseEther("9.5"));
     });
-
   });
 
   describe("cancel position", function () {
@@ -719,7 +719,7 @@ describe("PSM core", function () {
           fixture.Id,
           parseEther("2"),
         ]);
-      
+
       expect(received).to.equal(parseEther("0.95"));
       expect(feePrecentage).to.equal(parseEther("5"));
       expect(fee).to.equal(parseEther("0.1"));
@@ -950,6 +950,7 @@ describe("PSM core", function () {
         parseEther("5"),
         parseEther("1"),
         10n,
+        BigInt(helper.expiry(1000000)),
       ]);
 
       const events = await fixture.moduleCore.getEvents.Issued({
@@ -957,7 +958,7 @@ describe("PSM core", function () {
         expiry: BigInt(expiry),
       });
 
-      await fixture.moduleCore.write.depositLv([Id, parseEther("10")]);
+      await fixture.moduleCore.write.depositLv([Id, parseEther("10"), 0n, 0n]);
 
       await fixture.lv.write.approve([
         fixture.moduleCore.address,
