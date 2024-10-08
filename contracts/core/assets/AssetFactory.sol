@@ -29,7 +29,7 @@ contract AssetFactory is IAssetFactory, OwnableUpgradeable, UUPSUpgradeable {
 
     /**
      * @notice for safety checks in psm core, also act as kind of like a registry
-     * @param _asset the address of Asset contract
+     * @param asset the address of Asset contract
      */
     function isDeployed(address asset) external view override returns (bool) {
         return (deployed[asset] == 1 ? true : false);
