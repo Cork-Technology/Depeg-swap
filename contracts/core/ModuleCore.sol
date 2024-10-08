@@ -20,6 +20,9 @@ import {ContextUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/Cont
  * @notice Modulecore contract for integrating abstract modules like PSM and Vault contracts
  */
 contract ModuleCore is OwnableUpgradeable, UUPSUpgradeable, PsmCore, Initialize, VaultCore {
+    /// @notice __gap variable to prevent storage collisions
+    uint256[49] __gap;
+
     using PsmLibrary for State;
     using PairLibrary for Pair;
 

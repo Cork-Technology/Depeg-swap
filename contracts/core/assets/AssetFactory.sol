@@ -27,6 +27,9 @@ contract AssetFactory is IAssetFactory, OwnableUpgradeable, UUPSUpgradeable {
     mapping(Id => Pair[]) internal swapAssets;
     mapping(address => bool) internal deployed;
 
+    /// @notice __gap variable to prevent storage collisions
+    uint256[49] __gap;
+
     /**
      * @notice for safety checks in psm core, also act as kind of like a registry
      * @param asset the address of Asset contract
@@ -45,7 +48,7 @@ contract AssetFactory is IAssetFactory, OwnableUpgradeable, UUPSUpgradeable {
     function getLv(address ra, address pa) external view override returns (address) {
         return lvs[Pair(pa, ra).toId()];
     }
-    
+
     /**
      * @notice initializes asset factory contract and setup owner
      */
@@ -180,7 +183,7 @@ contract AssetFactory is IAssetFactory, OwnableUpgradeable, UUPSUpgradeable {
         override
         onlyOwner
         returns (address lv)
-    {
+        {
         lv = address(
             new Asset(LV_PREFIX, string(abi.encodePacked(Asset(ra).name(), "-", Asset(pa).name())), owner, 0, 0)
         );
