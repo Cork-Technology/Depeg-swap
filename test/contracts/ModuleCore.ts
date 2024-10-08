@@ -75,53 +75,7 @@ describe("Module Core", function () {
     });
   }
 
-  it("should deploy", async function () {
-    const mathLib = await hre.viem.deployContract("MathHelper");
-    const psm = await hre.viem.deployContract("PsmLibrary", [], {
-      libraries: {
-        MathHelper: mathLib.address,
-      },
-    });
-    const vault = await hre.viem.deployContract("VaultLibrary", [], {
-      libraries: {
-        MathHelper: mathLib.address,
-      },
-    });
-
-    const dsFlashSwapRouter = await helper.deployFlashSwapRouter(
-      mathLib.address
-    );
-    const univ2Factory = await helper.deployUniV2Factory(
-      dsFlashSwapRouter.contract.address
-    );
-    const weth = await helper.deployWeth();
-    const univ2Router = await helper.deployUniV2Router(
-      weth.contract.address,
-      univ2Factory,
-      dsFlashSwapRouter.contract.address
-    );
-    const swapAssetFactory = await helper.deployAssetFactory();
-    const config = await helper.deployCorkConfig();
-
-    const moduleCore = await hre.viem.deployContract("ModuleCore", [], {
-      client: {
-        wallet: defaultSigner,
-      },
-      libraries: {
-        PsmLibrary: psm.address,
-        VaultLibrary: vault.address,
-      },
-    });
-    moduleCore.write.initialize([
-      swapAssetFactory.contract.address,
-      univ2Factory,
-      dsFlashSwapRouter.contract.address,
-      univ2Router,
-      config.contract.address,
-    ]);
-    expect(moduleCore).to.be.ok;
-  });
-
+  
   it("getId should work correctly", async function () {
     let Id = await moduleCore.read.getId([
       fixture.pa.address,
