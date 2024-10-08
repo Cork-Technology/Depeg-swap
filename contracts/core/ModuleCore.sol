@@ -58,7 +58,11 @@ contract ModuleCore is OwnableUpgradeable, UUPSUpgradeable, PsmCore, Initialize,
         return PairLibrary.initalize(pa, ra).toId();
     }
 
-    function initializeModuleCore(address pa, address ra, uint256 lvFee, uint256 initialDsPrice) external override onlyConfig {
+    function initializeModuleCore(address pa, address ra, uint256 lvFee, uint256 initialDsPrice)
+        external
+        override
+        onlyConfig
+    {
         Pair memory key = PairLibrary.initalize(pa, ra);
         Id id = key.toId();
 
@@ -148,15 +152,28 @@ contract ModuleCore is OwnableUpgradeable, UUPSUpgradeable, PsmCore, Initialize,
         Id id,
         bool isPSMDepositPaused,
         bool isPSMWithdrawalPaused,
+        bool isPSMRepurchasePaused,
         bool isLVDepositPaused,
         bool isLVWithdrawalPaused
     ) external onlyConfig {
         State storage state = states[id];
         PsmLibrary.updatePoolsStatus(
-            state, isPSMDepositPaused, isPSMWithdrawalPaused, isLVDepositPaused, isLVWithdrawalPaused
+            state,
+            isPSMDepositPaused,
+            isPSMWithdrawalPaused,
+            isPSMRepurchasePaused,
+            isLVDepositPaused,
+            isLVWithdrawalPaused
         );
 
-        emit PoolsStatusUpdated(id, isPSMDepositPaused, isPSMWithdrawalPaused, isLVDepositPaused, isLVWithdrawalPaused);
+        emit PoolsStatusUpdated(
+            id,
+            isPSMDepositPaused,
+            isPSMWithdrawalPaused,
+            isPSMRepurchasePaused,
+            isLVDepositPaused,
+            isLVWithdrawalPaused
+        );
     }
 
     /**

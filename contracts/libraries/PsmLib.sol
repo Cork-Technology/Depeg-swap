@@ -455,11 +455,13 @@ library PsmLibrary {
         State storage self,
         bool isPSMDepositPaused,
         bool isPSMWithdrawalPaused,
+        bool isPSMRepurchasePaused,
         bool isLVDepositPaused,
         bool isLVWithdrawalPaused
     ) external {
         self.psm.isDepositPaused = isPSMDepositPaused;
         self.psm.isWithdrawalPaused = isPSMWithdrawalPaused;
+        self.psm.isRepurchasePaused = isPSMRepurchasePaused;
         self.vault.config.isDepositPaused = isLVDepositPaused;
         self.vault.config.isWithdrawalPaused = isLVWithdrawalPaused;
     }

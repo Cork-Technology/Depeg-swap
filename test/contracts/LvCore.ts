@@ -75,7 +75,7 @@ describe("LvCore", function () {
   }
 
   async function pauseAllPools() {
-    await corkConfig.write.updatePoolsStatus([Id, true, true, true, true], {
+    await corkConfig.write.updatePoolsStatus([Id, true, true, true, true, true], {
       account: defaultSigner.account,
     });
   }
