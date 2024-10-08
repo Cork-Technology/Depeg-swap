@@ -83,7 +83,7 @@ contract AssetFactory is IAssetFactory, OwnableUpgradeable, UUPSUpgradeable {
         ra = new address[](arrLen);
         lv = new address[](arrLen);
 
-        for (uint256 i = start; i < end; i++) {
+        for (uint256 i = start; i < end; ++i) {
             Pair storage asset = pairs[i];
             uint8 _idx = SafeCast.toUint8(i - start);
 
@@ -125,7 +125,7 @@ contract AssetFactory is IAssetFactory, OwnableUpgradeable, UUPSUpgradeable {
         ct = new address[](arrLen);
         ds = new address[](arrLen);
 
-        for (uint256 i = start; i < end; i++) {
+        for (uint256 i = start; i < end; ++i) {
             ct[i - start] = _assets[i].pair0;
             ds[i - start] = _assets[i].pair1;
         }
