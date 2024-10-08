@@ -66,7 +66,7 @@ describe("FlashSwapRouter", function () {
       pa: fixture.pa.address,
     });
 
-    await fixture.moduleCore.write.depositLv([pool.Id, depositAmount]);
+    await fixture.moduleCore.write.depositLv([pool.Id, depositAmount, 0n, 0n]);
   });
 
   describe("onNewIssuance", function () {
@@ -77,7 +77,6 @@ describe("FlashSwapRouter", function () {
           pool.dsId!,
           zeroAddress,
           zeroAddress,
-          depositAmount,
           zeroAddress,
           zeroAddress,
         ])
@@ -88,7 +87,7 @@ describe("FlashSwapRouter", function () {
   describe("emptyReserve", function () {
     it("Revert emptyReserve when called by non owner", async function () {
       await expect(
-        fixture.dsFlashSwapRouter.contract.write.emptyReserve([
+        fixture.dsFlashSwapRouter.contract.write.emptyReserveLv([
           pool.Id,
           pool.dsId!,
         ])
@@ -99,7 +98,7 @@ describe("FlashSwapRouter", function () {
   describe("emptyReservePartial", function () {
     it("Revert emptyReservePartial when called by non owner", async function () {
       await expect(
-        fixture.dsFlashSwapRouter.contract.write.emptyReservePartial([
+        fixture.dsFlashSwapRouter.contract.write.emptyReservePartialLv([
           pool.Id,
           pool.dsId!,
           10n,
@@ -111,7 +110,7 @@ describe("FlashSwapRouter", function () {
   describe("addReserve", function () {
     it("Revert addReserve when called by non owner", async function () {
       await expect(
-        fixture.dsFlashSwapRouter.contract.write.emptyReservePartial([
+        fixture.dsFlashSwapRouter.contract.write.emptyReservePartialLv([
           pool.Id,
           pool.dsId!,
           10n,
@@ -194,6 +193,7 @@ describe("FlashSwapRouter", function () {
         pool.dsId!,
         dsAmount,
         BigInt(0),
+        defaultSigner.account.address,
         permitmsg,
         deadline,
       ]);
@@ -293,6 +293,7 @@ describe("FlashSwapRouter", function () {
         pool.dsId!,
         raProvided,
         BigInt(0),
+        defaultSigner.account.address,
         permitmsg,
         deadline,
       ]);
