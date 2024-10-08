@@ -459,7 +459,7 @@ library PsmLibrary {
         bool isPSMRepurchasePaused,
         bool isLVDepositPaused,
         bool isLVWithdrawalPaused
-    ) external {
+    ) external{
         self.psm.isDepositPaused = isPSMDepositPaused;
         self.psm.isWithdrawalPaused = isPSMWithdrawalPaused;
         self.psm.isRepurchasePaused = isPSMRepurchasePaused;
@@ -522,6 +522,11 @@ library PsmLibrary {
         // transfer user RA to the PSM/LV
         self.psm.balances.ra.lockFrom(amount, buyer);
 
+        // decrease the locked balance with the fee(if any), since the fee is used to provide liquidity
+        if (fee != 0) {
+            self.psm.balances.ra.decLocked(fee);
+        }
+
         // transfer user attrubuted DS + PA
         // PA
         (, address pa) = self.info.underlyingAsset();
@@ -530,8 +535,10 @@ library PsmLibrary {
         // DS
         IERC20(ds._address).safeTransfer(buyer, received);
 
-        // Provide liquidity
-        VaultLibrary.__provideLiquidityWithRatio(self, fee, flashSwapRouter, ds.ct, ammRouter);
+        if (fee != 0) {
+            // Provide liquidity with fee(if any)
+            VaultLibrary.__provideLiquidityWithRatio(self, fee, flashSwapRouter, ds.ct, ammRouter);
+        }
     }
 
     function _redeemDs(Balances storage self, uint256 amount) internal {
