@@ -215,7 +215,7 @@ library PsmLibrary {
 
         if (remainingRolloverDs != 0) {
             // mint DS to user
-            Asset(self.ds[prevDsId]._address).transfer(owner, remainingRolloverDs);
+            IERC20(self.ds[prevDsId]._address).safeTransfer(owner, remainingRolloverDs);
         }
     }
 
@@ -230,7 +230,7 @@ library PsmLibrary {
         if (self.psm.autoSell[owner]) {
             // send DS to flashswap router if auto sellf
             Asset(currentDs._address).mint(address(this), ctDsReceived);
-            Asset(currentDs._address).approve(address(flashSwapRouter), ctDsReceived);
+            IERC20(currentDs._address).safeIncreaseAllowance(address(flashSwapRouter), ctDsReceived);
 
             flashSwapRouter.addReservePsm(self.info.toId(), self.globalAssetIdx, ctDsReceived);
         } else {
@@ -528,7 +528,7 @@ library PsmLibrary {
         IERC20(pa).safeTransfer(buyer, received);
 
         // DS
-        IERC20(ds._address).transfer(buyer, received);
+        IERC20(ds._address).safeTransfer(buyer, received);
 
         // Provide liquidity
         VaultLibrary.__provideLiquidityWithRatio(self, fee, flashSwapRouter, ds.ct, ammRouter);
@@ -546,7 +546,7 @@ library PsmLibrary {
         uint256 amount,
         uint256 feePrecentage
     ) internal returns (uint256 received, uint256 _exchangeRate, uint256 fee) {
-        IERC20(ds._address).transferFrom(owner, address(this), amount);
+        IERC20(ds._address).safeTransferFrom(owner, address(this), amount);
 
         _exchangeRate = ds.exchangeRate();
         received = MathHelper.calculateRedeemAmountWithExchangeRate(amount, _exchangeRate);

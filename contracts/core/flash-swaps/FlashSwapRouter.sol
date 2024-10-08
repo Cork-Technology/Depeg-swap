@@ -632,7 +632,7 @@ contract RouterState is
         uint256 dsAttributed
     ) internal {
         AssetPair storage assetPair = self.ds[dsId];
-        assetPair.ra.approve(_moduleCore, dsAttributed);
+        IERC20(assetPair.ra).safeIncreaseAllowance(_moduleCore, dsAttributed);
 
         IPSMcore psm = IPSMcore(_moduleCore);
         psm.depositPsm(reserveId, dsAttributed);
@@ -656,8 +656,8 @@ contract RouterState is
         uint256 raAttributed
     ) internal {
         AssetPair storage assetPair = self.ds[dsId];
-        assetPair.ds.approve(_moduleCore, ctAmount);
-        assetPair.ct.approve(_moduleCore, ctAmount);
+        IERC20(assetPair.ds).safeIncreaseAllowance(_moduleCore, ctAmount);
+        IERC20(assetPair.ct).safeIncreaseAllowance(_moduleCore, ctAmount);
 
         IPSMcore psm = IPSMcore(_moduleCore);
 
