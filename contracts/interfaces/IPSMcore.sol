@@ -132,7 +132,7 @@ interface IPSMcore is IRepurchase {
     event EarlyRedemptionFeeRateUpdated(Id indexed Id, uint256 earlyRedemptionFeeRate);
 
     /// @notice Emmitted when psmBaseRedemptionFeePrecentage is updated
-    /// @param id the PSM id 
+    /// @param id the PSM id
     /// @param psmBaseRedemptionFeePrecentage the new psmBaseRedemptionFeePrecentage
     event PsmBaseRedemptionFeePrecentageUpdated(Id indexed id, uint256 indexed psmBaseRedemptionFeePrecentage);
 
@@ -193,7 +193,10 @@ interface IPSMcore is IRepurchase {
      * @param dsId The DS id
      * @param amount The amount of DS + PA to redeem
      */
-    function previewRedeemRaWithDs(Id id, uint256 dsId, uint256 amount) external view returns (uint256 assets);
+    function previewRedeemRaWithDs(Id id, uint256 dsId, uint256 amount)
+        external
+        view
+        returns (uint256 assets, uint256 fee, uint256 feePercentage);
 
     /**
      * @notice redeem RA + PA with CT at expiry
