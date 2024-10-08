@@ -139,6 +139,85 @@ describe("Module Core", function () {
     });
   });
 
+  describe("initialize", function () {
+    it("initialize should revert when passed Zero Addresses", async function () {
+      const mathLib = await hre.viem.deployContract("MathHelper");
+      const psm = await hre.viem.deployContract("PsmLibrary", [], {
+        libraries: {
+          MathHelper: mathLib.address,
+        },
+      });
+      const vault = await hre.viem.deployContract("VaultLibrary", [], {
+        libraries: {
+          MathHelper: mathLib.address,
+        },
+      });
+      const moduleCore1 = await hre.viem.deployContract("ModuleCore", [], {
+        client: {
+          wallet: defaultSigner,
+        },
+        libraries: {
+          VaultLibrary: vault.address,
+          PsmLibrary: psm.address,
+        },
+      });
+      await expect(
+        moduleCore1.write.initialize([
+          zeroAddress,
+          defaultSigner.account.address,
+          defaultSigner.account.address,
+          defaultSigner.account.address,
+          defaultSigner.account.address,
+          helper.DEFAULT_BASE_REDEMPTION_PRECENTAGE,
+        ])
+      ).to.be.rejectedWith("ZeroAddress()");
+
+      await expect(
+        moduleCore1.write.initialize([
+          defaultSigner.account.address,
+          zeroAddress,
+          defaultSigner.account.address,
+          defaultSigner.account.address,
+          defaultSigner.account.address,
+          helper.DEFAULT_BASE_REDEMPTION_PRECENTAGE,
+        ])
+      ).to.be.rejectedWith("ZeroAddress()");
+
+      await expect(
+        moduleCore1.write.initialize([
+          defaultSigner.account.address,
+          defaultSigner.account.address,
+          zeroAddress,
+          defaultSigner.account.address,
+          defaultSigner.account.address,
+          helper.DEFAULT_BASE_REDEMPTION_PRECENTAGE,
+        ])
+      ).to.be.rejectedWith("ZeroAddress()");
+
+      await expect(
+        moduleCore1.write.initialize([
+          defaultSigner.account.address,
+          defaultSigner.account.address,
+          defaultSigner.account.address,
+          zeroAddress,
+          defaultSigner.account.address,
+          helper.DEFAULT_BASE_REDEMPTION_PRECENTAGE,
+        ])
+      ).to.be.rejectedWith("ZeroAddress()");
+
+      await expect(
+        moduleCore1.write.initialize([
+          defaultSigner.account.address,
+          defaultSigner.account.address,
+          defaultSigner.account.address,
+          defaultSigner.account.address,
+          zeroAddress,
+          helper.DEFAULT_BASE_REDEMPTION_PRECENTAGE,
+        ])
+      ).to.be.rejectedWith("ZeroAddress()");
+    });
+  });
+
   describe("initializeModuleCore", function () {
     it("initializeModuleCore should work correctly", async function () {
       const { pa, ra } = await helper.backedAssets();
