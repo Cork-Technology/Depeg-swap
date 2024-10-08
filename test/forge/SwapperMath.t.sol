@@ -146,26 +146,4 @@ contract SwapMathTest is Test {
         // repayment amount should be less than what we got from PSM
         vm.assertTrue(repaymentAmount <= amountToSell * exchangeRates / 1e18);
     }
-
-    function test_buyDs() external {
-        uint256 ctReserve = 10000 ether;
-        console.log("ctReserve                                                  :", ctReserve);
-        uint256 raReserve = 9000 ether;
-        console.log("raReserve                                                  :", raReserve);
-
-        uint256 amountToBuy = 1 ether;
-        console.log("ra Provided                                                :", amountToBuy);
-        uint256 exchangeRates = 1 ether;
-        console.log("exchangeRates                                              :", exchangeRates, "// basically 1");
-
-        (uint256 dsReceived, uint256 borrowed) =
-            SwapperMathLibrary.getAmountOutBuyDs(exchangeRates, raReserve, ctReserve, amountToBuy);
-
-        console.log("total ds received (amount + borrowed from AMM)             :", borrowed + amountToBuy);
-        console.log("borrowed                                                   :", borrowed);
-
-        uint256 amountIn = MinimalUniswapV2Library.getAmountIn(borrowed, ctReserve, raReserve);
-
-        console.log("expected by uniswap                                        :", amountIn);
-    }
-}
+   }

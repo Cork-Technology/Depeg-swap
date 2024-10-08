@@ -9,7 +9,6 @@ import "./../../contracts/interfaces/IPSMcore.sol";
 import "./../../contracts/interfaces/IDsFlashSwapRouter.sol";
 import "forge-std/console.sol";
 
-
 contract FlashSwapTest is Helper {
     DummyWETH internal ra;
     DummyWETH internal pa;
@@ -23,11 +22,11 @@ contract FlashSwapTest is Helper {
     address public ct;
     address public ds;
 
-    function defaultInitialDsPrice() internal pure override returns (uint256) {
+    function defaultInitialDsPrice() internal pure virtual override returns (uint256) {
         return MERRYL_LYNCH_DEFAULT_INITIAL_DS_PRICE;
     }
 
-    function setUp() public {
+    function setUp() public virtual {
         vm.startPrank(DEFAULT_ADDRESS);
 
         deployModuleCore();
@@ -68,7 +67,7 @@ contract FlashSwapTest is Helper {
         fetchProtocolGeneralInfo();
     }
 
-    function test_buyBack() external {
+    function test_buyBack() public virtual {
         uint256 prevDsId = dsId;
         uint256 amountOutMin = flashSwapRouter.previewSwapRaforDs(currencyId, dsId, 1 ether);
 
@@ -106,7 +105,7 @@ contract FlashSwapTest is Helper {
         vm.assertEq(raBalanceAfter, raBalanceBefore + amountOutSell);
 
         // add more liquidity to the router and AMM
-        moduleCore.depositLv(currencyId, 10_000 ether,0,0);
+        moduleCore.depositLv(currencyId, 10_000 ether, 0, 0);
 
         // now if buy, it should sell from reserves
         lvReserveBefore = flashSwapRouter.getLvReserve(currencyId, dsId);

@@ -149,7 +149,7 @@ abstract contract Helper is Test, SigUtils {
         issueNewDs(
             id,
             expiryInSeconds,
-            DEFAULT_EXCHANGE_RATES,
+            defaultExchangeRate(),
             DEFAULT_REPURCHASE_FEE,
             DEFAULT_DECAY_DISCOUNT_RATE,
             DEFAULT_ROLLOVER_PERIOD

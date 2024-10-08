@@ -4,7 +4,6 @@ import {UQ112x112} from "./UQ112x112.sol";
 import {SignedMath} from "@openzeppelin/contracts/utils/math/SignedMath.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
-import "forge-std/console.sol";
 
 /**
  * @title SwapperMathLibrary Contract
@@ -60,13 +59,13 @@ library SwapperMathLibrary {
      *  @param x RA reserve
      *  @param y CT reserve
      *  @param e Amount of RA user provided
-     *  @return amount of DS user will receive
      *  @return borrowed of RA user need to borrow from the AMM
+     *  @return amount of DS user will receive
      */
     function getAmountOutBuyDs(uint256 r, uint256 x, uint256 y, uint256 e)
         external
         pure
-        returns (uint256 amount, uint256 borrowed)
+        returns (uint256 borrowed, uint256 amount)
     {
         // Step 1: Calculate (x - r * y + E), with possibility that (x - r * y) is negative
         int256 term1 = int256(x) - int256(r * y / 1e18); // Convert to int256 for possible negative
@@ -86,11 +85,10 @@ library SwapperMathLibrary {
         // since generally x < y
         amount = sqrtTerm - SignedMath.abs(term1);
 
+        
         amount = amount * 1e18 / (2 * r);
-        borrowed = (r * amount - e) / 1e18;
-
-        // pay 1 wei more to account for rounding errors
-        amount -= 1;
+        
+        borrowed = (r * (amount - e)) / 1e18;
     }
 
     function calculatePercentage(uint256 amount, uint256 percentage) private pure returns (uint256 result) {
