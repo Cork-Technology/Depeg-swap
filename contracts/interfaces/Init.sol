@@ -16,7 +16,7 @@ interface Initialize {
      * @param initialDsPrice initial target price of DS, will be used to derive optimal ratio to provide AMM from liquidity vault, make sure it has 18 decimals(e.g 0.1 = 1e17)
      *
      */
-    function initializeModuleCore(address pa, address ra, uint256 lvFee, uint256 initialDsPrice) external;
+    function initializeModuleCore(address pa, address ra, uint256 lvFee, uint256 initialDsPrice, uint256 _psmBaseRedemptionFeePercentage) external;
 
     /**
      * @notice issue a new DS, can only be done after the previous DS has expired(if any). will deploy CT, DS and initialize new AMM and increment ds Id
@@ -34,7 +34,8 @@ interface Initialize {
         uint256 repurchaseFeePercentage,
         uint256 decayDiscountRateInDays,
         // won't have effect on first issuance
-        uint256 rolloverPeriodInblocks
+        uint256 rolloverPeriodInblocks,
+        uint256 ammLiquidationDeadline
     ) external;
 
     /**
@@ -56,6 +57,7 @@ interface Initialize {
      * @param id id of the pair
      * @param isPSMDepositPaused set to true if you want to pause PSM deposits
      * @param isPSMWithdrawalPaused set to true if you want to pause PSM withdrawals
+     * @param isPSMRepurchasePaused set to true if you want to pause PSM repurchases
      * @param isLVDepositPaused set to true if you want to pause LV deposits
      * @param isLVWithdrawalPaused set to true if you want to pause LV withdrawals
      */
@@ -63,6 +65,7 @@ interface Initialize {
         Id id,
         bool isPSMDepositPaused,
         bool isPSMWithdrawalPaused,
+        bool isPSMRepurchasePaused,
         bool isLVDepositPaused,
         bool isLVWithdrawalPaused
     ) external;
@@ -71,5 +74,5 @@ interface Initialize {
      * @notice update PSM base redemption fee percentage
      * @param newPsmBaseRedemptionFeePercentage new value of base redemption fees, make sure it has 18 decimals(e.g 1% = 1e18)
      */
-    function updatePsmBaseRedemptionFeePercentage(uint256 newPsmBaseRedemptionFeePercentage) external;
+    function updatePsmBaseRedemptionFeePercentage(Id id,uint256 newPsmBaseRedemptionFeePercentage) external;
 }

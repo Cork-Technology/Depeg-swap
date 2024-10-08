@@ -69,8 +69,8 @@ contract CorkConfig is AccessControl, Pausable {
      * @param lvFee fees for LV
      * @param initialDsPrice initial price of DS
      */
-    function initializeModuleCore(address pa, address ra, uint256 lvFee, uint256 initialDsPrice) external onlyManager {
-        moduleCore.initializeModuleCore(pa, ra, lvFee, initialDsPrice);
+    function initializeModuleCore(address pa, address ra, uint256 lvFee, uint256 initialDsPrice ,  uint256 _psmBaseRedemptionFeePercentage) external onlyManager {
+        moduleCore.initializeModuleCore(pa, ra, lvFee, initialDsPrice ,  _psmBaseRedemptionFeePercentage);
     }
 
     /**
@@ -83,10 +83,17 @@ contract CorkConfig is AccessControl, Pausable {
         uint256 repurchaseFeePercentage,
         uint256 decayDiscountRateInDays,
         // won't have effect on first issuance
-        uint256 rolloverPeriodInblocks
+        uint256 rolloverPeriodInblocks,
+        uint256 ammLiquidationDeadline
     ) external whenNotPaused onlyManager {
         moduleCore.issueNewDs(
-            id, expiry, exchangeRates, repurchaseFeePercentage, decayDiscountRateInDays, rolloverPeriodInblocks
+            id,
+            expiry,
+            exchangeRates,
+            repurchaseFeePercentage,
+            decayDiscountRateInDays,
+            rolloverPeriodInblocks,
+            ammLiquidationDeadline
         );
     }
 
@@ -113,6 +120,7 @@ contract CorkConfig is AccessControl, Pausable {
      * @param id id of PSM
      * @param isPSMDepositPaused new value of isPSMDepositPaused
      * @param isPSMWithdrawalPaused new value of isPSMWithdrawalPaused
+     * @param isPSMRepurchasePaused new value of isPSMRepurchasePaused
      * @param isLVDepositPaused new value of isLVDepositPaused
      * @param isLVWithdrawalPaused new value of isLVWithdrawalPaused
      */
@@ -120,11 +128,17 @@ contract CorkConfig is AccessControl, Pausable {
         Id id,
         bool isPSMDepositPaused,
         bool isPSMWithdrawalPaused,
+        bool isPSMRepurchasePaused,
         bool isLVDepositPaused,
         bool isLVWithdrawalPaused
     ) external onlyManager {
         moduleCore.updatePoolsStatus(
-            id, isPSMDepositPaused, isPSMWithdrawalPaused, isLVDepositPaused, isLVWithdrawalPaused
+            id,
+            isPSMDepositPaused,
+            isPSMWithdrawalPaused,
+            isPSMRepurchasePaused,
+            isLVDepositPaused,
+            isLVWithdrawalPaused
         );
     }
 
@@ -132,8 +146,8 @@ contract CorkConfig is AccessControl, Pausable {
      * @notice Updates base redemption fee percentage
      * @param newPsmBaseRedemptionFeePercentage new value of fees, make sure it has 18 decimals(e.g 1% = 1e18)
      */
-    function updatePsmBaseRedemptionFeePercentage(uint256 newPsmBaseRedemptionFeePercentage) external onlyManager {
-        moduleCore.updatePsmBaseRedemptionFeePercentage(newPsmBaseRedemptionFeePercentage);
+    function updatePsmBaseRedemptionFeePercentage(Id id,uint256 newPsmBaseRedemptionFeePercentage) external onlyManager {
+        moduleCore.updatePsmBaseRedemptionFeePercentage(id,newPsmBaseRedemptionFeePercentage);
     }
 
     function updateFlashSwapRouterDiscountInDays(Id id, uint256 newDiscountInDays) external onlyManager {
