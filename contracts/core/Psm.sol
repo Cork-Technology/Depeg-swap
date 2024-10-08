@@ -181,10 +181,12 @@ abstract contract PsmCore is IPSMcore, ModuleState, Context {
         override
         onlyInitialized(id)
         PSMWithdrawalNotPaused(id)
-        returns (uint256 assets)
+        returns (uint256 assets, uint256 fee, uint256 feePercentage)
     {
         State storage state = states[id];
-        assets = state.previewRedeemWithDs(dsId, amount);
+        
+        feePercentage = state.psm.psmBaseRedemptionFeePrecentage;
+        (assets, fee) = state.previewRedeemWithDs(dsId, amount);
     }
 
     function redeemWithCT(Id id, uint256 dsId, uint256 amount, bytes memory rawCtPermitSig, uint256 deadline)

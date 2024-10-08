@@ -60,7 +60,7 @@ contract ModuleCore is OwnableUpgradeable, UUPSUpgradeable, PsmCore, Initialize,
         address ra,
         uint256 lvFee,
         uint256 initialDsPrice,
-        uint256 _psmBaseRedemptionFeePercentage
+        uint256 psmBaseRedemptionFeePercentage
     ) external override onlyConfig {
         Pair memory key = PairLibrary.initalize(pa, ra);
         Id id = key.toId();
@@ -75,9 +75,8 @@ contract ModuleCore is OwnableUpgradeable, UUPSUpgradeable, PsmCore, Initialize,
 
         address lv = assetsFactory.deployLv(ra, pa, address(this));
 
-        PsmLibrary.initialize(state, key);
+        PsmLibrary.initialize(state, key, psmBaseRedemptionFeePercentage);
         VaultLibrary.initialize(state.vault, lv, lvFee, ra, initialDsPrice);
-        state.psm.psmBaseRedemptionFeePrecentage = _psmBaseRedemptionFeePercentage; 
         emit InitializedModuleCore(id, pa, ra, lv);
     }
 
@@ -211,7 +210,10 @@ contract ModuleCore is OwnableUpgradeable, UUPSUpgradeable, PsmCore, Initialize,
      * @notice update value of PSMBaseRedemption fees
      * @param newPsmBaseRedemptionFeePrecentage new value of fees
      */
-    function updatePsmBaseRedemptionFeePrecentage(Id id ,uint256 newPsmBaseRedemptionFeePrecentage) external onlyConfig {
+    function updatePsmBaseRedemptionFeePrecentage(Id id, uint256 newPsmBaseRedemptionFeePrecentage)
+        external
+        onlyConfig
+    {
         if (newPsmBaseRedemptionFeePrecentage > 5 ether) {
             revert InvalidFees();
         }
