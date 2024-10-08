@@ -227,12 +227,7 @@ library DsFlashSwaplibrary {
         (uint112 raReserve, uint112 ctReserve) = getReservesSorted(assetPair);
         uint256 exchangeRates = assetPair.ds.exchangeRate();
 
-        (borrowedAmount, amountOut) = SwapperMathLibrary.getAmountOutBuyDs(
-            exchangeRates,
-            raReserve,
-            ctReserve,
-            amount
-        );
+        (borrowedAmount, amountOut) = SwapperMathLibrary.getAmountOutBuyDs(exchangeRates, raReserve, ctReserve, amount);
 
         repaymentAmount = amountOut;
     }

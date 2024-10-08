@@ -24,28 +24,29 @@ describe("SwapMath", function () {
   });
 
   it("should calculate DS received correctly", async function () {
-    //x
-    const raReserve = parseEther("1000");
     // y
-    const ctReserve = parseEther("900");
+    const ctReserve = parseEther("100000000");
+    //x
+    const raReserve = parseEther("90000000");
 
     //e
-    const raProvided = parseEther("0.1009");
+    const raProvided = parseEther("1");
 
-    const [raBorrowed, dsReturned] = await swapMath.read.getAmountOutDs([
+    const [raBorrowed, dsReturned] = await swapMath.read.getAmountOutBuyDs([
+      parseEther("1"),
       raReserve,
       ctReserve,
       raProvided,
     ]);
 
     expect(raBorrowed).to.be.closeTo(
-      helper.toEthersBigNumer("0.899"),
-      helper.toEthersBigNumer("0.001")
+      helper.toEthersBigNumer("9"),
+      helper.toEthersBigNumer("0.1")
     );
 
     expect(dsReturned).to.be.closeTo(
-      helper.toEthersBigNumer("1.00000883"),
-      helper.toEthersBigNumer("0.00000001")
+      helper.toEthersBigNumer("9.99"),
+      helper.toEthersBigNumer("0.01")
     );
   });
 
