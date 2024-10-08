@@ -453,7 +453,7 @@ contract RouterState is
         profit = profit * lvReserveUsed / amountSellFromReserve;
 
         // use the vault profit
-        (raAdded, ctAdded) = MathHelper.calculateProvideLiquidityAmountBasedOnCtPrice(profit, ratio);
+        (raAdded, ctAdded) = MathHelper.calculateProvideLiquidityAmountBasedOnCtPrice(profit, ratio, assetPair.ds.exchangeRate());
 
         raReserve += SafeCast.toUint112(raAdded);
         ctReserve += SafeCast.toUint112(ctAdded);

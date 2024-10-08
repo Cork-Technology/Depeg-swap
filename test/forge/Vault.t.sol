@@ -45,7 +45,7 @@ contract VaultRedeemTest is Helper {
         // 10000 for psm 10000 for LV
         ra.approve(address(moduleCore), type(uint256).max);
 
-        moduleCore.depositPsm(currencyId, DEFAULT_DEPOSIT_AMOUNT);
+        // moduleCore.depositPsm(currencyId, DEFAULT_DEPOSIT_AMOUNT);
         moduleCore.depositLv(currencyId, DEFAULT_DEPOSIT_AMOUNT, 0, 0);
 
         // save initial data
@@ -87,5 +87,26 @@ contract VaultRedeemTest is Helper {
         // not exactly 1 ether cause of uni v2 minimum liquidity
         vm.assertApproxEqAbs(received, 1 ether, 1e9);
         // save initial data
+    }
+
+    function test_reissueMany() external {
+        for (uint256 i = 0; i < 100; i++) {
+            console.log("reissue", i);
+            ff_expired();
+        }
+    }
+
+    function defaultExchangeRate() internal pure override returns (uint256) {
+        return 1.5 ether;
+    }
+
+    function ff_expired() internal {
+        dsId = moduleCore.lastDsId(currencyId);
+        (address ct,) = moduleCore.swapAsset(currencyId, dsId);
+        uint256 expiry = Asset(ct).expiry();
+
+        vm.warp(expiry);
+
+        issueNewDs(currencyId, block.timestamp + 1 days);
     }
 }
