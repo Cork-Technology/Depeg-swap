@@ -40,9 +40,10 @@ library PsmLibrary {
         status = self.info.isInitialized();
     }
 
-    function initialize(State storage self, Pair memory key) external {
+    function initialize(State storage self, Pair memory key, uint256 psmBaseRedemptionFee) external {
         self.info = key;
         self.psm.balances.ra = RedemptionAssetManagerLibrary.initialize(key.redemptionAsset());
+        self.psm.psmBaseRedemptionFeePrecentage = psmBaseRedemptionFee;
     }
 
     function updateAutoSell(State storage self, address user, bool status) external {
@@ -596,12 +597,12 @@ library PsmLibrary {
     function previewRedeemWithDs(State storage self, uint256 dsId, uint256 amount)
         external
         view
-        returns (uint256 assets)
+        returns (uint256 assets, uint256 fee)
     {
         DepegSwap storage ds = self.ds[dsId];
         Guard.safeBeforeExpired(ds);
         assets = MathHelper.calculateRedeemAmountWithExchangeRate(amount, ds.exchangeRate());
-        uint256 fee = MathHelper.calculatePrecentageFee(assets, self.psm.repurchaseFeePrecentage);
+        fee = MathHelper.calculatePrecentageFee(assets, self.psm.psmBaseRedemptionFeePrecentage);
         assets -= fee;
     }
 
@@ -705,4 +706,12 @@ library PsmLibrary {
 
         (accruedPa, accruedRa) = _calcRedeemAmount(amount, totalCtIssued, availableRa, availablePa);
     }
+
+    function updatePSMBaseRedemptionFeePrecentage(State storage self, uint256 newFees) external {
+        if (newFees > 5 ether) {
+            revert ICommon.InvalidFees();
+        }
+        self.psm.psmBaseRedemptionFeePrecentage = newFees;
+    }
+
 }
