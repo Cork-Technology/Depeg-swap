@@ -2,7 +2,7 @@ pragma solidity 0.8.24;
 
 import {Script, console} from "forge-std/Script.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
-import {Funder} from "../../contracts/tc_utils/Funder.sol";
+import {Funder} from "../../../contracts/tc_utils/Funder.sol";
 
 contract FundUsersScript is Script {
     Funder public funder;

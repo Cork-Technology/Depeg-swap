@@ -30,6 +30,9 @@ interface ICommon {
     /// @notice PSM Withdrawal is paused, i.e thrown when withdrawal is paused for PSM
     error PSMWithdrawalPaused();
 
+    /// @notice PSM Repurchase is paused, i.e thrown when repurchase is paused for PSM
+    error PSMRepurchasePaused();
+
     /// @notice LV Deposit is paused, i.e thrown when deposit is paused for LV
     error LVDepositPaused();
 
