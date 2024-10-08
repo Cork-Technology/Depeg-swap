@@ -41,7 +41,7 @@ contract FlashSwapTest is Helper {
         ra.approve(address(moduleCore), 100_000_000_000 ether);
 
         moduleCore.depositPsm(currencyId, DEFAULT_DEPOSIT_AMOUNT);
-        moduleCore.depositLv(currencyId, DEFAULT_DEPOSIT_AMOUNT);
+        moduleCore.depositLv(currencyId, DEFAULT_DEPOSIT_AMOUNT, 0, 0);
 
         // save initial data
         fetchProtocolGeneralInfo();
@@ -106,7 +106,7 @@ contract FlashSwapTest is Helper {
         vm.assertEq(raBalanceAfter, raBalanceBefore + amountOutSell);
 
         // add more liquidity to the router and AMM
-        moduleCore.depositLv(currencyId, 10_000 ether);
+        moduleCore.depositLv(currencyId, 10_000 ether,0,0);
 
         // now if buy, it should sell from reserves
         lvReserveBefore = flashSwapRouter.getLvReserve(currencyId, dsId);

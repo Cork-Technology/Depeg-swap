@@ -144,7 +144,7 @@ describe("Math Helper", function () {
 
       const contract = await loadFixture(deployMathHelper);
 
-      const result = await contract.read.calculatePrecentageFee([fee, amount]);
+      const result = await contract.read.calculatePercentageFee([fee, amount]);
       expect(result).to.equal(parseEther("10"));
     });
 
