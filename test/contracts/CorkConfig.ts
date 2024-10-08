@@ -135,7 +135,13 @@ describe("CorkConfig", function () {
       const { pa, ra } = await loadFixture(helper.backedAssets);
       await expect(
         await corkConfig.write.initializeModuleCore(
-          [pa.address, ra.address, fixture.lvFee, initialDsPrice],
+          [
+            pa.address,
+            ra.address,
+            fixture.lvFee,
+            initialDsPrice,
+            parseEther("1"),
+          ],
           {
             account: defaultSigner.account,
           }
@@ -146,7 +152,13 @@ describe("CorkConfig", function () {
     it("Revert when non MANAGER call initializeModuleCore", async function () {
       await expect(
         corkConfig.write.initializeModuleCore(
-          [pa.address, fixture.ra.address, fixture.lvFee, initialDsPrice],
+          [
+            pa.address,
+            fixture.ra.address,
+            fixture.lvFee,
+            initialDsPrice,
+            parseEther("1"),
+          ],
           {
             account: secondSigner.account,
           }
@@ -278,24 +290,30 @@ describe("CorkConfig", function () {
 
   describe("updatePsmBaseRedemptionFeePrecentage", function () {
     it("updatePsmBaseRedemptionFeePrecentage should work correctly", async function () {
-      expect(await moduleCore.read.baseRedemptionFee()).to.be.equals(
-        parseEther("5")
-      );
       expect(
-        await corkConfig.write.updatePsmBaseRedemptionFeePrecentage([1000n], {
-          account: defaultSigner.account,
-        })
+        await moduleCore.read.baseRedemptionFee([fixture.Id])
+      ).to.be.equals(parseEther("5"));
+      expect(
+        await corkConfig.write.updatePsmBaseRedemptionFeePrecentage(
+          [fixture.Id, 1000n],
+          {
+            account: defaultSigner.account,
+          }
+        )
       ).to.be.ok;
-      expect(await moduleCore.read.baseRedemptionFee()).to.be.equals(
-        parseUnits("1000", 0)
-      );
+      expect(
+        await moduleCore.read.baseRedemptionFee([fixture.Id])
+      ).to.be.equals(parseUnits("1000", 0));
     });
 
     it("Revert when non MANAGER call updatePsmBaseRedemptionFeePrecentage", async function () {
       await expect(
-        corkConfig.write.updatePsmBaseRedemptionFeePrecentage([1000n], {
-          account: secondSigner.account,
-        })
+        corkConfig.write.updatePsmBaseRedemptionFeePrecentage(
+          [fixture.Id, 1000n],
+          {
+            account: secondSigner.account,
+          }
+        )
       ).to.be.rejectedWith("CallerNotManager()");
     });
   });

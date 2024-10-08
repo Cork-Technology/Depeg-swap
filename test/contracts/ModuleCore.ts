@@ -118,24 +118,23 @@ describe("Module Core", function () {
       dsFlashSwapRouter.contract.address,
       univ2Router,
       config.contract.address,
-      helper.DEFAULT_BASE_REDEMPTION_PRECENTAGE,
     ]);
     expect(moduleCore).to.be.ok;
   });
 
   it("getId should work correctly", async function () {
-      let Id = await moduleCore.read.getId([
-        fixture.pa.address,
-        fixture.ra.address,
-      ]);
-      const expectedKey = ethers.utils.keccak256(
-        ethers.utils.defaultAbiCoder.encode(
-          ["address", "address"],
-          [fixture.pa.address, fixture.ra.address]
-        )
-      );
-      expect(Id).to.equal(expectedKey);
-    });
+    let Id = await moduleCore.read.getId([
+      fixture.pa.address,
+      fixture.ra.address,
+    ]);
+    const expectedKey = ethers.utils.keccak256(
+      ethers.utils.defaultAbiCoder.encode(
+        ["address", "address"],
+        [fixture.pa.address, fixture.ra.address]
+      )
+    );
+    expect(Id).to.equal(expectedKey);
+  });
 
   describe("initializeModuleCore", function () {
     it("initializeModuleCore should work correctly", async function () {
@@ -152,6 +151,7 @@ describe("Module Core", function () {
         ra.address,
         fixture.lvFee,
         initialDsPrice,
+        parseEther("5"),
       ]);
       const events = await moduleCore.getEvents.InitializedModuleCore({
         id: expectedId,
@@ -176,6 +176,7 @@ describe("Module Core", function () {
           fixture.ra.address,
           fixture.lvFee,
           initialDsPrice,
+          parseEther("5"),
         ])
       ).to.be.rejectedWith("AlreadyInitialized()");
     });
@@ -187,6 +188,7 @@ describe("Module Core", function () {
           fixture.ra.address,
           fixture.lvFee,
           initialDsPrice,
+          parseEther("5"),
         ])
       ).to.be.rejectedWith("OnlyConfigAllowed()");
     });
@@ -418,16 +420,22 @@ describe("Module Core", function () {
 
   describe("updatePsmBaseRedemptionFeePrecentage", function () {
     it("updatePsmBaseRedemptionFeePrecentage should work correctly", async function () {
-      expect(await moduleCore.read.baseRedemptionFee()).to.equal(
+      expect(await moduleCore.read.baseRedemptionFee([fixture.Id])).to.equal(
         parseEther("5")
       );
-      await corkConfig.write.updatePsmBaseRedemptionFeePrecentage([500n]);
-      expect(await moduleCore.read.baseRedemptionFee()).to.equal(500n);
+      await corkConfig.write.updatePsmBaseRedemptionFeePrecentage([
+        fixture.Id,
+        500n,
+      ]);
+      expect(await moduleCore.read.baseRedemptionFee([fixture.Id])).to.equal(
+        500n
+      );
     });
 
     it("updatePsmBaseRedemptionFeePrecentage should revert when new value is more than 5%", async function () {
       await expect(
         corkConfig.write.updatePsmBaseRedemptionFeePrecentage([
+          fixture.Id,
           parseEther("5.00000000000001"),
         ])
       ).to.be.rejectedWith("InvalidFees()");
@@ -435,9 +443,12 @@ describe("Module Core", function () {
 
     it("updatePsmBaseRedemptionFeePrecentage should revert when not called by Config contract", async function () {
       await expect(
-        moduleCore.write.updatePsmBaseRedemptionFeePrecentage([500n], {
-          account: secondSigner.account,
-        })
+        moduleCore.write.updatePsmBaseRedemptionFeePrecentage(
+          [fixture.Id, 500n],
+          {
+            account: secondSigner.account,
+          }
+        )
       ).to.be.rejectedWith("OnlyConfigAllowed()");
     });
   });

@@ -80,7 +80,7 @@ contract SetupTCScript is Script {
         uint256 dsPrice,
         uint256 repurchaseFee
     ) public {
-        config.initializeModuleCore(cst, ceth, redmptionFee, dsPrice);
+        config.initializeModuleCore(cst, ceth, redmptionFee, dsPrice, base_redemption_fee);
 
         Id id = moduleCore.getId(cst, ceth);
         config.issueNewDs(

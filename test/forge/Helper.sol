@@ -79,7 +79,7 @@ abstract contract Helper is Test, SigUtils {
     }
 
     function initializeNewModuleCore(address pa, address ra, uint256 lvFee, uint256 initialDsPrice) internal {
-        corkConfig.initializeModuleCore(pa, ra, lvFee, initialDsPrice);
+        corkConfig.initializeModuleCore(pa, ra, lvFee, initialDsPrice, DEFAULT_BASE_REDEMPTION_FEE);
     }
 
     function issueNewDs(
@@ -168,14 +168,13 @@ abstract contract Helper is Test, SigUtils {
         flashSwapRouter.setModuleCore(address(moduleCore));
     }
 
-    function initializeModuleCore(uint256 fees) internal {
+    function initializeModuleCore() internal {
         moduleCore.initialize(
             address(assetFactory),
             address(uniswapFactory),
             address(flashSwapRouter),
             address(uniswapRouter),
-            address(corkConfig),
-            fees
+            address(corkConfig)
         );
     }
 
@@ -190,20 +189,6 @@ abstract contract Helper is Test, SigUtils {
         initializeAssetFactory();
         initializeConfig();
         initializeFlashSwapRouter();
-        initializeModuleCore(DEFAULT_EXCHANGE_RATES);
-    }
-
-    function deployModuleCore(uint256 psmBaseRedemptionFee) internal {
-        deployConfig();
-        deployFlashSwapRouter();
-        deployAssetFactory();
-        deployUniswapFactory(address(0), address(flashSwapRouter));
-        deployUniswapRouter(address(uniswapFactory), address(flashSwapRouter));
-
-        moduleCore = new TestModuleCore();
-        initializeAssetFactory();
-        initializeConfig();
-        initializeFlashSwapRouter();
-        initializeModuleCore(psmBaseRedemptionFee);
+        initializeModuleCore();
     }
 }

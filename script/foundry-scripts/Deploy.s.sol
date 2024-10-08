@@ -131,7 +131,15 @@ contract DeployScript is Script {
         console.log("ModuleCore Router Implementation : ", address(moduleCoreImplementation));
 
         // Deploy the ModuleCore Proxy contract
-        data = abi.encodeWithSelector(moduleCoreImplementation.initialize.selector, address(assetFactory), address(factory), address(flashswapRouter), address(univ2Router), address(config), 0.2 ether); // 0.2 base redemptionfee
+        data = abi.encodeWithSelector(
+            moduleCoreImplementation.initialize.selector,
+            address(assetFactory),
+            address(factory),
+            address(flashswapRouter),
+            address(univ2Router),
+            address(config),
+            0.2 ether
+        ); // 0.2 base redemptionfee
         ERC1967Proxy moduleCoreProxy = new ERC1967Proxy(address(moduleCoreImplementation), data);
         moduleCore = ModuleCore(address(moduleCoreProxy));
 
@@ -170,7 +178,7 @@ contract DeployScript is Script {
         uint256 repurchaseFee,
         uint256 expiryPeriod
     ) public {
-        config.initializeModuleCore(cst, ceth, redmptionFee, dsPrice);
+        config.initializeModuleCore(cst, ceth, redmptionFee, dsPrice, base_redemption_fee);
 
         Id id = moduleCore.getId(cst, ceth);
         config.issueNewDs(
