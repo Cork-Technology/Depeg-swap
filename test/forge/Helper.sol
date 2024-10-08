@@ -78,18 +78,8 @@ abstract contract Helper is Test, SigUtils {
         uniswapFactory = IUniswapV2Factory(addr);
     }
 
-    function initializeNewModuleCore(
-        address pa,
-        address ra,
-        uint256 lvFee,
-        uint256 initialDsPrice,
-        uint256 baseRedemptionFee
-    ) internal {
-        corkConfig.initializeModuleCore(pa, ra, lvFee, initialDsPrice, baseRedemptionFee);
-    }
-
-    function initializeNewModuleCore(address pa, address ra, uint256 lvFee, uint256 initialDsPrice) internal {
-        corkConfig.initializeModuleCore(pa, ra, lvFee, initialDsPrice, DEFAULT_BASE_REDEMPTION_FEE);
+    function initializeNewModuleCore(address pa, address ra, uint256 lvFee, uint256 initialDsPrice ,uint256 _psmBaseRedemptionFeePercentage ) internal {
+        corkConfig.initializeModuleCore(pa, ra, lvFee, initialDsPrice ,  _psmBaseRedemptionFeePercentage);
     }
 
     function issueNewDs(
@@ -129,6 +119,7 @@ abstract contract Helper is Test, SigUtils {
         Pair memory _id = PairLibrary.initalize(address(pa), address(ra));
         id = PairLibrary.toId(_id);
 
+<<<<<<< HEAD
         initializeNewModuleCore(
             address(pa), address(ra), DEFAULT_LV_FEE, defaultInitialDsPrice(), DEFAULT_BASE_REDEMPTION_FEE
         );
@@ -159,6 +150,9 @@ abstract contract Helper is Test, SigUtils {
         id = PairLibrary.toId(_id);
 
         initializeNewModuleCore(address(pa), address(ra), DEFAULT_LV_FEE, defaultInitialDsPrice(), baseRedemptionFee);
+=======
+        initializeNewModuleCore(address(pa), address(ra), DEFAULT_LV_FEE, defaultInitialDsPrice(), DEFAULT_BASE_REDEMPTION_FEE);
+>>>>>>> 0e8b94c (forge tests fixed)
         issueNewDs(
             id,
             expiryInSeconds,
@@ -184,7 +178,7 @@ abstract contract Helper is Test, SigUtils {
         Pair memory _id = PairLibrary.initalize(address(pa), address(ra));
         id = PairLibrary.toId(_id);
 
-        initializeNewModuleCore(address(pa), address(ra), lvFee, initialDsPrice);
+        initializeNewModuleCore(address(pa), address(ra), lvFee, initialDsPrice, DEFAULT_BASE_REDEMPTION_FEE);
         issueNewDs(
             id, expiryInSeconds, exchangeRates, repurchaseFeePrecentage, decayDiscountRateInDays, rolloverPeriodInblocks
         );
