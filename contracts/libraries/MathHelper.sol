@@ -132,13 +132,13 @@ library MathHelper {
         pure
         returns (uint256 attributedWithdrawal, uint256 attributedAmm, uint256 ratePerLv)
     {
-        // with 1e18 precision
-        ratePerLv = ((totalAmount * 1e18) / totalLvIssued);
-
         // attribute all to AMM if no lv issued or withdrawn
         if (totalLvIssued == 0 || totalLvWithdrawn == 0) {
-            return (0, totalAmount, ratePerLv);
+            return (0, totalAmount, 0);
         }
+
+        // with 1e18 precision
+        ratePerLv = ((totalAmount * 1e18) / totalLvIssued);
 
         attributedWithdrawal = (ratePerLv * totalLvWithdrawn) / 1e18;
         attributedAmm = totalAmount - attributedWithdrawal;
