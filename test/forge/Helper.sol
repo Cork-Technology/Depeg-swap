@@ -23,10 +23,12 @@ abstract contract Helper is Test, SigUtils {
     TestFlashSwapRouter internal flashSwapRouter;
     DummyWETH internal weth = new DummyWETH();
 
-    // 1% base redemption fee
-    uint256 internal DEFAULT_BASE_REDEMPTION_FEE = 1 ether;
+    Id defaultCurrencyId;
 
-    uint256 internal DEFAULT_EXCHANGE_RATES = 1 ether;
+    // 1% base redemption fee
+    uint256 internal constant DEFAULT_BASE_REDEMPTION_FEE = 1 ether;
+
+    uint256 internal constant DEFAULT_EXCHANGE_RATES = 1 ether;
 
     // use this to test functions as user
     uint256 internal DEFAULT_ADDRESS_PK = 1;
@@ -49,6 +51,10 @@ abstract contract Helper is Test, SigUtils {
 
     function defaultInitialDsPrice() internal pure virtual returns (uint256) {
         return DEFAULT_INITIAL_DS_PRICE;
+    }
+
+    function defaultExchangeRate() internal pure virtual returns (uint256) {
+        return DEFAULT_EXCHANGE_RATES;
     }
 
     function deployAssetFactory() internal {
@@ -78,20 +84,36 @@ abstract contract Helper is Test, SigUtils {
         uniswapFactory = IUniswapV2Factory(addr);
     }
 
+    function initializeNewModuleCore(
+        address pa,
+        address ra,
+        uint256 lvFee,
+        uint256 initialDsPrice,
+        uint256 baseRedemptionFee
+    ) internal {
+        corkConfig.initializeModuleCore(pa, ra, lvFee, initialDsPrice, baseRedemptionFee);
+    }
+
     function initializeNewModuleCore(address pa, address ra, uint256 lvFee, uint256 initialDsPrice) internal {
-        corkConfig.initializeModuleCore(pa, ra, lvFee, initialDsPrice);
+        corkConfig.initializeModuleCore(pa, ra, lvFee, initialDsPrice, DEFAULT_BASE_REDEMPTION_FEE);
     }
 
     function issueNewDs(
         Id id,
         uint256 expiryInSeconds,
         uint256 exchangeRates,
-        uint256 repurchaseFeePrecentage,
+        uint256 repurchaseFeePercentage,
         uint256 decayDiscountRateInDays,
         uint256 rolloverPeriodInblocks
     ) internal {
         corkConfig.issueNewDs(
-            id, expiryInSeconds, exchangeRates, repurchaseFeePrecentage, decayDiscountRateInDays, rolloverPeriodInblocks
+            id,
+            expiryInSeconds,
+            exchangeRates,
+            repurchaseFeePercentage,
+            decayDiscountRateInDays,
+            rolloverPeriodInblocks,
+            block.timestamp + 10 seconds
         );
     }
 
@@ -99,7 +121,7 @@ abstract contract Helper is Test, SigUtils {
         issueNewDs(
             id,
             expiryInSeconds,
-            DEFAULT_EXCHANGE_RATES,
+            defaultExchangeRate(),
             DEFAULT_REPURCHASE_FEE,
             DEFAULT_DECAY_DISCOUNT_RATE,
             block.number + DEFAULT_ROLLOVER_PERIOD
@@ -119,7 +141,41 @@ abstract contract Helper is Test, SigUtils {
         Pair memory _id = PairLibrary.initalize(address(pa), address(ra));
         id = PairLibrary.toId(_id);
 
-        initializeNewModuleCore(address(pa), address(ra), DEFAULT_LV_FEE, defaultInitialDsPrice());
+        defaultCurrencyId = id;
+
+        initializeNewModuleCore(
+            address(pa), address(ra), DEFAULT_LV_FEE, defaultInitialDsPrice(), DEFAULT_BASE_REDEMPTION_FEE
+        );
+        issueNewDs(
+            id,
+            expiryInSeconds,
+            DEFAULT_EXCHANGE_RATES,
+            DEFAULT_REPURCHASE_FEE,
+            DEFAULT_DECAY_DISCOUNT_RATE,
+            DEFAULT_ROLLOVER_PERIOD
+        );
+    }
+
+    function initializeAndIssueNewDs(uint256 expiryInSeconds, uint256 baseRedemptionFee)
+        internal
+        returns (DummyWETH ra, DummyWETH pa, Id id)
+    {
+        if (block.timestamp + expiryInSeconds > block.timestamp + 100 days) {
+            revert(
+                "Expiry too far in the future, specify a default decay rate, this will cause the discount to exceed 100!"
+            );
+        }
+
+        ra = new DummyWETH();
+        pa = new DummyWETH();
+
+        Pair memory _id = PairLibrary.initalize(address(pa), address(ra));
+        id = PairLibrary.toId(_id);
+
+                defaultCurrencyId = id;
+
+
+        initializeNewModuleCore(address(pa), address(ra), DEFAULT_LV_FEE, defaultInitialDsPrice(), baseRedemptionFee);
         issueNewDs(
             id,
             expiryInSeconds,
@@ -133,7 +189,7 @@ abstract contract Helper is Test, SigUtils {
     function initializeAndIssueNewDs(
         uint256 expiryInSeconds,
         uint256 exchangeRates,
-        uint256 repurchaseFeePrecentage,
+        uint256 repurchaseFeePercentage,
         uint256 decayDiscountRateInDays,
         uint256 rolloverPeriodInblocks,
         uint256 lvFee,
@@ -147,7 +203,7 @@ abstract contract Helper is Test, SigUtils {
 
         initializeNewModuleCore(address(pa), address(ra), lvFee, initialDsPrice);
         issueNewDs(
-            id, expiryInSeconds, exchangeRates, repurchaseFeePrecentage, decayDiscountRateInDays, rolloverPeriodInblocks
+            id, expiryInSeconds, exchangeRates, repurchaseFeePercentage, decayDiscountRateInDays, rolloverPeriodInblocks
         );
     }
 
@@ -168,18 +224,17 @@ abstract contract Helper is Test, SigUtils {
         flashSwapRouter.setModuleCore(address(moduleCore));
     }
 
-    function initializeModuleCore(uint256 fees) internal {
+    function initializeModuleCore() internal {
         moduleCore.initialize(
             address(assetFactory),
             address(uniswapFactory),
             address(flashSwapRouter),
             address(uniswapRouter),
-            address(corkConfig),
-            fees
+            address(corkConfig)
         );
     }
 
-    function deployModuleCore() internal {
+   function deployModuleCore() internal {
         deployConfig();
         deployFlashSwapRouter();
         deployAssetFactory();
@@ -190,20 +245,6 @@ abstract contract Helper is Test, SigUtils {
         initializeAssetFactory();
         initializeConfig();
         initializeFlashSwapRouter();
-        initializeModuleCore(DEFAULT_EXCHANGE_RATES);
-    }
-
-    function deployModuleCore(uint256 psmBaseRedemptionFee) internal {
-        deployConfig();
-        deployFlashSwapRouter();
-        deployAssetFactory();
-        deployUniswapFactory(address(0), address(flashSwapRouter));
-        deployUniswapRouter(address(uniswapFactory), address(flashSwapRouter));
-
-        moduleCore = new TestModuleCore();
-        initializeAssetFactory();
-        initializeConfig();
-        initializeFlashSwapRouter();
-        initializeModuleCore(psmBaseRedemptionFee);
+        initializeModuleCore();
     }
 }

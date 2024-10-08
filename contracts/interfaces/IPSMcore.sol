@@ -65,7 +65,7 @@ interface IPSMcore is IRepurchase {
     /// @param amount The amount of the DS redeemed
     /// @param received The amount of  asset received
     /// @param dsExchangeRate The exchange rate of DS at the time of redeem
-    /// @param feePrecentage The fee precentage charged for redemption
+    /// @param feePercentage The fee percentage charged for redemption
     /// @param fee The fee charged for redemption
     event DsRedeemed(
         Id indexed Id,
@@ -74,7 +74,7 @@ interface IPSMcore is IRepurchase {
         uint256 amount,
         uint256 received,
         uint256 dsExchangeRate,
-        uint256 feePrecentage,
+        uint256 feePercentage,
         uint256 fee
     );
 
@@ -114,12 +114,14 @@ interface IPSMcore is IRepurchase {
     /// @param Id The PSM id
     /// @param isPSMDepositPaused The new value saying if Deposit allowed in PSM or not
     /// @param isPSMWithdrawalPaused The new value saying if Withdrawal allowed in PSM or not
+    /// @param isPSMRepurchasePaused The new value saying if Repurcahse allowed in PSM or not
     /// @param isLVDepositPaused The new value saying if Deposit allowed in LV or not
     /// @param isLVWithdrawalPaused The new value saying if Withdrawal allowed in LV or not
     event PoolsStatusUpdated(
         Id indexed Id,
         bool isPSMDepositPaused,
         bool isPSMWithdrawalPaused,
+        bool isPSMRepurchasePaused,
         bool isLVDepositPaused,
         bool isLVWithdrawalPaused
     );
@@ -128,6 +130,11 @@ interface IPSMcore is IRepurchase {
     /// @param Id The PSM id
     /// @param earlyRedemptionFeeRate The new value of early redemption fee rate
     event EarlyRedemptionFeeRateUpdated(Id indexed Id, uint256 earlyRedemptionFeeRate);
+
+    /// @notice Emmitted when psmBaseRedemptionFeePercentage is updated
+    /// @param id the PSM id
+    /// @param psmBaseRedemptionFeePercentage the new psmBaseRedemptionFeePercentage
+    event PsmBaseRedemptionFeePercentageUpdated(Id indexed id, uint256 indexed psmBaseRedemptionFeePercentage);
 
     /**
      * @notice returns the amount of CT and DS tokens that will be received after deposit
@@ -163,10 +170,11 @@ interface IPSMcore is IRepurchase {
      * @param id The pair id
      * @param dsId The DS id
      * @param amount The amount of DS + PA to redeem
+     * @param redeemer The address of the redeemer
      * @param rawDsPermitSig The raw signature for DS approval permit
      * @param deadline The deadline for DS approval permit signature
      */
-    function redeemRaWithDs(Id id, uint256 dsId, uint256 amount, bytes memory rawDsPermitSig, uint256 deadline)
+    function redeemRaWithDs(Id id, uint256 dsId, uint256 amount, address redeemer, bytes memory rawDsPermitSig, uint256 deadline)
         external
         returns (uint256 received, uint256 _exchangeRate, uint256 fee);
 
@@ -186,17 +194,21 @@ interface IPSMcore is IRepurchase {
      * @param dsId The DS id
      * @param amount The amount of DS + PA to redeem
      */
-    function previewRedeemRaWithDs(Id id, uint256 dsId, uint256 amount) external view returns (uint256 assets);
+    function previewRedeemRaWithDs(Id id, uint256 dsId, uint256 amount)
+        external
+        view
+        returns (uint256 assets, uint256 fee, uint256 feePercentage);
 
     /**
      * @notice redeem RA + PA with CT at expiry
      * @param id The pair id
      * @param dsId The DS id
      * @param amount The amount of CT to redeem
+     * @param redeemer The address of the redeemer
      * @param rawCtPermitSig The raw signature for CT approval permit
      * @param deadline The deadline for CT approval permit signature
      */
-    function redeemWithCT(Id id, uint256 dsId, uint256 amount, bytes memory rawCtPermitSig, uint256 deadline)
+    function redeemWithCT(Id id, uint256 dsId, uint256 amount, address redeemer, bytes memory rawCtPermitSig, uint256 deadline)
         external
         returns (uint256 accruedPa, uint256 accruedRa);
 
@@ -227,6 +239,7 @@ interface IPSMcore is IRepurchase {
      * @notice returns amount of ra user will get when Redeem RA with CT+DS
      * @param id The PSM id
      * @param amount amount user wants to redeem
+     * @param redeemer The address of the redeemer
      * @param rawDsPermitSig raw signature for DS approval permit
      * @param dsDeadline deadline for DS approval permit signature
      * @param rawCtPermitSig raw signature for CT approval permit
@@ -238,6 +251,7 @@ interface IPSMcore is IRepurchase {
     function redeemRaWithCtDs(
         Id id,
         uint256 amount,
+        address redeemer,
         bytes memory rawDsPermitSig,
         uint256 dsDeadline,
         bytes memory rawCtPermitSig,
@@ -272,7 +286,7 @@ interface IPSMcore is IRepurchase {
     /**
      * @notice returns base redemption fees (1e18 = 1%)
      */
-    function baseRedemptionFee() external view returns (uint256);
+    function baseRedemptionFee(Id id) external view returns (uint256);
 
     function psmAcceptFlashSwapProfit(Id id, uint256 profit) external;
 
@@ -289,7 +303,9 @@ interface IPSMcore is IRepurchase {
         external
         returns (uint256 ctReceived, uint256 dsReceived, uint256 _exchangeRate, uint256 paReceived);
 
-    function claimRolloverProfit(Id id, uint256 prevDsId, uint256 amount) external returns (uint256 profit, uint256 dsReceived);
+    function claimAutoSellProfit(Id id, uint256 prevDsId, uint256 amount)
+        external
+        returns (uint256 profit, uint256 dsReceived);
 
     function updatePsmAutoSellStatus(Id id, address user, bool status) external;
 

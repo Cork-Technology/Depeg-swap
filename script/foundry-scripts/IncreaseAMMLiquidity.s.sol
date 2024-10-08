@@ -3,10 +3,6 @@ pragma solidity 0.8.24;
 import {IUniswapV2Router02} from "v2-periphery/interfaces/IUniswapV2Router02.sol";
 
 import {Script, console} from "forge-std/Script.sol";
-import {ERC1967Proxy} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
-import {AssetFactory} from "../../contracts/core/assets/AssetFactory.sol";
-import {CorkConfig} from "../../contracts/core/CorkConfig.sol";
-import {RouterState} from "../../contracts/core/flash-swaps/FlashSwapRouter.sol";
 import {ModuleCore} from "../../contracts/core/ModuleCore.sol";
 import {CETH} from "../../contracts/tokens/CETH.sol";
 import {CST} from "../../contracts/tokens/CST.sol";
@@ -22,9 +18,9 @@ contract LiquidityScript is Script {
     ModuleCore public moduleCore;
 
     bool public isProd = vm.envBool("PRODUCTION");
-    uint256 public base_redemption_fee = vm.envUint("PSM_BASE_REDEMPTION_FEE_PRECENTAGE");
+    uint256 public base_redemption_fee = vm.envUint("PSM_BASE_REDEMPTION_FEE_PERCENTAGE");
     address public ceth = vm.envAddress("WETH");
-    uint256 public pk = vm.envUint("PRIVATE_KEY3");
+    uint256 public pk = vm.envUint("PRIVATE_KEY");
 
     address bsETH = 0xb194fc7C6ab86dCF5D96CF8525576245d0459ea9;
     address lbETH = 0xF24177162B1604e56EB338dd9775d75CC79DaC2B;

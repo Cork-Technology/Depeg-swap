@@ -112,31 +112,28 @@ describe("Module Core", function () {
         VaultLibrary: vault.address,
       },
     });
-    moduleCore.write.initialize([
+    let tx = await moduleCore.write.initialize([
       swapAssetFactory.contract.address,
       univ2Factory,
       dsFlashSwapRouter.contract.address,
       univ2Router,
-      config.contract.address,
-      helper.DEFAULT_BASE_REDEMPTION_PRECENTAGE,
+      config.contract.address
     ]);
-    expect(moduleCore).to.be.ok;
+    expect(tx).to.be.ok;
   });
 
-  describe("getId", function () {
-    it("getId should work correctly", async function () {
-      let Id = await moduleCore.read.getId([
-        fixture.pa.address,
-        fixture.ra.address,
-      ]);
-      const expectedKey = ethers.utils.keccak256(
-        ethers.utils.defaultAbiCoder.encode(
-          ["address", "address"],
-          [fixture.pa.address, fixture.ra.address]
-        )
-      );
-      expect(Id).to.equal(expectedKey);
-    });
+  it("getId should work correctly", async function () {
+    let Id = await moduleCore.read.getId([
+      fixture.pa.address,
+      fixture.ra.address,
+    ]);
+    const expectedKey = ethers.utils.keccak256(
+      ethers.utils.defaultAbiCoder.encode(
+        ["address", "address"],
+        [fixture.pa.address, fixture.ra.address]
+      )
+    );
+    expect(Id).to.equal(expectedKey);
   });
 
   describe("initializeModuleCore", function () {
@@ -154,6 +151,7 @@ describe("Module Core", function () {
         ra.address,
         fixture.lvFee,
         initialDsPrice,
+        parseEther("5"),
       ]);
       const events = await moduleCore.getEvents.InitializedModuleCore({
         id: expectedId,
@@ -178,6 +176,7 @@ describe("Module Core", function () {
           fixture.ra.address,
           fixture.lvFee,
           initialDsPrice,
+          parseEther("5"),
         ])
       ).to.be.rejectedWith("AlreadyInitialized()");
     });
@@ -189,6 +188,7 @@ describe("Module Core", function () {
           fixture.ra.address,
           fixture.lvFee,
           initialDsPrice,
+          parseEther("5"),
         ])
       ).to.be.rejectedWith("OnlyConfigAllowed()");
     });
@@ -203,6 +203,7 @@ describe("Module Core", function () {
         parseEther("5"),
         parseEther("1"),
         10n,
+        BigInt(helper.expiry(1000000)),
       ]);
       const events = await moduleCore.getEvents.Issued({
         Id: fixture.Id,
@@ -232,6 +233,7 @@ describe("Module Core", function () {
           parseEther("10"),
           parseEther("1"),
           10n,
+          BigInt(helper.expiry(1000000)),
         ])
       ).to.be.rejectedWith("Uinitialized()");
     });
@@ -245,6 +247,7 @@ describe("Module Core", function () {
           parseEther("5.000000000001"),
           parseEther("1"),
           10n,
+          BigInt(helper.expiry(1000000)),
         ])
       ).to.be.rejectedWith("InvalidFees()");
     });
@@ -258,6 +261,7 @@ describe("Module Core", function () {
           parseEther("10"),
           parseEther("1"),
           10n,
+          BigInt(helper.expiry(1000000)),
         ])
       ).to.be.rejectedWith("OnlyConfigAllowed()");
     });
@@ -348,6 +352,7 @@ describe("Module Core", function () {
         true,
         true,
         true,
+        true,
       ]);
       const events = await moduleCore.getEvents.PoolsStatusUpdated({
         Id: fixture.Id,
@@ -356,6 +361,7 @@ describe("Module Core", function () {
       expect(events[0].args.Id).to.equal(fixture.Id);
       expect(events[0].args.isPSMDepositPaused).to.equal(true);
       expect(events[0].args.isPSMWithdrawalPaused).to.equal(true);
+      expect(events[0].args.isPSMRepurchasePaused).to.equal(true);
       expect(events[0].args.isLVDepositPaused).to.equal(true);
       expect(events[0].args.isLVWithdrawalPaused).to.equal(true);
     });
@@ -363,7 +369,7 @@ describe("Module Core", function () {
     it("updatePoolsStatus should revert when not called by Config contract", async function () {
       await expect(
         moduleCore.write.updatePoolsStatus(
-          [fixture.Id, true, true, true, true],
+          [fixture.Id, true, true, true, true, true],
           {
             account: secondSigner.account,
           }
@@ -382,6 +388,7 @@ describe("Module Core", function () {
         parseEther("5"),
         parseEther("1"),
         10n,
+        BigInt(helper.expiry(1000000)),
       ]);
       expect(await moduleCore.read.lastDsId([fixture.Id])).to.equal(1n);
     });
@@ -416,28 +423,37 @@ describe("Module Core", function () {
     });
   });
 
-  describe("updatePsmBaseRedemptionFeePrecentage", function () {
-    it("updatePsmBaseRedemptionFeePrecentage should work correctly", async function () {
-      expect(await moduleCore.read.baseRedemptionFee()).to.equal(
+  describe("updatePsmBaseRedemptionFeePercentage", function () {
+    it("updatePsmBaseRedemptionFeePercentage should work correctly", async function () {
+      expect(await moduleCore.read.baseRedemptionFee([fixture.Id])).to.equal(
         parseEther("5")
       );
-      await corkConfig.write.updatePsmBaseRedemptionFeePrecentage([500n]);
-      expect(await moduleCore.read.baseRedemptionFee()).to.equal(500n);
+      await corkConfig.write.updatePsmBaseRedemptionFeePercentage([
+        fixture.Id,
+        500n,
+      ]);
+      expect(await moduleCore.read.baseRedemptionFee([fixture.Id])).to.equal(
+        500n
+      );
     });
 
-    it("updatePsmBaseRedemptionFeePrecentage should revert when new value is more than 5%", async function () {
+    it("updatePsmBaseRedemptionFeePercentage should revert when new value is more than 5%", async function () {
       await expect(
-        corkConfig.write.updatePsmBaseRedemptionFeePrecentage([
+        corkConfig.write.updatePsmBaseRedemptionFeePercentage([
+          fixture.Id,
           parseEther("5.00000000000001"),
         ])
       ).to.be.rejectedWith("InvalidFees()");
     });
 
-    it("updatePsmBaseRedemptionFeePrecentage should revert when not called by Config contract", async function () {
+    it("updatePsmBaseRedemptionFeePercentage should revert when not called by Config contract", async function () {
       await expect(
-        moduleCore.write.updatePsmBaseRedemptionFeePrecentage([500n], {
-          account: secondSigner.account,
-        })
+        moduleCore.write.updatePsmBaseRedemptionFeePercentage(
+          [fixture.Id, 500n],
+          {
+            account: secondSigner.account,
+          }
+        )
       ).to.be.rejectedWith("OnlyConfigAllowed()");
     });
   });
