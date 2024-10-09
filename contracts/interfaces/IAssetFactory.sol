@@ -67,7 +67,6 @@ interface IAssetFactory {
      * @param owner Address of asset owners
      * @param expiry expiry timestamp
      * @param psmExchangeRate exchange rate for this pair
-     * @param dsId DS id
      * @return ct new CT contract address
      * @return ds new DS contract address
      */

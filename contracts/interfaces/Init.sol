@@ -35,8 +35,7 @@ interface Initialize {
         uint256 decayDiscountRateInDays,
         // won't have effect on first issuance
         uint256 rolloverPeriodInblocks,
-        uint256 ammLiquidationDeadline,
-        uint256 dsId
+        uint256 ammLiquidationDeadline
     ) external;
 
     /**

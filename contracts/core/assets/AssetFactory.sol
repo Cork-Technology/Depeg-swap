@@ -5,6 +5,8 @@ import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/Own
 import {UUPSUpgradeable} from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import {Id, Pair, PairLibrary} from "../../libraries/Pair.sol";
 import {Asset} from "./Asset.sol";
+import {ModuleCore} from "../ModuleCore.sol";
+import {ICommon} from "../../interfaces/ICommon.sol";
 
 /**
  * @title Factory contract for Assets
@@ -13,6 +15,7 @@ import {Asset} from "./Asset.sol";
  */
 contract AssetFactory is IAssetFactory, OwnableUpgradeable, UUPSUpgradeable {
     using PairLibrary for Pair;
+    using PairLibrary for Id;
 
     uint8 public constant MAX_LIMIT = 10;
     string private constant CT_PREFIX = "CT";
@@ -140,11 +143,10 @@ contract AssetFactory is IAssetFactory, OwnableUpgradeable, UUPSUpgradeable {
      * @param _owner Address of asset owners
      * @param expiry expiry timestamp
      * @param psmExchangeRate exchange rate for this pair
-     * @param dsId dsid 
      * @return ct new CT contract address
      * @return ds new DS contract address
      */
-    function deploySwapAssets(address _ra, address _pa, address _owner, uint256 expiry, uint256 psmExchangeRate, uint256 dsId)
+    function deploySwapAssets(address _ra, address _pa, address _owner, uint256 expiry, uint256 psmExchangeRate , uint256 dsId)
         external
         override
         onlyOwner
