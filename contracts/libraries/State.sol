@@ -25,14 +25,16 @@ struct State {
  */
 struct PsmState {
     Balances balances;
-    uint256 repurchaseFeePrecentage;
+    uint256 repurchaseFeePercentage;
     BitMaps.BitMap liquiditySeparated;
     /// @dev dsId => PsmPoolArchive
     mapping(uint256 => PsmPoolArchive) poolArchive;
     mapping(address => bool) autoSell;
     bool isDepositPaused;
     bool isWithdrawalPaused;
- }
+    bool isRepurchasePaused;
+    uint256 psmBaseRedemptionFeePercentage;
+}
 
 /**
  * @dev PsmPoolArchive structure for PSM Pools
@@ -100,8 +102,8 @@ struct VaultState {
     BitMaps.BitMap lpLiquidated;
     VaultPool pool;
     uint256 initialDsPrice;
-    // will be set to true after first deposit to LV. 
-    // to prevent manipulative behavior when depositing to Lv since we depend on preview redeem eearly to get 
+    // will be set to true after first deposit to LV.
+    // to prevent manipulative behavior when depositing to Lv since we depend on preview redeem eearly to get
     // the correct exchange rate of LV
     bool initialized;
 }
