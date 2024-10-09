@@ -124,6 +124,7 @@ describe("PSM core", function () {
         parseEther("5"),
         parseEther("1"),
         10n,
+        BigInt(helper.expiry(1000000)),
       ]);
 
       const events = await moduleCore.getEvents.Issued({
@@ -200,6 +201,7 @@ describe("PSM core", function () {
         fixture.Id,
         dsId!,
         redeemAmount,
+        defaultSigner.account.address,
         permitmsg,
         deadline,
       ]);
@@ -213,9 +215,9 @@ describe("PSM core", function () {
         .then((e) => e[0]);
 
       expect(event.args.received!).to.equal(
-        redeemAmount - helper.calculatePrecentage(redeemAmount)
+        redeemAmount - helper.calculatePercentage(redeemAmount)
       );
-      expect(event.args.fee).to.equal(helper.calculatePrecentage(redeemAmount));
+      expect(event.args.fee).to.equal(helper.calculatePercentage(redeemAmount));
     });
 
     it("should redeem DS : Approval", async function () {
@@ -302,6 +304,7 @@ describe("PSM core", function () {
         fixture.Id,
         dsId!,
         redeemAmount,
+        defaultSigner.account.address,
         msgPermit,
         deadline,
       ]);
@@ -426,6 +429,7 @@ describe("PSM core", function () {
         fixture.Id,
         dsId!,
         expectedAMount,
+        defaultSigner.account.address,
         permitmsg,
         deadline,
       ]);
@@ -438,7 +442,7 @@ describe("PSM core", function () {
 
       expect(event[0].args.dsExchangeRate).to.equal(rates);
       expect(event[0].args.received).to.equal(
-        depositAmount - helper.calculatePrecentage(depositAmount)
+        depositAmount - helper.calculatePercentage(depositAmount)
       );
     });
 
@@ -466,13 +470,12 @@ describe("PSM core", function () {
         depositor: defaultSigner.account.address,
       });
 
-      const raReceived = await fixture.moduleCore.read.previewRedeemRaWithDs([
+      const [raReceived] = await fixture.moduleCore.read.previewRedeemRaWithDs([
         fixture.Id,
         dsId!,
         expectedAMount,
       ]);
-
-      expect(raReceived).to.equal(depositAmount);
+      expect(raReceived).to.equal(parseEther("9.5"));
     });
   });
 
@@ -525,6 +528,7 @@ describe("PSM core", function () {
       await fixture.moduleCore.write.redeemRaWithCtDs([
         fixture.Id,
         parseEther("2"),
+        defaultSigner.account.address,
         msgPermit1,
         deadline,
         msgPermit2,
@@ -698,6 +702,7 @@ describe("PSM core", function () {
         fixture.Id,
         dsId!,
         parseEther("10"),
+        defaultSigner.account.address,
         permitmsg,
         deadline,
       ]);
@@ -709,14 +714,14 @@ describe("PSM core", function () {
       expect(availableDs).to.equal(parseEther("10"));
 
       // remember fee rate is fixed at 10%
-      const [_, received, feePrecentage, fee, exchangeRate] =
+      const [_, received, feePercentage, fee, exchangeRate] =
         await fixture.moduleCore.read.previewRepurchase([
           fixture.Id,
           parseEther("2"),
         ]);
-      
+
       expect(received).to.equal(parseEther("0.95"));
-      expect(feePrecentage).to.equal(parseEther("5"));
+      expect(feePercentage).to.equal(parseEther("5"));
       expect(fee).to.equal(parseEther("0.1"));
       expect(exchangeRate).to.equal(parseEther("2"));
 
@@ -732,7 +737,7 @@ describe("PSM core", function () {
       expect(event.args.received).to.equal(received);
       expect(event.args.fee).to.equal(fee);
       expect(event.args.exchangeRates).to.equal(exchangeRate);
-      expect(event.args.feePrecentage).to.equal(feePrecentage);
+      expect(event.args.feePercentage).to.equal(feePercentage);
     });
 
     it("shouldn't be able to repurchase after expired", async function () {
@@ -778,6 +783,7 @@ describe("PSM core", function () {
         fixture.Id,
         dsId!,
         parseEther("10"),
+        defaultSigner.account.address,
         permitmsg,
         deadline,
       ]);
@@ -838,6 +844,7 @@ describe("PSM core", function () {
         fixture.Id,
         dsId!,
         parseEther("50"),
+        defaultSigner.account.address,
         permitmsg,
         deadline,
       ]);
@@ -876,6 +883,7 @@ describe("PSM core", function () {
         fixture.Id,
         dsId!,
         parseEther("1"),
+        defaultSigner.account.address,
         permitmsg2,
         deadline2,
       ]);
@@ -942,6 +950,7 @@ describe("PSM core", function () {
         parseEther("5"),
         parseEther("1"),
         10n,
+        BigInt(helper.expiry(1000000)),
       ]);
 
       const events = await fixture.moduleCore.getEvents.Issued({
@@ -949,7 +958,7 @@ describe("PSM core", function () {
         expiry: BigInt(expiry),
       });
 
-      await fixture.moduleCore.write.depositLv([Id, parseEther("10")]);
+      await fixture.moduleCore.write.depositLv([Id, parseEther("10"), 0n, 0n]);
 
       await fixture.lv.write.approve([
         fixture.moduleCore.address,
@@ -1020,6 +1029,7 @@ describe("PSM core", function () {
         fixture.Id,
         dsId!,
         parseEther("100"),
+        defaultSigner.account.address,
         msgPermit,
         deadline,
       ]);
@@ -1117,19 +1127,20 @@ describe("PSM core", function () {
         fixture.Id,
         dsId!,
         parseEther("10"),
+        defaultSigner.account.address,
         permitmsg,
         deadline,
       ]);
 
       // remember fee rate is fixed at 10%
-      const [_, received, feePrecentage, fee, exchangeRate] =
+      const [_, received, feePercentage, fee, exchangeRate] =
         await fixture.moduleCore.read.previewRepurchase([
           fixture.Id,
           parseEther("2"),
         ]);
 
       expect(received).to.equal(parseEther("0.95"));
-      expect(feePrecentage).to.equal(parseEther("5"));
+      expect(feePercentage).to.equal(parseEther("5"));
       expect(fee).to.equal(parseEther("0.1"));
       expect(exchangeRate).to.equal(parseEther("2"));
     });
