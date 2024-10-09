@@ -84,7 +84,8 @@ contract CorkConfig is AccessControl, Pausable {
         uint256 decayDiscountRateInDays,
         // won't have effect on first issuance
         uint256 rolloverPeriodInblocks,
-        uint256 ammLiquidationDeadline
+        uint256 ammLiquidationDeadline,
+        uint256 dsId
     ) external whenNotPaused onlyManager {
         moduleCore.issueNewDs(
             id,
@@ -93,7 +94,8 @@ contract CorkConfig is AccessControl, Pausable {
             repurchaseFeePercentage,
             decayDiscountRateInDays,
             rolloverPeriodInblocks,
-            ammLiquidationDeadline
+            ammLiquidationDeadline,
+            dsId
         );
     }
 
