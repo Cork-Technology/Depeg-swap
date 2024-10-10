@@ -86,7 +86,7 @@ library SwapperMathLibrary {
 
         amount = amount * 1e18 / (2 * r);
 
-        borrowed = (r * (amount - e)) / 1e18;
+        borrowed = (r * amount / 1e18 - e);
     }
 
     function calculatePercentage(uint256 amount, uint256 percentage) private pure returns (uint256 result) {
