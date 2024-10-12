@@ -5,7 +5,6 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 
-
 interface IPriceOracle {
     function getPrice(address asset) external view returns (uint256);
 }
@@ -32,17 +31,15 @@ abstract contract HedgedUnit is Ownable {
     IDepegSwapMarket public depegSwapMarket;
     IRedemptionPool public redemptionPool;
 
-
     bool public mintingPaused;
 
     uint256 public constant PRECISION = 1e18;
     uint256 public mintCap;
     uint256 public totalSupply;
     uint256 public lastRolloverBlock;
-    uint256 public constant BLOCKS_BEFORE_EXPIRY = 100; 
+    uint256 public constant BLOCKS_BEFORE_EXPIRY = 100;
     uint256 public constant DEPEG_THRESHOLD = 1e16;
-    uint256 public constant BLOCKS_BEFORE_SHORTAGE_CHECK = 200; 
-
+    uint256 public constant BLOCKS_BEFORE_SHORTAGE_CHECK = 200;
 
     mapping(address => uint256) public balanceOf;
 
@@ -104,7 +101,6 @@ abstract contract HedgedUnit is Ownable {
     }
 
     function handleDepegSwapShortage(uint256 amountToSell) external onlyOwner {
-
         peggedAsset.safeTransfer(address(this), amountToSell);
         mintingPaused = true;
     }
@@ -132,12 +128,12 @@ abstract contract HedgedUnit is Ownable {
     }
 
     function isDepegScenario() internal view returns (bool) {
-        uint256 peggedAssetPrice = getPeggedAssetPrice(); 
+        uint256 peggedAssetPrice = getPeggedAssetPrice();
         return peggedAssetPrice <= (PRECISION - DEPEG_THRESHOLD);
     }
 
     function isDepegSwapShortage() internal view returns (bool) {
-        uint256 availableDepegSwaps = getAvailableDepegSwaps(); 
+        uint256 availableDepegSwaps = getAvailableDepegSwaps();
         uint256 requiredDepegSwaps = peggedAsset.balanceOf(address(this));
         return availableDepegSwaps < requiredDepegSwaps;
     }
@@ -174,15 +170,11 @@ abstract contract HedgedUnit is Ownable {
         emit RolloverExecuted(newDepegSwapAmount);
     }
 
-   
-    function getPeggedAssetPrice() internal view returns (uint256) {
-    }
+    function getPeggedAssetPrice() internal view returns (uint256) {}
 
-    function getAvailableDepegSwaps() internal view returns (uint256) {
-    }
+    function getAvailableDepegSwaps() internal view returns (uint256) {}
 
     function redeemAssets(uint256 peggedAmount, uint256 depegSwapAmount) internal {
-     
         peggedAsset.approve(address(redemptionPool), peggedAmount);
         depegSwap.approve(address(redemptionPool), depegSwapAmount);
 
@@ -192,7 +184,6 @@ abstract contract HedgedUnit is Ownable {
     }
 
     function sellPeggedAsset(uint256 amount) internal {
-       
         peggedAsset.approve(address(depegSwapMarket), amount);
 
         uint256 receivedRedemptionAsset = depegSwapMarket.sellPeggedAsset(amount);
@@ -203,7 +194,7 @@ abstract contract HedgedUnit is Ownable {
     function calculateRequiredRedemptionAsset(uint256 peggedAssetAmount) internal view returns (uint256) {
         uint256 depegSwapPrice = depegSwapMarket.getCurrentPrice();
 
-        return (peggedAssetAmount*(depegSwapPrice))/(PRECISION);
+        return (peggedAssetAmount * (depegSwapPrice)) / (PRECISION);
     }
 
     function convertPeggedToRedemption(uint256 amount) internal {
