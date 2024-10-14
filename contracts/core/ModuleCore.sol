@@ -238,7 +238,6 @@ contract ModuleCore is OwnableUpgradeable, UUPSUpgradeable, PsmCore, Initialize,
     }
 
     function expiry(Id id) external view override returns (uint256 expiry) {
-        State storage state = states[id];
-        expiry = PsmLibrary.nextExpiry(state);
+        expiry = PsmLibrary.nextExpiry(states[id]);
     }
 }
