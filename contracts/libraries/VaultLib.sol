@@ -18,6 +18,7 @@ import {DepegSwap, DepegSwapLibrary} from "./DepegSwapLib.sol";
 import {Asset, ERC20, ERC20Burnable} from "../core/assets/Asset.sol";
 import {ICommon} from "../interfaces/ICommon.sol";
 import {SafeERC20, IERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import {IVault} from "../interfaces/IVault.sol";
 
 /**
  * @title Vault Library Contract
@@ -34,16 +35,6 @@ library VaultLibrary {
     using DepegSwapLibrary for DepegSwap;
     using VaultPoolLibrary for VaultPool;
     using SafeERC20 for IERC20;
-
-    /// @notice caller is not authorized to perform the action, e.g transfering
-    /// redemption rights to another address while not having the rights
-    error Unauthorized(address caller);
-
-    /// @notice inssuficient balance to perform expiry redeem(e.g requesting 5 LV to redeem but trying to redeem 10)
-    error InsufficientBalance(address caller, uint256 requested, uint256 balance);
-
-    /// @notice insufficient output amount, e.g trying to redeem 100 LV whcih you expect 100 RA but only received 50 RA
-    error InsufficientOutputAmount(uint256 amountOutMin, uint256 received);
 
     // for avoiding stack too deep errors
     struct Tolerance {
@@ -297,12 +288,17 @@ library VaultLibrary {
             self.vault.initialized = true;
         } else {
             // else we get the current exchange rate of LV
-            (exchangeRate,,) = previewRedeemEarly(self, 1 ether, flashSwapRouter);
+            (exchangeRate,,,) = previewRedeemEarly(self, 1 ether, flashSwapRouter);
         }
 
         self.vault.balances.ra.lockUnchecked(amount, from);
         __provideLiquidityWithRatio(
-            self, amount, flashSwapRouter, self.ds[self.globalAssetIdx].ct, ammRouter, Tolerance(raTolerance, ctTolerance)
+            self,
+            amount,
+            flashSwapRouter,
+            self.ds[self.globalAssetIdx].ct,
+            ammRouter,
+            Tolerance(raTolerance, ctTolerance)
         );
 
         // then we calculate how much LV we will get for the amount of RA we deposited with the exchange rate
@@ -311,6 +307,7 @@ library VaultLibrary {
 
         self.vault.lv.issue(from, amount);
 
+        self.vault.userLvBalance[from].balance += amount;
         received = amount;
     }
 
@@ -328,7 +325,7 @@ library VaultLibrary {
             exchangeRate = 1 ether;
         } else {
             // else we get the current exchange rate of LV
-            (exchangeRate,,) = previewRedeemEarly(self, 1 ether, flashSwapRouter);
+            (exchangeRate,,,) = previewRedeemEarly(self, 1 ether, flashSwapRouter);
         }
 
         // then we calculate how much LV we will get for the amount of RA we deposited with the exchange rate
@@ -342,6 +339,13 @@ library VaultLibrary {
         );
 
         lvReceived = amount;
+    }
+
+    // Calculates PA amount as per price of PA with LV total supply, PA balance and given LV amount
+    // lv price = paReserve / lvTotalSupply
+    // PA amount = lvAmount * (PA reserve in contract / total supply of LV)
+    function _calculatePaPriceForLv(State storage self, uint256 lvAmt) internal view returns (uint256 paAmount) {
+        return lvAmt * self.vault.pool.withdrawalPool.paBalance / ERC20(self.vault.lv._address).totalSupply();
     }
 
     function __liquidateUnchecked(
@@ -690,45 +694,62 @@ library VaultLibrary {
     function redeemEarly(
         State storage self,
         address owner,
-        address receiver,
-        uint256 amount,
-        IDsFlashSwapCore flashSwapRouter,
-        IUniswapV2Router02 ammRouter,
-        bytes memory rawLvPermitSig,
-        uint256 permitDeadline,
-        uint256 amountOutMin,
-        uint256 ammDeadline
-    ) external returns (uint256 received, uint256 fee, uint256 feePercentage) {
+        IVault.RedeemEarlyParams memory redeemParams,
+        IVault.Routers memory routers,
+        IVault.PermitParams memory permitParams
+    ) external returns (uint256 received, uint256 fee, uint256 feePercentage, uint256 paAmount) {
         safeBeforeExpired(self);
-        if (permitDeadline != 0) {
+        if (permitParams.deadline != 0) {
             DepegSwapLibrary.permit(
-                self.vault.lv._address, rawLvPermitSig, owner, address(this), amount, permitDeadline
+                self.vault.lv._address,
+                permitParams.rawLvPermitSig,
+                owner,
+                address(this),
+                redeemParams.amount,
+                permitParams.deadline
             );
         }
 
+        if (redeemParams.amount > self.vault.userLvBalance[owner].balance) {
+            revert IVault.InsufficientBalance(owner, redeemParams.amount, self.vault.userLvBalance[owner].balance);
+        }
+
+        self.vault.userLvBalance[owner].balance -= redeemParams.amount;
+
+        paAmount = _calculatePaPriceForLv(self, redeemParams.amount);
+        self.vault.pool.withdrawalPool.paBalance -= paAmount;
+        ERC20(self.info.pair0).transfer(owner, paAmount);
+
         feePercentage = self.vault.config.fee;
 
-        received = _liquidateLpPartial(self, self.globalAssetIdx, flashSwapRouter, ammRouter, amount, ammDeadline);
+        received = _liquidateLpPartial(
+            self,
+            self.globalAssetIdx,
+            routers.flashSwapRouter,
+            routers.ammRouter,
+            redeemParams.amount,
+            redeemParams.ammDeadline
+        );
 
         fee = MathHelper.calculatePercentageFee(received, feePercentage);
 
         if (fee != 0) {
-            provideLiquidityWithFee(self, fee, flashSwapRouter, ammRouter);
+            provideLiquidityWithFee(self, fee, routers.flashSwapRouter, routers.ammRouter);
             received = received - fee;
         }
 
-        if (received < amountOutMin) {
-            revert InsufficientOutputAmount(amountOutMin, received);
+        if (received < redeemParams.amountOutMin) {
+            revert IVault.InsufficientOutputAmount(redeemParams.amountOutMin, received);
         }
 
-        ERC20Burnable(self.vault.lv._address).burnFrom(owner, amount);
-        self.vault.balances.ra.unlockToUnchecked(received, receiver);
+        ERC20Burnable(self.vault.lv._address).burnFrom(owner, redeemParams.amount);
+        self.vault.balances.ra.unlockToUnchecked(received, redeemParams.receiver);
     }
 
     function previewRedeemEarly(State storage self, uint256 amount, IDsFlashSwapCore flashSwapRouter)
         public
         view
-        returns (uint256 received, uint256 fee, uint256 feePercentage)
+        returns (uint256 received, uint256 fee, uint256 feePercentage, uint256 paAmpount)
     {
         safeBeforeExpired(self);
 
@@ -739,5 +760,6 @@ library VaultLibrary {
         fee = MathHelper.calculatePercentageFee(received, feePercentage);
 
         received -= fee;
+        paAmpount = _calculatePaPriceForLv(self, amount);
     }
 }
