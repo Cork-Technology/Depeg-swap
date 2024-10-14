@@ -453,14 +453,13 @@ contract RouterState is
 
         // use the vault profit
         (raAdded, ctAdded) =
-            MathHelper.calculateProvideLiquidityAmountBasedOnCtPrice(profit, ratio, assetPair.ds.exchangeRate());
+            MathHelper.calculateProvideLiquidityAmountBasedOnCtPrice(profit, ratio);
 
         raReserve += uint112(raAdded);
         ctReserve += uint112(ctAdded);
 
         // update amountOut since we sold some from the reserve
-        uint256 exchangeRates = assetPair.ds.exchangeRate();
-        (, amountOut) = SwapperMathLibrary.getAmountOutBuyDs(exchangeRates, raReserve, ctReserve, amount);
+        (, amountOut) = SwapperMathLibrary.getAmountOutBuyDs(raReserve, ctReserve, amount);
     }
 
     function isRolloverSale(Id id, uint256 dsId) external view returns (bool) {
@@ -698,7 +697,7 @@ contract RouterState is
 
         IPSMcore psm = IPSMcore(_moduleCore);
 
-        (uint256 received,,) = psm.redeemRaWithCtDs(reserveId, ctAmount);
+        uint256 received = psm.redeemRaWithCtDs(reserveId, ctAmount);
 
         // for rounding error and to satisfy uni v2 liquidity rules(it forces us to repay 1 wei higher to prevent liquidity stealing)
         uint256 repaymentAmount = received - raAttributed;
