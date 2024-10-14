@@ -1,0 +1,148 @@
+// SPDX-License-Identifier: MIT
+pragma solidity 0.8.24;
+
+import {Helper} from "./Helper.sol";
+import {HedgeUnit} from "../../contracts/core/assets/HedgeUnit.sol";
+import {IHedgeUnit} from "../../contracts/interfaces/IHedgeUnit.sol";
+import {DummyWETH} from "../../contracts/dummy/DummyWETH.sol";
+import {Id} from "./../../contracts/libraries/Pair.sol";
+
+contract HedgeUnitTest is Helper {
+    HedgeUnit public hedgeUnit;
+    DummyWETH public dsToken;
+    DummyWETH internal ra;
+    DummyWETH internal pa;
+
+    Id public currencyId;
+    uint256 public dsId;
+
+    address public ct;
+    address public ds;
+    address public owner;
+    address public user;
+
+    uint256 public DEFAULT_DEPOSIT_AMOUNT = 1900 ether;
+    uint256 constant INITIAL_MINT_CAP = 1000 * 1e18; // 1000 tokens
+    uint256 constant USER_BALANCE = 500 * 1e18;
+
+    function setUp() public {
+        vm.startPrank(DEFAULT_ADDRESS);
+        // Setup accounts
+        owner = address(this); // Owner of the contract
+        user = address(0x123);
+
+        deployModuleCore();
+
+        (ra, pa, currencyId) = initializeAndIssueNewDs(block.timestamp + 1 days);
+        vm.deal(DEFAULT_ADDRESS, 100_000_000 ether);
+        ra.deposit{value: 100000 ether}();
+        pa.deposit{value: 100000 ether}();
+
+        // 10000 for psm 10000 for LV
+        ra.approve(address(moduleCore), 100_000_000 ether);
+
+        moduleCore.depositPsm(currencyId, USER_BALANCE * 2);
+        moduleCore.depositLv(currencyId, USER_BALANCE * 2, 0, 0);
+
+        fetchProtocolGeneralInfo();
+
+        // Deploy the HedgeUnit contract
+        hedgeUnit = new HedgeUnit(ds, address(pa), "DS/PA", INITIAL_MINT_CAP);
+
+        // Transfer tokens to user for testing
+        dsToken.transfer(user, USER_BALANCE);
+        pa.deposit{value: USER_BALANCE}();
+        pa.transfer(user, USER_BALANCE);
+    }
+
+    function fetchProtocolGeneralInfo() internal {
+        dsId = moduleCore.lastDsId(currencyId);
+        (ct, ds) = moduleCore.swapAsset(currencyId, dsId);
+        dsToken = DummyWETH(payable(address(ds)));
+    }
+
+    function testMintingTokens() public {
+        // Test minting by the user
+        vm.startPrank(user);
+
+        // Approve tokens for HedgeUnit contract
+        dsToken.approve(address(hedgeUnit), USER_BALANCE);
+        pa.approve(address(hedgeUnit), USER_BALANCE);
+
+        // Mint 100 HedgeUnit tokens
+        uint256 mintAmount = 100 * 1e18;
+        hedgeUnit.mint(mintAmount);
+
+        // Check balances and total supply
+        assertEq(hedgeUnit.balanceOf(user), mintAmount);
+        assertEq(hedgeUnit.totalSupply(), mintAmount);
+
+        // Check token balances in the contract
+        assertEq(dsToken.balanceOf(address(hedgeUnit)), mintAmount);
+        assertEq(pa.balanceOf(address(hedgeUnit)), mintAmount);
+
+        vm.stopPrank();
+    }
+
+    function testMintCapExceeded() public {
+        vm.startPrank(user);
+
+        // Approve tokens for HedgeUnit contract
+        dsToken.approve(address(hedgeUnit), USER_BALANCE);
+        pa.approve(address(hedgeUnit), USER_BALANCE);
+
+        // Try minting more than the mint cap
+        uint256 mintAmount = 2000 * 1e18; // Exceed the mint cap
+        vm.expectRevert(IHedgeUnit.MintCapExceeded.selector);
+        hedgeUnit.mint(mintAmount);
+
+        vm.stopPrank();
+    }
+
+    function testDissolvingTokens() public {
+        // Mint tokens first
+        testMintingTokens();
+
+        vm.startPrank(user);
+
+        uint256 dissolveAmount = 50 * 1e18;
+
+        // Dissolve 50 tokens
+        hedgeUnit.dissolve(dissolveAmount);
+
+        // Check that the user's HedgeUnit balance and contract's DS/PA balance decreased
+        assertEq(hedgeUnit.balanceOf(user), 50 * 1e18); // 100 - 50 = 50 tokens left
+        assertEq(dsToken.balanceOf(user), USER_BALANCE - 50 * 1e18); // 500 - 50
+        assertEq(pa.balanceOf(user), USER_BALANCE - 50 * 1e18); // 500 - 50
+
+        vm.stopPrank();
+    }
+
+    function testMintingPaused() public {
+        // Pause minting
+        hedgeUnit.setMintingPaused(true);
+
+        // Expect revert when minting while paused
+        vm.startPrank(user);
+        dsToken.approve(address(hedgeUnit), USER_BALANCE);
+        pa.approve(address(hedgeUnit), USER_BALANCE);
+        vm.expectRevert(IHedgeUnit.MintingPaused.selector);
+        hedgeUnit.mint(100 * 1e18);
+        vm.stopPrank();
+    }
+
+    function testMintCapUpdate() public {
+        // Update mint cap to a new value
+        uint256 newMintCap = 2000 * 1e18;
+        hedgeUnit.updateMintCap(newMintCap);
+
+        // Check that the mint cap was updated
+        assertEq(hedgeUnit.mintCap(), newMintCap);
+    }
+
+    function testMintCapUpdateRevert() public {
+        // Try to update the mint cap to the same value
+        vm.expectRevert(IHedgeUnit.InvalidValue.selector);
+        hedgeUnit.updateMintCap(INITIAL_MINT_CAP);
+    }
+}
