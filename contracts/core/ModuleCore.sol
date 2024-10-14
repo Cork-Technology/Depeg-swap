@@ -110,7 +110,7 @@ contract ModuleCore is OwnableUpgradeable, UUPSUpgradeable, PsmCore, Initialize,
         address ra = state.info.pair1;
 
         (address ct, address ds) = IAssetFactory(SWAP_ASSET_FACTORY).deploySwapAssets(
-            ra, state.info.pair0, address(this), expiry, exchangeRates
+            ra, state.info.pair0, address(this), expiry, exchangeRates, state.globalAssetIdx + 1
         );
 
         // avoid stack to deep error
