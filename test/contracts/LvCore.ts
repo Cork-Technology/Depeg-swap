@@ -159,21 +159,27 @@ describe("LvCore", function () {
         signer: defaultSigner,
       });
 
-      const [preview, ,] = await moduleCore.read.previewRedeemEarlyLv([
+      const [preview, , ,] = await moduleCore.read.previewRedeemEarlyLv([
         Id,
         redeemAmount,
       ]);
 
       await moduleCore.write.redeemEarlyLv(
         [
-          Id,
+          {
+            // RedeemEarlyParams
+            id: Id, // Id
+            receiver: defaultSigner.account.address, // receiver
+            amount: redeemAmount, // amount
+            amountOutMin: preview, // amountOutMin
+            ammDeadline: BigInt(helper.expiry(1000000)), // ammDeadline
+          },
           defaultSigner.account.address,
-          defaultSigner.account.address,
-          redeemAmount,
-          msgPermit,
-          deadline,
-          preview,
-          BigInt(helper.expiry(1000000)),
+          {
+            // PermitParams
+            rawLvPermitSig: msgPermit, // rawLvPermitSig
+            deadline: deadline, // deadline
+          },
         ],
         {
           account: defaultSigner.account,
@@ -222,16 +228,18 @@ describe("LvCore", function () {
       await moduleCore.write.depositLv([Id, depositAmount, 0n, 0n]);
       await fixture.lv.write.approve([moduleCore.address, depositAmount]);
 
-      const [preview, ,] = await moduleCore.read.previewRedeemEarlyLv([
+      const [preview, , ,] = await moduleCore.read.previewRedeemEarlyLv([
         Id,
         redeemAmount,
       ]);
       await moduleCore.write.redeemEarlyLv([
-        Id,
-        defaultSigner.account.address,
-        redeemAmount,
-        preview,
-        BigInt(helper.expiry(1000000)),
+        {
+          id: Id, // Id
+          receiver: defaultSigner.account.address, // receiver
+          amount: redeemAmount, // amount
+          amountOutMin: preview, // amountOutMin
+          ammDeadline: BigInt(helper.expiry(1000000)), // ammDeadline
+        },
       ]);
       const event = await moduleCore.getEvents
         .LvRedeemEarly({
@@ -275,24 +283,37 @@ describe("LvCore", function () {
 
       await pauseAllPools();
       await expect(
-        moduleCore.write.redeemEarlyLv([
-          Id,
-          defaultSigner.account.address,
-          defaultSigner.account.address,
-          redeemAmount,
-          msgPermit,
-          deadline,
-          preview,
-          BigInt(helper.expiry(1000000)),
-        ])
+        moduleCore.write.redeemEarlyLv(
+          [
+            {
+              // RedeemEarlyParams
+              id: Id, // Id
+              receiver: defaultSigner.account.address, // receiver
+              amount: redeemAmount, // amount
+              amountOutMin: preview, // amountOutMin
+              ammDeadline: BigInt(helper.expiry(1000000)), // ammDeadline
+            },
+            defaultSigner.account.address,
+            {
+              // PermitParams
+              rawLvPermitSig: msgPermit, // rawLvPermitSig
+              deadline: deadline, // deadline
+            },
+          ],
+          {
+            account: defaultSigner.account, // Additional account details
+          }
+        )
       ).to.be.rejectedWith("LVWithdrawalPaused()");
       await expect(
         moduleCore.write.redeemEarlyLv([
-          Id,
-          defaultSigner.account.address,
-          redeemAmount,
-          preview,
-          BigInt(helper.expiry(1000000)),
+          {
+            id: Id, // Id
+            receiver: defaultSigner.account.address, // receiver
+            amount: redeemAmount, // amount
+            amountOutMin: preview, // amountOutMin
+            ammDeadline: BigInt(helper.expiry(1000000)), // ammDeadline
+          },
         ])
       ).to.be.rejectedWith("LVWithdrawalPaused()");
     });
@@ -303,18 +324,20 @@ describe("LvCore", function () {
 
     await moduleCore.write.depositLv([Id, depositAmount, 0n, 0n]);
     await fixture.lv.write.approve([moduleCore.address, depositAmount]);
-    const [preview, ,] = await moduleCore.read.previewRedeemEarlyLv([
+    const [preview, , ,] = await moduleCore.read.previewRedeemEarlyLv([
       Id,
       redeemAmount,
     ]);
 
     await expect(
       moduleCore.write.redeemEarlyLv([
-        Id,
-        defaultSigner.account.address,
-        redeemAmount,
-        preview + 1n,
-        BigInt(helper.expiry(1000000)),
+        {
+          id: Id, // Id
+          receiver: defaultSigner.account.address, // receiver
+          amount: redeemAmount, // amount
+          amountOutMin: preview + 1n, // amountOutMin
+          ammDeadline: BigInt(helper.expiry(1000000)), // ammDeadline
+        },
       ])
     ).to.be.rejected;
   });
@@ -325,17 +348,19 @@ describe("LvCore", function () {
 
     await moduleCore.write.depositLv([Id, depositAmount, 0n, 0n]);
     await fixture.lv.write.approve([moduleCore.address, depositAmount]);
-    const [preview, ,] = await moduleCore.read.previewRedeemEarlyLv([
+    const [preview, , ,] = await moduleCore.read.previewRedeemEarlyLv([
       Id,
       redeemAmount,
     ]);
 
     await moduleCore.write.redeemEarlyLv([
-      Id,
-      defaultSigner.account.address,
-      redeemAmount,
-      preview,
-      BigInt(helper.expiry(1000000)),
+      {
+        id: Id, // Id
+        receiver: defaultSigner.account.address, // receiver
+        amount: redeemAmount, // amount
+        amountOutMin: preview, // amountOutMin
+        ammDeadline: BigInt(helper.expiry(1000000)), // ammDeadline
+      },
     ]);
 
     const event = await moduleCore.getEvents
@@ -371,9 +396,8 @@ describe("LvCore", function () {
       const { Id } = await issueNewSwapAssets(expiry);
 
       await moduleCore.write.depositLv([Id, depositAmount, 0n, 0n]);
-      const [rcv, fee, percentage] = await moduleCore.read.previewRedeemEarlyLv(
-        [Id, redeemAmount]
-      );
+      const [rcv, fee, percentage, paAmount] =
+        await moduleCore.read.previewRedeemEarlyLv([Id, redeemAmount]);
 
       expect(percentage).to.be.equal(parseEther("5"));
       expect(fee).to.be.closeTo(
