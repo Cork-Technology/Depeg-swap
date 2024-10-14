@@ -236,4 +236,8 @@ contract ModuleCore is OwnableUpgradeable, UUPSUpgradeable, PsmCore, Initialize,
         PsmLibrary.updatePSMBaseRedemptionFeePercentage(state, newPsmBaseRedemptionFeePercentage);
         emit PsmBaseRedemptionFeePercentageUpdated(id, newPsmBaseRedemptionFeePercentage);
     }
+
+    function expiry(Id id) external view override returns (uint256 expiry) {
+        expiry = PsmLibrary.nextExpiry(states[id]);
+    }
 }

@@ -531,4 +531,23 @@ describe("Module Core", function () {
       ).to.be.rejectedWith("OnlyConfigAllowed()");
     });
   });
+
+  describe("expiry", function () {
+    it("should return the correct expiry time for a given ID", async function () {
+      const currentTime = await time.latest();
+      const expiryTime = currentTime + 86400; 
+      await corkConfig.write.issueNewDs([
+        fixture.Id,
+        BigInt(expiryTime),
+        parseEther("1"),
+        parseEther("5"),
+        parseEther("1"),
+        10n,
+        BigInt(helper.expiry(1000000)),
+      ]);
+      const expectedExpiry = await moduleCore.read.expiry([fixture.Id]);
+      expect(expectedExpiry).to.equal(BigInt(expiryTime));
+    });
+  });
+   
 });
