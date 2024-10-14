@@ -312,7 +312,7 @@ contract RouterState is
         }
 
         // trigger flash swaps and send the attributed DS tokens to the user
-        __flashSwap(assetPair, assetPair.pair, borrowedAmount, 0, dsId, reserveId, true, amountOut, msg.sender);
+        __flashSwap(assetPair, assetPair.pair, borrowedAmount, 0, dsId, reserveId, true, amountOut, msg.sender, amount);
 
         // add the amount of DS tokens from the rollover, if any
         amountOut += dsReceived;
@@ -453,14 +453,13 @@ contract RouterState is
 
         // use the vault profit
         (raAdded, ctAdded) =
-            MathHelper.calculateProvideLiquidityAmountBasedOnCtPrice(profit, ratio, assetPair.ds.exchangeRate());
+            MathHelper.calculateProvideLiquidityAmountBasedOnCtPrice(profit, ratio);
 
         raReserve += uint112(raAdded);
         ctReserve += uint112(ctAdded);
 
         // update amountOut since we sold some from the reserve
-        uint256 exchangeRates = assetPair.ds.exchangeRate();
-        (, amountOut) = SwapperMathLibrary.getAmountOutBuyDs(exchangeRates, raReserve, ctReserve, amount);
+        (, amountOut) = SwapperMathLibrary.getAmountOutBuyDs(raReserve, ctReserve, amount);
     }
 
     function isRolloverSale(Id id, uint256 dsId) external view returns (bool) {
@@ -555,7 +554,7 @@ contract RouterState is
             revert InsufficientOutputAmount();
         }
 
-        __flashSwap(assetPair, assetPair.pair, 0, amount, dsId, reserveId, false, amountOut, caller);
+        __flashSwap(assetPair, assetPair.pair, 0, amount, dsId, reserveId, false, amountOut, caller, amount);
     }
 
     /**
@@ -579,6 +578,19 @@ contract RouterState is
         }
     }
 
+    struct CallbackData {
+        bool buyDs;
+        address caller;
+        // CT or RA amount borrowed
+        uint256 borrowed;
+        // DS or RA amount provided
+        uint256 provided;
+        // DS/RA amount attributed to user
+        uint256 attributed;
+        Id reserveId;
+        uint256 dsId;
+    }
+
     function __flashSwap(
         AssetPair storage assetPair,
         IUniswapV2Pair univ2Pair,
@@ -587,37 +599,53 @@ contract RouterState is
         uint256 dsId,
         Id reserveId,
         bool buyDs,
-        // extra data to be encoded into the callback
         // will be interpreted as the ra attributed to user for selling ds
         // and ds attributed to user for buying ra
-        uint256 extraData,
-        address caller
+        uint256 attributed,
+        address caller,
+        // DS or RA amount provided
+        uint256 provided
     ) internal {
         (,, uint256 amount0out, uint256 amount1out) = MinimalUniswapV2Library.sortTokensUnsafeWithAmount(
             address(assetPair.ra), address(assetPair.ct), raAmount, ctAmount
         );
 
-        bytes memory data = abi.encode(reserveId, dsId, buyDs, caller, extraData);
+        uint256 borrowed = amount0out == 0 ? amount1out : amount0out;
+        CallbackData memory callbackData = CallbackData(buyDs, caller, borrowed, provided, attributed, reserveId, dsId);
+        bytes memory data = abi.encode(callbackData);
 
         univ2Pair.swap(amount0out, amount1out, address(this), data);
     }
 
     function uniswapV2Call(address sender, uint256 amount0, uint256 amount1, bytes calldata data) external {
-        (Id reserveId, uint256 dsId, bool buyDs, address caller, uint256 extraData) =
-            abi.decode(data, (Id, uint256, bool, address, uint256));
+        CallbackData memory callbackData = abi.decode(data, (CallbackData));
 
-        ReserveState storage self = reserves[reserveId];
-        IUniswapV2Pair pair = self.getPair(dsId);
+        ReserveState storage self = reserves[callbackData.reserveId];
+        IUniswapV2Pair pair = self.getPair(callbackData.dsId);
 
         assert(msg.sender == address(pair));
         assert(sender == address(this));
 
-        if (buyDs) {
-            __afterFlashswapBuy(self, reserveId, dsId, caller, extraData);
+        if (callbackData.buyDs) {
+            __afterFlashswapBuy(
+                self,
+                callbackData.reserveId,
+                callbackData.dsId,
+                callbackData.caller,
+                callbackData.attributed,
+                callbackData.provided,
+                callbackData.borrowed
+            );
         } else {
-            uint256 amount = amount0 == 0 ? amount1 : amount0;
-
-            __afterFlashswapSell(self, amount, reserveId, dsId, caller, extraData);
+            // same as borrowed since we're redeeming the same number of DS tokens with CT
+            __afterFlashswapSell(
+                self,
+                callbackData.borrowed,
+                callbackData.reserveId,
+                callbackData.dsId,
+                callbackData.caller,
+                callbackData.attributed
+            );
         }
     }
 
@@ -626,22 +654,33 @@ contract RouterState is
         Id reserveId,
         uint256 dsId,
         address caller,
-        uint256 dsAttributed
+        uint256 dsAttributed,
+        uint256 provided,
+        uint256 borrowed
     ) internal {
         AssetPair storage assetPair = self.ds[dsId];
-        IERC20(assetPair.ra).safeIncreaseAllowance(_moduleCore, dsAttributed);
+
+        uint256 deposited = provided + borrowed;
+
+
+        IERC20(assetPair.ra).safeIncreaseAllowance(_moduleCore, deposited);
 
         IPSMcore psm = IPSMcore(_moduleCore);
-        psm.depositPsm(reserveId, dsAttributed);
+        (uint256 received,) = psm.depositPsm(reserveId, deposited);
+
+        // for rounding error protection
+        dsAttributed -= 1;
+
+        assert(received >= dsAttributed);
 
         // should be the same, we don't compare with the RA amount since we maybe dealing
         // with a non-rebasing token, in which case the amount deposited and the amount received will always be different
         // so we simply enforce that the amount received is equal to the amount attributed to the user
 
         // send caller their DS
-        assetPair.ds.transfer(caller, dsAttributed);
+        assetPair.ds.transfer(caller, received);
         // repay flash loan
-        assetPair.ct.transfer(msg.sender, dsAttributed);
+        assetPair.ct.transfer(msg.sender, received);
     }
 
     function __afterFlashswapSell(
@@ -658,7 +697,7 @@ contract RouterState is
 
         IPSMcore psm = IPSMcore(_moduleCore);
 
-        (uint256 received,,) = psm.redeemRaWithCtDs(reserveId, ctAmount);
+        uint256 received = psm.redeemRaWithCtDs(reserveId, ctAmount);
 
         // for rounding error and to satisfy uni v2 liquidity rules(it forces us to repay 1 wei higher to prevent liquidity stealing)
         uint256 repaymentAmount = received - raAttributed;

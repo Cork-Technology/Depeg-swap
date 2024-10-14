@@ -23,13 +23,25 @@ library MathHelper {
      * @return ra the amount of ra needed to provide AMM with liquidity
      * @return ct the amount of ct needed to provide AMM with liquidity, also the amount of how much ra should be converted to ct
      */
-    function calculateProvideLiquidityAmountBasedOnCtPrice(uint256 amountra, uint256 priceRatio, uint256 exchangeRate)
+    function calculateProvideLiquidityAmountBasedOnCtPrice(uint256 amountra, uint256 priceRatio)
         external
         pure
         returns (uint256 ra, uint256 ct)
     {
-        ct = (amountra * 1e18) / (priceRatio + exchangeRate);
-        ra = (amountra - (ct * exchangeRate / 1e18));
+
+        ct = (amountra * 1e18) / (priceRatio + 1e18);
+        ra = (amountra - ct);
+    }
+
+    /**
+     * @dev amount = pa x exchangeRate
+     * calculate how much DS(need to be provided) and RA(user will receive) in respect to the exchange rate
+     * @param pa the amount of pa user provides
+     * @param exchangeRate the current exchange rate between RA:(CT+DS)
+     * @return amount the amount of RA user will receive & DS needs to be provided
+     */
+    function calculateEqualSwapAmount(uint256 pa, uint256 exchangeRate) external pure returns (uint256 amount) {
+        amount = (pa * exchangeRate) / 1e18;
     }
 
     function calculateProvideLiquidityAmount(uint256 amountRa, uint256 raDeposited) external pure returns (uint256) {

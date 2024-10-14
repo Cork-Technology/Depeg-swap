@@ -114,36 +114,45 @@ contract SwapMathTest is Test {
         uint256 raReserve = 9000 ether;
 
         uint256 amountToSell = 10 ether;
-        uint256 exchangeRates = 1 ether;
 
         (bool success, uint256 raReceived, uint256 repaymentAmount) =
-            SwapperMathLibrary.getAmountOutSellDs(raReserve, ctReserve, amountToSell, exchangeRates);
+            SwapperMathLibrary.getAmountOutSellDs(raReserve, ctReserve, amountToSell);
 
         vm.assertEq(success, true);
         vm.assertApproxEqAbs(raReceived, 1 ether, 0.03 ether);
 
-        exchangeRates = 0.5 ether;
-
-        // can't sell if exchange rate is below 1
+        // can't sell if can't borrow enough CT
+        amountToSell = 10000 ether;
         (success, raReceived, repaymentAmount) =
-            SwapperMathLibrary.getAmountOutSellDs(raReserve, ctReserve, amountToSell, exchangeRates);
+            SwapperMathLibrary.getAmountOutSellDs(raReserve, ctReserve, amountToSell);
 
         vm.assertEq(success, false);
     }
 
-    function testFuzz_sellDs(uint256 amountToSell, uint256 exchangeRates) external {
+    function testFuzz_sellDs(uint256 amountToSell) external {
         // 0.001 DS price
         uint256 ctReserve = 10000000 ether;
         uint256 raReserve = 9990000 ether;
 
         amountToSell = bound(amountToSell, 1 ether, ctReserve - raReserve);
-        exchangeRates = bound(exchangeRates, 1 ether, 2 ether);
 
         (bool success,, uint256 repaymentAmount) =
-            SwapperMathLibrary.getAmountOutSellDs(raReserve, ctReserve, amountToSell, exchangeRates);
+            SwapperMathLibrary.getAmountOutSellDs(raReserve, ctReserve, amountToSell);
 
         vm.assertTrue(success);
         // repayment amount should be less than what we got from PSM
-        vm.assertTrue(repaymentAmount <= amountToSell * exchangeRates / 1e18);
+        vm.assertTrue(repaymentAmount <= amountToSell);
     }
-   }
+
+    function test_buyDs() external {
+        uint256 ctReserve = 1000 ether;
+        uint256 raReserve = 900 ether;
+
+        uint256 amountToBuy = 0.1009 ether;
+
+        (uint256 borrowed, uint256 amount) = SwapperMathLibrary.getAmountOutBuyDs(raReserve, ctReserve, amountToBuy);
+
+        vm.assertApproxEqAbs(amount, 1.0000088 ether, 0.000001 ether);
+        vm.assertApproxEqAbs(borrowed, amount - amountToBuy, 0.0001 ether);
+    }
+}
