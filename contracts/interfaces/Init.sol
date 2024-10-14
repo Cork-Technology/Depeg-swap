@@ -74,5 +74,12 @@ interface Initialize {
      * @notice update PSM base redemption fee percentage
      * @param newPsmBaseRedemptionFeePercentage new value of base redemption fees, make sure it has 18 decimals(e.g 1% = 1e18)
      */
-    function updatePsmBaseRedemptionFeePercentage(Id id,uint256 newPsmBaseRedemptionFeePercentage) external;
+    function updatePsmBaseRedemptionFeePercentage(Id id, uint256 newPsmBaseRedemptionFeePercentage) external;
+
+    /**
+     * @notice get next expiry time from id
+     * @param id id of the pair
+     * @return expiry next expiry time in seconds
+     */
+    function expiry(Id id) external view returns (uint256 expiry);
 }

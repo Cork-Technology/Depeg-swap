@@ -14,7 +14,8 @@ interface IRepurchase {
      * @param buyer the address of the buyer
      * @param dsId the id of the DS
      * @param raUsed the amount of RA used
-     * @param received the amount of RA used
+     * @param receivedPa the amount of PA received
+     * @param receivedDs the amount of DS received
      * @param fee the fee charged
      * @param feePercentage the fee in percentage
      * @param exchangeRates the effective DS exchange rate at the time of repurchase
@@ -24,7 +25,8 @@ interface IRepurchase {
         address indexed buyer,
         uint256 indexed dsId,
         uint256 raUsed,
-        uint256 received,
+        uint256 receivedPa,
+        uint256 receivedDs,
         uint256 feePercentage,
         uint256 fee,
         uint256 exchangeRates
@@ -52,17 +54,31 @@ interface IRepurchase {
      * @notice repurchase using RA
      * @param id the id of PSM
      * @param amount the amount of RA to use
+     * @return dsId the id of the DS
+     * @return receivedPa the amount of PA received
+     * @return receivedDs the amount of DS received
+     * @return feePercentage the fee in percentage
+     * @return fee the fee charged
+     * @return exchangeRates the effective DS exchange rate at the time of repurchase
      */
     function repurchase(Id id, uint256 amount)
         external
-        returns (uint256 dsId, uint256 received, uint256 feePercentage, uint256 fee, uint256 exchangeRates);
+        returns (
+            uint256 dsId,
+            uint256 receivedPa,
+            uint256 receivedDs,
+            uint256 feePercentage,
+            uint256 fee,
+            uint256 exchangeRates
+        );
 
     /**
      * @notice returns the amount of pa and ds tokens that will be received after repurchasing
      * @param id the id of PSM
      * @param amount the amount of RA to use
      * @return dsId the id of the DS
-     * @return received the amount of RA received
+     * @return receivedPa the amount of PA received
+     * @return receivedDs the amount of DS received
      * @return feePercentage the fee in percentage
      * @return fee the fee charged
      * @return exchangeRates the effective DS exchange rate at the time of repurchase
@@ -70,7 +86,14 @@ interface IRepurchase {
     function previewRepurchase(Id id, uint256 amount)
         external
         view
-        returns (uint256 dsId, uint256 received, uint256 feePercentage, uint256 fee, uint256 exchangeRates);
+        returns (
+            uint256 dsId,
+            uint256 receivedPa,
+            uint256 receivedDs,
+            uint256 feePercentage,
+            uint256 fee,
+            uint256 exchangeRates
+        );
 
     /**
      * @notice return the amount of available PA and DS to purchase.

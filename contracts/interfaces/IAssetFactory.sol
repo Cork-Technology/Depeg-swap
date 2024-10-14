@@ -70,7 +70,7 @@ interface IAssetFactory {
      * @return ct new CT contract address
      * @return ds new DS contract address
      */
-    function deploySwapAssets(address ra, address pa, address owner, uint256 expiry, uint256 psmExchangeRate)
+    function deploySwapAssets(address ra, address pa, address owner, uint256 expiry, uint256 psmExchangeRate, uint256 dsId) 
         external
         returns (address ct, address ds);
 

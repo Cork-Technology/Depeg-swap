@@ -110,7 +110,7 @@ contract ModuleCore is OwnableUpgradeable, UUPSUpgradeable, PsmCore, Initialize,
         address ra = state.info.pair1;
 
         (address ct, address ds) = IAssetFactory(SWAP_ASSET_FACTORY).deploySwapAssets(
-            ra, state.info.pair0, address(this), expiry, exchangeRates
+            ra, state.info.pair0, address(this), expiry, exchangeRates, state.globalAssetIdx + 1
         );
 
         // avoid stack to deep error
@@ -235,5 +235,9 @@ contract ModuleCore is OwnableUpgradeable, UUPSUpgradeable, PsmCore, Initialize,
         State storage state = states[id];
         PsmLibrary.updatePSMBaseRedemptionFeePercentage(state, newPsmBaseRedemptionFeePercentage);
         emit PsmBaseRedemptionFeePercentageUpdated(id, newPsmBaseRedemptionFeePercentage);
+    }
+
+    function expiry(Id id) external view override returns (uint256 expiry) {
+        expiry = PsmLibrary.nextExpiry(states[id]);
     }
 }

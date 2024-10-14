@@ -85,6 +85,7 @@ contract CorkConfig is AccessControl, Pausable {
         // won't have effect on first issuance
         uint256 rolloverPeriodInblocks,
         uint256 ammLiquidationDeadline
+       
     ) external whenNotPaused onlyManager {
         moduleCore.issueNewDs(
             id,
