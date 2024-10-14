@@ -5,8 +5,6 @@ import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/Own
 import {UUPSUpgradeable} from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import {Id, Pair, PairLibrary} from "../../libraries/Pair.sol";
 import {Asset} from "./Asset.sol";
-import {ModuleCore} from "../ModuleCore.sol";
-import {ICommon} from "../../interfaces/ICommon.sol";
 
 /**
  * @title Factory contract for Assets

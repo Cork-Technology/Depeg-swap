@@ -75,7 +75,8 @@ contract Expiry is IExpiry {
  * @notice Contract for implementing assets like DS/CT etc
  */
 contract Asset is ERC20Burnable, ERC20Permit, Ownable, Expiry, ExchangeRate {
-    uint256 internal immutable dsId;
+    uint256 internal immutable DS_ID;
+
     constructor(string memory prefix, string memory pairName, address _owner, uint256 _expiry, uint256 _rate, uint256 _dsId)
         ExchangeRate(_rate)
         ERC20(string(abi.encodePacked(prefix, "-", pairName)), string(abi.encodePacked(prefix, "-", pairName)))
@@ -83,7 +84,7 @@ contract Asset is ERC20Burnable, ERC20Permit, Ownable, Expiry, ExchangeRate {
         Ownable(_owner)
         Expiry(_expiry)
     {
-        dsId = _dsId;
+        DS_ID = _dsId;
     }
 
     /**
@@ -93,5 +94,12 @@ contract Asset is ERC20Burnable, ERC20Permit, Ownable, Expiry, ExchangeRate {
      */
     function mint(address to, uint256 amount) public onlyOwner {
         _mint(to, amount);
+    }
+
+    /**
+     * @notice returns expiry timestamp of contract
+     */
+    function dsId() external view virtual returns (uint256) {
+        return DS_ID;
     }
 }
