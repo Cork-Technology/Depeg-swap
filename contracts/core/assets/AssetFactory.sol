@@ -13,7 +13,6 @@ import {Asset} from "./Asset.sol";
  */
 contract AssetFactory is IAssetFactory, OwnableUpgradeable, UUPSUpgradeable {
     using PairLibrary for Pair;
-    using PairLibrary for Id;
 
     uint8 public constant MAX_LIMIT = 10;
     string private constant CT_PREFIX = "CT";
