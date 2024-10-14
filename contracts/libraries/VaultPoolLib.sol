@@ -165,10 +165,11 @@ library VaultPoolLibrary {
         self.ammLiquidityPool.balance -= withdrawnFromAmm;
     }
 
-    function rationedToAmm(VaultPool storage self, uint256 ratio, uint256 exchangeRate) internal view returns (uint256 ra, uint256 ct, uint256 originalBalance) {
+    function rationedToAmm(VaultPool storage self, uint256 ratio) internal view returns (uint256 ra, uint256 ct, uint256 originalBalance) {
         originalBalance = self.ammLiquidityPool.balance;
 
-        (ra, ct) = MathHelper.calculateProvideLiquidityAmountBasedOnCtPrice(originalBalance, ratio, exchangeRate);
+        (ra, ct) = MathHelper.calculateProvideLiquidityAmountBasedOnCtPrice(originalBalance, ratio);
+        
     }
 
     function resetAmmPool(VaultPool storage self) internal {

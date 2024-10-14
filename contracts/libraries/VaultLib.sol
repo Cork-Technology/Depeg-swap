@@ -71,6 +71,7 @@ library VaultLibrary {
         uint256 raTolerance,
         uint256 ctTolerance
     ) internal {
+
         IERC20(raAddress).safeIncreaseAllowance(address(ammRouter), raAmount);
         IERC20(ctAddress).safeIncreaseAllowance(address(ammRouter), ctAmount);
 
@@ -155,9 +156,8 @@ library VaultLibrary {
     {
         uint256 dsId = self.globalAssetIdx;
         uint256 ctRatio = __getAmmCtPriceRatio(self, flashSwapRouter, dsId);
-        uint256 exchangeRates = self.ds[dsId].exchangeRate();
 
-        (ra, ct) = MathHelper.calculateProvideLiquidityAmountBasedOnCtPrice(amount, ctRatio, exchangeRates);
+        (ra, ct) = MathHelper.calculateProvideLiquidityAmountBasedOnCtPrice(amount, ctRatio);
     }
 
     function __provideLiquidityWithRatio(
@@ -181,7 +181,6 @@ library VaultLibrary {
         returns (uint256 ratio)
     {
         Id id = self.info.toId();
-        uint256 exchangeRate = self.ds[dsId].exchangeRate();
         uint256 hpa = flashSwapRouter.getCurrentEffectiveHPA(id);
         bool isRollover = flashSwapRouter.isRolloverSale(id, dsId);
 
@@ -193,29 +192,26 @@ library VaultLibrary {
             marketRatio = 0;
         }
 
-        ratio = _determineRatio(hpa, marketRatio, self.vault.initialDsPrice, exchangeRate, isRollover, dsId);
+        ratio = _determineRatio(hpa, marketRatio, self.vault.initialDsPrice, isRollover, dsId);
     }
 
-    function _determineRatio(
-        uint256 hpa,
-        uint256 marketRatio,
-        uint256 initialDsPrice,
-        uint256 exchangeRate,
-        bool isRollover,
-        uint256 dsId
-    ) internal pure returns (uint256 ratio) {
+    function _determineRatio(uint256 hpa, uint256 marketRatio, uint256 initialDsPrice, bool isRollover, uint256 dsId)
+        internal
+        pure
+        returns (uint256 ratio)
+    {
         // fallback to initial ds price ratio if hpa is 0, and market ratio is 0
         // usually happens when there's no trade on the router AND is not the first issuance
         // OR it's the first issuance
         if (hpa == 0 && marketRatio == 0) {
-            ratio = exchangeRate - initialDsPrice;
+            ratio = 1e18 - initialDsPrice;
             return ratio;
         }
 
         // this will return the hpa as ratio when it's basically not the first issuance, and there's actually an hpa to rely on
         // we must specifically check for market ratio since, we want to trigger this only when there's no market ratio(i.e freshly after a rollover)
         if (dsId != 1 && isRollover && hpa != 0 && marketRatio == 0) {
-            ratio = exchangeRate - hpa;
+            ratio = hpa;
             return ratio;
         }
 
@@ -262,7 +258,7 @@ library VaultLibrary {
         uint256 ctRatio = __getAmmCtPriceRatio(self, flashSwapRouter, dsId);
 
         (uint256 ra, uint256 ct, uint256 originalBalance) =
-            self.vault.pool.rationedToAmm(ctRatio, self.ds[dsId].exchangeRate());
+            self.vault.pool.rationedToAmm(ctRatio);
 
         // this doesn't really matter tbh, since the amm is fresh and we're the first one to add liquidity to it
         (uint256 raTolerance, uint256 ctTolerance) =
@@ -302,7 +298,12 @@ library VaultLibrary {
 
         self.vault.balances.ra.lockUnchecked(amount, from);
         __provideLiquidityWithRatio(
-            self, amount, flashSwapRouter, self.ds[self.globalAssetIdx].ct, ammRouter, Tolerance(raTolerance, ctTolerance)
+            self,
+            amount,
+            flashSwapRouter,
+            self.ds[self.globalAssetIdx].ct,
+            ammRouter,
+            Tolerance(raTolerance, ctTolerance)
         );
 
         // then we calculate how much LV we will get for the amount of RA we deposited with the exchange rate
@@ -336,9 +337,7 @@ library VaultLibrary {
         amount = MathHelper.calculateDepositAmountWithExchangeRate(amount, exchangeRate);
 
         (raAddedAsLiquidity, ctAddedAsLiquidity) = MathHelper.calculateProvideLiquidityAmountBasedOnCtPrice(
-            amount,
-            __getAmmCtPriceRatio(self, flashSwapRouter, self.globalAssetIdx),
-            self.ds[self.globalAssetIdx].exchangeRate()
+            amount, __getAmmCtPriceRatio(self, flashSwapRouter, self.globalAssetIdx)
         );
 
         lvReceived = amount;
