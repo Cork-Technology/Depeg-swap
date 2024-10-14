@@ -19,7 +19,7 @@ contract MathHelperTest is Helper {
     }
 
     function testFuzz_ProvideLiquidityNot11(uint256 priceRatio, uint256 exchangeRate) external {
-        priceRatio =  bound(priceRatio, 0.0001 ether, 10 ether);
+        priceRatio = bound(priceRatio, 0.0001 ether, 10 ether);
         exchangeRate = bound(exchangeRate, 1 ether, 10 ether);
 
         uint256 amountRa = 1 ether;
@@ -29,5 +29,23 @@ contract MathHelperTest is Helper {
 
         uint256 amountToDepositAsCt = amountRa - ra;
         vm.assertApproxEqAbs(amountToDepositAsCt * 1e18 / exchangeRate, ct, 1);
+    }
+
+    function test_DsRedeemAmount() external {
+        uint256 rates = 1.1 ether;
+        uint256 pa = 5 ether;
+
+        uint256 amount = MathHelper.calculateEqualSwapAmount(pa, rates);
+
+        vm.assertEq(amount, 5.5 ether);
+    }
+
+    function testFuzz_DsRedeemAmount(uint256 pa, uint256 rates) external {
+        pa = bound(pa, 0.1 ether, 10 ether);
+        rates = bound(rates, 1 ether, 1.5 ether);
+
+        uint256 amount = MathHelper.calculateEqualSwapAmount(pa, rates);
+
+        vm.assertEq(amount, pa * rates / 1e18);
     }
 }

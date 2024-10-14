@@ -32,6 +32,17 @@ library MathHelper {
         ra = (amountra - (ct * exchangeRate / 1e18));
     }
 
+    /**
+     * @dev amount = pa x exchangeRate
+     * calculate how much DS(need to be provided) and RA(user will receive) in respect to the exchange rate
+     * @param pa the amount of pa user provides
+     * @param exchangeRate the current exchange rate between RA:(CT+DS)
+     * @return amount the amount of RA user will receive & DS needs to be provided
+     */
+    function calculateEqualSwapAmount(uint256 pa, uint256 exchangeRate) external pure returns (uint256 amount) {
+        amount = (pa * exchangeRate) / 1e18;
+    }
+
     function calculateProvideLiquidityAmount(uint256 amountRa, uint256 raDeposited) external pure returns (uint256) {
         return amountRa - raDeposited;
     }
