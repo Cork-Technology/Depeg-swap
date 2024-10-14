@@ -51,7 +51,7 @@ describe("FlashSwapRouter", function () {
     ) as Address;
     fixture = await loadFixture(localFixture);
 
-    depositAmount = parseEther("19000");
+    depositAmount = parseEther("1900000");
     expiry = helper.expiry(1000000);
 
     await fixture.ra.write.mint([defaultSigner.account.address, depositAmount]);

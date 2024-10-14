@@ -13,7 +13,7 @@ contract RolloverTest is Helper {
     DummyWETH internal pa;
     Id public currencyId;
 
-    uint256 public DEFAULT_DEPOSIT_AMOUNT = 10000 ether;
+    uint256 public DEFAULT_DEPOSIT_AMOUNT = 1900 ether;
 
     uint256 public dsId;
 
@@ -248,11 +248,13 @@ contract RolloverTest is Helper {
 
     function test_rolloverSaleWorks() external {
         uint256 prevDsId = dsId;
-        uint256 amountOutMin = flashSwapRouter.previewSwapRaforDs(currencyId, dsId, 1 ether);
+        uint256 amountOutMin = flashSwapRouter.previewSwapRaforDs(currencyId, dsId, 0.1009 ether);
+
 
         ra.approve(address(flashSwapRouter), 100 ether);
 
         uint256 amountOut = flashSwapRouter.swapRaforDs(currencyId, dsId, 1 ether, amountOutMin);
+
         uint256 hpaCummulated = flashSwapRouter.getHpaCumulated(currencyId);
         uint256 vhpaCummulated = flashSwapRouter.getVhpaCumulated(currencyId);
 
