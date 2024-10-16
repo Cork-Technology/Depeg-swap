@@ -344,7 +344,7 @@ contract RouterState is
             if (!DsFlashSwaplibrary.isRAsupportsPermit(address(assetPair.ra))) {
                 revert PermitNotSupported();
             }
-            DepegSwapLibrary.permit(address(assetPair.ds), rawRaPermitSig, user, address(this), amount, deadline);
+            DepegSwapLibrary.permit(address(assetPair.ra), rawRaPermitSig, user, address(this), amount, deadline);
         }
         IERC20(assetPair.ra).safeTransferFrom(user, address(this), amount);
 

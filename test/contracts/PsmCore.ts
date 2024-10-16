@@ -252,6 +252,9 @@ describe("PSM core", function () {
         fixture.Id,
         dsId!,
         parseEther("10"),
+        defaultSigner.account.address,
+        "0x",
+        0n,
       ]);
 
       const event = await fixture.moduleCore.getEvents.DsRedeemed({
@@ -353,6 +356,9 @@ describe("PSM core", function () {
         fixture.Id,
         dsId!,
         redeemAmount,
+        defaultSigner.account.address,
+        "0x",
+        0n,
       ]);
 
       const event = await fixture.moduleCore.getEvents.CtRedeemed({
@@ -605,6 +611,11 @@ describe("PSM core", function () {
       await fixture.moduleCore.write.redeemRaWithCtDs([
         fixture.Id,
         parseEther("1"),
+        defaultSigner.account.address,
+        "0x",
+        0n,
+        "0x",
+        0n,
       ]);
 
       const events = await fixture.moduleCore.getEvents.Cancelled({
@@ -645,11 +656,10 @@ describe("PSM core", function () {
         { rates: parseEther("0.5") }
       );
 
-      const raAmount =
-        await fixture.moduleCore.read.previewRedeemRaWithCtDs([
-          fixture.Id,
-          parseEther("2"),
-        ]);
+      const raAmount = await fixture.moduleCore.read.previewRedeemRaWithCtDs([
+        fixture.Id,
+        parseEther("2"),
+      ]);
 
       expect(raAmount).to.equal(parseEther("2"));
     });
@@ -1131,7 +1141,7 @@ describe("PSM core", function () {
       ]);
 
       // remember fee rate is fixed at 10%
-      const [_, receivedPa,receivedDs, feePercentage, fee, exchangeRate] =
+      const [_, receivedPa, receivedDs, feePercentage, fee, exchangeRate] =
         await fixture.moduleCore.read.previewRepurchase([
           fixture.Id,
           parseEther("2"),
@@ -1233,6 +1243,9 @@ describe("PSM core", function () {
         fixture.Id,
         dsId!,
         parseEther("9.987"),
+        defaultSigner.account.address,
+        "0x",
+        0n,
       ]);
       [availablePa, availableDs] =
         await fixture.moduleCore.read.availableForRepurchase([fixture.Id]);
