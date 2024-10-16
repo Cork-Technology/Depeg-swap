@@ -76,7 +76,7 @@ contract RolloverTest is Helper {
         ff_expired();
 
         (uint256 ctReceived, uint256 dsReceived,,) =
-            moduleCore.rolloverCt(currencyId, DEFAULT_ADDRESS, DEFAULT_DEPOSIT_AMOUNT, prevDsId);
+            moduleCore.rolloverCt(currencyId, DEFAULT_ADDRESS, DEFAULT_DEPOSIT_AMOUNT, prevDsId, bytes(""), 0);
 
         // verify that we have enough balance
         vm.assertEq(ctReceived, Asset(ds).balanceOf(DEFAULT_ADDRESS));
@@ -91,7 +91,7 @@ contract RolloverTest is Helper {
         ff_expired();
 
         (uint256 ctReceived, uint256 dsReceived,,) =
-            moduleCore.rolloverCt(currencyId, DEFAULT_ADDRESS, DEFAULT_DEPOSIT_AMOUNT, prevDsId);
+            moduleCore.rolloverCt(currencyId, DEFAULT_ADDRESS, DEFAULT_DEPOSIT_AMOUNT, prevDsId, bytes(""), 0);
 
         vm.assertEq(dsReceived, 0);
         vm.assertEq(ctReceived, Asset(ct).balanceOf(DEFAULT_ADDRESS));
@@ -137,7 +137,8 @@ contract RolloverTest is Helper {
 
         ra.approve(address(flashSwapRouter), 2 ether);
 
-        uint256 amountOut = flashSwapRouter.swapRaforDs(currencyId, dsId, 1 ether, amountOutMin);
+        uint256 amountOut =
+            flashSwapRouter.swapRaforDs(currencyId, dsId, 1 ether, amountOutMin, DEFAULT_ADDRESS, bytes(""), 0);
         uint256 hpaCummulated = flashSwapRouter.getHpaCumulated(currencyId);
         uint256 vhpaCummulated = flashSwapRouter.getVhpaCumulated(currencyId);
 
@@ -156,13 +157,13 @@ contract RolloverTest is Helper {
 
         // rollover our CT
         (uint256 ctReceived, uint256 dsReceived,,) =
-            moduleCore.rolloverCt(currencyId, DEFAULT_ADDRESS, DEFAULT_DEPOSIT_AMOUNT, prevDsId);
+            moduleCore.rolloverCt(currencyId, DEFAULT_ADDRESS, DEFAULT_DEPOSIT_AMOUNT, prevDsId, bytes(""), 0);
 
         // we autosell
         vm.assertEq(dsReceived, 0);
 
         amountOutMin = flashSwapRouter.previewSwapRaforDs(currencyId, dsId, 1 ether);
-        amountOut = flashSwapRouter.swapRaforDs(currencyId, dsId, 1 ether, amountOutMin);
+        amountOut = flashSwapRouter.swapRaforDs(currencyId, dsId, 1 ether, amountOutMin, DEFAULT_ADDRESS, bytes(""), 0);
 
         uint256 rolloverProfit = moduleCore.getPsmPoolArchiveRolloverProfit(currencyId, dsId);
         vm.assertNotEq(rolloverProfit, 0);
@@ -186,13 +187,13 @@ contract RolloverTest is Helper {
     function test_RevertClaimRolloverTwice() external {
         vm.expectRevert();
 
-        moduleCore.rolloverCt(currencyId, DEFAULT_ADDRESS, DEFAULT_DEPOSIT_AMOUNT, dsId - 1);
+        moduleCore.rolloverCt(currencyId, DEFAULT_ADDRESS, DEFAULT_DEPOSIT_AMOUNT, dsId - 1, bytes(""), 0);
     }
 
     function test_RevertWhenNotExpired() external {
         vm.expectRevert();
 
-        moduleCore.rolloverCt(currencyId, DEFAULT_ADDRESS, DEFAULT_DEPOSIT_AMOUNT, dsId);
+        moduleCore.rolloverCt(currencyId, DEFAULT_ADDRESS, DEFAULT_DEPOSIT_AMOUNT, dsId, bytes(""), 0);
     }
 
     function test_RevertClaimBalanceNotEnough() external {
@@ -203,7 +204,8 @@ contract RolloverTest is Helper {
 
         ra.approve(address(flashSwapRouter), 2 ether);
 
-        uint256 amountOut = flashSwapRouter.swapRaforDs(currencyId, dsId, 1 ether, amountOutMin);
+        uint256 amountOut =
+            flashSwapRouter.swapRaforDs(currencyId, dsId, 1 ether, amountOutMin, DEFAULT_ADDRESS, bytes(""), 0);
         uint256 hpaCummulated = flashSwapRouter.getHpaCumulated(currencyId);
         uint256 vhpaCummulated = flashSwapRouter.getVhpaCumulated(currencyId);
 
@@ -222,13 +224,13 @@ contract RolloverTest is Helper {
 
         // rollover our CT
         (uint256 ctReceived, uint256 dsReceived,,) =
-            moduleCore.rolloverCt(currencyId, DEFAULT_ADDRESS, DEFAULT_DEPOSIT_AMOUNT, prevDsId);
+            moduleCore.rolloverCt(currencyId, DEFAULT_ADDRESS, DEFAULT_DEPOSIT_AMOUNT, prevDsId, bytes(""), 0);
 
         // we autosell
         vm.assertEq(dsReceived, 0);
 
         amountOutMin = flashSwapRouter.previewSwapRaforDs(currencyId, dsId, 1 ether);
-        amountOut = flashSwapRouter.swapRaforDs(currencyId, dsId, 1 ether, amountOutMin);
+        amountOut = flashSwapRouter.swapRaforDs(currencyId, dsId, 1 ether, amountOutMin, DEFAULT_ADDRESS, bytes(""), 0);
 
         uint256 rolloverProfit = moduleCore.getPsmPoolArchiveRolloverProfit(currencyId, dsId);
         vm.assertNotEq(rolloverProfit, 0);
@@ -250,10 +252,10 @@ contract RolloverTest is Helper {
         uint256 prevDsId = dsId;
         uint256 amountOutMin = flashSwapRouter.previewSwapRaforDs(currencyId, dsId, 0.1009 ether);
 
-
         ra.approve(address(flashSwapRouter), 100 ether);
 
-        uint256 amountOut = flashSwapRouter.swapRaforDs(currencyId, dsId, 1 ether, amountOutMin);
+        uint256 amountOut =
+            flashSwapRouter.swapRaforDs(currencyId, dsId, 1 ether, amountOutMin, DEFAULT_ADDRESS, bytes(""), 0);
 
         uint256 hpaCummulated = flashSwapRouter.getHpaCumulated(currencyId);
         uint256 vhpaCummulated = flashSwapRouter.getVhpaCumulated(currencyId);
@@ -273,7 +275,7 @@ contract RolloverTest is Helper {
 
         // rollover our CT
         (uint256 ctReceived, uint256 dsReceived,,) =
-            moduleCore.rolloverCt(currencyId, DEFAULT_ADDRESS, DEFAULT_DEPOSIT_AMOUNT, prevDsId);
+            moduleCore.rolloverCt(currencyId, DEFAULT_ADDRESS, DEFAULT_DEPOSIT_AMOUNT, prevDsId, bytes(""), 0);
 
         // we autosell
         vm.assertEq(dsReceived, 0);
@@ -281,11 +283,11 @@ contract RolloverTest is Helper {
         vm.assertEq(true, flashSwapRouter.isRolloverSale(currencyId, dsId));
 
         amountOutMin = flashSwapRouter.previewSwapRaforDs(currencyId, dsId, hpa);
-        amountOut = flashSwapRouter.swapRaforDs(currencyId, dsId, hpa, amountOutMin);
+        amountOut = flashSwapRouter.swapRaforDs(currencyId, dsId, hpa, amountOutMin, DEFAULT_ADDRESS, bytes(""), 0);
 
         vm.assertEq(amountOut, 1 ether);
 
-        amountOut = flashSwapRouter.swapRaforDs(currencyId, dsId, hpa * 10, amountOutMin);
+        amountOut = flashSwapRouter.swapRaforDs(currencyId, dsId, hpa * 10, amountOutMin, DEFAULT_ADDRESS, bytes(""), 0);
 
         vm.assertEq(amountOut, 10 ether);
     }
@@ -296,7 +298,8 @@ contract RolloverTest is Helper {
 
         ra.approve(address(flashSwapRouter), 100 ether);
 
-        uint256 amountOut = flashSwapRouter.swapRaforDs(currencyId, dsId, 1 ether, amountOutMin);
+        uint256 amountOut =
+            flashSwapRouter.swapRaforDs(currencyId, dsId, 1 ether, amountOutMin, DEFAULT_ADDRESS, bytes(""), 0);
         uint256 hpaCummulated = flashSwapRouter.getHpaCumulated(currencyId);
         uint256 vhpaCummulated = flashSwapRouter.getVhpaCumulated(currencyId);
 
@@ -315,7 +318,7 @@ contract RolloverTest is Helper {
 
         // rollover our CT
         (uint256 ctReceived, uint256 dsReceived,,) =
-            moduleCore.rolloverCt(currencyId, DEFAULT_ADDRESS, DEFAULT_DEPOSIT_AMOUNT, prevDsId);
+            moduleCore.rolloverCt(currencyId, DEFAULT_ADDRESS, DEFAULT_DEPOSIT_AMOUNT, prevDsId, bytes(""), 0);
 
         // we autosell
         vm.assertEq(dsReceived, 0);
@@ -324,6 +327,6 @@ contract RolloverTest is Helper {
 
         amountOutMin = flashSwapRouter.previewSwapRaforDs(currencyId, dsId, hpa);
         vm.expectRevert();
-        amountOut = flashSwapRouter.swapRaforDs(currencyId, dsId, hpa, amountOutMin + 1);
+        amountOut = flashSwapRouter.swapRaforDs(currencyId, dsId, hpa, amountOutMin + 1, DEFAULT_ADDRESS, bytes(""), 0);
     }
 }
