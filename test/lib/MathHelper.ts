@@ -25,7 +25,6 @@ describe("Math Helper", function () {
           ratio,
         ]);
 
-
       // since it costs a half of whatever ct here, it essentially boils down
       // 6666666666666666666 / 2 = 3333333333333333333 + 1
       const expectedCt = BigInt("6666666666666666666");
@@ -138,7 +137,7 @@ describe("Math Helper", function () {
 
       const contract = await loadFixture(deployMathHelper);
 
-      const result = await contract.read.calculatePrecentageFee([fee, amount]);
+      const result = await contract.read.calculatePercentageFee([fee, amount]);
       expect(result).to.equal(parseEther("10"));
     });
 
@@ -344,7 +343,6 @@ describe("Math Helper", function () {
       expect(redeem2).to.equal(amount);
 
       const rate3 = parseEther("0.5");
-
 
       const deposit3 =
         await contract.read.calculateDepositAmountWithExchangeRate([

@@ -39,6 +39,7 @@ describe("Asset", function () {
       defaultSigner.account.address,
       BigInt(helper.expiry(100) + 1000),
       100n,
+      1n,
     ]);
   };
 
@@ -108,7 +109,7 @@ describe("Asset", function () {
       expect(await asset.read.owner()).to.equal(
         await getCheckSummedAdrress(defaultSigner.account.address)
       );
-      // 
+      //
       expect(await asset.read.expiry()).to.closeTo(
         helper.toEthersBigNumer(BigInt(helper.expiry(100) + 1000)),
         // workaround for hardhat test, it never has exact value
@@ -118,6 +119,7 @@ describe("Asset", function () {
       expect(await asset.read.exchangeRate()).to.equal(100n);
       expect(await asset.read.name()).to.equal("Demo-Prefix-Demo-Pair");
       expect(await asset.read.symbol()).to.equal("Demo-Prefix-Demo-Pair");
+      expect(await asset.read.dsId()).to.equal(1n);
     });
 
     it("mint should work correctly", async function () {

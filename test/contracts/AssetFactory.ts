@@ -116,6 +116,31 @@ describe("Asset Factory", function () {
       }
     });
 
+    it("should return correct number of items as per query parameters and end length", async function () {
+      let lv: Address[] = [];
+      let ra: Address[] = [];
+      let pa: Address[] = [];
+      for (let i = 0; i < 10; i++) {
+        const backedAssets = await helper.backedAssets();
+        pa.push(backedAssets.pa.address);
+        ra.push(backedAssets.ra.address);
+        await assetFactory.write.deployLv([
+          ra[i],
+          pa[i],
+          defaultSigner.account.address,
+        ]);
+        const event = await assetFactory.getEvents
+          .LvAssetDeployed({
+            ra: ra[i]!,
+          })
+          .then((e) => e[0]);
+        lv.push(event.args.lv!);
+      }
+      const assets = await assetFactory.read.getDeployedAssets([3, 3]);
+      expect(assets[0].length).to.equal(1);
+      expect(assets[1].length).to.equal(1);
+    });
+
     it("should correctly return empty array when queried more than current assets", async function () {
       const assets = await assetFactory.read.getDeployedAssets([7, 10]);
       expect(assets[0].length).to.equal(0);
@@ -146,6 +171,7 @@ describe("Asset Factory", function () {
         defaultSigner.account.address,
         BigInt(helper.expiry(100000)),
         parseEther("1"),
+        BigInt(1)
       ]);
 
       const events = await assetFactory.getEvents.AssetDeployed({
@@ -173,6 +199,7 @@ describe("Asset Factory", function () {
           defaultSigner.account.address,
           BigInt(helper.expiry(100000)),
           parseEther("1"),
+          BigInt(1)
         ]);
       }
 
@@ -193,6 +220,7 @@ describe("Asset Factory", function () {
             defaultSigner.account.address,
             BigInt(helper.expiry(100000)),
             parseEther("1"),
+            BigInt(1)
           ],
           {
             account: secondSigner.account,
@@ -212,6 +240,7 @@ describe("Asset Factory", function () {
           defaultSigner.account.address,
           BigInt(helper.expiry(100000)),
           parseEther("1"),
+          BigInt(1)
         ])
       ).to.be.rejectedWith(
         `NotExist("${await getCheckSummedAdrress(
@@ -241,6 +270,7 @@ describe("Asset Factory", function () {
           defaultSigner.account.address,
           BigInt(helper.expiry(100000)),
           parseEther("1"),
+          BigInt(1)
         ]);
         const event = await assetFactory.getEvents
           .AssetDeployed({
@@ -276,6 +306,44 @@ describe("Asset Factory", function () {
         expect(assets[0][i]).to.equal(ct[i + 10]);
         expect(assets[1][i]).to.equal(ds[i + 10]);
       }
+    });
+
+    it("should return correct number of items as per query parameters and end length", async function () {
+      const { ra, pa } = await helper.backedAssets();
+      // deploy lv to signal that a pair exist
+      await assetFactory.write.deployLv([
+        ra.address,
+        pa.address,
+        defaultSigner.account.address,
+      ]);
+
+      let ct: Address[] = [];
+      let ds: Address[] = [];
+      for (let i = 0; i < 10; i++) {
+        await assetFactory.write.deploySwapAssets([
+          ra.address,
+          pa.address,
+          defaultSigner.account.address,
+          BigInt(helper.expiry(100000)),
+          parseEther("1"),
+          BigInt(1)
+        ]);
+        const event = await assetFactory.getEvents
+          .AssetDeployed({
+            ra: ra.address!,
+          })
+          .then((e) => e[0]);
+        ct.push(event.args.ct!);
+        ds.push(event.args.ds!);
+      }
+      const assets = await assetFactory.read.getDeployedSwapAssets([
+        ra.address,
+        pa.address,
+        3,
+        3,
+      ]);
+      expect(assets[0].length).to.equal(1);
+      expect(assets[1].length).to.equal(1);
     });
 
     it("should correctly return empty array when queried more than current assets", async function () {
@@ -316,6 +384,7 @@ describe("Asset Factory", function () {
           defaultSigner.account.address,
           BigInt(helper.expiry(100000)),
           parseEther("1"),
+          BigInt(1)
         ]);
       }
 

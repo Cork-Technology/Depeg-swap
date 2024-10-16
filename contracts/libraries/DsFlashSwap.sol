@@ -30,7 +30,7 @@ struct AssetPair {
 struct ReserveState {
     /// @dev dsId => [RA, CT, DS]
     mapping(uint256 => AssetPair) ds;
-    uint256 reserveSellPressurePrecentage;
+    uint256 reserveSellPressurePercentage;
     uint256 hpaCumulated;
     uint256 vhpaCumulated;
     uint256 decayDiscountRateInDays;
@@ -44,30 +44,24 @@ struct ReserveState {
  * @notice DsFlashSwap library which implements supporting lib and functions flashswap related features for DS/CT
  */
 library DsFlashSwaplibrary {
-    /// @dev the precentage amount of reserve that will be used to fill buy orders
+    /// @dev the percentage amount of reserve that will be used to fill buy orders
     /// the router will sell in respect to this ratio on first issuance
-    uint256 public constant INITIAL_RESERVE_SELL_PRESSURE_PRECENTAGE = 50e18;
+    uint256 public constant INITIAL_RESERVE_SELL_PRESSURE_PERCENTAGE = 50e18;
 
-    /// @dev the precentage amount of reserve that will be used to fill buy orders
+    /// @dev the percentage amount of reserve that will be used to fill buy orders
     /// the router will sell in respect to this ratio on subsequent issuances
-    uint256 public constant SUBSEQUENT_RESERVE_SELL_PRESSURE_PRECENTAGE = 80e18;
+    uint256 public constant SUBSEQUENT_RESERVE_SELL_PRESSURE_PERCENTAGE = 80e18;
 
     uint256 public constant FIRST_ISSUANCE = 1;
 
-    function onNewIssuance(
-        ReserveState storage self,
-        uint256 dsId,
-        address ds,
-        address pair,
-        uint256 initialReserve,
-        address ra,
-        address ct
-    ) internal {
-        self.ds[dsId] = AssetPair(Asset(ra), Asset(ct), Asset(ds), IUniswapV2Pair(pair), initialReserve, 0);
+    function onNewIssuance(ReserveState storage self, uint256 dsId, address ds, address pair, address ra, address ct)
+        internal
+    {
+        self.ds[dsId] = AssetPair(Asset(ra), Asset(ct), Asset(ds), IUniswapV2Pair(pair), 0, 0);
 
-        self.reserveSellPressurePrecentage = dsId == FIRST_ISSUANCE
-            ? INITIAL_RESERVE_SELL_PRESSURE_PRECENTAGE
-            : SUBSEQUENT_RESERVE_SELL_PRESSURE_PRECENTAGE;
+        self.reserveSellPressurePercentage = dsId == FIRST_ISSUANCE
+            ? INITIAL_RESERVE_SELL_PRESSURE_PERCENTAGE
+            : SUBSEQUENT_RESERVE_SELL_PRESSURE_PERCENTAGE;
 
         if (dsId != FIRST_ISSUANCE) {
             try SwapperMathLibrary.calculateHPA(self.hpaCumulated, self.vhpaCumulated) returns (uint256 hpa) {
@@ -213,27 +207,13 @@ library DsFlashSwaplibrary {
         returns (uint256 amountOut, uint256 repaymentAmount, bool success)
     {
         (uint112 raReserve, uint112 ctReserve) = getReservesSorted(assetPair);
-        
-        repaymentAmount = MinimalUniswapV2Library.getAmountIn(amount, raReserve, ctReserve - amount);
-        
-        // from the amount, since we're getting back the same RA amount as DS user buy, this works. to get the effective price per DS,
-        // you would devide this by the DS amount user bought.
-        // note that we subtract 1 to enforce uni v2 rules
 
-        // dont' have liquidity to do flash swap properly
-        if (repaymentAmount > amount) {
-            return (0, 0, false);
+        (success, amountOut, repaymentAmount) = SwapperMathLibrary.getAmountOutSellDs(raReserve, ctReserve, amount);
+
+        if (success) {
+            amountOut -= 1;
+            repaymentAmount += 1;
         }
-
-        success = true;
-
-        amountOut = amount - repaymentAmount;
-
-        // enforce uni v2 rules, pay 1 wei more
-        amountOut -= 1;
-        repaymentAmount += 1;
-
-        assert(amountOut + repaymentAmount == amount);
     }
 
     function getAmountOutBuyDS(AssetPair storage assetPair, uint256 amount)
@@ -243,10 +223,9 @@ library DsFlashSwaplibrary {
     {
         (uint112 raReserve, uint112 ctReserve) = getReservesSorted(assetPair);
 
-        (borrowedAmount, amountOut) =
-            SwapperMathLibrary.getAmountOutDs(int256(uint256(raReserve)), int256(uint256(ctReserve)), int256(amount));
+        (borrowedAmount, amountOut) = SwapperMathLibrary.getAmountOutBuyDs(uint256(raReserve), uint256(ctReserve), amount);
 
-        repaymentAmount = MinimalUniswapV2Library.getAmountIn(borrowedAmount, ctReserve, raReserve - borrowedAmount);
+        repaymentAmount = amountOut;
     }
 
     function isRAsupportsPermit(address token) internal view returns (bool) {

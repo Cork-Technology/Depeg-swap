@@ -26,7 +26,7 @@ contract VaultRedeemTest is Helper {
 
         deployModuleCore();
 
-        (ra, pa, currencyId) = initializeAndIssueNewDs(block.timestamp + 1 days);
+        (ra, pa, currencyId) = initializeAndIssueNewDs(block.timestamp + 1 days, 1 ether);
         vm.deal(DEFAULT_ADDRESS, type(uint256).max);
 
         ra.deposit{value: type(uint128).max}();
@@ -45,8 +45,8 @@ contract VaultRedeemTest is Helper {
         // 10000 for psm 10000 for LV
         ra.approve(address(moduleCore), type(uint256).max);
 
-        moduleCore.depositPsm(currencyId, DEFAULT_DEPOSIT_AMOUNT);
-        moduleCore.depositLv(currencyId, DEFAULT_DEPOSIT_AMOUNT);
+        // moduleCore.depositPsm(currencyId, DEFAULT_DEPOSIT_AMOUNT);
+        moduleCore.depositLv(currencyId, DEFAULT_DEPOSIT_AMOUNT, 0, 0);
 
         // save initial data
         lv = assetFactory.getLv(address(ra), address(pa));
@@ -55,18 +55,29 @@ contract VaultRedeemTest is Helper {
 
     function test_redeemEarly() external {
         // we first deposit a lot of RA to LV
-        moduleCore.depositLv(currencyId, 1_000_000_000 ether);
+        moduleCore.depositLv(currencyId, 1_000_000_000 ether, 0, 0);
 
         //now we buy a lot of DS to accrue value to LV holders
         ra.approve(address(flashSwapRouter), type(uint256).max);
-        flashSwapRouter.swapRaforDs(currencyId, dsId, 10_000_000 ether, 0);
+        flashSwapRouter.swapRaforDs(currencyId, dsId, 10_000_000 ether, 0, DEFAULT_ADDRESS, bytes(""), 0);
 
         // now we try redeem early
         IERC20(lv).approve(address(moduleCore), 0.9 ether);
         uint256 balanceBefore = IERC20(ra).balanceOf(DEFAULT_ADDRESS);
 
-        (uint256 received, uint256 fee, uint256 feePercentage) =
-            moduleCore.redeemEarlyLv(currencyId, DEFAULT_ADDRESS, 0.9 ether, 0);
+        IVault.RedeemEarlyParams memory redeemParams = IVault.RedeemEarlyParams({
+            id: currencyId,
+            receiver: DEFAULT_ADDRESS,
+            amount: 0.9 ether,
+            amountOutMin: 0,
+            ammDeadline: block.timestamp
+        });
+        IVault.PermitParams memory permitParams = IVault.PermitParams({
+            rawLvPermitSig: bytes(""),
+            deadline: 0
+        });
+        (uint256 received, uint256 fee, uint256 feePercentage, uint256 paAmount) =
+            moduleCore.redeemEarlyLv(redeemParams, DEFAULT_ADDRESS, permitParams);
 
         vm.assertTrue(received > 0.9 ether, "should accrue value");
 
@@ -75,17 +86,44 @@ contract VaultRedeemTest is Helper {
 
         // deposit first
         ra.approve(address(moduleCore), type(uint256).max);
-        uint256 lvReceived = moduleCore.depositLv(currencyId, 1 ether);
+        uint256 lvReceived = moduleCore.depositLv(currencyId, 1 ether, 0, 0);
 
-        (received, fee, feePercentage) = moduleCore.previewRedeemEarlyLv(currencyId, lvReceived);
+        (received, fee, feePercentage, paAmount) = moduleCore.previewRedeemEarlyLv(currencyId, lvReceived);
 
         // redeem early
         IERC20(lv).approve(address(moduleCore), 1 ether);
-        (received, fee, feePercentage) = moduleCore.redeemEarlyLv(currencyId, DEFAULT_ADDRESS, lvReceived, 0);
+        redeemParams = IVault.RedeemEarlyParams({
+            id: currencyId,
+            receiver: DEFAULT_ADDRESS,
+            amount: lvReceived,
+            amountOutMin: 0,
+            ammDeadline: block.timestamp
+        });
+        (received, fee, feePercentage, paAmount) = moduleCore.redeemEarlyLv(redeemParams, user2, permitParams);
 
         // user shouldn't accrue any value, so they will receive their original deposits back
         // not exactly 1 ether cause of uni v2 minimum liquidity
         vm.assertApproxEqAbs(received, 1 ether, 1e9);
         // save initial data
+    }
+
+    function test_reissueMany() external {
+        for (uint256 i = 0; i < 100; i++) {
+            ff_expired();
+        }
+    }
+
+    function defaultExchangeRate() internal pure override returns (uint256) {
+        return 1.5 ether;
+    }
+
+    function ff_expired() internal {
+        dsId = moduleCore.lastDsId(currencyId);
+        (address ct,) = moduleCore.swapAsset(currencyId, dsId);
+        uint256 expiry = Asset(ct).expiry();
+
+        vm.warp(expiry);
+
+        issueNewDs(currencyId, block.timestamp + 1 days);
     }
 }
