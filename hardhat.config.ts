@@ -11,6 +11,7 @@ import chai from "chai";
 import { solidity } from "ethereum-waffle";
 import "solidity-coverage";
 import "@nomicfoundation/hardhat-foundry";
+import "@openzeppelin/hardhat-defender";
 
 chai.use(solidity);
 // import "@nomicfoundation/hardhat-chai-matchers";
@@ -27,6 +28,10 @@ const config: HardhatUserConfig = {
       },
       evmVersion: "cancun",
     },
+  },
+  defender: {
+    apiKey: "HSgPD1Mykixstem9qNVmGm9cLUXAiJbH",
+    apiSecret: "2DtCYAAw6A2rVsTziTb3uTgFFqYRLnxzXhHHWtawowP8M27cBJnzWUUbhVwwWQEV",
   },
   networks: {
     hardhat: {},
