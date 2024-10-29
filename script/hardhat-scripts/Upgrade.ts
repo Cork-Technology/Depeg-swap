@@ -1,22 +1,45 @@
-import {defender, ethers} from "hardhat";
-import   "@openzeppelin/hardhat-defender" ;
+import { ethers, upgrades } from "hardhat";
+import "@openzeppelin/hardhat-defender";
+import dotenv from "dotenv";
 
-async function main(){
+async function main() {
 
-    const AssetNewImpl = await ethers.getContractAt("Asset","0xB0b1E68f6DDE488e6c67f46FFf20545B3f2cDC34" );
-    const proposal = await defender.proposeUpgrade("0x7c9CF1E9CDc9D07Fe8b53908eA667753Fb307FC7", "AssetNewImpl");
-    console.log(`Upgrade Propose with URL : ${proposal.url}`);
+    const provider = new ethers.providers.JsonRpcProvider(process.env.RPC_URL);
+  
+    const privateKey = process.env.PRIVATE_KEY;
+  
+    const signer = new ethers.Wallet(privateKey, provider);
+    
+    console.log("Signer address:", await signer.getAddress());
 
+    // Get the contract factory
+    const AssetNewImpl = await ethers.getContractFactory("Asset", signer);
 
+    const PROXY_ADDRESS = ""; // proxy address
+
+    try {
+          const upgraded = await upgrades.upgradeProxy(
+            "0x7c9CF1E9C0c9b07Fe8b53908eA667753Fb307FC7",
+            AssetNewImpl,
+            { constructorArgs: [
+                      // pass all the arg in constructor 
+            ] }
+        );
+
+        await upgraded.deployed();
+        console.log("Proxy upgraded successfully");
+        
+        console.log("Upgrade transaction mined");
+
+    } catch (error) {
+        console.error("Error during upgrade:", error);
+        throw error;
+    }
 }
-function sleep(ms: number) {
-    return new Promise((resolve) => {
-      setTimeout(resolve, ms);
-    });
-  }
-  main()
+main()
     .then(() => process.exit(0))
     .catch((error) => {
-      console.error(error);
+        console.error(error);
+        process.exit(1);
     });
-  
+

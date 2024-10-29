@@ -12,6 +12,8 @@ import { solidity } from "ethereum-waffle";
 import "solidity-coverage";
 import "@nomicfoundation/hardhat-foundry";
 import "@openzeppelin/hardhat-defender";
+import "@openzeppelin/hardhat-upgrades";
+
 
 chai.use(solidity);
 // import "@nomicfoundation/hardhat-chai-matchers";
