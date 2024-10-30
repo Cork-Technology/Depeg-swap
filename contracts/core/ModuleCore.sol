@@ -34,7 +34,10 @@ contract ModuleCore is OwnableUpgradeable, UUPSUpgradeable, PsmCore, Initialize,
         address _ammRouter,
         address _config
     ) external initializer {
-        if(_swapAssetFactory == address(0) || _ammFactory == address(0) || _flashSwapRouter == address(0) || _ammRouter == address(0) || _config == address(0)) {
+        if (
+            _swapAssetFactory == address(0) || _ammFactory == address(0) || _flashSwapRouter == address(0)
+                || _ammRouter == address(0) || _config == address(0)
+        ) {
             revert ZeroAddress();
         }
 
@@ -68,11 +71,7 @@ contract ModuleCore is OwnableUpgradeable, UUPSUpgradeable, PsmCore, Initialize,
         uint256 lvFee,
         uint256 initialDsPrice,
         uint256 psmBaseRedemptionFeePercentage
-    )
-        external
-        override
-        onlyConfig
-    {
+    ) external override onlyConfig {
         Pair memory key = PairLibrary.initalize(pa, ra);
         Id id = key.toId();
 
@@ -124,27 +123,22 @@ contract ModuleCore is OwnableUpgradeable, UUPSUpgradeable, PsmCore, Initialize,
         );
     }
 
-    function _initOnNewIssuance(
-        Id id,
-        uint256 repurchaseFeePercentage,
-        address ct,
-        address ds,
-        uint256 expiry
-    ) internal {
-        
+    function _initOnNewIssuance(Id id, uint256 repurchaseFeePercentage, address ct, address ds, uint256 expiry)
+        internal
+    {
         State storage state = states[id];
-        
+
         address ra = state.info.pair1;
         uint256 prevIdx = state.globalAssetIdx++;
         uint256 idx = state.globalAssetIdx;
 
-        address ammPair = getAmmFactory().createPair(ra, ct);
+        PsmLibrary.onNewIssuance(state, ct, ds, idx, prevIdx, repurchaseFeePercentage);
 
-        PsmLibrary.onNewIssuance(state, ct, ds, ammPair, idx, prevIdx, repurchaseFeePercentage);
+        // TODO : must handle changes in flash swap router later
+        // getRouterCore().onNewIssuance(id, idx, ds, ammPair, ra, ct);
 
-        getRouterCore().onNewIssuance(id, idx, ds, ammPair, ra, ct);
-
-        emit Issued(id, idx, expiry, ds, ct, ammPair);
+        // TODO : place holder, must change to the id later
+        emit Issued(id, idx, expiry, ds, ct, address(0));
     }
 
     function updateRepurchaseFeeRate(Id id, uint256 newRepurchaseFeePercentage) external onlyConfig {

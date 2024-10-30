@@ -36,6 +36,7 @@ contract RouterState is
     bytes32 public constant CONFIG = keccak256("CONFIG");
 
     address public _moduleCore;
+    address public hook;
 
     /// @notice __gap variable to prevent storage collisions
     uint256[49] __gap;

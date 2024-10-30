@@ -15,6 +15,8 @@ import {IDsFlashSwapCore} from "../interfaces/IDsFlashSwapRouter.sol";
 import {VaultLibrary} from "./VaultLib.sol";
 import {IUniswapV2Router02} from "../interfaces/uniswap-v2/RouterV2.sol";
 import {SafeERC20, IERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import {ICorkHook} from "./../interfaces/UniV4/IMinimalHook.sol";
+
 
 /**
  * @title Psm Library Contract
@@ -248,7 +250,6 @@ library PsmLibrary {
         State storage self,
         address ct,
         address ds,
-        address ammPair,
         uint256 idx,
         uint256 prevIdx,
         uint256 repurchaseFeePercent
@@ -263,7 +264,7 @@ library PsmLibrary {
         self.psm.balances.dsBalance = 0;
 
         self.psm.repurchaseFeePercentage = repurchaseFeePercent;
-        self.ds[idx] = DepegSwapLibrary.initialize(ds, ct, ammPair);
+        self.ds[idx] = DepegSwapLibrary.initialize(ds, ct);
     }
 
     function _separateLiquidity(State storage self, uint256 prevIdx) internal {
@@ -513,7 +514,7 @@ library PsmLibrary {
         address buyer,
         uint256 amount,
         IDsFlashSwapCore flashSwapRouter,
-        IUniswapV2Router02 ammRouter
+        ICorkHook ammRouter
     )
         external
         returns (

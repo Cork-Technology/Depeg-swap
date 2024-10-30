@@ -12,13 +12,14 @@ import {BitMaps} from "@openzeppelin/contracts/utils/structs/BitMaps.sol";
 import {VaultPool, VaultPoolLibrary} from "./VaultPoolLib.sol";
 import {MinimalUniswapV2Library} from "./uni-v2/UniswapV2Library.sol";
 import {IDsFlashSwapCore} from "../interfaces/IDsFlashSwapRouter.sol";
-import {IUniswapV2Router02} from "../interfaces/uniswap-v2/RouterV2.sol";
 import {IUniswapV2Pair} from "../interfaces/uniswap-v2/pair.sol";
 import {DepegSwap, DepegSwapLibrary} from "./DepegSwapLib.sol";
 import {Asset, ERC20, ERC20Burnable} from "../core/assets/Asset.sol";
 import {ICommon} from "../interfaces/ICommon.sol";
 import {SafeERC20, IERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {IVault} from "../interfaces/IVault.sol";
+import {ICorkHook} from "./../interfaces/UniV4/IMinimalHook.sol";
+
 
 /**
  * @title Vault Library Contract
@@ -58,7 +59,7 @@ library VaultLibrary {
         uint256 ctAmount,
         address raAddress,
         address ctAddress,
-        IUniswapV2Router02 ammRouter,
+        ICorkHook ammRouter,
         uint256 raTolerance,
         uint256 ctTolerance
     ) internal {
@@ -99,7 +100,7 @@ library VaultLibrary {
         State storage self,
         uint256 prevDsId,
         IDsFlashSwapCore flashSwapRouter,
-        IUniswapV2Router02 ammRouter,
+        ICorkHook ammRouter,
         uint256 deadline
     ) external {
         // do nothing at first issuance
@@ -132,7 +133,7 @@ library VaultLibrary {
         uint256 amount,
         IDsFlashSwapCore flashSwapRouter,
         address ctAddress,
-        IUniswapV2Router02 ammRouter,
+        ICorkHook ammRouter,
         Tolerance memory tolerance
     ) internal returns (uint256 ra, uint256 ct) {
         (ra, ct) = __calculateProvideLiquidityAmount(self, amount, flashSwapRouter);
@@ -156,7 +157,7 @@ library VaultLibrary {
         uint256 amount,
         IDsFlashSwapCore flashSwapRouter,
         address ctAddress,
-        IUniswapV2Router02 ammRouter
+        ICorkHook ammRouter
     ) internal returns (uint256 ra, uint256 ct) {
         (uint256 raTolerance, uint256 ctTolerance) =
             MathHelper.calculateWithTolerance(ra, ct, MathHelper.UNIV2_STATIC_TOLERANCE);
@@ -219,7 +220,7 @@ library VaultLibrary {
         uint256 ctAmount,
         IDsFlashSwapCore flashSwapRouter,
         address ctAddress,
-        IUniswapV2Router02 ammRouter,
+        ICorkHook ammRouter,
         Tolerance memory tolerance,
         uint256 amountRaOriginal
     ) internal {
@@ -242,7 +243,7 @@ library VaultLibrary {
         State storage self,
         IDsFlashSwapCore flashSwapRouter,
         address ctAddress,
-        IUniswapV2Router02 ammRouter
+        ICorkHook ammRouter
     ) internal {
         uint256 dsId = self.globalAssetIdx;
 
@@ -267,7 +268,7 @@ library VaultLibrary {
         address from,
         uint256 amount,
         IDsFlashSwapCore flashSwapRouter,
-        IUniswapV2Router02 ammRouter,
+        ICorkHook ammRouter,
         uint256 raTolerance,
         uint256 ctTolerance
     ) external returns (uint256 received) {
@@ -346,7 +347,7 @@ library VaultLibrary {
         State storage self,
         address raAddress,
         address ctAddress,
-        IUniswapV2Router02 ammRouter,
+        ICorkHook ammRouter,
         IUniswapV2Pair ammPair,
         uint256 lp,
         uint256 deadline
@@ -364,7 +365,7 @@ library VaultLibrary {
         State storage self,
         uint256 dsId,
         IDsFlashSwapCore flashSwapRouter,
-        IUniswapV2Router02 ammRouter,
+        ICorkHook ammRouter,
         uint256 lvRedeemed,
         uint256 deadline
     ) internal returns (uint256 ra) {
@@ -379,7 +380,7 @@ library VaultLibrary {
         State storage self,
         uint256 dsId,
         IDsFlashSwapCore flashSwapRouter,
-        IUniswapV2Router02 ammRouter,
+        ICorkHook ammRouter,
         uint256 lvRedeemed,
         uint256 deadline
     ) private returns (uint256 ra, uint256 ammCtBalance) {
@@ -408,7 +409,7 @@ library VaultLibrary {
     function _redeemCtDsAndSellExcessCt(
         State storage self,
         uint256 dsId,
-        IUniswapV2Router02 ammRouter,
+        ICorkHook ammRouter,
         IDsFlashSwapCore flashSwapRouter,
         uint256 ammCtBalance,
         uint256 deadline
@@ -439,7 +440,7 @@ library VaultLibrary {
     function _liquidatedLp(
         State storage self,
         uint256 dsId,
-        IUniswapV2Router02 ammRouter,
+        ICorkHook ammRouter,
         IDsFlashSwapCore flashSwapRouter,
         uint256 deadline
     ) internal {
@@ -652,7 +653,7 @@ library VaultLibrary {
         State storage self,
         uint256 amount,
         IDsFlashSwapCore flashSwapRouter,
-        IUniswapV2Router02 ammRouter
+        ICorkHook ammRouter
     ) public {
         __provideLiquidityWithRatio(self, amount, flashSwapRouter, self.ds[self.globalAssetIdx].ct, ammRouter);
     }
