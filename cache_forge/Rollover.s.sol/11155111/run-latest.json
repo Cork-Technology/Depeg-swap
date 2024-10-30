@@ -1,0 +1,13 @@
+{
+  "transactions": [
+    {
+      "rpc": "wss://sepolia.infura.io/ws/v3/774fcfd0b35b4cc0b85503aca8113440"
+    },
+    {
+      "rpc": "wss://sepolia.infura.io/ws/v3/774fcfd0b35b4cc0b85503aca8113440"
+    },
+    {
+      "rpc": "wss://sepolia.infura.io/ws/v3/774fcfd0b35b4cc0b85503aca8113440"
+    }
+  ]
+}
