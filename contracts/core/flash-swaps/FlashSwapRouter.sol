@@ -17,6 +17,7 @@ import {DepegSwapLibrary} from "../../libraries/DepegSwapLib.sol";
 import {SafeERC20, IERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {ICorkHook} from "../../interfaces/UniV4/IMinimalHook.sol";
 import {AmmId, toAmmId} from "Cork-Hook/lib/State.sol";
+import {CorkSwapCallback} from "Cork-Hook/interfaces/CorkSwapCallback.sol";
 
 /**
  * @title Router contract for Flashswap
@@ -28,7 +29,7 @@ contract RouterState is
     IDsFlashSwapCore,
     AccessControlUpgradeable,
     UUPSUpgradeable,
-    IUniswapV2Callee
+    CorkSwapCallback
 {
     using DsFlashSwaplibrary for ReserveState;
     using DsFlashSwaplibrary for AssetPair;
@@ -166,7 +167,7 @@ contract RouterState is
         override
         returns (uint256 raPriceRatio, uint256 ctPriceRatio)
     {
-        (raPriceRatio, ctPriceRatio) = reserves[id].getPriceRatio(dsId);
+        (raPriceRatio, ctPriceRatio) = reserves[id].getPriceRatio(dsId, hook);
     }
 
     function addReserveLv(Id id, uint256 dsId, uint256 amount) external override onlyModuleCore {
@@ -265,7 +266,7 @@ contract RouterState is
         }
 
         // calculate the amount of DS tokens attributed
-        (amountOut, borrowedAmount,) = assetPair.getAmountOutBuyDS(amount);
+        (amountOut, borrowedAmount,) = assetPair.getAmountOutBuyDS(amount, hook);
 
         // calculate the amount of DS tokens that will be sold from reserve
         uint256 amountSellFromReserve =
@@ -287,17 +288,21 @@ contract RouterState is
                 __swapDsforRa(assetPair, reserveId, dsId, amountSellFromReserve, 0, _moduleCore);
 
             if (success) {
-                // calculate the amount of DS tokens that will be sold from both reserve
-                uint256 lvReserveUsed = assetPair.lvReserve * amountSellFromReserve * 1e18
-                    / (assetPair.lvReserve + assetPair.psmReserve) / 1e18;
-                uint256 psmReserveUsed = amountSellFromReserve - lvReserveUsed;
+                uint256 vaultProfit;
 
-                // decrement reserve
-                assetPair.lvReserve -= lvReserveUsed;
-                assetPair.psmReserve -= psmReserveUsed;
+                {
+                    // calculate the amount of DS tokens that will be sold from both reserve
+                    uint256 lvReserveUsed = assetPair.lvReserve * amountSellFromReserve * 1e18
+                        / (assetPair.lvReserve + assetPair.psmReserve) / 1e18;
+                    uint256 psmReserveUsed = amountSellFromReserve - lvReserveUsed;
 
-                // calculate the profit of the liquidity vault
-                uint256 vaultProfit = profitRa * lvReserveUsed / amountSellFromReserve;
+                    // decrement reserve
+                    assetPair.lvReserve -= lvReserveUsed;
+                    assetPair.psmReserve -= psmReserveUsed;
+
+                    // calculate the profit of the liquidity vault
+                    vaultProfit = profitRa * lvReserveUsed / amountSellFromReserve;
+                }
 
                 // send profit to the vault and PSM
                 IVault(_moduleCore).provideLiquidityWithFlashSwapFee(reserveId, vaultProfit);
@@ -305,7 +310,7 @@ contract RouterState is
                 IPSMcore(_moduleCore).psmAcceptFlashSwapProfit(reserveId, profitRa - vaultProfit);
 
                 // recalculate the amount of DS tokens attributed, since we sold some from the reserve
-                (amountOut, borrowedAmount,) = assetPair.getAmountOutBuyDS(amount);
+                (amountOut, borrowedAmount,) = assetPair.getAmountOutBuyDS(amount, hook);
             }
         }
 
@@ -315,7 +320,7 @@ contract RouterState is
         }
 
         // trigger flash swaps and send the attributed DS tokens to the user
-        __flashSwap(assetPair, assetPair.pair, borrowedAmount, 0, dsId, reserveId, true, amountOut, msg.sender, amount);
+        __flashSwap(assetPair, borrowedAmount, 0, dsId, reserveId, true, amountOut, msg.sender, amount);
 
         // add the amount of DS tokens from the rollover, if any
         amountOut += dsReceived;
@@ -380,7 +385,7 @@ contract RouterState is
             return dsReceived;
         }
 
-        (amountOut,,) = assetPair.getAmountOutBuyDS(amount);
+        (amountOut,,) = assetPair.getAmountOutBuyDS(amount, hook);
 
         // calculate the amount of DS tokens that will be sold from reserve
         uint256 amountSellFromReserve =
@@ -393,7 +398,7 @@ contract RouterState is
 
         // sell the DS tokens from the reserve if there's any
         if (amountSellFromReserve != 0) {
-            (,, bool success) = assetPair.getAmountOutSellDS(amountSellFromReserve);
+            (,, bool success) = assetPair.getAmountOutSellDS(amountSellFromReserve, hook);
 
             if (success) {
                 amountOut = _trySellFromReserve(self, assetPair, amountSellFromReserve, dsId, amount);
@@ -413,17 +418,17 @@ contract RouterState is
         uint256 dsId,
         uint256 amount
     ) private view returns (uint256 amountOut) {
-        (uint256 raReserve, uint256 ctReserve) = assetPair.getReservesSorted();
+        (uint256 raReserve, uint256 ctReserve) = assetPair.getReservesSorted(hook);
 
         // we borrow the same amount of CT tokens from the reserve
         ctReserve -= uint256(amountSellFromReserve);
 
-        (uint256 profit, uint256 raAdded,) = assetPair.getAmountOutSellDS(amountSellFromReserve);
+        (uint256 profit, uint256 raAdded,) = assetPair.getAmountOutSellDS(amountSellFromReserve, hook);
 
         raReserve += uint256(raAdded);
 
         // emulate Vault way of adding liquidity using RA from selling DS reserve
-        (, uint256 ratio) = self.tryGetPriceRatioAfterSellDs(dsId, amountSellFromReserve, raAdded);
+        (, uint256 ratio) = self.tryGetPriceRatioAfterSellDs(dsId, amountSellFromReserve, raAdded, hook);
         uint256 ctAdded;
         uint256 lvReserveUsed =
             assetPair.lvReserve * amountSellFromReserve * 1e18 / (assetPair.lvReserve + assetPair.psmReserve) / 1e18; // calculate the profit of the liquidity vault
@@ -477,7 +482,7 @@ contract RouterState is
         (amountOut, repaymentAmount, success) = __swapDsforRa(assetPair, reserveId, dsId, amount, amountOutMin, user);
 
         if (!success) {
-            (uint256 raReserve, uint256 ctReserve) = assetPair.getReservesSorted();
+            (uint256 raReserve, uint256 ctReserve) = assetPair.getReservesSorted(hook);
             revert IDsFlashSwapCore.InsufficientLiquidity(raReserve, ctReserve, repaymentAmount);
         }
         self.recalculateHPA(dsId, amountOut, amount);
@@ -493,7 +498,7 @@ contract RouterState is
         uint256 amountOutMin,
         address caller
     ) internal returns (uint256 amountOut, uint256 repaymentAmount, bool success) {
-        (amountOut, repaymentAmount, success) = assetPair.getAmountOutSellDS(amount);
+        (amountOut, repaymentAmount, success) = assetPair.getAmountOutSellDS(amount, hook);
 
         if (!success) {
             return (amountOut, repaymentAmount, success);
@@ -503,7 +508,7 @@ contract RouterState is
             revert InsufficientOutputAmount();
         }
 
-        __flashSwap(assetPair, assetPair.pair, 0, amount, dsId, reserveId, false, amountOut, caller, amount);
+        __flashSwap(assetPair, 0, amount, dsId, reserveId, false, amountOut, caller, amount);
     }
 
     /**
@@ -519,10 +524,10 @@ contract RouterState is
         bool success;
         uint256 repaymentAmount;
 
-        (amountOut, repaymentAmount, success) = assetPair.getAmountOutSellDS(amount);
+        (amountOut, repaymentAmount, success) = assetPair.getAmountOutSellDS(amount, hook);
 
         if (!success) {
-            (uint256 raReserve, uint256 ctReserve) = assetPair.getReservesSorted();
+            (uint256 raReserve, uint256 ctReserve) = assetPair.getReservesSorted(hook);
             revert IDsFlashSwapCore.InsufficientLiquidity(raReserve, ctReserve, repaymentAmount);
         }
     }
@@ -542,7 +547,6 @@ contract RouterState is
 
     function __flashSwap(
         AssetPair storage assetPair,
-        IUniswapV2Pair univ2Pair,
         uint256 raAmount,
         uint256 ctAmount,
         uint256 dsId,
@@ -555,25 +559,30 @@ contract RouterState is
         // DS or RA amount provided
         uint256 provided
     ) internal {
-        (,, uint256 amount0out, uint256 amount1out) = MinimalUniswapV2Library.sortTokensUnsafeWithAmount(
-            address(assetPair.ra), address(assetPair.ct), raAmount, ctAmount
-        );
-
-        uint256 borrowed = amount0out == 0 ? amount1out : amount0out;
+        uint256 borrowed = buyDs ? raAmount : ctAmount;
         CallbackData memory callbackData = CallbackData(buyDs, caller, borrowed, provided, attributed, reserveId, dsId);
+
         bytes memory data = abi.encode(callbackData);
 
-        univ2Pair.swap(amount0out, amount1out, address(this), data);
+        hook.swap(address(assetPair.ra), address(assetPair.ct), raAmount, ctAmount, data);
     }
 
-    function uniswapV2Call(address sender, uint256 amount0, uint256 amount1, bytes calldata data) external {
+    function CorkCall(
+        address sender,
+        bytes calldata data,
+        uint256 paymentAmount,
+        address paymentToken,
+        address poolManager
+    ) external {
         CallbackData memory callbackData = abi.decode(data, (CallbackData));
 
         ReserveState storage self = reserves[callbackData.reserveId];
-        IUniswapV2Pair pair = self.getPair(callbackData.dsId);
 
-        assert(msg.sender == address(pair));
-        assert(sender == address(this));
+        {
+            // make sure only hook and forwarder can call this function
+            assert(msg.sender == address(hook) || msg.sender == address(hook.getForwarder()));
+            assert(sender == address(this));
+        }
 
         if (callbackData.buyDs) {
             __afterFlashswapBuy(
@@ -583,7 +592,8 @@ contract RouterState is
                 callbackData.caller,
                 callbackData.attributed,
                 callbackData.provided,
-                callbackData.borrowed
+                callbackData.borrowed,
+                poolManager
             );
         } else {
             // same as borrowed since we're redeeming the same number of DS tokens with CT
@@ -593,7 +603,8 @@ contract RouterState is
                 callbackData.reserveId,
                 callbackData.dsId,
                 callbackData.caller,
-                callbackData.attributed
+                callbackData.attributed,
+                poolManager
             );
         }
     }
@@ -605,7 +616,8 @@ contract RouterState is
         address caller,
         uint256 dsAttributed,
         uint256 provided,
-        uint256 borrowed
+        uint256 borrowed,
+        address poolManager
     ) internal {
         AssetPair storage assetPair = self.ds[dsId];
 
@@ -628,7 +640,7 @@ contract RouterState is
         // send caller their DS
         assetPair.ds.transfer(caller, received);
         // repay flash loan
-        assetPair.ct.transfer(msg.sender, received);
+        assetPair.ct.transfer(poolManager, received);
     }
 
     function __afterFlashswapSell(
@@ -637,7 +649,8 @@ contract RouterState is
         Id reserveId,
         uint256 dsId,
         address caller,
-        uint256 raAttributed
+        uint256 raAttributed,
+        address poolManager
     ) internal {
         AssetPair storage assetPair = self.ds[dsId];
         IERC20(assetPair.ds).safeIncreaseAllowance(_moduleCore, ctAmount);
@@ -657,6 +670,6 @@ contract RouterState is
         // send caller their RA
         IERC20(ra).safeTransfer(caller, raAttributed);
         // repay flash loan
-        IERC20(ra).safeTransfer(msg.sender, repaymentAmount);
+        IERC20(ra).safeTransfer(poolManager, repaymentAmount);
     }
 }

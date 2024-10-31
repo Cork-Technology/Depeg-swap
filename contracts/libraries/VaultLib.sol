@@ -19,6 +19,7 @@ import {ICommon} from "../interfaces/ICommon.sol";
 import {SafeERC20, IERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {IVault} from "../interfaces/IVault.sol";
 import {ICorkHook} from "./../interfaces/UniV4/IMinimalHook.sol";
+import {LiquidityToken} from "Cork-Hook/LiquidityToken.sol";
 
 /**
  * @title Vault Library Contract
@@ -381,23 +382,20 @@ library VaultLibrary {
     ) private returns (uint256 ra, uint256 ammCtBalance) {
         DepegSwap storage ds = self.ds[dsId];
 
-        uint256 lpliquidated = _calculateLpEquivalent(self, dsId, flashSwapRouter, lvRedeemed);
+        uint256 lpliquidated = _calculateLpEquivalent(self, dsId, ammRouter, lvRedeemed);
 
-        (ra, ammCtBalance) = __liquidateUnchecked(
-            self, self.info.pair1, ds.ct, ammRouter, lpliquidated, deadline
-        );
+        (ra, ammCtBalance) = __liquidateUnchecked(self, self.info.pair1, ds.ct, ammRouter, lpliquidated, deadline);
     }
 
-    function _calculateLpEquivalent(
-        State storage self,
-        uint256 dsId,
-        IDsFlashSwapCore flashSwapRouter,
-        uint256 lvRedeemed
-    ) private view returns (uint256 lpRemoved) {
+    function _calculateLpEquivalent(State storage self, uint256 dsId, ICorkHook ammRouter, uint256 lvRedeemed)
+        private
+        view
+        returns (uint256 lpRemoved)
+    {
         uint256 raPerLp;
         uint256 raPerLv;
 
-        (raPerLv,, raPerLp,) = __calculateCtBalanceWithRate(self, flashSwapRouter, dsId);
+        (raPerLv,, raPerLp,) = __calculateCtBalanceWithRate(self, ammRouter, dsId);
         lpRemoved = MathHelper.convertToLp(raPerLv, raPerLp, lvRedeemed);
     }
 
@@ -455,9 +453,8 @@ library VaultLibrary {
         // 4. End state: Only RA + redeemed PA remains
         self.vault.lpLiquidated.set(dsId);
 
-        (uint256 raAmm, uint256 ctAmm) = __liquidateUnchecked(
-            self, self.info.pair1, ds.ct, ammRouter, lpBalance, deadline
-        );
+        (uint256 raAmm, uint256 ctAmm) =
+            __liquidateUnchecked(self, self.info.pair1, ds.ct, ammRouter, lpBalance, deadline);
 
         // avoid stack too deep error
         _pairAndRedeemCtDs(self, flashSwapRouter, dsId, ctAmm, raAmm);
@@ -491,14 +488,15 @@ library VaultLibrary {
         self.vault.pool.reserve(self.vault.lv.totalIssued(), psmRa, psmPa);
     }
 
-    function _tryLiquidateLpAndRedeemCtToPsm(State storage self, uint256 dsId, IDsFlashSwapCore flashSwapRouter)
-        internal
-        view
-        returns (uint256 totalRa, uint256 pa)
-    {
+    function _tryLiquidateLpAndRedeemCtToPsm(
+        State storage self,
+        uint256 dsId,
+        IDsFlashSwapCore flashSwapRouter,
+        ICorkHook ammRouter
+    ) internal view returns (uint256 totalRa, uint256 pa) {
         uint256 ammCtBalance;
 
-        (totalRa, ammCtBalance) = __calculateTotalRaAndCtBalance(self, flashSwapRouter, dsId);
+        (totalRa, ammCtBalance) = __calculateTotalRaAndCtBalance(self, ammRouter, dsId);
 
         uint256 reservedDs = flashSwapRouter.getLvReserve(self.info.toId(), dsId);
 
@@ -515,45 +513,37 @@ library VaultLibrary {
         );
     }
 
-    // duplate function to avoid stack too deep error
-    function __calculateTotalRaAndCtBalance(State storage self, IDsFlashSwapCore flashSwapRouter, uint256 dsId)
+    // duplicate function to avoid stack too deep error
+    function __calculateTotalRaAndCtBalance(State storage self, ICorkHook ammRouter, uint256 dsId)
         internal
         view
         returns (uint256 totalRa, uint256 ammCtBalance)
     {
-        IUniswapV2Pair ammPair = flashSwapRouter.getUniV2pair(self.info.toId(), dsId);
+        address ra = self.info.pair1;
+        address ct = self.ds[dsId].ct;
 
-        (uint256 raReserve, uint256 ctReserve,) = ammPair.getReserves();
+        (uint256 raReserve, uint256 ctReserve) = ammRouter.getReserves(ra, ct);
 
-        (raReserve, ctReserve) = MinimalUniswapV2Library.reverseSortWithAmount224(
-            ammPair.token0(), ammPair.token1(), self.info.pair1, self.ds[dsId].ct, raReserve, ctReserve
-        );
+        uint256 lpTotal = LiquidityToken(ammRouter.getLiquidityToken(ra, ct)).totalSupply();
 
-        (,,,, totalRa, ammCtBalance) = __calculateTotalRaAndCtBalanceWithReserve(
-            self, raReserve, ctReserve, flashSwapRouter.getUniV2pair(self.info.toId(), dsId).totalSupply()
-        );
+        (,,,, totalRa, ammCtBalance) = __calculateTotalRaAndCtBalanceWithReserve(self, raReserve, ctReserve, lpTotal);
     }
 
-    // duplate function to avoid stack too deep error
-    function __calculateCtBalanceWithRate(State storage self, IDsFlashSwapCore flashSwapRouter, uint256 dsId)
+    // duplicate function to avoid stack too deep error
+    function __calculateCtBalanceWithRate(State storage self, ICorkHook ammRouter, uint256 dsId)
         internal
         view
         returns (uint256 raPerLv, uint256 ctPerLv, uint256 raPerLp, uint256 ctPerLp)
     {
-        (uint256 raReserve, uint256 ctReserve,) = flashSwapRouter.getUniV2pair(self.info.toId(), dsId).getReserves();
+        address ra = self.info.pair1;
+        address ct = self.ds[dsId].ct;
 
-        (raReserve, ctReserve) = MinimalUniswapV2Library.reverseSortWithAmount224(
-            flashSwapRouter.getUniV2pair(self.info.toId(), dsId).token0(),
-            flashSwapRouter.getUniV2pair(self.info.toId(), dsId).token1(),
-            self.info.pair1,
-            self.ds[dsId].ct,
-            raReserve,
-            ctReserve
-        );
+        (uint256 raReserve, uint256 ctReserve) = ammRouter.getReserves(ra, ct);
 
-        (,, raPerLv, ctPerLv, raPerLp, ctPerLp) = __calculateTotalRaAndCtBalanceWithReserve(
-            self, raReserve, ctReserve, flashSwapRouter.getUniV2pair(self.info.toId(), dsId).totalSupply()
-        );
+        uint256 lpTotal = LiquidityToken(ammRouter.getLiquidityToken(ra, ct)).totalSupply();
+
+        (,, raPerLv, ctPerLv, raPerLp, ctPerLp) =
+            __calculateTotalRaAndCtBalanceWithReserve(self, raReserve, ctReserve, lpTotal);
     }
 
     function __calculateTotalRaAndCtBalanceWithReserve(
@@ -573,76 +563,73 @@ library VaultLibrary {
             uint256 ctPerLp
         )
     {
-        (raPerLv, ctPerLv, raPerLp, ctPerLp, totalRa, ammCtBalance) = MathHelper.calculateLvValueFromUniV2Lp(
+        (raPerLv, ctPerLv, raPerLp, ctPerLp, totalRa, ammCtBalance) = MathHelper.calculateLvValueFromUniLp(
             lpSupply, self.vault.config.lpBalance, raReserve, ctReserve, Asset(self.vault.lv._address).totalSupply()
         );
     }
 
-    function _tryLiquidateLpAndSellCtToAmm(
-        State storage self,
-        uint256 dsId,
-        IDsFlashSwapCore flashSwapRouter,
-        uint256 lvRedeemed
-    ) internal view returns (uint256 totalRa, uint256 lpLiquidated) {
-        uint256 lvReserve = flashSwapRouter.getLvReserve(self.info.toId(), dsId);
+    // TODO : simplify lv withdrawals
+    // function _tryLiquidateLpAndSellCtToAmm(
+    //     State storage self,
+    //     uint256 dsId,
+    //     IDsFlashSwapCore flashSwapRouter,
+    //     ICorkHook ammRouter,
+    //     uint256 lvRedeemed
+    // ) internal view returns (uint256 totalRa, uint256 lpLiquidated) {
+    //     uint256 lvReserve = flashSwapRouter.getLvReserve(self.info.toId(), dsId);
 
-        (uint256 raPerLv,, uint256 raPerLp,) = __calculateCtBalanceWithRate(self, flashSwapRouter, dsId);
+    //     (uint256 raPerLv,, uint256 raPerLp,) = __calculateCtBalanceWithRate(self, ammRouter, dsId);
 
-        (uint256 raReserve, uint256 ctReserve) = _getRaCtReserveSorted(self, flashSwapRouter, dsId);
+    //     (uint256 raReserve, uint256 ctReserve) = _getRaCtReserveSorted(self, ammRouter, dsId);
 
-        // calculate how much LP we need to liquidate to redeem the LV
-        lpLiquidated = MathHelper.convertToLp(raPerLv, raPerLp, lvRedeemed);
+    //     // calculate how much LP we need to liquidate to redeem the LV
+    //     lpLiquidated = MathHelper.convertToLp(raPerLv, raPerLp, lvRedeemed);
 
-        uint256 lpTotalSupply = flashSwapRouter.getUniV2pair(self.info.toId(), dsId).totalSupply();
-        // totalRa we remove
-        totalRa = lpLiquidated * raReserve / lpTotalSupply;
+    //     uint256 lpTotalSupply = flashSwapRouter.getUniV2pair(self.info.toId(), dsId).totalSupply();
+    //     // totalRa we remove
+    //     totalRa = lpLiquidated * raReserve / lpTotalSupply;
 
-        // total Ct we remove
-        uint256 ammCtBalance = lpLiquidated * ctReserve / lpTotalSupply;
+    //     // total Ct we remove
+    //     uint256 ammCtBalance = lpLiquidated * ctReserve / lpTotalSupply;
 
-        // pair DS and CT to redeem RA
-        totalRa += lvReserve > ammCtBalance ? ammCtBalance : lvReserve;
+    //     // pair DS and CT to redeem RA
+    //     totalRa += lvReserve > ammCtBalance ? ammCtBalance : lvReserve;
 
-        uint256 excessCt = lvReserve > ammCtBalance ? 0 : ammCtBalance - lvReserve;
+    //     uint256 excessCt = lvReserve > ammCtBalance ? 0 : ammCtBalance - lvReserve;
 
-        totalRa += _trySellCtToAmm(self, dsId, flashSwapRouter, excessCt, lpLiquidated, lpTotalSupply);
-    }
+    //     totalRa += _trySellCtToAmm(self, dsId, flashSwapRouter, excessCt, lpLiquidated, lpTotalSupply);
+    // }
 
-    function _getRaCtReserveSorted(State storage self, IDsFlashSwapCore flashSwapRouter, uint256 dsId)
+    function _getRaCtReserveSorted(State storage self, ICorkHook ammRouter, uint256 dsId)
         internal
         view
         returns (uint256 raReserve, uint256 ctReserve)
     {
-        (raReserve, ctReserve,) = flashSwapRouter.getUniV2pair(self.info.toId(), dsId).getReserves();
+        address ra = self.info.pair1;
+        address ct = self.ds[dsId].ct;
 
-        (raReserve, ctReserve) = MinimalUniswapV2Library.reverseSortWithAmount224(
-            flashSwapRouter.getUniV2pair(self.info.toId(), dsId).token0(),
-            flashSwapRouter.getUniV2pair(self.info.toId(), dsId).token1(),
-            self.info.pair1,
-            self.ds[dsId].ct,
-            raReserve,
-            ctReserve
-        );
+        (raReserve, ctReserve) = ammRouter.getReserves(ra, ct);
     }
 
-    function _trySellCtToAmm(
-        State storage self,
-        uint256 dsId,
-        IDsFlashSwapCore flashSwapRouter,
-        uint256 excessCt,
-        uint256 lpLiquidated,
-        uint256 lpTotalSupply
-    ) internal view returns (uint256 ra) {
-        if (excessCt == 0) {
-            return 0;
-        }
+    // TODO : simplify lv withdrawals
+    // function _trySellCtToAmm(
+    //     State storage self,
+    //     uint256 dsId,
+    //     IDsFlashSwapCore flashSwapRouter,
+    //     uint256 excessCt,
+    //     uint256 lpLiquidated,
+    //     uint256 lpTotalSupply
+    // ) internal view returns (uint256 ra) {
+    //     if (excessCt == 0) {
+    //         return 0;
+    //     }
 
-        (uint256 raReserve, uint256 ctReserve) = _getRaCtReserveSorted(self, flashSwapRouter, dsId);
-        raReserve -= (lpLiquidated * raReserve) / lpTotalSupply;
-        ctReserve -= (lpLiquidated * ctReserve) / lpTotalSupply;
+    //     (uint256 raReserve, uint256 ctReserve) = _getRaCtReserveSorted(self, flashSwapRouter, dsId);
+    //     raReserve -= (lpLiquidated * raReserve) / lpTotalSupply;
+    //     ctReserve -= (lpLiquidated * ctReserve) / lpTotalSupply;
 
-        ra = MinimalUniswapV2Library.getAmountOut(excessCt, ctReserve, raReserve);
-    }
+    //     ra = MinimalUniswapV2Library.getAmountOut(excessCt, ctReserve, raReserve);
+    // }
 
     // IMPORTANT : only psm, flash swap router and early redeem LV can call this function
     function provideLiquidityWithFee(
@@ -737,6 +724,7 @@ library VaultLibrary {
         self.vault.balances.ra.unlockToUnchecked(received, redeemParams.receiver);
     }
 
+    // TODO : simplify lv withdrawals
     function previewRedeemEarly(State storage self, uint256 amount, IDsFlashSwapCore flashSwapRouter)
         public
         view
@@ -746,7 +734,8 @@ library VaultLibrary {
 
         feePercentage = self.vault.config.fee;
 
-        (received,) = _tryLiquidateLpAndSellCtToAmm(self, self.globalAssetIdx, flashSwapRouter, amount);
+        
+        // (received,) = _tryLiquidateLpAndSellCtToAmm(self, self.globalAssetIdx, flashSwapRouter, amount);
 
         fee = MathHelper.calculatePercentageFee(received, feePercentage);
 

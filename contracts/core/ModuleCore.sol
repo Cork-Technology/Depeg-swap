@@ -13,6 +13,7 @@ import {VaultCore} from "./Vault.sol";
 import {Initialize} from "../interfaces/Init.sol";
 import {Context} from "@openzeppelin/contracts/utils/Context.sol";
 import {ContextUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/ContextUpgradeable.sol";
+import {AmmId, toAmmId} from "Cork-Hook/lib/State.sol";
 
 /**
  * @title ModuleCore Contract
@@ -132,10 +133,10 @@ contract ModuleCore is OwnableUpgradeable, UUPSUpgradeable, PsmCore, Initialize,
         PsmLibrary.onNewIssuance(state, ct, ds, idx, prevIdx, repurchaseFeePercentage);
 
         // TODO : must handle changes in flash swap router later
-        // getRouterCore().onNewIssuance(id, idx, ds, ammPair, ra, ct);
+        getRouterCore().onNewIssuance(id, idx, ds, ra, ct);
 
         // TODO : place holder, must change to the id later
-        emit Issued(id, idx, expiry, ds, ct, address(0));
+        emit Issued(id, idx, expiry, ds, ct, AmmId.unwrap(toAmmId(ra, ct)));
     }
 
     function updateRepurchaseFeeRate(Id id, uint256 newRepurchaseFeePercentage) external onlyConfig {

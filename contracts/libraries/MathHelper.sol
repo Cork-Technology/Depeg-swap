@@ -176,7 +176,7 @@ library MathHelper {
         valueCtPerLp = (uint256(totalCtReserve) * 1e18) / totalLpSupply;
     }
 
-    function calculateLvValueFromUniV2Lp(
+    function calculateLvValueFromUniLp(
         uint256 totalLpSupply,
         uint256 totalLpOwned,
         uint256 totalRaReserve,
