@@ -225,13 +225,15 @@ abstract contract Helper is Test, SigUtils {
     }
 
     function initializeModuleCore() internal {
-        moduleCore.initialize(
-            address(assetFactory),
-            address(uniswapFactory),
-            address(flashSwapRouter),
-            address(uniswapRouter),
-            address(corkConfig)
-        );
+        // TODO : adjust tests
+        
+        // moduleCore.initialize(
+        //     address(assetFactory),
+        //     address(uniswapFactory),
+        //     address(flashSwapRouter),
+        //     address(uniswapRouter),
+        //     address(corkConfig)
+        // );
     }
 
    function deployModuleCore() internal {

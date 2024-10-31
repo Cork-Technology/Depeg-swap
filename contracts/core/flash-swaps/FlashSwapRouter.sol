@@ -15,6 +15,7 @@ import {IVault} from "../../interfaces/IVault.sol";
 import {Asset} from "../assets/Asset.sol";
 import {DepegSwapLibrary} from "../../libraries/DepegSwapLib.sol";
 import {SafeERC20, IERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import {ICorkHook} from "../../interfaces/UniV4/IMinimalHook.sol";
 
 /**
  * @title Router contract for Flashswap
@@ -36,7 +37,7 @@ contract RouterState is
     bytes32 public constant CONFIG = keccak256("CONFIG");
 
     address public _moduleCore;
-    address public hook;
+    ICorkHook public hook;
 
     /// @notice __gap variable to prevent storage collisions
     uint256[49] __gap;
@@ -88,6 +89,10 @@ contract RouterState is
     function setModuleCore(address moduleCore) external onlyDefaultAdmin {
         _moduleCore = moduleCore;
         _grantRole(MODULE_CORE, moduleCore);
+    }
+
+    function setHook(address _hook) external onlyDefaultAdmin {
+        hook = ICorkHook(_hook);
     }
 
     function onNewIssuance(Id reserveId, uint256 dsId, address ds, address pair, address ra, address ct)
@@ -430,8 +435,7 @@ contract RouterState is
         profit = profit * lvReserveUsed / amountSellFromReserve;
 
         // use the vault profit
-        (raAdded, ctAdded) =
-            MathHelper.calculateProvideLiquidityAmountBasedOnCtPrice(profit, ratio);
+        (raAdded, ctAdded) = MathHelper.calculateProvideLiquidityAmountBasedOnCtPrice(profit, ratio);
 
         raReserve += uint112(raAdded);
         ctReserve += uint112(ctAdded);
@@ -609,7 +613,6 @@ contract RouterState is
         AssetPair storage assetPair = self.ds[dsId];
 
         uint256 deposited = provided + borrowed;
-
 
         IERC20(assetPair.ra).safeIncreaseAllowance(_moduleCore, deposited);
 

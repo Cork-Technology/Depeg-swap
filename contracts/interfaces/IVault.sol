@@ -3,6 +3,7 @@ pragma solidity ^0.8.24;
 import {Id} from "../libraries/Pair.sol";
 import {IDsFlashSwapCore} from "../interfaces/IDsFlashSwapRouter.sol";
 import {IUniswapV2Router02} from "../interfaces/uniswap-v2/RouterV2.sol";
+import {ICorkHook} from "./../interfaces/UniV4/IMinimalHook.sol";
 
 /**
  * @title IVault Interface
@@ -12,7 +13,7 @@ import {IUniswapV2Router02} from "../interfaces/uniswap-v2/RouterV2.sol";
 interface IVault {
     struct Routers {
         IDsFlashSwapCore flashSwapRouter;
-        IUniswapV2Router02 ammRouter;
+        ICorkHook ammRouter;
     }
 
     struct PermitParams {

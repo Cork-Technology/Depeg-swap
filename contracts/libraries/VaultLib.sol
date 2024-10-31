@@ -20,7 +20,6 @@ import {SafeERC20, IERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeE
 import {IVault} from "../interfaces/IVault.sol";
 import {ICorkHook} from "./../interfaces/UniV4/IMinimalHook.sol";
 
-
 /**
  * @title Vault Library Contract
  * @author Cork Team
@@ -63,13 +62,11 @@ library VaultLibrary {
         uint256 raTolerance,
         uint256 ctTolerance
     ) internal {
-
         IERC20(raAddress).safeIncreaseAllowance(address(ammRouter), raAmount);
         IERC20(ctAddress).safeIncreaseAllowance(address(ammRouter), ctAmount);
 
-        (uint256 raAdded, uint256 ctAdded, uint256 lp) = ammRouter.addLiquidity(
-            raAddress, ctAddress, raAmount, ctAmount, raTolerance, ctTolerance, address(this), block.timestamp
-        );
+        (uint256 raAdded, uint256 ctAdded, uint256 lp) =
+            ammRouter.addLiquidity(raAddress, ctAddress, raAmount, ctAmount, raTolerance, ctTolerance, block.timestamp);
 
         uint256 dustCt = ctAmount - ctAdded;
 
@@ -249,8 +246,7 @@ library VaultLibrary {
 
         uint256 ctRatio = __getAmmCtPriceRatio(self, flashSwapRouter, dsId);
 
-        (uint256 ra, uint256 ct, uint256 originalBalance) =
-            self.vault.pool.rationedToAmm(ctRatio);
+        (uint256 ra, uint256 ct, uint256 originalBalance) = self.vault.pool.rationedToAmm(ctRatio);
 
         // this doesn't really matter tbh, since the amm is fresh and we're the first one to add liquidity to it
         (uint256 raTolerance, uint256 ctTolerance) =
@@ -348,14 +344,13 @@ library VaultLibrary {
         address raAddress,
         address ctAddress,
         ICorkHook ammRouter,
-        IUniswapV2Pair ammPair,
         uint256 lp,
         uint256 deadline
     ) internal returns (uint256 raReceived, uint256 ctReceived) {
-        ammPair.approve(address(ammRouter), lp);
+        IERC20(ammRouter.getLiquidityToken(raAddress, ctAddress)).approve(address(ammRouter), lp);
 
         // amountAMin & amountBMin = 0 for 100% tolerence
-        (raReceived, ctReceived) = ammRouter.removeLiquidity(raAddress, ctAddress, lp, 0, 0, address(this), deadline);
+        (raReceived, ctReceived) = ammRouter.removeLiquidity(raAddress, ctAddress, lp, 0, 0, deadline);
 
         self.vault.config.lpBalance -= lp;
     }
@@ -389,7 +384,7 @@ library VaultLibrary {
         uint256 lpliquidated = _calculateLpEquivalent(self, dsId, flashSwapRouter, lvRedeemed);
 
         (ra, ammCtBalance) = __liquidateUnchecked(
-            self, self.info.pair1, ds.ct, ammRouter, IUniswapV2Pair(ds.ammPair), lpliquidated, deadline
+            self, self.info.pair1, ds.ct, ammRouter, lpliquidated, deadline
         );
     }
 
@@ -430,11 +425,12 @@ library VaultLibrary {
         path[0] = ds.ct;
         path[1] = self.info.pair1;
 
-        if (ctSellAmount != 0) {
-            IERC20(ds.ct).safeIncreaseAllowance(address(ammRouter), ctSellAmount);
-            // 100% tolerance, to ensure this not fail
-            ra += ammRouter.swapExactTokensForTokens(ctSellAmount, 0, path, address(this), deadline)[1];
-        }
+        // TODO : simplify lv withdrawals
+        // if (ctSellAmount != 0) {
+        //     IERC20(ds.ct).safeIncreaseAllowance(address(ammRouter), ctSellAmount);
+        //     // 100% tolerance, to ensure this not fail
+        //     ra += ammRouter.swapExactTokensForTokens(ctSellAmount, 0, path, address(this), deadline)[1];
+        // }
     }
 
     function _liquidatedLp(
@@ -460,7 +456,7 @@ library VaultLibrary {
         self.vault.lpLiquidated.set(dsId);
 
         (uint256 raAmm, uint256 ctAmm) = __liquidateUnchecked(
-            self, self.info.pair1, ds.ct, ammRouter, IUniswapV2Pair(ds.ammPair), lpBalance, deadline
+            self, self.info.pair1, ds.ct, ammRouter, lpBalance, deadline
         );
 
         // avoid stack too deep error

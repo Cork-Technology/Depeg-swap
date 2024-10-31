@@ -5,6 +5,8 @@ import {Asset} from "../core/assets/Asset.sol";
 import {SwapperMathLibrary} from "./DsSwapperMathLib.sol";
 import {MinimalUniswapV2Library} from "./uni-v2/UniswapV2Library.sol";
 import {PermitChecker} from "./PermitChecker.sol";
+import {ICorkHook} from "../interfaces/UniV4/IMinimalHook.sol";
+
 
 /**
  * @dev AssetPair structure for Asset Pairs
@@ -13,8 +15,6 @@ struct AssetPair {
     Asset ra;
     Asset ct;
     Asset ds;
-    /// @dev [RA, CT]
-    IUniswapV2Pair pair;
     /// @dev this represent the amount of DS that the LV has in reserve
     /// will be used to fullfill buy DS orders based on the LV DS selling strategy
     // (i.e 50:50 for first expiry, and 80:20 on subsequent expiries. note that it's represented as LV:AMM)
@@ -54,10 +54,10 @@ library DsFlashSwaplibrary {
 
     uint256 public constant FIRST_ISSUANCE = 1;
 
-    function onNewIssuance(ReserveState storage self, uint256 dsId, address ds, address pair, address ra, address ct)
+    function onNewIssuance(ReserveState storage self, uint256 dsId, address ds, address ra, address ct)
         internal
     {
-        self.ds[dsId] = AssetPair(Asset(ra), Asset(ct), Asset(ds), IUniswapV2Pair(pair), 0, 0);
+        self.ds[dsId] = AssetPair(Asset(ra), Asset(ct), Asset(ds), 0, 0);
 
         self.reserveSellPressurePercentage = dsId == FIRST_ISSUANCE
             ? INITIAL_RESERVE_SELL_PRESSURE_PERCENTAGE
@@ -77,10 +77,6 @@ library DsFlashSwaplibrary {
 
     function rolloverSale(ReserveState storage self) internal view returns (bool) {
         return block.number <= self.rolloverEndInBlockNumber;
-    }
-
-    function getPair(ReserveState storage self, uint256 dsId) internal view returns (IUniswapV2Pair) {
-        return self.ds[dsId].pair;
     }
 
     function emptyReserveLv(ReserveState storage self, uint256 dsId, address to) internal returns (uint256 emptied) {

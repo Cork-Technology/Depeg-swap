@@ -27,23 +27,20 @@ contract ModuleCore is OwnableUpgradeable, UUPSUpgradeable, PsmCore, Initialize,
     using PairLibrary for Pair;
 
     /// @notice Initializer function for upgradeable contracts
-    function initialize(
-        address _swapAssetFactory,
-        address _ammFactory,
-        address _flashSwapRouter,
-        address _ammRouter,
-        address _config
-    ) external initializer {
+    function initialize(address _swapAssetFactory, address _ammHook, address _flashSwapRouter, address _config)
+        external
+        initializer
+    {
         if (
-            _swapAssetFactory == address(0) || _ammFactory == address(0) || _flashSwapRouter == address(0)
-                || _ammRouter == address(0) || _config == address(0)
+            _swapAssetFactory == address(0) || _ammHook == address(0) || _flashSwapRouter == address(0)
+                || _config == address(0)
         ) {
             revert ZeroAddress();
         }
 
         __Ownable_init(msg.sender);
         __UUPSUpgradeable_init();
-        initializeModuleState(_swapAssetFactory, _ammFactory, _flashSwapRouter, _ammRouter, _config);
+        initializeModuleState(_swapAssetFactory, _ammHook, _flashSwapRouter, _config);
     }
 
     /// @notice Authorization function for UUPS proxy upgrades
