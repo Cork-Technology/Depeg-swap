@@ -16,7 +16,7 @@ import {Asset} from "../assets/Asset.sol";
 import {DepegSwapLibrary} from "../../libraries/DepegSwapLib.sol";
 import {SafeERC20, IERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {ICorkHook} from "../../interfaces/UniV4/IMinimalHook.sol";
-import {toAmmId} from "Cork-Hook/lib/State.sol";
+import {AmmId, toAmmId} from "Cork-Hook/lib/State.sol";
 
 /**
  * @title Router contract for Flashswap
@@ -103,7 +103,7 @@ contract RouterState is
     {
         reserves[reserveId].onNewIssuance(dsId, ds, ra, ct);
 
-        emit NewIssuance(reserveId, dsId, ds, toAmmId(ra, ct));
+        emit NewIssuance(reserveId, dsId, ds, AmmId.unwrap(toAmmId(ra, ct)));
     }
 
     /// @notice set the discount rate rate and rollover for the new issuance
@@ -118,8 +118,8 @@ contract RouterState is
         self.rolloverEndInBlockNumber = block.number + rolloverPeriodInblocks;
     }
 
-    function getAmmReserve(Id id, uint256 dsId) external view override returns (uint112 raReserve, uint112 ctReserve) {
-        (raReserve, ctReserve) = reserves[id].getReserve(dsId);
+    function getAmmReserve(Id id, uint256 dsId) external view override returns (uint256 raReserve, uint256 ctReserve) {
+        (raReserve, ctReserve) = reserves[id].getReserve(dsId, hook);
     }
 
     function getLvReserve(Id id, uint256 dsId) external view override returns (uint256 lvReserve) {
@@ -128,10 +128,6 @@ contract RouterState is
 
     function getPsmReserve(Id id, uint256 dsId) external view override returns (uint256 psmReserve) {
         return reserves[id].ds[dsId].psmReserve;
-    }
-
-    function getUniV2pair(Id id, uint256 dsId) external view override returns (IUniswapV2Pair pair) {
-        return reserves[id].getPair(dsId);
     }
 
     function emptyReserveLv(Id reserveId, uint256 dsId) external override onlyModuleCore returns (uint256 amount) {
@@ -417,14 +413,14 @@ contract RouterState is
         uint256 dsId,
         uint256 amount
     ) private view returns (uint256 amountOut) {
-        (uint112 raReserve, uint112 ctReserve) = assetPair.getReservesSorted();
+        (uint256 raReserve, uint256 ctReserve) = assetPair.getReservesSorted();
 
         // we borrow the same amount of CT tokens from the reserve
-        ctReserve -= uint112(amountSellFromReserve);
+        ctReserve -= uint256(amountSellFromReserve);
 
         (uint256 profit, uint256 raAdded,) = assetPair.getAmountOutSellDS(amountSellFromReserve);
 
-        raReserve += uint112(raAdded);
+        raReserve += uint256(raAdded);
 
         // emulate Vault way of adding liquidity using RA from selling DS reserve
         (, uint256 ratio) = self.tryGetPriceRatioAfterSellDs(dsId, amountSellFromReserve, raAdded);
@@ -438,8 +434,8 @@ contract RouterState is
         // use the vault profit
         (raAdded, ctAdded) = MathHelper.calculateProvideLiquidityAmountBasedOnCtPrice(profit, ratio);
 
-        raReserve += uint112(raAdded);
-        ctReserve += uint112(ctAdded);
+        raReserve += uint256(raAdded);
+        ctReserve += uint256(ctAdded);
 
         // update amountOut since we sold some from the reserve
         (, amountOut) = SwapperMathLibrary.getAmountOutBuyDs(raReserve, ctReserve, amount);
@@ -481,7 +477,7 @@ contract RouterState is
         (amountOut, repaymentAmount, success) = __swapDsforRa(assetPair, reserveId, dsId, amount, amountOutMin, user);
 
         if (!success) {
-            (uint112 raReserve, uint112 ctReserve) = assetPair.getReservesSorted();
+            (uint256 raReserve, uint256 ctReserve) = assetPair.getReservesSorted();
             revert IDsFlashSwapCore.InsufficientLiquidity(raReserve, ctReserve, repaymentAmount);
         }
         self.recalculateHPA(dsId, amountOut, amount);
@@ -526,7 +522,7 @@ contract RouterState is
         (amountOut, repaymentAmount, success) = assetPair.getAmountOutSellDS(amount);
 
         if (!success) {
-            (uint112 raReserve, uint112 ctReserve) = assetPair.getReservesSorted();
+            (uint256 raReserve, uint256 ctReserve) = assetPair.getReservesSorted();
             revert IDsFlashSwapCore.InsufficientLiquidity(raReserve, ctReserve, repaymentAmount);
         }
     }

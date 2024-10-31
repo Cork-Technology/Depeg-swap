@@ -28,7 +28,7 @@ interface IDsFlashSwapUtility {
      * @return raReserve reserve of RA
      * @return ctReserve reserve of CT
      */
-    function getAmmReserve(Id id, uint256 dsId) external view returns (uint112 raReserve, uint112 ctReserve);
+    function getAmmReserve(Id id, uint256 dsId) external view returns (uint256 raReserve, uint256 ctReserve);
 
     /**
      * @notice returns the current DS reserve that is owned by liquidity vault
@@ -45,13 +45,6 @@ interface IDsFlashSwapUtility {
      * @return psmReserve reserve of DS
      */
     function getPsmReserve(Id id, uint256 dsId) external view returns (uint256 psmReserve);
-
-    /**
-     * @notice returns the underlying uniswap v2 pair address
-     * @param id the id of the pair
-     * @param dsId the ds id of the pair
-     */
-    function getUniV2pair(Id id, uint256 dsId) external view returns (IUniswapV2Pair pair);
 
     /**
      * @notice returns the current cumulative HPA of the pair
@@ -159,11 +152,10 @@ interface IDsFlashSwapCore is IDsFlashSwapUtility {
      * @param reserveId the pair id
      * @param dsId the ds id of the pair
      * @param ds the address of the new issued DS
-     * @param pair the pair id of RA:CT in uni v4
      * @param ra the address of RA token
      * @param ct the address of CT token
      */
-    function onNewIssuance(Id reserveId, uint256 dsId, address ds, bytes32 pair, address ra, address ct) external;
+    function onNewIssuance(Id reserveId, uint256 dsId, address ds, address ra, address ct) external;
 
     /**
      * @notice set the discount rate rate and rollover for the new issuance
