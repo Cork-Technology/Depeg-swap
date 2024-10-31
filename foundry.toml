@@ -7,5 +7,5 @@ test = "test"
 cache_path = "cache_forge"
 optimizer = true
 optimizer_runs = 200
-solc_version = "0.8.24"
+solc_version = "0.8.26"
 fs_permissions = [{ access = "read", path = "./"}]

@@ -122,9 +122,9 @@ interface IDsFlashSwapCore is IDsFlashSwapUtility {
      * @param reserveId the reserve id same as the id on PSM and LV
      * @param dsId the ds id of the pair, the same as the DS id on PSM and LV
      * @param ds the new DS address
-     * @param pair the RA:CT pair address
+     * @param pair the RA:CT pair id
      */
-    event NewIssuance(Id indexed reserveId, uint256 indexed dsId, address ds, address pair);
+    event NewIssuance(Id indexed reserveId, uint256 indexed dsId, address ds, bytes32 pair);
 
     /**
      * @notice Emitted when a reserve is added
@@ -159,11 +159,11 @@ interface IDsFlashSwapCore is IDsFlashSwapUtility {
      * @param reserveId the pair id
      * @param dsId the ds id of the pair
      * @param ds the address of the new issued DS
-     * @param pair the address of the underlying uniswap v2 pair
+     * @param pair the pair id of RA:CT in uni v4
      * @param ra the address of RA token
      * @param ct the address of CT token
      */
-    function onNewIssuance(Id reserveId, uint256 dsId, address ds, address pair, address ra, address ct) external;
+    function onNewIssuance(Id reserveId, uint256 dsId, address ds, bytes32 pair, address ra, address ct) external;
 
     /**
      * @notice set the discount rate rate and rollover for the new issuance

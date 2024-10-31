@@ -16,6 +16,7 @@ import {Asset} from "../assets/Asset.sol";
 import {DepegSwapLibrary} from "../../libraries/DepegSwapLib.sol";
 import {SafeERC20, IERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {ICorkHook} from "../../interfaces/UniV4/IMinimalHook.sol";
+import {toAmmId} from "Cork-Hook/lib/State.sol";
 
 /**
  * @title Router contract for Flashswap
@@ -95,14 +96,14 @@ contract RouterState is
         hook = ICorkHook(_hook);
     }
 
-    function onNewIssuance(Id reserveId, uint256 dsId, address ds, address pair, address ra, address ct)
+    function onNewIssuance(Id reserveId, uint256 dsId, address ds, address ra, address ct)
         external
         override
         onlyModuleCore
     {
-        reserves[reserveId].onNewIssuance(dsId, ds, pair, ra, ct);
+        reserves[reserveId].onNewIssuance(dsId, ds, ra, ct);
 
-        emit NewIssuance(reserveId, dsId, ds, pair);
+        emit NewIssuance(reserveId, dsId, ds, toAmmId(ra, ct));
     }
 
     /// @notice set the discount rate rate and rollover for the new issuance

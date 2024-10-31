@@ -4,6 +4,7 @@ import {UQ112x112} from "./UQ112x112.sol";
 import {SignedMath} from "@openzeppelin/contracts/utils/math/SignedMath.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
+import {FixedPoint} from "Cork-Hook/lib/balancers/FixedPoint.sol";
 
 /**
  * @title SwapperMathLibrary Contract
@@ -12,8 +13,9 @@ import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
  */
 library SwapperMathLibrary {
     using UQ112x112 for uint224;
-    using Math for uint256;
+    using FixedPoint for uint256;
 
+    // TODO : move errors to interface
     /// @notice thrown when Reserve is Zero
     error ZeroReserve();
 
@@ -30,7 +32,7 @@ library SwapperMathLibrary {
     error TooBig();
 
     // Calculate price ratio of two tokens in a uniswap v2 pair, will return ratio on 18 decimals precision
-    function getPriceRatioUniv2(uint112 raReserve, uint112 ctReserve)
+    function getPriceRatio(uint256 raReserve, uint256 ctReserve)
         public
         pure
         returns (uint256 raPriceRatio, uint256 ctPriceRatio)
@@ -39,18 +41,8 @@ library SwapperMathLibrary {
             revert ZeroReserve();
         }
 
-        // Encode uni v2 reserves to UQ112x112 format
-        uint224 encodedRaReserve = UQ112x112.encode(raReserve);
-        uint224 encodedCtReserve = UQ112x112.encode(ctReserve);
-
-        // Calculate price ratios using uqdiv
-        uint224 raPriceRatioUQ = encodedCtReserve.uqdiv(raReserve);
-        uint224 ctPriceRatioUQ = encodedRaReserve.uqdiv(ctReserve);
-
-        // Convert UQ112x112 to regular uint (divide by 2**112)
-        // we time by 18 to have 18 decimals precision
-        raPriceRatio = (uint256(raPriceRatioUQ) * 1e18) / UQ112x112.Q112;
-        ctPriceRatio = (uint256(ctPriceRatioUQ) * 1e18) / UQ112x112.Q112;
+        raPriceRatio = ctReserve.divDown(raReserve);
+        ctPriceRatio = raReserve.divDown(ctReserve);
     }
     /*
      * S = (E + x - y + sqrt(E^2 + 2E(x + y) + (x - y)^2)) / 2
