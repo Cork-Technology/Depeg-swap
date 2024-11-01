@@ -35,6 +35,7 @@ abstract contract PsmCore is IPSMcore, ModuleState, Context {
     function repurchase(Id id, uint256 amount)
         external
         override
+        nonReentrant
         PSMRepurchaseNotPaused(id)
         returns (
             uint256 dsId,
@@ -301,6 +302,7 @@ abstract contract PsmCore is IPSMcore, ModuleState, Context {
 
     function claimAutoSellProfit(Id id, uint256 dsId, uint256 amount)
         external
+        nonReentrant
         returns (uint256 profit, uint256 dsReceived)
     {
         State storage state = states[id];
