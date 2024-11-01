@@ -694,8 +694,8 @@ library VaultLibrary {
             );
         }
 
-        if (redeemParams.amount > self.vault.userLvBalance[owner].balance) {
-            revert IVault.InsufficientBalance(owner, redeemParams.amount, self.vault.userLvBalance[owner].balance);
+        if (redeemParams.amount > ERC20(self.vault.lv._address).balanceOf(owner)) {
+            revert IVault.InsufficientBalance(owner, redeemParams.amount,ERC20(self.vault.lv._address).balanceOf(owner));
         }
 
         self.vault.userLvBalance[owner].balance -= redeemParams.amount;
