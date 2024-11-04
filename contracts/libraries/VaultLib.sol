@@ -427,7 +427,7 @@ library VaultLibrary {
         ra += PsmLibrary.lvRedeemRaWithCtDs(self, redeemAmount, dsId);
 
         // we subtract redeem amount since we already liquidate it from the router
-        uint256 ctSellAmount = reservedDs - redeemAmount >= ammCtBalance ? 0 : ammCtBalance - redeemAmount;
+        uint256 ctSellAmount = reservedDs >= ammCtBalance ? 0 : ammCtBalance - reservedDs;
 
         DepegSwap storage ds = self.ds[dsId];
         address[] memory path = new address[](2);
