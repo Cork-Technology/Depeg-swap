@@ -13,8 +13,9 @@ import {DummyWETH} from "./../../contracts/dummy/DummyWETH.sol";
 import {TestModuleCore} from "./TestModuleCore.sol";
 import {TestFlashSwapRouter} from "./TestFlashSwapRouter.sol";
 import "./SigUtils.sol";
+import {TestHelper as CorkHelper} from "Cork-Hook/../test/Helper.sol";
 
-abstract contract Helper is Test, SigUtils {
+abstract contract Helper is SigUtils, CorkHelper {
     TestModuleCore internal moduleCore;
     AssetFactory internal assetFactory;
     IUniswapV2Factory internal uniswapFactory;
@@ -28,11 +29,7 @@ abstract contract Helper is Test, SigUtils {
     // 1% base redemption fee
     uint256 internal constant DEFAULT_BASE_REDEMPTION_FEE = 1 ether;
 
-    uint256 internal constant DEFAULT_EXCHANGE_RATES = 1 ether;
-
-    // use this to test functions as user
-    uint256 internal DEFAULT_ADDRESS_PK = 1;
-    address internal DEFAULT_ADDRESS = vm.rememberKey(DEFAULT_ADDRESS_PK);
+    uint256 internal constant DEFAULT_EXCHANGE_RATES = 1 ether;  
 
     // 1% repurchase fee
     uint256 internal constant DEFAULT_REPURCHASE_FEE = 1 ether;
@@ -172,8 +169,7 @@ abstract contract Helper is Test, SigUtils {
         Pair memory _id = PairLibrary.initalize(address(pa), address(ra));
         id = PairLibrary.toId(_id);
 
-                defaultCurrencyId = id;
-
+        defaultCurrencyId = id;
 
         initializeNewModuleCore(address(pa), address(ra), DEFAULT_LV_FEE, defaultInitialDsPrice(), baseRedemptionFee);
         issueNewDs(
@@ -226,7 +222,7 @@ abstract contract Helper is Test, SigUtils {
 
     function initializeModuleCore() internal {
         // TODO : adjust tests
-        
+
         // moduleCore.initialize(
         //     address(assetFactory),
         //     address(uniswapFactory),
@@ -236,7 +232,7 @@ abstract contract Helper is Test, SigUtils {
         // );
     }
 
-   function deployModuleCore() internal {
+    function deployModuleCore() internal {
         deployConfig();
         deployFlashSwapRouter();
         deployAssetFactory();

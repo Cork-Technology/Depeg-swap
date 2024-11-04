@@ -3,7 +3,6 @@
 @openzeppelin/=node_modules/@openzeppelin/
 @openzeppelin/contracts-upgradeable/=lib/openzeppelin-contracts-upgradeable/contracts/
 @openzeppelin/contracts/=lib/openzeppelin-contracts/contracts/
-@uniswap/=node_modules/@uniswap/
 @uniswap/v4-core/=lib/Cork-Hook/lib/v4-periphery/lib/v4-core/
 Cork-Hook/=lib/Cork-Hook/src/
 Depeg-swap/=lib/Cork-Hook/lib/Depeg-swap/
