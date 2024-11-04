@@ -200,38 +200,22 @@ library SwapperMathLibrary {
     }
 
     /**
-     * @notice  e =  s - p
-     *          p = (((x*y) / (y-s)) - x)
+     * @notice  e =  s - (x' - x)
+     *          x' - x = (k - (reserveOut - amountOut)^(1-t))^1/(1-t) - reserveIn
+     *          x' - x and x should be fetched directly from the hook
+     *          x' - x is the same as regular getAmountIn
+     * @param xIn the RA we must pay, get it from the hook using getAmountIn
+     * @param s Amount DS user want to sell and how much CT we should borrow from the AMM and also the RA we receive from the PSM
      *
-     * @param x Ra reserve
-     * @param y Ct reserve
-     * @param s Amount DS user want to sell and how much CT we should borrow from the AMM
      * @return success true if the operation is successful, false otherwise. happen generally if there's insufficient liquidity
      * @return e Amount of RA user will receive
-     * @return p amount needed to repay the flash loan
      */
-    function getAmountOutSellDs(uint256 x, uint256 y, uint256 s)
-        external
-        pure
-        returns (bool success, uint256 e, uint256 p)
-    {
-        // can't do a swap if we can't borrow an equal amount of CT from the pool
-        if (x > y - s) {
-            return (false, 0, 0);
+    function getAmountOutSellDs(uint256 xIn, uint256 s) external pure returns (bool success, uint256 e) {
+        if (s < xIn) {
+            return (false, 0);
+        } else {
+            e = s - xIn;
+            return (true, e);
         }
-
-        // calculate the amount of RA user will receive
-        e = s;
-
-        // calculate the amount of RA user need to repay the flash loan
-        p = ((x * y) / (y - s)) - x;
-
-        // if the amount of RA user need to repay the flash loan is bigger than the amount of RA user will receive, then the operation is not successful
-        if (p > e) {
-            return (false, 0, 0);
-        }
-
-        success = true;
-        e -= p;
     }
 }

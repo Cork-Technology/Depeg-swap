@@ -110,38 +110,31 @@ contract SwapMathTest is Test {
     }
 
     function test_sellDs() external {
-        uint256 ctReserve = 10000 ether;
-        uint256 raReserve = 9000 ether;
+        uint256 ctReserve = 1000 ether;
+        uint256 raReserve = 900 ether;
 
-        uint256 amountToSell = 10 ether;
+        uint256 amountToSell = 5 ether;
 
-        (bool success, uint256 raReceived, uint256 repaymentAmount) =
-            SwapperMathLibrary.getAmountOutSellDs(raReserve, ctReserve, amountToSell);
+        uint256 borrwedAmount = 4.527164981 ether;
+
+        (bool success, uint256 raReceived) = SwapperMathLibrary.getAmountOutSellDs(borrwedAmount, amountToSell);
 
         vm.assertEq(success, true);
-        vm.assertApproxEqAbs(raReceived, 1 ether, 0.03 ether);
+        vm.assertApproxEqAbs(raReceived, 0.472835019 ether, 0.000001 ether);
 
-        // can't sell if can't borrow enough CT
-        amountToSell = 10000 ether;
-        (success, raReceived, repaymentAmount) =
-            SwapperMathLibrary.getAmountOutSellDs(raReserve, ctReserve, amountToSell);
+        // can't sell if  CT > RA
+        amountToSell = 4 ether;
+        (success, raReceived) = SwapperMathLibrary.getAmountOutSellDs(borrwedAmount, amountToSell);
 
         vm.assertEq(success, false);
     }
 
-    function testFuzz_sellDs(uint256 amountToSell) external {
-        // 0.001 DS price
-        uint256 ctReserve = 10000000 ether;
-        uint256 raReserve = 9990000 ether;
+    function testFuzz_sellDs(uint256 amountToSell, uint256 repaymentAmount) external {
+        vm.assume(amountToSell > repaymentAmount);
 
-        amountToSell = bound(amountToSell, 1 ether, ctReserve - raReserve);
-
-        (bool success,, uint256 repaymentAmount) =
-            SwapperMathLibrary.getAmountOutSellDs(raReserve, ctReserve, amountToSell);
+        (bool success, uint256 raReceived) = SwapperMathLibrary.getAmountOutSellDs(repaymentAmount, amountToSell);
 
         vm.assertTrue(success);
-        // repayment amount should be less than what we got from PSM
-        vm.assertTrue(repaymentAmount <= amountToSell);
     }
 
     function test_buyDs() external {
