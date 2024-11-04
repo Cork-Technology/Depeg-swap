@@ -200,12 +200,9 @@ library DsFlashSwaplibrary {
     {
         (uint256 raReserve, uint256 ctReserve) = getReservesSorted(assetPair, router);
 
-        (success, amountOut, repaymentAmount) = SwapperMathLibrary.getAmountOutSellDs(raReserve, ctReserve, amount);
+        repaymentAmount = router.getAmountIn(address(assetPair.ra), address(assetPair.ct), true, amount);
 
-        if (success) {
-            amountOut -= 1;
-            repaymentAmount += 1;
-        }
+        (success, amountOut) = SwapperMathLibrary.getAmountOutSellDs(repaymentAmount, amount);
     }
 
     function getAmountOutBuyDS(AssetPair storage assetPair, uint256 amount, ICorkHook router)

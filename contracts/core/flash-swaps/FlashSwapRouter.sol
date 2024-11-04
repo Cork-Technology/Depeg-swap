@@ -596,6 +596,8 @@ contract RouterState is
                 poolManager
             );
         } else {
+            assert(paymentToken == address(self.ds[callbackData.dsId].ct));
+
             // same as borrowed since we're redeeming the same number of DS tokens with CT
             __afterFlashswapSell(
                 self,
@@ -604,7 +606,8 @@ contract RouterState is
                 callbackData.dsId,
                 callbackData.caller,
                 callbackData.attributed,
-                poolManager
+                poolManager,
+                paymentAmount
             );
         }
     }
@@ -650,7 +653,8 @@ contract RouterState is
         uint256 dsId,
         address caller,
         uint256 raAttributed,
-        address poolManager
+        address poolManager,
+        uint256 actualRepaymentAmount
     ) internal {
         AssetPair storage assetPair = self.ds[dsId];
         IERC20(assetPair.ds).safeIncreaseAllowance(_moduleCore, ctAmount);
@@ -665,7 +669,12 @@ contract RouterState is
 
         Asset ra = assetPair.ra;
 
-        assert(repaymentAmount + raAttributed >= received);
+        if (actualRepaymentAmount > repaymentAmount) {
+            {
+                (uint256 raReserve, uint256 ctReserve) = hook.getReserves(address(assetPair.ra), address(assetPair.ct));
+                revert IDsFlashSwapCore.InsufficientLiquidity(raReserve, ctReserve, actualRepaymentAmount);
+            }
+        }
 
         // send caller their RA
         IERC20(ra).safeTransfer(caller, raAttributed);
