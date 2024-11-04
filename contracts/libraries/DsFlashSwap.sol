@@ -200,7 +200,7 @@ library DsFlashSwaplibrary {
     {
         (uint256 raReserve, uint256 ctReserve) = getReservesSorted(assetPair, router);
 
-        repaymentAmount = router.getAmountIn(address(assetPair.ra), address(assetPair.ct), false, amountOut);
+        repaymentAmount = router.getAmountIn(address(assetPair.ra), address(assetPair.ct), true, amount);
 
         (success, amountOut) = SwapperMathLibrary.getAmountOutSellDs(repaymentAmount, amount);
     }

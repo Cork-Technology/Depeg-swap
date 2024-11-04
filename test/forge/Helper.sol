@@ -13,9 +13,9 @@ import {DummyWETH} from "./../../contracts/dummy/DummyWETH.sol";
 import {TestModuleCore} from "./TestModuleCore.sol";
 import {TestFlashSwapRouter} from "./TestFlashSwapRouter.sol";
 import "./SigUtils.sol";
-import {TestHelper as CorkHelper} from "Cork-Hook/../test/Helper.sol";
+import {TestHelper} from "Cork-Hook/../test/Helper.sol";
 
-abstract contract Helper is SigUtils, CorkHelper {
+abstract contract Helper is SigUtils, TestHelper {
     TestModuleCore internal moduleCore;
     AssetFactory internal assetFactory;
     IUniswapV2Factory internal uniswapFactory;
@@ -29,7 +29,7 @@ abstract contract Helper is SigUtils, CorkHelper {
     // 1% base redemption fee
     uint256 internal constant DEFAULT_BASE_REDEMPTION_FEE = 1 ether;
 
-    uint256 internal constant DEFAULT_EXCHANGE_RATES = 1 ether;  
+    uint256 internal constant DEFAULT_EXCHANGE_RATES = 1 ether;
 
     // 1% repurchase fee
     uint256 internal constant DEFAULT_REPURCHASE_FEE = 1 ether;
@@ -61,24 +61,6 @@ abstract contract Helper is SigUtils, CorkHelper {
     function initializeAssetFactory() internal {
         assetFactory.initialize();
         assetFactory.transferOwnership(address(moduleCore));
-    }
-
-    function deployUniswapRouter(address uniswapfactory, address _flashSwapRouter) internal {
-        bytes memory constructorArgs = abi.encode(uniswapfactory, weth, _flashSwapRouter);
-
-        address addr = deployCode("test/helper/ext-abi/foundry/uni-v2-router.json", constructorArgs);
-
-        require(addr != address(0), "Router deployment failed");
-
-        uniswapRouter = IUniswapV2Router02(addr);
-    }
-
-    function deployUniswapFactory(address feeToSetter, address _flashSwapRouter) internal {
-        bytes memory constructorArgs = abi.encode(feeToSetter, _flashSwapRouter);
-
-        address addr = deployCode("test/helper/ext-abi/foundry/uni-v2-factory.json", constructorArgs);
-
-        uniswapFactory = IUniswapV2Factory(addr);
     }
 
     function initializeNewModuleCore(
@@ -218,26 +200,19 @@ abstract contract Helper is SigUtils, CorkHelper {
     function initializeFlashSwapRouter() internal {
         flashSwapRouter.initialize(address(corkConfig));
         flashSwapRouter.setModuleCore(address(moduleCore));
+        flashSwapRouter.setHook(address(hook));
     }
 
     function initializeModuleCore() internal {
-        // TODO : adjust tests
-
-        // moduleCore.initialize(
-        //     address(assetFactory),
-        //     address(uniswapFactory),
-        //     address(flashSwapRouter),
-        //     address(uniswapRouter),
-        //     address(corkConfig)
-        // );
+        moduleCore.initialize(address(assetFactory), address(hook), address(flashSwapRouter), address(corkConfig));
     }
 
     function deployModuleCore() internal {
+        setupTest();
+
         deployConfig();
         deployFlashSwapRouter();
         deployAssetFactory();
-        deployUniswapFactory(address(0), address(flashSwapRouter));
-        deployUniswapRouter(address(uniswapFactory), address(flashSwapRouter));
 
         moduleCore = new TestModuleCore();
         initializeAssetFactory();
