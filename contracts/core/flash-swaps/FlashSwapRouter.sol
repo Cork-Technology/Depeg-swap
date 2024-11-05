@@ -596,7 +596,7 @@ contract RouterState is
                 poolManager
             );
         } else {
-            assert(paymentToken == address(self.ds[callbackData.dsId].ct));
+            assert(paymentToken == address(self.ds[callbackData.dsId].ra));
 
             // same as borrowed since we're redeeming the same number of DS tokens with CT
             __afterFlashswapSell(
@@ -657,8 +657,9 @@ contract RouterState is
         uint256 actualRepaymentAmount
     ) internal {
         AssetPair storage assetPair = self.ds[dsId];
-        IERC20(assetPair.ds).safeIncreaseAllowance(_moduleCore, ctAmount);
-        IERC20(assetPair.ct).safeIncreaseAllowance(_moduleCore, ctAmount);
+
+        IERC20(address(assetPair.ds)).safeIncreaseAllowance(_moduleCore, ctAmount);
+        IERC20(address(assetPair.ct)).safeIncreaseAllowance(_moduleCore, ctAmount);
 
         IPSMcore psm = IPSMcore(_moduleCore);
 
