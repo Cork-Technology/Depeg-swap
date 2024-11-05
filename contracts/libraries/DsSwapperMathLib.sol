@@ -5,6 +5,35 @@ import {SignedMath} from "@openzeppelin/contracts/utils/math/SignedMath.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 import {FixedPoint} from "Cork-Hook/lib/balancers/FixedPoint.sol";
+import {SD59x18, sd, add, mul, pow, sub} from "@prb/math/src/SD59x18.sol";
+
+library BuyMathBisectionSolver {
+    /// @notice f(s) = x^1-t + y^t - (x - s + e)^1-t - (y + s)^1-t
+    function f(SD59x18 x, SD59x18 y, SD59x18 s, SD59x18 e, SD59x18 _1MinusT) internal returns (SD59x18) {
+        SD59x18 xMinSplusE = sub(x, s);
+        xMinSplusE = add(x, e);
+
+        SD59x18 yPlusS = add(y, s);
+
+        {
+            SD59x18 zero = sd(0);
+
+            if (xMinSplusE < zero || yPlusS < zero) {
+                // TODO : move to interface
+                revert("Invalid S");
+            }
+        }
+
+        SD59x18 xPow = pow(x, _1MinusT);
+        SD59x18 yPow = pow(y, _1MinusT);
+        SD59x18 xMinSplusEPow = pow(xMinSplusE, _1MinusT);
+        SD59x18 yPlusSPow = pow(yPlusS, _1MinusT);
+
+        return sub(add(xPow, yPow), add(xMinSplusEPow, yPlusSPow));
+    }
+
+    function findRoot() internal {}
+}
 
 /**
  * @title SwapperMathLibrary Contract
