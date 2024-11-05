@@ -443,7 +443,7 @@ contract RouterState is
         ctReserve += uint256(ctAdded);
 
         // update amountOut since we sold some from the reserve
-        (, amountOut) = SwapperMathLibrary.getAmountOutBuyDs(raReserve, ctReserve, amount);
+        ( amountOut,,) = assetPair.getAmountOutBuyDS(amount, hook);
     }
 
     function isRolloverSale(Id id, uint256 dsId) external view returns (bool) {

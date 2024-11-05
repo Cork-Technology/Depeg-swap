@@ -5,22 +5,46 @@ import {SignedMath} from "@openzeppelin/contracts/utils/math/SignedMath.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 import {FixedPoint} from "Cork-Hook/lib/balancers/FixedPoint.sol";
-import {SD59x18, sd, add, mul, pow, sub} from "@prb/math/src/SD59x18.sol";
+import {SD59x18, convert, sd, add, mul, pow, sub, div, abs, unwrap} from "@prb/math/src/SD59x18.sol";
+import {IMathError} from "./../interfaces/IMathError.sol";
 
 library BuyMathBisectionSolver {
+    uint256 internal constant MAX_BISECTION_ITER = 256;
+
+    /// @notice returns the the normalized time to maturity from 1-0
+    /// 1 means we're at the start of the period, 0 means we're at the end
+    function computeT(SD59x18 start, SD59x18 end, SD59x18 current) internal pure returns (SD59x18) {
+        SD59x18 minimumElapsed = convert(1);
+
+        SD59x18 elapsedTime = sub(current, start);
+        elapsedTime = elapsedTime == convert(0) ? minimumElapsed : elapsedTime;
+        SD59x18 totalDuration = sub(end, start);
+
+        // we return 0 in case it's past maturity time
+        if (elapsedTime >= totalDuration) {
+            return convert(0);
+        }
+
+        // Return a normalized time between 0 and 1 (as a percentage in 18 decimals)
+        return sub(convert(1), div(elapsedTime, totalDuration));
+    }
+
+    function computeOneMinusT(SD59x18 start, SD59x18 end, SD59x18 current) internal pure returns (SD59x18) {
+        return sub(convert(1), computeT(start, end, current));
+    }
+
     /// @notice f(s) = x^1-t + y^t - (x - s + e)^1-t - (y + s)^1-t
-    function f(SD59x18 x, SD59x18 y, SD59x18 s, SD59x18 e, SD59x18 _1MinusT) internal returns (SD59x18) {
+    function f(SD59x18 x, SD59x18 y, SD59x18 e, SD59x18 s, SD59x18 _1MinusT) internal pure returns (SD59x18) {
         SD59x18 xMinSplusE = sub(x, s);
-        xMinSplusE = add(x, e);
+        xMinSplusE = add(xMinSplusE, e);
 
         SD59x18 yPlusS = add(y, s);
 
         {
-            SD59x18 zero = sd(0);
+            SD59x18 zero = convert(0);
 
-            if (xMinSplusE < zero || yPlusS < zero) {
-                // TODO : move to interface
-                revert("Invalid S");
+            if (xMinSplusE < zero && yPlusS < zero) {
+                revert IMathError.InvalidS();
             }
         }
 
@@ -29,10 +53,63 @@ library BuyMathBisectionSolver {
         SD59x18 xMinSplusEPow = pow(xMinSplusE, _1MinusT);
         SD59x18 yPlusSPow = pow(yPlusS, _1MinusT);
 
-        return sub(add(xPow, yPow), add(xMinSplusEPow, yPlusSPow));
+        return sub(sub(add(xPow, yPow), xMinSplusEPow), yPlusSPow);
     }
 
-    function findRoot() internal {}
+    function findRoot(SD59x18 x, SD59x18 y, SD59x18 e, SD59x18 _1MinusT) internal pure returns (SD59x18) {
+        SD59x18 a = sd(0);
+        SD59x18 b;
+
+        {
+            SD59x18 delta = sd(1e12);
+            b = sub(add(x, e), delta);
+        }
+
+        SD59x18 fA = f(x, y, e, a, _1MinusT);
+        SD59x18 fB = f(x, y, e, b, _1MinusT);
+        {
+            if (mul(fA, fB) >= sd(0)) {
+                uint256 maxAdjustments = 1000;
+
+                SD59x18 adjustment = mul(convert(-1e4), b);
+                for (uint256 i = 0; i < maxAdjustments; i++) {
+                    b = sub(b, adjustment);
+                    fB = f(x, y, e, b, _1MinusT);
+
+                    if (mul(fA, fB) < sd(0)) {
+                        break;
+                    }
+                }
+
+                revert IMathError.NoSignChange();
+            }
+        }
+
+        SD59x18 epsilon = sd(1e9);
+        for (uint256 i = 0; i < MAX_BISECTION_ITER; i++) {
+            SD59x18 c = div(add(a, b), convert(2));
+            SD59x18 fC = f(x, y, e, c, _1MinusT);
+
+            if (abs(fC) < epsilon) {
+                return c;
+            }
+
+            if (mul(fA, fC) < sd(0)) {
+                b = c;
+                fB = fC;
+            } else {
+                a = c;
+                fA = fC;
+            }
+
+            if (sub(b, a) < epsilon) {
+                SD59x18 c = div(add(a, b), convert(2));
+                return c;
+            }
+        }
+
+        revert IMathError.NoConverge();
+    }
 }
 
 /**
@@ -44,22 +121,6 @@ library SwapperMathLibrary {
     using UQ112x112 for uint224;
     using FixedPoint for uint256;
 
-    // TODO : move errors to interface
-    /// @notice thrown when Reserve is Zero
-    error ZeroReserve();
-
-    /// @notice thrown when Input amount is not sufficient
-    error InsufficientInputAmount();
-
-    /// @notice thrown when not having sufficient Liquidity
-    error InsufficientLiquidity();
-
-    /// @notice thrown when Output amount is not sufficient
-    error InsufficientOutputAmount();
-
-    /// @notice thrown when the number is too big
-    error TooBig();
-
     // Calculate price ratio of two tokens in a uniswap v2 pair, will return ratio on 18 decimals precision
     function getPriceRatio(uint256 raReserve, uint256 ctReserve)
         public
@@ -67,57 +128,30 @@ library SwapperMathLibrary {
         returns (uint256 raPriceRatio, uint256 ctPriceRatio)
     {
         if (raReserve <= 0 || ctReserve <= 0) {
-            revert ZeroReserve();
+            revert IMathError.ZeroReserve();
         }
 
         raPriceRatio = ctReserve.divDown(raReserve);
         ctPriceRatio = raReserve.divDown(ctReserve);
     }
-    /*
-     * S = (E + x - y + sqrt(E^2 + 2E(x + y) + (x - y)^2)) / 2
-     *
-     * Where:
-     *   - s: Amount DS user received
-     *   - e: RA user provided
-     *   - x: RA reserve
-     *   - y: CT reserve
-     *   - r: RA needed to borrow from AMM
-     *
-     */
 
-    function getAmountOutBuyDs(uint256 _x, uint256 _y, uint256 _e) external pure returns (uint256 r, uint256 s) {
-        // first we solve the sqrt part of the equation first
+    function getAmountOutBuyDs(uint256 x, uint256 y, uint256 e, uint256 start, uint256 end, uint256 current)
+        external
+        pure
+        returns (uint256 s)
+    {
+        if (x < 0 || y < 0 || e < 0) {
+            revert IMathError.InvalidParam();
+        }
 
-        int256 x = SafeCast.toInt256(_x);
-        int256 y = SafeCast.toInt256(_y);
-        int256 e = SafeCast.toInt256(_e);
+        if (e > x || x < y) {
+            revert IMathError.InsufficientLiquidity();
+        }
 
-        // E^2
-        int256 q1 = e ** 2;
-        // 2E(x + y)
-        int256 q2 = 2 * e * (x + y);
-        // (x - y)^2
-        int256 q3 = (x - y) ** 2;
+        SD59x18 oneMinusT = BuyMathBisectionSolver.computeOneMinusT(convert(int256(start)), convert(int256(end)), convert(int256(current)));
+        SD59x18 root = BuyMathBisectionSolver.findRoot(convert(int256(x)), convert(int256(y)), convert(int256(e)), oneMinusT);
 
-        // q = sqrt(E^2 + 2E(x + y) + (x - y)^2)
-        uint256 q = SignedMath.abs(q1 + q2 + q3);
-        q = Math.sqrt(q);
-
-        // then we substitue back the sqrt part to the main equation
-        // S = (E + x - y + q) / 2
-
-        // r1 = x - y (to absolute, and we reverse the equation)
-        uint256 r1 = SignedMath.abs(x - y);
-        // r2 = -r1 + q  = q - r1
-        uint256 r2 = q - r1;
-        // E + r2
-        uint256 r3 = r2 + SignedMath.abs(e);
-
-        // S = r3/2 (we multiply by 1e18 to have 18 decimals precision)
-        s = (r3 * 1e18) / 2e18;
-
-        // R = s - e (should be fine with direct typecasting)
-        r = s - SignedMath.abs(e);
+        return uint256(convert(root));
     }
 
     function calculatePercentage(uint256 amount, uint256 percentage) private pure returns (uint256 result) {
@@ -173,7 +207,7 @@ library SwapperMathLibrary {
         returns (uint256 decay)
     {
         if (decayDiscountInDays > type(uint112).max) {
-            revert TooBig();
+            revert IMathError.TooBig();
         }
 
         uint224 discPerSec = UQ112x112.encode(uint112(decayDiscountInDays)) / 1 days;
