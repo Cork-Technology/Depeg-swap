@@ -6,6 +6,7 @@ import {HedgeUnit} from "../../contracts/core/assets/HedgeUnit.sol";
 import {IHedgeUnit} from "../../contracts/interfaces/IHedgeUnit.sol";
 import {DummyWETH} from "../../contracts/dummy/DummyWETH.sol";
 import {Id} from "./../../contracts/libraries/Pair.sol";
+import {PausableUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/PausableUpgradeable.sol";
 
 contract HedgeUnitTest is Helper {
     HedgeUnit public hedgeUnit;
@@ -47,7 +48,8 @@ contract HedgeUnitTest is Helper {
         fetchProtocolGeneralInfo();
 
         // Deploy the HedgeUnit contract
-        hedgeUnit = new HedgeUnit(ds, address(pa), "DS/PA", INITIAL_MINT_CAP);
+        hedgeUnit = new HedgeUnit();
+        hedgeUnit.initialize(ds, address(pa), "DS/PA", INITIAL_MINT_CAP);
 
         // Transfer tokens to user for testing
         dsToken.transfer(user, USER_BALANCE);
@@ -120,13 +122,13 @@ contract HedgeUnitTest is Helper {
 
     function testMintingPaused() public {
         // Pause minting
-        hedgeUnit.setMintingPaused(true);
+        hedgeUnit.pause();
 
         // Expect revert when minting while paused
         vm.startPrank(user);
         dsToken.approve(address(hedgeUnit), USER_BALANCE);
         pa.approve(address(hedgeUnit), USER_BALANCE);
-        vm.expectRevert(IHedgeUnit.MintingPaused.selector);
+        vm.expectRevert(PausableUpgradeable.EnforcedPause.selector);
         hedgeUnit.mint(100 * 1e18);
         vm.stopPrank();
     }

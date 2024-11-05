@@ -19,21 +19,12 @@ interface IHedgeUnit {
     event Dissolve(address indexed dissolver, uint256 amount, uint256 dsAmount, uint256 paAmount);
 
     /**
-     * @notice Emitted when the minting paused state is changed.
-     * @param paused The new paused state (true if paused, false otherwise).
-     */
-    event MintingPausedSet(bool paused);
-
-    /**
      * @notice Emitted when the mint cap is updated.
      * @param newMintCap The new mint cap value.
      */
     event MintCapUpdated(uint256 newMintCap);
 
     // Errors
-
-    /// @notice Error indicating that minting is currently paused.
-    error MintingPaused();
 
     /// @notice Error indicating an invalid amount was provided.
     error InvalidAmount();
@@ -45,12 +36,6 @@ interface IHedgeUnit {
     error InvalidValue();
 
     // Read functions
-    /**
-     * @notice Returns the current state of minting pause.
-     * @return paused Boolean indicating whether minting is currently paused.
-     */
-    function mintingPaused() external view returns (bool);
-
     /**
      * @notice Returns the current mint cap.
      * @return mintCap The maximum supply cap for minting HedgeUnit tokens.
@@ -74,13 +59,6 @@ interface IHedgeUnit {
      * @custom:reverts InvalidAmount if the user has insufficient HedgeUnit balance.
      */
     function dissolve(uint256 amount) external returns (uint256 dsAmount, uint256 paAmount);
-
-    /**
-     * @notice Sets the paused state for minting.
-     * @param _paused The new paused state (true to pause, false to unpause).
-     * @custom:reverts InvalidValue if the paused state is not changed.
-     */
-    function setMintingPaused(bool _paused) external;
 
     /**
      * @notice Updates the mint cap.
