@@ -7,13 +7,13 @@ pragma solidity ^0.8.24;
  */
 interface ILiquidator {
     event OrderRequest(
-        uint256 indexed orderId,
         address indexed raToken,
         address indexed paToken,
         uint256 amount,
         uint256 minAmount,
         uint256 expiry,
-        address owner
+        address owner,
+        bytes32 orderUid
     );
 
     event SwapExecuted(

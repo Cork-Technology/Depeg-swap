@@ -1,10 +1,14 @@
 pragma solidity 0.8.24;
 
-import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "@openzeppelin/contracts/access/Ownable.sol";
-import "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
-import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import "../interfaces/ILiquidator.sol";
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
+import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
+import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import {ILiquidator} from "../interfaces/ILiquidator.sol";
+
+interface ISettlement {
+    function setPreSignature(bytes calldata orderUid, bool signed) external;
+}
 
 contract Liquidator is Ownable, ReentrancyGuard, ILiquidator {
     using SafeERC20 for IERC20;
@@ -36,20 +40,26 @@ contract Liquidator is Ownable, ReentrancyGuard, ILiquidator {
         external
         onlyOwner
         nonReentrant
-        returns (uint256)
+        returns (bool)
     {
         uint256 expiry = block.timestamp + expiryInterval;
-        uint256 orderId = orderCounter++;
 
         // Transfer RA tokens from caller to this contract
         IERC20(raToken).safeTransferFrom(msg.sender, address(this), amount);
         // Approve the CowSwap settlement contract to spend `amount` of `raToken`
         IERC20(raToken).safeIncreaseAllowance(settlementContract, amount);
 
-        // Emit event with order details for backend service to pick up
-        emit OrderRequest(orderId, raToken, paToken, amount, minAmount, expiry, msg.sender);
+        // Generate the order UID as a bytes32 hash
+        bytes32 orderUid = keccak256(abi.encodePacked(orderCounter, raToken, paToken, amount, expiry));
+        orderCounter++; // Increment for the next order
 
-        return orderId;
+        // Call the settlement contract to set pre-signature
+        ISettlement(settlementContract).setPreSignature(abi.encode(orderUid), true);
+
+        // Emit an event with order details for the backend to pick up
+        emit OrderRequest(raToken, paToken, amount, minAmount, expiry, msg.sender, orderUid);
+
+        return true;
     }
 
     // This function will be called by CowSwap once the swap is executed
