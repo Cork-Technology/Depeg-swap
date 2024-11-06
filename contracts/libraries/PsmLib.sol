@@ -504,7 +504,7 @@ library PsmLibrary {
         }
 
         if (receivedDs > self.psm.balances.ra.locked) {
-            revert IRepurchase.InsufficientLiquidity(amount, self.psm.balances.ra.locked);
+            revert IRepurchase.InsufficientLiquidity(amount, self.psm.balances.dsBalance);
         }
     }
 
