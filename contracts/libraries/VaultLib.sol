@@ -277,6 +277,7 @@ library VaultLibrary {
         safeBeforeExpired(self);
 
         uint256 exchangeRate;
+        uint256 paAmount;
 
         // we mint 1:1 if it's the first deposit
         if (!self.vault.initialized) {
@@ -284,7 +285,8 @@ library VaultLibrary {
             self.vault.initialized = true;
         } else {
             // else we get the current exchange rate of LV
-            (exchangeRate,,,) = previewRedeemEarly(self, 1 ether, flashSwapRouter);
+            (exchangeRate,,,paAmount) = previewRedeemEarly(self, 1 ether, flashSwapRouter);
+            exchangeRate += paAmount;
         }
 
         self.vault.balances.ra.lockUnchecked(amount, from);
