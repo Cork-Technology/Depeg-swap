@@ -595,7 +595,8 @@ contract RouterState is
                 callbackData.attributed,
                 callbackData.provided,
                 callbackData.borrowed,
-                poolManager
+                poolManager,
+                paymentAmount
             );
         } else {
             assert(paymentToken == address(self.ds[callbackData.dsId].ra));
@@ -638,9 +639,6 @@ contract RouterState is
         {
             uint256 refunded;
 
-            console.log("actualRepaymentAmount", actualRepaymentAmount);
-            console.log("received             ", received);
-            
             // not enough liquidity
             if (actualRepaymentAmount > received) {
                 (uint256 raReserve, uint256 ctReserve) = hook.getReserves(address(assetPair.ra), address(assetPair.ct));
