@@ -266,5 +266,10 @@ interface IDsFlashSwapCore is IDsFlashSwapUtility {
      */
     function updateDiscountRateInDdays(Id id, uint256 discountRateInDays) external;
 
+    /**
+     * @notice update the gradual sale status, if true, will try to sell DS tokens from the reserve gradually
+     */
+    function updateGradualSaleStatus(Id id, bool status) external;
+
     function isRolloverSale(Id id, uint256 dsId) external view returns (bool);
 }
