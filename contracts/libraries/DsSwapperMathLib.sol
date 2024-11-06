@@ -103,8 +103,7 @@ library BuyMathBisectionSolver {
             }
 
             if (sub(b, a) < epsilon) {
-                SD59x18 c = div(add(a, b), convert(2));
-                return c;
+                return div(add(a, b), convert(2));
             }
         }
 
@@ -144,12 +143,15 @@ library SwapperMathLibrary {
             revert IMathError.InvalidParam();
         }
 
-        if (e > x || x < y) {
+        if (e > x && x < y) {
             revert IMathError.InsufficientLiquidity();
         }
 
-        SD59x18 oneMinusT = BuyMathBisectionSolver.computeOneMinusT(convert(int256(start)), convert(int256(end)), convert(int256(current)));
-        SD59x18 root = BuyMathBisectionSolver.findRoot(convert(int256(x)), convert(int256(y)), convert(int256(e)), oneMinusT);
+        SD59x18 oneMinusT = BuyMathBisectionSolver.computeOneMinusT(
+            convert(int256(start)), convert(int256(end)), convert(int256(current))
+        );
+        SD59x18 root =
+            BuyMathBisectionSolver.findRoot(convert(int256(x)), convert(int256(y)), convert(int256(e)), oneMinusT);
 
         return uint256(convert(root));
     }

@@ -26,13 +26,29 @@ contract BuyMathTest is Test {
     }
 
     function test_buyMath() external {
+        vm.pauseGasMetering();
         SD59x18 x = convert(1000 ether);
         SD59x18 y = convert(1050 ether);
         SD59x18 e = convert(0.5 ether);
+        vm.resumeGasMetering();
 
         SD59x18 _1MinusT = sd(0.01 ether);
 
         uint256 result = uint256(convert(BuyMathBisectionSolver.findRoot(x, y, e, _1MinusT)));
+
+        vm.pauseGasMetering();
+        vm.assertApproxEqAbs(result, 9.054 ether, 0.001 ether);
+    }
+
+    function test_buyMathWithChecks() external {
+        uint256 x = 1000 ether;
+        uint256 y = 1050 ether;
+        uint256 e = 0.5 ether;
+        uint256 start = 0 days;
+        uint256 end = 100 days;
+        uint256 current = 1 days;
+
+        uint256 result = SwapperMathLibrary.getAmountOutBuyDs(x, y, e, start, end, current);
 
         vm.assertApproxEqAbs(result, 9.054 ether, 0.001 ether);
     }
