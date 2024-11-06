@@ -86,7 +86,7 @@ contract RolloverTest is Helper {
     function test_autoSellWorks() external {
         uint256 prevDsId = dsId;
 
-        IPSMcore(moduleCore).updatePsmAutoSellStatus(currencyId, DEFAULT_ADDRESS, true);
+        IPSMcore(moduleCore).updatePsmAutoSellStatus(currencyId, true);
 
         ff_expired();
 
@@ -153,7 +153,7 @@ contract RolloverTest is Helper {
         // take into account the discount rate, so it won't be exactly 0.1 ether
         vm.assertApproxEqAbs(hpa, 0.1 ether, 0.002 ether);
 
-        IPSMcore(moduleCore).updatePsmAutoSellStatus(currencyId, DEFAULT_ADDRESS, true);
+        IPSMcore(moduleCore).updatePsmAutoSellStatus(currencyId, true);
 
         // rollover our CT
         (uint256 ctReceived, uint256 dsReceived,,) =
@@ -220,7 +220,7 @@ contract RolloverTest is Helper {
         // take into account the discount rate, so it won't be exactly 0.1 ether
         vm.assertApproxEqAbs(hpa, 0.1 ether, 0.002 ether);
 
-        IPSMcore(moduleCore).updatePsmAutoSellStatus(currencyId, DEFAULT_ADDRESS, true);
+        IPSMcore(moduleCore).updatePsmAutoSellStatus(currencyId, true);
 
         // rollover our CT
         (uint256 ctReceived, uint256 dsReceived,,) =
@@ -271,7 +271,7 @@ contract RolloverTest is Helper {
         // take into account the discount rate, so it won't be exactly 0.1 ether
         vm.assertApproxEqAbs(hpa, 0.1 ether, 0.002 ether);
 
-        IPSMcore(moduleCore).updatePsmAutoSellStatus(currencyId, DEFAULT_ADDRESS, true);
+        IPSMcore(moduleCore).updatePsmAutoSellStatus(currencyId, true);
 
         // rollover our CT
         (uint256 ctReceived, uint256 dsReceived,,) =
@@ -314,7 +314,7 @@ contract RolloverTest is Helper {
         // take into account the discount rate, so it won't be exactly 0.1 ether
         vm.assertApproxEqAbs(hpa, 0.1 ether, 0.002 ether);
 
-        IPSMcore(moduleCore).updatePsmAutoSellStatus(currencyId, DEFAULT_ADDRESS, true);
+        IPSMcore(moduleCore).updatePsmAutoSellStatus(currencyId, true);
 
         // rollover our CT
         (uint256 ctReceived, uint256 dsReceived,,) =

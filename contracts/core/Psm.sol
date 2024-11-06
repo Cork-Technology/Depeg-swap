@@ -312,8 +312,8 @@ abstract contract PsmCore is IPSMcore, ModuleState, Context {
         return state.psm.poolArchive[dsId].rolloverClaims[msg.sender];
     }
 
-    function updatePsmAutoSellStatus(Id id, address user, bool status) external {
+    function updatePsmAutoSellStatus(Id id, bool status) external {
         State storage state = states[id];
-        state.updateAutoSell(user, status);
+        state.updateAutoSell(_msgSender(), status);
     }
 }
