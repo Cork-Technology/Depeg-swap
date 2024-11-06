@@ -212,15 +212,9 @@ library DsFlashSwaplibrary {
     {
         (uint256 raReserve, uint256 ctReserve) = getReservesSorted(assetPair, router);
 
-        uint256 issuedAt = assetPair.ds.issuedAt();
-        uint256 currentTime = block.timestamp;
-        uint256 end = assetPair.ds.expiry();
+        (borrowedAmount, amountOut) =
+            SwapperMathLibrary.getAmountOutBuyDs(uint256(raReserve), uint256(ctReserve), amount);
 
-        amountOut = SwapperMathLibrary.getAmountOutBuyDs(
-            uint256(raReserve), uint256(ctReserve), amount, issuedAt, end, currentTime
-        );
-
-        borrowedAmount = amountOut - amount;
         repaymentAmount = amountOut;
     }
 

@@ -138,18 +138,14 @@ contract SwapMathTest is Test {
     }
 
     function test_buyDs() external {
-        uint256 ctReserve = 1050 ether;
-        uint256 raReserve = 1000 ether;
+        uint256 ctReserve = 1000 ether;
+        uint256 raReserve = 900 ether;
 
-        uint256 start = 0 days;
-        uint256 end = 100 days;
-        uint256 current = 0.01 days;
+        uint256 amountToBuy = 0.1009 ether;
 
-        uint256 amountToBuy = 5 ether;
+        (uint256 borrowed, uint256 amount) = SwapperMathLibrary.getAmountOutBuyDs(raReserve, ctReserve, amountToBuy);
 
-        // TODO: verify we have enough CT to repay
-        uint256 returned = SwapperMathLibrary.getAmountOutBuyDs(raReserve, ctReserve, amountToBuy, start, end, current);
-        
-        vm.assertApproxEqAbs(returned, 9.548 ether, 0.001 ether);
+        vm.assertApproxEqAbs(amount, 1.0000088 ether, 0.000001 ether);
+        vm.assertApproxEqAbs(borrowed, amount - amountToBuy, 0.0001 ether);
     }
 }

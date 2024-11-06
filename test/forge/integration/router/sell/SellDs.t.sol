@@ -9,7 +9,7 @@ import "../../../../../contracts/interfaces/IPSMcore.sol";
 import "../../../../../contracts/interfaces/IDsFlashSwapRouter.sol";
 import "forge-std/console.sol";
 
-contract SellDsTest is Helper {
+contract BasicFlashSwapTest is Helper {
     DummyWETH internal ra;
     DummyWETH internal pa;
     address ct;
@@ -64,8 +64,6 @@ contract SellDsTest is Helper {
         uint256 balanceRaBefore = ra.balanceOf(DEFAULT_ADDRESS);
         vm.warp(current);
 
-        
-        // TODO : figure out the out of whack gas consumption
         vm.pauseGasMetering();
        
         uint256 amountOutPreview = flashSwapRouter.previewSwapDsforRa(currencyId, dsId, amount);

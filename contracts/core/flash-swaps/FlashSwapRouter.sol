@@ -18,7 +18,6 @@ import {SafeERC20, IERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeE
 import {ICorkHook} from "../../interfaces/UniV4/IMinimalHook.sol";
 import {AmmId, toAmmId} from "Cork-Hook/lib/State.sol";
 import {CorkSwapCallback} from "Cork-Hook/interfaces/CorkSwapCallback.sol";
-import "forge-std/console.sol";
 
 /**
  * @title Router contract for Flashswap
@@ -364,6 +363,7 @@ contract RouterState is
         emit RaSwapped(reserveId, dsId, user, amount, amountOut);
     }
 
+    // TODO : add rollover and subtract reserve from the two reserve
     /**
      * @notice Preview the amount of DS that will be received from swapping RA
      * @param reserveId the reserve id same as the id on PSM and LV
@@ -443,7 +443,7 @@ contract RouterState is
         ctReserve += uint256(ctAdded);
 
         // update amountOut since we sold some from the reserve
-        (amountOut,,) = assetPair.getAmountOutBuyDS(amount, hook);
+        (, amountOut) = SwapperMathLibrary.getAmountOutBuyDs(raReserve, ctReserve, amount);
     }
 
     function isRolloverSale(Id id, uint256 dsId) external view returns (bool) {
@@ -585,8 +585,6 @@ contract RouterState is
         }
 
         if (callbackData.buyDs) {
-            assert(paymentToken == address(self.ds[callbackData.dsId].ct));
-
             __afterFlashswapBuy(
                 self,
                 callbackData.reserveId,
@@ -595,8 +593,7 @@ contract RouterState is
                 callbackData.attributed,
                 callbackData.provided,
                 callbackData.borrowed,
-                poolManager,
-                paymentAmount
+                poolManager
             );
         } else {
             assert(paymentToken == address(self.ds[callbackData.dsId].ra));
@@ -623,8 +620,7 @@ contract RouterState is
         uint256 dsAttributed,
         uint256 provided,
         uint256 borrowed,
-        address poolManager,
-        uint256 actualRepaymentAmount
+        address poolManager
     ) internal {
         AssetPair storage assetPair = self.ds[dsId];
 
@@ -634,29 +630,6 @@ contract RouterState is
 
         IPSMcore psm = IPSMcore(_moduleCore);
         (uint256 received,) = psm.depositPsm(reserveId, deposited);
-
-        uint256 repaymentAmount;
-        {
-            uint256 refunded;
-
-            console.log("actualRepaymentAmount", actualRepaymentAmount);
-            console.log("received             ", received);
-            
-            // not enough liquidity
-            if (actualRepaymentAmount > received) {
-                (uint256 raReserve, uint256 ctReserve) = hook.getReserves(address(assetPair.ra), address(assetPair.ct));
-
-                revert IDsFlashSwapCore.InsufficientLiquidity(raReserve, ctReserve, actualRepaymentAmount);
-            } else {
-                refunded = received - actualRepaymentAmount;
-                repaymentAmount = actualRepaymentAmount;
-            }
-
-            if (refunded > 0) {
-                // refund the user with extra ct
-                assetPair.ct.transfer(caller, refunded);
-            }
-        }
 
         // for rounding error protection
         dsAttributed -= 1;
@@ -670,7 +643,7 @@ contract RouterState is
         // send caller their DS
         assetPair.ds.transfer(caller, received);
         // repay flash loan
-        assetPair.ct.transfer(poolManager, repaymentAmount);
+        assetPair.ct.transfer(poolManager, received);
     }
 
     function __afterFlashswapSell(
@@ -692,6 +665,7 @@ contract RouterState is
 
         uint256 received = psm.redeemRaWithCtDs(reserveId, ctAmount, address(this), bytes(""), 0, bytes(""), 0);
 
+        // for rounding error and to satisfy uni v2 liquidity rules(it forces us to repay 1 wei higher to prevent liquidity stealing)
         uint256 repaymentAmount = received - raAttributed;
 
         Asset ra = assetPair.ra;
