@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.24;
 
 import {Asset, ERC20, ERC20Burnable} from "../core/assets/Asset.sol";
