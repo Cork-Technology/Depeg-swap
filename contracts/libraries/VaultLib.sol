@@ -287,7 +287,6 @@ library VaultLibrary {
         }
 
         self.vault.balances.ra.lockUnchecked(amount, from);
-        uint256 initialRaBalance = IERC20(self.info.redemptionAsset()).balanceOf(address(this));
 
         __provideLiquidityWithRatio(
             self,
@@ -298,12 +297,9 @@ library VaultLibrary {
             Tolerance(raTolerance, ctTolerance)
         );
 
-        uint256 finalRaBalance = IERC20(self.info.redemptionAsset()).balanceOf(address(this));
-        uint256 actualAmount = amount - (finalRaBalance - initialRaBalance);
-        
         // then we calculate how much LV we will get for the amount of RA we deposited with the exchange rate
         // this is to seprate the yield vs the actual deposit amount. so when a user withdraws their LV, they get their accrued yield properly
-        amount = MathHelper.calculateDepositAmountWithExchangeRate(actualAmount, exchangeRate);
+        amount = MathHelper.calculateDepositAmountWithExchangeRate(amount, exchangeRate);
 
         self.vault.lv.issue(from, amount);
 
