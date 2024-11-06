@@ -26,11 +26,12 @@ library VaultPoolLibrary {
         (attributedToWithdraw, attributedToAmm, ratePerLv) =
             MathHelper.separateLiquidity(totalPa, totalLvIssued, totalLvWithdrawn);
 
-        self.withdrawalPool.paBalance = attributedToWithdraw;
+        self.withdrawalPool.paBalance = attributedToAmm; 
         self.withdrawalPool.stagnatedPaBalance = attributedToWithdraw;
         self.withdrawalPool.paExchangeRate = ratePerLv;
 
         assert(totalRa == self.withdrawalPool.raBalance + self.ammLiquidityPool.balance);
+        assert(totalPa == self.withdrawalPool.paBalance + self.withdrawalPool.stagnatedPaBalance);
     }
 
     function tryReserve(
