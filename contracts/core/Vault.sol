@@ -128,6 +128,7 @@ abstract contract VaultCore is ModuleState, Context, IVault {
     function provideLiquidityWithFlashSwapFee(Id id, uint256 amount) external onlyFlashSwapRouter {
         State storage state = states[id];
         state.provideLiquidityWithFee(amount, getRouterCore(), getAmmRouter());
+        emit DSTransferred(address(this), amount);
     }
 
     /**

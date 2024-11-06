@@ -34,6 +34,11 @@ interface IVault {
     /// @param newEarlyRedemptionFee The new early redemption rate
     event EarlyRedemptionFeeUpdated(Id indexed Id, uint256 indexed newEarlyRedemptionFee);
 
+    /// @notice Emits an event when DS transfers occur between the router and the vault.
+    /// @param to The address receiving the DS tokens.
+    /// @param amount The amount of DS tokens transferred.
+    event DSTransferred(address indexed to, uint256 amount);
+
     /**
      * @notice Deposit a wrapped asset into a given vault
      * @param id The Module id that is used to reference both psm and lv of a given pair
