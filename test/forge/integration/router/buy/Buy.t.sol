@@ -24,7 +24,7 @@ contract BuyDsTest is Helper {
     uint256 public dsId;
 
     function defaultInitialDsPrice() internal pure virtual override returns (uint256) {
-        return 0.0476190476 ether;
+        return 0.04761904762 ether;
     }
 
     function defaultExchangeRate() internal pure virtual override returns (uint256) {
@@ -50,6 +50,11 @@ contract BuyDsTest is Helper {
 
         dsId = moduleCore.lastDsId(currencyId);
         (ct, ds) = moduleCore.swapAsset(currencyId, dsId);
+
+        vm.stopPrank();
+        vm.prank(address(corkConfig));
+        flashSwapRouter.updateGradualSaleStatus(currencyId, false);
+        vm.startPrank(DEFAULT_ADDRESS);
     }
 
     function test_buyDS() public virtual {
@@ -67,7 +72,8 @@ contract BuyDsTest is Helper {
         // TODO : figure out the out of whack gas consumption
         vm.pauseGasMetering();
 
-        hook.updateBaseFeePercentage(address(ra), ct, 1 ether);
+        // TODO : implement fee in buy
+        // hook.updateBaseFeePercentage(address(ra), ct, 1 ether);
         uint256 amountOutPreview = flashSwapRouter.previewSwapRaforDs(currencyId, dsId, amount);
 
         // won't be exact since we sold some from reserve

@@ -70,6 +70,10 @@ contract RouterState is
         reserves[id].decayDiscountRateInDays = discountRateInDays;
     }
 
+    function updateGradualSaleStatus(Id id, bool status) external override onlyConfig {
+        reserves[id].gradualSale = status;
+    }
+
     function getCurrentCumulativeHPA(Id id) external view returns (uint256 hpaCummulative) {
         hpaCummulative = reserves[id].getCurrentCumulativeHPA();
     }
@@ -279,7 +283,7 @@ contract RouterState is
             : amountSellFromReserve;
 
         // sell the DS tokens from the reserve if there's any
-        if (amountSellFromReserve != 0) {
+        if (amountSellFromReserve != 0 && self.gradualSale) {
             // sell the DS tokens from the reserve and accrue value to LV holders
             // it's safe to transfer all profit to the module core since the profit for each PSM and LV is calculated separately and we invoke
             // the profit acceptance function for each of them
