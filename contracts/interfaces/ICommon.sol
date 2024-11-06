@@ -65,9 +65,9 @@ interface ICommon {
     /// @param expiry The expiry of the DS
     /// @param ds The address of the DS token
     /// @param ct The address of the CT token
-    /// @param raCtUniPair The address of the uniswap-v2 pair between RA and CT
+    /// @param raCtUniPairId The id of the uniswap-v4 pair between RA and CT
     event Issued(
-        Id indexed Id, uint256 indexed dsId, uint256 indexed expiry, address ds, address ct, address raCtUniPair
+        Id indexed Id, uint256 indexed dsId, uint256 indexed expiry, address ds, address ct, bytes32 raCtUniPairId
     );
 
     /**

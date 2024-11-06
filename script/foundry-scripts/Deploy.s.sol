@@ -1,4 +1,4 @@
-pragma solidity 0.8.24;
+pragma solidity ^0.8.24;
 
 import {IUniswapV2Factory} from "v2-core/interfaces/IUniswapV2Factory.sol";
 import {IUniswapV2Router02} from "v2-periphery/interfaces/IUniswapV2Router02.sol";
@@ -188,7 +188,7 @@ contract DeployScript is Script {
             repurchaseFee,
             6 ether, // 6% per day TODO
             block.timestamp + 6600, // 1 block per 12 second and 22 hours rollover during TC = 6600 // TODO
-            block.timestamp + 10 seconds 
+            block.timestamp + 10 seconds
         );
         console.log("New DS issued");
         console.log("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-");

@@ -14,6 +14,7 @@ import {VaultCore} from "./Vault.sol";
 import {Initialize} from "../interfaces/Init.sol";
 import {Context} from "@openzeppelin/contracts/utils/Context.sol";
 import {ContextUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/ContextUpgradeable.sol";
+import {AmmId, toAmmId} from "Cork-Hook/lib/State.sol";
 
 /**
  * @title ModuleCore Contract
@@ -28,20 +29,20 @@ contract ModuleCore is OwnableUpgradeable, UUPSUpgradeable, PsmCore, Initialize,
     using PairLibrary for Pair;
 
     /// @notice Initializer function for upgradeable contracts
-    function initialize(
-        address _swapAssetFactory,
-        address _ammFactory,
-        address _flashSwapRouter,
-        address _ammRouter,
-        address _config
-    ) external initializer {
-        if(_swapAssetFactory == address(0) || _ammFactory == address(0) || _flashSwapRouter == address(0) || _ammRouter == address(0) || _config == address(0)) {
+    function initialize(address _swapAssetFactory, address _ammHook, address _flashSwapRouter, address _config)
+        external
+        initializer
+    {
+        if (
+            _swapAssetFactory == address(0) || _ammHook == address(0) || _flashSwapRouter == address(0)
+                || _config == address(0)
+        ) {
             revert ZeroAddress();
         }
 
         __Ownable_init(msg.sender);
         __UUPSUpgradeable_init();
-        initializeModuleState(_swapAssetFactory, _ammFactory, _flashSwapRouter, _ammRouter, _config);
+        initializeModuleState(_swapAssetFactory, _ammHook, _flashSwapRouter, _config);
     }
 
     /// @notice Authorization function for UUPS proxy upgrades
@@ -69,11 +70,7 @@ contract ModuleCore is OwnableUpgradeable, UUPSUpgradeable, PsmCore, Initialize,
         uint256 lvFee,
         uint256 initialDsPrice,
         uint256 psmBaseRedemptionFeePercentage
-    )
-        external
-        override
-        onlyConfig
-    {
+    ) external override onlyConfig {
         Pair memory key = PairLibrary.initalize(pa, ra);
         Id id = key.toId();
 
@@ -125,27 +122,22 @@ contract ModuleCore is OwnableUpgradeable, UUPSUpgradeable, PsmCore, Initialize,
         );
     }
 
-    function _initOnNewIssuance(
-        Id id,
-        uint256 repurchaseFeePercentage,
-        address ct,
-        address ds,
-        uint256 expiry
-    ) internal {
-        
+    function _initOnNewIssuance(Id id, uint256 repurchaseFeePercentage, address ct, address ds, uint256 expiry)
+        internal
+    {
         State storage state = states[id];
-        
+
         address ra = state.info.pair1;
         uint256 prevIdx = state.globalAssetIdx++;
         uint256 idx = state.globalAssetIdx;
 
-        address ammPair = getAmmFactory().createPair(ra, ct);
+        PsmLibrary.onNewIssuance(state, ct, ds, idx, prevIdx, repurchaseFeePercentage);
 
-        PsmLibrary.onNewIssuance(state, ct, ds, ammPair, idx, prevIdx, repurchaseFeePercentage);
+        // TODO : must handle changes in flash swap router later
+        getRouterCore().onNewIssuance(id, idx, ds, ra, ct);
 
-        getRouterCore().onNewIssuance(id, idx, ds, ammPair, ra, ct);
-
-        emit Issued(id, idx, expiry, ds, ct, ammPair);
+        // TODO : place holder, must change to the id later
+        emit Issued(id, idx, expiry, ds, ct, AmmId.unwrap(toAmmId(ra, ct)));
     }
 
     function updateRepurchaseFeeRate(Id id, uint256 newRepurchaseFeePercentage) external onlyConfig {

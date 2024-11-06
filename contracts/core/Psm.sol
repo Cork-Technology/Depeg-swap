@@ -8,6 +8,7 @@ import {IPSMcore} from "../interfaces/IPSMcore.sol";
 import {State} from "../libraries/State.sol";
 import {ModuleState} from "./ModuleState.sol";
 import {Context} from "@openzeppelin/contracts/utils/Context.sol";
+import {ICorkHook} from "./../interfaces/UniV4/IMinimalHook.sol";
 
 /**
  * @title PsmCore Abstract Contract

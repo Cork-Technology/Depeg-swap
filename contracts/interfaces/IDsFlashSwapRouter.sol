@@ -29,7 +29,7 @@ interface IDsFlashSwapUtility {
      * @return raReserve reserve of RA
      * @return ctReserve reserve of CT
      */
-    function getAmmReserve(Id id, uint256 dsId) external view returns (uint112 raReserve, uint112 ctReserve);
+    function getAmmReserve(Id id, uint256 dsId) external view returns (uint256 raReserve, uint256 ctReserve);
 
     /**
      * @notice returns the current DS reserve that is owned by liquidity vault
@@ -46,13 +46,6 @@ interface IDsFlashSwapUtility {
      * @return psmReserve reserve of DS
      */
     function getPsmReserve(Id id, uint256 dsId) external view returns (uint256 psmReserve);
-
-    /**
-     * @notice returns the underlying uniswap v2 pair address
-     * @param id the id of the pair
-     * @param dsId the ds id of the pair
-     */
-    function getUniV2pair(Id id, uint256 dsId) external view returns (IUniswapV2Pair pair);
 
     /**
      * @notice returns the current cumulative HPA of the pair
@@ -123,9 +116,9 @@ interface IDsFlashSwapCore is IDsFlashSwapUtility {
      * @param reserveId the reserve id same as the id on PSM and LV
      * @param dsId the ds id of the pair, the same as the DS id on PSM and LV
      * @param ds the new DS address
-     * @param pair the RA:CT pair address
+     * @param pair the RA:CT pair id
      */
-    event NewIssuance(Id indexed reserveId, uint256 indexed dsId, address ds, address pair);
+    event NewIssuance(Id indexed reserveId, uint256 indexed dsId, address ds, bytes32 pair);
 
     /**
      * @notice Emitted when a reserve is added
@@ -160,11 +153,10 @@ interface IDsFlashSwapCore is IDsFlashSwapUtility {
      * @param reserveId the pair id
      * @param dsId the ds id of the pair
      * @param ds the address of the new issued DS
-     * @param pair the address of the underlying uniswap v2 pair
      * @param ra the address of RA token
      * @param ct the address of CT token
      */
-    function onNewIssuance(Id reserveId, uint256 dsId, address ds, address pair, address ra, address ct) external;
+    function onNewIssuance(Id reserveId, uint256 dsId, address ds, address ra, address ct) external;
 
     /**
      * @notice set the discount rate rate and rollover for the new issuance

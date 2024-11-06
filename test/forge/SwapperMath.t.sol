@@ -110,49 +110,46 @@ contract SwapMathTest is Test {
     }
 
     function test_sellDs() external {
-        uint256 ctReserve = 10000 ether;
-        uint256 raReserve = 9000 ether;
+        uint256 ctReserve = 1000 ether;
+        uint256 raReserve = 900 ether;
 
-        uint256 amountToSell = 10 ether;
+        uint256 amountToSell = 5 ether;
 
-        (bool success, uint256 raReceived, uint256 repaymentAmount) =
-            SwapperMathLibrary.getAmountOutSellDs(raReserve, ctReserve, amountToSell);
+        uint256 borrwedAmount = 4.527164981 ether;
+
+        (bool success, uint256 raReceived) = SwapperMathLibrary.getAmountOutSellDs(borrwedAmount, amountToSell);
 
         vm.assertEq(success, true);
-        vm.assertApproxEqAbs(raReceived, 1 ether, 0.03 ether);
+        vm.assertApproxEqAbs(raReceived, 0.472835019 ether, 0.000001 ether);
 
-        // can't sell if can't borrow enough CT
-        amountToSell = 10000 ether;
-        (success, raReceived, repaymentAmount) =
-            SwapperMathLibrary.getAmountOutSellDs(raReserve, ctReserve, amountToSell);
+        // can't sell if  CT > RA
+        amountToSell = 4 ether;
+        (success, raReceived) = SwapperMathLibrary.getAmountOutSellDs(borrwedAmount, amountToSell);
 
         vm.assertEq(success, false);
     }
 
-    function testFuzz_sellDs(uint256 amountToSell) external {
-        // 0.001 DS price
-        uint256 ctReserve = 10000000 ether;
-        uint256 raReserve = 9990000 ether;
+    function testFuzz_sellDs(uint256 amountToSell, uint256 repaymentAmount) external {
+        vm.assume(amountToSell > repaymentAmount);
 
-        amountToSell = bound(amountToSell, 1 ether, ctReserve - raReserve);
-
-        (bool success,, uint256 repaymentAmount) =
-            SwapperMathLibrary.getAmountOutSellDs(raReserve, ctReserve, amountToSell);
+        (bool success, uint256 raReceived) = SwapperMathLibrary.getAmountOutSellDs(repaymentAmount, amountToSell);
 
         vm.assertTrue(success);
-        // repayment amount should be less than what we got from PSM
-        vm.assertTrue(repaymentAmount <= amountToSell);
     }
 
     function test_buyDs() external {
-        uint256 ctReserve = 1000 ether;
-        uint256 raReserve = 900 ether;
+        uint256 ctReserve = 1050 ether;
+        uint256 raReserve = 1000 ether;
 
-        uint256 amountToBuy = 0.1009 ether;
+        uint256 start = 0 days;
+        uint256 end = 100 days;
+        uint256 current = 0.01 days;
 
-        (uint256 borrowed, uint256 amount) = SwapperMathLibrary.getAmountOutBuyDs(raReserve, ctReserve, amountToBuy);
+        uint256 amountToBuy = 5 ether;
 
-        vm.assertApproxEqAbs(amount, 1.0000088 ether, 0.000001 ether);
-        vm.assertApproxEqAbs(borrowed, amount - amountToBuy, 0.0001 ether);
+        // TODO: verify we have enough CT to repay
+        uint256 returned = SwapperMathLibrary.getAmountOutBuyDs(raReserve, ctReserve, amountToBuy, start, end, current);
+        
+        vm.assertApproxEqAbs(returned, 9.548 ether, 0.001 ether);
     }
 }
