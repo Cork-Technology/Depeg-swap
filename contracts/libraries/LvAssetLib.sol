@@ -1,9 +1,11 @@
+// SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.24;
 
-import {IERC20, Asset, ERC20, ERC20Burnable} from "../core/assets/Asset.sol";
+import {Asset, ERC20, ERC20Burnable} from "../core/assets/Asset.sol";
+import {SafeERC20, IERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 /**
- * @dev LvAsset structure for Liquidity Vault Assets    
+ * @dev LvAsset structure for Liquidity Vault Assets
  */
 struct LvAsset {
     address _address;
@@ -17,6 +19,7 @@ struct LvAsset {
  */
 library LvAssetLibrary {
     using LvAssetLibrary for LvAsset;
+    using SafeERC20 for IERC20;
 
     function initialize(address _address) internal pure returns (LvAsset memory) {
         return LvAsset(_address, 0);
@@ -31,7 +34,7 @@ library LvAssetLibrary {
     }
 
     function depositUnchecked(LvAsset memory self, address from, uint256 amount) internal {
-        self.asErc20().transferFrom(from, address(this), amount);
+        self.asErc20().safeTransferFrom(from, address(this), amount);
     }
 
     function totalIssued(LvAsset memory self) internal view returns (uint256 total) {
@@ -57,11 +60,11 @@ library LvAssetLibrary {
 
     function unlockTo(LvAsset storage self, uint256 amount, address to) internal {
         decLocked(self, amount);
-        self.asErc20().transfer(to, amount);
+        self.asErc20().safeTransfer(to, amount);
     }
 
     function lockUnchecked(LvAsset storage self, uint256 amount, address from) internal {
-        ERC20(self._address).transferFrom(from, address(this), amount);
+        self.asErc20().safeTransferFrom(from, address(this), amount);
     }
 
     function burnSelf(LvAsset storage self, uint256 amount) internal {

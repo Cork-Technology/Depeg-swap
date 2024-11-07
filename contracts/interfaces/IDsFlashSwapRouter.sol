@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.24;
 
 import {Id} from "../libraries/Pair.sol";
@@ -28,7 +29,7 @@ interface IDsFlashSwapUtility {
      * @return raReserve reserve of RA
      * @return ctReserve reserve of CT
      */
-    function getAmmReserve(Id id, uint256 dsId) external view returns (uint112 raReserve, uint112 ctReserve);
+    function getAmmReserve(Id id, uint256 dsId) external view returns (uint256 raReserve, uint256 ctReserve);
 
     /**
      * @notice returns the current DS reserve that is owned by liquidity vault
@@ -45,13 +46,6 @@ interface IDsFlashSwapUtility {
      * @return psmReserve reserve of DS
      */
     function getPsmReserve(Id id, uint256 dsId) external view returns (uint256 psmReserve);
-
-    /**
-     * @notice returns the underlying uniswap v2 pair address
-     * @param id the id of the pair
-     * @param dsId the ds id of the pair
-     */
-    function getUniV2pair(Id id, uint256 dsId) external view returns (IUniswapV2Pair pair);
 
     /**
      * @notice returns the current cumulative HPA of the pair
@@ -122,10 +116,9 @@ interface IDsFlashSwapCore is IDsFlashSwapUtility {
      * @param reserveId the reserve id same as the id on PSM and LV
      * @param dsId the ds id of the pair, the same as the DS id on PSM and LV
      * @param ds the new DS address
-     * @param pair the RA:CT pair address
-     * @param initialReserve the initial reserve of the DS, deposited by LV
+     * @param pair the RA:CT pair id
      */
-    event NewIssuance(Id indexed reserveId, uint256 indexed dsId, address ds, address pair, uint256 initialReserve);
+    event NewIssuance(Id indexed reserveId, uint256 indexed dsId, address ds, bytes32 pair);
 
     /**
      * @notice Emitted when a reserve is added
@@ -160,20 +153,10 @@ interface IDsFlashSwapCore is IDsFlashSwapUtility {
      * @param reserveId the pair id
      * @param dsId the ds id of the pair
      * @param ds the address of the new issued DS
-     * @param pair the address of the underlying uniswap v2 pair
-     * @param initialReserve the initial reserve of the DS
      * @param ra the address of RA token
      * @param ct the address of CT token
      */
-    function onNewIssuance(
-        Id reserveId,
-        uint256 dsId,
-        address ds,
-        address pair,
-        uint256 initialReserve,
-        address ra,
-        address ct
-    ) external;
+    function onNewIssuance(Id reserveId, uint256 dsId, address ds, address ra, address ct) external;
 
     /**
      * @notice set the discount rate rate and rollover for the new issuance
@@ -230,9 +213,15 @@ interface IDsFlashSwapCore is IDsFlashSwapUtility {
      * @param amountOutMin the minimum amount of DS to receive, will revert if the actual amount is less than this. should be inserted with value from previewSwapRaforDs
      * @return amountOut amount of DS that's received
      */
-    function swapRaforDs(Id reserveId, uint256 dsId, uint256 amount, uint256 amountOutMin)
-        external
-        returns (uint256 amountOut);
+    function swapRaforDs(
+        Id reserveId,
+        uint256 dsId,
+        uint256 amount,
+        uint256 amountOutMin,
+        address user,
+        bytes memory rawRaPermitSig,
+        uint256 deadline
+    ) external returns (uint256 amountOut);
 
     /**
      * @notice Preview the amount of DS that will be received from swapping RA
@@ -251,9 +240,15 @@ interface IDsFlashSwapCore is IDsFlashSwapUtility {
      * @param amountOutMin the minimum amount of RA to receive, will revert if the actual amount is less than this. should be inserted with value from previewSwapDsforRa
      * @return amountOut amount of RA that's received
      */
-    function swapDsforRa(Id reserveId, uint256 dsId, uint256 amount, uint256 amountOutMin)
-        external
-        returns (uint256 amountOut);
+    function swapDsforRa(
+        Id reserveId,
+        uint256 dsId,
+        uint256 amount,
+        uint256 amountOutMin,
+        address user,
+        bytes memory rawDsPermitSig,
+        uint256 deadline
+    ) external returns (uint256 amountOut);
 
     /**
      * @notice Preview the amount of RA that will be received from swapping DS
@@ -270,6 +265,11 @@ interface IDsFlashSwapCore is IDsFlashSwapUtility {
      * @param discountRateInDays the new discount rate in D days
      */
     function updateDiscountRateInDdays(Id id, uint256 discountRateInDays) external;
+
+    /**
+     * @notice update the gradual sale status, if true, will try to sell DS tokens from the reserve gradually
+     */
+    function updateGradualSaleStatus(Id id, bool status) external;
 
     function isRolloverSale(Id id, uint256 dsId) external view returns (bool);
 }

@@ -40,6 +40,10 @@ describe("Module Core", function () {
     return await hre.viem.getContractAt("CorkConfig", address);
   };
 
+  const getDs = async (address: Address) => {
+    return await hre.viem.getContractAt("Asset", address);
+  };
+
   before(async () => {
     const __signers = await hre.viem.getWalletClients();
     ({ defaultSigner, secondSigner, signers } = helper.getSigners(__signers));
@@ -112,31 +116,28 @@ describe("Module Core", function () {
         VaultLibrary: vault.address,
       },
     });
-    moduleCore.write.initialize([
+    let tx = await moduleCore.write.initialize([
       swapAssetFactory.contract.address,
       univ2Factory,
       dsFlashSwapRouter.contract.address,
       univ2Router,
       config.contract.address,
-      helper.DEFAULT_BASE_REDEMPTION_PRECENTAGE,
     ]);
-    expect(moduleCore).to.be.ok;
+    expect(tx).to.be.ok;
   });
 
-  describe("getId", function () {
-    it("getId should work correctly", async function () {
-      let Id = await moduleCore.read.getId([
-        fixture.pa.address,
-        fixture.ra.address,
-      ]);
-      const expectedKey = ethers.utils.keccak256(
-        ethers.utils.defaultAbiCoder.encode(
-          ["address", "address"],
-          [fixture.pa.address, fixture.ra.address]
-        )
-      );
-      expect(Id).to.equal(expectedKey);
-    });
+  it("getId should work correctly", async function () {
+    let Id = await moduleCore.read.getId([
+      fixture.pa.address,
+      fixture.ra.address,
+    ]);
+    const expectedKey = ethers.utils.keccak256(
+      ethers.utils.defaultAbiCoder.encode(
+        ["address", "address"],
+        [fixture.pa.address, fixture.ra.address]
+      )
+    );
+    expect(Id).to.equal(expectedKey);
   });
 
   describe("initialize", function () {
@@ -168,7 +169,6 @@ describe("Module Core", function () {
           defaultSigner.account.address,
           defaultSigner.account.address,
           defaultSigner.account.address,
-          helper.DEFAULT_BASE_REDEMPTION_PRECENTAGE,
         ])
       ).to.be.rejectedWith("ZeroAddress()");
 
@@ -179,7 +179,6 @@ describe("Module Core", function () {
           defaultSigner.account.address,
           defaultSigner.account.address,
           defaultSigner.account.address,
-          helper.DEFAULT_BASE_REDEMPTION_PRECENTAGE,
         ])
       ).to.be.rejectedWith("ZeroAddress()");
 
@@ -190,7 +189,6 @@ describe("Module Core", function () {
           zeroAddress,
           defaultSigner.account.address,
           defaultSigner.account.address,
-          helper.DEFAULT_BASE_REDEMPTION_PRECENTAGE,
         ])
       ).to.be.rejectedWith("ZeroAddress()");
 
@@ -201,7 +199,6 @@ describe("Module Core", function () {
           defaultSigner.account.address,
           zeroAddress,
           defaultSigner.account.address,
-          helper.DEFAULT_BASE_REDEMPTION_PRECENTAGE,
         ])
       ).to.be.rejectedWith("ZeroAddress()");
 
@@ -212,7 +209,6 @@ describe("Module Core", function () {
           defaultSigner.account.address,
           defaultSigner.account.address,
           zeroAddress,
-          helper.DEFAULT_BASE_REDEMPTION_PRECENTAGE,
         ])
       ).to.be.rejectedWith("ZeroAddress()");
     });
@@ -233,6 +229,7 @@ describe("Module Core", function () {
         ra.address,
         fixture.lvFee,
         initialDsPrice,
+        parseEther("5"),
       ]);
       const events = await moduleCore.getEvents.InitializedModuleCore({
         id: expectedId,
@@ -257,6 +254,7 @@ describe("Module Core", function () {
           fixture.ra.address,
           fixture.lvFee,
           initialDsPrice,
+          parseEther("5"),
         ])
       ).to.be.rejectedWith("AlreadyInitialized()");
     });
@@ -268,6 +266,7 @@ describe("Module Core", function () {
           fixture.ra.address,
           fixture.lvFee,
           initialDsPrice,
+          parseEther("5"),
         ])
       ).to.be.rejectedWith("OnlyConfigAllowed()");
     });
@@ -282,6 +281,7 @@ describe("Module Core", function () {
         parseEther("5"),
         parseEther("1"),
         10n,
+        BigInt(helper.expiry(1000000)),
       ]);
       const events = await moduleCore.getEvents.Issued({
         Id: fixture.Id,
@@ -293,6 +293,9 @@ describe("Module Core", function () {
       expect(events[0].args.expiry).to.equal(BigInt(expiryTime));
       expect(events[0].args.ds).to.equal(assets[1]);
       expect(events[0].args.ct).to.equal(assets[0]);
+
+      let ds = await getDs(assets[1]);
+      expect(await ds.read.dsId()).to.equal(1n);
     });
 
     it("initialize should revert when AlreadyInitialized", async function () {
@@ -311,6 +314,7 @@ describe("Module Core", function () {
           parseEther("10"),
           parseEther("1"),
           10n,
+          BigInt(helper.expiry(1000000)),
         ])
       ).to.be.rejectedWith("Uinitialized()");
     });
@@ -324,6 +328,7 @@ describe("Module Core", function () {
           parseEther("5.000000000001"),
           parseEther("1"),
           10n,
+          BigInt(helper.expiry(1000000)),
         ])
       ).to.be.rejectedWith("InvalidFees()");
     });
@@ -337,6 +342,7 @@ describe("Module Core", function () {
           parseEther("10"),
           parseEther("1"),
           10n,
+          BigInt(helper.expiry(1000000)),
         ])
       ).to.be.rejectedWith("OnlyConfigAllowed()");
     });
@@ -427,6 +433,7 @@ describe("Module Core", function () {
         true,
         true,
         true,
+        true,
       ]);
       const events = await moduleCore.getEvents.PoolsStatusUpdated({
         Id: fixture.Id,
@@ -435,6 +442,7 @@ describe("Module Core", function () {
       expect(events[0].args.Id).to.equal(fixture.Id);
       expect(events[0].args.isPSMDepositPaused).to.equal(true);
       expect(events[0].args.isPSMWithdrawalPaused).to.equal(true);
+      expect(events[0].args.isPSMRepurchasePaused).to.equal(true);
       expect(events[0].args.isLVDepositPaused).to.equal(true);
       expect(events[0].args.isLVWithdrawalPaused).to.equal(true);
     });
@@ -442,7 +450,7 @@ describe("Module Core", function () {
     it("updatePoolsStatus should revert when not called by Config contract", async function () {
       await expect(
         moduleCore.write.updatePoolsStatus(
-          [fixture.Id, true, true, true, true],
+          [fixture.Id, true, true, true, true, true],
           {
             account: secondSigner.account,
           }
@@ -461,6 +469,7 @@ describe("Module Core", function () {
         parseEther("5"),
         parseEther("1"),
         10n,
+        BigInt(helper.expiry(1000000)),
       ]);
       expect(await moduleCore.read.lastDsId([fixture.Id])).to.equal(1n);
     });
@@ -495,29 +504,57 @@ describe("Module Core", function () {
     });
   });
 
-  describe("updatePsmBaseRedemptionFeePrecentage", function () {
-    it("updatePsmBaseRedemptionFeePrecentage should work correctly", async function () {
-      expect(await moduleCore.read.baseRedemptionFee()).to.equal(
+  describe("updatePsmBaseRedemptionFeePercentage", function () {
+    it("updatePsmBaseRedemptionFeePercentage should work correctly", async function () {
+      expect(await moduleCore.read.baseRedemptionFee([fixture.Id])).to.equal(
         parseEther("5")
       );
-      await corkConfig.write.updatePsmBaseRedemptionFeePrecentage([500n]);
-      expect(await moduleCore.read.baseRedemptionFee()).to.equal(500n);
+      await corkConfig.write.updatePsmBaseRedemptionFeePercentage([
+        fixture.Id,
+        500n,
+      ]);
+      expect(await moduleCore.read.baseRedemptionFee([fixture.Id])).to.equal(
+        500n
+      );
     });
 
-    it("updatePsmBaseRedemptionFeePrecentage should revert when new value is more than 5%", async function () {
+    it("updatePsmBaseRedemptionFeePercentage should revert when new value is more than 5%", async function () {
       await expect(
-        corkConfig.write.updatePsmBaseRedemptionFeePrecentage([
+        corkConfig.write.updatePsmBaseRedemptionFeePercentage([
+          fixture.Id,
           parseEther("5.00000000000001"),
         ])
       ).to.be.rejectedWith("InvalidFees()");
     });
 
-    it("updatePsmBaseRedemptionFeePrecentage should revert when not called by Config contract", async function () {
+    it("updatePsmBaseRedemptionFeePercentage should revert when not called by Config contract", async function () {
       await expect(
-        moduleCore.write.updatePsmBaseRedemptionFeePrecentage([500n], {
-          account: secondSigner.account,
-        })
+        moduleCore.write.updatePsmBaseRedemptionFeePercentage(
+          [fixture.Id, 500n],
+          {
+            account: secondSigner.account,
+          }
+        )
       ).to.be.rejectedWith("OnlyConfigAllowed()");
     });
   });
+
+  describe("expiry", function () {
+    it("should return the correct expiry time for a given ID", async function () {
+      const currentTime = await time.latest();
+      const expiryTime = currentTime + 86400; 
+      await corkConfig.write.issueNewDs([
+        fixture.Id,
+        BigInt(expiryTime),
+        parseEther("1"),
+        parseEther("5"),
+        parseEther("1"),
+        10n,
+        BigInt(helper.expiry(1000000)),
+      ]);
+      const expectedExpiry = await moduleCore.read.expiry([fixture.Id]);
+      expect(expectedExpiry).to.equal(BigInt(expiryTime));
+    });
+  });
+   
 });

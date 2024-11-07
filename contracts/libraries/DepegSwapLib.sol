@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.24;
 
 import {Asset} from "../core/assets/Asset.sol";
@@ -10,8 +11,6 @@ struct DepegSwap {
     bool expiredEventEmitted;
     address _address;
     address ct;
-    /// @dev right now this the RA:CT AMM pair address
-    address ammPair;
     uint256 ctRedeemed;
 }
 
@@ -35,8 +34,8 @@ library DepegSwapLibrary {
         return Asset(self._address).exchangeRate();
     }
 
-    function initialize(address _address, address ct, address ammPair) internal pure returns (DepegSwap memory) {
-        return DepegSwap({expiredEventEmitted: false, _address: _address, ammPair: ammPair, ct: ct, ctRedeemed: 0});
+    function initialize(address _address, address ct) internal pure returns (DepegSwap memory) {
+        return DepegSwap({expiredEventEmitted: false, _address: _address, ct: ct, ctRedeemed: 0});
     }
 
     function permit(

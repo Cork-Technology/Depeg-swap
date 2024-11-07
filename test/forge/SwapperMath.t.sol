@@ -3,6 +3,8 @@ pragma solidity ^0.8.24;
 import "./../../contracts/libraries/DsSwapperMathLib.sol";
 import "forge-std/Test.sol";
 import "./../../contracts/libraries/UQ112x112.sol";
+import "forge-std/console.sol";
+import "./../../contracts/libraries/uni-v2/UniswapV2Library.sol";
 
 contract SwapMathTest is Test {
     using UQ112x112 for uint224;
@@ -105,5 +107,49 @@ contract SwapMathTest is Test {
         uint256 hpa = SwapperMathLibrary.calculateHPA(cumulatedHPA, cumulatedVHPA);
 
         vm.assertEq(hpa, 2 ether);
+    }
+
+    function test_sellDs() external {
+        uint256 ctReserve = 1000 ether;
+        uint256 raReserve = 900 ether;
+
+        uint256 amountToSell = 5 ether;
+
+        uint256 borrwedAmount = 4.527164981 ether;
+
+        (bool success, uint256 raReceived) = SwapperMathLibrary.getAmountOutSellDs(borrwedAmount, amountToSell);
+
+        vm.assertEq(success, true);
+        vm.assertApproxEqAbs(raReceived, 0.472835019 ether, 0.000001 ether);
+
+        // can't sell if  CT > RA
+        amountToSell = 4 ether;
+        (success, raReceived) = SwapperMathLibrary.getAmountOutSellDs(borrwedAmount, amountToSell);
+
+        vm.assertEq(success, false);
+    }
+
+    function testFuzz_sellDs(uint256 amountToSell, uint256 repaymentAmount) external {
+        vm.assume(amountToSell > repaymentAmount);
+
+        (bool success, uint256 raReceived) = SwapperMathLibrary.getAmountOutSellDs(repaymentAmount, amountToSell);
+
+        vm.assertTrue(success);
+    }
+
+    function test_buyDs() external {
+        uint256 ctReserve = 1050 ether;
+        uint256 raReserve = 1000 ether;
+
+        uint256 start = 0 days;
+        uint256 end = 100 days;
+        uint256 current = 0.01 days;
+
+        uint256 amountToBuy = 5 ether;
+
+        // TODO: verify we have enough CT to repay
+        uint256 returned = SwapperMathLibrary.getAmountOutBuyDs(raReserve, ctReserve, amountToBuy, start, end, current);
+        
+        vm.assertApproxEqAbs(returned, 9.548 ether, 0.001 ether);
     }
 }

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.24;
 
 import {Id} from "../libraries/Pair.sol";
@@ -33,6 +34,9 @@ interface ICommon {
     /// @notice PSM Withdrawal is paused, i.e thrown when withdrawal is paused for PSM
     error PSMWithdrawalPaused();
 
+    /// @notice PSM Repurchase is paused, i.e thrown when repurchase is paused for PSM
+    error PSMRepurchasePaused();
+
     /// @notice LV Deposit is paused, i.e thrown when deposit is paused for LV
     error LVDepositPaused();
 
@@ -61,9 +65,9 @@ interface ICommon {
     /// @param expiry The expiry of the DS
     /// @param ds The address of the DS token
     /// @param ct The address of the CT token
-    /// @param raCtUniPair The address of the uniswap-v2 pair between RA and CT
+    /// @param raCtUniPairId The id of the uniswap-v4 pair between RA and CT
     event Issued(
-        Id indexed Id, uint256 indexed dsId, uint256 indexed expiry, address ds, address ct, address raCtUniPair
+        Id indexed Id, uint256 indexed dsId, uint256 indexed expiry, address ds, address ct, bytes32 raCtUniPairId
     );
 
     /**

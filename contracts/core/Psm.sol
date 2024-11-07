@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.24;
 
 import {PsmLibrary} from "../libraries/PsmLib.sol";
@@ -7,6 +8,7 @@ import {IPSMcore} from "../interfaces/IPSMcore.sol";
 import {State} from "../libraries/State.sol";
 import {ModuleState} from "./ModuleState.sol";
 import {Context} from "@openzeppelin/contracts/utils/Context.sol";
+import {ICorkHook} from "./../interfaces/UniV4/IMinimalHook.sol";
 
 /**
  * @title PsmCore Abstract Contract
@@ -18,12 +20,12 @@ abstract contract PsmCore is IPSMcore, ModuleState, Context {
     using PairLibrary for Pair;
 
     /**
-     * @notice returns the fee precentage for repurchasing(1e18 = 1%)
+     * @notice returns the fee percentage for repurchasing(1e18 = 1%)
      * @param id the id of PSM
      */
     function repurchaseFee(Id id) external view override returns (uint256) {
         State storage state = states[id];
-        return state.repurchaseFeePrecentage();
+        return state.repurchaseFeePercentage();
     }
 
     /**
@@ -34,33 +36,41 @@ abstract contract PsmCore is IPSMcore, ModuleState, Context {
     function repurchase(Id id, uint256 amount)
         external
         override
-        returns (uint256 dsId, uint256 received, uint256 feePrecentage, uint256 fee, uint256 exchangeRates)
+        nonReentrant
+        PSMRepurchaseNotPaused(id)
+        returns (
+            uint256 dsId,
+            uint256 receivedPa,
+            uint256 receivedDs,
+            uint256 feePercentage,
+            uint256 fee,
+            uint256 exchangeRates
+        )
     {
         State storage state = states[id];
-        (dsId, received, feePrecentage, fee, exchangeRates) =
+
+        (dsId, receivedPa, receivedDs, feePercentage, fee, exchangeRates) =
             state.repurchase(_msgSender(), amount, getRouterCore(), getAmmRouter());
 
-        emit Repurchased(id, _msgSender(), dsId, amount, received, feePrecentage, fee, exchangeRates);
+        emit Repurchased(id, _msgSender(), dsId, amount, receivedPa, receivedDs, feePercentage, fee, exchangeRates);
     }
 
-    /**
-     * @notice returns the amount of pa and ds tokens that will be received after repurchasing
-     * @param id the id of PSM
-     * @param amount the amount of RA to use
-     * @return dsId the id of the DS
-     * @return received the amount of RA received
-     * @return feePrecentage the fee in precentage
-     * @return fee the fee charged
-     * @return exchangeRates the effective DS exchange rate at the time of repurchase
-     */
     function previewRepurchase(Id id, uint256 amount)
         external
         view
         override
-        returns (uint256 dsId, uint256 received, uint256 feePrecentage, uint256 fee, uint256 exchangeRates)
+        PSMRepurchaseNotPaused(id)
+        returns (
+            uint256 dsId,
+            uint256 receivedPa,
+            uint256 receivedDs,
+            uint256 feePercentage,
+            uint256 fee,
+            uint256 exchangeRates
+        )
     {
         State storage state = states[id];
-        (dsId, received, feePrecentage, fee, exchangeRates,) = state.previewRepurchase(amount);
+        (dsId, receivedPa, receivedDs, feePercentage, fee, exchangeRates,) = state.previewRepurchase(amount);
     }
 
     /**
@@ -124,7 +134,14 @@ abstract contract PsmCore is IPSMcore, ModuleState, Context {
         (ctReceived, dsReceived, dsId) = state.previewDeposit(amount);
     }
 
-    function redeemRaWithDs(Id id, uint256 dsId, uint256 amount, bytes memory rawDsPermitSig, uint256 deadline)
+    function redeemRaWithDs(
+        Id id,
+        uint256 dsId,
+        uint256 amount,
+        address redeemer,
+        bytes memory rawDsPermitSig,
+        uint256 deadline
+    )
         external
         override
         nonReentrant
@@ -133,34 +150,14 @@ abstract contract PsmCore is IPSMcore, ModuleState, Context {
         returns (uint256 received, uint256 _exchangeRate, uint256 fee)
     {
         State storage state = states[id];
-        // gas savings
-        uint256 feePrecentage = psmBaseRedemptionFeePrecentage;
 
-        (received, _exchangeRate, fee) =
-            state.redeemWithDs(_msgSender(), amount, dsId, rawDsPermitSig, deadline, feePrecentage);
+        (received, _exchangeRate, fee) = state.redeemWithDs(redeemer, amount, dsId, rawDsPermitSig, deadline);
 
         VaultLibrary.provideLiquidityWithFee(state, fee, getRouterCore(), getAmmRouter());
 
-        emit DsRedeemed(id, dsId, _msgSender(), amount, received, _exchangeRate, feePrecentage, fee);
-    }
-
-    function redeemRaWithDs(Id id, uint256 dsId, uint256 amount)
-        external
-        override
-        nonReentrant
-        onlyInitialized(id)
-        PSMWithdrawalNotPaused(id)
-        returns (uint256 received, uint256 _exchangeRate, uint256 fee)
-    {
-        State storage state = states[id];
-        // gas savings
-        uint256 feePrecentage = psmBaseRedemptionFeePrecentage;
-
-        (received, _exchangeRate, fee) = state.redeemWithDs(_msgSender(), amount, dsId, bytes(""), 0, feePrecentage);
-
-        VaultLibrary.provideLiquidityWithFee(state, fee, getRouterCore(), getAmmRouter());
-
-        emit DsRedeemed(id, dsId, _msgSender(), amount, received, _exchangeRate, feePrecentage, fee);
+        emit DsRedeemed(
+            id, dsId, redeemer, amount, received, _exchangeRate, state.psm.psmBaseRedemptionFeePercentage, fee
+        );
     }
 
     /**
@@ -179,13 +176,22 @@ abstract contract PsmCore is IPSMcore, ModuleState, Context {
         override
         onlyInitialized(id)
         PSMWithdrawalNotPaused(id)
-        returns (uint256 assets)
+        returns (uint256 ra, uint256 ds, uint256 fee, uint256 exchangeRates, uint256 feePercentage)
     {
         State storage state = states[id];
-        assets = state.previewRedeemWithDs(dsId, amount);
+
+        feePercentage = state.psm.psmBaseRedemptionFeePercentage;
+        (ra, ds, fee, exchangeRates) = state.previewRedeemWithDs(dsId, amount);
     }
 
-    function redeemWithCT(Id id, uint256 dsId, uint256 amount, bytes memory rawCtPermitSig, uint256 deadline)
+    function redeemWithCT(
+        Id id,
+        uint256 dsId,
+        uint256 amount,
+        address redeemer,
+        bytes memory rawCtPermitSig,
+        uint256 deadline
+    )
         external
         override
         nonReentrant
@@ -195,24 +201,9 @@ abstract contract PsmCore is IPSMcore, ModuleState, Context {
     {
         State storage state = states[id];
 
-        (accruedPa, accruedRa) = state.redeemWithCt(_msgSender(), amount, dsId, rawCtPermitSig, deadline);
+        (accruedPa, accruedRa) = state.redeemWithCt(redeemer, amount, dsId, rawCtPermitSig, deadline);
 
-        emit CtRedeemed(id, dsId, _msgSender(), amount, accruedPa, accruedRa);
-    }
-
-    function redeemWithCT(Id id, uint256 dsId, uint256 amount)
-        external
-        override
-        nonReentrant
-        onlyInitialized(id)
-        PSMWithdrawalNotPaused(id)
-        returns (uint256 accruedPa, uint256 accruedRa)
-    {
-        State storage state = states[id];
-
-        (accruedPa, accruedRa) = state.redeemWithCt(_msgSender(), amount, dsId, bytes(""), 0);
-
-        emit CtRedeemed(id, dsId, _msgSender(), amount, accruedPa, accruedRa);
+        emit CtRedeemed(id, dsId, redeemer, amount, accruedPa, accruedRa);
     }
 
     function previewRedeemWithCt(Id id, uint256 dsId, uint256 amount)
@@ -248,38 +239,16 @@ abstract contract PsmCore is IPSMcore, ModuleState, Context {
     function redeemRaWithCtDs(
         Id id,
         uint256 amount,
+        address redeemer,
         bytes memory rawDsPermitSig,
         uint256 dsDeadline,
         bytes memory rawCtPermitSig,
         uint256 ctDeadline
-    ) external override nonReentrant PSMWithdrawalNotPaused(id) returns (uint256 ra, uint256 dsId, uint256 rates) {
+    ) external override nonReentrant PSMWithdrawalNotPaused(id) returns (uint256 ra) {
         State storage state = states[id];
-        (ra, dsId, rates) =
-            state.redeemRaWithCtDs(_msgSender(), amount, rawDsPermitSig, dsDeadline, rawCtPermitSig, ctDeadline);
+        ra = state.redeemRaWithCtDs(redeemer, amount, rawDsPermitSig, dsDeadline, rawCtPermitSig, ctDeadline);
 
-        emit Cancelled(id, dsId, _msgSender(), ra, amount, rates);
-    }
-
-    /**
-     * @notice returns amount of ra user will get when Redeem RA with CT+DS
-     * @param id The PSM id
-     * @param amount amount user wants to redeem
-     * @return ra amount of RA user received
-     * @return dsId the id of DS
-     * @return rates the effective rate at the time of redemption
-     */
-    function redeemRaWithCtDs(Id id, uint256 amount)
-        external
-        override
-        nonReentrant
-        PSMWithdrawalNotPaused(id)
-        returns (uint256 ra, uint256 dsId, uint256 rates)
-    {
-        State storage state = states[id];
-
-        (ra, dsId, rates) = state.redeemRaWithCtDs(_msgSender(), amount, bytes(""), 0, bytes(""), 0);
-
-        emit Cancelled(id, dsId, _msgSender(), ra, amount, rates);
+        emit Cancelled(id, state.globalAssetIdx, redeemer, ra, amount);
     }
 
     /**
@@ -287,24 +256,24 @@ abstract contract PsmCore is IPSMcore, ModuleState, Context {
      * @param id The PSM id
      * @param amount amount user wants to redeem
      * @return ra amount of RA user will get
-     * @return rates the effective rate at the time of redemption
      */
     function previewRedeemRaWithCtDs(Id id, uint256 amount)
         external
         view
         override
         PSMWithdrawalNotPaused(id)
-        returns (uint256 ra, uint256 rates)
+        returns (uint256 ra)
     {
         State storage state = states[id];
-        (ra,, rates) = state.previewRedeemRaWithCtDs(amount);
+        ra = amount;
     }
 
     /**
      * @notice returns base redemption fees (1e18 = 1%)
      */
-    function baseRedemptionFee() external view override returns (uint256) {
-        return psmBaseRedemptionFeePrecentage;
+    function baseRedemptionFee(Id id) external view override returns (uint256) {
+        State storage state = states[id];
+        return state.psm.psmBaseRedemptionFeePercentage;
     }
 
     function psmAcceptFlashSwapProfit(Id id, uint256 profit) external onlyFlashSwapRouter {
@@ -328,26 +297,13 @@ abstract contract PsmCore is IPSMcore, ModuleState, Context {
         (ctReceived, dsReceived, _exchangeRate, paReceived) =
             state.rolloverCt(owner, amount, dsId, getRouterCore(), rawCtPermitSig, ctDeadline);
         emit RolledOver(
-            id, state.globalAssetIdx, _msgSender(), dsId, amount, dsReceived, ctReceived, paReceived, _exchangeRate
-        );
-    }
-
-    function rolloverCt(Id id, address owner, uint256 amount, uint256 dsId)
-        external
-        PSMDepositNotPaused(id)
-        returns (uint256 ctReceived, uint256 dsReceived, uint256 _exchangeRate, uint256 paReceived)
-    {
-        State storage state = states[id];
-        bytes memory signaturePlaceHolder;
-        (ctReceived, dsReceived, _exchangeRate, paReceived) =
-            state.rolloverCt(owner, amount, dsId, getRouterCore(), signaturePlaceHolder, 0);
-        emit RolledOver(
-            id, state.globalAssetIdx, _msgSender(), dsId, amount, dsReceived, ctReceived, paReceived, _exchangeRate
+            id, state.globalAssetIdx, owner, dsId, amount, dsReceived, ctReceived, paReceived, _exchangeRate
         );
     }
 
     function claimAutoSellProfit(Id id, uint256 dsId, uint256 amount)
         external
+        nonReentrant
         returns (uint256 profit, uint256 dsReceived)
     {
         State storage state = states[id];

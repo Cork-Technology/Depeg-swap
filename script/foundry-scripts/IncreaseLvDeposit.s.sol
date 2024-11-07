@@ -1,4 +1,4 @@
-pragma solidity 0.8.24;
+pragma solidity ^0.8.24;
 
 import {Script, console} from "forge-std/Script.sol";
 import {ModuleCore} from "../../contracts/core/ModuleCore.sol";
@@ -10,7 +10,7 @@ contract IncreaseDepositScript is Script {
     ModuleCore public moduleCore;
 
     bool public isProd = vm.envBool("PRODUCTION");
-    uint256 public base_redemption_fee = vm.envUint("PSM_BASE_REDEMPTION_FEE_PRECENTAGE");
+    uint256 public base_redemption_fee = vm.envUint("PSM_BASE_REDEMPTION_FEE_PERCENTAGE");
     address public ceth = vm.envAddress("WETH");
     uint256 public pk = vm.envUint("PRIVATE_KEY");
 
@@ -43,7 +43,7 @@ contract IncreaseDepositScript is Script {
     function increaseLvDeposit(address cst, uint256 liquidityAmt) public {
         Id id = moduleCore.getId(cst, ceth);
         cETH.approve(address(moduleCore), depositLVAmt);
-        moduleCore.depositLv(id, depositLVAmt);
+        moduleCore.depositLv(id, depositLVAmt, 0, 0);
         console.log("LV Deposited");
         console.log("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-");
     }

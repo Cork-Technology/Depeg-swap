@@ -1,4 +1,4 @@
-pragma solidity 0.8.24;
+pragma solidity ^0.8.24;
 
 import {IUniswapV2Factory} from "v2-core/interfaces/IUniswapV2Factory.sol";
 import {IUniswapV2Router02} from "v2-periphery/interfaces/IUniswapV2Router02.sol";
@@ -85,7 +85,8 @@ contract RolloverScript is Script {
             DEFAULT_EXCHANGE_RATE,
             asset.repruchaseFee,
             DEFAULT_DECAY_DISCOUNT_RATE,
-            DEFAULT_ROLLOVER_PERIOD
+            DEFAULT_ROLLOVER_PERIOD,
+            block.timestamp + 10 seconds 
         );
 
         uint256 afterDsId = moduleCore.lastDsId(id);

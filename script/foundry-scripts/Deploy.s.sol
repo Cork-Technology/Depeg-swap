@@ -1,4 +1,4 @@
-pragma solidity 0.8.24;
+pragma solidity ^0.8.24;
 
 import {IUniswapV2Factory} from "v2-core/interfaces/IUniswapV2Factory.sol";
 import {IUniswapV2Router02} from "v2-periphery/interfaces/IUniswapV2Router02.sol";
@@ -32,7 +32,7 @@ contract DeployScript is Script {
     ModuleCore public moduleCore;
 
     bool public isProd = vm.envBool("PRODUCTION");
-    uint256 public base_redemption_fee = vm.envUint("PSM_BASE_REDEMPTION_FEE_PRECENTAGE");
+    uint256 public base_redemption_fee = vm.envUint("PSM_BASE_REDEMPTION_FEE_PERCENTAGE");
     address public ceth = vm.envAddress("WETH");
     uint256 public pk = vm.envUint("PRIVATE_KEY");
 
@@ -131,7 +131,15 @@ contract DeployScript is Script {
         console.log("ModuleCore Router Implementation : ", address(moduleCoreImplementation));
 
         // Deploy the ModuleCore Proxy contract
-        data = abi.encodeWithSelector(moduleCoreImplementation.initialize.selector, address(assetFactory), address(factory), address(flashswapRouter), address(univ2Router), address(config), 0.2 ether); // 0.2 base redemptionfee
+        data = abi.encodeWithSelector(
+            moduleCoreImplementation.initialize.selector,
+            address(assetFactory),
+            address(factory),
+            address(flashswapRouter),
+            address(univ2Router),
+            address(config),
+            0.2 ether
+        ); // 0.2 base redemptionfee
         ERC1967Proxy moduleCoreProxy = new ERC1967Proxy(address(moduleCoreImplementation), data);
         moduleCore = ModuleCore(address(moduleCoreProxy));
 
@@ -170,7 +178,7 @@ contract DeployScript is Script {
         uint256 repurchaseFee,
         uint256 expiryPeriod
     ) public {
-        config.initializeModuleCore(cst, ceth, redmptionFee, dsPrice);
+        config.initializeModuleCore(cst, ceth, redmptionFee, dsPrice, base_redemption_fee);
 
         Id id = moduleCore.getId(cst, ceth);
         config.issueNewDs(
@@ -179,13 +187,14 @@ contract DeployScript is Script {
             1 ether, // exchange rate = 1:1
             repurchaseFee,
             6 ether, // 6% per day TODO
-            block.timestamp + 6600 // 1 block per 12 second and 22 hours rollover during TC = 6600 // TODO
+            block.timestamp + 6600, // 1 block per 12 second and 22 hours rollover during TC = 6600 // TODO
+            block.timestamp + 10 seconds
         );
         console.log("New DS issued");
         console.log("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-");
 
         cETH.approve(address(moduleCore), depositLVAmt);
-        moduleCore.depositLv(id, depositLVAmt);
+        moduleCore.depositLv(id, depositLVAmt, 0, 0);
         console.log("LV Deposited");
 
         cETH.approve(address(univ2Router), liquidityAmt);

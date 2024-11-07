@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.24;
 
 import {Id} from "../libraries/Pair.sol";
@@ -8,29 +9,26 @@ import {IUniswapV2Factory} from "../interfaces/uniswap-v2/factory.sol";
 import {RouterState} from "./flash-swaps/FlashSwapRouter.sol";
 import {IUniswapV2Router02} from "../interfaces/uniswap-v2/RouterV2.sol";
 import {NoReentrant} from "../libraries/MutexLock.sol";
-
+import {ICorkHook} from "./../interfaces/UniV4/IMinimalHook.sol";
 /**
  * @title ModuleState Abstract Contract
  * @author Cork Team
  * @notice Abstract ModuleState contract for providing base for Modulecore contract
  */
+
 abstract contract ModuleState is ICommon {
     using PsmLibrary for State;
 
     mapping(Id => State) internal states;
-    address internal SWAP_ASSET_FACTORY;
 
-    /// @dev in this case is uni v2
-    address internal AMM_FACTORY;
+    address internal SWAP_ASSET_FACTORY;
 
     address internal DS_FLASHSWAP_ROUTER;
 
-    /// @dev in this case is uni v2
-    address internal AMM_ROUTER;
+    /// @dev in this case is uni v4
+    address internal AMM_HOOK;
 
     address internal CONFIG;
-
-    uint256 internal psmBaseRedemptionFeePrecentage;
 
     /**
      * @dev checks if caller is config contract or not
@@ -48,33 +46,22 @@ abstract contract ModuleState is ICommon {
 
     function initializeModuleState(
         address _swapAssetFactory,
-        address _ammFactory,
+        address _ammHook,
         address _dsFlashSwapRouter,
-        address _ammRouter,
-        address _config,
-        uint256 _psmBaseRedemptionFeePrecentage
+        address _config
     ) internal {
-        if (psmBaseRedemptionFeePrecentage > 5 ether) {
-            revert InvalidFees();
-        }
         SWAP_ASSET_FACTORY = _swapAssetFactory;
-        AMM_FACTORY = _ammFactory;
         DS_FLASHSWAP_ROUTER = _dsFlashSwapRouter;
-        AMM_ROUTER = _ammRouter;
         CONFIG = _config;
-        psmBaseRedemptionFeePrecentage = _psmBaseRedemptionFeePrecentage;
+        AMM_HOOK = _ammHook;
     }
 
     function getRouterCore() internal view returns (RouterState) {
         return RouterState(DS_FLASHSWAP_ROUTER);
     }
 
-    function getAmmFactory() internal view returns (IUniswapV2Factory) {
-        return IUniswapV2Factory(AMM_FACTORY);
-    }
-
-    function getAmmRouter() internal view returns (IUniswapV2Router02) {
-        return IUniswapV2Router02(AMM_ROUTER);
+    function getAmmRouter() internal view returns (ICorkHook) {
+        return ICorkHook(AMM_HOOK);
     }
 
     modifier onlyInitialized(Id id) {
@@ -105,8 +92,15 @@ abstract contract ModuleState is ICommon {
         _;
     }
 
+    modifier PSMRepurchaseNotPaused(Id id) {
+        if (states[id].psm.isRepurchasePaused) {
+            revert PSMRepurchasePaused();
+        }
+        _;
+    }
+
     modifier LVDepositNotPaused(Id id) {
-        if (states[id].vault.config.isWithdrawalPaused) {
+        if (states[id].vault.config.isDepositPaused) {
             revert LVDepositPaused();
         }
         _;
