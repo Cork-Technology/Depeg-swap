@@ -7,6 +7,7 @@ import {Initialize} from "../interfaces/Init.sol";
 import {Id} from "../libraries/Pair.sol";
 import {IDsFlashSwapCore} from "../interfaces/IDsFlashSwapRouter.sol";
 import {Pair} from "../libraries/Pair.sol";
+import {IVault} from "./../interfaces/IVault.sol";
 
 /**
  * @title Config Contract
@@ -70,8 +71,14 @@ contract CorkConfig is AccessControl, Pausable {
      * @param lvFee fees for LV
      * @param initialDsPrice initial price of DS
      */
-    function initializeModuleCore(address pa, address ra, uint256 lvFee, uint256 initialDsPrice ,  uint256 _psmBaseRedemptionFeePercentage) external onlyManager {
-        moduleCore.initializeModuleCore(pa, ra, lvFee, initialDsPrice ,  _psmBaseRedemptionFeePercentage);
+    function initializeModuleCore(
+        address pa,
+        address ra,
+        uint256 lvFee,
+        uint256 initialDsPrice,
+        uint256 _psmBaseRedemptionFeePercentage
+    ) external onlyManager {
+        moduleCore.initializeModuleCore(pa, ra, lvFee, initialDsPrice, _psmBaseRedemptionFeePercentage);
     }
 
     /**
@@ -86,7 +93,6 @@ contract CorkConfig is AccessControl, Pausable {
         // won't have effect on first issuance
         uint256 rolloverPeriodInblocks,
         uint256 ammLiquidationDeadline
-       
     ) external whenNotPaused onlyManager {
         moduleCore.issueNewDs(
             id,
@@ -148,12 +154,23 @@ contract CorkConfig is AccessControl, Pausable {
      * @notice Updates base redemption fee percentage
      * @param newPsmBaseRedemptionFeePercentage new value of fees, make sure it has 18 decimals(e.g 1% = 1e18)
      */
-    function updatePsmBaseRedemptionFeePercentage(Id id,uint256 newPsmBaseRedemptionFeePercentage) external onlyManager {
-        moduleCore.updatePsmBaseRedemptionFeePercentage(id,newPsmBaseRedemptionFeePercentage);
+    function updatePsmBaseRedemptionFeePercentage(Id id, uint256 newPsmBaseRedemptionFeePercentage)
+        external
+        onlyManager
+    {
+        moduleCore.updatePsmBaseRedemptionFeePercentage(id, newPsmBaseRedemptionFeePercentage);
     }
 
     function updateFlashSwapRouterDiscountInDays(Id id, uint256 newDiscountInDays) external onlyManager {
         flashSwapRouter.updateDiscountRateInDdays(id, newDiscountInDays);
+    }
+
+    function updateRouterGradualSaleStatus(Id id, bool status) external onlyManager {
+        flashSwapRouter.updateGradualSaleStatus(id, status);
+    }
+
+    function updateLvStrategyCtSplitPercentage(Id id, uint256 newCtSplitPercentage) external onlyManager {
+        IVault(address(moduleCore)).updateCtHeldPercentage(id, newCtSplitPercentage);
     }
 
     /**

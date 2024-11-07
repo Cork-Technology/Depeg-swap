@@ -51,7 +51,7 @@ contract VaultRedeemTest is Helper {
     function testFuzz_redeemDs(uint256 redeemAmount) external {
         redeemAmount = bound(redeemAmount, 0.1 ether, DEFAULT_DEPOSIT_AMOUNT);
 
-        uint256 expectedFee = MathHelper.calculatePercentageFee(feePercentage, redeemAmount);
+        uint256 expectedFee = MathHelper.calculatePercentageFee(moduleCore.baseRedemptionFee(currencyId), redeemAmount);
 
         uint256 received;
         uint256 fee;
