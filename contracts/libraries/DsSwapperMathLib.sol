@@ -91,8 +91,8 @@ library BuyMathBisectionSolver {
             SD59x18 c = div(add(a, b), convert(2));
             SD59x18 fC = f(x, y, e, c, _1MinusT);
 
-            if (abs(fC) < epsilon) {
-                return c;
+           if (sub(b, a) < epsilon) {
+                return div(add(a, b), convert(2));
             }
 
             if (mul(fA, fC) < sd(0)) {
