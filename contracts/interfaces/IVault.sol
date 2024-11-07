@@ -56,6 +56,11 @@ interface IVault {
     /// @param newEarlyRedemptionFee The new early redemption rate
     event EarlyRedemptionFeeUpdated(Id indexed Id, uint256 indexed newEarlyRedemptionFee);
 
+    /// @notice Emitted when the protocol receive sales profit from the router
+    /// @param router The address of the router
+    /// @param amount The amount of RA tokens transferred.
+    event ProfitReceived(address indexed router, uint256 amount);
+
     /// @notice caller is not authorized to perform the action, e.g transfering
     /// redemption rights to another address while not having the rights
     error Unauthorized(address caller);
