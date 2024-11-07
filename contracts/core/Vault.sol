@@ -117,4 +117,8 @@ abstract contract VaultCore is ModuleState, Context, IVault {
         State storage state = states[id];
         state.provideLiquidityWithFee(amount, getRouterCore(), getAmmRouter());
     }
+
+    function updateCtHeldPercentage(Id id, uint256 ctHeldPercentage) external onlyConfig {
+        states[id].updateCtHeldPercentage(ctHeldPercentage);
+    }
 }

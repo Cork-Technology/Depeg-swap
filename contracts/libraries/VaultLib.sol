@@ -109,6 +109,7 @@ library VaultLibrary {
 
         if (!self.vault.lpLiquidated.get(prevDsId)) {
             _liquidatedLp(self, prevDsId, ammRouter, flashSwapRouter, deadline);
+            _redeemCtStrategy(self, prevDsId);
         }
 
         __provideAmmLiquidityFromPool(self, flashSwapRouter, self.ds[self.globalAssetIdx].ct, ammRouter);
@@ -275,6 +276,9 @@ library VaultLibrary {
         }
         safeBeforeExpired(self);
 
+        // split the RA first according to the lv strategy
+        amount = _splitCtWithStrategy(self, flashSwapRouter, amount);
+
         uint256 exchangeRate;
 
         // we mint 1:1 if it's the first deposit
@@ -305,6 +309,54 @@ library VaultLibrary {
 
         self.vault.userLvBalance[from].balance += amount;
         received = amount;
+    }
+
+    function updateCtHeldPercentage(State storage self, uint256 ctHeldPercentage) external {
+        // must be between 0.001% and 100%
+        if (ctHeldPercentage > 100 ether || ctHeldPercentage < 0.001 ether) {
+            revert IVault.InvalidParams();
+        }
+
+        self.vault.ctHeldPercetage = ctHeldPercentage;
+    }
+
+    // TODO : test
+    function _splitCtWithStrategy(State storage self, IDsFlashSwapCore flashSwapRouter, uint256 amount)
+        internal
+        returns (uint256 amountLeft)
+    {
+        uint256 ctHeldPercentage = self.vault.ctHeldPercetage;
+
+        uint256 splitted = MathHelper.calculatePercentageFee(ctHeldPercentage, amount);
+
+        // increase the ct balance in the vault
+        self.vault.balances.ctBalance += splitted;
+
+        amountLeft = amount - splitted;
+
+        // actually mint ct & ds to vault
+        PsmLibrary.unsafeIssueToLv(self, splitted);
+
+        // add ds to flash swap reserve
+        _addFlashSwapReserveLv(self, flashSwapRouter, self.ds[self.globalAssetIdx], splitted);
+    }
+
+    // TODO : test
+    // redeem CT that's been held in the pool, must only be called after liquidating LP on new issuance
+    function _redeemCtStrategy(State storage self, uint256 dsId) internal {
+        uint256 attributedCt = self.vault.balances.ctBalance;
+
+        // reset the ct balance
+        self.vault.balances.ctBalance = 0;
+
+        // redeem the ct to the PSM
+        (uint256 accruedPa, uint256 accruedRa) = PsmLibrary.lvRedeemRaPaWithCt(self, attributedCt, dsId);
+
+        // add the accrued RA to the amm pool
+        self.vault.pool.ammLiquidityPool.balance += accruedRa;
+
+        // add the accrued PA to the withdrawal pool
+        self.vault.pool.withdrawalPool.paBalance += accruedPa;
     }
 
     // preview a deposit action with current exchange rate,
@@ -692,7 +744,9 @@ library VaultLibrary {
         }
 
         if (redeemParams.amount > ERC20(self.vault.lv._address).balanceOf(owner)) {
-            revert IVault.InsufficientBalance(owner, redeemParams.amount,ERC20(self.vault.lv._address).balanceOf(owner));
+            revert IVault.InsufficientBalance(
+                owner, redeemParams.amount, ERC20(self.vault.lv._address).balanceOf(owner)
+            );
         }
 
         self.vault.userLvBalance[owner].balance -= redeemParams.amount;
@@ -737,7 +791,6 @@ library VaultLibrary {
 
         feePercentage = self.vault.config.fee;
 
-        
         // (received,) = _tryLiquidateLpAndSellCtToAmm(self, self.globalAssetIdx, flashSwapRouter, amount);
 
         fee = MathHelper.calculatePercentageFee(received, feePercentage);

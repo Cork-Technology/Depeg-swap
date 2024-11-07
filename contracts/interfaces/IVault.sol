@@ -65,6 +65,9 @@ interface IVault {
     /// redemption rights to another address while not having the rights
     error Unauthorized(address caller);
 
+    /// @notice invalid parameters, e.g passing 0 as amount
+    error InvalidParams();
+
     /// @notice inssuficient balance to perform expiry redeem(e.g requesting 5 LV to redeem but trying to redeem 10)
     error InsufficientBalance(address caller, uint256 requested, uint256 balance);
 
@@ -102,7 +105,6 @@ interface IVault {
         external
         returns (uint256 received, uint256 fee, uint256 feePercentage, uint256 paAmount);
 
-
     /**
      * @notice preview redeem lv before expiry
      * @param id The Module id that is used to reference both psm and lv of a given pair
@@ -133,4 +135,6 @@ interface IVault {
     function vaultLp(Id id) external view returns (uint256);
 
     function lvAcceptRolloverProfit(Id id, uint256 amount) external;
+
+    function updateCtHeldPercentage(Id id, uint256 ctHeldPercentage) external;
 }
