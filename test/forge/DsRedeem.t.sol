@@ -51,18 +51,11 @@ contract VaultRedeemTest is Helper {
     function testFuzz_redeemDs(uint256 redeemAmount) external {
         redeemAmount = bound(redeemAmount, 0.1 ether, DEFAULT_DEPOSIT_AMOUNT);
 
-        (uint256 ra, uint256 ds, uint256 fee, uint256 exchangeRates, uint256 feePercentage) =
-            moduleCore.previewRedeemRaWithDs(currencyId, dsId, redeemAmount);
-
-        vm.assertEq(feePercentage, redemptionFeePercentage);
         uint256 expectedFee = MathHelper.calculatePercentageFee(feePercentage, redeemAmount);
 
-        vm.assertEq(fee, expectedFee);
-        vm.assertEq(ra, redeemAmount - fee);
-
         uint256 received;
+        uint256 fee;
         (received,, fee) = moduleCore.redeemRaWithDs(currencyId, dsId, redeemAmount, DEFAULT_ADDRESS, bytes(""), 0);
-        vm.assertEq(received, ra);
         vm.assertEq(fee, expectedFee);
     }
 }

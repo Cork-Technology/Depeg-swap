@@ -35,20 +35,6 @@ abstract contract VaultCore is ModuleState, Context, IVault {
     }
 
     /**
-     * @notice Preview the amount of lv that will be deposited
-     * @param amount The amount of the redemption asset(ra) to be deposited
-     */
-    function previewLvDeposit(Id id, uint256 amount)
-        external
-        view
-        override
-        LVDepositNotPaused(id)
-        returns (uint256 lv, uint256 raAddedAsLiquidity, uint256 ctAddedAsLiquidity)
-    {
-        (lv, raAddedAsLiquidity, ctAddedAsLiquidity) = VaultLibrary.previewDeposit(states[id], getRouterCore(), amount);
-    }
-
-    /**
      * @notice Redeem lv before expiry
      * @param redeemParams The object with details like id, reciever, amount, amountOutMin, ammDeadline
      * @param redeemer The address of the redeemer
@@ -76,22 +62,6 @@ abstract contract VaultCore is ModuleState, Context, IVault {
             result.feePercentage,
             result.paReceived
         );
-    }
-
-    /**
-     * @notice preview redeem lv before expiry
-     * @param id The Module id that is used to reference both psm and lv of a given pair
-     * @param amount The amount of the asset to be redeemed
-     */
-    function previewRedeemEarlyLv(Id id, uint256 amount)
-        external
-        view
-        override
-        LVWithdrawalNotPaused(id)
-        returns (uint256 received, uint256 fee, uint256 feePercentage, uint256 paAmount)
-    {
-        State storage state = states[id];
-        (received, fee, feePercentage, paAmount) = state.previewRedeemEarly(amount, getRouterCore());
     }
 
     /**

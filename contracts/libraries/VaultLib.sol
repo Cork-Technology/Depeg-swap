@@ -504,27 +504,6 @@ library VaultLibrary {
         );
     }
 
-    // TODO : simplify lv withdrawals
-    function _tryLiquidateLp(
-        State storage self,
-        uint256 dsId,
-        IDsFlashSwapCore flashSwapRouter,
-        ICorkHook ammRouter,
-        uint256 lpLiquidated
-    ) internal view returns (uint256 raReceived, uint256 ctReceived) {
-        uint256 lvReserve = flashSwapRouter.getLvReserve(self.info.toId(), dsId);
-
-        (uint256 raReserve, uint256 ctReserve) = _getRaCtReserveSorted(self, ammRouter, dsId);
-
-        uint256 lpTotalSupply = ammRouter.getLiquidityToken(self.info.pair1, self.ds[dsId].ct);
-
-        // totalRa we remove
-        raReceived = lpLiquidated * raReserve / lpTotalSupply;
-
-        // total Ct we remove
-        ctReceived = lpLiquidated * ctReserve / lpTotalSupply;
-    }
-
     function _getRaCtReserveSorted(State storage self, ICorkHook ammRouter, uint256 dsId)
         internal
         view

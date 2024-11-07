@@ -373,27 +373,6 @@ library PsmLibrary {
         _beforeCtRedeem(self, self.ds[dsId], dsId, amount, accruedPa, accruedRa);
     }
 
-    /// @notice preview deposit
-    /// @dev since we mint 1:1, we return the same amount,
-    /// since rate only effective when redeeming with DS
-    function previewDeposit(State storage self, uint256 amount)
-        external
-        view
-        returns (uint256 ctReceived, uint256 dsReceived, uint256 dsId)
-    {
-        if (amount == 0) {
-            revert ICommon.ZeroDeposit();
-        }
-
-        dsId = self.globalAssetIdx;
-        DepegSwap storage ds = self.ds[dsId];
-
-        Guard.safeBeforeExpired(ds);
-
-        ctReceived = amount;
-        dsReceived = amount;
-    }
-
     function _redeemRaWithCtDs(State storage self, DepegSwap storage ds, address owner, uint256 amount)
         internal
         returns (uint256 ra)
@@ -471,7 +450,7 @@ library PsmLibrary {
     }
 
     function previewRepurchase(State storage self, uint256 amount)
-        public
+        internal
         view
         returns (
             uint256 dsId,
@@ -714,30 +693,6 @@ library PsmLibrary {
         _afterCtRedeem(self, ds, owner, amount, accruedPa, accruedRa);
     }
 
-    /// @notice simulate a ct redeem. will fail if not expired.
-    /// @return accruedPa the amount of PA the user would receive
-    /// @return accruedRa the amount of RA the user would receive
-    function previewRedeemWithCt(State storage self, uint256 dsId, uint256 amount)
-        external
-        view
-        returns (uint256 accruedPa, uint256 accruedRa)
-    {
-        DepegSwap storage ds = self.ds[dsId];
-        Guard.safeAfterExpired(ds);
-
-        uint256 totalCtIssued = IERC20(ds.ct).totalSupply();
-        uint256 availableRa = self.psm.balances.ra.tryConvertAllToFree();
-        uint256 availablePa = self.psm.balances.paBalance;
-
-        if (self.psm.liquiditySeparated.get(dsId)) {
-            PsmPoolArchive storage archive = self.psm.poolArchive[dsId];
-            totalCtIssued = archive.ctAttributed;
-            availableRa = archive.raAccrued;
-            availablePa = archive.paAccrued;
-        }
-
-        (accruedPa, accruedRa) = _calcRedeemAmount(amount, totalCtIssued, availableRa, availablePa);
-    }
 
     function updatePSMBaseRedemptionFeePercentage(State storage self, uint256 newFees) external {
         if (newFees > 5 ether) {
