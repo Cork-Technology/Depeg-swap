@@ -30,25 +30,35 @@ interface IVault {
         uint256 ammDeadline;
     }
 
+    struct RedeemEarlyResult {
+        Id id;
+        address receiver;
+        uint256 raReceivedFromAmm;
+        uint256 ctReceivedFromAmm;
+        uint256 ctReceivedFromVault;
+        uint256 dsReceived;
+        uint256 raFee;
+        uint256 feePercentage;
+        uint256 paReceived;
+    }
+
     /// @notice Emitted when a user deposits assets into a given Vault
     /// @param id The Module id that is used to reference both psm and lv of a given pair
     /// @param depositor The address of the depositor
     /// @param amount  The amount of the asset deposited
     event LvDeposited(Id indexed id, address indexed depositor, uint256 amount);
 
-    /// @notice Emitted when a user redeems Lv before expiry
-    /// @param Id The Module id that is used to reference both psm and lv of a given pair
-    /// @param receiver The address of the receiver
-    /// @param amount The amount of the asset redeemed
-    /// @param fee The total fee charged for early redemption
-    /// @param feePercentage The fee percentage for early redemption, denominated in 1e18 (e.g 100e18 = 100%)
     event LvRedeemEarly(
         Id indexed Id,
         address indexed redeemer,
         address indexed receiver,
-        uint256 amount,
-        uint256 fee,
-        uint256 feePercentage
+        uint256 lvBurned,
+        uint256 ctReceivedFromAmm,
+        uint256 ctReceivedFromVault,
+        uint256 dsReceived,
+        uint256 raFee,
+        uint256 feePercentage,
+        uint256 paReceived
     );
 
     /// @notice Emitted when a early redemption fee is updated for a given Vault
@@ -103,7 +113,7 @@ interface IVault {
      */
     function redeemEarlyLv(RedeemEarlyParams memory redeemParams, address redeemer, PermitParams memory permitParams)
         external
-        returns (uint256 received, uint256 fee, uint256 feePercentage, uint256 paAmount);
+        returns (RedeemEarlyResult memory result);
 
     /**
      * @notice preview redeem lv before expiry
