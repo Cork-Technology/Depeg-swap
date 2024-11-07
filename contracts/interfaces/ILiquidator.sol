@@ -13,7 +13,7 @@ interface ILiquidator {
         uint256 minAmount,
         uint256 expiry,
         address owner,
-        bytes32 orderUid
+        bytes orderUid
     );
 
     event SwapExecuted(

@@ -1,61 +1,94 @@
 pragma solidity 0.8.24;
 
-import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
-import {UUPSUpgradeable} from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
-import {PausableUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/PausableUpgradeable.sol";
-import {ERC20Upgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
-import {ReentrancyGuardUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol";
+import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
+import {Pausable} from "@openzeppelin/contracts/utils/Pausable.sol";
+import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import {SafeERC20, IERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {IHedgeUnit} from "../../interfaces/IHedgeUnit.sol";
+import {ICommon} from "../../interfaces/ICommon.sol";
+import {Id} from "../../libraries/Pair.sol";
+import {Asset} from "./Asset.sol";
+
+struct DSData {
+    address dsAddress;
+    uint256 totalDeposited;
+}
 
 /**
  * @title HedgeUnit
  * @notice This contract allows minting and dissolving HedgeUnit tokens in exchange for two underlying assets.
  * @dev The contract uses OpenZeppelin's ERC20, ReentrancyGuard,Pausable and Ownable modules.
  */
-contract HedgeUnit is
-    UUPSUpgradeable,
-    ERC20Upgradeable,
-    ReentrancyGuardUpgradeable,
-    OwnableUpgradeable,
-    PausableUpgradeable,
-    IHedgeUnit
-{
+contract HedgeUnit is ERC20, ReentrancyGuard, Ownable, Pausable, IHedgeUnit {
     using SafeERC20 for IERC20;
 
-    /// @notice The ERC20 token representing the DS asset.
-    IERC20 public DS;
+    ICommon public immutable MODULE_CORE;
+    Id public immutable ID;
 
     /// @notice The ERC20 token representing the PA asset.
-    IERC20 public PA;
+    IERC20 public immutable PA;
+    uint8 public immutable paDecimals;
+
+    /// @notice The ERC20 token representing the ds asset.
+    Asset public ds;
 
     /// @notice Maximum supply cap for minting HedgeUnit tokens.
     uint256 public mintCap;
 
-    /// @notice __gap variable to prevent storage collisions
-    uint256[49] __gap;
+    DSData[] public dsHistory;
+    mapping(address => uint256) private dsIndexMap;
+
+    error NoValidDSExist();
 
     /**
-     * @dev Initializer that sets the DS and PA tokens and initializes the mint cap.
-     * @param _DS Address of the DS token.
+     * @dev Constructor that sets the DS and PA tokens and initializes the mint cap.
+     * @param _moduleCore Address of the MODULE_CORE.
      * @param _PA Address of the PA token.
      * @param _pairName Name of the HedgeUnit pair.
      * @param _mintCap Initial mint cap for the HedgeUnit tokens.
      */
-    function initialize(address _DS, address _PA, string memory _pairName, uint256 _mintCap) external initializer {
-        __UUPSUpgradeable_init();
-        __Ownable_init(msg.sender);
-        __ERC20_init(string(abi.encodePacked("Hedge Unit - ", _pairName)), string(abi.encodePacked("HU - ", _pairName)));
-        __ReentrancyGuard_init();
-        __Pausable_init();
-
-        DS = IERC20(_DS);
+    constructor(address _moduleCore, Id _id, address _PA, string memory _pairName, uint256 _mintCap)
+        ERC20(string(abi.encodePacked("Hedge Unit - ", _pairName)), string(abi.encodePacked("HU - ", _pairName)))
+        Ownable(msg.sender)
+    {
+        MODULE_CORE = ICommon(_moduleCore);
+        ID = _id;
         PA = IERC20(_PA);
+        paDecimals = uint8(ERC20(_PA).decimals());
         mintCap = _mintCap;
     }
 
-    /// @notice Authorization function for UUPS proxy upgrades
-    function _authorizeUpgrade(address newImplementation) internal override onlyOwner {}
+    /**
+     * @dev Internal function to get the latest DS address.
+     * Calls MODULE_CORE to get the latest DS id and retrieves the associated DS address.
+     */
+    function _getLastDS() internal {
+        if (address(ds) == address(0) || ds.isExpired()) {
+            uint256 dsId = MODULE_CORE.lastDsId(ID);
+            (, address dsAdd) = MODULE_CORE.swapAsset(ID, dsId);
+
+            if (dsAdd == address(0) || Asset(dsAdd).isExpired()) {
+                revert NoValidDSExist();
+            }
+
+            // Check if the DS address already exists in history
+            bool found = false;
+            uint256 index = dsIndexMap[dsAdd];
+            if (dsHistory.length > 0 && dsHistory[index].dsAddress == dsAdd) {
+                // DS address is already at index
+                ds = Asset(dsAdd);
+                found = true;
+            }
+
+            // If not found, add new DS address to history
+            if (!found) {
+                ds = Asset(dsAdd);
+                dsHistory.push(DSData({dsAddress: dsAdd, totalDeposited: 0}));
+                dsIndexMap[dsAdd] = dsHistory.length - 1; // Store the index
+            }
+        }
+    }
 
     /**
      * @notice Mints HedgeUnit tokens by transferring the equivalent amount of DS and PA tokens.
@@ -68,9 +101,13 @@ contract HedgeUnit is
         if (totalSupply() + amount > mintCap) {
             revert MintCapExceeded();
         }
+        _getLastDS();
 
-        DS.safeTransferFrom(msg.sender, address(this), amount);
-        PA.safeTransferFrom(msg.sender, address(this), amount);
+        IERC20(ds).safeTransferFrom(msg.sender, address(this), amount);
+        uint256 paAmount = (amount * (10 ** paDecimals)) / (10 ** 18);
+        PA.safeTransferFrom(msg.sender, address(this), paAmount);
+        dsHistory[dsIndexMap[address(ds)]].totalDeposited += amount;
+
         _mint(msg.sender, amount);
 
         emit Mint(msg.sender, amount);
@@ -96,11 +133,11 @@ contract HedgeUnit is
 
         uint256 totalSupplyHU = totalSupply();
 
-        dsAmount = (amount * DS.balanceOf(address(this))) / totalSupplyHU;
-        paAmount = (amount * PA.balanceOf(address(this))) / totalSupplyHU;
+        dsAmount = (amount * ds.balanceOf(address(this))) / totalSupplyHU;
+        paAmount = (amount * PA.balanceOf(address(this))) / (totalSupplyHU * (10 ** (18 - paDecimals)));
 
         _burn(msg.sender, amount);
-        DS.safeTransfer(msg.sender, dsAmount);
+        IERC20(ds).safeTransfer(msg.sender, dsAmount);
         PA.safeTransfer(msg.sender, paAmount);
 
         emit Dissolve(msg.sender, amount, dsAmount, paAmount);

@@ -48,8 +48,7 @@ contract HedgeUnitTest is Helper {
         fetchProtocolGeneralInfo();
 
         // Deploy the HedgeUnit contract
-        hedgeUnit = new HedgeUnit();
-        hedgeUnit.initialize(ds, address(pa), "DS/PA", INITIAL_MINT_CAP);
+        hedgeUnit = new HedgeUnit(address(moduleCore), currencyId, address(pa), "DS/PA", INITIAL_MINT_CAP);
 
         // Transfer tokens to user for testing
         dsToken.transfer(user, USER_BALANCE);
