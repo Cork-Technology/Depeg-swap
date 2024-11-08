@@ -87,6 +87,17 @@ interface IDsFlashSwapCore is IDsFlashSwapUtility {
     /// @notice thrown when there's not enough liquidity to perform flash swap
     error InsufficientLiquidity(uint256 raReserve, uint256 ctReserve, uint256 amountRepayment);
 
+    struct BuyAprroxParams {
+        /// @dev the maximum amount of iterations to find the optimal amount of DS to swap
+        uint256 maxApproxIter;
+        /// @dev the amount that will be used to subtract borrowed amount to find the optimal amount for borrowing RA
+        /// the lower the value, the more accurate the approximation will be but will be more expensive
+        /// when in doubt use 0.01 ether or 1e16
+        uint256 feeIntervalAdjustment;
+        /// @dev the threshold tolerance that's used to find the optimal DS amount
+        /// when in doubt use 1e9
+        uint256 epsilon;
+    }
     /**
      * @notice Emitted when DS is swapped for RA
      * @param reserveId the reserve id same as the id on PSM and LV
@@ -95,6 +106,7 @@ interface IDsFlashSwapCore is IDsFlashSwapUtility {
      * @param amountIn the amount of DS that's swapped
      * @param amountOut the amount of RA that's received
      */
+
     event DsSwapped(
         Id indexed reserveId, uint256 indexed dsId, address indexed user, uint256 amountIn, uint256 amountOut
     );

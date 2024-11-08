@@ -8,6 +8,7 @@ import {MinimalUniswapV2Library} from "./uni-v2/UniswapV2Library.sol";
 import {PermitChecker} from "./PermitChecker.sol";
 import {ICorkHook} from "../interfaces/UniV4/IMinimalHook.sol";
 import "Cork-Hook/lib/MarketSnapshot.sol";
+import "./../interfaces/IDsFlashSwapRouter.sol";
 
 /**
  * @dev AssetPair structure for Asset Pairs
@@ -57,11 +58,6 @@ library DsFlashSwaplibrary {
     uint256 public constant SUBSEQUENT_RESERVE_SELL_PRESSURE_PERCENTAGE = 80e18;
 
     uint256 public constant FIRST_ISSUANCE = 1;
-
-    // TODO : move to params
-    uint256 public constant MAX_ITER = 256;
-
-    uint256 public constant INTERVAL_ADJUSTMENT = 0.01 ether;
 
     function onNewIssuance(ReserveState storage self, uint256 dsId, address ds, address ra, address ct) internal {
         self.ds[dsId] = AssetPair(Asset(ra), Asset(ct), Asset(ds), 0, 0);
@@ -215,11 +211,12 @@ library DsFlashSwaplibrary {
         (success, amountOut) = SwapperMathLibrary.getAmountOutSellDs(repaymentAmount, amount);
     }
 
-    function getAmountOutBuyDS(AssetPair storage assetPair, uint256 amount, ICorkHook router)
-        internal
-        view
-        returns (uint256 amountOut, uint256 borrowedAmount, uint256 repaymentAmount)
-    {
+    function getAmountOutBuyDS(
+        AssetPair storage assetPair,
+        uint256 amount,
+        ICorkHook router,
+        IDsFlashSwapCore.BuyAprroxParams memory params
+    ) internal view returns (uint256 amountOut, uint256 borrowedAmount, uint256 repaymentAmount) {
         (uint256 raReserve, uint256 ctReserve) = getReservesSorted(assetPair, router);
 
         uint256 issuedAt = assetPair.ds.issuedAt();
@@ -227,7 +224,14 @@ library DsFlashSwaplibrary {
         uint256 end = assetPair.ds.expiry();
 
         amountOut = SwapperMathLibrary.getAmountOutBuyDs(
-            uint256(raReserve), uint256(ctReserve), amount, issuedAt, end, currentTime
+            uint256(raReserve),
+            uint256(ctReserve),
+            amount,
+            issuedAt,
+            end,
+            currentTime,
+            params.epsilon,
+            params.maxApproxIter
         );
 
         borrowedAmount = amountOut - amount;
@@ -235,9 +239,9 @@ library DsFlashSwaplibrary {
         MarketSnapshot memory market = router.getMarketSnapshot(address(assetPair.ra), address(assetPair.ct));
         // reverse linear search for optimal borrow  amount since the math doesn't take into account the fee
 
-        for (uint256 i = 0; i < MAX_ITER; i++) {
+        for (uint256 i = 0; i < params.maxApproxIter; i++) {
             repaymentAmount = market.getAmountIn(borrowedAmount, false);
-            
+
             if (repaymentAmount <= amountOut) {
                 return (amountOut, borrowedAmount, repaymentAmount);
             } else {
@@ -247,7 +251,6 @@ library DsFlashSwaplibrary {
         }
 
         revert("approx exhausted");
-
     }
 
     function isRAsupportsPermit(address token) internal view returns (bool) {
