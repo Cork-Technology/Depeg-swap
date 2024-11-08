@@ -10,6 +10,7 @@ import {SD59x18, convert, sd, add, mul, pow, sub, div, abs, unwrap} from "@prb/m
 import {IMathError} from "./../interfaces/IMathError.sol";
 
 library BuyMathBisectionSolver {
+    // TODO : move to params
     uint256 internal constant MAX_BISECTION_ITER = 256;
 
     /// @notice returns the the normalized time to maturity from 1-0

@@ -7,6 +7,7 @@ import {SwapperMathLibrary} from "./DsSwapperMathLib.sol";
 import {MinimalUniswapV2Library} from "./uni-v2/UniswapV2Library.sol";
 import {PermitChecker} from "./PermitChecker.sol";
 import {ICorkHook} from "../interfaces/UniV4/IMinimalHook.sol";
+import "Cork-Hook/lib/MarketSnapshot.sol";
 
 /**
  * @dev AssetPair structure for Asset Pairs
@@ -45,6 +46,8 @@ struct ReserveState {
  * @notice DsFlashSwap library which implements supporting lib and functions flashswap related features for DS/CT
  */
 library DsFlashSwaplibrary {
+    using MarketSnapshotLib for MarketSnapshot;
+
     /// @dev the percentage amount of reserve that will be used to fill buy orders
     /// the router will sell in respect to this ratio on first issuance
     uint256 public constant INITIAL_RESERVE_SELL_PRESSURE_PERCENTAGE = 50e18;
@@ -54,6 +57,11 @@ library DsFlashSwaplibrary {
     uint256 public constant SUBSEQUENT_RESERVE_SELL_PRESSURE_PERCENTAGE = 80e18;
 
     uint256 public constant FIRST_ISSUANCE = 1;
+
+    // TODO : move to params
+    uint256 public constant MAX_ITER = 256;
+
+    uint256 public constant INTERVAL_ADJUSTMENT = 0.01 ether;
 
     function onNewIssuance(ReserveState storage self, uint256 dsId, address ds, address ra, address ct) internal {
         self.ds[dsId] = AssetPair(Asset(ra), Asset(ct), Asset(ds), 0, 0);
@@ -223,7 +231,26 @@ library DsFlashSwaplibrary {
         );
 
         borrowedAmount = amountOut - amount;
-        repaymentAmount = amountOut;
+
+        MarketSnapshot memory market = router.getMarketSnapshot(address(assetPair.ra), address(assetPair.ct));
+        // reverse linear search for optimal borrow  amount since the math doesn't take into account the fee
+
+        console.log("borrowedAmount", borrowedAmount);
+        console.log("amountOut", amountOut);
+
+        for (uint256 i = 0; i < MAX_ITER; i++) {
+            repaymentAmount = market.getAmountIn(borrowedAmount, false);
+            
+            if (repaymentAmount <= amountOut) {
+                return (amountOut, borrowedAmount, repaymentAmount);
+            } else {
+                borrowedAmount -= INTERVAL_ADJUSTMENT;
+                amountOut = borrowedAmount + amount;
+            }
+        }
+
+        revert("approx exhausted");
+
     }
 
     function isRAsupportsPermit(address token) internal view returns (bool) {

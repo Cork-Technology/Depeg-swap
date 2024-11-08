@@ -70,10 +70,10 @@ contract BuyDsTest is Helper {
         vm.warp(current);
 
         // TODO : figure out the out of whack gas consumption
-        vm.pauseGasMetering();
+        // vm.pauseGasMetering();
 
         // TODO : implement fee in buy
-        // hook.updateBaseFeePercentage(address(ra), ct, 1 ether);
+        hook.updateBaseFeePercentage(address(ra), ct, 1 ether);
         uint256 amountOutPreview = flashSwapRouter.previewSwapRaforDs(currencyId, dsId, amount);
 
         // won't be exact since we sold some from reserve
