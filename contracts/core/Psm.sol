@@ -146,6 +146,9 @@ abstract contract PsmCore is IPSMcore, ModuleState, Context {
         PSMWithdrawalNotPaused(id)
         returns (uint256 received, uint256 _exchangeRate, uint256 fee)
     {
+        if (rawDsPermitSig.length == 0 || deadline == 0) {
+            revert InvalidSignature();
+        }
         State storage state = states[id];
 
         (received, _exchangeRate, fee) = state.redeemWithDs(redeemer, amount, dsId, rawDsPermitSig, deadline);
@@ -215,6 +218,9 @@ abstract contract PsmCore is IPSMcore, ModuleState, Context {
         PSMWithdrawalNotPaused(id)
         returns (uint256 accruedPa, uint256 accruedRa)
     {
+        if (rawCtPermitSig.length == 0 || deadline == 0) {
+            revert InvalidSignature();
+        }
         State storage state = states[id];
 
         (accruedPa, accruedRa) = state.redeemWithCt(redeemer, amount, dsId, rawCtPermitSig, deadline);
@@ -276,6 +282,9 @@ abstract contract PsmCore is IPSMcore, ModuleState, Context {
         bytes memory rawCtPermitSig,
         uint256 ctDeadline
     ) external override nonReentrant PSMWithdrawalNotPaused(id) returns (uint256 ra) {
+        if (rawDsPermitSig.length == 0 || dsDeadline == 0 || rawCtPermitSig.length == 0 || ctDeadline == 0) {
+            revert InvalidSignature();
+        }
         State storage state = states[id];
         ra = state.redeemRaWithCtDs(redeemer, amount, rawDsPermitSig, dsDeadline, rawCtPermitSig, ctDeadline);
 
@@ -344,6 +353,9 @@ abstract contract PsmCore is IPSMcore, ModuleState, Context {
         PSMDepositNotPaused(id)
         returns (uint256 ctReceived, uint256 dsReceived, uint256 _exchangeRate, uint256 paReceived)
     {
+        if (rawCtPermitSig.length == 0 || ctDeadline == 0) {
+            revert InvalidSignature();
+        }
         State storage state = states[id];
         (ctReceived, dsReceived, _exchangeRate, paReceived) =
             state.rolloverCt(owner, amount, dsId, getRouterCore(), rawCtPermitSig, ctDeadline);

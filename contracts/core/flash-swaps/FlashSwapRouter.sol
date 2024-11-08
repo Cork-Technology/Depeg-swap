@@ -337,6 +337,10 @@ contract RouterState is
         bytes memory rawRaPermitSig,
         uint256 deadline
     ) external returns (uint256 amountOut) {
+        if (rawRaPermitSig.length == 0 || deadline == 0) {
+            revert InvalidSignature();
+        }
+
         ReserveState storage self = reserves[reserveId];
         AssetPair storage assetPair = self.ds[dsId];
 
@@ -484,6 +488,9 @@ contract RouterState is
         bytes memory rawDsPermitSig,
         uint256 deadline
     ) external returns (uint256 amountOut) {
+        if (rawDsPermitSig.length == 0 || deadline == 0) {
+            revert InvalidSignature();
+        }
         ReserveState storage self = reserves[reserveId];
         AssetPair storage assetPair = self.ds[dsId];
 
