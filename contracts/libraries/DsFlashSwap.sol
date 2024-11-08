@@ -235,9 +235,6 @@ library DsFlashSwaplibrary {
         MarketSnapshot memory market = router.getMarketSnapshot(address(assetPair.ra), address(assetPair.ct));
         // reverse linear search for optimal borrow  amount since the math doesn't take into account the fee
 
-        console.log("borrowedAmount", borrowedAmount);
-        console.log("amountOut", amountOut);
-
         for (uint256 i = 0; i < MAX_ITER; i++) {
             repaymentAmount = market.getAmountIn(borrowedAmount, false);
             

@@ -19,7 +19,6 @@ import {SafeERC20, IERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeE
 import {ICorkHook} from "../../interfaces/UniV4/IMinimalHook.sol";
 import {AmmId, toAmmId} from "Cork-Hook/lib/State.sol";
 import {CorkSwapCallback} from "Cork-Hook/interfaces/CorkSwapCallback.sol";
-import "forge-std/console.sol";
 
 /**
  * @title Router contract for Flashswap
@@ -634,10 +633,6 @@ contract RouterState is
         AssetPair storage assetPair = self.ds[dsId];
 
         uint256 deposited = provided + borrowed;
-        console.log("provided", provided);
-        console.log("borrowed", borrowed);
-        console.log("deposited", deposited);
-
 
         IERC20(assetPair.ra).safeIncreaseAllowance(_moduleCore, deposited);
 
@@ -650,9 +645,6 @@ contract RouterState is
 
             // not enough liquidity
             if (actualRepaymentAmount > received) {
-                console.log("borrowed", borrowed);
-                console.log("actualRepaymentAmount", actualRepaymentAmount);
-                console.log("received", received);
 
                 (uint256 raReserve, uint256 ctReserve) = hook.getReserves(address(assetPair.ra), address(assetPair.ct));
 
