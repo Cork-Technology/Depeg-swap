@@ -245,7 +245,7 @@ library DsFlashSwaplibrary {
             if (repaymentAmount <= amountOut) {
                 return (amountOut, borrowedAmount, repaymentAmount);
             } else {
-                borrowedAmount -= INTERVAL_ADJUSTMENT;
+                borrowedAmount -= params.feeIntervalAdjustment;
                 amountOut = borrowedAmount + amount;
             }
         }

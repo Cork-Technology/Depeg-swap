@@ -235,7 +235,8 @@ contract RouterState is
         Id reserveId,
         uint256 dsId,
         uint256 amount,
-        uint256 amountOutMin
+        uint256 amountOutMin,
+        IDsFlashSwapCore.BuyAprroxParams memory approxParams
     ) internal returns (uint256 amountOut) {
         uint256 borrowedAmount;
 
@@ -249,7 +250,7 @@ contract RouterState is
         }
 
         // calculate the amount of DS tokens attributed
-        (amountOut, borrowedAmount,) = assetPair.getAmountOutBuyDS(amount, hook);
+        (amountOut, borrowedAmount,) = assetPair.getAmountOutBuyDS(amount, hook, approxParams);
 
         // calculate the amount of DS tokens that will be sold from reserve
         uint256 amountSellFromReserve =
@@ -293,7 +294,7 @@ contract RouterState is
                 IPSMcore(_moduleCore).psmAcceptFlashSwapProfit(reserveId, profitRa - vaultProfit);
 
                 // recalculate the amount of DS tokens attributed, since we sold some from the reserve
-                (amountOut, borrowedAmount,) = assetPair.getAmountOutBuyDS(amount, hook);
+                (amountOut, borrowedAmount,) = assetPair.getAmountOutBuyDS(amount, hook, approxParams);
             }
         }
 
@@ -309,16 +310,6 @@ contract RouterState is
         amountOut += dsReceived;
     }
 
-    /**
-     * @notice Swaps RA for DS
-     * @param reserveId the reserve id same as the id on PSM and LV
-     * @param dsId the ds id of the pair, the same as the DS id on PSM and LV
-     * @param amount the amount of RA to swap
-     * @param amountOutMin the minimum amount of DS to receive, will revert if the actual amount is less than this.
-     * @param rawRaPermitSig raw signature for RA token approval
-     * @param deadline the deadline of given permit signature
-     * @return amountOut amount of DS that's received
-     */
     function swapRaforDs(
         Id reserveId,
         uint256 dsId,
@@ -326,7 +317,8 @@ contract RouterState is
         uint256 amountOutMin,
         address user,
         bytes memory rawRaPermitSig,
-        uint256 deadline
+        uint256 deadline,
+        BuyAprroxParams memory params
     ) external returns (uint256 amountOut) {
         ReserveState storage self = reserves[reserveId];
         AssetPair storage assetPair = self.ds[dsId];
@@ -339,62 +331,17 @@ contract RouterState is
         }
         IERC20(assetPair.ra).safeTransferFrom(user, address(this), amount);
 
-        amountOut = _swapRaforDs(self, assetPair, reserveId, dsId, amount, amountOutMin);
+        amountOut = _swapRaforDs(self, assetPair, reserveId, dsId, amount, amountOutMin, params);
 
         self.recalculateHPA(dsId, amount, amountOut);
 
         emit RaSwapped(reserveId, dsId, user, amount, amountOut);
     }
 
-    function _trySellFromReserve(
-        ReserveState storage self,
-        AssetPair storage assetPair,
-        uint256 amountSellFromReserve,
-        uint256 dsId,
-        uint256 amount
-    ) private view returns (uint256 amountOut) {
-        (uint256 raReserve, uint256 ctReserve) = assetPair.getReservesSorted(hook);
-
-        // we borrow the same amount of CT tokens from the reserve
-        ctReserve -= uint256(amountSellFromReserve);
-
-        (uint256 profit, uint256 raAdded,) = assetPair.getAmountOutSellDS(amountSellFromReserve, hook);
-
-        raReserve += uint256(raAdded);
-
-        // emulate Vault way of adding liquidity using RA from selling DS reserve
-        (, uint256 ratio) = self.tryGetPriceRatioAfterSellDs(dsId, amountSellFromReserve, raAdded, hook);
-        uint256 ctAdded;
-        uint256 lvReserveUsed =
-            assetPair.lvReserve * amountSellFromReserve * 1e18 / (assetPair.lvReserve + assetPair.psmReserve) / 1e18; // calculate the profit of the liquidity vault
-
-        // get the vault profit, we don't care about the PSM profit since it'll be sent to PSM
-        profit = profit * lvReserveUsed / amountSellFromReserve;
-
-        // use the vault profit
-        (raAdded, ctAdded) = MathHelper.calculateProvideLiquidityAmountBasedOnCtPrice(profit, ratio);
-
-        raReserve += uint256(raAdded);
-        ctReserve += uint256(ctAdded);
-
-        // update amountOut since we sold some from the reserve
-        (amountOut,,) = assetPair.getAmountOutBuyDS(amount, hook);
-    }
-
     function isRolloverSale(Id id, uint256 dsId) external view returns (bool) {
         return reserves[id].rolloverSale();
     }
 
-    /**
-     * @notice Swaps DS for RA
-     * @param reserveId the reserve id same as the id on PSM and LV
-     * @param dsId the ds id of the pair, the same as the DS id on PSM and LV
-     * @param amount the amount of DS to swap
-     * @param amountOutMin the minimum amount of RA to receive, will revert if the actual amount is less than this.
-     * @param rawDsPermitSig raw signature for DS token approval
-     * @param deadline the deadline of given permit signature
-     * @return amountOut amount of RA that's received
-     */
     function swapDsforRa(
         Id reserveId,
         uint256 dsId,
@@ -555,7 +502,6 @@ contract RouterState is
 
             // not enough liquidity
             if (actualRepaymentAmount > received) {
-
                 (uint256 raReserve, uint256 ctReserve) = hook.getReserves(address(assetPair.ra), address(assetPair.ct));
 
                 revert IDsFlashSwapCore.InsufficientLiquidity(raReserve, ctReserve, actualRepaymentAmount);
