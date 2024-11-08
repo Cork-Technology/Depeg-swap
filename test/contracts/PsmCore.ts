@@ -252,9 +252,6 @@ describe("PSM core", function () {
         fixture.Id,
         dsId!,
         parseEther("10"),
-        defaultSigner.account.address,
-        "0x",
-        0n,
       ]);
 
       const event = await fixture.moduleCore.getEvents.DsRedeemed({
@@ -356,9 +353,6 @@ describe("PSM core", function () {
         fixture.Id,
         dsId!,
         redeemAmount,
-        defaultSigner.account.address,
-        "0x",
-        0n,
       ]);
 
       const event = await fixture.moduleCore.getEvents.CtRedeemed({
@@ -611,11 +605,6 @@ describe("PSM core", function () {
       await fixture.moduleCore.write.redeemRaWithCtDs([
         fixture.Id,
         parseEther("1"),
-        defaultSigner.account.address,
-        "0x",
-        0n,
-        "0x",
-        0n,
       ]);
 
       const events = await fixture.moduleCore.getEvents.Cancelled({
@@ -1243,9 +1232,6 @@ describe("PSM core", function () {
         fixture.Id,
         dsId!,
         parseEther("9.987"),
-        defaultSigner.account.address,
-        "0x",
-        0n,
       ]);
       [availablePa, availableDs] =
         await fixture.moduleCore.read.availableForRepurchase([fixture.Id]);

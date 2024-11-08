@@ -95,6 +95,13 @@ interface IVault {
         external
         returns (uint256 received, uint256 fee, uint256 feePercentage, uint256 paAmount);
 
+    /**
+     * @notice Redeem lv before expiry
+     * @param redeemParams The object with details like id, reciever, amount, amountOutMin, ammDeadline
+     */
+    function redeemEarlyLv(RedeemEarlyParams memory redeemParams)
+        external
+        returns (uint256 received, uint256 fee, uint256 feePercentage, uint256 paAmount);
 
     /**
      * @notice preview redeem lv before expiry

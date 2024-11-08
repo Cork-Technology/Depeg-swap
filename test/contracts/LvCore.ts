@@ -240,11 +240,6 @@ describe("LvCore", function () {
           amountOutMin: preview, // amountOutMin
           ammDeadline: BigInt(helper.expiry(1000000)), // ammDeadline
         },
-        defaultSigner.account.address,
-        {
-          rawLvPermitSig: "0x",
-          deadline: 0n,
-        },
       ]);
       const event = await moduleCore.getEvents
         .LvRedeemEarly({
@@ -319,11 +314,6 @@ describe("LvCore", function () {
             amountOutMin: preview, // amountOutMin
             ammDeadline: BigInt(helper.expiry(1000000)), // ammDeadline
           },
-          defaultSigner.account.address,
-          {
-            rawLvPermitSig: msgPermit,
-            deadline: deadline,
-          },
         ])
       ).to.be.rejectedWith("LVWithdrawalPaused()");
     });
@@ -348,11 +338,6 @@ describe("LvCore", function () {
           amountOutMin: preview + 1n, // amountOutMin
           ammDeadline: BigInt(helper.expiry(1000000)), // ammDeadline
         },
-        defaultSigner.account.address,
-        {
-          rawLvPermitSig: "0x",
-          deadline: 0n,
-        },
       ])
     ).to.be.rejected;
   });
@@ -375,11 +360,6 @@ describe("LvCore", function () {
         amount: redeemAmount, // amount
         amountOutMin: preview, // amountOutMin
         ammDeadline: BigInt(helper.expiry(1000000)), // ammDeadline
-      },
-      defaultSigner.account.address,
-      {
-        rawLvPermitSig: "0x",
-        deadline: 0n,
       },
     ]);
 

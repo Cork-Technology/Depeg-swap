@@ -68,6 +68,26 @@ abstract contract VaultCore is ModuleState, Context, IVault {
     }
 
     /**
+     * @notice Redeem lv before expiry
+     * @param redeemParams The object with details like id, reciever, amount, amountOutMin, ammDeadline
+     */
+    function redeemEarlyLv(RedeemEarlyParams memory redeemParams)
+        external
+        override
+        nonReentrant
+        LVWithdrawalNotPaused(redeemParams.id)
+        returns (uint256 received, uint256 fee, uint256 feePercentage, uint256 paAmount)
+    {
+        Routers memory routers = Routers({flashSwapRouter: getRouterCore(), ammRouter: getAmmRouter()});
+        PermitParams memory permitParams = PermitParams({rawLvPermitSig: bytes(""), deadline: 0});
+
+        (received, fee, feePercentage, paAmount) =
+            states[redeemParams.id].redeemEarly(_msgSender(), redeemParams, routers, permitParams);
+
+        emit LvRedeemEarly(redeemParams.id, _msgSender(), redeemParams.receiver, received, fee, feePercentage);
+    }
+
+    /**
      * @notice preview redeem lv before expiry
      * @param id The Module id that is used to reference both psm and lv of a given pair
      * @param amount The amount of the asset to be redeemed

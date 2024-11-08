@@ -220,6 +220,18 @@ interface IDsFlashSwapCore is IDsFlashSwapUtility {
      * @param amountOutMin the minimum amount of DS to receive, will revert if the actual amount is less than this. should be inserted with value from previewSwapRaforDs
      * @return amountOut amount of DS that's received
      */
+    function swapRaforDs(Id reserveId, uint256 dsId, uint256 amount, uint256 amountOutMin)
+        external
+        returns (uint256 amountOut);
+
+    /**
+     * @notice Swaps RA for DS
+     * @param reserveId the reserve id same as the id on PSM and LV
+     * @param dsId the ds id of the pair, the same as the DS id on PSM and LV
+     * @param amount the amount of RA to swap
+     * @param amountOutMin the minimum amount of DS to receive, will revert if the actual amount is less than this. should be inserted with value from previewSwapRaforDs
+     * @return amountOut amount of DS that's received
+     */
     function swapRaforDs(
         Id reserveId,
         uint256 dsId,
@@ -238,6 +250,18 @@ interface IDsFlashSwapCore is IDsFlashSwapUtility {
      * @return amountOut amount of DS that will be received
      */
     function previewSwapRaforDs(Id reserveId, uint256 dsId, uint256 amount) external view returns (uint256 amountOut);
+
+    /**
+     * @notice Swaps DS for RA
+     * @param reserveId the reserve id same as the id on PSM and LV
+     * @param dsId the ds id of the pair, the same as the DS id on PSM and LV
+     * @param amount the amount of DS to swap
+     * @param amountOutMin the minimum amount of RA to receive, will revert if the actual amount is less than this. should be inserted with value from previewSwapDsforRa
+     * @return amountOut amount of RA that's received
+     */
+    function swapDsforRa(Id reserveId, uint256 dsId, uint256 amount, uint256 amountOutMin)
+        external
+        returns (uint256 amountOut);
 
     /**
      * @notice Swaps DS for RA

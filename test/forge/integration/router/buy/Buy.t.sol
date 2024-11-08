@@ -18,7 +18,6 @@ contract BasicFlashSwapTest is Helper {
 
     uint256 public dsId;
 
-
     function defaultInitialDsPrice() internal pure virtual override returns (uint256) {
         return 0.001 ether;
     }
@@ -26,7 +25,6 @@ contract BasicFlashSwapTest is Helper {
     function defaultExchangeRate() internal pure virtual override returns (uint256) {
         return 1.1 ether;
     }
-
 
     function setUp() public virtual {
         vm.startPrank(DEFAULT_ADDRESS);
@@ -48,10 +46,9 @@ contract BasicFlashSwapTest is Helper {
         dsId = moduleCore.lastDsId(currencyId);
     }
 
-
     function test_buyDS() public virtual {
         ra.approve(address(flashSwapRouter), type(uint256).max);
 
-        uint256 amountOut = flashSwapRouter.swapRaforDs(currencyId, dsId, 1 ether, 0, DEFAULT_ADDRESS, bytes(""), 0);
+        uint256 amountOut = flashSwapRouter.swapRaforDs(currencyId, dsId, 1 ether, 0);
     }
 }
