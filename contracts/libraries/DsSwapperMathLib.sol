@@ -88,7 +88,6 @@ library BuyMathBisectionSolver {
             }
         }
 
-        SD59x18 epsilon = sd(1e9);
         for (uint256 i = 0; i < maxIter; i++) {
             SD59x18 c = div(add(a, b), convert(2));
             SD59x18 fC = f(x, y, e, c, _1MinusT);
@@ -159,7 +158,7 @@ library SwapperMathLibrary {
             convert(int256(start)), convert(int256(end)), convert(int256(current))
         );
         SD59x18 root = BuyMathBisectionSolver.findRoot(
-            convert(int256(x)), convert(int256(y)), convert(int256(e)), oneMinusT, sd(epsilon), maxIter
+            convert(int256(x)), convert(int256(y)), convert(int256(e)), oneMinusT, sd(int256(epsilon)), maxIter
         );
 
         return uint256(convert(root));

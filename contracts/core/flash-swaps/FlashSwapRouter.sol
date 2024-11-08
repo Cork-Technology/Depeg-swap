@@ -256,46 +256,18 @@ contract RouterState is
         uint256 amountSellFromReserve =
             amountOut - MathHelper.calculatePercentageFee(self.reserveSellPressurePercentage, amountOut);
 
-        // sell all tokens if the sell amount is higher than the available reserve
-        amountSellFromReserve = assetPair.lvReserve + assetPair.psmReserve < amountSellFromReserve
-            ? assetPair.lvReserve + assetPair.psmReserve
-            : amountSellFromReserve;
+        {
+            uint256 lvReserve = assetPair.lvReserve;
+            uint256 totalReserve = lvReserve + assetPair.psmReserve;
+
+            // sell all tokens if the sell amount is higher than the available reserve
+            amountSellFromReserve = totalReserve < amountSellFromReserve ? totalReserve : amountSellFromReserve;
+        }
 
         // sell the DS tokens from the reserve if there's any
         if (amountSellFromReserve != 0 && self.gradualSale) {
-            // sell the DS tokens from the reserve and accrue value to LV holders
-            // it's safe to transfer all profit to the module core since the profit for each PSM and LV is calculated separately and we invoke
-            // the profit acceptance function for each of them
-            //
-            // this function can fail, if there's not enough CT liquidity to sell the DS tokens, in that case, we skip the selling part and let user buy the DS tokens
-            (uint256 profitRa,, bool success) =
-                __swapDsforRa(assetPair, reserveId, dsId, amountSellFromReserve, 0, _moduleCore);
-
-            if (success) {
-                uint256 vaultProfit;
-
-                {
-                    // calculate the amount of DS tokens that will be sold from both reserve
-                    uint256 lvReserveUsed = assetPair.lvReserve * amountSellFromReserve * 1e18
-                        / (assetPair.lvReserve + assetPair.psmReserve) / 1e18;
-                    uint256 psmReserveUsed = amountSellFromReserve - lvReserveUsed;
-
-                    // decrement reserve
-                    assetPair.lvReserve -= lvReserveUsed;
-                    assetPair.psmReserve -= psmReserveUsed;
-
-                    // calculate the profit of the liquidity vault
-                    vaultProfit = profitRa * lvReserveUsed / amountSellFromReserve;
-                }
-
-                // send profit to the vault and PSM
-                IVault(_moduleCore).provideLiquidityWithFlashSwapFee(reserveId, vaultProfit);
-                // send profit to the PSM
-                IPSMcore(_moduleCore).psmAcceptFlashSwapProfit(reserveId, profitRa - vaultProfit);
-
-                // recalculate the amount of DS tokens attributed, since we sold some from the reserve
-                (amountOut, borrowedAmount,) = assetPair.getAmountOutBuyDS(amount, hook, approxParams);
-            }
+            (amountOut, borrowedAmount) =
+                _sellDsReserve(assetPair, SellDsParams(reserveId, dsId, amountSellFromReserve, amount, approxParams));
         }
 
         // slippage protection, revert if the amount of DS tokens received is less than the minimum amount
@@ -308,6 +280,51 @@ contract RouterState is
 
         // add the amount of DS tokens from the rollover, if any
         amountOut += dsReceived;
+    }
+
+    struct SellDsParams {
+        Id reserveId;
+        uint256 dsId;
+        uint256 amountSellFromReserve;
+        uint256 amount;
+        BuyAprroxParams approxParams;
+    }
+
+    function _sellDsReserve(AssetPair storage assetPair, SellDsParams memory params)
+        internal
+        returns (uint256 amountOut, uint256 borrowedAmount)
+    {
+        // sell the DS tokens from the reserve and accrue value to LV holders
+        // it's safe to transfer all profit to the module core since the profit for each PSM and LV is calculated separately and we invoke
+        // the profit acceptance function for each of them
+        //
+        // this function can fail, if there's not enough CT liquidity to sell the DS tokens, in that case, we skip the selling part and let user buy the DS tokens
+        (uint256 profitRa,, bool success) =
+            __swapDsforRa(assetPair, params.reserveId, params.dsId, params.amountSellFromReserve, 0, _moduleCore);
+
+        if (success) {
+            uint256 lvReserve = assetPair.lvReserve;
+            uint256 totalReserve = lvReserve + assetPair.psmReserve;
+
+            // calculate the amount of DS tokens that will be sold from both reserve
+            uint256 lvReserveUsed = lvReserve * params.amountSellFromReserve * 1e18 / (totalReserve) / 1e18;
+            // uint256 psmReserveUsed = amountSellFromReserve - lvReserveUsed;
+
+            // decrement reserve
+            assetPair.lvReserve -= lvReserveUsed;
+            assetPair.psmReserve -= params.amountSellFromReserve - lvReserveUsed;
+
+            // calculate the profit of the liquidity vault
+            uint256 vaultProfit = profitRa * lvReserveUsed / params.amountSellFromReserve;
+
+            // send profit to the vault
+            IVault(_moduleCore).provideLiquidityWithFlashSwapFee(params.reserveId, vaultProfit);
+            // send profit to the PSM
+            IPSMcore(_moduleCore).psmAcceptFlashSwapProfit(params.reserveId, profitRa - vaultProfit);
+
+            // recalculate the amount of DS tokens attributed, since we sold some from the reserve
+            (amountOut, borrowedAmount,) = assetPair.getAmountOutBuyDS(params.amount, hook, params.approxParams);
+        }
     }
 
     function swapRaforDs(

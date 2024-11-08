@@ -237,6 +237,8 @@ library MathHelper {
     }
 
     function calculateRedeemLv(RedeemParams calldata params)
+        external
+        pure
         returns (uint256 ctReceived, uint256 dsReceived, uint256 lpLiquidated)
     {
         // TODO

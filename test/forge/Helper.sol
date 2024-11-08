@@ -14,6 +14,7 @@ import {TestModuleCore} from "./TestModuleCore.sol";
 import {TestFlashSwapRouter} from "./TestFlashSwapRouter.sol";
 import "./SigUtils.sol";
 import {TestHelper} from "Cork-Hook/../test/Helper.sol";
+import "./../../contracts/interfaces/IDsFlashSwapRouter.sol";
 
 abstract contract Helper is SigUtils, TestHelper {
     TestModuleCore internal moduleCore;
@@ -61,6 +62,10 @@ abstract contract Helper is SigUtils, TestHelper {
     function initializeAssetFactory() internal {
         assetFactory.initialize();
         assetFactory.transferOwnership(address(moduleCore));
+    }
+
+    function defaultBuyApproxParams() internal pure returns (IDsFlashSwapCore.BuyAprroxParams memory) {
+        return IDsFlashSwapCore.BuyAprroxParams(256, 1e16, 1e9);
     }
 
     function initializeNewModuleCore(

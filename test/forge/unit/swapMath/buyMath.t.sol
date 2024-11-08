@@ -34,7 +34,7 @@ contract BuyMathTest is Test {
 
         SD59x18 _1MinusT = sd(0.01 ether);
 
-        uint256 result = uint256(convert(BuyMathBisectionSolver.findRoot(x, y, e, _1MinusT)));
+        uint256 result = uint256(convert(BuyMathBisectionSolver.findRoot(x, y, e, _1MinusT, sd(1e9), 256)));
 
         vm.pauseGasMetering();
         vm.assertApproxEqAbs(result, 9.054 ether, 0.001 ether);
@@ -48,7 +48,7 @@ contract BuyMathTest is Test {
         uint256 end = 100 days;
         uint256 current = 1 days;
 
-        uint256 result = SwapperMathLibrary.getAmountOutBuyDs(x, y, e, start, end, current);
+        uint256 result = SwapperMathLibrary.getAmountOutBuyDs(x, y, e, start, end, current, 1e9, 256);
 
         vm.assertApproxEqAbs(result, 9.054 ether, 0.001 ether);
     }

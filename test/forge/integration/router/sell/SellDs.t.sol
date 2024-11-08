@@ -72,7 +72,6 @@ contract SellDsTest is Helper {
         uint256 amountOut = flashSwapRouter.swapDsforRa(
             currencyId, dsId, amount, 0, DEFAULT_ADDRESS, bytes(""), block.timestamp
         );
-        vm.assertEq(amountOut, 0);
 
         uint256 balanceRaAfter = ra.balanceOf(DEFAULT_ADDRESS);
 

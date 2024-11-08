@@ -286,18 +286,20 @@ library VaultLibrary {
         // split the RA first according to the lv strategy
         (amount, splitted) = _splitCtWithStrategy(self, flashSwapRouter, amount);
 
-        uint256 exchangeRate;
+        uint256 dsId = self.globalAssetIdx;
 
-        (,, uint256 lp) = __provideLiquidityWithRatio(
-            self,
-            amount,
-            flashSwapRouter,
-            self.ds[self.globalAssetIdx].ct,
-            ammRouter,
-            Tolerance(raTolerance, ctTolerance)
-        );
+        uint256 lp;
+        {
+            address ct = self.ds[dsId].ct;
+
+            (,, lp) = __provideLiquidityWithRatio(
+                self, amount, flashSwapRouter, ct, ammRouter, Tolerance(raTolerance, ctTolerance)
+            );
+        }
 
         {
+            Id id = self.info.toId();
+
             MathHelper.DepositParams memory params = MathHelper.DepositParams({
                 totalLvIssued: Asset(self.vault.lv._address).totalSupply(),
                 // the provide liquidity automatically adds the lp, so we need to subtract it first here
@@ -305,7 +307,7 @@ library VaultLibrary {
                 totalLpMinted: lp,
                 totalVaultCt: self.vault.balances.ctBalance - splitted,
                 totalCtMinted: splitted,
-                totalVaultDs: flashSwapRouter.getLvReserve(self.info.toId(), self.globalAssetIdx) - splitted,
+                totalVaultDs: flashSwapRouter.getLvReserve(id, dsId) - splitted,
                 totalDsMinted: splitted
             });
 
@@ -552,27 +554,30 @@ library VaultLibrary {
 
         result.paReceived = _redeemPa(self, redeemParams, owner);
 
+        uint256 lpLiquidated;
+        uint256 dsId = self.globalAssetIdx;
+        Pair storage pair = self.info;
+        
         {
             MathHelper.RedeemParams memory params = MathHelper.RedeemParams({
                 amountLvBurned: redeemParams.amount,
                 totalLvIssued: Asset(self.vault.lv._address).totalSupply(),
                 totalVaultLp: self.vault.config.lpBalance,
                 totalVaultCt: self.vault.balances.ctBalance,
-                totalVaultDs: routers.flashSwapRouter.getLvReserve(self.info.toId(), self.globalAssetIdx)
+                totalVaultDs: routers.flashSwapRouter.getLvReserve(pair.toId(), dsId)
             });
 
-            (uint256 ctReceived, uint256 dsReceived, uint256 lpLiquidated) = MathHelper.calculateRedeemLv(params);
+            uint256 ctReceived;
+            uint256 dsReceived;
 
+            (ctReceived, dsReceived, lpLiquidated) = MathHelper.calculateRedeemLv(params);
             result.ctReceivedFromVault = ctReceived;
             result.dsReceived = dsReceived;
+        }
 
+        {
             (uint256 raFromAmm, uint256 ctFromAmm) = __liquidateUnchecked(
-                self,
-                self.info.pair1,
-                self.ds[self.globalAssetIdx].ct,
-                routers.ammRouter,
-                lpLiquidated,
-                redeemParams.ammDeadline
+                self, pair.pair1, self.ds[dsId].ct, routers.ammRouter, lpLiquidated, redeemParams.ammDeadline
             );
 
             result.raReceivedFromAmm = raFromAmm;

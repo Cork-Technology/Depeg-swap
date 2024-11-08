@@ -75,7 +75,7 @@ contract BuyDsTest is Helper {
         hook.updateBaseFeePercentage(address(ra), ct, 1 ether);
 
         uint256 amountOut = flashSwapRouter.swapRaforDs(
-            currencyId, dsId, amount, 0, DEFAULT_ADDRESS, bytes(""), block.timestamp
+            currencyId, dsId, amount, 0, DEFAULT_ADDRESS, bytes(""), block.timestamp,defaultBuyApproxParams()
         );
         uint256 balanceRaAfter = Asset(ds).balanceOf(DEFAULT_ADDRESS);
 

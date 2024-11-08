@@ -220,19 +220,9 @@ library DsFlashSwaplibrary {
         (uint256 raReserve, uint256 ctReserve) = getReservesSorted(assetPair, router);
 
         uint256 issuedAt = assetPair.ds.issuedAt();
-        uint256 currentTime = block.timestamp;
         uint256 end = assetPair.ds.expiry();
 
-        amountOut = SwapperMathLibrary.getAmountOutBuyDs(
-            uint256(raReserve),
-            uint256(ctReserve),
-            amount,
-            issuedAt,
-            end,
-            currentTime,
-            params.epsilon,
-            params.maxApproxIter
-        );
+        amountOut = _calculateInitialBuyOut(InitialTradeCaclParams(raReserve, ctReserve, issuedAt, end, amount, params));
 
         borrowedAmount = amountOut - amount;
 
@@ -251,6 +241,28 @@ library DsFlashSwaplibrary {
         }
 
         revert("approx exhausted");
+    }
+
+    struct InitialTradeCaclParams {
+        uint256 raReserve;
+        uint256 ctReserve;
+        uint256 issuedAt;
+        uint256 end;
+        uint256 amount;
+        IDsFlashSwapCore.BuyAprroxParams approx;
+    }
+
+    function _calculateInitialBuyOut(InitialTradeCaclParams memory params) internal view returns (uint256) {
+        return SwapperMathLibrary.getAmountOutBuyDs(
+            params.raReserve,
+            params.ctReserve,
+            params.amount,
+            params.issuedAt,
+            params.end,
+            block.timestamp,
+            params.approx.epsilon,
+            params.approx.maxApproxIter
+        );
     }
 
     function isRAsupportsPermit(address token) internal view returns (bool) {
