@@ -143,7 +143,7 @@ contract SwapMathTest is Test {
 
         uint256 start = 0 days;
         uint256 end = 100 days;
-        uint256 current = 0.01 days;
+        uint256 current = 1 days;
 
         uint256 amountToBuy = 0.5 ether;
 
@@ -151,6 +151,6 @@ contract SwapMathTest is Test {
         uint256 returned =
             SwapperMathLibrary.getAmountOutBuyDs(raReserve, ctReserve, amountToBuy, start, end, current, 1e9, 256);
 
-        vm.assertApproxEqAbs(returned, 9.548 ether, 0.001 ether);
+        vm.assertApproxEqAbs(returned, 9.0548 ether, 0.001 ether);
     }
 }
