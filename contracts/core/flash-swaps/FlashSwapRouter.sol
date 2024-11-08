@@ -225,28 +225,6 @@ contract RouterState is
         emit RolloverSold(reserveId, dsId, msg.sender, dsReceived, amountRa - raLeft);
     }
 
-    function _previewSwapRaForDsViaRollover(Id reserveId, uint256 dsId, uint256 amountRa)
-        internal
-        view
-        returns (uint256 raLeft, uint256 dsReceived)
-    {
-        if (dsId == DsFlashSwaplibrary.FIRST_ISSUANCE || !reserves[reserveId].rolloverSale()) {
-            return (amountRa, 0);
-        }
-
-        ReserveState storage self = reserves[reserveId];
-        AssetPair storage assetPair = self.ds[dsId];
-
-        uint256 lvProfit;
-        uint256 psmProfit;
-        dsReceived;
-        uint256 lvReserveUsed;
-        uint256 psmReserveUsed;
-
-        (lvProfit, psmProfit, raLeft, dsReceived, lvReserveUsed, psmReserveUsed) =
-            SwapperMathLibrary.calculateRolloverSale(assetPair.lvReserve, assetPair.psmReserve, amountRa, self.hpa);
-    }
-
     function rolloverSaleEnds(Id reserveId) external view returns (uint256 endInBlockNumber) {
         return reserves[reserveId].rolloverEndInBlockNumber;
     }
@@ -336,7 +314,7 @@ contract RouterState is
      * @param reserveId the reserve id same as the id on PSM and LV
      * @param dsId the ds id of the pair, the same as the DS id on PSM and LV
      * @param amount the amount of RA to swap
-     * @param amountOutMin the minimum amount of DS to receive, will revert if the actual amount is less than this. should be inserted with value from previewSwapRaforDs
+     * @param amountOutMin the minimum amount of DS to receive, will revert if the actual amount is less than this.
      * @param rawRaPermitSig raw signature for RA token approval
      * @param deadline the deadline of given permit signature
      * @return amountOut amount of DS that's received
@@ -366,53 +344,6 @@ contract RouterState is
         self.recalculateHPA(dsId, amount, amountOut);
 
         emit RaSwapped(reserveId, dsId, user, amount, amountOut);
-    }
-
-    /**
-     * @notice Preview the amount of DS that will be received from swapping RA
-     * @param reserveId the reserve id same as the id on PSM and LV
-     * @param dsId the ds id of the pair, the same as the DS id on PSM and LV
-     * @param amount the amount of RA to swap
-     * @return amountOut amount of DS that will be received
-     */
-    function previewSwapRaforDs(Id reserveId, uint256 dsId, uint256 amount) external view returns (uint256 amountOut) {
-        ReserveState storage self = reserves[reserveId];
-        AssetPair storage assetPair = self.ds[dsId];
-
-        uint256 dsReceived;
-
-        // preview rollover, if applicable
-        (amount, dsReceived) = _previewSwapRaForDsViaRollover(reserveId, dsId, amount);
-
-        // short circuit if all the swap is filled using rollover
-        if (amount == 0) {
-            return dsReceived;
-        }
-
-        (amountOut,,) = assetPair.getAmountOutBuyDS(amount, hook);
-
-        // calculate the amount of DS tokens that will be sold from reserve
-        uint256 amountSellFromReserve =
-            amountOut - MathHelper.calculatePercentageFee(self.reserveSellPressurePercentage, amountOut);
-
-        // sell all tokens if the sell amount is higher than the available reserve
-        amountSellFromReserve = assetPair.lvReserve + assetPair.psmReserve < amountSellFromReserve
-            ? assetPair.lvReserve + assetPair.psmReserve
-            : amountSellFromReserve;
-
-        // sell the DS tokens from the reserve if there's any
-        if (amountSellFromReserve != 0) {
-            (,, bool success) = assetPair.getAmountOutSellDS(amountSellFromReserve, hook);
-
-            if (success) {
-                amountOut = _trySellFromReserve(self, assetPair, amountSellFromReserve, dsId, amount);
-            }
-        }
-
-        // add the amount of DS tokens from the rollover, if any
-        // we add here the last for simpler control flow, since this way the logic of regular swap
-        // don't need to care about how much token is received from the rollover sale
-        amountOut += dsReceived;
     }
 
     function _trySellFromReserve(
@@ -459,7 +390,7 @@ contract RouterState is
      * @param reserveId the reserve id same as the id on PSM and LV
      * @param dsId the ds id of the pair, the same as the DS id on PSM and LV
      * @param amount the amount of DS to swap
-     * @param amountOutMin the minimum amount of RA to receive, will revert if the actual amount is less than this. should be inserted with value from previewSwapDsforRa
+     * @param amountOutMin the minimum amount of RA to receive, will revert if the actual amount is less than this.
      * @param rawDsPermitSig raw signature for DS token approval
      * @param deadline the deadline of given permit signature
      * @return amountOut amount of RA that's received
@@ -513,27 +444,6 @@ contract RouterState is
         }
 
         __flashSwap(assetPair, 0, amount, dsId, reserveId, false, amountOut, caller, amount);
-    }
-
-    /**
-     * @notice Preview the amount of RA that will be received from swapping DS
-     * @param reserveId the reserve id same as the id on PSM and LV
-     * @param dsId the ds id of the pair, the same as the DS id on PSM and LV
-     * @param amount the amount of DS to swap
-     * @return amountOut amount of RA that will be received
-     */
-    function previewSwapDsforRa(Id reserveId, uint256 dsId, uint256 amount) external view returns (uint256 amountOut) {
-        AssetPair storage assetPair = reserves[reserveId].ds[dsId];
-
-        bool success;
-        uint256 repaymentAmount;
-
-        (amountOut, repaymentAmount, success) = assetPair.getAmountOutSellDS(amount, hook);
-
-        if (!success) {
-            (uint256 raReserve, uint256 ctReserve) = assetPair.getReservesSorted(hook);
-            revert IDsFlashSwapCore.InsufficientLiquidity(raReserve, ctReserve, repaymentAmount);
-        }
     }
 
     struct CallbackData {

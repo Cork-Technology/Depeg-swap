@@ -29,7 +29,6 @@ library MathHelper {
         pure
         returns (uint256 ra, uint256 ct)
     {
-
         ct = (amountra * 1e18) / (priceRatio + 1e18);
         ra = (amountra - ct);
     }
@@ -213,5 +212,33 @@ library MathHelper {
         returns (uint256 lpLiquidated)
     {
         lpLiquidated = ((redeemedLv * rateRaPerLv) * 1e18) / rateRaPerLp / 1e18;
+    }
+
+    struct DepositParams {
+        uint256 totalLvIssued;
+        uint256 totalVaultLp;
+        uint256 totalLpMinted;
+        uint256 totalVaultCt;
+        uint256 totalCtMinted;
+        uint256 totalVaultDs;
+        uint256 totalDsMinted;
+    }
+
+    function calculateDepositLv(DepositParams calldata params) external pure returns (uint256 lvMinted) {
+        // TODO
+    }
+
+    struct RedeemParams {
+        uint256 amountLvBurned;
+        uint256 totalLvIssued;
+        uint256 totalVaultLp;
+        uint256 totalVaultCt;
+        uint256 totalVaultDs;
+    }
+
+    function calculateRedeemLv(RedeemParams calldata params)
+        returns (uint256 ctReceived, uint256 dsReceived, uint256 lpLiquidated)
+    {
+        // TODO
     }
 }

@@ -30,25 +30,35 @@ interface IVault {
         uint256 ammDeadline;
     }
 
+    struct RedeemEarlyResult {
+        Id id;
+        address receiver;
+        uint256 raReceivedFromAmm;
+        uint256 ctReceivedFromAmm;
+        uint256 ctReceivedFromVault;
+        uint256 dsReceived;
+        uint256 raFee;
+        uint256 feePercentage;
+        uint256 paReceived;
+    }
+
     /// @notice Emitted when a user deposits assets into a given Vault
     /// @param id The Module id that is used to reference both psm and lv of a given pair
     /// @param depositor The address of the depositor
     /// @param amount  The amount of the asset deposited
     event LvDeposited(Id indexed id, address indexed depositor, uint256 amount);
 
-    /// @notice Emitted when a user redeems Lv before expiry
-    /// @param Id The Module id that is used to reference both psm and lv of a given pair
-    /// @param receiver The address of the receiver
-    /// @param amount The amount of the asset redeemed
-    /// @param fee The total fee charged for early redemption
-    /// @param feePercentage The fee percentage for early redemption, denominated in 1e18 (e.g 100e18 = 100%)
     event LvRedeemEarly(
         Id indexed Id,
         address indexed redeemer,
         address indexed receiver,
-        uint256 amount,
-        uint256 fee,
-        uint256 feePercentage
+        uint256 lvBurned,
+        uint256 ctReceivedFromAmm,
+        uint256 ctReceivedFromVault,
+        uint256 dsReceived,
+        uint256 raFee,
+        uint256 feePercentage,
+        uint256 paReceived
     );
 
     /// @notice Emitted when a early redemption fee is updated for a given Vault
@@ -64,6 +74,9 @@ interface IVault {
     /// @notice caller is not authorized to perform the action, e.g transfering
     /// redemption rights to another address while not having the rights
     error Unauthorized(address caller);
+
+    /// @notice invalid parameters, e.g passing 0 as amount
+    error InvalidParams();
 
     /// @notice inssuficient balance to perform expiry redeem(e.g requesting 5 LV to redeem but trying to redeem 10)
     error InsufficientBalance(address caller, uint256 requested, uint256 balance);
@@ -81,18 +94,6 @@ interface IVault {
         returns (uint256 received);
 
     /**
-     * @notice Preview the amount of lv that will be deposited
-     * @param amount The amount of the redemption asset(ra) to be deposited
-     * @return lv The amount of lv that user will receive
-     * @return raAddedAsLiquidity The amount of ra that will be added as liquidity, use this as a baseline for tolerance when adding depositing to LV
-     * @return ctAddedAsLiquidity The amount of ct that will be added as liquidity, use this as a baseline for tolerance when adding depositing to LV
-     */
-    function previewLvDeposit(Id id, uint256 amount)
-        external
-        view
-        returns (uint256 lv, uint256 raAddedAsLiquidity, uint256 ctAddedAsLiquidity);
-
-    /**
      * @notice Redeem lv before expiry
      * @param redeemParams The object with details like id, reciever, amount, amountOutMin, ammDeadline
      * @param redeemer The address of the redeemer
@@ -100,19 +101,9 @@ interface IVault {
      */
     function redeemEarlyLv(RedeemEarlyParams memory redeemParams, address redeemer, PermitParams memory permitParams)
         external
-        returns (uint256 received, uint256 fee, uint256 feePercentage, uint256 paAmount);
+        returns (RedeemEarlyResult memory result);
 
-
-    /**
-     * @notice preview redeem lv before expiry
-     * @param id The Module id that is used to reference both psm and lv of a given pair
-     * @param amount The amount of the asset to be redeemed
-     */
-    function previewRedeemEarlyLv(Id id, uint256 amount)
-        external
-        view
-        returns (uint256 received, uint256 fee, uint256 feePercentage, uint256 paAmount);
-
+   
     /**
      * Returns the early redemption fee percentage
      * @param id The Module id that is used to reference both psm and lv of a given pair
@@ -133,4 +124,6 @@ interface IVault {
     function vaultLp(Id id) external view returns (uint256);
 
     function lvAcceptRolloverProfit(Id id, uint256 amount) external;
+
+    function updateCtHeldPercentage(Id id, uint256 ctHeldPercentage) external;
 }
