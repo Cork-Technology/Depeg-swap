@@ -7,6 +7,8 @@ import {SwapperMathLibrary} from "./DsSwapperMathLib.sol";
 import {MinimalUniswapV2Library} from "./uni-v2/UniswapV2Library.sol";
 import {PermitChecker} from "./PermitChecker.sol";
 import {ICorkHook} from "../interfaces/UniV4/IMinimalHook.sol";
+import "Cork-Hook/lib/MarketSnapshot.sol";
+import "./../interfaces/IDsFlashSwapRouter.sol";
 
 /**
  * @dev AssetPair structure for Asset Pairs
@@ -45,6 +47,8 @@ struct ReserveState {
  * @notice DsFlashSwap library which implements supporting lib and functions flashswap related features for DS/CT
  */
 library DsFlashSwaplibrary {
+    using MarketSnapshotLib for MarketSnapshot;
+
     /// @dev the percentage amount of reserve that will be used to fill buy orders
     /// the router will sell in respect to this ratio on first issuance
     uint256 public constant INITIAL_RESERVE_SELL_PRESSURE_PERCENTAGE = 50e18;
@@ -207,23 +211,58 @@ library DsFlashSwaplibrary {
         (success, amountOut) = SwapperMathLibrary.getAmountOutSellDs(repaymentAmount, amount);
     }
 
-    function getAmountOutBuyDS(AssetPair storage assetPair, uint256 amount, ICorkHook router)
-        internal
-        view
-        returns (uint256 amountOut, uint256 borrowedAmount, uint256 repaymentAmount)
-    {
+    function getAmountOutBuyDS(
+        AssetPair storage assetPair,
+        uint256 amount,
+        ICorkHook router,
+        IDsFlashSwapCore.BuyAprroxParams memory params
+    ) internal view returns (uint256 amountOut, uint256 borrowedAmount, uint256 repaymentAmount) {
         (uint256 raReserve, uint256 ctReserve) = getReservesSorted(assetPair, router);
 
         uint256 issuedAt = assetPair.ds.issuedAt();
-        uint256 currentTime = block.timestamp;
         uint256 end = assetPair.ds.expiry();
 
-        amountOut = SwapperMathLibrary.getAmountOutBuyDs(
-            uint256(raReserve), uint256(ctReserve), amount, issuedAt, end, currentTime
-        );
+        amountOut = _calculateInitialBuyOut(InitialTradeCaclParams(raReserve, ctReserve, issuedAt, end, amount, params));
 
         borrowedAmount = amountOut - amount;
-        repaymentAmount = amountOut;
+
+        MarketSnapshot memory market = router.getMarketSnapshot(address(assetPair.ra), address(assetPair.ct));
+        // reverse linear search for optimal borrow  amount since the math doesn't take into account the fee
+
+        for (uint256 i = 0; i < params.maxApproxIter; i++) {
+            repaymentAmount = market.getAmountIn(borrowedAmount, false);
+
+            if (repaymentAmount <= amountOut) {
+                return (amountOut, borrowedAmount, repaymentAmount);
+            } else {
+                borrowedAmount -= params.feeIntervalAdjustment;
+                amountOut = borrowedAmount + amount;
+            }
+        }
+
+        revert("approx exhausted");
+    }
+
+    struct InitialTradeCaclParams {
+        uint256 raReserve;
+        uint256 ctReserve;
+        uint256 issuedAt;
+        uint256 end;
+        uint256 amount;
+        IDsFlashSwapCore.BuyAprroxParams approx;
+    }
+
+    function _calculateInitialBuyOut(InitialTradeCaclParams memory params) internal view returns (uint256) {
+        return SwapperMathLibrary.getAmountOutBuyDs(
+            params.raReserve,
+            params.ctReserve,
+            params.amount,
+            params.issuedAt,
+            params.end,
+            block.timestamp,
+            params.approx.epsilon,
+            params.approx.maxApproxIter
+        );
     }
 
     function isRAsupportsPermit(address token) internal view returns (bool) {

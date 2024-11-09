@@ -10,8 +10,6 @@ import {SD59x18, convert, sd, add, mul, pow, sub, div, abs, unwrap} from "@prb/m
 import {IMathError} from "./../interfaces/IMathError.sol";
 
 library BuyMathBisectionSolver {
-    uint256 internal constant MAX_BISECTION_ITER = 256;
-
     /// @notice returns the the normalized time to maturity from 1-0
     /// 1 means we're at the start of the period, 0 means we're at the end
     function computeT(SD59x18 start, SD59x18 end, SD59x18 current) internal pure returns (SD59x18) {
@@ -57,7 +55,11 @@ library BuyMathBisectionSolver {
         return sub(sub(add(xPow, yPow), xMinSplusEPow), yPlusSPow);
     }
 
-    function findRoot(SD59x18 x, SD59x18 y, SD59x18 e, SD59x18 _1MinusT) internal pure returns (SD59x18) {
+    function findRoot(SD59x18 x, SD59x18 y, SD59x18 e, SD59x18 _1MinusT, SD59x18 epsilon, uint256 maxIter)
+        internal
+        pure
+        returns (SD59x18)
+    {
         SD59x18 a = sd(0);
         SD59x18 b;
 
@@ -86,8 +88,7 @@ library BuyMathBisectionSolver {
             }
         }
 
-        SD59x18 epsilon = sd(1e9);
-        for (uint256 i = 0; i < MAX_BISECTION_ITER; i++) {
+        for (uint256 i = 0; i < maxIter; i++) {
             SD59x18 c = div(add(a, b), convert(2));
             SD59x18 fC = f(x, y, e, c, _1MinusT);
 
@@ -135,11 +136,16 @@ library SwapperMathLibrary {
         ctPriceRatio = raReserve.divDown(ctReserve);
     }
 
-    function getAmountOutBuyDs(uint256 x, uint256 y, uint256 e, uint256 start, uint256 end, uint256 current)
-        external
-        pure
-        returns (uint256 s)
-    {
+    function getAmountOutBuyDs(
+        uint256 x,
+        uint256 y,
+        uint256 e,
+        uint256 start,
+        uint256 end,
+        uint256 current,
+        uint256 epsilon,
+        uint256 maxIter
+    ) external pure returns (uint256 s) {
         if (x < 0 || y < 0 || e < 0) {
             revert IMathError.InvalidParam();
         }
@@ -151,8 +157,9 @@ library SwapperMathLibrary {
         SD59x18 oneMinusT = BuyMathBisectionSolver.computeOneMinusT(
             convert(int256(start)), convert(int256(end)), convert(int256(current))
         );
-        SD59x18 root =
-            BuyMathBisectionSolver.findRoot(convert(int256(x)), convert(int256(y)), convert(int256(e)), oneMinusT);
+        SD59x18 root = BuyMathBisectionSolver.findRoot(
+            convert(int256(x)), convert(int256(y)), convert(int256(e)), oneMinusT, sd(int256(epsilon)), maxIter
+        );
 
         return uint256(convert(root));
     }

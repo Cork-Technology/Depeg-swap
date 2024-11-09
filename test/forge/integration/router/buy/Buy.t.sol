@@ -72,17 +72,11 @@ contract BuyDsTest is Helper {
         // TODO : figure out the out of whack gas consumption
         vm.pauseGasMetering();
 
-        // TODO : implement fee in buy
-        // hook.updateBaseFeePercentage(address(ra), ct, 1 ether);
-        uint256 amountOutPreview = flashSwapRouter.previewSwapRaforDs(currencyId, dsId, amount);
+        hook.updateBaseFeePercentage(address(ra), ct, 1 ether);
 
-        // won't be exact since we sold some from reserve
-        // vm.assertApproxEqAbs(amountOutPreview, 9 ether, 0.03 ether);
         uint256 amountOut = flashSwapRouter.swapRaforDs(
-            currencyId, dsId, amount, amountOutPreview, DEFAULT_ADDRESS, bytes(""), block.timestamp
+            currencyId, dsId, amount, 0, DEFAULT_ADDRESS, bytes(""), block.timestamp,defaultBuyApproxParams()
         );
-        vm.assertEq(amountOut, amountOutPreview);
-
         uint256 balanceRaAfter = Asset(ds).balanceOf(DEFAULT_ADDRESS);
 
         vm.assertEq(balanceRaAfter - balanceRaBefore, amountOut);

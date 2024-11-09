@@ -87,6 +87,17 @@ interface IDsFlashSwapCore is IDsFlashSwapUtility {
     /// @notice thrown when there's not enough liquidity to perform flash swap
     error InsufficientLiquidity(uint256 raReserve, uint256 ctReserve, uint256 amountRepayment);
 
+    struct BuyAprroxParams {
+        /// @dev the maximum amount of iterations to find the optimal amount of DS to swap, 256 is a good number
+        uint256 maxApproxIter;
+        /// @dev the amount that will be used to subtract borrowed amount to find the optimal amount for borrowing RA
+        /// the lower the value, the more accurate the approximation will be but will be more expensive
+        /// when in doubt use 0.01 ether or 1e16
+        uint256 feeIntervalAdjustment;
+        /// @dev the threshold tolerance that's used to find the optimal DS amount
+        /// when in doubt use 1e9
+        uint256 epsilon;
+    }
     /**
      * @notice Emitted when DS is swapped for RA
      * @param reserveId the reserve id same as the id on PSM and LV
@@ -95,6 +106,7 @@ interface IDsFlashSwapCore is IDsFlashSwapUtility {
      * @param amountIn the amount of DS that's swapped
      * @param amountOut the amount of RA that's received
      */
+
     event DsSwapped(
         Id indexed reserveId, uint256 indexed dsId, address indexed user, uint256 amountIn, uint256 amountOut
     );
@@ -210,8 +222,12 @@ interface IDsFlashSwapCore is IDsFlashSwapUtility {
      * @param reserveId the reserve id same as the id on PSM and LV
      * @param dsId the ds id of the pair, the same as the DS id on PSM and LV
      * @param amount the amount of RA to swap
-     * @param amountOutMin the minimum amount of DS to receive, will revert if the actual amount is less than this. should be inserted with value from previewSwapRaforDs
+     * @param amountOutMin the minimum amount of DS to receive, will revert if the actual amount is less than this.
      * @return amountOut amount of DS that's received
+     * @param user the user that's swapping
+     * @param rawRaPermitSig the raw permit signature of RA
+     * @param deadline the deadline for the swap
+     * @param params the buy approximation params(math stuff)
      */
     function swapRaforDs(
         Id reserveId,
@@ -220,24 +236,16 @@ interface IDsFlashSwapCore is IDsFlashSwapUtility {
         uint256 amountOutMin,
         address user,
         bytes memory rawRaPermitSig,
-        uint256 deadline
+        uint256 deadline,
+        BuyAprroxParams memory params
     ) external returns (uint256 amountOut);
-
-    /**
-     * @notice Preview the amount of DS that will be received from swapping RA
-     * @param reserveId the reserve id same as the id on PSM and LV
-     * @param dsId the ds id of the pair, the same as the DS id on PSM and LV
-     * @param amount the amount of RA to swap
-     * @return amountOut amount of DS that will be received
-     */
-    function previewSwapRaforDs(Id reserveId, uint256 dsId, uint256 amount) external view returns (uint256 amountOut);
 
     /**
      * @notice Swaps DS for RA
      * @param reserveId the reserve id same as the id on PSM and LV
      * @param dsId the ds id of the pair, the same as the DS id on PSM and LV
      * @param amount the amount of DS to swap
-     * @param amountOutMin the minimum amount of RA to receive, will revert if the actual amount is less than this. should be inserted with value from previewSwapDsforRa
+     * @param amountOutMin the minimum amount of RA to receive, will revert if the actual amount is less than this.
      * @return amountOut amount of RA that's received
      */
     function swapDsforRa(
@@ -249,15 +257,6 @@ interface IDsFlashSwapCore is IDsFlashSwapUtility {
         bytes memory rawDsPermitSig,
         uint256 deadline
     ) external returns (uint256 amountOut);
-
-    /**
-     * @notice Preview the amount of RA that will be received from swapping DS
-     * @param reserveId the reserve id same as the id on PSM and LV
-     * @param dsId the ds id of the pair, the same as the DS id on PSM and LV
-     * @param amount the amount of DS to swap
-     * @return amountOut amount of RA that will be received
-     */
-    function previewSwapDsforRa(Id reserveId, uint256 dsId, uint256 amount) external view returns (uint256 amountOut);
 
     /**
      * @notice Updates the discount rate in D days for the pair

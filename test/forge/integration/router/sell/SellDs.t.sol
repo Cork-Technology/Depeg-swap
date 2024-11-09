@@ -69,11 +69,9 @@ contract SellDsTest is Helper {
         vm.pauseGasMetering();
         hook.updateBaseFeePercentage(address(ra), ct, 1 ether);
        
-        uint256 amountOutPreview = flashSwapRouter.previewSwapDsforRa(currencyId, dsId, amount);
         uint256 amountOut = flashSwapRouter.swapDsforRa(
-            currencyId, dsId, amount, amountOutPreview, DEFAULT_ADDRESS, bytes(""), block.timestamp
+            currencyId, dsId, amount, 0, DEFAULT_ADDRESS, bytes(""), block.timestamp
         );
-        vm.assertEq(amountOut, amountOutPreview);
 
         uint256 balanceRaAfter = ra.balanceOf(DEFAULT_ADDRESS);
 

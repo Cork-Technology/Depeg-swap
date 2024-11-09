@@ -1,6 +1,7 @@
 pragma solidity ^0.8.0;
 
 import "./IErrors.sol";
+import "Cork-Hook/lib/MarketSnapshot.sol";
 
 interface ICorkHook is IErrors {
     function swap(address ra, address ct, uint256 amountRaOut, uint256 amountCtOut, bytes calldata data)
@@ -43,8 +44,10 @@ interface ICorkHook is IErrors {
         external
         view
         returns (uint256 amountOut);
-        
+
     function getPoolManager() external view returns (address);
 
     function getForwarder() external view returns (address);
+
+    function getMarketSnapshot(address ra, address ct) external view returns (MarketSnapshot memory);
 }
