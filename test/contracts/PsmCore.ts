@@ -195,6 +195,7 @@ describe("PSM core", function () {
         erc20contractAddress: ds!,
         psmAddress: fixture.moduleCore.address,
         signer: defaultSigner,
+        functionName: "redeemRaWithDs",
       });
 
       await fixture.moduleCore.write.redeemRaWithDs([
@@ -289,6 +290,7 @@ describe("PSM core", function () {
         erc20contractAddress: ct!,
         psmAddress: fixture.moduleCore.address,
         signer: defaultSigner,
+        functionName: "redeemWithCT",
       });
 
       const [_, raReceivedPreview] =
@@ -423,6 +425,7 @@ describe("PSM core", function () {
         erc20contractAddress: ds!,
         psmAddress: fixture.moduleCore.address,
         signer: defaultSigner,
+        functionName: "redeemRaWithDs",
       });
 
       await fixture.moduleCore.write.redeemRaWithDs([
@@ -516,6 +519,7 @@ describe("PSM core", function () {
         erc20contractAddress: ds!,
         psmAddress: fixture.moduleCore.address,
         signer: defaultSigner,
+        functionName: "redeemRaWithCtDs",
       });
       const msgPermit2 = await helper.permit({
         amount: parseEther("1"),
@@ -523,6 +527,7 @@ describe("PSM core", function () {
         erc20contractAddress: ct!,
         psmAddress: fixture.moduleCore.address,
         signer: defaultSigner,
+        functionName: "redeemRaWithCtDs",
       });
 
       await fixture.moduleCore.write.redeemRaWithCtDs([
@@ -692,6 +697,7 @@ describe("PSM core", function () {
         erc20contractAddress: ds!,
         psmAddress: fixture.moduleCore.address,
         signer: defaultSigner,
+        functionName: "redeemRaWithDs",
       });
 
       await fixture.moduleCore.write.redeemRaWithDs([
@@ -774,6 +780,7 @@ describe("PSM core", function () {
         erc20contractAddress: ds!,
         psmAddress: fixture.moduleCore.address,
         signer: defaultSigner,
+        functionName: "redeemRaWithDs",
       });
 
       await fixture.moduleCore.write.redeemRaWithDs([
@@ -835,6 +842,7 @@ describe("PSM core", function () {
         erc20contractAddress: ds!,
         psmAddress: fixture.moduleCore.address,
         signer: defaultSigner,
+        functionName: "redeemRaWithDs",
       });
 
       await fixture.moduleCore.write.redeemRaWithDs([
@@ -874,6 +882,7 @@ describe("PSM core", function () {
         erc20contractAddress: ct!,
         psmAddress: fixture.moduleCore.address,
         signer: defaultSigner,
+        functionName: "redeemWithCT",
       });
 
       await fixture.moduleCore.write.redeemWithCT([
@@ -1018,6 +1027,7 @@ describe("PSM core", function () {
         erc20contractAddress: ct!,
         psmAddress: fixture.moduleCore.address,
         signer: defaultSigner,
+        functionName: "redeemWithCT",
       });
 
       await time.increaseTo(newExpiry);
@@ -1118,6 +1128,7 @@ describe("PSM core", function () {
         erc20contractAddress: ds!,
         psmAddress: fixture.moduleCore.address,
         signer: defaultSigner,
+        functionName: "redeemRaWithDs",
       });
 
       await fixture.moduleCore.write.redeemRaWithDs([

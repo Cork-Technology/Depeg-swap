@@ -348,7 +348,7 @@ contract RouterState is
             revert PermitNotSupported();
         }
 
-        DepegSwapLibrary.permit(address(assetPair.ra), rawRaPermitSig, user, address(this), amount, deadline);
+        DepegSwapLibrary.permitForRA(address(assetPair.ra), rawRaPermitSig, user, address(this), amount, deadline);
         IERC20(assetPair.ra).safeTransferFrom(user, address(this), amount);
 
         amountOut = _swapRaforDs(self, assetPair, reserveId, dsId, amount, amountOutMin);
@@ -494,7 +494,9 @@ contract RouterState is
         ReserveState storage self = reserves[reserveId];
         AssetPair storage assetPair = self.ds[dsId];
 
-        DepegSwapLibrary.permit(address(assetPair.ds), rawDsPermitSig, user, address(this), amount, deadline);
+        DepegSwapLibrary.permit(
+            address(assetPair.ds), rawDsPermitSig, user, address(this), amount, deadline, "swapDsforRa"
+        );
         assetPair.ds.transferFrom(user, address(this), amount);
 
         bool success;

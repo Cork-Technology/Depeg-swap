@@ -119,7 +119,8 @@ contract RolloverTest is Helper {
             Asset(ct).nonces(DEFAULT_ADDRESS),
             deadline,
             DEFAULT_ADDRESS_PK,
-            DOMAIN_SEPARATOR
+            DOMAIN_SEPARATOR,
+            "rolloverCt"
         );
 
         ff_expired();

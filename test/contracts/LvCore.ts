@@ -157,6 +157,7 @@ describe("LvCore", function () {
         erc20contractAddress: fixture.lv.address!,
         psmAddress: moduleCore.address,
         signer: defaultSigner,
+        functionName: "redeemEarlyLv",
       });
 
       const [preview, , ,] = await moduleCore.read.previewRedeemEarlyLv([
@@ -276,6 +277,7 @@ describe("LvCore", function () {
         erc20contractAddress: fixture.lv.address!,
         psmAddress: moduleCore.address,
         signer: secondSigner,
+        functionName: "redeemEarlyLv",
       });
 
       // don't actually matter right now

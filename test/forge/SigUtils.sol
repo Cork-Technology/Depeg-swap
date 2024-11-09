@@ -4,9 +4,8 @@ pragma solidity ^0.8.24;
 import "forge-std/Test.sol";
 
 contract SigUtils is Test {
-
-    // keccak256("Permit(address owner,address spender,uint256 value,uint256 nonce,uint256 deadline)");
-    bytes32 public constant PERMIT_TYPEHASH = 0x6e71edae12b1b97f4d1f60370fef10105fa2faae0126114a169c64845d6126c9;
+    // keccak256("Permit(address owner,address spender,uint256 value,uint256 nonce,uint256 deadline,bytes32 functionHash)");
+    bytes32 public constant PERMIT_TYPEHASH = 0x80b24e394b7fdf35ccd5eb8f755150927489ac082064fc8f3e9fb140f57f3725;
 
     struct Permit {
         address owner;
@@ -14,12 +13,21 @@ contract SigUtils is Test {
         uint256 value;
         uint256 nonce;
         uint256 deadline;
+        bytes32 functionHash;
     }
 
     // computes the hash of a permit
     function getStructHash(Permit memory _permit) internal pure returns (bytes32) {
         return keccak256(
-            abi.encode(PERMIT_TYPEHASH, _permit.owner, _permit.spender, _permit.value, _permit.nonce, _permit.deadline)
+            abi.encode(
+                PERMIT_TYPEHASH,
+                _permit.owner,
+                _permit.spender,
+                _permit.value,
+                _permit.nonce,
+                _permit.deadline,
+                _permit.functionHash
+            )
         );
     }
 
@@ -28,13 +36,26 @@ contract SigUtils is Test {
         return keccak256(abi.encodePacked("\x19\x01", DOMAIN_SEPARATOR, getStructHash(_permit)));
     }
 
-    function getPermit(address owner, address spender, uint256 value, uint256 nonce, uint256 deadline, uint256 pk, bytes32 DOMAIN_SEPARATOR)
-        internal
-        pure
-        returns (bytes memory)
-    {
-        SigUtils.Permit memory permit =
-            SigUtils.Permit({owner: owner, spender: spender, value: value, nonce: nonce, deadline: deadline});
+    function getPermit(
+        address owner,
+        address spender,
+        uint256 value,
+        uint256 nonce,
+        uint256 deadline,
+        uint256 pk,
+        bytes32 DOMAIN_SEPARATOR,
+        string memory functionName
+    ) internal pure returns (bytes memory) {
+        bytes32 functionHash = keccak256(bytes(functionName));
+
+        SigUtils.Permit memory permit = SigUtils.Permit({
+            owner: owner,
+            spender: spender,
+            value: value,
+            nonce: nonce,
+            deadline: deadline,
+            functionHash: functionHash
+        });
 
         bytes32 digest = getTypedDataHash(permit, DOMAIN_SEPARATOR);
 

@@ -62,7 +62,6 @@ library VaultLibrary {
         uint256 raTolerance,
         uint256 ctTolerance
     ) internal {
-
         IERC20(raAddress).safeIncreaseAllowance(address(ammRouter), raAmount);
         IERC20(ctAddress).safeIncreaseAllowance(address(ammRouter), ctAmount);
 
@@ -248,8 +247,7 @@ library VaultLibrary {
 
         uint256 ctRatio = __getAmmCtPriceRatio(self, flashSwapRouter, dsId);
 
-        (uint256 ra, uint256 ct, uint256 originalBalance) =
-            self.vault.pool.rationedToAmm(ctRatio);
+        (uint256 ra, uint256 ct, uint256 originalBalance) = self.vault.pool.rationedToAmm(ctRatio);
 
         // this doesn't really matter tbh, since the amm is fresh and we're the first one to add liquidity to it
         (uint256 raTolerance, uint256 ctTolerance) =
@@ -700,7 +698,8 @@ library VaultLibrary {
                 owner,
                 address(this),
                 redeemParams.amount,
-                permitParams.deadline
+                permitParams.deadline,
+                "redeemEarlyLv"
             );
         }
 

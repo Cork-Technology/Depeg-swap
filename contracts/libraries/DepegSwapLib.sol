@@ -1,10 +1,11 @@
 pragma solidity ^0.8.24;
 
+import {IERC20Permit} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Permit.sol";
 import {Asset} from "../core/assets/Asset.sol";
 import {Signature, MinimalSignatureHelper} from "./SignatureHelperLib.sol";
 
 /**
- * @dev DepegSwap structure for DS(DepegSwap)   
+ * @dev DepegSwap structure for DS(DepegSwap)
  */
 struct DepegSwap {
     bool expiredEventEmitted;
@@ -18,7 +19,7 @@ struct DepegSwap {
 /**
  * @title DepegSwapLibrary Contract
  * @author Cork Team
- * @notice DepegSwapLibrary library which implements DepegSwap(DS) related features 
+ * @notice DepegSwapLibrary library which implements DepegSwap(DS) related features
  */
 library DepegSwapLibrary {
     using MinimalSignatureHelper for Signature;
@@ -39,7 +40,7 @@ library DepegSwapLibrary {
         return DepegSwap({expiredEventEmitted: false, _address: _address, ammPair: ammPair, ct: ct, ctRedeemed: 0});
     }
 
-    function permit(
+    function permitForRA(
         address contract_,
         bytes memory rawSig,
         address owner,
@@ -47,9 +48,27 @@ library DepegSwapLibrary {
         uint256 value,
         uint256 deadline
     ) internal {
+        // Split the raw signature
         Signature memory sig = MinimalSignatureHelper.split(rawSig);
 
-        Asset(contract_).permit(owner, spender, value, deadline, sig.v, sig.r, sig.s);
+        // Call the underlying ERC-20 contract's permit function
+        IERC20Permit(contract_).permit(owner, spender, value, deadline, sig.v, sig.r, sig.s);
+    }
+
+    function permit(
+        address contract_,
+        bytes memory rawSig,
+        address owner,
+        address spender,
+        uint256 value,
+        uint256 deadline,
+        string memory functionName
+    ) internal {
+        // Split the raw signature
+        Signature memory sig = MinimalSignatureHelper.split(rawSig);
+
+        // Call the underlying ERC-20 contract's permit function
+        Asset(contract_).permit(owner, spender, value, deadline, sig.v, sig.r, sig.s, functionName);
     }
 
     function issue(DepegSwap memory self, address to, uint256 amount) internal {

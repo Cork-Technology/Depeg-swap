@@ -75,7 +75,9 @@ library PsmLibrary {
         uint256 ctDeadline
     ) external returns (uint256 ctReceived, uint256 dsReceived, uint256 _exchangeRate, uint256 paReceived) {
         if (rawCtPermitSig.length > 0 && ctDeadline != 0) {
-            DepegSwapLibrary.permit(self.ds[dsId].ct, rawCtPermitSig, owner, address(this), amount, ctDeadline);
+            DepegSwapLibrary.permit(
+                self.ds[dsId].ct, rawCtPermitSig, owner, address(this), amount, ctDeadline, "rolloverCt"
+            );
         }
 
         (ctReceived, dsReceived, _exchangeRate, paReceived) = _rolloverCt(self, owner, amount, dsId, flashSwapRouter);
@@ -418,8 +420,10 @@ library PsmLibrary {
         Guard.safeBeforeExpired(ds);
 
         if (dsDeadline != 0 && ctDeadline != 0) {
-            DepegSwapLibrary.permit(ds._address, rawDsPermitSig, owner, address(this), amount, dsDeadline);
-            DepegSwapLibrary.permit(ds.ct, rawCtPermitSig, owner, address(this), amount, ctDeadline);
+            DepegSwapLibrary.permit(
+                ds._address, rawDsPermitSig, owner, address(this), amount, dsDeadline, "redeemRaWithCtDs"
+            );
+            DepegSwapLibrary.permit(ds.ct, rawCtPermitSig, owner, address(this), amount, ctDeadline, "redeemRaWithCtDs");
         }
 
         ra = _redeemRaWithCtDs(self, ds, owner, amount);
@@ -609,7 +613,9 @@ library PsmLibrary {
         (received, dsProvided, fee, _exchangeRate) = previewRedeemWithDs(self, dsId, amount);
 
         if (deadline != 0) {
-            DepegSwapLibrary.permit(ds._address, rawDsPermitSig, owner, address(this), dsProvided, deadline);
+            DepegSwapLibrary.permit(
+                ds._address, rawDsPermitSig, owner, address(this), dsProvided, deadline, "redeemRaWithDs"
+            );
         }
 
         _redeemDs(self.psm.balances, amount, dsProvided);
@@ -698,7 +704,7 @@ library PsmLibrary {
         DepegSwap storage ds = self.ds[dsId];
         Guard.safeAfterExpired(ds);
         if (deadline != 0) {
-            DepegSwapLibrary.permit(ds.ct, rawCtPermitSig, owner, address(this), amount, deadline);
+            DepegSwapLibrary.permit(ds.ct, rawCtPermitSig, owner, address(this), amount, deadline, "redeemWithCT");
         }
         _separateLiquidity(self, dsId);
 
