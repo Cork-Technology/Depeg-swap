@@ -75,11 +75,6 @@ contract FlashSwapTest is Helper {
         uint256 amountOut = flashSwapRouter.swapRaforDs(
             currencyId, dsId, 1 ether, 0, DEFAULT_ADDRESS, bytes(""), 0, defaultBuyApproxParams()
         );
-        uint256 hpaCummulated = flashSwapRouter.getHpaCumulated(currencyId);
-        uint256 vhpaCummulated = flashSwapRouter.getVhpaCumulated(currencyId);
-
-        // we fetch the hpa after expiry so that it's calculated
-        uint256 hpa = flashSwapRouter.getHpa(currencyId);
 
         IPSMcore(moduleCore).updatePsmAutoSellStatus(currencyId, DEFAULT_ADDRESS, true);
 
