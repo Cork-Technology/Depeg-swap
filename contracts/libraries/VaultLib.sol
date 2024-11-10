@@ -177,7 +177,8 @@ library VaultLibrary {
         returns (uint256 ratio)
     {
         Id id = self.info.toId();
-        uint256 hpa = flashSwapRouter.getCurrentEffectiveHPA(id);
+        // TODO : adjust rate initialization
+        uint256 hpa = flashSwapRouter.getCurrentEffectiveHIYA(id);
         bool isRollover = flashSwapRouter.isRolloverSale(id, dsId);
 
         uint256 marketRatio;

@@ -33,11 +33,11 @@ struct ReserveState {
     /// @dev dsId => [RA, CT, DS]
     mapping(uint256 => AssetPair) ds;
     uint256 reserveSellPressurePercentage;
-    uint256 hpaCumulated;
-    uint256 vhpaCumulated;
+    uint256 hiyaCumulated;
+    uint256 vhiyaCumulated;
     uint256 decayDiscountRateInDays;
     uint256 rolloverEndInBlockNumber;
-    uint256 hpa;
+    uint256 hiya;
     bool gradualSale;
 }
 
@@ -66,15 +66,14 @@ library DsFlashSwaplibrary {
             ? INITIAL_RESERVE_SELL_PRESSURE_PERCENTAGE
             : SUBSEQUENT_RESERVE_SELL_PRESSURE_PERCENTAGE;
 
+        // try to calculate implied ARP, if not present then fallback to the default value provided from previous issuance/start
         if (dsId != FIRST_ISSUANCE) {
-            try SwapperMathLibrary.calculateHPA(self.hpaCumulated, self.vhpaCumulated) returns (uint256 hpa) {
-                self.hpa = hpa;
-            } catch {
-                self.hpa = 0;
-            }
+            try SwapperMathLibrary.calculateHIYA(self.hiyaCumulated, self.vhiyaCumulated) returns (uint256 hiya) {
+                self.hiya = hiya;
+            } catch {}
 
-            self.hpaCumulated = 0;
-            self.vhpaCumulated = 0;
+            self.hiyaCumulated = 0;
+            self.vhiyaCumulated = 0;
         }
     }
 
@@ -86,28 +85,27 @@ library DsFlashSwaplibrary {
         emptied = emptyReservePartialLv(self, dsId, self.ds[dsId].lvReserve, to);
     }
 
-    function getEffectiveHPA(ReserveState storage self) internal view returns (uint256) {
-        return self.hpa;
+    function getEffectiveHIYA(ReserveState storage self) internal view returns (uint256) {
+        return self.hiya;
     }
 
-    function getCurrentCumulativeHPA(ReserveState storage self) internal view returns (uint256) {
-        try SwapperMathLibrary.calculateHPA(self.hpaCumulated, self.vhpaCumulated) returns (uint256 hpa) {
-            return hpa;
+    function getCurrentCumulativeHIYA(ReserveState storage self) internal view returns (uint256) {
+        try SwapperMathLibrary.calculateHIYA(self.hiyaCumulated, self.vhiyaCumulated) returns (uint256 hiya) {
+            return hiya;
         } catch {
             return 0;
         }
     }
 
-    // this function is called for every trade, it recalculates the HPA and VHPA for the reserve.
-    function recalculateHPA(ReserveState storage self, uint256 dsId, uint256 ra, uint256 ds) internal {
-        uint256 effectiveDsPrice = SwapperMathLibrary.calculateEffectiveDsPrice(ds, ra);
-        uint256 issuanceTime = self.ds[dsId].ds.issuedAt();
-        uint256 currentTime = block.timestamp;
+    // this function is called for every trade, it recalculates the HIYA and VHIYA for the reserve.
+    function recalculateHIYA(ReserveState storage self, uint256 dsId, uint256 ra, uint256 ds) internal {
+        uint256 start = self.ds[dsId].ds.issuedAt();
+        uint256 end = self.ds[dsId].ds.expiry();
+        uint256 current = block.timestamp;
         uint256 decayDiscount = self.decayDiscountRateInDays;
 
-        self.hpaCumulated +=
-            SwapperMathLibrary.calculateHPAcumulated(effectiveDsPrice, ds, decayDiscount, issuanceTime, currentTime);
-        self.vhpaCumulated += SwapperMathLibrary.calculateVHPAcumulated(ds, decayDiscount, issuanceTime, currentTime);
+        self.hiyaCumulated += SwapperMathLibrary.calcHIYAaccumulated(start, end, current, ds, ra, decayDiscount);
+        self.vhiyaCumulated += SwapperMathLibrary.calcVHIYAaccumulated(start, end, current, decayDiscount, ds);
     }
 
     function emptyReservePartialLv(ReserveState storage self, uint256 dsId, uint256 amount, address to)
