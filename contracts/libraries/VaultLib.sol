@@ -44,14 +44,12 @@ library VaultLibrary {
         uint256 ct;
     }
 
-    function initialize(VaultState storage self, address lv, uint256 fee, address ra, uint256 initialDsPrice)
-        external
-    {
+    function initialize(VaultState storage self, address lv, uint256 fee, address ra, uint256 initialArp) external {
         self.config = VaultConfigLibrary.initialize(fee);
 
         self.lv = LvAssetLibrary.initialize(lv);
         self.balances.ra = RedemptionAssetManagerLibrary.initialize(ra);
-        self.initialDsPrice = initialDsPrice;
+        self.initialArp = initialArp;
     }
 
     function __addLiquidityToAmmUnchecked(
@@ -189,10 +187,10 @@ library VaultLibrary {
             marketRatio = 0;
         }
 
-        ratio = _determineRatio(hpa, marketRatio, self.vault.initialDsPrice, isRollover, dsId);
+        ratio = _determineRatio(hpa, marketRatio, self.vault.initialArp, isRollover, dsId);
     }
 
-    function _determineRatio(uint256 hpa, uint256 marketRatio, uint256 initialDsPrice, bool isRollover, uint256 dsId)
+    function _determineRatio(uint256 hpa, uint256 marketRatio, uint256 initialArp, bool isRollover, uint256 dsId)
         internal
         pure
         returns (uint256 ratio)
@@ -201,7 +199,8 @@ library VaultLibrary {
         // usually happens when there's no trade on the router AND is not the first issuance
         // OR it's the first issuance
         if (hpa == 0 && marketRatio == 0) {
-            ratio = 1e18 - initialDsPrice;
+            // TODO : test vault initialization works
+            ratio = MathHelper.caclulateInitialCtRatio(initialArp);
             return ratio;
         }
 
@@ -558,7 +557,7 @@ library VaultLibrary {
         uint256 lpLiquidated;
         uint256 dsId = self.globalAssetIdx;
         Pair storage pair = self.info;
-        
+
         {
             MathHelper.RedeemParams memory params = MathHelper.RedeemParams({
                 amountLvBurned: redeemParams.amount,
