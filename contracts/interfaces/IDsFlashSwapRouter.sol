@@ -48,17 +48,17 @@ interface IDsFlashSwapUtility {
     function getPsmReserve(Id id, uint256 dsId) external view returns (uint256 psmReserve);
 
     /**
-     * @notice returns the current cumulative HPA of the pair
+     * @notice returns the current cumulative HIYA of the pair
      * @param id the id of the pair
-     * @return hpaCummulative the current cumulative HPA
+     * @return hpaCummulative the current cumulative HIYA
      */
-    function getCurrentCumulativeHPA(Id id) external view returns (uint256 hpaCummulative);
+    function getCurrentCumulativeHIYA(Id id) external view returns (uint256 hpaCummulative);
 
     /**
-     * @notice returns the current effective HPA of the pair
+     * @notice returns the current effective HIYA of the pair
      * @param id the id of the pair
      */
-    function getCurrentEffectiveHPA(Id id) external view returns (uint256 hpa);
+    function getCurrentEffectiveHIYA(Id id) external view returns (uint256 hpa);
 }
 
 /**
