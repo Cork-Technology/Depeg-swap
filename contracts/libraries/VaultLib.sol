@@ -62,7 +62,6 @@ library VaultLibrary {
         uint256 raTolerance,
         uint256 ctTolerance
     ) internal {
-
         IERC20(raAddress).safeIncreaseAllowance(address(ammRouter), raAmount);
         IERC20(ctAddress).safeIncreaseAllowance(address(ammRouter), ctAmount);
 
@@ -248,8 +247,7 @@ library VaultLibrary {
 
         uint256 ctRatio = __getAmmCtPriceRatio(self, flashSwapRouter, dsId);
 
-        (uint256 ra, uint256 ct, uint256 originalBalance) =
-            self.vault.pool.rationedToAmm(ctRatio);
+        (uint256 ra, uint256 ct, uint256 originalBalance) = self.vault.pool.rationedToAmm(ctRatio);
 
         // this doesn't really matter tbh, since the amm is fresh and we're the first one to add liquidity to it
         (uint256 raTolerance, uint256 ctTolerance) =
@@ -285,7 +283,7 @@ library VaultLibrary {
             self.vault.initialized = true;
         } else {
             // else we get the current exchange rate of LV
-            (exchangeRate,,,paAmount) = previewRedeemEarly(self, 1 ether, flashSwapRouter);
+            (exchangeRate,,, paAmount) = previewRedeemEarly(self, 1 ether, flashSwapRouter);
             exchangeRate += paAmount;
         }
 
@@ -317,13 +315,15 @@ library VaultLibrary {
         returns (uint256 lvReceived, uint256 raAddedAsLiquidity, uint256 ctAddedAsLiquidity)
     {
         uint256 exchangeRate;
+        uint256 paAmount;
 
         // we mint 1:1 if it's the first deposit
         if (!self.vault.initialized) {
             exchangeRate = 1 ether;
         } else {
             // else we get the current exchange rate of LV
-            (exchangeRate,,,) = previewRedeemEarly(self, 1 ether, flashSwapRouter);
+            (exchangeRate,,, paAmount) = previewRedeemEarly(self, 1 ether, flashSwapRouter);
+            exchangeRate += paAmount;
         }
 
         // then we calculate how much LV we will get for the amount of RA we deposited with the exchange rate
@@ -745,7 +745,7 @@ library VaultLibrary {
     function previewRedeemEarly(State storage self, uint256 amount, IDsFlashSwapCore flashSwapRouter)
         public
         view
-        returns (uint256 received, uint256 fee, uint256 feePercentage, uint256 paAmpount)
+        returns (uint256 received, uint256 fee, uint256 feePercentage, uint256 paAmount)
     {
         safeBeforeExpired(self);
 
@@ -756,6 +756,6 @@ library VaultLibrary {
         fee = MathHelper.calculatePercentageFee(received, feePercentage);
 
         received -= fee;
-        paAmpount = _calculatePaPriceForLv(self, amount);
+        paAmount = _calculatePaPriceForLv(self, amount);
     }
 }
