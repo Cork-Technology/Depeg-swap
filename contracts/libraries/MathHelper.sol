@@ -1,5 +1,8 @@
+// TODO : change math related contract license to MIT/GPL
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.24;
+
+import {UD60x18, convert, ud, add, mul, pow, sub, div, unwrap} from "@prb/math/src/UD60x18.sol";
 
 /**
  * @title MathHelper Library Contract
@@ -242,5 +245,13 @@ library MathHelper {
         returns (uint256 ctReceived, uint256 dsReceived, uint256 lpLiquidated)
     {
         // TODO
+    }
+
+    /// @notice InitialctRatio = f / (rate +1)^t
+    /// where f = 1, and t = 1
+    function caclulateInitialCtRatio(uint256 _rate) internal returns (uint256) {
+        UD60x18 rate = convert(_rate);
+        UD60x18 ratePlusOne = add(rate, convert(1));
+        return convert(div(convert(1), ratePlusOne));
     }
 }
