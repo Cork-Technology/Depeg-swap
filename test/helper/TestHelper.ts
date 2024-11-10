@@ -86,11 +86,25 @@ export function getSigners(
 export async function deployAssetFactory() {
   const signers = await hre.viem.getWalletClients();
   const { defaultSigner } = getSigners(signers);
-  const contract = await hre.viem.deployContract("AssetFactory", [], {
-    client: {
-      wallet: defaultSigner,
-    },
-  });
+  const assetFactorycontract = await hre.viem.deployContract(
+    "AssetFactory",
+    [],
+    {
+      client: {
+        wallet: defaultSigner,
+      },
+    }
+  );
+
+  const initializeData = "0x8129fc1c";
+  const assetFactoryProxy = await hre.viem.deployContract("ERC1967Proxy", [
+    assetFactorycontract.address,
+    initializeData,
+  ]);
+  const contract = await hre.viem.getContractAt(
+    "AssetFactory",
+    assetFactoryProxy.address
+  );
 
   return {
     contract,
@@ -119,14 +133,30 @@ export async function deployWeth() {
   };
 }
 
-export async function deployFlashSwapRouter(mathHelper: Address) {
+export async function deployFlashSwapRouter(
+  mathHelper: Address,
+  config: Address
+) {
   const mathLib = await hre.viem.deployContract("SwapperMathLibrary");
-  const contract = await hre.viem.deployContract("RouterState", [], {
+  const routerContract = await hre.viem.deployContract("RouterState", [], {
     libraries: {
       SwapperMathLibrary: mathLib.address,
       MathHelper: mathHelper,
     },
   });
+
+  // Step 3: Manually encode the initialization data (initialize(address))
+  // 'initialize(address)' has the function selector 'initialize(address)' and takes a single 'address' argument
+  const initializeData = "0xc4d66de8" + config.slice(2).padStart(64, "0");
+  const routerProxy = await hre.viem.deployContract(
+    "ERC1967Proxy",
+    [routerContract.address, initializeData],
+    {}
+  );
+  const contract = await hre.viem.getContractAt(
+    "RouterState",
+    routerProxy.address
+  );
 
   return {
     contract,
@@ -196,7 +226,10 @@ export async function deployModuleCore(
     },
   });
 
-  const dsFlashSwapRouter = await deployFlashSwapRouter(mathLib.address);
+  const dsFlashSwapRouter = await deployFlashSwapRouter(
+    mathLib.address,
+    config
+  );
   const univ2Factory = await deployUniV2Factory(
     dsFlashSwapRouter.contract.address
   );
@@ -207,7 +240,7 @@ export async function deployModuleCore(
     dsFlashSwapRouter.contract.address
   );
 
-  const contract = await hre.viem.deployContract("ModuleCore", [], {
+  const moduleCoreContract = await hre.viem.deployContract("ModuleCore", [], {
     client: {
       wallet: defaultSigner,
     },
@@ -217,17 +250,28 @@ export async function deployModuleCore(
     },
   });
 
-  contract.write.initialize([
-    swapAssetFactory,
-    univ2Factory,
-    dsFlashSwapRouter.contract.address,
-    univ2Router,
-    config,
-  ]);
+  const initializeData =
+    "0x1459457a" +
+    [
+      swapAssetFactory,
+      univ2Factory,
+      dsFlashSwapRouter.contract.address,
+      univ2Router,
+      config,
+    ]
+      .map((address) => address.slice(2).padStart(64, "0"))
+      .join(""); // Remove `0x` and pad each address to 32 bytes
 
-  await dsFlashSwapRouter.contract.write.initialize([
-    dsFlashSwapRouter.contract.address,
-  ]);
+  const moduleCoreProxy = await hre.viem.deployContract(
+    "ERC1967Proxy",
+    [moduleCoreContract.address, initializeData],
+    {}
+  );
+  const contract = await hre.viem.getContractAt(
+    "ModuleCore",
+    moduleCoreProxy.address
+  );
+
   await dsFlashSwapRouter.contract.write.setModuleCore([contract.address]);
   // await dsFlashSwapRouter.contract.write.transferOwnership([contract.address]);
 
@@ -483,7 +527,6 @@ export async function onlymoduleCoreWithFactory(basePsmRedemptionFee: bigint) {
       config.contract.address,
     );
   const moduleCore = contract;
-  await factory.contract.write.initialize();
   await factory.contract.write.transferOwnership([moduleCore.address]);
 
   return {

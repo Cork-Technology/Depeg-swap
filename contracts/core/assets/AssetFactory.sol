@@ -29,6 +29,10 @@ contract AssetFactory is IAssetFactory, OwnableUpgradeable, UUPSUpgradeable {
     /// @notice __gap variable to prevent storage collisions
     uint256[49] __gap;
 
+    constructor() {
+        _disableInitializers();
+    }
+
     /**
      * @notice for safety checks in psm core, also act as kind of like a registry
      * @param asset the address of Asset contract
