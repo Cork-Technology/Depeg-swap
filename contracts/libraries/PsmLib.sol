@@ -332,23 +332,20 @@ library PsmLibrary {
         ds.issue(address(this), received);
     }
 
- function _handleExpiredDsRedeem(State storage self, uint256 amount, uint256 dsId) internal returns (uint256 accruedRa) {
-        PsmPoolArchive storage archive = self.psm.poolArchive[dsId];
+    function _handleExpiredDsRedeem(PsmPoolArchive storage archive, uint256 amount)
+        internal
+        returns (uint256 accruedRa)
+    {
         uint256 totalCtIssued = archive.ctAttributed;
 
-        (, accruedRa) = _calcRedeemAmount(
-                amount,
-                totalCtIssued,
-                archive.raAccrued,
-                archive.paAccrued
-        );
+        (, accruedRa) = _calcRedeemAmount(amount, totalCtIssued, archive.raAccrued, archive.paAccrued);
 
         // because the PSM treats all CT issued(including to itself) as redeemable, we need to decrease the total amount of CT issued
         archive.ctAttributed -= amount;
         archive.raAccrued -= accruedRa;
 
         return accruedRa;
-        }
+    }
 
     function lvRedeemRaWithCtDs(State storage self, uint256 amount, uint256 dsId) internal returns (uint256 ra) {
         // separate if its hasnt been separated and is expired, if expired withdraw from archive, if not, decrease locked RA
@@ -362,7 +359,7 @@ library PsmLibrary {
             _separateLiquidity(self, dsId);
             PsmPoolArchive storage archive = self.psm.poolArchive[dsId];
 
-             ra = _handleExpiredDsRedeem(self, amount, dsId);
+            ra = _handleExpiredDsRedeem(archive, amount);
         } else {
             // else we just decrease the locked RA, since all the RA is still locked state(will turn to attributed when separated at liquidity)
             // this'll happen when someone redeem early
