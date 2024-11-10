@@ -65,17 +65,9 @@ contract VaultRedeemTest is Helper {
         IERC20(lv).approve(address(moduleCore), 0.9 ether);
         uint256 balanceBefore = IERC20(ra).balanceOf(DEFAULT_ADDRESS);
 
-        IVault.RedeemEarlyParams memory redeemParams = IVault.RedeemEarlyParams({
-            id: currencyId,
-            receiver: DEFAULT_ADDRESS,
-            amount: 0.9 ether,
-            amountOutMin: 0,
-            ammDeadline: block.timestamp
-        });
-        IVault.PermitParams memory permitParams = IVault.PermitParams({
-            rawLvPermitSig: bytes(""),
-            deadline: 0
-        });
+        IVault.RedeemEarlyParams memory redeemParams =
+            IVault.RedeemEarlyParams({id: currencyId, amount: 0.9 ether, amountOutMin: 0, ammDeadline: block.timestamp});
+        IVault.PermitParams memory permitParams = IVault.PermitParams({rawLvPermitSig: bytes(""), deadline: 0});
         (uint256 received, uint256 fee, uint256 feePercentage, uint256 paAmount) =
             moduleCore.redeemEarlyLv(redeemParams, DEFAULT_ADDRESS, permitParams);
 
@@ -94,7 +86,6 @@ contract VaultRedeemTest is Helper {
         IERC20(lv).approve(address(moduleCore), 1 ether);
         redeemParams = IVault.RedeemEarlyParams({
             id: currencyId,
-            receiver: DEFAULT_ADDRESS,
             amount: lvReceived,
             amountOutMin: 0,
             ammDeadline: block.timestamp

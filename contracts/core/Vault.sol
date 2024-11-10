@@ -60,12 +60,11 @@ abstract contract VaultCore is ModuleState, Context, IVault {
         LVWithdrawalNotPaused(redeemParams.id)
         returns (uint256 received, uint256 fee, uint256 feePercentage, uint256 paAmount)
     {
-        require(redeemer == redeemParams.receiver, "Receiver and Redeemer not same");
         Routers memory routers = Routers({flashSwapRouter: getRouterCore(), ammRouter: getAmmRouter()});
         (received, fee, feePercentage, paAmount) =
             states[redeemParams.id].redeemEarly(redeemer, redeemParams, routers, permitParams);
 
-        emit LvRedeemEarly(redeemParams.id, redeemer, redeemParams.receiver, received, fee, feePercentage);
+        emit LvRedeemEarly(redeemParams.id, redeemer, received, fee, feePercentage);
     }
 
     /**
