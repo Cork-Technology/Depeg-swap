@@ -62,7 +62,6 @@ library VaultLibrary {
         uint256 raTolerance,
         uint256 ctTolerance
     ) internal {
-
         IERC20(raAddress).safeIncreaseAllowance(address(ammRouter), raAmount);
         IERC20(ctAddress).safeIncreaseAllowance(address(ammRouter), ctAmount);
 
@@ -248,8 +247,7 @@ library VaultLibrary {
 
         uint256 ctRatio = __getAmmCtPriceRatio(self, flashSwapRouter, dsId);
 
-        (uint256 ra, uint256 ct, uint256 originalBalance) =
-            self.vault.pool.rationedToAmm(ctRatio);
+        (uint256 ra, uint256 ct, uint256 originalBalance) = self.vault.pool.rationedToAmm(ctRatio);
 
         // this doesn't really matter tbh, since the amm is fresh and we're the first one to add liquidity to it
         (uint256 raTolerance, uint256 ctTolerance) =
@@ -492,49 +490,6 @@ library VaultLibrary {
         psmRa += redeemAmount + raAmm;
 
         self.vault.pool.reserve(self.vault.lv.totalIssued(), psmRa, psmPa);
-    }
-
-    function _tryLiquidateLpAndRedeemCtToPsm(State storage self, uint256 dsId, IDsFlashSwapCore flashSwapRouter)
-        internal
-        view
-        returns (uint256 totalRa, uint256 pa)
-    {
-        uint256 ammCtBalance;
-
-        (totalRa, ammCtBalance) = __calculateTotalRaAndCtBalance(self, flashSwapRouter, dsId);
-
-        uint256 reservedDs = flashSwapRouter.getLvReserve(self.info.toId(), dsId);
-
-        // pair DS and CT to redeem RA
-        totalRa += reservedDs > ammCtBalance ? ammCtBalance : reservedDs;
-
-        uint256 raFromCt;
-        // redeem CT to get RA + PA
-        (pa, raFromCt) = PsmLibrary.previewRedeemWithCt(
-            self,
-            dsId,
-            // CT attributed to PA
-            reservedDs > ammCtBalance ? 0 : ammCtBalance - reservedDs
-        );
-    }
-
-    // duplate function to avoid stack too deep error
-    function __calculateTotalRaAndCtBalance(State storage self, IDsFlashSwapCore flashSwapRouter, uint256 dsId)
-        internal
-        view
-        returns (uint256 totalRa, uint256 ammCtBalance)
-    {
-        IUniswapV2Pair ammPair = flashSwapRouter.getUniV2pair(self.info.toId(), dsId);
-
-        (uint256 raReserve, uint256 ctReserve,) = ammPair.getReserves();
-
-        (raReserve, ctReserve) = MinimalUniswapV2Library.reverseSortWithAmount224(
-            ammPair.token0(), ammPair.token1(), self.info.pair1, self.ds[dsId].ct, raReserve, ctReserve
-        );
-
-        (,,,, totalRa, ammCtBalance) = __calculateTotalRaAndCtBalanceWithReserve(
-            self, raReserve, ctReserve, flashSwapRouter.getUniV2pair(self.info.toId(), dsId).totalSupply()
-        );
     }
 
     // duplate function to avoid stack too deep error
