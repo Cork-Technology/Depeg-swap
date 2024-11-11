@@ -249,9 +249,13 @@ library MathHelper {
 
     /// @notice InitialctRatio = f / (rate +1)^t
     /// where f = 1, and t = 1
-    function caclulateInitialCtRatio(uint256 _rate) internal returns (uint256) {
+    /// we expect that the rate is in 1e18 precision BEFORE passing it to this function
+    function caclulateInitialCtRatio(uint256 _rate) internal pure returns (uint256) {
         UD60x18 rate = convert(_rate);
-        UD60x18 ratePlusOne = add(rate, convert(1));
-        return convert(div(convert(1), ratePlusOne));
+        // normalize to 0-1
+        rate = div(rate, convert(100));
+
+        UD60x18 ratePlusOne = add(convert(1e18), rate);
+        return convert(div(convert(1e36), ratePlusOne));
     }
 }

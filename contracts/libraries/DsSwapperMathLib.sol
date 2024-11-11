@@ -334,7 +334,7 @@ library SwapperMathLibrary {
 
     /// @notice rT = (f/pT)^1/t - 1
     // TODO : test
-    function calcRt(UD60x18 pT, UD60x18 t) internal returns (UD60x18) {
+    function calcRt(UD60x18 pT, UD60x18 t) internal pure returns (UD60x18) {
         UD60x18 onePerT = div(convertUd(1), t);
         // TODO : confirm with peter
         UD60x18 fConst = convertUd(1);
@@ -346,7 +346,7 @@ library SwapperMathLibrary {
     }
 
     // TODO : test
-    function calcSpotArp(UD60x18 t, UD60x18 effectiveDsPrice) internal returns (UD60x18) {
+    function calcSpotArp(UD60x18 t, UD60x18 effectiveDsPrice) internal pure returns (UD60x18) {
         UD60x18 pt = calcPt(effectiveDsPrice);
         return calcRt(pt, t);
     }
@@ -354,13 +354,13 @@ library SwapperMathLibrary {
     /// @notice pt = 1 - effectiveDsPrice
     // TODO : confirm with peter
     // TODO : test
-    function calcPt(UD60x18 effectiveDsPrice) internal returns (UD60x18) {
+    function calcPt(UD60x18 effectiveDsPrice) internal pure returns (UD60x18) {
         return sub(convertUd(1), effectiveDsPrice);
     }
 
     /// @notice ptConstFixed = f / (rate +1)^t
     /// where f = 1, and t = 1
-    function calcPtConstFixed(UD60x18 rate) internal returns (UD60x18) {
+    function calcPtConstFixed(UD60x18 rate) internal pure returns (UD60x18) {
         UD60x18 ratePlusOne = add(rate, convertUd(1));
         return div(convertUd(1), ratePlusOne);
     }
