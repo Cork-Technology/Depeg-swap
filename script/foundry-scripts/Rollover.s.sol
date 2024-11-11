@@ -54,9 +54,9 @@ contract RolloverScript is Script {
 
         Id id = PairLibrary.toId(PairLibrary.initalize(asset.peggedAsset, asset.redemptionAsset));
 
-        uint256 currentHPA = flashSwapRouter.getCurrentCumulativeHPA(id);
+        uint256 currentHPA = flashSwapRouter.getCurrentCumulativeHIYA(id);
 
-        console.log("Current HPA  : ", currentHPA);
+        console.log("Current HIYA  : ", currentHPA);
 
         uint256 dsId = moduleCore.lastDsId(id);
 
@@ -99,9 +99,9 @@ contract RolloverScript is Script {
 
         console.log("New DS Expiry      : ", expiry);
 
-        currentHPA = flashSwapRouter.getCurrentEffectiveHPA(id);
+        currentHPA = flashSwapRouter.getCurrentEffectiveHIYA(id);
 
-        console.log("Current HPA        : ", currentHPA);
+        console.log("Current HIYA        : ", currentHPA);
     }
 
     function run() public {

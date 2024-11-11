@@ -74,12 +74,12 @@ contract RouterState is
         reserves[id].gradualSale = status;
     }
 
-    function getCurrentCumulativeHPA(Id id) external view returns (uint256 hpaCummulative) {
-        hpaCummulative = reserves[id].getCurrentCumulativeHPA();
+    function getCurrentCumulativeHIYA(Id id) external view returns (uint256 hpaCummulative) {
+        hpaCummulative = reserves[id].getCurrentCumulativeHIYA();
     }
 
-    function getCurrentEffectiveHPA(Id id) external view returns (uint256 hpa) {
-        hpa = reserves[id].getEffectiveHPA();
+    function getCurrentEffectiveHIYA(Id id) external view returns (uint256 hpa) {
+        hpa = reserves[id].getEffectiveHIYA();
     }
 
     function initialize(address config) external initializer {
@@ -206,7 +206,7 @@ contract RouterState is
         uint256 psmReserveUsed;
 
         (lvProfit, psmProfit, raLeft, dsReceived, lvReserveUsed, psmReserveUsed) =
-            SwapperMathLibrary.calculateRolloverSale(assetPair.lvReserve, assetPair.psmReserve, amountRa, self.hpa);
+            SwapperMathLibrary.calculateRolloverSale(assetPair.lvReserve, assetPair.psmReserve, amountRa, self.hiya);
 
         if (dsReceived < amountOutMin) {
             revert InsufficientOutputAmount();
@@ -350,7 +350,7 @@ contract RouterState is
 
         amountOut = _swapRaforDs(self, assetPair, reserveId, dsId, amount, amountOutMin, params);
 
-        self.recalculateHPA(dsId, amount, amountOut);
+        self.recalculateHIYA(dsId, amount, amountOut);
 
         emit RaSwapped(reserveId, dsId, user, amount, amountOut);
     }
@@ -384,7 +384,7 @@ contract RouterState is
             (uint256 raReserve, uint256 ctReserve) = assetPair.getReservesSorted(hook);
             revert IDsFlashSwapCore.InsufficientLiquidity(raReserve, ctReserve, repaymentAmount);
         }
-        self.recalculateHPA(dsId, amountOut, amount);
+        self.recalculateHIYA(dsId, amountOut, amount);
 
         emit DsSwapped(reserveId, dsId, user, amount, amountOut);
     }

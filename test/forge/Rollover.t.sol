@@ -143,19 +143,19 @@ contract RolloverTest is Helper {
         uint256 amountOut = flashSwapRouter.swapRaforDs(
             currencyId, dsId, 1 ether, 0, DEFAULT_ADDRESS_ROLLOVER, bytes(""), 0, defaultBuyApproxParams()
         );
-        uint256 hpaCummulated = flashSwapRouter.getHpaCumulated(currencyId);
-        uint256 vhpaCummulated = flashSwapRouter.getVhpaCumulated(currencyId);
+        uint256 HiyaCummulated = flashSwapRouter.getHiyaCumulated(currencyId);
+        uint256 vHiyaCummulated = flashSwapRouter.getVhiyaCumulated(currencyId);
 
         ff_expired();
 
-        // we fetch the hpa after expiry so that it's calculated
-        uint256 hpa = flashSwapRouter.getHpa(currencyId);
+        // we fetch the Hiya after expiry so that it's calculated
+        uint256 Hiya = flashSwapRouter.getHiya(currencyId);
 
-        vm.assertNotEq(vhpaCummulated, 0);
-        vm.assertNotEq(hpaCummulated, 0);
+        vm.assertNotEq(vHiyaCummulated, 0);
+        vm.assertNotEq(HiyaCummulated, 0);
 
         // take into account the discount rate, so it won't be exactly 0.1 ether
-        vm.assertApproxEqAbs(hpa, 0.1 ether, 0.002 ether);
+        vm.assertApproxEqAbs(Hiya, 0.1 ether, 0.002 ether);
 
         IPSMcore(moduleCore).updatePsmAutoSellStatus(currencyId, DEFAULT_ADDRESS_ROLLOVER, true);
 
@@ -211,19 +211,19 @@ contract RolloverTest is Helper {
         uint256 amountOut = flashSwapRouter.swapRaforDs(
             currencyId, dsId, 1 ether, 0, DEFAULT_ADDRESS_ROLLOVER, bytes(""), 0, defaultBuyApproxParams()
         );
-        uint256 hpaCummulated = flashSwapRouter.getHpaCumulated(currencyId);
-        uint256 vhpaCummulated = flashSwapRouter.getVhpaCumulated(currencyId);
+        uint256 HiyaCummulated = flashSwapRouter.getHiyaCumulated(currencyId);
+        uint256 vHiyaCummulated = flashSwapRouter.getVhiyaCumulated(currencyId);
 
         ff_expired();
 
-        // we fetch the hpa after expiry so that it's calculated
-        uint256 hpa = flashSwapRouter.getHpa(currencyId);
+        // we fetch the Hiya after expiry so that it's calculated
+        uint256 Hiya = flashSwapRouter.getHiya(currencyId);
 
-        vm.assertNotEq(vhpaCummulated, 0);
-        vm.assertNotEq(hpaCummulated, 0);
+        vm.assertNotEq(vHiyaCummulated, 0);
+        vm.assertNotEq(HiyaCummulated, 0);
 
         // take into account the discount rate, so it won't be exactly 0.1 ether
-        vm.assertApproxEqAbs(hpa, 0.1 ether, 0.002 ether);
+        vm.assertApproxEqAbs(Hiya, 0.1 ether, 0.002 ether);
 
         IPSMcore(moduleCore).updatePsmAutoSellStatus(currencyId, DEFAULT_ADDRESS_ROLLOVER, true);
 
@@ -263,19 +263,19 @@ contract RolloverTest is Helper {
             currencyId, dsId, 1 ether, 0, DEFAULT_ADDRESS_ROLLOVER, bytes(""), 0, defaultBuyApproxParams()
         );
 
-        uint256 hpaCummulated = flashSwapRouter.getHpaCumulated(currencyId);
-        uint256 vhpaCummulated = flashSwapRouter.getVhpaCumulated(currencyId);
+        uint256 HiyaCummulated = flashSwapRouter.getHiyaCumulated(currencyId);
+        uint256 vHiyaCummulated = flashSwapRouter.getVhiyaCumulated(currencyId);
 
         ff_expired();
 
-        // we fetch the hpa after expiry so that it's calculated
-        uint256 hpa = flashSwapRouter.getHpa(currencyId);
+        // we fetch the Hiya after expiry so that it's calculated
+        uint256 Hiya = flashSwapRouter.getHiya(currencyId);
 
-        vm.assertNotEq(vhpaCummulated, 0);
-        vm.assertNotEq(hpaCummulated, 0);
+        vm.assertNotEq(vHiyaCummulated, 0);
+        vm.assertNotEq(HiyaCummulated, 0);
 
         // take into account the discount rate, so it won't be exactly 0.1 ether
-        vm.assertApproxEqAbs(hpa, 0.1 ether, 0.002 ether);
+        vm.assertApproxEqAbs(Hiya, 0.1 ether, 0.002 ether);
 
         IPSMcore(moduleCore).updatePsmAutoSellStatus(currencyId, DEFAULT_ADDRESS_ROLLOVER, true);
 
@@ -289,13 +289,13 @@ contract RolloverTest is Helper {
         vm.assertEq(true, flashSwapRouter.isRolloverSale(currencyId, dsId));
 
         amountOut = flashSwapRouter.swapRaforDs(
-            currencyId, dsId, hpa, 0, DEFAULT_ADDRESS_ROLLOVER, bytes(""), 0, defaultBuyApproxParams()
+            currencyId, dsId, Hiya, 0, DEFAULT_ADDRESS_ROLLOVER, bytes(""), 0, defaultBuyApproxParams()
         );
 
         vm.assertEq(amountOut, 1 ether);
 
         amountOut = flashSwapRouter.swapRaforDs(
-            currencyId, dsId, hpa * 10, 0, DEFAULT_ADDRESS_ROLLOVER, bytes(""), 0, defaultBuyApproxParams()
+            currencyId, dsId, Hiya * 10, 0, DEFAULT_ADDRESS_ROLLOVER, bytes(""), 0, defaultBuyApproxParams()
         );
 
         vm.assertEq(amountOut, 10 ether);
@@ -309,19 +309,19 @@ contract RolloverTest is Helper {
         uint256 amountOut = flashSwapRouter.swapRaforDs(
             currencyId, dsId, 1 ether, 0, DEFAULT_ADDRESS_ROLLOVER, bytes(""), 0, defaultBuyApproxParams()
         );
-        uint256 hpaCummulated = flashSwapRouter.getHpaCumulated(currencyId);
-        uint256 vhpaCummulated = flashSwapRouter.getVhpaCumulated(currencyId);
+        uint256 HiyaCummulated = flashSwapRouter.getHiyaCumulated(currencyId);
+        uint256 vHiyaCummulated = flashSwapRouter.getVhiyaCumulated(currencyId);
 
         ff_expired();
 
-        // we fetch the hpa after expiry so that it's calculated
-        uint256 hpa = flashSwapRouter.getHpa(currencyId);
+        // we fetch the Hiya after expiry so that it's calculated
+        uint256 Hiya = flashSwapRouter.getHiya(currencyId);
 
-        vm.assertNotEq(vhpaCummulated, 0);
-        vm.assertNotEq(hpaCummulated, 0);
+        vm.assertNotEq(vHiyaCummulated, 0);
+        vm.assertNotEq(HiyaCummulated, 0);
 
         // take into account the discount rate, so it won't be exactly 0.1 ether
-        vm.assertApproxEqAbs(hpa, 0.1 ether, 0.002 ether);
+        vm.assertApproxEqAbs(Hiya, 0.1 ether, 0.002 ether);
 
         IPSMcore(moduleCore).updatePsmAutoSellStatus(currencyId, DEFAULT_ADDRESS_ROLLOVER, true);
 
@@ -336,7 +336,7 @@ contract RolloverTest is Helper {
 
         vm.expectRevert();
         amountOut = flashSwapRouter.swapRaforDs(
-            currencyId, dsId, hpa, 1000000 ether, DEFAULT_ADDRESS_ROLLOVER, bytes(""), 0, defaultBuyApproxParams()
+            currencyId, dsId, Hiya, 1000000 ether, DEFAULT_ADDRESS_ROLLOVER, bytes(""), 0, defaultBuyApproxParams()
         );
     }
 }

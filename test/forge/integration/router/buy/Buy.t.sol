@@ -24,7 +24,7 @@ contract BuyDsTest is Helper {
     uint256 public dsId;
 
     function defaultInitialDsPrice() internal pure virtual override returns (uint256) {
-        return 0.04761904762 ether;
+        return 5 ether;
     }
 
     function defaultExchangeRate() internal pure virtual override returns (uint256) {
