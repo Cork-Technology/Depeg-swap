@@ -91,7 +91,7 @@ contract ModuleCore is OwnableUpgradeable, UUPSUpgradeable, PsmCore, Initialize,
 
     function issueNewDs(
         Id id,
-        uint256 expiry,
+        uint256 _expiry,
         uint256 exchangeRates,
         uint256 repurchaseFeePercentage,
         uint256 decayDiscountRateInDays,
@@ -108,11 +108,11 @@ contract ModuleCore is OwnableUpgradeable, UUPSUpgradeable, PsmCore, Initialize,
         address ra = state.info.pair1;
 
         (address ct, address ds) = IAssetFactory(SWAP_ASSET_FACTORY).deploySwapAssets(
-            ra, state.info.pair0, address(this), expiry, exchangeRates, state.globalAssetIdx + 1
+            ra, state.info.pair0, address(this), _expiry, exchangeRates, state.globalAssetIdx + 1
         );
 
         // avoid stack to deep error
-        _initOnNewIssuance(id, repurchaseFeePercentage, ct, ds, expiry);
+        _initOnNewIssuance(id, repurchaseFeePercentage, ct, ds, _expiry);
         // avoid stack to deep error
         getRouterCore().setDecayDiscountAndRolloverPeriodOnNewIssuance(
             id, decayDiscountRateInDays, rolloverPeriodInblocks
@@ -122,7 +122,7 @@ contract ModuleCore is OwnableUpgradeable, UUPSUpgradeable, PsmCore, Initialize,
         );
     }
 
-    function _initOnNewIssuance(Id id, uint256 repurchaseFeePercentage, address ct, address ds, uint256 expiry)
+    function _initOnNewIssuance(Id id, uint256 repurchaseFeePercentage, address ct, address ds, uint256 _expiry)
         internal
     {
         State storage state = states[id];
@@ -137,7 +137,7 @@ contract ModuleCore is OwnableUpgradeable, UUPSUpgradeable, PsmCore, Initialize,
         getRouterCore().onNewIssuance(id, idx, ds, ra, ct);
 
         // TODO : place holder, must change to the id later
-        emit Issued(id, idx, expiry, ds, ct, AmmId.unwrap(toAmmId(ra, ct)));
+        emit Issued(id, idx, _expiry, ds, ct, AmmId.unwrap(toAmmId(ra, ct)));
     }
 
     function updateRepurchaseFeeRate(Id id, uint256 newRepurchaseFeePercentage) external onlyConfig {
@@ -230,7 +230,7 @@ contract ModuleCore is OwnableUpgradeable, UUPSUpgradeable, PsmCore, Initialize,
         emit PsmBaseRedemptionFeePercentageUpdated(id, newPsmBaseRedemptionFeePercentage);
     }
 
-    function expiry(Id id) external view override returns (uint256 expiry) {
-        expiry = PsmLibrary.nextExpiry(states[id]);
+    function expiry(Id id) external view override returns (uint256 _expiry) {
+        _expiry = PsmLibrary.nextExpiry(states[id]);
     }
 }
