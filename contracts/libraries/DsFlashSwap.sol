@@ -238,7 +238,7 @@ library DsFlashSwaplibrary {
             }
         }
 
-        revert("approx exhausted");
+        revert IDsFlashSwapCore.ApproxExhausted();
     }
 
     struct InitialTradeCaclParams {

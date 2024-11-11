@@ -84,6 +84,8 @@ interface IDsFlashSwapCore is IDsFlashSwapUtility {
 
     error NotDefaultAdmin();
 
+    error ApproxExhausted();
+
     /// @notice thrown when there's not enough liquidity to perform flash swap
     error InsufficientLiquidity(uint256 raReserve, uint256 ctReserve, uint256 amountRepayment);
 

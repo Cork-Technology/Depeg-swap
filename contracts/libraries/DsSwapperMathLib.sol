@@ -170,7 +170,6 @@ library SwapperMathLibrary {
     }
 
     /// @notice HIYA_acc = Ri x Volume_i x 1 - ((Discount / 86400) * (currentTime - issuanceTime))
-    // TODO : test
     function calcHIYAaccumulated(
         uint256 startTime,
         uint256 maturityTime,
@@ -189,12 +188,11 @@ library SwapperMathLibrary {
         UD60x18 decay =
             calculateDecayDiscount(convertUd(decayDiscountInDays), convertUd(startTime), convertUd(currentTime));
 
-        return convertUd(calculatePercentage(rateI * convertUd(amount), decay));
+        return convertUd(calculatePercentage(calculatePercentage(convertUd(amount), rateI), decay));
     }
 
     /// @notice VHIYA_acc =  Volume_i  - ((Discount / 86400) * (currentTime - issuanceTime))
-    // TODO : test
-    function calcVHIYAaccumulated(
+     function calcVHIYAaccumulated(
         uint256 startTime,
         uint256 maturityTime,
         uint256 currentTime,
@@ -207,7 +205,6 @@ library SwapperMathLibrary {
         return convertUd(calculatePercentage(convertUd(amount), decay));
     }
 
-    // TODO : test
     function calculateEffectiveDsPrice(UD60x18 dsAmount, UD60x18 raProvided)
         internal
         pure
@@ -216,9 +213,9 @@ library SwapperMathLibrary {
         effectiveDsPrice = div(raProvided, dsAmount);
     }
 
-    // TODO : test
     function calculateHIYA(uint256 cumulatedHIYA, uint256 cumulatedVHIYA) external pure returns (uint256 hiya) {
-        hiya = convertUd(div(convertUd(cumulatedHIYA), convertUd(cumulatedVHIYA)));
+        // we unwrap here since we want to keep the precision when storing
+        hiya = unwrap(div(convertUd(cumulatedHIYA), convertUd(cumulatedVHIYA)));
     }
 
     /**
@@ -333,7 +330,6 @@ library SwapperMathLibrary {
     }
 
     /// @notice rT = (f/pT)^1/t - 1
-    // TODO : test
     function calcRt(UD60x18 pT, UD60x18 t) internal pure returns (UD60x18) {
         UD60x18 onePerT = div(convertUd(1), t);
         // TODO : confirm with peter
@@ -345,7 +341,6 @@ library SwapperMathLibrary {
         return sub(fPerPtPow, convertUd(1));
     }
 
-    // TODO : test
     function calcSpotArp(UD60x18 t, UD60x18 effectiveDsPrice) internal pure returns (UD60x18) {
         UD60x18 pt = calcPt(effectiveDsPrice);
         return calcRt(pt, t);
@@ -353,15 +348,18 @@ library SwapperMathLibrary {
 
     /// @notice pt = 1 - effectiveDsPrice
     // TODO : confirm with peter
-    // TODO : test
     function calcPt(UD60x18 effectiveDsPrice) internal pure returns (UD60x18) {
         return sub(convertUd(1), effectiveDsPrice);
     }
 
     /// @notice ptConstFixed = f / (rate +1)^t
     /// where f = 1, and t = 1
+    /// we expect that the rate is in 1e18 precision BEFORE passing it to this function
     function calcPtConstFixed(UD60x18 rate) internal pure returns (UD60x18) {
-        UD60x18 ratePlusOne = add(rate, convertUd(1));
-        return div(convertUd(1), ratePlusOne);
+        // normalize to 0-1
+        rate = div(rate, convertUd(100));
+
+        UD60x18 ratePlusOne = add(convertUd(1e18), rate);
+        return div(convertUd(1e36), ratePlusOne);
     }
 }
