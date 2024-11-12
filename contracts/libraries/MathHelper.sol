@@ -2,7 +2,10 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.24;
 
-import {UD60x18, convert, ud, add, mul, pow, sub, div, unwrap} from "@prb/math/src/UD60x18.sol";
+import {BuyMathBisectionSolver, SwapperMathLibrary} from "./DsSwapperMathLib.sol";
+
+import {UD60x18, convert, ud, add, mul, pow, sub, div, unwrap, intoSD59x18} from "@prb/math/src/UD60x18.sol";
+import {SD59x18, intoUD60x18} from "@prb/math/src/SD59x18.sol";
 
 /**
  * @title MathHelper Library Contract
@@ -257,5 +260,26 @@ library MathHelper {
 
         UD60x18 ratePlusOne = add(convert(1e18), rate);
         return convert(div(convert(1e36), ratePlusOne));
+    }
+
+    function calculateRepurchaseFee(
+        uint256 _start,
+        uint256 _end,
+        uint256 _current,
+        uint256 _amount,
+        uint256 _baseFeePercentage
+    ) internal pure returns (uint256 _fee, uint256 _actualFeePercentage) {
+        UD60x18 t = intoUD60x18(
+            BuyMathBisectionSolver.computeT(
+                intoSD59x18(convert(_start)), intoSD59x18(convert(_end)), intoSD59x18(convert(_current))
+            )
+        );
+
+        UD60x18 feeFactor = mul(convert(_baseFeePercentage), t);
+        // since the amount is already on 18 decimals, we don't need to convert it
+        UD60x18 fee = SwapperMathLibrary.calculatePercentage(ud(_amount), feeFactor);
+
+        _actualFeePercentage = convert(feeFactor);
+        _fee = convert(fee);
     }
 }

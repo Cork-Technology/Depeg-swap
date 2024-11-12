@@ -36,10 +36,25 @@ contract MathHelperTest is Helper {
     }
 
     function test_initialCtRatioBasedOnArp() external {
-        uint256 arp  = 5 ether;
+        uint256 arp = 5 ether;
 
         uint256 ratio = MathHelper.caclulateInitialCtRatio(arp);
 
         vm.assertApproxEqAbs(ratio, 0.95 ether, 0.01 ether);
+    }
+
+    function test_calculateRepurchaseFee() external {
+        uint256 start = 0 days;
+        uint256 end = 1 days;
+        uint256 current = 0 days;
+
+        // 10 percent
+        uint256 feePercentage = 10 ether;
+        uint256 amount = 1 ether;
+
+        (uint256 result, uint256 actualPercentage) = MathHelper.calculateRepurchaseFee(start, end, current, amount, feePercentage);
+        
+        vm.assertApproxEqAbs(actualPercentage, 10 ether, 0.01 ether);
+        vm.assertApproxEqAbs(result, 0.1 ether, 0.01 ether);
     }
 }
