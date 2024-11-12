@@ -18,7 +18,6 @@ import {IUniswapV2Router02} from "../interfaces/uniswap-v2/RouterV2.sol";
 import {SafeERC20, IERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {ICorkHook} from "./../interfaces/UniV4/IMinimalHook.sol";
 
-
 /**
  * @title Psm Library Contract
  * @author Cork Team
@@ -474,8 +473,14 @@ library PsmLibrary {
         exchangeRates = ds.exchangeRate();
 
         // the fee is taken directly from RA before it's even converted to DS
-        feePercentage = self.psm.repurchaseFeePercentage;
-        fee = MathHelper.calculatePercentageFee(amount, feePercentage);
+        {
+            Asset dsToken = Asset(ds._address);
+
+            (fee, feePercentage) = MathHelper.calculateRepurchaseFee(
+                dsToken.issuedAt(), dsToken.expiry(), block.timestamp, amount, self.psm.repurchaseFeePercentage
+            );
+        }
+
         amount = amount - fee;
 
         // we use deposit here because technically the user deposit RA to the PSM when repurchasing
@@ -696,7 +701,6 @@ library PsmLibrary {
 
         _afterCtRedeem(self, ds, owner, amount, accruedPa, accruedRa);
     }
-
 
     function updatePSMBaseRedemptionFeePercentage(State storage self, uint256 newFees) external {
         if (newFees > 5 ether) {
