@@ -60,8 +60,8 @@ contract ModuleCore is OwnableUpgradeable, UUPSUpgradeable, PsmCore, Initialize,
         return super._contextSuffixLength();
     }
 
-    function getId(address pa, address ra) external pure returns (Id) {
-        return PairLibrary.initalize(pa, ra).toId();
+    function getId(address pa, address ra, uint256 expiryInterva) external pure returns (Id) {
+        return PairLibrary.initalize(pa, ra, expiryInterva).toId();
     }
 
     function initializeModuleCore(
@@ -69,9 +69,10 @@ contract ModuleCore is OwnableUpgradeable, UUPSUpgradeable, PsmCore, Initialize,
         address ra,
         uint256 lvFee,
         uint256 initialDsPrice,
-        uint256 psmBaseRedemptionFeePercentage
+        uint256 psmBaseRedemptionFeePercentage,
+        uint256 expiryInterval
     ) external override onlyConfig {
-        Pair memory key = PairLibrary.initalize(pa, ra);
+        Pair memory key = PairLibrary.initalize(pa, ra, expiryInterval);
         Id id = key.toId();
 
         State storage state = states[id];
@@ -82,7 +83,7 @@ contract ModuleCore is OwnableUpgradeable, UUPSUpgradeable, PsmCore, Initialize,
 
         IAssetFactory assetsFactory = IAssetFactory(SWAP_ASSET_FACTORY);
 
-        address lv = assetsFactory.deployLv(ra, pa, address(this));
+        address lv = assetsFactory.deployLv(ra, pa, address(this), expiryInterval);
 
         PsmLibrary.initialize(state, key, psmBaseRedemptionFeePercentage);
         VaultLibrary.initialize(state.vault, lv, lvFee, ra, initialDsPrice);
@@ -91,7 +92,6 @@ contract ModuleCore is OwnableUpgradeable, UUPSUpgradeable, PsmCore, Initialize,
 
     function issueNewDs(
         Id id,
-        uint256 _expiry,
         uint256 exchangeRates,
         uint256 repurchaseFeePercentage,
         uint256 decayDiscountRateInDays,
@@ -105,14 +105,16 @@ contract ModuleCore is OwnableUpgradeable, UUPSUpgradeable, PsmCore, Initialize,
 
         State storage state = states[id];
 
-        address ra = state.info.pair1;
+        address ra = state.info.ra;
+
+        uint256 _expiryInterval = state.info.expiryInterval;
 
         (address ct, address ds) = IAssetFactory(SWAP_ASSET_FACTORY).deploySwapAssets(
-            ra, state.info.pair0, address(this), _expiry, exchangeRates, state.globalAssetIdx + 1
+            ra, state.info.pa, address(this), _expiryInterval, exchangeRates, state.globalAssetIdx + 1
         );
 
         // avoid stack to deep error
-        _initOnNewIssuance(id, repurchaseFeePercentage, ct, ds, _expiry);
+        _initOnNewIssuance(id, repurchaseFeePercentage, ct, ds, _expiryInterval);
         // avoid stack to deep error
         getRouterCore().setDecayDiscountAndRolloverPeriodOnNewIssuance(
             id, decayDiscountRateInDays, rolloverPeriodInblocks
@@ -122,12 +124,12 @@ contract ModuleCore is OwnableUpgradeable, UUPSUpgradeable, PsmCore, Initialize,
         );
     }
 
-    function _initOnNewIssuance(Id id, uint256 repurchaseFeePercentage, address ct, address ds, uint256 _expiry)
+    function _initOnNewIssuance(Id id, uint256 repurchaseFeePercentage, address ct, address ds, uint256 _expiryInterval)
         internal
     {
         State storage state = states[id];
 
-        address ra = state.info.pair1;
+        address ra = state.info.ra;
         uint256 prevIdx = state.globalAssetIdx++;
         uint256 idx = state.globalAssetIdx;
 
@@ -137,7 +139,7 @@ contract ModuleCore is OwnableUpgradeable, UUPSUpgradeable, PsmCore, Initialize,
         getRouterCore().onNewIssuance(id, idx, ds, ra, ct);
 
         // TODO : place holder, must change to the id later
-        emit Issued(id, idx, _expiry, ds, ct, AmmId.unwrap(toAmmId(ra, ct)));
+        emit Issued(id, idx, block.timestamp + _expiryInterval, ds, ct, AmmId.unwrap(toAmmId(ra, ct)));
     }
 
     function updateRepurchaseFeeRate(Id id, uint256 newRepurchaseFeePercentage) external onlyConfig {

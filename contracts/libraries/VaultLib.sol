@@ -417,7 +417,7 @@ library VaultLibrary {
         self.vault.lpLiquidated.set(dsId);
 
         (uint256 raAmm, uint256 ctAmm) =
-            __liquidateUnchecked(self, self.info.pair1, ds.ct, ammRouter, lpBalance, deadline);
+            __liquidateUnchecked(self, self.info.ra, ds.ct, ammRouter, lpBalance, deadline);
 
         // avoid stack too deep error
         _pairAndRedeemCtDs(self, flashSwapRouter, dsId, ctAmm, raAmm);
@@ -457,7 +457,7 @@ library VaultLibrary {
         view
         returns (uint256 totalRa, uint256 ammCtBalance)
     {
-        address ra = self.info.pair1;
+        address ra = self.info.ra;
         address ct = self.ds[dsId].ct;
 
         (uint256 raReserve, uint256 ctReserve) = ammRouter.getReserves(ra, ct);
@@ -473,7 +473,7 @@ library VaultLibrary {
         view
         returns (uint256 raPerLv, uint256 ctPerLv, uint256 raPerLp, uint256 ctPerLp)
     {
-        address ra = self.info.pair1;
+        address ra = self.info.ra;
         address ct = self.ds[dsId].ct;
 
         (uint256 raReserve, uint256 ctReserve) = ammRouter.getReserves(ra, ct);
@@ -511,7 +511,7 @@ library VaultLibrary {
         view
         returns (uint256 raReserve, uint256 ctReserve)
     {
-        address ra = self.info.pair1;
+        address ra = self.info.ra;
         address ct = self.ds[dsId].ct;
 
         (raReserve, ctReserve) = ammRouter.getReserves(ra, ct);
@@ -577,7 +577,7 @@ library VaultLibrary {
 
         {
             (uint256 raFromAmm, uint256 ctFromAmm) = __liquidateUnchecked(
-                self, pair.pair1, self.ds[dsId].ct, routers.ammRouter, lpLiquidated, redeemParams.ammDeadline
+                self, pair.ra, self.ds[dsId].ct, routers.ammRouter, lpLiquidated, redeemParams.ammDeadline
             );
 
             result.raReceivedFromAmm = raFromAmm;
@@ -613,6 +613,6 @@ library VaultLibrary {
 
         paAmount = _calculatePaPriceForLv(self, redeemParams.amount);
         self.vault.pool.withdrawalPool.paBalance -= paAmount;
-        ERC20(self.info.pair0).transfer(owner, paAmount);
+        ERC20(self.info.pa).transfer(owner, paAmount);
     }
 }

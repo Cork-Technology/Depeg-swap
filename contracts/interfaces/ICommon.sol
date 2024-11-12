@@ -94,4 +94,6 @@ interface ICommon {
      * @return ds address of the DS token
      */
     function swapAsset(Id id, uint256 dsId) external view returns (address ct, address ds);
+
+    function getId(address pa, address ra, uint256 expiryInterva) external pure returns (Id id);
 }
