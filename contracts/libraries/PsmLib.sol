@@ -53,6 +53,10 @@ library PsmLibrary {
         self.psm.autoSell[user] = status;
     }
 
+    function autoSellStatus(State storage self, address user) external view returns (bool status) {
+        return self.psm.autoSell[user];
+    }
+
     function acceptRolloverProfit(State storage self, uint256 amount) external {
         self.psm.poolArchive[self.globalAssetIdx].rolloverProfit += amount;
     }

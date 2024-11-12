@@ -240,4 +240,9 @@ abstract contract PsmCore is IPSMcore, ModuleState, Context {
         State storage state = states[id];
         state.updateAutoSell(user, status);
     }
+
+    function psmAutoSellStatus(Id id) external view returns (bool) {
+        State storage state = states[id];
+        state.autoSellStatus(_msgSender());
+    }
 }
