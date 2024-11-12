@@ -173,6 +173,10 @@ contract CorkConfig is AccessControl, Pausable {
         IVault(address(moduleCore)).updateCtHeldPercentage(id, newCtSplitPercentage);
     }
 
+    function updateReserveSellPressurePercentage(Id id, uint256 newSellPressurePercentage) external onlyManager {
+        flashSwapRouter.updateReserveSellPressurePercentage(id, newSellPressurePercentage);
+    }
+
     /**
      * @notice Pause this contract
      */
