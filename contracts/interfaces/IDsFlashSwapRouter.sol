@@ -86,6 +86,8 @@ interface IDsFlashSwapCore is IDsFlashSwapUtility {
 
     error ApproxExhausted();
 
+    error InvalidParams();
+
     /// @notice thrown when there's not enough liquidity to perform flash swap
     error InsufficientLiquidity(uint256 raReserve, uint256 ctReserve, uint256 amountRepayment);
 
@@ -273,4 +275,6 @@ interface IDsFlashSwapCore is IDsFlashSwapUtility {
     function updateGradualSaleStatus(Id id, bool status) external;
 
     function isRolloverSale(Id id, uint256 dsId) external view returns (bool);
+
+    function updateReserveSellPressurePercentage(Id id, uint256 newPercentage) external;
 }

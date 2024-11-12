@@ -98,6 +98,10 @@ contract RouterState is
         _grantRole(MODULE_CORE, moduleCore);
     }
 
+    function updateReserveSellPressurePercentage(Id id, uint256 newPercentage) external override onlyConfig {
+        reserves[id].updateReserveSellPressurePercentage(newPercentage);
+    }
+
     function setHook(address _hook) external onlyDefaultAdmin {
         hook = ICorkHook(_hook);
     }

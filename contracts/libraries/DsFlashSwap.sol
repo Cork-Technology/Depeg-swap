@@ -49,22 +49,12 @@ struct ReserveState {
 library DsFlashSwaplibrary {
     using MarketSnapshotLib for MarketSnapshot;
 
-    /// @dev the percentage amount of reserve that will be used to fill buy orders
-    /// the router will sell in respect to this ratio on first issuance
-    uint256 public constant INITIAL_RESERVE_SELL_PRESSURE_PERCENTAGE = 50e18;
-
-    /// @dev the percentage amount of reserve that will be used to fill buy orders
-    /// the router will sell in respect to this ratio on subsequent issuances
-    uint256 public constant SUBSEQUENT_RESERVE_SELL_PRESSURE_PERCENTAGE = 80e18;
+    
 
     uint256 public constant FIRST_ISSUANCE = 1;
 
     function onNewIssuance(ReserveState storage self, uint256 dsId, address ds, address ra, address ct) internal {
         self.ds[dsId] = AssetPair(Asset(ra), Asset(ct), Asset(ds), 0, 0);
-
-        self.reserveSellPressurePercentage = dsId == FIRST_ISSUANCE
-            ? INITIAL_RESERVE_SELL_PRESSURE_PERCENTAGE
-            : SUBSEQUENT_RESERVE_SELL_PRESSURE_PERCENTAGE;
 
         // try to calculate implied ARP, if not present then fallback to the default value provided from previous issuance/start
         if (dsId != FIRST_ISSUANCE) {
@@ -79,6 +69,15 @@ library DsFlashSwaplibrary {
 
     function rolloverSale(ReserveState storage self) internal view returns (bool) {
         return block.number <= self.rolloverEndInBlockNumber;
+    }
+    
+    function updateReserveSellPressurePercentage(ReserveState storage self, uint256 newPercentage) internal {
+        // must be between 0.01 and 100
+        if (newPercentage < 1e16 || newPercentage > 1e20) {
+            revert IDsFlashSwapCore.InvalidParams();
+        }
+
+        self.reserveSellPressurePercentage = newPercentage;
     }
 
     function emptyReserveLv(ReserveState storage self, uint256 dsId, address to) internal returns (uint256 emptied) {
