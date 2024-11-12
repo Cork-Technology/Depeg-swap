@@ -84,7 +84,6 @@ abstract contract Helper is SigUtils, TestHelper {
 
     function issueNewDs(
         Id id,
-        uint256 expiryInSeconds,
         uint256 exchangeRates,
         uint256 repurchaseFeePercentage,
         uint256 decayDiscountRateInDays,
@@ -92,7 +91,6 @@ abstract contract Helper is SigUtils, TestHelper {
     ) internal {
         corkConfig.issueNewDs(
             id,
-            expiryInSeconds,
             exchangeRates,
             repurchaseFeePercentage,
             decayDiscountRateInDays,
@@ -104,7 +102,6 @@ abstract contract Helper is SigUtils, TestHelper {
     function issueNewDs(Id id, uint256 expiryInSeconds) internal {
         issueNewDs(
             id,
-            expiryInSeconds,
             defaultExchangeRate(),
             DEFAULT_REPURCHASE_FEE,
             DEFAULT_DECAY_DISCOUNT_RATE,
@@ -122,7 +119,7 @@ abstract contract Helper is SigUtils, TestHelper {
         ra = new DummyWETH();
         pa = new DummyWETH();
 
-        Pair memory _id = PairLibrary.initalize(address(pa), address(ra));
+        Pair memory _id = PairLibrary.initalize(address(pa), address(ra), expiryInSeconds);
         id = PairLibrary.toId(_id);
 
         defaultCurrencyId = id;
@@ -131,12 +128,7 @@ abstract contract Helper is SigUtils, TestHelper {
             address(pa), address(ra), DEFAULT_LV_FEE, defaultInitialDsPrice(), DEFAULT_BASE_REDEMPTION_FEE
         );
         issueNewDs(
-            id,
-            expiryInSeconds,
-            defaultExchangeRate(),
-            DEFAULT_REPURCHASE_FEE,
-            DEFAULT_DECAY_DISCOUNT_RATE,
-            DEFAULT_ROLLOVER_PERIOD
+            id, defaultExchangeRate(), DEFAULT_REPURCHASE_FEE, DEFAULT_DECAY_DISCOUNT_RATE, DEFAULT_ROLLOVER_PERIOD
         );
     }
 
@@ -153,7 +145,7 @@ abstract contract Helper is SigUtils, TestHelper {
         ra = new DummyWETH();
         pa = new DummyWETH();
 
-        Pair memory _id = PairLibrary.initalize(address(pa), address(ra));
+        Pair memory _id = PairLibrary.initalize(address(pa), address(ra), expiryInSeconds);
         id = PairLibrary.toId(_id);
 
         defaultCurrencyId = id;
@@ -161,7 +153,6 @@ abstract contract Helper is SigUtils, TestHelper {
         initializeNewModuleCore(address(pa), address(ra), DEFAULT_LV_FEE, defaultInitialDsPrice(), baseRedemptionFee);
         issueNewDs(
             id,
-            expiryInSeconds,
             DEFAULT_EXCHANGE_RATES,
             DEFAULT_REPURCHASE_FEE,
             DEFAULT_DECAY_DISCOUNT_RATE,
@@ -181,12 +172,12 @@ abstract contract Helper is SigUtils, TestHelper {
         ra = new DummyWETH();
         pa = new DummyWETH();
 
-        Pair memory _id = PairLibrary.initalize(address(pa), address(ra));
+        Pair memory _id = PairLibrary.initalize(address(pa), address(ra), expiryInSeconds);
         id = PairLibrary.toId(_id);
 
         initializeNewModuleCore(address(pa), address(ra), lvFee, initialDsPrice);
         issueNewDs(
-            id, expiryInSeconds, exchangeRates, repurchaseFeePercentage, decayDiscountRateInDays, rolloverPeriodInblocks
+            id, exchangeRates, repurchaseFeePercentage, decayDiscountRateInDays, rolloverPeriodInblocks
         );
     }
 
