@@ -76,9 +76,10 @@ contract CorkConfig is AccessControl, Pausable {
         address ra,
         uint256 lvFee,
         uint256 initialDsPrice,
-        uint256 _psmBaseRedemptionFeePercentage
+        uint256 _psmBaseRedemptionFeePercentage,
+        uint256 expiryInterval
     ) external onlyManager {
-        moduleCore.initializeModuleCore(pa, ra, lvFee, initialDsPrice, _psmBaseRedemptionFeePercentage);
+        moduleCore.initializeModuleCore(pa, ra, lvFee, initialDsPrice, _psmBaseRedemptionFeePercentage, expiryInterval);
     }
 
     /**
@@ -86,7 +87,6 @@ contract CorkConfig is AccessControl, Pausable {
      */
     function issueNewDs(
         Id id,
-        uint256 expiry,
         uint256 exchangeRates,
         uint256 repurchaseFeePercentage,
         uint256 decayDiscountRateInDays,
@@ -96,7 +96,6 @@ contract CorkConfig is AccessControl, Pausable {
     ) external whenNotPaused onlyManager {
         moduleCore.issueNewDs(
             id,
-            expiry,
             exchangeRates,
             repurchaseFeePercentage,
             decayDiscountRateInDays,

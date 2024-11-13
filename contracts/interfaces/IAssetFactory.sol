@@ -51,12 +51,13 @@ interface IAssetFactory {
      * @notice for getting list of deployed SwapAssets with this factory
      * @param ra Address of RA
      * @param pa Address of PA
+     * @param expiryInterval expiry interval
      * @param page page number
      * @param limit number of entries per page
      * @return ct list of deployed CT assets
      * @return ds list of deployed DS assets
      */
-    function getDeployedSwapAssets(address ra, address pa, uint8 page, uint8 limit)
+    function getDeployedSwapAssets(address ra, address pa, uint256 expiryInterval, uint8 page, uint8 limit)
         external
         view
         returns (address[] memory ct, address[] memory ds);
@@ -71,9 +72,14 @@ interface IAssetFactory {
      * @return ct new CT contract address
      * @return ds new DS contract address
      */
-    function deploySwapAssets(address ra, address pa, address owner, uint256 expiry, uint256 psmExchangeRate, uint256 dsId) 
-        external
-        returns (address ct, address ds);
+    function deploySwapAssets(
+        address ra,
+        address pa,
+        address owner,
+        uint256 expiry,
+        uint256 psmExchangeRate,
+        uint256 dsId
+    ) external returns (address ct, address ds);
 
     /**
      * @notice deploys new LV Assets for given RA & PA
@@ -82,7 +88,7 @@ interface IAssetFactory {
      * @param owner Address of asset owners
      * @return lv new LV contract address
      */
-    function deployLv(address ra, address pa, address owner) external returns (address lv);
+    function deployLv(address ra, address pa, address owner, uint256 expiryInterval) external returns (address lv);
 
-    function getLv(address ra, address pa) external view returns (address);
+    function getLv(address ra, address pa, uint256 expiryInterval) external view returns (address);
 }

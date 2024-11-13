@@ -66,7 +66,7 @@ abstract contract ModuleState is ICommon {
 
     modifier onlyInitialized(Id id) {
         if (!states[id].isInitialized()) {
-            revert Uinitialized();
+            revert Uninitializedlized();
         }
         _;
     }

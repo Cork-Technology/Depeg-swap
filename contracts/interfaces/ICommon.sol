@@ -19,7 +19,7 @@ interface ICommon {
     error OnlyConfigAllowed();
 
     /// @notice module is not initialized, i.e thrown when interacting with uninitialized module
-    error Uinitialized();
+    error Uninitializedlized();
 
     /// @notice module is already initialized, i.e thrown when trying to reinitialize a module
     error AlreadyInitialized();
@@ -57,7 +57,8 @@ interface ICommon {
     /// @param pa The address of the pegged asset
     /// @param ra The address of the redemption asset
     /// @param lv The address of the LV
-    event InitializedModuleCore(Id indexed id, address indexed pa, address indexed ra, address lv);
+    /// @param expiry The expiry interval of the DS
+    event InitializedModuleCore(Id indexed id, address indexed pa, address indexed ra, address lv, uint256 expiry);
 
     /// @notice Emitted when a new DS is issued for a given PSM
     /// @param Id The PSM id
@@ -94,4 +95,6 @@ interface ICommon {
      * @return ds address of the DS token
      */
     function swapAsset(Id id, uint256 dsId) external view returns (address ct, address ds);
+
+    function getId(address pa, address ra, uint256 expiryInterva) external pure returns (Id id);
 }

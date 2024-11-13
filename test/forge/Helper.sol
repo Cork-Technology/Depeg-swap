@@ -73,18 +73,24 @@ abstract contract Helper is SigUtils, TestHelper {
         address ra,
         uint256 lvFee,
         uint256 initialDsPrice,
-        uint256 baseRedemptionFee
+        uint256 baseRedemptionFee,
+        uint256 expiryInSeconds
     ) internal {
-        corkConfig.initializeModuleCore(pa, ra, lvFee, initialDsPrice, baseRedemptionFee);
+        corkConfig.initializeModuleCore(pa, ra, lvFee, initialDsPrice, baseRedemptionFee, expiryInSeconds);
     }
 
-    function initializeNewModuleCore(address pa, address ra, uint256 lvFee, uint256 initialDsPrice) internal {
-        corkConfig.initializeModuleCore(pa, ra, lvFee, initialDsPrice, DEFAULT_BASE_REDEMPTION_FEE);
+    function initializeNewModuleCore(
+        address pa,
+        address ra,
+        uint256 lvFee,
+        uint256 initialDsPrice,
+        uint256 expiryInSeconds
+    ) internal {
+        corkConfig.initializeModuleCore(pa, ra, lvFee, initialDsPrice, DEFAULT_BASE_REDEMPTION_FEE, expiryInSeconds);
     }
 
     function issueNewDs(
         Id id,
-        uint256 expiryInSeconds,
         uint256 exchangeRates,
         uint256 repurchaseFeePercentage,
         uint256 decayDiscountRateInDays,
@@ -92,7 +98,6 @@ abstract contract Helper is SigUtils, TestHelper {
     ) internal {
         corkConfig.issueNewDs(
             id,
-            expiryInSeconds,
             exchangeRates,
             repurchaseFeePercentage,
             decayDiscountRateInDays,
@@ -104,7 +109,6 @@ abstract contract Helper is SigUtils, TestHelper {
     function issueNewDs(Id id, uint256 expiryInSeconds) internal {
         issueNewDs(
             id,
-            expiryInSeconds,
             defaultExchangeRate(),
             DEFAULT_REPURCHASE_FEE,
             DEFAULT_DECAY_DISCOUNT_RATE,
@@ -122,21 +126,16 @@ abstract contract Helper is SigUtils, TestHelper {
         ra = new DummyWETH();
         pa = new DummyWETH();
 
-        Pair memory _id = PairLibrary.initalize(address(pa), address(ra));
+        Pair memory _id = PairLibrary.initalize(address(pa), address(ra), expiryInSeconds);
         id = PairLibrary.toId(_id);
 
         defaultCurrencyId = id;
 
         initializeNewModuleCore(
-            address(pa), address(ra), DEFAULT_LV_FEE, defaultInitialDsPrice(), DEFAULT_BASE_REDEMPTION_FEE
+            address(pa), address(ra), DEFAULT_LV_FEE, defaultInitialDsPrice(), DEFAULT_BASE_REDEMPTION_FEE, expiryInSeconds
         );
         issueNewDs(
-            id,
-            expiryInSeconds,
-            defaultExchangeRate(),
-            DEFAULT_REPURCHASE_FEE,
-            DEFAULT_DECAY_DISCOUNT_RATE,
-            DEFAULT_ROLLOVER_PERIOD
+            id, defaultExchangeRate(), DEFAULT_REPURCHASE_FEE, DEFAULT_DECAY_DISCOUNT_RATE, DEFAULT_ROLLOVER_PERIOD
         );
     }
 
@@ -153,19 +152,14 @@ abstract contract Helper is SigUtils, TestHelper {
         ra = new DummyWETH();
         pa = new DummyWETH();
 
-        Pair memory _id = PairLibrary.initalize(address(pa), address(ra));
+        Pair memory _id = PairLibrary.initalize(address(pa), address(ra), expiryInSeconds);
         id = PairLibrary.toId(_id);
 
         defaultCurrencyId = id;
 
-        initializeNewModuleCore(address(pa), address(ra), DEFAULT_LV_FEE, defaultInitialDsPrice(), baseRedemptionFee);
+        initializeNewModuleCore(address(pa), address(ra), DEFAULT_LV_FEE, defaultInitialDsPrice(), baseRedemptionFee, expiryInSeconds);
         issueNewDs(
-            id,
-            expiryInSeconds,
-            DEFAULT_EXCHANGE_RATES,
-            DEFAULT_REPURCHASE_FEE,
-            DEFAULT_DECAY_DISCOUNT_RATE,
-            DEFAULT_ROLLOVER_PERIOD
+            id, DEFAULT_EXCHANGE_RATES, DEFAULT_REPURCHASE_FEE, DEFAULT_DECAY_DISCOUNT_RATE, DEFAULT_ROLLOVER_PERIOD
         );
     }
 
@@ -181,13 +175,11 @@ abstract contract Helper is SigUtils, TestHelper {
         ra = new DummyWETH();
         pa = new DummyWETH();
 
-        Pair memory _id = PairLibrary.initalize(address(pa), address(ra));
+        Pair memory _id = PairLibrary.initalize(address(pa), address(ra), expiryInSeconds);
         id = PairLibrary.toId(_id);
 
-        initializeNewModuleCore(address(pa), address(ra), lvFee, initialDsPrice);
-        issueNewDs(
-            id, expiryInSeconds, exchangeRates, repurchaseFeePercentage, decayDiscountRateInDays, rolloverPeriodInblocks
-        );
+        initializeNewModuleCore(address(pa), address(ra), lvFee, initialDsPrice, expiryInSeconds);
+        issueNewDs(id, exchangeRates, repurchaseFeePercentage, decayDiscountRateInDays, rolloverPeriodInblocks);
     }
 
     function deployConfig() internal {
