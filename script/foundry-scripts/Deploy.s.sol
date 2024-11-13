@@ -9,6 +9,8 @@ import {AssetFactory} from "../../contracts/core/assets/AssetFactory.sol";
 import {CorkConfig} from "../../contracts/core/CorkConfig.sol";
 import {RouterState} from "../../contracts/core/flash-swaps/FlashSwapRouter.sol";
 import {ModuleCore} from "../../contracts/core/ModuleCore.sol";
+import {Liquidator} from "../../contracts/core/Liquidator.sol";
+import {HedgeUnit} from "../../contracts/core/assets/HedgeUnit.sol";
 import {CETH} from "../../contracts/tokens/CETH.sol";
 import {CST} from "../../contracts/tokens/CST.sol";
 import {Id} from "../../contracts/libraries/Pair.sol";
@@ -30,6 +32,12 @@ contract DeployScript is Script {
     CorkConfig public config;
     RouterState public flashswapRouter;
     ModuleCore public moduleCore;
+    Liquidator public liquidator;
+
+    HedgeUnit public hedgeUnitbsETH;
+    HedgeUnit public hedgeUnitlbETH;
+    HedgeUnit public hedgeUnitwamuETH;
+    HedgeUnit public hedgeUnitmlETH;
 
     bool public isProd = vm.envBool("PRODUCTION");
     uint256 public base_redemption_fee = vm.envUint("PSM_BASE_REDEMPTION_FEE_PERCENTAGE");
@@ -40,6 +48,9 @@ contract DeployScript is Script {
     address lbETH = 0xF24177162B1604e56EB338dd9775d75CC79DaC2B;
     address wamuETH = 0x38B61B429a3526cC6C446400DbfcA4c1ae61F11B;
     address mlETH = 0xCDc1133148121F43bE5F1CfB3a6426BbC01a9AF6;
+    address settlementContract = 0x9008D19f58AAbD9eD0D60971565AA8510560ab41;
+
+    uint256 constant INITIAL_MINT_CAP = 1000 * 1e18; // 1000 tokens
 
     CETH cETH = CETH(ceth);
 
@@ -146,6 +157,57 @@ contract DeployScript is Script {
         console.log("Module Core                     : ", address(moduleCore));
         console.log("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-");
 
+        // Deploy the Liquidator contract
+        liquidator = new Liquidator(msg.sender, 10000, settlementContract);
+        console.log("Liquidator                      : ", address(liquidator));
+        console.log("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-");
+
+        // Deploy the HedgeUnit contract
+        hedgeUnitbsETH = new HedgeUnit(
+            address(moduleCore),
+            address(liquidator),
+            moduleCore.getId(bsETH, ceth),
+            bsETH,
+            "Bear Sterns Restaked ETH - CETH",
+            INITIAL_MINT_CAP
+        );
+        liquidator.updateLiquidatorRole(address(hedgeUnitbsETH), true);
+        console.log("HU bsETH                        : ", address(hedgeUnitbsETH));
+
+        hedgeUnitlbETH = new HedgeUnit(
+            address(moduleCore),
+            address(liquidator),
+            moduleCore.getId(lbETH, ceth),
+            lbETH,
+            "Lehman Brothers Restaked ETH - CETH",
+            INITIAL_MINT_CAP
+        );
+        liquidator.updateLiquidatorRole(address(hedgeUnitlbETH), true);
+        console.log("HU lbETH                        : ", address(hedgeUnitlbETH));
+
+        hedgeUnitwamuETH = new HedgeUnit(
+            address(moduleCore),
+            address(liquidator),
+            moduleCore.getId(wamuETH, ceth),
+            wamuETH,
+            "Washington Mutual restaked ETH - CETH",
+            INITIAL_MINT_CAP
+        );
+        liquidator.updateLiquidatorRole(address(hedgeUnitwamuETH), true);
+        console.log("HU wamuETH                      : ", address(hedgeUnitwamuETH));
+
+        hedgeUnitmlETH = new HedgeUnit(
+            address(moduleCore),
+            address(liquidator),
+            moduleCore.getId(mlETH, ceth),
+            mlETH,
+            "Merrill Lynch staked ETH - CETH",
+            INITIAL_MINT_CAP
+        );
+        liquidator.updateLiquidatorRole(address(hedgeUnitmlETH), true);
+        console.log("HU mlETH                        : ", address(hedgeUnitmlETH));
+        console.log("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-");
+
         // Transfer Ownership to moduleCore
         assetFactory.transferOwnership(address(moduleCore));
         // TODO
@@ -188,7 +250,7 @@ contract DeployScript is Script {
             repurchaseFee,
             6 ether, // 6% per day TODO
             block.timestamp + 6600, // 1 block per 12 second and 22 hours rollover during TC = 6600 // TODO
-            block.timestamp + 10 seconds 
+            block.timestamp + 10 seconds
         );
         console.log("New DS issued");
         console.log("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-");

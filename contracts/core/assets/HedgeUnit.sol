@@ -7,6 +7,7 @@ import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol
 import {SafeERC20, IERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {IHedgeUnit} from "../../interfaces/IHedgeUnit.sol";
 import {ICommon} from "../../interfaces/ICommon.sol";
+import {ILiquidator} from "../../interfaces/ILiquidator.sol";
 import {Id} from "../../libraries/Pair.sol";
 import {Asset} from "./Asset.sol";
 
@@ -24,6 +25,7 @@ contract HedgeUnit is ERC20, ReentrancyGuard, Ownable, Pausable, IHedgeUnit {
     using SafeERC20 for IERC20;
 
     ICommon public immutable MODULE_CORE;
+    ILiquidator public immutable LIQUIDATOR;
     Id public immutable ID;
 
     /// @notice The ERC20 token representing the PA asset.
@@ -48,11 +50,19 @@ contract HedgeUnit is ERC20, ReentrancyGuard, Ownable, Pausable, IHedgeUnit {
      * @param _pairName Name of the HedgeUnit pair.
      * @param _mintCap Initial mint cap for the HedgeUnit tokens.
      */
-    constructor(address _moduleCore, Id _id, address _PA, string memory _pairName, uint256 _mintCap)
+    constructor(
+        address _moduleCore,
+        address _liquidator,
+        Id _id,
+        address _PA,
+        string memory _pairName,
+        uint256 _mintCap
+    )
         ERC20(string(abi.encodePacked("Hedge Unit - ", _pairName)), string(abi.encodePacked("HU - ", _pairName)))
         Ownable(msg.sender)
     {
         MODULE_CORE = ICommon(_moduleCore);
+        LIQUIDATOR = ILiquidator(_liquidator);
         ID = _id;
         PA = IERC20(_PA);
         paDecimals = uint8(ERC20(_PA).decimals());

@@ -3,12 +3,14 @@ pragma solidity 0.8.24;
 
 import {Helper} from "./Helper.sol";
 import {HedgeUnit} from "../../contracts/core/assets/HedgeUnit.sol";
+import {Liquidator} from "../../contracts/core/Liquidator.sol";
 import {IHedgeUnit} from "../../contracts/interfaces/IHedgeUnit.sol";
 import {DummyWETH} from "../../contracts/dummy/DummyWETH.sol";
 import {Id} from "./../../contracts/libraries/Pair.sol";
 import {PausableUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/PausableUpgradeable.sol";
 
 contract HedgeUnitTest is Helper {
+    Liquidator public liquidator;
     HedgeUnit public hedgeUnit;
     DummyWETH public dsToken;
     DummyWETH internal ra;
@@ -25,6 +27,8 @@ contract HedgeUnitTest is Helper {
     uint256 public DEFAULT_DEPOSIT_AMOUNT = 1900 ether;
     uint256 constant INITIAL_MINT_CAP = 1000 * 1e18; // 1000 tokens
     uint256 constant USER_BALANCE = 500 * 1e18;
+
+    address settlementContract = 0x9008D19f58AAbD9eD0D60971565AA8510560ab41;
 
     function setUp() public {
         vm.startPrank(DEFAULT_ADDRESS);
@@ -47,8 +51,13 @@ contract HedgeUnitTest is Helper {
 
         fetchProtocolGeneralInfo();
 
+        // Deploy the Liquidator contract
+        liquidator = new Liquidator(DEFAULT_ADDRESS, 10000, settlementContract);
+
         // Deploy the HedgeUnit contract
-        hedgeUnit = new HedgeUnit(address(moduleCore), currencyId, address(pa), "DS/PA", INITIAL_MINT_CAP);
+        hedgeUnit =
+            new HedgeUnit(address(moduleCore), address(liquidator), currencyId, address(pa), "DS/PA", INITIAL_MINT_CAP);
+        liquidator.updateLiquidatorRole(address(hedgeUnit), true);
 
         // Transfer tokens to user for testing
         dsToken.transfer(user, USER_BALANCE);
