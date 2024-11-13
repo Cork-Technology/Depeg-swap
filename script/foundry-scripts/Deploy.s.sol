@@ -178,12 +178,11 @@ contract DeployScript is Script {
         uint256 repurchaseFee,
         uint256 expiryPeriod
     ) public {
-        config.initializeModuleCore(cst, ceth, redmptionFee, dsPrice, base_redemption_fee);
+        config.initializeModuleCore(cst, ceth, redmptionFee, dsPrice, base_redemption_fee, expiryPeriod);
 
-        Id id = moduleCore.getId(cst, ceth);
+        Id id = moduleCore.getId(cst, ceth, expiryPeriod);
         config.issueNewDs(
             id,
-            block.timestamp + expiryPeriod,
             1 ether, // exchange rate = 1:1
             repurchaseFee,
             6 ether, // 6% per day TODO

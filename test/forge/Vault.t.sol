@@ -20,13 +20,14 @@ contract VaultRedeemTest is Helper {
 
     address public lv;
     address user2 = address(30);
+    uint256 _expiry = 1 days;
 
     function setUp() public {
         vm.startPrank(DEFAULT_ADDRESS);
 
         deployModuleCore();
 
-        (ra, pa, currencyId) = initializeAndIssueNewDs(block.timestamp + 1 days, 1 ether);
+        (ra, pa, currencyId) = initializeAndIssueNewDs(_expiry, 1 ether);
         vm.deal(DEFAULT_ADDRESS, type(uint256).max);
 
         ra.deposit{value: type(uint128).max}();
@@ -49,7 +50,7 @@ contract VaultRedeemTest is Helper {
         moduleCore.depositLv(currencyId, DEFAULT_DEPOSIT_AMOUNT, 0, 0);
 
         // save initial data
-        lv = assetFactory.getLv(address(ra), address(pa));
+        lv = assetFactory.getLv(address(ra), address(pa), _expiry);
         dsId = moduleCore.lastDsId(currencyId);
     }
 

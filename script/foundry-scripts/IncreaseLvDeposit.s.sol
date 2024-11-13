@@ -15,9 +15,16 @@ contract IncreaseDepositScript is Script {
     uint256 public pk = vm.envUint("PRIVATE_KEY");
 
     address bsETH = 0xb194fc7C6ab86dCF5D96CF8525576245d0459ea9;
+    uint256 bsETHexpiry = 0;
+
     address lbETH = 0xF24177162B1604e56EB338dd9775d75CC79DaC2B;
+    uint256 lbETHexpiry = 0;
+
     address wamuETH = 0x38B61B429a3526cC6C446400DbfcA4c1ae61F11B;
+    uint256 wamuETHexpiry = 0;
+
     address mlETH = 0xCDc1133148121F43bE5F1CfB3a6426BbC01a9AF6;
+    uint256 mlETHexpiry = 0;
 
     CETH cETH = CETH(ceth);
 
@@ -32,16 +39,16 @@ contract IncreaseDepositScript is Script {
         moduleCore = ModuleCore(0xe56565c208d0a8Ca28FB632aD7F6518f273B8B9f);
         console.log("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-");
 
-        increaseLvDeposit(mlETH, 300_000 ether);
-        increaseLvDeposit(lbETH, 300_000 ether);
-        increaseLvDeposit(bsETH, 300_000 ether);
-        increaseLvDeposit(wamuETH, 500_000 ether);
+        increaseLvDeposit(mlETH, 300_000 ether, mlETHexpiry);
+        increaseLvDeposit(lbETH, 300_000 ether, lbETHexpiry);
+        increaseLvDeposit(bsETH, 300_000 ether, bsETHexpiry);
+        increaseLvDeposit(wamuETH, 500_000 ether, wamuETHexpiry);
         console.log("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-");
         vm.stopBroadcast();
     }
 
-    function increaseLvDeposit(address cst, uint256 liquidityAmt) public {
-        Id id = moduleCore.getId(cst, ceth);
+    function increaseLvDeposit(address cst, uint256 liquidityAmt, uint256 expiryPeriod) public {
+        Id id = moduleCore.getId(cst, ceth, expiryPeriod);
         cETH.approve(address(moduleCore), depositLVAmt);
         moduleCore.depositLv(id, depositLVAmt, 0, 0);
         console.log("LV Deposited");

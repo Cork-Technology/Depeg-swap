@@ -52,7 +52,7 @@ contract RolloverScript is Script {
 
         console.log("--------------- %s (%s) ---------------", tokenName, tokenSymbol);
 
-        Id id = PairLibrary.toId(PairLibrary.initalize(asset.peggedAsset, asset.redemptionAsset));
+        Id id = PairLibrary.toId(PairLibrary.initalize(asset.peggedAsset, asset.redemptionAsset, asset.expiryInterval));
 
         uint256 currentHPA = flashSwapRouter.getCurrentCumulativeHIYA(id);
 
@@ -81,7 +81,6 @@ contract RolloverScript is Script {
         console.log("Issuing new DS...");
         config.issueNewDs(
             id,
-            block.timestamp + asset.expiryInterval,
             DEFAULT_EXCHANGE_RATE,
             asset.repruchaseFee,
             DEFAULT_DECAY_DISCOUNT_RATE,
