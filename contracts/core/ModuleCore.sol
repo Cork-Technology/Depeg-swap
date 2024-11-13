@@ -87,7 +87,7 @@ contract ModuleCore is OwnableUpgradeable, UUPSUpgradeable, PsmCore, Initialize,
 
         PsmLibrary.initialize(state, key, psmBaseRedemptionFeePercentage);
         VaultLibrary.initialize(state.vault, lv, lvFee, ra, initialDsPrice);
-        emit InitializedModuleCore(id, pa, ra, lv);
+        emit InitializedModuleCore(id, pa, ra, lv, expiryInterval);
     }
 
     function issueNewDs(
@@ -105,16 +105,15 @@ contract ModuleCore is OwnableUpgradeable, UUPSUpgradeable, PsmCore, Initialize,
 
         State storage state = states[id];
 
-        address ra = state.info.ra;
+        Pair storage info = state.info;
 
-        uint256 _expiryInterval = state.info.expiryInterval;
 
         (address ct, address ds) = IAssetFactory(SWAP_ASSET_FACTORY).deploySwapAssets(
-            ra, state.info.pa, address(this), _expiryInterval, exchangeRates, state.globalAssetIdx + 1
+            info.ra, state.info.pa, address(this), info.expiryInterval, exchangeRates, state.globalAssetIdx + 1
         );
 
         // avoid stack to deep error
-        _initOnNewIssuance(id, repurchaseFeePercentage, ct, ds, _expiryInterval);
+        _initOnNewIssuance(id, repurchaseFeePercentage, ct, ds, info.expiryInterval);
         // avoid stack to deep error
         getRouterCore().setDecayDiscountAndRolloverPeriodOnNewIssuance(
             id, decayDiscountRateInDays, rolloverPeriodInblocks
