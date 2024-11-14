@@ -14,14 +14,12 @@ import "Cork-Hook/lib/MarketSnapshot.sol";
  * @notice MathHelper Library which implements Helper functions for Math
  */
 library MathHelper {
-    uint224 internal constant Q112 = 2 ** 112;
-
     /// @dev default decimals for now to calculate price ratio
     uint8 internal constant DEFAULT_DECIMAL = 18;
 
     // this is used to calculate tolerance level when adding liqudity to AMM pair
     /// @dev 1e18 == 1%.
-    uint256 internal constant UNIV2_STATIC_TOLERANCE = 5e18;
+    uint256 internal constant UNI_STATIC_TOLERANCE = 5e18;
 
     /**
      * @dev calculate the amount of ra and ct needed to provide AMM with liquidity in respect to the price ratio
@@ -36,8 +34,9 @@ library MathHelper {
         pure
         returns (uint256 ra, uint256 ct)
     {
-        ct = (amountra * 1e18) / (priceRatio + 1e18);
-        ra = (amountra - ct);
+        UD60x18 _ct = div(ud(amountra), ud(priceRatio) + convert(1e18));
+        ct = unwrap(_ct);
+        ra = amountra - ct;
     }
 
     /**
@@ -48,21 +47,11 @@ library MathHelper {
      * @return amount the amount of RA user will receive & DS needs to be provided
      */
     function calculateEqualSwapAmount(uint256 pa, uint256 exchangeRate) external pure returns (uint256 amount) {
-        amount = (pa * exchangeRate) / 1e18;
+        amount = unwrap(mul(ud(pa), ud(exchangeRate)));
     }
 
     function calculateProvideLiquidityAmount(uint256 amountRa, uint256 raDeposited) external pure returns (uint256) {
         return amountRa - raDeposited;
-    }
-
-    /// @dev should only pass ERC20.decimals() onto the decimal field
-    /// @dev will output price ratio in 18 decimal precision.
-    function calculatePriceRatioUniV4(uint160 sqrtPriceX96, uint8 decimal) external pure returns (uint256) {
-        uint256 numerator1 = uint256(sqrtPriceX96) * uint256(sqrtPriceX96);
-        uint256 numerator2 = 10 ** decimal;
-        uint256 denominator = 1 << 192;
-
-        return (numerator1 * numerator2) / denominator;
     }
 
     /**
@@ -79,8 +68,10 @@ library MathHelper {
         pure
         returns (uint256 ra, uint256 pa)
     {
-        ra = (amount * (accruedRa * 1e18) / totalLv) / 1e18;
-        pa = (amount * (accruedPa * 1e18) / totalLv) / 1e18;
+        UD60x18 _ra = mul(ud(amount), div(ud(accruedRa), ud(totalLv)));
+        UD60x18 _pa = mul(ud(amount), div(ud(accruedPa), ud(totalLv)));
+
+        return (unwrap(_ra), unwrap(_pa));
     }
 
     /**
@@ -94,7 +85,8 @@ library MathHelper {
         pure
         returns (uint256 received)
     {
-        received = (amount * (lvRaBalance * 1e18) / totalLv) / 1e18;
+        UD60x18 _received = mul(ud(amount), div(ud(lvRaBalance), ud(totalLv)));
+        return unwrap(_received);
     }
 
     /**
@@ -103,7 +95,7 @@ library MathHelper {
      * @param amount the amount of lv user want to withdraw
      */
     function calculatePercentageFee(uint256 fee1e18, uint256 amount) external pure returns (uint256 percentage) {
-        percentage = (((amount * 1e18) * fee1e18) / (100 * 1e18)) / 1e18;
+        UD60x18 fee = SwapperMathLibrary.calculatePercentage(ud(amount), convert(fee1e18));
     }
 
     /**
@@ -116,7 +108,8 @@ library MathHelper {
         pure
         returns (uint256 _amount)
     {
-        _amount = (amount * 1e18) / exchangeRate;
+        UD60x18 _amount = div(ud(amount), ud(exchangeRate));
+        return unwrap(_amount);
     }
 
     /**
@@ -129,7 +122,8 @@ library MathHelper {
         pure
         returns (uint256 _amount)
     {
-        _amount = (amount * exchangeRate) / 1e18;
+        UD60x18 amount = mul(ud(amount), ud(exchangeRate));
+        return unwrap(amount);
     }
 
     /// @notice calculate the accrued PA & RA
@@ -143,7 +137,8 @@ library MathHelper {
         pure
         returns (uint256 accrued)
     {
-        accrued = (amount * (available * 1e18) / totalCtIssued) / 1e18;
+        UD60x18 _accrued = mul(ud(amount), div(ud(available), ud(totalCtIssued)));
+        return unwrap(_accrued);
     }
 
     function separateLiquidity(uint256 totalAmount, uint256 totalLvIssued, uint256 totalLvWithdrawn)
@@ -157,12 +152,16 @@ library MathHelper {
         }
 
         // with 1e18 precision
+        UD60x18 _ratePerLv = div(ud(totalAmount), ud(totalLvIssued));
         ratePerLv = ((totalAmount * 1e18) / totalLvIssued);
 
-        attributedWithdrawal = (ratePerLv * totalLvWithdrawn) / 1e18;
-        attributedAmm = totalAmount - attributedWithdrawal;
+        UD60x18 _attributedWithdrawal = mul(_ratePerLv, ud(totalLvWithdrawn));
 
-        assert((attributedWithdrawal + attributedAmm) == totalAmount);
+        UD60x18 _attributedAmm = sub(ud(totalAmount), _attributedWithdrawal);
+
+        attributedWithdrawal = unwrap(_attributedWithdrawal);
+        attributedAmm = unwrap(_attributedAmm);
+        ratePerLv = unwrap(_ratePerLv);
     }
 
     function calculateWithTolerance(uint256 ra, uint256 ct, uint256 tolerance)
@@ -170,8 +169,10 @@ library MathHelper {
         pure
         returns (uint256 raTolerance, uint256 ctTolerance)
     {
-        raTolerance = ra - ((ra * 1e18 * tolerance) / (100 * 1e18) / 1e18);
-        ctTolerance = ct - ((ct * 1e18 * tolerance) / (100 * 1e18) / 1e18);
+        UD60x18 _raTolerance = div(mul(ud(ra), ud(tolerance)), convert(100));
+        UD60x18 _ctTolerance = div(mul(ud(ct), ud(tolerance)), convert(100));
+
+        return (unwrap(_raTolerance), unwrap(_ctTolerance));
     }
 
     function calculateUniLpValue(UD60x18 totalLpSupply, UD60x18 totalRaReserve, UD60x18 totalCtReserve)
@@ -201,51 +202,54 @@ library MathHelper {
             uint256 totalLvCtValue
         )
     {
-        // (valueRaPerLp, valueCtPerLp) = calculateUniLpValue(totalLpSupply, totalRaReserve, totalCtReserve);
+        UniLpValueParams memory params = UniLpValueParams(
+            ud(totalLpSupply), ud(totalLpOwned), ud(totalRaReserve), ud(totalCtReserve), ud(totalLvIssued)
+        );
 
-        uint256 cumulatedLptotalLvOwnedRa = (totalLpOwned * valueRaPerLp) / 1e18;
-        uint256 cumulatedLptotalLvOwnedCt = (totalLpOwned * valueCtPerLp) / 1e18;
+        UniLpValueResult memory result = _calculateLvValueFromUniLp(params);
 
-        raValuePerLv = (cumulatedLptotalLvOwnedRa * 1e18) / totalLvIssued;
-        ctValuePerLv = (cumulatedLptotalLvOwnedCt * 1e18) / totalLvIssued;
-
-        totalLvRaValue = (raValuePerLv * totalLvIssued) / 1e18;
-        totalLvCtValue = (ctValuePerLv * totalLvIssued) / 1e18;
+        raValuePerLv = unwrap(result.raValuePerLv);
+        ctValuePerLv = unwrap(result.ctValuePerLv);
+        valueRaPerLp = unwrap(result.valueRaPerLp);
+        valueCtPerLp = unwrap(result.valueCtPerLp);
+        totalLvRaValue = unwrap(result.totalLvRaValue);
+        totalLvCtValue = unwrap(result.totalLvCtValue);
     }
 
-    // struct UniLpValueParams {
-    //     UD60x18 totalLpSupply;
-    //     UD60x18 totalLpOwned;
-    //     UD60x18 totalRaReserve;
-    //     UD60x18 totalCtReserve;
-    //     UD60x18 totalLvIssued;
-    // }
+    struct UniLpValueParams {
+        UD60x18 totalLpSupply;
+        UD60x18 totalLpOwned;
+        UD60x18 totalRaReserve;
+        UD60x18 totalCtReserve;
+        UD60x18 totalLvIssued;
+    }
 
-    // struct UniLpValueResult {
-    //     UD60x18 raValuePerLv;
-    //     UD60x18 ctValuePerLv;
-    //     UD60x18 valueRaPerLp;
-    //     UD60x18 valueCtPerLp;
-    //     UD60x18 totalLvRaValue;
-    //     UD60x18 totalLvCtValue;
-    // }
+    struct UniLpValueResult {
+        UD60x18 raValuePerLv;
+        UD60x18 ctValuePerLv;
+        UD60x18 valueRaPerLp;
+        UD60x18 valueCtPerLp;
+        UD60x18 totalLvRaValue;
+        UD60x18 totalLvCtValue;
+    }
 
-    // function _calculateLvValueFromUniLp(UniLpValueParams memory params)
-    //     external
-    //     pure
-    //     returns (UniLpValueResult memory result)
-    // {
-    //     (result.valueRaPerLp, result.valueCtPerLp) = calculateUniLpValue(totalLpSupply, totalRaReserve, totalCtReserve);
+    function _calculateLvValueFromUniLp(UniLpValueParams memory params)
+        internal
+        pure
+        returns (UniLpValueResult memory result)
+    {
+        (result.valueRaPerLp, result.valueCtPerLp) =
+            calculateUniLpValue(params.totalLpSupply, params.totalRaReserve, params.totalCtReserve);
 
-    //     UD60x18 cumulatedLptotalLvOwnedRa = mul(totalLpOwned, valueRaPerLp);
-    //     UD60x18 cumulatedLptotalLvOwnedCt = mul(totalLpOwned, valueCtPerLp);
+        UD60x18 cumulatedLptotalLvOwnedRa = mul(params.totalLpOwned, result.valueRaPerLp);
+        UD60x18 cumulatedLptotalLvOwnedCt = mul(params.totalLpOwned, result.valueCtPerLp);
 
-    //     raValuePerLv = (cumulatedLptotalLvOwnedRa * 1e18) / totalLvIssued;
-    //     ctValuePerLv = (cumulatedLptotalLvOwnedCt * 1e18) / totalLvIssued;
+        result.raValuePerLv = div(cumulatedLptotalLvOwnedRa, params.totalLvIssued);
+        result.ctValuePerLv = div(cumulatedLptotalLvOwnedCt, params.totalLvIssued);
 
-    //     totalLvRaValue = (raValuePerLv * totalLvIssued) / 1e18;
-    //     totalLvCtValue = (ctValuePerLv * totalLvIssued) / 1e18;
-    // }
+        result.totalLvRaValue = mul(result.raValuePerLv, params.totalLvIssued);
+        result.totalLvCtValue = mul(result.ctValuePerLv, params.totalLvIssued);
+    }
 
     function convertToLp(uint256 rateRaPerLv, uint256 rateRaPerLp, uint256 redeemedLv)
         external
