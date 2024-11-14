@@ -300,18 +300,18 @@ library VaultLibrary {
         {
             Id id = self.info.toId();
 
-            MathHelper.DepositParams memory params = MathHelper.DepositParams({
-                totalLvIssued: Asset(self.vault.lv._address).totalSupply(),
-                // the provide liquidity automatically adds the lp, so we need to subtract it first here
-                totalVaultLp: self.vault.config.lpBalance - lp,
-                totalLpMinted: lp,
-                totalVaultCt: self.vault.balances.ctBalance - splitted,
-                totalCtMinted: splitted,
-                totalVaultDs: flashSwapRouter.getLvReserve(id, dsId) - splitted,
-                totalDsMinted: splitted
-            });
+            // MathHelper.DepositParams memory params = MathHelper.DepositParams({
+            //     totalLvIssued: Asset(self.vault.lv._address).totalSupply(),
+            //     // the provide liquidity automatically adds the lp, so we need to subtract it first here
+            //     totalVaultLp: self.vault.config.lpBalance - lp,
+            //     totalLpMinted: lp,
+            //     totalVaultCt: self.vault.balances.ctBalance - splitted,
+            //     totalCtMinted: splitted,
+            //     totalVaultDs: flashSwapRouter.getLvReserve(id, dsId) - splitted,
+            //     totalDsMinted: splitted
+            // });
 
-            received = MathHelper.calculateDepositLv(params);
+            // received = MathHelper.calculateDepositLv(params);
         }
 
         self.vault.lv.issue(from, received);
@@ -559,20 +559,20 @@ library VaultLibrary {
         Pair storage pair = self.info;
 
         {
-            MathHelper.RedeemParams memory params = MathHelper.RedeemParams({
-                amountLvBurned: redeemParams.amount,
-                totalLvIssued: Asset(self.vault.lv._address).totalSupply(),
-                totalVaultLp: self.vault.config.lpBalance,
-                totalVaultCt: self.vault.balances.ctBalance,
-                totalVaultDs: routers.flashSwapRouter.getLvReserve(pair.toId(), dsId)
-            });
+            // MathHelper.RedeemParams memory params = MathHelper.RedeemParams({
+            //     amountLvBurned: redeemParams.amount,
+            //     totalLvIssued: Asset(self.vault.lv._address).totalSupply(),
+            //     totalVaultLp: self.vault.config.lpBalance,
+            //     totalVaultCt: self.vault.balances.ctBalance,
+            //     totalVaultDs: routers.flashSwapRouter.getLvReserve(pair.toId(), dsId)
+            // });
 
-            uint256 ctReceived;
-            uint256 dsReceived;
+            // uint256 ctReceived;
+            // uint256 dsReceived;
 
-            (ctReceived, dsReceived, lpLiquidated) = MathHelper.calculateRedeemLv(params);
-            result.ctReceivedFromVault = ctReceived;
-            result.dsReceived = dsReceived;
+            // (ctReceived, dsReceived, lpLiquidated) = MathHelper.calculateRedeemLv(params);
+            // result.ctReceivedFromVault = ctReceived;
+            // result.dsReceived = dsReceived;
         }
 
         {

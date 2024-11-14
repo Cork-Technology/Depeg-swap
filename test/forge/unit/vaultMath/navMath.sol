@@ -4,23 +4,97 @@ import "forge-std/Test.sol";
 import "./../../../../contracts/libraries/MathHelper.sol";
 import "./../../Helper.sol";
 import "forge-std/console.sol";
+import {UD60x18, convert, add, mul, pow, sub, div, unwrap, ud} from "@prb/math/src/UD60x18.sol";
 
 contract NavMathTest is Test {
+    UD60x18 internal raReserve = convert(1000 ether);
+    UD60x18 internal ctReserve = convert(1050 ether);
+
     function test_quote() external {
-        uint256 raReserve = 1000 ether;
-        uint256 ctReserve = 1050 ether;
-
-        // t = 0.9
-        uint256 start = 0 days;
-        uint256 end = 10 days;
-        uint256 current = 1 days;
-
-        uint256 raQuote = MathHelper.getPriceAsQuote(ctReserve, raReserve, start, end, current);
+        uint256 raQuote = unwrap(MathHelper.caclulatePriceQuote(ctReserve, raReserve, ud(0.9 ether)));
 
         vm.assertApproxEqAbs(raQuote, 1.044 ether, 0.001 ether);
 
-        uint256 ctQuote = MathHelper.getPriceAsQuote(raReserve, ctReserve, start, end, current);
+        uint256 ctQuote = unwrap(MathHelper.caclulatePriceQuote(raReserve, ctReserve, ud(0.9 ether)));
 
         vm.assertApproxEqAbs(ctQuote, 0.957 ether, 0.001 ether);
+    }
+
+    function test_calculateNav() external {
+        UD60x18 marketValue = ud(2 ether);
+        UD60x18 qty = ud(3 ether);
+
+        uint256 nav = unwrap(MathHelper.calculateNav(marketValue, qty));
+
+        vm.assertEq(nav, 6 ether);
+    }
+
+    function test_calculateInternalPrices() external {
+        MathHelper.DepositParams memory params = MathHelper.DepositParams({
+            reserveRa: 1000 ether,
+            oneMinusT: 0.1 ether,
+            reserveCt: 1050 ether,
+            lpSupply: 1024 ether,
+            depositAmount: 1 ether,
+            lvSupply: 2050 ether,
+            vaultCt: 1000 ether,
+            vaultDs: 2050 ether,
+            vaultLp: 1024 ether
+        });
+
+        MathHelper.InternalPrices memory prices = MathHelper.calculateInternalPrice(params);
+        vm.assertApproxEqAbs(unwrap(prices.ctPrice), 0.957 ether, 0.001 ether);
+        vm.assertApproxEqAbs(unwrap(prices.raPrice), 1.044 ether, 0.001 ether);
+        vm.assertApproxEqAbs(unwrap(prices.dsPrice), 0.042 ether, 0.001 ether);
+    }
+
+    function test_calculateNavCombined() external {
+        MathHelper.DepositParams memory params = MathHelper.DepositParams({
+            reserveRa: 1000 ether,
+            oneMinusT: 0.1 ether,
+            reserveCt: 1050 ether,
+            lpSupply: 1024 ether,
+            depositAmount: 1 ether,
+            lvSupply: 2050 ether,
+            vaultCt: 1000 ether,
+            vaultDs: 2050 ether,
+            vaultLp: 1024 ether
+        });
+
+        (UD60x18 navLp, UD60x18 navCt, UD60x18 navDs) = MathHelper.calculateNavCombined(params);
+        vm.assertApproxEqAbs(unwrap(navLp), 2051.387124 ether, 0.000001 ether);
+        vm.assertApproxEqAbs(unwrap(navCt), 957.03 ether, 0.01 ether);
+        vm.assertApproxEqAbs(unwrap(navDs), 88.07 ether, 0.01 ether);
+    }
+
+    function test_calculateLvMinted() external {
+        MathHelper.DepositParams memory params = MathHelper.DepositParams({
+            reserveRa: 1000 ether,
+            oneMinusT: 0.1 ether,
+            reserveCt: 1050 ether,
+            lpSupply: 1024 ether,
+            depositAmount: 1 ether,
+            lvSupply: 2050 ether,
+            vaultCt: 1000 ether,
+            vaultDs: 2050 ether,
+            vaultLp: 1024 ether
+        });
+        uint256 minted = MathHelper.calculateDepositLv(params);
+        vm.assertApproxEqAbs(minted, 0.66 ether, 0.01 ether);
+    }
+
+    function test_Claim() external {
+        MathHelper.RedeemParams memory params = MathHelper.RedeemParams({
+            amountLvClaimed: 10 ether,
+            totalLvIssued: 100 ether,
+            totalVaultLp: 450 ether,
+            totalVaultCt: 300 ether,
+            totalVaultDs: 700 ether
+        });
+
+        (uint256 ctReceived, uint256 dsReceived, uint256 lpLiquidated) = MathHelper.calculateRedeemLv(params);
+        vm.assertEq(ctReceived, 30 ether);
+        vm.assertEq(dsReceived, 70 ether);
+        vm.assertEq(lpLiquidated, 45 ether);
     }
 }

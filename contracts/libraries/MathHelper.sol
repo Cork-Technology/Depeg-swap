@@ -6,6 +6,7 @@ import {BuyMathBisectionSolver, SwapperMathLibrary} from "./DsSwapperMathLib.sol
 
 import {UD60x18, convert, ud, add, mul, pow, sub, div, unwrap, intoSD59x18} from "@prb/math/src/UD60x18.sol";
 import {SD59x18, intoUD60x18} from "@prb/math/src/SD59x18.sol";
+import "Cork-Hook/lib/MarketSnapshot.sol";
 
 /**
  * @title MathHelper Library Contract
@@ -221,21 +222,63 @@ library MathHelper {
     }
 
     struct DepositParams {
-        uint256 totalLvIssued;
-        uint256 totalVaultLp;
-        uint256 totalLpMinted;
-        uint256 totalVaultCt;
-        uint256 totalCtMinted;
-        uint256 totalVaultDs;
-        uint256 totalDsMinted;
+        uint256 depositAmount;
+        uint256 reserveRa;
+        uint256 reserveCt;
+        uint256 oneMinusT;
+        uint256 lpSupply;
+        uint256 lvSupply;
+        uint256 vaultCt;
+        uint256 vaultDs;
+        uint256 vaultLp;
     }
 
-    function calculateDepositLv(DepositParams calldata params) external pure returns (uint256 lvMinted) {
-        // TODO
+    function calculateDepositLv(DepositParams memory params) external pure returns (uint256 lvMinted) {
+        (UD60x18 navLp, UD60x18 navCt, UD60x18 navDs) = calculateNavCombined(params);
+
+        UD60x18 nav = add(navCt, add(navDs, navLp));
+        UD60x18 navPerShare = div(nav, ud(params.lvSupply));
+
+        return unwrap(div(ud(params.depositAmount), navPerShare));
+    }
+
+    struct InternalPrices {
+        UD60x18 ctPrice;
+        UD60x18 dsPrice;
+        UD60x18 raPrice;
+    }
+
+
+    function calculateInternalPrice(DepositParams memory params) internal pure returns (InternalPrices memory) {
+        UD60x18 t = sub(convert(1), ud(params.oneMinusT));
+        UD60x18 ctPrice = caclulatePriceQuote(ud(params.reserveRa), ud(params.reserveCt), t);
+        UD60x18 dsPrice = sub(convert(1), ctPrice);
+        UD60x18 raPrice = caclulatePriceQuote(ud(params.reserveCt), ud(params.reserveRa), t);
+
+        return InternalPrices(ctPrice, dsPrice, raPrice);
+    }
+
+    function calculateNavCombined(DepositParams memory params)
+        internal
+        pure
+        returns (UD60x18 navLp, UD60x18 navCt, UD60x18 navDs)
+    {
+        InternalPrices memory prices = calculateInternalPrice(params);
+
+        navCt = calculateNav(prices.ctPrice, ud(params.vaultCt));
+        navDs = calculateNav(prices.dsPrice, ud(params.vaultDs));
+
+        UD60x18 raPerLp = div(ud(params.lpSupply), ud(params.reserveRa));
+        UD60x18 navRaLp = calculateNav(prices.raPrice, mul(ud(params.vaultLp), raPerLp));
+
+        UD60x18 ctPerLp = div(ud(params.lpSupply), ud(params.reserveCt));
+        UD60x18 navCtLp = calculateNav(prices.ctPrice, mul(ud(params.vaultLp), ctPerLp));
+
+        navLp = add(navRaLp, navCtLp);
     }
 
     struct RedeemParams {
-        uint256 amountLvBurned;
+        uint256 amountLvClaimed;
         uint256 totalLvIssued;
         uint256 totalVaultLp;
         uint256 totalVaultCt;
@@ -247,7 +290,10 @@ library MathHelper {
         pure
         returns (uint256 ctReceived, uint256 dsReceived, uint256 lpLiquidated)
     {
-        // TODO
+        UD60x18 proportionalClaim = div(ud(params.amountLvClaimed), ud(params.totalLvIssued));
+        ctReceived = unwrap(mul(proportionalClaim, ud(params.totalVaultCt)));
+        dsReceived = unwrap(mul(proportionalClaim, ud(params.totalVaultDs)));
+        lpLiquidated = unwrap(mul(proportionalClaim, ud(params.totalVaultLp)));
     }
 
     /// @notice InitialctRatio = f / (rate +1)^t
@@ -284,20 +330,11 @@ library MathHelper {
     }
 
     /// @notice calculates quote = (reserve0 / reserve1)^t
-    function getPriceAsQuote(uint256 reserve0, uint256 reserve1, uint256 start, uint256 end, uint256 current)
-        internal
-        pure
-        returns (uint256)
-    {
-        UD60x18 t = intoUD60x18(
-            BuyMathBisectionSolver.computeT(
-                intoSD59x18(convert(start)), intoSD59x18(convert(end)), intoSD59x18(convert(current))
-            )
-        );
+    function caclulatePriceQuote(UD60x18 reserve0, UD60x18 reserve1, UD60x18 t) internal pure returns (UD60x18) {
+        return pow(div(reserve0, reserve1), t);
+    }
 
-        UD60x18 quote = pow(div(convert(reserve0), convert(reserve1)), t);
-        
-        // we unwrap since w want the output in 18 decimals precision
-        return unwrap(quote);
+    function calculateNav(UD60x18 marketValueFromQuote, UD60x18 qty) internal pure returns (UD60x18) {
+        return mul(marketValueFromQuote, qty);
     }
 }
