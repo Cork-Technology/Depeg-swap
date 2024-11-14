@@ -58,7 +58,7 @@ abstract contract VaultCore is ModuleState, Context, IVault {
             result.ctReceivedFromAmm,
             result.ctReceivedFromVault,
             result.dsReceived,
-            result.raFee,
+            result.fee,
             result.feePercentage,
             result.paReceived
         );

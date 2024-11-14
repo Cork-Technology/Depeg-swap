@@ -569,56 +569,65 @@ library VaultLibrary {
             );
         }
         result.feePercentage = self.vault.config.fee;
+        result.fee = MathHelper.calculatePercentageFee(result.feePercentage, redeemParams.amount);
 
-        amount = amount - MathHelper.calculatePercentageFee(result.feePercentage, amount);
-
-        result.receiver = owner;
+        redeemParams.amount -= result.fee;
+        
+        result.id = redeemParams.id;
+        result.receiver = redeemParams.receiver;
 
         result.paReceived = _redeemPa(self, redeemParams, owner);
 
         uint256 lpLiquidated;
         uint256 dsId = self.globalAssetIdx;
+
         Pair storage pair = self.info;
+        DepegSwap storage ds = self.ds[dsId];
 
         {
-            // MathHelper.RedeemParams memory params = MathHelper.RedeemParams({
-            //     amountLvBurned: redeemParams.amount,
-            //     totalLvIssued: Asset(self.vault.lv._address).totalSupply(),
-            //     totalVaultLp: self.vault.config.lpBalance,
-            //     totalVaultCt: self.vault.balances.ctBalance,
-            //     totalVaultDs: routers.flashSwapRouter.getLvReserve(pair.toId(), dsId)
-            // });
+            MathHelper.RedeemParams memory params = MathHelper.RedeemParams({
+                amountLvClaimed: redeemParams.amount,
+                totalLvIssued: Asset(self.vault.lv._address).totalSupply(),
+                totalVaultLp: self.vault.config.lpBalance,
+                totalVaultCt: self.vault.balances.ctBalance,
+                totalVaultDs: routers.flashSwapRouter.getLvReserve(redeemParams.id, dsId)
+            });
 
-            // uint256 ctReceived;
-            // uint256 dsReceived;
+            uint256 ctReceived;
+            uint256 dsReceived;
 
-            // (ctReceived, dsReceived, lpLiquidated) = MathHelper.calculateRedeemLv(params);
-            // result.ctReceivedFromVault = ctReceived;
-            // result.dsReceived = dsReceived;
+            (ctReceived, dsReceived, lpLiquidated) = MathHelper.calculateRedeemLv(params);
+            result.ctReceivedFromVault = ctReceived;
+            // decrease the ct balance in the vault
+            self.vault.balances.ctBalance -= result.ctReceivedFromVault;
+
+            result.dsReceived = dsReceived;
         }
 
         {
-            (uint256 raFromAmm, uint256 ctFromAmm) = __liquidateUnchecked(
-                self, pair.ra, self.ds[dsId].ct, routers.ammRouter, lpLiquidated, redeemParams.ammDeadline
-            );
+            (uint256 raFromAmm, uint256 ctFromAmm) =
+                __liquidateUnchecked(self, pair.ra, ds.ct, routers.ammRouter, lpLiquidated, redeemParams.ammDeadline);
 
             result.raReceivedFromAmm = raFromAmm;
             result.ctReceivedFromAmm = ctFromAmm;
-        }
-
-        result.raFee = MathHelper.calculatePercentageFee(result.raReceivedFromAmm, result.feePercentage);
-
-        if (result.raFee != 0) {
-            provideLiquidityWithFee(self, result.raFee, routers.flashSwapRouter, routers.ammRouter);
-            result.raReceivedFromAmm = result.raReceivedFromAmm - result.raFee;
         }
 
         if (result.raReceivedFromAmm < redeemParams.amountOutMin) {
             revert IVault.InsufficientOutputAmount(redeemParams.amountOutMin, result.raReceivedFromAmm);
         }
 
-        ERC20Burnable(self.vault.lv._address).burnFrom(owner, redeemParams.amount);
+        // burn lv amount + fee
+        ERC20Burnable(self.vault.lv._address).burnFrom(owner, redeemParams.amount + result.fee);
+
+        // send RA amm to user
         self.vault.balances.ra.unlockToUnchecked(result.raReceivedFromAmm, redeemParams.receiver);
+
+        // send CT received from AMM and held in vault to user
+        SafeERC20.safeTransfer(IERC20(ds.ct), redeemParams.receiver, result.ctReceivedFromVault + result.ctReceivedFromAmm);
+
+        // empty the DS reserve in router and send it to user
+        routers.flashSwapRouter.emptyReservePartialLv(redeemParams.id, dsId, result.dsReceived);
+        SafeERC20.safeTransfer(IERC20(ds._address), redeemParams.receiver, result.dsReceived);
     }
 
     function _redeemPa(State storage self, IVault.RedeemEarlyParams memory redeemParams, address owner)
