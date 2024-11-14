@@ -9,7 +9,7 @@ contract ArpMath is Test {
     function test_fixedCtPrice() external {
         uint256 arp = 5 ether;
 
-        uint256 ratio = convert(SwapperMathLibrary.calcPtConstFixed(convert(arp)));
+        uint256 ratio = unwrap(SwapperMathLibrary.calcPtConstFixed(ud(arp)));
 
         vm.assertApproxEqAbs(ratio, 0.95 ether, 0.01 ether);
     }
