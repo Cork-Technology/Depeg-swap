@@ -174,13 +174,13 @@ library MathHelper {
         ctTolerance = ct - ((ct * 1e18 * tolerance) / (100 * 1e18) / 1e18);
     }
 
-    function calculateUniV2LpValue(uint256 totalLpSupply, uint256 totalRaReserve, uint256 totalCtReserve)
+    function calculateUniLpValue(UD60x18 totalLpSupply, UD60x18 totalRaReserve, UD60x18 totalCtReserve)
         public
         pure
-        returns (uint256 valueRaPerLp, uint256 valueCtPerLp)
+        returns (UD60x18 valueRaPerLp, UD60x18 valueCtPerLp)
     {
-        valueRaPerLp = (uint256(totalRaReserve) * 1e18) / totalLpSupply;
-        valueCtPerLp = (uint256(totalCtReserve) * 1e18) / totalLpSupply;
+        valueRaPerLp = div(totalRaReserve, totalLpSupply);
+        valueCtPerLp = div(totalCtReserve, totalLpSupply);
     }
 
     function calculateLvValueFromUniLp(
@@ -201,7 +201,7 @@ library MathHelper {
             uint256 totalLvCtValue
         )
     {
-        (valueRaPerLp, valueCtPerLp) = calculateUniV2LpValue(totalLpSupply, totalRaReserve, totalCtReserve);
+        // (valueRaPerLp, valueCtPerLp) = calculateUniLpValue(totalLpSupply, totalRaReserve, totalCtReserve);
 
         uint256 cumulatedLptotalLvOwnedRa = (totalLpOwned * valueRaPerLp) / 1e18;
         uint256 cumulatedLptotalLvOwnedCt = (totalLpOwned * valueCtPerLp) / 1e18;
@@ -212,6 +212,40 @@ library MathHelper {
         totalLvRaValue = (raValuePerLv * totalLvIssued) / 1e18;
         totalLvCtValue = (ctValuePerLv * totalLvIssued) / 1e18;
     }
+
+    // struct UniLpValueParams {
+    //     UD60x18 totalLpSupply;
+    //     UD60x18 totalLpOwned;
+    //     UD60x18 totalRaReserve;
+    //     UD60x18 totalCtReserve;
+    //     UD60x18 totalLvIssued;
+    // }
+
+    // struct UniLpValueResult {
+    //     UD60x18 raValuePerLv;
+    //     UD60x18 ctValuePerLv;
+    //     UD60x18 valueRaPerLp;
+    //     UD60x18 valueCtPerLp;
+    //     UD60x18 totalLvRaValue;
+    //     UD60x18 totalLvCtValue;
+    // }
+
+    // function _calculateLvValueFromUniLp(UniLpValueParams memory params)
+    //     external
+    //     pure
+    //     returns (UniLpValueResult memory result)
+    // {
+    //     (result.valueRaPerLp, result.valueCtPerLp) = calculateUniLpValue(totalLpSupply, totalRaReserve, totalCtReserve);
+
+    //     UD60x18 cumulatedLptotalLvOwnedRa = mul(totalLpOwned, valueRaPerLp);
+    //     UD60x18 cumulatedLptotalLvOwnedCt = mul(totalLpOwned, valueCtPerLp);
+
+    //     raValuePerLv = (cumulatedLptotalLvOwnedRa * 1e18) / totalLvIssued;
+    //     ctValuePerLv = (cumulatedLptotalLvOwnedCt * 1e18) / totalLvIssued;
+
+    //     totalLvRaValue = (raValuePerLv * totalLvIssued) / 1e18;
+    //     totalLvCtValue = (ctValuePerLv * totalLvIssued) / 1e18;
+    // }
 
     function convertToLp(uint256 rateRaPerLv, uint256 rateRaPerLp, uint256 redeemedLv)
         external
@@ -247,7 +281,6 @@ library MathHelper {
         UD60x18 dsPrice;
         UD60x18 raPrice;
     }
-
 
     function calculateInternalPrice(DepositParams memory params) internal pure returns (InternalPrices memory) {
         UD60x18 t = sub(convert(1), ud(params.oneMinusT));
