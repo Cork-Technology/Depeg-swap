@@ -56,10 +56,11 @@ contract HedgeUnit is ERC20, ReentrancyGuard, Ownable, Pausable, IHedgeUnit {
         Id _id,
         address _PA,
         string memory _pairName,
-        uint256 _mintCap
+        uint256 _mintCap,
+        address _owner
     )
         ERC20(string(abi.encodePacked("Hedge Unit - ", _pairName)), string(abi.encodePacked("HU - ", _pairName)))
-        Ownable(msg.sender)
+        Ownable(_owner)
     {
         MODULE_CORE = ICommon(_moduleCore);
         LIQUIDATOR = ILiquidator(_liquidator);
@@ -101,26 +102,58 @@ contract HedgeUnit is ERC20, ReentrancyGuard, Ownable, Pausable, IHedgeUnit {
     }
 
     /**
+     * @notice Returns the dsAmount and paAmount required to mint the specified amount of HedgeUnit tokens.
+     * @return dsAmount The amount of DS tokens required to mint the specified amount of HedgeUnit tokens.
+     * @return paAmount The amount of PA tokens required to mint the specified amount of HedgeUnit tokens.
+     */
+    function previewMint(uint256 amount) external view returns (uint256 dsAmount, uint256 paAmount) {
+        if (totalSupply() + amount > mintCap) {
+            revert MintCapExceeded();
+        }
+        dsAmount = amount;
+        paAmount = (amount * (10 ** paDecimals)) / (10 ** 18);
+    }
+
+    /**
      * @notice Mints HedgeUnit tokens by transferring the equivalent amount of DS and PA tokens.
      * @dev The function checks for the paused state and mint cap before minting.
      * @param amount The amount of HedgeUnit tokens to mint.
      * @custom:reverts EnforcedPause if minting is currently paused.
      * @custom:reverts MintCapExceeded if the mint cap is exceeded.
+     * @return dsAmount The amount of DS tokens used to mint HedgeUnit tokens.
+     * @return paAmount The amount of PA tokens used to mint HedgeUnit tokens.
      */
-    function mint(uint256 amount) external whenNotPaused nonReentrant {
+    function mint(uint256 amount) external whenNotPaused nonReentrant returns (uint256 dsAmount, uint256 paAmount) {
         if (totalSupply() + amount > mintCap) {
             revert MintCapExceeded();
         }
         _getLastDS();
 
-        IERC20(ds).safeTransferFrom(msg.sender, address(this), amount);
-        uint256 paAmount = (amount * (10 ** paDecimals)) / (10 ** 18);
+        dsAmount = amount;
+        IERC20(ds).safeTransferFrom(msg.sender, address(this), dsAmount);
+
+        // this calculation is based on the assumption that the DS token has 18 decimals but PA can have different decimals
+        paAmount = (amount * (10 ** paDecimals)) / (10 ** 18);
         PA.safeTransferFrom(msg.sender, address(this), paAmount);
         dsHistory[dsIndexMap[address(ds)]].totalDeposited += amount;
 
         _mint(msg.sender, amount);
 
         emit Mint(msg.sender, amount);
+    }
+
+    /**
+     * @notice Returns the dsAmount and paAmount received for dissolving the specified amount of HedgeUnit tokens.
+     * @return dsAmount The amount of DS tokens received for dissolving the specified amount of HedgeUnit tokens.
+     * @return paAmount The amount of PA tokens received for dissolving the specified amount of HedgeUnit tokens.
+     */
+    function previewDissolve(uint256 amount) external view returns (uint256 dsAmount, uint256 paAmount) {
+        if (amount > balanceOf(msg.sender)) {
+            revert InvalidAmount();
+        }
+        uint256 totalSupplyHU = totalSupply();
+        dsAmount = (amount * ds.balanceOf(address(this))) / totalSupplyHU;
+        paAmount = (amount * PA.balanceOf(address(this))) / (totalSupplyHU * (10 ** (18 - paDecimals)));
     }
 
     /**

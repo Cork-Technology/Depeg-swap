@@ -11,6 +11,7 @@ import {RouterState} from "../../contracts/core/flash-swaps/FlashSwapRouter.sol"
 import {ModuleCore} from "../../contracts/core/ModuleCore.sol";
 import {Liquidator} from "../../contracts/core/Liquidator.sol";
 import {HedgeUnit} from "../../contracts/core/assets/HedgeUnit.sol";
+import {HedgeUnitFactory} from "../../contracts/core/assets/HedgeUnitFactory.sol";
 import {CETH} from "../../contracts/tokens/CETH.sol";
 import {CST} from "../../contracts/tokens/CST.sol";
 import {Id} from "../../contracts/libraries/Pair.sol";
@@ -33,6 +34,7 @@ contract DeployScript is Script {
     RouterState public flashswapRouter;
     ModuleCore public moduleCore;
     Liquidator public liquidator;
+    HedgeUnitFactory public hedgeUnitFactory;
 
     HedgeUnit public hedgeUnitbsETH;
     HedgeUnit public hedgeUnitlbETH;
@@ -162,47 +164,40 @@ contract DeployScript is Script {
         console.log("Liquidator                      : ", address(liquidator));
         console.log("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-");
 
+        // Deploy the HedgeUnitFactry contract
+        hedgeUnitFactory = new HedgeUnitFactory(address(moduleCore), address(liquidator));
+        console.log("HedgeUnit Factory               : ", address(hedgeUnitFactory));
+        console.log("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-");
+
         // Deploy the HedgeUnit contract
-        hedgeUnitbsETH = new HedgeUnit(
-            address(moduleCore),
-            address(liquidator),
-            moduleCore.getId(bsETH, ceth),
-            bsETH,
-            "Bear Sterns Restaked ETH - CETH",
-            INITIAL_MINT_CAP
+        hedgeUnitbsETH = HedgeUnit(
+            hedgeUnitFactory.deployHedgeUnit(
+                moduleCore.getId(bsETH, ceth), bsETH, "Bear Sterns Restaked ETH - CETH", INITIAL_MINT_CAP
+            )
         );
         liquidator.updateLiquidatorRole(address(hedgeUnitbsETH), true);
         console.log("HU bsETH                        : ", address(hedgeUnitbsETH));
 
-        hedgeUnitlbETH = new HedgeUnit(
-            address(moduleCore),
-            address(liquidator),
-            moduleCore.getId(lbETH, ceth),
-            lbETH,
-            "Lehman Brothers Restaked ETH - CETH",
-            INITIAL_MINT_CAP
+        hedgeUnitlbETH = HedgeUnit(
+            hedgeUnitFactory.deployHedgeUnit(
+                moduleCore.getId(lbETH, ceth), lbETH, "Lehman Brothers Restaked ETH - CETH", INITIAL_MINT_CAP
+            )
         );
         liquidator.updateLiquidatorRole(address(hedgeUnitlbETH), true);
         console.log("HU lbETH                        : ", address(hedgeUnitlbETH));
 
-        hedgeUnitwamuETH = new HedgeUnit(
-            address(moduleCore),
-            address(liquidator),
-            moduleCore.getId(wamuETH, ceth),
-            wamuETH,
-            "Washington Mutual restaked ETH - CETH",
-            INITIAL_MINT_CAP
+        hedgeUnitwamuETH = HedgeUnit(
+            hedgeUnitFactory.deployHedgeUnit(
+                moduleCore.getId(wamuETH, ceth), wamuETH, "Washington Mutual restaked ETH - CETH", INITIAL_MINT_CAP
+            )
         );
         liquidator.updateLiquidatorRole(address(hedgeUnitwamuETH), true);
         console.log("HU wamuETH                      : ", address(hedgeUnitwamuETH));
 
-        hedgeUnitmlETH = new HedgeUnit(
-            address(moduleCore),
-            address(liquidator),
-            moduleCore.getId(mlETH, ceth),
-            mlETH,
-            "Merrill Lynch staked ETH - CETH",
-            INITIAL_MINT_CAP
+        hedgeUnitmlETH = HedgeUnit(
+            hedgeUnitFactory.deployHedgeUnit(
+                moduleCore.getId(mlETH, ceth), mlETH, "Merrill Lynch staked ETH - CETH", INITIAL_MINT_CAP
+            )
         );
         liquidator.updateLiquidatorRole(address(hedgeUnitmlETH), true);
         console.log("HU mlETH                        : ", address(hedgeUnitmlETH));

@@ -42,14 +42,30 @@ interface IHedgeUnit {
      */
     function mintCap() external view returns (uint256);
 
+    /**
+     * @notice Returns the dsAmount and paAmount required to mint the specified amount of HedgeUnit tokens.
+     * @return dsAmount The amount of DS tokens required to mint the specified amount of HedgeUnit tokens.
+     * @return paAmount The amount of PA tokens required to mint the specified amount of HedgeUnit tokens.
+     */
+    function previewMint(uint256 amount) external view returns (uint256 dsAmount, uint256 paAmount);
+
     //functions
     /**
      * @notice Mints HedgeUnit tokens by transferring the equivalent amount of DS and PA tokens.
      * @param amount The amount of HedgeUnit tokens to mint.
      * @custom:reverts MintingPaused if minting is currently paused.
      * @custom:reverts MintCapExceeded if the mint cap is exceeded.
+     * @return dsAmount The amount of DS tokens used to mint HedgeUnit tokens.
+     * @return paAmount The amount of PA tokens used to mint HedgeUnit tokens.
      */
-    function mint(uint256 amount) external;
+    function mint(uint256 amount) external returns (uint256 dsAmount, uint256 paAmount);
+
+    /**
+     * @notice Returns the dsAmount and paAmount received for dissolving the specified amount of HedgeUnit tokens.
+     * @return dsAmount The amount of DS tokens received for dissolving the specified amount of HedgeUnit tokens.
+     * @return paAmount The amount of PA tokens received for dissolving the specified amount of HedgeUnit tokens.
+     */
+    function previewDissolve(uint256 amount) external view returns (uint256 dsAmount, uint256 paAmount);
 
     /**
      * @notice Dissolves HedgeUnit tokens and returns the equivalent amount of DS and PA tokens.

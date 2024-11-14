@@ -55,8 +55,15 @@ contract HedgeUnitTest is Helper {
         liquidator = new Liquidator(DEFAULT_ADDRESS, 10000, settlementContract);
 
         // Deploy the HedgeUnit contract
-        hedgeUnit =
-            new HedgeUnit(address(moduleCore), address(liquidator), currencyId, address(pa), "DS/PA", INITIAL_MINT_CAP);
+        hedgeUnit = new HedgeUnit(
+            address(moduleCore),
+            address(liquidator),
+            currencyId,
+            address(pa),
+            "DS/PA",
+            INITIAL_MINT_CAP,
+            DEFAULT_ADDRESS
+        );
         liquidator.updateLiquidatorRole(address(hedgeUnit), true);
 
         // Transfer tokens to user for testing
@@ -69,6 +76,21 @@ contract HedgeUnitTest is Helper {
         dsId = moduleCore.lastDsId(currencyId);
         (ct, ds) = moduleCore.swapAsset(currencyId, dsId);
         dsToken = DummyWETH(payable(address(ds)));
+    }
+
+    function testPreviewMint() public {
+        // Preview minting 100 HedgeUnit tokens
+        (uint256 dsAmount, uint256 paAmount) = hedgeUnit.previewMint(100 * 1e18);
+
+        // Check that the DS and PA amounts are correct
+        assertEq(dsAmount, 100 * 1e18);
+        assertEq(paAmount, 100 * 1e18);
+    }
+
+    function testPreviewMintRevertWhenMintCapExceeded() public {
+        // Preview minting 2000 HedgeUnit tokens
+        vm.expectRevert(IHedgeUnit.MintCapExceeded.selector);
+        hedgeUnit.previewMint(2000 * 1e18);
     }
 
     function testMintingTokens() public {
@@ -107,6 +129,35 @@ contract HedgeUnitTest is Helper {
         hedgeUnit.mint(mintAmount);
 
         vm.stopPrank();
+    }
+
+    function testPreviewDissolve() public {
+        // Mint tokens first
+        dsToken.approve(address(hedgeUnit), USER_BALANCE);
+        pa.approve(address(hedgeUnit), USER_BALANCE);
+        uint256 mintAmount = 100 * 1e18;
+        hedgeUnit.mint(mintAmount);
+
+        // Preview dissolving 50 tokens
+        (uint256 dsAmount, uint256 paAmount) = hedgeUnit.previewDissolve(50 * 1e18);
+
+        // Check that the DS and PA amounts are correct
+        assertEq(dsAmount, 50 * 1e18);
+        assertEq(paAmount, 50 * 1e18);
+    }
+
+    function testPreviewDissolveRevertWhenInvalidAmount() public {
+        // Preview dissolving more than the user's balance
+        vm.expectRevert(IHedgeUnit.InvalidAmount.selector);
+        hedgeUnit.previewDissolve(1000 * 1e18);
+
+        dsToken.approve(address(hedgeUnit), USER_BALANCE);
+        pa.approve(address(hedgeUnit), USER_BALANCE);
+        uint256 mintAmount = 100 * 1e18;
+        hedgeUnit.mint(mintAmount);
+
+        vm.expectRevert(IHedgeUnit.InvalidAmount.selector);
+        hedgeUnit.previewDissolve(100 * 1e18 + 1);
     }
 
     function testDissolvingTokens() public {
