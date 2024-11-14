@@ -19,12 +19,12 @@ interface ICST {
 }
 
 contract DeployScript is Script {
-    // TODO : check if univ2 compilation with foundry is same as hardhat compiled bytecode
-    string constant v2FactoryArtifact = "test/helper/ext-abi/foundry/uni-v2-factory.json";
-    string constant v2RouterArtifact = "test/helper/ext-abi/foundry/uni-v2-router.json";
+    // // TODO : check if univ2 compilation with foundry is same as hardhat compiled bytecode
+    // string constant v2FactoryArtifact = "test/helper/ext-abi/foundry/uni-v2-factory.json";
+    // string constant v2RouterArtifact = "test/helper/ext-abi/foundry/uni-v2-router.json";
 
-    IUniswapV2Factory public factory;
-    IUniswapV2Router02 public univ2Router;
+    // IUniswapV2Factory public factory;
+    // IUniswapV2Router02 public univ2Router;
 
     AssetFactory public assetFactory;
     CorkConfig public config;
@@ -117,14 +117,14 @@ contract DeployScript is Script {
         console.log("Flashswap Router Proxy          : ", address(flashswapRouter));
 
         // Deploy the UniswapV2Factory contract
-        address _factory = deployCode(v2FactoryArtifact, abi.encode(msg.sender, address(flashswapRouter)));
-        factory = IUniswapV2Factory(_factory);
-        console.log("Univ2 Factory                   : ", _factory);
+        // address _factory = deployCode(v2FactoryArtifact, abi.encode(msg.sender, address(flashswapRouter)));
+        // factory = IUniswapV2Factory(_factory);
+        // console.log("Univ2 Factory                   : ", _factory);
 
         // Deploy the UniswapV2Router contract
-        address _router = deployCode(v2RouterArtifact, abi.encode(_factory, address(ceth), address(flashswapRouter)));
-        univ2Router = IUniswapV2Router02(_router);
-        console.log("Univ2 Router                    : ", _router);
+        // address _router = deployCode(v2RouterArtifact, abi.encode(_factory, address(ceth), address(flashswapRouter)));
+        // univ2Router = IUniswapV2Router02(_router);
+        // console.log("Univ2 Router                    : ", _router);
 
         // Deploy the ModuleCore implementation (logic) contract
         ModuleCore moduleCoreImplementation = new ModuleCore();
