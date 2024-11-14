@@ -282,4 +282,22 @@ library MathHelper {
         _actualFeePercentage = convert(feeFactor);
         _fee = convert(fee);
     }
+
+    /// @notice calculates quote = (reserve0 / reserve1)^t
+    function getPriceAsQuote(uint256 reserve0, uint256 reserve1, uint256 start, uint256 end, uint256 current)
+        internal
+        pure
+        returns (uint256)
+    {
+        UD60x18 t = intoUD60x18(
+            BuyMathBisectionSolver.computeT(
+                intoSD59x18(convert(start)), intoSD59x18(convert(end)), intoSD59x18(convert(current))
+            )
+        );
+
+        UD60x18 quote = pow(div(convert(reserve0), convert(reserve1)), t);
+        
+        // we unwrap since w want the output in 18 decimals precision
+        return unwrap(quote);
+    }
 }
