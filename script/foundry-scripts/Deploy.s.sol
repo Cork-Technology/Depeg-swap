@@ -59,11 +59,6 @@ contract DeployScript is Script {
     );
 
     function run() public {
-        bytes memory creationCode = type(CorkHook).creationCode;
-        bytes memory constructorArgs = abi.encode(address(poolManager), address(liquidityToken));
-
-        (address hookAddress, bytes32 salt) = HookMiner.find(CREATE_2_PROXY, hookFlags, creationCode, constructorArgs);
-
         vm.startBroadcast(pk);
         if (!isProd && ceth == address(0)) {
             // Deploy the WETH contract
@@ -149,6 +144,12 @@ contract DeployScript is Script {
         // deploy hook
         poolManager = new PoolManager();
         liquidityToken = new LiquidityToken();
+
+        bytes memory creationCode = type(CorkHook).creationCode;
+        bytes memory constructorArgs = abi.encode(poolManager, liquidityToken);
+
+        (address hookAddress, bytes32 salt) = HookMiner.find(CREATE_2_PROXY, hookFlags, creationCode, constructorArgs);
+
         hook = new CorkHook{salt: salt}(poolManager, liquidityToken);
         require(address(hook) == hookAddress, "hook address mismatch");
 
@@ -214,9 +215,10 @@ contract DeployScript is Script {
         console.log("New DS issued");
         console.log("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-");
 
-        cETH.approve(address(moduleCore), depositLVAmt);
-        moduleCore.depositLv(id, depositLVAmt, 0, 0);
-        console.log("LV Deposited");
+        // TODO : doesn't work properly for now
+        // cETH.approve(address(moduleCore), depositLVAmt);
+        // moduleCore.depositLv(id, depositLVAmt, 0, 0);
+        // console.log("LV Deposited");
 
         // TODO : plz fix this properly
         // cETH.approve(address(univ2Router), liquidityAmt);
