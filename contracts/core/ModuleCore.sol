@@ -68,7 +68,7 @@ contract ModuleCore is OwnableUpgradeable, UUPSUpgradeable, PsmCore, Initialize,
         address pa,
         address ra,
         uint256 lvFee,
-        uint256 initialDsPrice,
+        uint256 initialArp,
         uint256 psmBaseRedemptionFeePercentage,
         uint256 expiryInterval
     ) external override onlyConfig {
@@ -86,7 +86,7 @@ contract ModuleCore is OwnableUpgradeable, UUPSUpgradeable, PsmCore, Initialize,
         address lv = assetsFactory.deployLv(ra, pa, address(this), expiryInterval);
 
         PsmLibrary.initialize(state, key, psmBaseRedemptionFeePercentage);
-        VaultLibrary.initialize(state.vault, lv, lvFee, ra, initialDsPrice);
+        VaultLibrary.initialize(state.vault, lv, lvFee, ra, initialArp);
         emit InitializedModuleCore(id, pa, ra, lv, expiryInterval);
     }
 

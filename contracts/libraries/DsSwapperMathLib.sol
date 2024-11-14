@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.24;
 
-import {UQ112x112} from "./UQ112x112.sol";
 import {SignedMath} from "@openzeppelin/contracts/utils/math/SignedMath.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
@@ -120,7 +119,6 @@ library BuyMathBisectionSolver {
  * @notice SwapperMath library which implements math operations for DS swap contract
  */
 library SwapperMathLibrary {
-    using UQ112x112 for uint224;
     using FixedPoint for uint256;
 
     // Calculate price ratio of two tokens in a uniswap v2 pair, will return ratio on 18 decimals precision
