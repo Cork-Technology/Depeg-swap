@@ -13,6 +13,9 @@ import {CETH} from "../../contracts/tokens/CETH.sol";
 import {CST} from "../../contracts/tokens/CST.sol";
 import {Id} from "../../contracts/libraries/Pair.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import {PoolManager} from "v4-core/PoolManager.sol";
+import "./Utils/HookMiner.sol";
+import {CorkHook, LiquidityToken, Hooks} from "Cork-Hook/CorkHook.sol";
 
 interface ICST {
     function deposit(uint256 amount) external;
@@ -30,11 +33,16 @@ contract DeployScript is Script {
     CorkConfig public config;
     RouterState public flashswapRouter;
     ModuleCore public moduleCore;
+    PoolManager public poolManager;
+    CorkHook public hook;
+    LiquidityToken public liquidityToken;
 
     bool public isProd = vm.envBool("PRODUCTION");
     uint256 public base_redemption_fee = vm.envUint("PSM_BASE_REDEMPTION_FEE_PERCENTAGE");
     address public ceth = vm.envAddress("WETH");
     uint256 public pk = vm.envUint("PRIVATE_KEY");
+
+    address internal constant CREATE_2_PROXY = 0x4e59b44847b379578588920cA78FbF26c0B4956C;
 
     address bsETH = 0xb194fc7C6ab86dCF5D96CF8525576245d0459ea9;
     address lbETH = 0xF24177162B1604e56EB338dd9775d75CC79DaC2B;
@@ -45,9 +53,17 @@ contract DeployScript is Script {
 
     uint256 depositLVAmt = 40_000 ether;
 
-    function setUp() public {}
+    uint160 hookFlags = uint160(
+        Hooks.BEFORE_INITIALIZE_FLAG | Hooks.BEFORE_ADD_LIQUIDITY_FLAG | Hooks.BEFORE_REMOVE_LIQUIDITY_FLAG
+            | Hooks.BEFORE_SWAP_FLAG | Hooks.BEFORE_SWAP_RETURNS_DELTA_FLAG
+    );
 
     function run() public {
+        bytes memory creationCode = type(CorkHook).creationCode;
+        bytes memory constructorArgs = abi.encode(address(poolManager), address(liquidityToken));
+
+        (address hookAddress, bytes32 salt) = HookMiner.find(CREATE_2_PROXY, hookFlags, creationCode, constructorArgs);
+
         vm.startBroadcast(pk);
         if (!isProd && ceth == address(0)) {
             // Deploy the WETH contract
@@ -130,13 +146,19 @@ contract DeployScript is Script {
         ModuleCore moduleCoreImplementation = new ModuleCore();
         console.log("ModuleCore Router Implementation : ", address(moduleCoreImplementation));
 
+        // deploy hook
+        poolManager = new PoolManager();
+        liquidityToken = new LiquidityToken();
+        hook = new CorkHook{salt: salt}(poolManager, liquidityToken);
+        require(address(hook) == hookAddress, "hook address mismatch");
+
         // Deploy the ModuleCore Proxy contract
+
         data = abi.encodeWithSelector(
             moduleCoreImplementation.initialize.selector,
             address(assetFactory),
-            address(factory),
+            address(hook),
             address(flashswapRouter),
-            address(univ2Router),
             address(config),
             0.2 ether
         ); // 0.2 base redemptionfee
@@ -196,19 +218,20 @@ contract DeployScript is Script {
         moduleCore.depositLv(id, depositLVAmt, 0, 0);
         console.log("LV Deposited");
 
-        cETH.approve(address(univ2Router), liquidityAmt);
-        IERC20(cst).approve(address(univ2Router), liquidityAmt);
-        univ2Router.addLiquidity(
-            ceth,
-            cst,
-            liquidityAmt,
-            liquidityAmt,
-            liquidityAmt,
-            liquidityAmt,
-            msg.sender,
-            block.timestamp + 10000 minutes
-        );
-        console.log("Liquidity Added to AMM");
+        // TODO : plz fix this properly
+        // cETH.approve(address(univ2Router), liquidityAmt);
+        // IERC20(cst).approve(address(univ2Router), liquidityAmt);
+        // univ2Router.addLiquidity(
+        //     ceth,
+        //     cst,
+        //     liquidityAmt,
+        //     liquidityAmt,
+        //     liquidityAmt,
+        //     liquidityAmt,
+        //     msg.sender,
+        //     block.timestamp + 10000 minutes
+        // );
+        // console.log("Liquidity Added to AMM");
 
         // moduleCore.redeemEarlyLv(id, msg.sender, 10 ether);
         // uint256 result = flashswapRouter.previewSwapRaforDs(id, 1, 100 ether);
