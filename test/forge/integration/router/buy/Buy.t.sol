@@ -23,7 +23,7 @@ contract BuyDsTest is Helper {
 
     uint256 public dsId;
 
-    function defaultInitialDsPrice() internal pure virtual override returns (uint256) {
+    function defaultInitialArp() internal pure virtual override returns (uint256) {
         return 5 ether;
     }
 

@@ -47,7 +47,7 @@ abstract contract Helper is SigUtils, TestHelper {
     // 1% initial ds price
     uint256 internal constant DEFAULT_INITIAL_DS_PRICE = 0.1 ether;
 
-    function defaultInitialDsPrice() internal pure virtual returns (uint256) {
+    function defaultInitialArp() internal pure virtual returns (uint256) {
         return DEFAULT_INITIAL_DS_PRICE;
     }
 
@@ -132,7 +132,7 @@ abstract contract Helper is SigUtils, TestHelper {
         defaultCurrencyId = id;
 
         initializeNewModuleCore(
-            address(pa), address(ra), DEFAULT_LV_FEE, defaultInitialDsPrice(), DEFAULT_BASE_REDEMPTION_FEE, expiryInSeconds
+            address(pa), address(ra), DEFAULT_LV_FEE, defaultInitialArp(), DEFAULT_BASE_REDEMPTION_FEE, expiryInSeconds
         );
         issueNewDs(
             id, defaultExchangeRate(), DEFAULT_REPURCHASE_FEE, DEFAULT_DECAY_DISCOUNT_RATE, DEFAULT_ROLLOVER_PERIOD
@@ -157,7 +157,7 @@ abstract contract Helper is SigUtils, TestHelper {
 
         defaultCurrencyId = id;
 
-        initializeNewModuleCore(address(pa), address(ra), DEFAULT_LV_FEE, defaultInitialDsPrice(), baseRedemptionFee, expiryInSeconds);
+        initializeNewModuleCore(address(pa), address(ra), DEFAULT_LV_FEE, defaultInitialArp(), baseRedemptionFee, expiryInSeconds);
         issueNewDs(
             id, DEFAULT_EXCHANGE_RATES, DEFAULT_REPURCHASE_FEE, DEFAULT_DECAY_DISCOUNT_RATE, DEFAULT_ROLLOVER_PERIOD
         );
@@ -188,6 +188,7 @@ abstract contract Helper is SigUtils, TestHelper {
 
     function initializeConfig() internal {
         corkConfig.setModuleCore(address(moduleCore));
+        corkConfig.setFlashSwapCore(address(flashSwapRouter));
     }
 
     function deployFlashSwapRouter() internal {

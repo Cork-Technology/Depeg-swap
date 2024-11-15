@@ -22,6 +22,11 @@ struct DepegSwap {
 library DepegSwapLibrary {
     using MinimalSignatureHelper for Signature;
 
+    /// @notice the rate can't change by default after initialization
+    /// though this doesn't prevent initialization with a rate that is not STATIC_RATE_CEILING
+    /// main prupose of this is to prevent accidental rate change after initialization
+    uint256 internal constant STATIC_RATE_CEILING = 1e18;
+
     function isExpired(DepegSwap storage self) internal view returns (bool) {
         return Asset(self._address).isExpired();
     }
@@ -59,5 +64,10 @@ library DepegSwapLibrary {
     function burnBothforSelf(DepegSwap storage self, uint256 amount) internal {
         Asset(self._address).burn(amount);
         Asset(self.ct).burn(amount);
+    }
+
+    function updateExchangeRate(DepegSwap storage self, uint256 rate) internal {
+        Asset(self._address).updateRate(rate);
+        Asset(self.ct).updateRate(rate); 
     }
 }

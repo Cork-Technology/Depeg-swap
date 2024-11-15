@@ -42,18 +42,16 @@ struct ReserveState {
 }
 
 /**
- * @title DsFlashSwaplibrary Contract
+ * @title DsFlashSwaplibrary Contract, this is meant to be deployed as a library and then linked back into the main contract
  * @author Cork Team
  * @notice DsFlashSwap library which implements supporting lib and functions flashswap related features for DS/CT
  */
 library DsFlashSwaplibrary {
     using MarketSnapshotLib for MarketSnapshot;
 
-    
-
     uint256 public constant FIRST_ISSUANCE = 1;
 
-    function onNewIssuance(ReserveState storage self, uint256 dsId, address ds, address ra, address ct) internal {
+    function onNewIssuance(ReserveState storage self, uint256 dsId, address ds, address ra, address ct) external {
         self.ds[dsId] = AssetPair(Asset(ra), Asset(ct), Asset(ds), 0, 0);
 
         // try to calculate implied ARP, if not present then fallback to the default value provided from previous issuance/start
@@ -67,11 +65,11 @@ library DsFlashSwaplibrary {
         }
     }
 
-    function rolloverSale(ReserveState storage self) internal view returns (bool) {
+    function rolloverSale(ReserveState storage self) external view returns (bool) {
         return block.number <= self.rolloverEndInBlockNumber;
     }
-    
-    function updateReserveSellPressurePercentage(ReserveState storage self, uint256 newPercentage) internal {
+
+    function updateReserveSellPressurePercentage(ReserveState storage self, uint256 newPercentage) external {
         // must be between 0.01 and 100
         if (newPercentage < 1e16 || newPercentage > 1e20) {
             revert IDsFlashSwapCore.InvalidParams();
@@ -80,15 +78,15 @@ library DsFlashSwaplibrary {
         self.reserveSellPressurePercentage = newPercentage;
     }
 
-    function emptyReserveLv(ReserveState storage self, uint256 dsId, address to) internal returns (uint256 emptied) {
+    function emptyReserveLv(ReserveState storage self, uint256 dsId, address to) external returns (uint256 emptied) {
         emptied = emptyReservePartialLv(self, dsId, self.ds[dsId].lvReserve, to);
     }
 
-    function getEffectiveHIYA(ReserveState storage self) internal view returns (uint256) {
+    function getEffectiveHIYA(ReserveState storage self) external view returns (uint256) {
         return self.hiya;
     }
 
-    function getCurrentCumulativeHIYA(ReserveState storage self) internal view returns (uint256) {
+    function getCurrentCumulativeHIYA(ReserveState storage self) external view returns (uint256) {
         try SwapperMathLibrary.calculateHIYA(self.hiyaCumulated, self.vhiyaCumulated) returns (uint256 hiya) {
             return hiya;
         } catch {
@@ -97,7 +95,7 @@ library DsFlashSwaplibrary {
     }
 
     // this function is called for every trade, it recalculates the HIYA and VHIYA for the reserve.
-    function recalculateHIYA(ReserveState storage self, uint256 dsId, uint256 ra, uint256 ds) internal {
+    function recalculateHIYA(ReserveState storage self, uint256 dsId, uint256 ra, uint256 ds) external {
         uint256 start = self.ds[dsId].ds.issuedAt();
         uint256 end = self.ds[dsId].ds.expiry();
         uint256 current = block.timestamp;
@@ -108,7 +106,7 @@ library DsFlashSwaplibrary {
     }
 
     function emptyReservePartialLv(ReserveState storage self, uint256 dsId, uint256 amount, address to)
-        internal
+        public
         returns (uint256 emptied)
     {
         self.ds[dsId].lvReserve -= amount;
@@ -116,12 +114,12 @@ library DsFlashSwaplibrary {
         emptied = amount;
     }
 
-    function emptyReservePsm(ReserveState storage self, uint256 dsId, address to) internal returns (uint256 emptied) {
+    function emptyReservePsm(ReserveState storage self, uint256 dsId, address to) public returns (uint256 emptied) {
         emptied = emptyReservePartialPsm(self, dsId, self.ds[dsId].psmReserve, to);
     }
 
     function emptyReservePartialPsm(ReserveState storage self, uint256 dsId, uint256 amount, address to)
-        internal
+        public
         returns (uint256 emptied)
     {
         self.ds[dsId].psmReserve -= amount;
@@ -130,7 +128,7 @@ library DsFlashSwaplibrary {
     }
 
     function getPriceRatio(ReserveState storage self, uint256 dsId, ICorkHook router)
-        internal
+        external
         view
         returns (uint256 raPriceRatio, uint256 ctPriceRatio)
     {
@@ -147,7 +145,7 @@ library DsFlashSwaplibrary {
         uint256 ctSubstracted,
         uint256 raAdded,
         ICorkHook router
-    ) internal view returns (uint256 raPriceRatio, uint256 ctPriceRatio) {
+    ) external view returns (uint256 raPriceRatio, uint256 ctPriceRatio) {
         AssetPair storage asset = self.ds[dsId];
 
         (uint256 raReserve, uint256 ctReserve) = router.getReserves(address(asset.ra), address(asset.ct));
@@ -159,7 +157,7 @@ library DsFlashSwaplibrary {
     }
 
     function getReserve(ReserveState storage self, uint256 dsId, ICorkHook router)
-        internal
+        external
         view
         returns (uint256 raReserve, uint256 ctReserve)
     {
@@ -169,7 +167,7 @@ library DsFlashSwaplibrary {
     }
 
     function addReserveLv(ReserveState storage self, uint256 dsId, uint256 amount, address from)
-        internal
+        external
         returns (uint256 reserve)
     {
         self.ds[dsId].ds.transferFrom(from, address(this), amount);
@@ -179,7 +177,7 @@ library DsFlashSwaplibrary {
     }
 
     function addReservePsm(ReserveState storage self, uint256 dsId, uint256 amount, address from)
-        internal
+        external
         returns (uint256 reserve)
     {
         self.ds[dsId].ds.transferFrom(from, address(this), amount);
@@ -189,7 +187,7 @@ library DsFlashSwaplibrary {
     }
 
     function getReservesSorted(AssetPair storage self, ICorkHook router)
-        internal
+        public
         view
         returns (uint256 raReserve, uint256 ctReserve)
     {
@@ -197,7 +195,7 @@ library DsFlashSwaplibrary {
     }
 
     function getAmountOutSellDS(AssetPair storage assetPair, uint256 amount, ICorkHook router)
-        internal
+        external
         view
         returns (uint256 amountOut, uint256 repaymentAmount, bool success)
     {
@@ -213,7 +211,7 @@ library DsFlashSwaplibrary {
         uint256 amount,
         ICorkHook router,
         IDsFlashSwapCore.BuyAprroxParams memory params
-    ) internal view returns (uint256 amountOut, uint256 borrowedAmount, uint256 repaymentAmount) {
+    ) external view returns (uint256 amountOut, uint256 borrowedAmount, uint256 repaymentAmount) {
         (uint256 raReserve, uint256 ctReserve) = getReservesSorted(assetPair, router);
 
         uint256 issuedAt = assetPair.ds.issuedAt();
@@ -249,7 +247,7 @@ library DsFlashSwaplibrary {
         IDsFlashSwapCore.BuyAprroxParams approx;
     }
 
-    function _calculateInitialBuyOut(InitialTradeCaclParams memory params) internal view returns (uint256) {
+    function _calculateInitialBuyOut(InitialTradeCaclParams memory params) public view returns (uint256) {
         return SwapperMathLibrary.getAmountOutBuyDs(
             params.raReserve,
             params.ctReserve,
@@ -262,7 +260,7 @@ library DsFlashSwaplibrary {
         );
     }
 
-    function isRAsupportsPermit(address token) internal view returns (bool) {
+    function isRAsupportsPermit(address token) external view returns (bool) {
         return PermitChecker.supportsPermit(token);
     }
 }

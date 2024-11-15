@@ -37,7 +37,7 @@ interface IVault {
         uint256 ctReceivedFromAmm;
         uint256 ctReceivedFromVault;
         uint256 dsReceived;
-        uint256 raFee;
+        uint256 fee;
         uint256 feePercentage;
         uint256 paReceived;
     }
@@ -56,7 +56,7 @@ interface IVault {
         uint256 ctReceivedFromAmm,
         uint256 ctReceivedFromVault,
         uint256 dsReceived,
-        uint256 raFee,
+        uint256 fee,
         uint256 feePercentage,
         uint256 paReceived
     );

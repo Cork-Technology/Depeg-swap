@@ -22,7 +22,7 @@ contract FlashSwapTest is Helper {
     address public ct;
     address public ds;
 
-    function defaultInitialDsPrice() internal pure virtual override returns (uint256) {
+    function defaultInitialArp() internal pure virtual override returns (uint256) {
         return MERRYL_LYNCH_DEFAULT_INITIAL_DS_PRICE;
     }
 
