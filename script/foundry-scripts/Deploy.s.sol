@@ -40,6 +40,7 @@ contract DeployScript is Script {
     bool public isProd = vm.envBool("PRODUCTION");
     uint256 public base_redemption_fee = vm.envUint("PSM_BASE_REDEMPTION_FEE_PERCENTAGE");
     address public ceth = vm.envAddress("WETH");
+    address public cusd;
     uint256 public pk = vm.envUint("PRIVATE_KEY");
 
     address internal constant CREATE_2_PROXY = 0x4e59b44847b379578588920cA78FbF26c0B4956C;
@@ -47,8 +48,12 @@ contract DeployScript is Script {
     address bsETH = 0xb194fc7C6ab86dCF5D96CF8525576245d0459ea9;
     address wamuETH = 0x38B61B429a3526cC6C446400DbfcA4c1ae61F11B;
     address mlETH = 0xCDc1133148121F43bE5F1CfB3a6426BbC01a9AF6;
+    address svbUSD = 0xb194fc7C6ab86dCF5D96CF8525576245d0459ea9;
+    address fedUSD = 0x38B61B429a3526cC6C446400DbfcA4c1ae61F11B;
+    address omgUSD = 0xCDc1133148121F43bE5F1CfB3a6426BbC01a9AF6;
 
     CETH cETH = CETH(ceth);
+    CETH cUSD = CETH(cusd);
 
     uint160 hookFlags = uint160(
         Hooks.BEFORE_INITIALIZE_FLAG | Hooks.BEFORE_ADD_LIQUIDITY_FLAG | Hooks.BEFORE_REMOVE_LIQUIDITY_FLAG
@@ -85,6 +90,33 @@ contract DeployScript is Script {
             cETH.approve(mlETH, 200_000 ether);
             mlETHCST.deposit(200_000 ether);
             console.log("mlETH                           : ", address(mlETH));
+
+            cUSD = new CETH();
+            cUSD.mint(msg.sender, 100_000_000_000_000 ether);
+            cusd = address(cUSD);
+            console.log("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-");
+            console.log("CUSD                            : ", address(cUSD));
+
+            CST svbUSDCST = new CST("Sillicon Valley Bank USD", "svbUSD", cusd, msg.sender, 480 hours, 8 ether);
+            svbUSD = address(svbUSDCST);
+            cUSD.addMinter(svbUSD);
+            cUSD.approve(svbUSD, 500_000_000 ether);
+            svbUSDCST.deposit(500_000_000 ether);
+            console.log("svbUSD                          : ", address(svbUSD));
+
+            CST fedUSDCST = new CST("Federal USD", "fedUSD", cusd, msg.sender, 480 hours, 5 ether);
+            fedUSD = address(fedUSDCST);
+            cUSD.addMinter(fedUSD);
+            cUSD.approve(fedUSD, 500_000_000 ether);
+            fedUSDCST.deposit(500_000_000 ether);
+            console.log("fedUSD                          : ", address(fedUSD));
+
+            CST omgUSDCST = new CST("OMG USD", "omgUSD", cusd, msg.sender, 480 hours, 0);
+            omgUSD = address(omgUSDCST);
+            cUSD.addMinter(omgUSD);
+            cUSD.approve(omgUSD, 500_000_000 ether);
+            omgUSDCST.deposit(500_000_000 ether);
+            console.log("omgUSD                          : ", address(omgUSD));
             console.log("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-");
         } else {
             console.log("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-");
@@ -176,6 +208,10 @@ contract DeployScript is Script {
         issueDSAndAddLiquidity(bsETH, wamuETH, 200_000 ether, 0.2 ether, 0.01875 ether, 0.75 ether, 3.5 days, 30_000 ether); // EarlyRedemptionFee = 0.2%,  DSPrice=0.7%(or 70%)  repurchaseFee = 0.75%
         issueDSAndAddLiquidity(mlETH, bsETH, 200_000 ether, 0.2 ether, 0.00625 ether, 0.75 ether, 1 days, 30_000 ether); // EarlyRedemptionFee = 0.2%,  DSPrice=0.3%(or 30%)  repurchaseFee = 0.75%
 
+        issueDSAndAddLiquidity(svbUSD, fedUSD, 500_000_000 ether, 0.2 ether, 0.025 ether, 0.75 ether, 3.5 days, 75_000_000 ether); 
+        issueDSAndAddLiquidity(fedUSD, cusd, 500_000_000 ether, 0.2 ether, 0.0125 ether, 0.75 ether, 3.5 days, 75_000_000 ether); 
+        issueDSAndAddLiquidity(omgUSD, svbUSD, 500_000_000 ether, 0.08 ether, 0.002 ether, 0.75 ether, 0.5 days, 75_000_000 ether);
+
         // moduleCore.redeemEarlyLv(id, msg.sender, 10 ether);
         // uint256 result = flashswapRouter.previewSwapRaforDs(id, 1, 100 ether);
         // console.log(result);
@@ -230,6 +266,6 @@ contract DeployScript is Script {
         // moduleCore.redeemEarlyLv(id, msg.sender, 10 ether);
         // uint256 result = flashswapRouter.previewSwapRaforDs(id, 1, 100 ether);
         // console.log(result);
-        // console.log("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-");
+        console.log("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-");
     }
 }
