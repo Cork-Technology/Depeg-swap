@@ -249,19 +249,18 @@ contract DeployScript is Script {
         console.log("LV Deposited");
 
         // TODO : plz fix this properly
-        // cETH.approve(address(univ2Router), liquidityAmt);
-        // IERC20(cst).approve(address(univ2Router), liquidityAmt);
-        // univ2Router.addLiquidity(
-        //     ceth,
-        //     cst,
-        //     liquidityAmt,
-        //     liquidityAmt,
-        //     liquidityAmt,
-        //     liquidityAmt,
-        //     msg.sender,
-        //     block.timestamp + 10000 minutes
-        // );
-        // console.log("Liquidity Added to AMM");
+        CETH(ceth).approve(address(hook), liquidityAmt);
+        IERC20(cst).approve(address(hook), liquidityAmt);
+        hook.addLiquidity(
+            ceth,
+            cst,
+            liquidityAmt,
+            liquidityAmt,
+            liquidityAmt,
+            liquidityAmt,
+            block.timestamp + 10000 minutes
+        );
+        console.log("Liquidity Added to AMM");
 
         // moduleCore.redeemEarlyLv(id, msg.sender, 10 ether);
         // uint256 result = flashswapRouter.previewSwapRaforDs(id, 1, 100 ether);
