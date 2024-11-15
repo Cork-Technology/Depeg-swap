@@ -139,12 +139,14 @@ contract DeployScript is Script {
 
         // Deploy the ModuleCore implementation (logic) contract
         ModuleCore moduleCoreImplementation = new ModuleCore();
-        console.log("ModuleCore Router Implementation : ", address(moduleCoreImplementation));
+        console.log("ModuleCore Router Implementation: ", address(moduleCoreImplementation));
 
         // deploy hook
         poolManager = new PoolManager();
+        console.log("Pool Manager                    : ", address(poolManager));
         liquidityToken = new LiquidityToken();
-
+        console.log("Liquidity Token                 : ", address(liquidityToken));
+        
         bytes memory creationCode = type(CorkHook).creationCode;
         bytes memory constructorArgs = abi.encode(poolManager, liquidityToken);
 
@@ -152,9 +154,9 @@ contract DeployScript is Script {
 
         hook = new CorkHook{salt: salt}(poolManager, liquidityToken);
         require(address(hook) == hookAddress, "hook address mismatch");
+        console.log("Hook                            : ", hookAddress);
 
         // Deploy the ModuleCore Proxy contract
-
         data = abi.encodeWithSelector(
             moduleCoreImplementation.initialize.selector,
             address(assetFactory),
@@ -216,9 +218,9 @@ contract DeployScript is Script {
         console.log("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-");
 
         // TODO : doesn't work properly for now
-        // cETH.approve(address(moduleCore), depositLVAmt);
-        // moduleCore.depositLv(id, depositLVAmt, 0, 0);
-        // console.log("LV Deposited");
+        cETH.approve(address(moduleCore), depositLVAmt);
+        moduleCore.depositLv(id, depositLVAmt, 0, 0);
+        console.log("LV Deposited");
 
         // TODO : plz fix this properly
         // cETH.approve(address(univ2Router), liquidityAmt);
