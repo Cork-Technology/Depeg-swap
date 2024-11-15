@@ -10,6 +10,18 @@ import {IRepurchase} from "./IRepurchase.sol";
  * @notice IPSMcore interface for PSMCore contract
  */
 interface IPSMcore is IRepurchase {
+    /// @notice Emitted when the exchange rate is updated
+    /// @param id The PSM id
+    /// @param newRate The new rate
+    /// @param previousRate The previous rate
+    event RateUpdated(Id indexed id, uint256 newRate, uint256 previousRate);
+
+    /// @notice Emitted when the rate ceiling is updated
+    /// @param id The PSM id
+    /// @param newRateCeiling The new rate ceiling
+    /// @param previousRateCeiling The previous rate ceiling
+    event RateCeilingUpdated(Id indexed id, uint256 newRateCeiling, uint256 previousRateCeiling);
+
     /// @notice Emitted when a user deposits assets into a given PSM
     /// @param Id The PSM id
     /// @param dsId The DS id
@@ -233,6 +245,12 @@ interface IPSMcore is IRepurchase {
     function updatePsmAutoSellStatus(Id id, address user, bool status) external;
 
     function rolloverProfitRemaining(Id id, uint256 dsId) external view returns (uint256);
-    
+
     function psmAutoSellStatus(Id id) external view returns (bool);
+
+    function updateRate(Id id, uint256 newRate) external;
+
+    function updateRateCeiling(Id id, uint256 newRateCeiling) external;
+
+    function rateCeiling(Id id) external view returns (uint256);
 }

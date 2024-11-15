@@ -52,6 +52,9 @@ interface ICommon {
     /// @notice Thrown this error when fees are more than 5%
     error InvalidFees();
 
+    /// @notice thrown when trying to update rate with invalid rate
+    error InvalidRate();
+
     /// @notice Emitted when a new LV and PSM is initialized with a given pair
     /// @param id The PSM id
     /// @param pa The address of the pegged asset
