@@ -39,24 +39,6 @@ contract rateTest is Helper {
         
     }
 
-    function test_revertWhenRateIsLowerThanCurrent() external {
-        uint256 newCeiling = 1.5 ether;
-
-        corkConfig.updatePsmRateCeiling(defaultCurrencyId, newCeiling);
-        
-        uint256 rate = moduleCore.rateCeiling(defaultCurrencyId);
-        vm.assertEq(rate, newCeiling);
-
-        uint256 newRate = 1.2 ether;
-        corkConfig.updatePsmRate(defaultCurrencyId, newRate);
-
-        rate = moduleCore.exchangeRate(defaultCurrencyId);
-        vm.assertEq(rate, newRate);
-
-        vm.expectRevert();
-        corkConfig.updatePsmRate(defaultCurrencyId, 1 ether);
-    }
-
     function test_RevertWhenRateIsHigherThanCeiling() external {
         uint256 newCeiling = 1.5 ether;
 

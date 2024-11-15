@@ -56,8 +56,8 @@ library PsmLibrary {
     function updateExchangeRate(State storage self, uint256 newRate) external {
         uint256 currentRate = self.ds[self.globalAssetIdx].exchangeRate();
 
-        // new rate can only be higher than current rate AND be lower than the ceiling
-        if (newRate <= currentRate || newRate > self.psm.rateCeiling) {
+        // new rate can only be lower than the ceiling
+        if (newRate > self.psm.rateCeiling) {
             revert ICommon.InvalidRate();
         }
 
