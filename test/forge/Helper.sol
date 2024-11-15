@@ -188,6 +188,7 @@ abstract contract Helper is SigUtils, TestHelper {
 
     function initializeConfig() internal {
         corkConfig.setModuleCore(address(moduleCore));
+        corkConfig.setFlashSwapCore(address(flashSwapRouter));
     }
 
     function deployFlashSwapRouter() internal {

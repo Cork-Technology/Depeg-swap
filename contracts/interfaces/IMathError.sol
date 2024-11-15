@@ -27,4 +27,6 @@ interface IMathError {
 
     /// @notice thrown when the number is too big
     error TooBig();
+
+    error NoLowerBound();
 }

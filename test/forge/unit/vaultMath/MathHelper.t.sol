@@ -38,7 +38,7 @@ contract MathHelperTest is Helper {
     function test_initialCtRatioBasedOnArp() external {
         uint256 arp = 5 ether;
 
-        uint256 ratio = MathHelper.caclulateInitialCtRatio(arp);
+        uint256 ratio = MathHelper.calculateInitialCtRatio(arp);
 
         vm.assertApproxEqAbs(ratio, 0.95 ether, 0.01 ether);
     }

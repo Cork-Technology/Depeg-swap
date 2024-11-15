@@ -7,6 +7,7 @@ import {Initialize} from "../interfaces/Init.sol";
 import {Id} from "../libraries/Pair.sol";
 import {IDsFlashSwapCore} from "../interfaces/IDsFlashSwapRouter.sol";
 import {Pair} from "../libraries/Pair.sol";
+import {ModuleCore} from "./ModuleCore.sol";
 import {IVault} from "./../interfaces/IVault.sol";
 
 /**
@@ -16,7 +17,7 @@ import {IVault} from "./../interfaces/IVault.sol";
  */
 contract CorkConfig is AccessControl, Pausable {
     bytes32 public constant MANAGER_ROLE = keccak256("MANAGER_ROLE");
-    Initialize public moduleCore;
+    ModuleCore public moduleCore;
     IDsFlashSwapCore public flashSwapRouter;
 
     /// @notice thrown when caller is not manager/Admin of Cork Protocol
@@ -52,7 +53,7 @@ contract CorkConfig is AccessControl, Pausable {
         if (_moduleCore == address(0)) {
             revert InvalidAddress();
         }
-        moduleCore = Initialize(_moduleCore);
+        moduleCore = ModuleCore(_moduleCore);
         emit ModuleCoreSet(_moduleCore);
     }
 
@@ -174,6 +175,14 @@ contract CorkConfig is AccessControl, Pausable {
 
     function updateReserveSellPressurePercentage(Id id, uint256 newSellPressurePercentage) external onlyManager {
         flashSwapRouter.updateReserveSellPressurePercentage(id, newSellPressurePercentage);
+    }
+
+    function updatePsmRateCeiling(Id id, uint256 newRateCeiling) external onlyManager {
+        moduleCore.updateRateCeiling(id, newRateCeiling);
+    }
+
+    function updatePsmRate(Id id, uint256 newRate) external onlyManager {
+        moduleCore.updateRate(id, newRate);
     }
 
     /**
