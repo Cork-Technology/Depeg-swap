@@ -45,13 +45,10 @@ contract DeployScript is Script {
     address internal constant CREATE_2_PROXY = 0x4e59b44847b379578588920cA78FbF26c0B4956C;
 
     address bsETH = 0xb194fc7C6ab86dCF5D96CF8525576245d0459ea9;
-    address lbETH = 0xF24177162B1604e56EB338dd9775d75CC79DaC2B;
     address wamuETH = 0x38B61B429a3526cC6C446400DbfcA4c1ae61F11B;
     address mlETH = 0xCDc1133148121F43bE5F1CfB3a6426BbC01a9AF6;
 
     CETH cETH = CETH(ceth);
-
-    uint256 depositLVAmt = 40_000 ether;
 
     uint160 hookFlags = uint160(
         Hooks.BEFORE_INITIALIZE_FLAG | Hooks.BEFORE_ADD_LIQUIDITY_FLAG | Hooks.BEFORE_REMOVE_LIQUIDITY_FLAG
@@ -68,32 +65,25 @@ contract DeployScript is Script {
             console.log("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-");
             console.log("CETH                            : ", address(cETH));
 
-            CST bsETHCST = new CST("Bear Sterns Restaked ETH", "bsETH", ceth, msg.sender, 480 hours, 7.5 ether);
-            bsETH = address(bsETHCST);
-            cETH.addMinter(bsETH);
-            cETH.approve(bsETH, 500_000 ether);
-            bsETHCST.deposit(500_000 ether);
-            console.log("bsETH                           : ", address(bsETH));
-
-            CST lbETHCST = new CST("Lehman Brothers Restaked ETH", "lbETH", ceth, msg.sender, 10 hours, 7.5 ether);
-            lbETH = address(lbETHCST);
-            cETH.addMinter(lbETH);
-            cETH.approve(lbETH, 500_000 ether);
-            lbETHCST.deposit(500_000 ether);
-            console.log("lbETH                           : ", address(lbETH));
-
-            CST wamuETHCST = new CST("Washington Mutual restaked ETH", "wamuETH", ceth, msg.sender, 1 seconds, 3 ether);
+            CST wamuETHCST = new CST("Washington Mutual restaked ETH", "wamuETH", ceth, msg.sender, 480 hours, 3 ether);
             wamuETH = address(wamuETHCST);
             cETH.addMinter(wamuETH);
-            cETH.approve(wamuETH, 500_000 ether);
-            wamuETHCST.deposit(500_000 ether);
+            cETH.approve(wamuETH, 200_000 ether);
+            wamuETHCST.deposit(200_000 ether);
             console.log("wamuETH                         : ", address(wamuETH));
 
-            CST mlETHCST = new CST("Merrill Lynch staked ETH", "mlETH", ceth, msg.sender, 5 hours, 7.5 ether);
+            CST bsETHCST = new CST("Bear Sterns Restaked ETH", "bsETH", ceth, msg.sender, 480 hours, 10 ether);
+            bsETH = address(bsETHCST);
+            cETH.addMinter(bsETH);
+            cETH.approve(bsETH, 200_000 ether);
+            bsETHCST.deposit(200_000 ether);
+            console.log("bsETH                           : ", address(bsETH));
+
+            CST mlETHCST = new CST("Merrill Lynch staked ETH", "mlETH", ceth, msg.sender, 480 hours, 10 ether);
             mlETH = address(mlETHCST);
             cETH.addMinter(mlETH);
-            cETH.approve(mlETH, 10_000_000 ether);
-            mlETHCST.deposit(10_000_000 ether);
+            cETH.approve(mlETH, 200_000 ether);
+            mlETHCST.deposit(200_000 ether);
             console.log("mlETH                           : ", address(mlETH));
             console.log("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-");
         } else {
@@ -182,10 +172,9 @@ contract DeployScript is Script {
         console.log("Modulecore configured in Config contract");
         console.log("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-");
 
-        issueDSAndAddLiquidity(mlETH, ceth, 300_000 ether, 0, 0.005 ether, 1 ether, 4 days); // EarlyRedemptionFee = 0%,  DSPrice=0.2%(or 20%)  repurchaseFee = 1%
-        issueDSAndAddLiquidity(lbETH, ceth, 300_000 ether, 0, 0.0075 ether, 0.5 ether, 4 days); // EarlyRedemptionFee = 0%,  DSPrice=0.3%(or 30%)  repurchaseFee = 0.5%
-        issueDSAndAddLiquidity(bsETH, ceth, 300_000 ether, 0, 0.0175 ether, 0, 4 days); // EarlyRedemptionFee = 0%,  DSPrice=0.7%(or 70%)  repurchaseFee = 0%
-        issueDSAndAddLiquidity(wamuETH, ceth, 500_000 ether, 0, 0.0045 ether, 0.25 ether, 6 days); // EarlyRedemptionFee = 0%,  DSPrice=0.3%(or 30%)  repurchaseFee = 0.25%
+        issueDSAndAddLiquidity(wamuETH, ceth, 200_000 ether, 0.2 ether, 0.00375 ether, 0.75 ether, 3.5 days, 30_000 ether); // EarlyRedemptionFee = 0.2%,  DSPrice=0.2%(or 20%)  repurchaseFee = 0.75%
+        issueDSAndAddLiquidity(bsETH, wamuETH, 200_000 ether, 0.2 ether, 0.01875 ether, 0.75 ether, 3.5 days, 30_000 ether); // EarlyRedemptionFee = 0.2%,  DSPrice=0.7%(or 70%)  repurchaseFee = 0.75%
+        issueDSAndAddLiquidity(mlETH, bsETH, 200_000 ether, 0.2 ether, 0.00625 ether, 0.75 ether, 1 days, 30_000 ether); // EarlyRedemptionFee = 0.2%,  DSPrice=0.3%(or 30%)  repurchaseFee = 0.75%
 
         // moduleCore.redeemEarlyLv(id, msg.sender, 10 ether);
         // uint256 result = flashswapRouter.previewSwapRaforDs(id, 1, 100 ether);
@@ -201,7 +190,8 @@ contract DeployScript is Script {
         uint256 redmptionFee,
         uint256 dsPrice,
         uint256 repurchaseFee,
-        uint256 expiryPeriod
+        uint256 expiryPeriod,
+        uint256 depositLVAmt
     ) public {
         config.initializeModuleCore(cst, ceth, redmptionFee, dsPrice, base_redemption_fee, expiryPeriod);
 
@@ -218,7 +208,7 @@ contract DeployScript is Script {
         console.log("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-");
 
         // TODO : doesn't work properly for now
-        cETH.approve(address(moduleCore), depositLVAmt);
+        CETH(ceth).approve(address(moduleCore), depositLVAmt);
         moduleCore.depositLv(id, depositLVAmt, 0, 0);
         console.log("LV Deposited");
 
