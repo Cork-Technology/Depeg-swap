@@ -52,6 +52,10 @@ library PsmLibrary {
         self.psm.autoSell[user] = status;
     }
 
+    function updateExchangeRate(State storage self, uint256 newRate) external {
+        // self.psm.r
+    }
+
     function autoSellStatus(State storage self, address user) external view returns (bool status) {
         return self.psm.autoSell[user];
     }

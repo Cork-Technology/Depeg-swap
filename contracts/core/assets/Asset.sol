@@ -13,18 +13,18 @@ import {IRates} from "../../interfaces/IRates.sol";
  * @author Cork Team
  * @notice Adds Exchange Rate functionality to Assets contracts
  */
-contract ExchangeRate is IRates {
-    uint256 internal immutable RATE;
+abstract contract ExchangeRate is IRates {
+    uint256 internal rate;
 
     constructor(uint256 _rate) {
-        RATE = _rate;
+        rate = _rate;
     }
 
     /**
      * @notice returns the current exchange rate
      */
     function exchangeRate() external view override returns (uint256) {
-        return RATE;
+        return rate;
     }
 }
 
@@ -34,7 +34,7 @@ contract ExchangeRate is IRates {
  * @notice Adds Expiry functionality to Assets contracts
  * @dev Used for adding Expiry functionality to contracts like DS
  */
-contract Expiry is IExpiry {
+abstract contract Expiry is IExpiry {
     uint256 internal immutable EXPIRY;
     uint256 internal immutable ISSUED_AT;
 
@@ -102,5 +102,9 @@ contract Asset is ERC20Burnable, ERC20Permit, Ownable, Expiry, ExchangeRate {
      */
     function dsId() external view virtual returns (uint256) {
         return DS_ID;
+    }
+
+    function updateRate(uint256 newRate) external override onlyOwner {
+        rate = newRate;
     }
 }
