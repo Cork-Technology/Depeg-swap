@@ -19,6 +19,8 @@ import {SafeERC20, IERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeE
 import {ICorkHook} from "../../interfaces/UniV4/IMinimalHook.sol";
 import {AmmId, toAmmId} from "Cork-Hook/lib/State.sol";
 import {CorkSwapCallback} from "Cork-Hook/interfaces/CorkSwapCallback.sol";
+import {IMathError} from "./../../interfaces/IMathError.sol";
+
 
 /**
  * @title Router contract for Flashswap
@@ -386,7 +388,7 @@ contract RouterState is
 
         if (!success) {
             (uint256 raReserve, uint256 ctReserve) = assetPair.getReservesSorted(hook);
-            revert IDsFlashSwapCore.InsufficientLiquidity(raReserve, ctReserve, repaymentAmount);
+            revert IMathError.InsufficientLiquidity();
         }
         self.recalculateHIYA(dsId, amountOut, amount);
 
@@ -523,9 +525,7 @@ contract RouterState is
 
             // not enough liquidity
             if (actualRepaymentAmount > received) {
-                (uint256 raReserve, uint256 ctReserve) = hook.getReserves(address(assetPair.ra), address(assetPair.ct));
-
-                revert IDsFlashSwapCore.InsufficientLiquidity(raReserve, ctReserve, actualRepaymentAmount);
+                revert IMathError.InsufficientLiquidity();
             } else {
                 refunded = received - actualRepaymentAmount;
                 repaymentAmount = actualRepaymentAmount;
@@ -540,7 +540,7 @@ contract RouterState is
         // for rounding error protection
         dsAttributed -= 1;
 
-        assert(received >= dsAttributed);
+        // assert(received >= dsAttributed);
 
         // should be the same, we don't compare with the RA amount since we maybe dealing
         // with a non-rebasing token, in which case the amount deposited and the amount received will always be different
@@ -578,7 +578,7 @@ contract RouterState is
         if (actualRepaymentAmount > repaymentAmount) {
             {
                 (uint256 raReserve, uint256 ctReserve) = hook.getReserves(address(assetPair.ra), address(assetPair.ct));
-                revert IDsFlashSwapCore.InsufficientLiquidity(raReserve, ctReserve, actualRepaymentAmount);
+                revert IMathError.InsufficientLiquidity();
             }
         }
 

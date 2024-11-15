@@ -222,20 +222,12 @@ library DsFlashSwaplibrary {
         borrowedAmount = amountOut - amount;
 
         MarketSnapshot memory market = router.getMarketSnapshot(address(assetPair.ra), address(assetPair.ct));
-        // reverse linear search for optimal borrow  amount since the math doesn't take into account the fee
 
-        for (uint256 i = 0; i < params.maxApproxIter; i++) {
-            repaymentAmount = market.getAmountIn(borrowedAmount, false);
-
-            if (repaymentAmount <= amountOut) {
-                return (amountOut, borrowedAmount, repaymentAmount);
-            } else {
-                borrowedAmount -= params.feeIntervalAdjustment;
-                amountOut = borrowedAmount + amount;
-            }
-        }
-
-        revert IDsFlashSwapCore.ApproxExhausted();
+        SwapperMathLibrary.OptimalBorrowParams memory optimalParams = SwapperMathLibrary.OptimalBorrowParams(
+            market, params.maxApproxIter, amountOut, borrowedAmount, amount, params.feeIntervalAdjustment
+        );
+        
+        (repaymentAmount, borrowedAmount, amountOut) = SwapperMathLibrary.findOptimalBorrowedAmount(optimalParams);
     }
 
     struct InitialTradeCaclParams {

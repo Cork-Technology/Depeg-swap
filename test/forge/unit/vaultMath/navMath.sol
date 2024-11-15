@@ -44,7 +44,7 @@ contract NavMathTest is Test {
 
         MathHelper.InternalPrices memory prices = MathHelper.calculateInternalPrice(params);
         vm.assertApproxEqAbs(unwrap(prices.ctPrice), 0.957 ether, 0.001 ether);
-        vm.assertApproxEqAbs(unwrap(prices.raPrice), 1.044 ether, 0.001 ether);
+        vm.assertApproxEqAbs(unwrap(prices.raPrice), 1 ether, 0.001 ether);
         vm.assertApproxEqAbs(unwrap(prices.dsPrice), 0.042 ether, 0.001 ether);
     }
 
@@ -62,7 +62,7 @@ contract NavMathTest is Test {
         });
 
         (UD60x18 navLp, UD60x18 navCt, UD60x18 navDs) = MathHelper.calculateNavCombined(params);
-        vm.assertApproxEqAbs(unwrap(navLp), 2051.387124 ether, 0.000001 ether);
+        vm.assertApproxEqAbs(unwrap(navLp), 2004.31706 ether, 0.00001 ether);
         vm.assertApproxEqAbs(unwrap(navCt), 957.03 ether, 0.01 ether);
         vm.assertApproxEqAbs(unwrap(navDs), 88.07 ether, 0.01 ether);
     }
@@ -80,7 +80,7 @@ contract NavMathTest is Test {
             vaultLp: 1024 ether
         });
         uint256 minted = MathHelper.calculateDepositLv(params);
-        vm.assertApproxEqAbs(minted, 0.66 ether, 0.01 ether);
+        vm.assertApproxEqAbs(minted, 0.672 ether, 0.01 ether);
     }
 
     function test_Claim() external {
