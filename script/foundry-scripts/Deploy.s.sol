@@ -27,7 +27,7 @@ contract DeployScript is Script {
     // string constant v2RouterArtifact = "test/helper/ext-abi/foundry/uni-v2-router.json";
 
     // IUniswapV2Factory public factory;
-    // IUniswapV2Router02 public univ2Router;
+    IUniswapV2Router02 public univ2Router;
 
     AssetFactory public assetFactory;
     CorkConfig public config;
@@ -44,6 +44,9 @@ contract DeployScript is Script {
     uint256 public pk = vm.envUint("PRIVATE_KEY");
 
     address internal constant CREATE_2_PROXY = 0x4e59b44847b379578588920cA78FbF26c0B4956C;
+
+    address uniswapV2FactorySepolia = 0xF62c03E08ada871A0bEb309762E260a7a6a880E6;
+    address uniswapV2RouterSepolia = 0xeE567Fe1712Faf6149d80dA1E6934E354124CfE3;
 
     address bsETH = 0xb194fc7C6ab86dCF5D96CF8525576245d0459ea9;
     address wamuETH = 0x38B61B429a3526cC6C446400DbfcA4c1ae61F11B;
@@ -73,22 +76,22 @@ contract DeployScript is Script {
             CST wamuETHCST = new CST("Washington Mutual restaked ETH", "wamuETH", ceth, msg.sender, 480 hours, 3 ether);
             wamuETH = address(wamuETHCST);
             cETH.addMinter(wamuETH);
-            cETH.approve(wamuETH, 200_000 ether);
-            wamuETHCST.deposit(200_000 ether);
+            cETH.approve(wamuETH, 1_000_000 ether);
+            wamuETHCST.deposit(1_000_000 ether);
             console.log("wamuETH                         : ", address(wamuETH));
 
             CST bsETHCST = new CST("Bear Sterns Restaked ETH", "bsETH", ceth, msg.sender, 480 hours, 10 ether);
             bsETH = address(bsETHCST);
             cETH.addMinter(bsETH);
-            cETH.approve(bsETH, 200_000 ether);
-            bsETHCST.deposit(200_000 ether);
+            cETH.approve(bsETH, 1_000_000 ether);
+            bsETHCST.deposit(1_000_000 ether);
             console.log("bsETH                           : ", address(bsETH));
 
             CST mlETHCST = new CST("Merrill Lynch staked ETH", "mlETH", ceth, msg.sender, 480 hours, 10 ether);
             mlETH = address(mlETHCST);
             cETH.addMinter(mlETH);
-            cETH.approve(mlETH, 200_000 ether);
-            mlETHCST.deposit(200_000 ether);
+            cETH.approve(mlETH, 1_000_000 ether);
+            mlETHCST.deposit(1_000_000 ether);
             console.log("mlETH                           : ", address(mlETH));
 
             cUSD = new CETH();
@@ -100,22 +103,22 @@ contract DeployScript is Script {
             CST svbUSDCST = new CST("Sillicon Valley Bank USD", "svbUSD", cusd, msg.sender, 480 hours, 8 ether);
             svbUSD = address(svbUSDCST);
             cUSD.addMinter(svbUSD);
-            cUSD.approve(svbUSD, 500_000_000 ether);
-            svbUSDCST.deposit(500_000_000 ether);
+            cUSD.approve(svbUSD, 10_000_000_000 ether);
+            svbUSDCST.deposit(10_000_000_000 ether);
             console.log("svbUSD                          : ", address(svbUSD));
 
             CST fedUSDCST = new CST("Federal USD", "fedUSD", cusd, msg.sender, 480 hours, 5 ether);
             fedUSD = address(fedUSDCST);
             cUSD.addMinter(fedUSD);
-            cUSD.approve(fedUSD, 500_000_000 ether);
-            fedUSDCST.deposit(500_000_000 ether);
+            cUSD.approve(fedUSD, 10_000_000_000 ether);
+            fedUSDCST.deposit(10_000_000_000 ether);
             console.log("fedUSD                          : ", address(fedUSD));
 
             CST omgUSDCST = new CST("OMG USD", "omgUSD", cusd, msg.sender, 480 hours, 0);
             omgUSD = address(omgUSDCST);
             cUSD.addMinter(omgUSD);
-            cUSD.approve(omgUSD, 500_000_000 ether);
-            omgUSDCST.deposit(500_000_000 ether);
+            cUSD.approve(omgUSD, 10_000_000_000 ether);
+            omgUSDCST.deposit(10_000_000_000 ether);
             console.log("omgUSD                          : ", address(omgUSD));
             console.log("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-");
         } else {
@@ -202,6 +205,9 @@ contract DeployScript is Script {
         config.setModuleCore(address(moduleCore));
         flashswapRouter.setModuleCore(address(moduleCore));
         console.log("Modulecore configured in Config contract");
+
+        univ2Router = IUniswapV2Router02(uniswapV2RouterSepolia);
+        console.log("Univ2 Router                    : ", uniswapV2RouterSepolia);
         console.log("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-");
 
         issueDSAndAddLiquidity(wamuETH, ceth, 200_000 ether, 0.2 ether, 0.00375 ether, 0.75 ether, 3.5 days, 30_000 ether); // EarlyRedemptionFee = 0.2%,  DSPrice=0.2%(or 20%)  repurchaseFee = 0.75%
@@ -220,8 +226,8 @@ contract DeployScript is Script {
     }
 
     function issueDSAndAddLiquidity(
-        address cst,
-        address ceth,
+        address cstToken,
+        address cethToken,
         uint256 liquidityAmt,
         uint256 redmptionFee,
         uint256 dsPrice,
@@ -229,9 +235,9 @@ contract DeployScript is Script {
         uint256 expiryPeriod,
         uint256 depositLVAmt
     ) public {
-        config.initializeModuleCore(cst, ceth, redmptionFee, dsPrice, base_redemption_fee, expiryPeriod);
+        config.initializeModuleCore(cstToken, cethToken, redmptionFee, dsPrice, base_redemption_fee, expiryPeriod);
 
-        Id id = moduleCore.getId(cst, ceth, expiryPeriod);
+        Id id = moduleCore.getId(cstToken, cethToken, expiryPeriod);
         config.issueNewDs(
             id,
             1 ether, // exchange rate = 1:1
@@ -243,21 +249,20 @@ contract DeployScript is Script {
         console.log("New DS issued");
         console.log("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-");
 
-        // TODO : doesn't work properly for now
-        CETH(ceth).approve(address(moduleCore), depositLVAmt);
+        CETH(cethToken).approve(address(moduleCore), depositLVAmt);
         moduleCore.depositLv(id, depositLVAmt, 0, 0);
         console.log("LV Deposited");
 
-        // TODO : plz fix this properly
-        CETH(ceth).approve(address(hook), liquidityAmt);
-        IERC20(cst).approve(address(hook), liquidityAmt);
-        hook.addLiquidity(
-            ceth,
-            cst,
+        CETH(cethToken).approve(uniswapV2RouterSepolia, liquidityAmt);
+        IERC20(cstToken).approve(uniswapV2RouterSepolia, liquidityAmt);
+        univ2Router.addLiquidity(
+            cethToken,
+            cstToken,
             liquidityAmt,
             liquidityAmt,
             liquidityAmt,
             liquidityAmt,
+            msg.sender,
             block.timestamp + 10000 minutes
         );
         console.log("Liquidity Added to AMM");
