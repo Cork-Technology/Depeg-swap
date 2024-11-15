@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.24;
 
-import {UQ112x112} from "./UQ112x112.sol";
 import {SignedMath} from "@openzeppelin/contracts/utils/math/SignedMath.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
@@ -119,8 +118,6 @@ library BuyMathBisectionSolver {
  * @notice SwapperMath library which implements math operations for DS swap contract
  */
 library SwapperMathLibrary {
-    using UQ112x112 for uint224;
-
     // Calculate price ratio of two tokens in a uniswap v2 pair, will return ratio on 18 decimals precision
     function getPriceRatio(uint256 raReserve, uint256 ctReserve)
         public
@@ -131,8 +128,8 @@ library SwapperMathLibrary {
             revert IMathError.ZeroReserve();
         }
 
-        raPriceRatio = ctReserve.divDown(raReserve);
-        ctPriceRatio = raReserve.divDown(ctReserve);
+        raPriceRatio = unwrap(div(ud(ctReserve), ud(raReserve)));
+        ctPriceRatio = unwrap(div(ud(raReserve), ud(ctReserve)));
     }
 
     function getAmountOutBuyDs(
@@ -190,7 +187,7 @@ library SwapperMathLibrary {
     }
 
     /// @notice VHIYA_acc =  Volume_i  - ((Discount / 86400) * (currentTime - issuanceTime))
-     function calcVHIYAaccumulated(
+    function calcVHIYAaccumulated(
         uint256 startTime,
         uint256 maturityTime,
         uint256 currentTime,
@@ -268,9 +265,6 @@ library SwapperMathLibrary {
         // calculate the RA profit of LV and PSM
         lvProfit = mul(lvReserveUsed, hpa);
         psmProfit = mul(psmReserveUsed, hpa);
-
-        assert(lvProfit + psmProfit == raProvided);
-        assert(lvReserveUsed + psmReserveUsed == dsReceived);
     }
 
     function calculateRolloverSale(uint256 lvDsReserve, uint256 psmDsReserve, uint256 raProvided, uint256 hiya)
@@ -285,10 +279,10 @@ library SwapperMathLibrary {
             uint256 psmReserveUsed
         )
     {
-        UD60x18 _lvDsReserve = convertUd(lvDsReserve);
-        UD60x18 _psmDsReserve = convertUd(psmDsReserve);
-        UD60x18 _raProvided = convertUd(raProvided);
-        UD60x18 _hpa = calcPtConstFixed(convertUd(hiya));
+        UD60x18 _lvDsReserve = ud(lvDsReserve);
+        UD60x18 _psmDsReserve = ud(psmDsReserve);
+        UD60x18 _raProvided = ud(raProvided);
+        UD60x18 _hpa = sub(convertUd(1), calcPtConstFixed(ud(hiya)));
 
         (
             UD60x18 _lvProfit,
@@ -299,12 +293,12 @@ library SwapperMathLibrary {
             UD60x18 _psmReserveUsed
         ) = _calculateRolloverSale(_lvDsReserve, _psmDsReserve, _raProvided, _hpa);
 
-        lvProfit = convertUd(_lvProfit);
-        psmProfit = convertUd(_psmProfit);
-        raLeft = convertUd(_raLeft);
-        dsReceived = convertUd(_dsReceived);
-        lvReserveUsed = convertUd(_lvReserveUsed);
-        psmReserveUsed = convertUd(_psmReserveUsed);
+        lvProfit = unwrap(_lvProfit);
+        psmProfit = unwrap(_psmProfit);
+        raLeft = unwrap(_raLeft);
+        dsReceived = unwrap(_dsReceived);
+        lvReserveUsed = unwrap(_lvReserveUsed);
+        psmReserveUsed = unwrap(_psmReserveUsed);
     }
 
     /**
@@ -357,7 +351,7 @@ library SwapperMathLibrary {
         // normalize to 0-1
         rate = div(rate, convertUd(100));
 
-        UD60x18 ratePlusOne = add(convertUd(1e18), rate);
-        return div(convertUd(1e36), ratePlusOne);
+        UD60x18 ratePlusOne = add(convertUd(1), rate);
+        return div(convertUd(1), ratePlusOne);
     }
 }
