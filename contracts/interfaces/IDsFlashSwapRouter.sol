@@ -3,13 +3,14 @@ pragma solidity ^0.8.24;
 
 import {Id} from "../libraries/Pair.sol";
 import {IUniswapV2Pair} from "./uniswap-v2/pair.sol";
+import "./IMathError.sol";
 
 /**
  * @title IDsFlashSwapUtility Interface
  * @author Cork Team
  * @notice Utility Interface for flashswap
  */
-interface IDsFlashSwapUtility {
+interface IDsFlashSwapUtility is IMathError {
     /**
      * @notice returns the current price ratio of the pair
      * @param id the id of the pair
@@ -67,9 +68,6 @@ interface IDsFlashSwapUtility {
  * @notice IDsFlashSwapCore interface for Flashswap Router contract
  */
 interface IDsFlashSwapCore is IDsFlashSwapUtility {
-    /// @notice thrown when output amount is not sufficient
-    error InsufficientOutputAmount();
-
     /// @notice thrown when Permit is not supported in Given ERC20 contract
     error PermitNotSupported();
 
@@ -87,9 +85,6 @@ interface IDsFlashSwapCore is IDsFlashSwapUtility {
     error ApproxExhausted();
 
     error InvalidParams();
-
-    /// @notice thrown when there's not enough liquidity to perform flash swap
-    error InsufficientLiquidity(uint256 raReserve, uint256 ctReserve, uint256 amountRepayment);
 
     struct BuyAprroxParams {
         /// @dev the maximum amount of iterations to find the optimal amount of DS to swap, 256 is a good number

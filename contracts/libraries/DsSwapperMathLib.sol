@@ -7,6 +7,8 @@ import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 import {SD59x18, convert, sd, add, mul, pow, sub, div, abs, unwrap, intoUD60x18} from "@prb/math/src/SD59x18.sol";
 import {UD60x18, convert as convertUd, ud, add, mul, pow, sub, div, unwrap} from "@prb/math/src/UD60x18.sol";
 import {IMathError} from "./../interfaces/IMathError.sol";
+import "forge-std/console.sol";
+import {MarketSnapshot, MarketSnapshotLib} from "Cork-Hook/lib/MarketSnapshot.sol";
 
 library BuyMathBisectionSolver {
     /// @notice returns the the normalized time to maturity from 1-0
@@ -118,6 +120,8 @@ library BuyMathBisectionSolver {
  * @notice SwapperMath library which implements math operations for DS swap contract
  */
 library SwapperMathLibrary {
+    using MarketSnapshotLib for MarketSnapshot;
+
     // Calculate price ratio of two tokens in a uniswap v2 pair, will return ratio on 18 decimals precision
     function getPriceRatio(uint256 raReserve, uint256 ctReserve)
         public
@@ -180,8 +184,7 @@ library SwapperMathLibrary {
         );
         UD60x18 effectiveDsPrice = calculateEffectiveDsPrice(convertUd(amount), convertUd(raProvided));
         UD60x18 rateI = calcSpotArp(t, effectiveDsPrice);
-        UD60x18 decay =
-            calculateDecayDiscount(convertUd(decayDiscountInDays), convertUd(startTime), convertUd(currentTime));
+        UD60x18 decay = calculateDecayDiscount(ud(decayDiscountInDays), convertUd(startTime), convertUd(currentTime));
 
         return convertUd(calculatePercentage(calculatePercentage(convertUd(amount), rateI), decay));
     }
@@ -194,8 +197,7 @@ library SwapperMathLibrary {
         uint256 decayDiscountInDays,
         uint256 amount
     ) internal pure returns (uint256) {
-        UD60x18 decay =
-            calculateDecayDiscount(convertUd(decayDiscountInDays), convertUd(startTime), convertUd(currentTime));
+        UD60x18 decay = calculateDecayDiscount(ud(decayDiscountInDays), convertUd(startTime), convertUd(currentTime));
 
         return convertUd(calculatePercentage(convertUd(amount), decay));
     }
@@ -227,6 +229,8 @@ library SwapperMathLibrary {
         UD60x18 t = sub(currentTime, issuanceTime);
         UD60x18 discount = mul(discPerSec, t);
 
+        console.log(unwrap(discount));
+        console.log(convertUd(discount));
         // this must hold true, it doesn't make sense to have a discount above 100%
         assert(discount < convertUd(100));
         decay = sub(convertUd(100), discount);
@@ -353,5 +357,50 @@ library SwapperMathLibrary {
 
         UD60x18 ratePlusOne = add(convertUd(1), rate);
         return div(convertUd(1), ratePlusOne);
+    }
+
+    struct OptimalBorrowParams {
+        MarketSnapshot market;
+        uint256 maxIter;
+        uint256 initialAmountOut;
+        uint256 initialBorrowedAmount;
+        uint256 amountSupplied;
+        uint256 feeIntervalAdjustment;
+    }
+
+    /// @notice binary search the optimal borrowed amount
+    /// the lower bound is the initial borrowed amount - (feeIntervalAdjustment * maxIter). if this doesn't satisfy the condition we revert as there's no sane lower bounds
+    /// the upper bound is the initial borrowed amount.
+    function findOptimalBorrowedAmount(OptimalBorrowParams memory params)
+        internal
+        pure
+        returns (uint256 repaymentAmount, uint256 borrowedAmount, uint256 amountOut)
+    {
+        UD60x18 amountOutUd = convertUd(params.initialAmountOut);
+        UD60x18 initialBorrowedAmountUd = convertUd(params.initialBorrowedAmount);
+        UD60x18 suppliedAmountUd = convertUd(params.amountSupplied);
+
+        UD60x18 lowerBound = sub(initialBorrowedAmountUd, convertUd(params.feeIntervalAdjustment * params.maxIter));
+        UD60x18 repaymentAmountUd = convertUd(params.market.getAmountIn(convertUd(lowerBound), false));
+
+        if (repaymentAmountUd > amountOutUd) {
+            revert IMathError.NoLowerBound();
+        }
+
+        UD60x18 upperBound = initialBorrowedAmountUd;
+
+        for (uint256 i = 0; i < params.maxIter; i++) {
+            console.log("on iter", i);
+            UD60x18 midpoint = div(add(lowerBound, upperBound), convertUd(2));
+            repaymentAmountUd = convertUd(params.market.getAmountIn(convertUd(midpoint), false));
+            amountOutUd = add(midpoint, suppliedAmountUd);
+
+            if (repaymentAmountUd <= amountOutUd) {
+                console.log("converged", convertUd(amountOutUd));
+                return (convertUd(repaymentAmountUd), convertUd(midpoint), convertUd(amountOutUd));
+            } else {
+                upperBound = midpoint;
+            }
+        }
     }
 }

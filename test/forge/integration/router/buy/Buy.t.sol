@@ -77,7 +77,7 @@ contract BuyDsTest is Helper {
         uint256 amountOut = flashSwapRouter.swapRaforDs(
             currencyId, dsId, amount, 0, DEFAULT_ADDRESS, bytes(""), block.timestamp,defaultBuyApproxParams()
         );
-        uint256 balanceRaAfter = Asset(ds).balanceOf(DEFAULT_ADDRESS);
+        uint256 balanceRaAfter = Asset(address(ds)).balanceOf(DEFAULT_ADDRESS);
 
         vm.assertEq(balanceRaAfter - balanceRaBefore, amountOut);
     }
