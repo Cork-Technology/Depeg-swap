@@ -201,7 +201,7 @@ library VaultLibrary {
         // OR it's the first issuance
         if (hpa == 0 && marketRatio == 0) {
             // TODO : test vault initialization works
-            ratio = MathHelper.caclulateInitialCtRatio(initialArp);
+            ratio = MathHelper.calculateInitialCtRatio(initialArp);
             return ratio;
         }
 

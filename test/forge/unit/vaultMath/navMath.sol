@@ -11,11 +11,11 @@ contract NavMathTest is Test {
     UD60x18 internal ctReserve = convert(1050 ether);
 
     function test_quote() external {
-        uint256 raQuote = unwrap(MathHelper.caclulatePriceQuote(ctReserve, raReserve, ud(0.9 ether)));
+        uint256 raQuote = unwrap(MathHelper.calculatePriceQuote(ctReserve, raReserve, ud(0.9 ether)));
 
         vm.assertApproxEqAbs(raQuote, 1.044 ether, 0.001 ether);
 
-        uint256 ctQuote = unwrap(MathHelper.caclulatePriceQuote(raReserve, ctReserve, ud(0.9 ether)));
+        uint256 ctQuote = unwrap(MathHelper.calculatePriceQuote(raReserve, ctReserve, ud(0.9 ether)));
 
         vm.assertApproxEqAbs(ctQuote, 0.957 ether, 0.001 ether);
     }

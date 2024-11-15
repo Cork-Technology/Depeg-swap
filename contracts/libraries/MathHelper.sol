@@ -34,7 +34,7 @@ library MathHelper {
         pure
         returns (uint256 ra, uint256 ct)
     {
-        UD60x18 _ct = div(ud(amountra), ud(priceRatio) + convert(1e18));
+        UD60x18 _ct = div(ud(amountra), ud(priceRatio) + convert(1));
         ct = unwrap(_ct);
         ra = amountra - ct;
     }
@@ -113,7 +113,7 @@ library MathHelper {
     }
 
     /**
-     * @dev caclulcate how much ra user will receive based on an exchange rate
+     * @dev calculcate how much ra user will receive based on an exchange rate
      * @param amount the amount of ds user want to redeem
      * @param exchangeRate the current exchange rate between RA:(CT+DS)
      */
@@ -288,9 +288,10 @@ library MathHelper {
 
     function calculateInternalPrice(DepositParams memory params) internal pure returns (InternalPrices memory) {
         UD60x18 t = sub(convert(1), ud(params.oneMinusT));
-        UD60x18 ctPrice = caclulatePriceQuote(ud(params.reserveRa), ud(params.reserveCt), t);
+        UD60x18 ctPrice = calculatePriceQuote(ud(params.reserveRa), ud(params.reserveCt), t);
         UD60x18 dsPrice = sub(convert(1), ctPrice);
-        UD60x18 raPrice = caclulatePriceQuote(ud(params.reserveCt), ud(params.reserveRa), t);
+        // we're pricing RA in term of itself
+        UD60x18 raPrice = convert(1);
 
         return InternalPrices(ctPrice, dsPrice, raPrice);
     }
@@ -336,7 +337,7 @@ library MathHelper {
     /// @notice InitialctRatio = f / (rate +1)^t
     /// where f = 1, and t = 1
     /// we expect that the rate is in 1e18 precision BEFORE passing it to this function
-    function caclulateInitialCtRatio(uint256 _rate) internal pure returns (uint256) {
+    function calculateInitialCtRatio(uint256 _rate) internal pure returns (uint256) {
         UD60x18 rate = convert(_rate);
         // normalize to 0-1
         rate = div(rate, convert(100));
@@ -367,7 +368,7 @@ library MathHelper {
     }
 
     /// @notice calculates quote = (reserve0 / reserve1)^t
-    function caclulatePriceQuote(UD60x18 reserve0, UD60x18 reserve1, UD60x18 t) internal pure returns (UD60x18) {
+    function calculatePriceQuote(UD60x18 reserve0, UD60x18 reserve1, UD60x18 t) internal pure returns (UD60x18) {
         return pow(div(reserve0, reserve1), t);
     }
 
