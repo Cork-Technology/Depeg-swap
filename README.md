@@ -16,7 +16,7 @@ Install required dependencies :(related to foundry)
 forge install Openzeppelin/openzeppelin-contracts@v5.0.2
 forge install Openzeppelin/openzeppelin-contracts-upgradeable@v5.0.2
 forge install Cork-Technology/v2-core@v1.0.2
-forge install Cork-Technology/v2-periphery@v1.0.1                   
+forge install Cork-Technology/v2-periphery@v1.0.1
 ```
 
 To build & compile all contracts simply run :
@@ -54,43 +54,43 @@ This is because we actualy don't use ignition when deploying uniswap v2 related 
 ```bash
 npx hardhat run script/hardhat-scripts/deploy.ts --network <network>
 
-forge script script/foundry-scripts/Deploy.s.sol:DeployScript --rpc-url https://1rpc.io/sepolia --broadcast -vvv --with-gas-price 25000000000
+forge script script/foundry-scripts/Deploy.s.sol:DeployScript --rpc-url https://1rpc.io/sepolia --broadcast -vvv --with-gas-price 25000000000 --verify
 ```
 
 AFter that, you should see something like this on your terminal :
 
 ```bash
- -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+  -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
   PRODUCTION                   : undefined
   Network                      : sepolia
   Chain Id                     : 11155111
   Deployer                     : 0xBa66992bE4816Cc3877dA86fA982A93a6948dde9
   -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-  CETH                            :  0x6D9DD9fB3a1bd4fB0310DD5CE871AB1A75aa0197
-  wamuETH                         :  0x442b2A6b0b7f0728fE72E381f9eC65cbE92EF92d
-  bsETH                           :  0x52480170Cf53f76bABACE04b84d3CbBd8cCfcAf2
-  mlETH                           :  0xBaFc88AfcF2193f326711144578B7874F1Ef1F63
+  CETH                            :  0xD4B903723EbAf1Bf0a2D8373fd5764e050114Dcd
+  wamuETH                         :  0x212542457f2F50Ab04e74187cE46b79A8B330567
+  bsETH                           :  0x71710AcACeD2b5Fb608a1371137CC1becFf391E0
+  mlETH                           :  0xc63b0e46FDA3be5c14719257A3EC235499Ca4D33
   -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-  CUSD                            :  0x647DE4ac37023E993c5b6495857a43E0566e9C7d
-  svbUSD                          :  0x34F48991F54181456462349137928133d13a142f
-  fedUSD                          :  0x2ca2F3872033BcA2C9BFb8698699793aED76FF94
-  omgUSD                          :  0xe94E4045B69829fCf0FC9546006942130c6c9836
+  CUSD                            :  0x8cdd2A328F36601A559c321F0eA224Cc55d9EBAa
+  svbUSD                          :  0x80bA1d3DF59c62f3C469477C625F4F1D9a1532E6
+  fedUSD                          :  0x618134155a3aB48003EC137FF1984f79BaB20028
+  omgUSD                          :  0xD8CEF48A9dc21FFe2ef09A7BD247e28e11b5B754
   -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-  Asset Factory Implementation    :  0xbD4b12b35b680bD396051414f55A78f7ae0533cc
-  Asset Factory                   :  0x37458dB9018cbaD85Bd5711D630b0a0ccA39e8f8
-  Cork Config                     :  0xf8fa7A887b3a6A8d18F1DC314102A5AD72bDd864
-  Flashswap Router Implementation :  0x0d8c7CC11E0f47D02c8C47a673B79e8836191EC6
-  Flashswap Router Proxy          :  0x20dB2489fd2E58D969Cf3990c5324f3215D7dA8f
-  ModuleCore Router Implementation:  0x2A297fb59544271068a31E3cebe9b39E3709D1d2
-  Pool Manager                    :  0x2D5Ed002fF3FcaFCeEbFa1304CBda745AB08AaC0
-  Liquidity Token                 :  0x6530D6d4C9B852fe30bbD6188149030619284bE7
-  Hook                            :  0x8eDe9184318a079385D7C6E2B4432Db1ecA96a88
-  Module Core                     :  0x62525738d67cb833B65e0783293737F0c1a2636C
-  -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+  Asset Factory Implementation    :  0x57B75AE79fb25113e3b3Aac576fE2121B44393c5
+  Asset Factory                   :  0x938A8Be7e60A666d807a7948304b82cFdEe67Af8
+  Cork Config                     :  0xcc79b14DA0891a00a6d3216b49d77815d1fEdC36
+  Flashswap Router Implementation :  0x6DDcfd062B05C3CE78100caE9E2a856ddf01b2AF
+  Flashswap Router Proxy          :  0x7ff313778Ca50e1cB5BD8a3B1408D931F14FEce4
+  ModuleCore Router Implementation:  0xBBAB023Aeb8b965689dd68fa6F2826F5078c13db
+  Pool Manager                    :  0x21E0D6713a5BE74BA3C3dA29a8Cdb2dD2854406f
+  Liquidity Token                 :  0x1359c5485dB6E9b4B9795b62F9c8528077dD0bea
+  Hook                            :  0x47e14768fFd0E5514cEe87E0e3dF23F7C5bfAA88
+  Module Core                     :  0x0e5212A25DDbf4CBEa390199b62C249aBf3637fF
+ -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
   Univ2 Factory                   :  0xF62c03E08ada871A0bEb309762E260a7a6a880E6
   Univ2 Router                    :  0xeE567Fe1712Faf6149d80dA1E6934E354124CfE3
   -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
   Funder Contract                 :  0xdAD2E0651F88D5EA6725274153209Fe94DF8c829
   Reader Contract                 :  0xC4736Ba3D54df3725771d889b964114535d4bF2D
- -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+  -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 ```
