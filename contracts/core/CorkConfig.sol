@@ -17,6 +17,8 @@ import {IVault} from "./../interfaces/IVault.sol";
  */
 contract CorkConfig is AccessControl, Pausable {
     bytes32 public constant MANAGER_ROLE = keccak256("MANAGER_ROLE");
+    bytes32 public constant RATE_UPDATERS_ROLE = keccak256("RATE_UPDATERS_ROLE");
+
     ModuleCore public moduleCore;
     IDsFlashSwapCore public flashSwapRouter;
 
@@ -35,14 +37,25 @@ contract CorkConfig is AccessControl, Pausable {
     event FlashSwapCoreSet(address flashSwapRouter);
 
     modifier onlyManager() {
-        if (!hasRole(MANAGER_ROLE, msg.sender) && !hasRole(DEFAULT_ADMIN_ROLE, msg.sender)) {
+        if (!hasRole(MANAGER_ROLE, msg.sender)) {
+            revert CallerNotManager();
+        }
+        _;
+    }
+
+    modifier onlyUpdaterOrManager() {
+        if (!hasRole(RATE_UPDATERS_ROLE, msg.sender) && !hasRole(MANAGER_ROLE, msg.sender)) {
             revert CallerNotManager();
         }
         _;
     }
 
     constructor() {
-        _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
+        _grantRole(MANAGER_ROLE, msg.sender);
+    }
+
+    function grantRole(bytes32 role, address account) public override onlyManager {
+        _grantRole(role, account);
     }
 
     /**
@@ -177,11 +190,7 @@ contract CorkConfig is AccessControl, Pausable {
         flashSwapRouter.updateReserveSellPressurePercentage(id, newSellPressurePercentage);
     }
 
-    function updatePsmRateCeiling(Id id, uint256 newRateCeiling) external onlyManager {
-        moduleCore.updateRateCeiling(id, newRateCeiling);
-    }
-
-    function updatePsmRate(Id id, uint256 newRate) external onlyManager {
+    function updatePsmRate(Id id, uint256 newRate) external onlyUpdaterOrManager {
         moduleCore.updateRate(id, newRate);
     }
 

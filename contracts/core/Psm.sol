@@ -28,15 +28,6 @@ abstract contract PsmCore is IPSMcore, ModuleState, Context {
         emit RateUpdated(id, newRate, previousRate);
     }
 
-    function updateRateCeiling(Id id, uint256 newRateCeiling) external onlyConfig {
-        State storage state = states[id];
-        uint256 previousRateCeiling = state.psm.rateCeiling;
-
-        state.updateExchangeRateCeiling(newRateCeiling);
-
-        emit RateCeilingUpdated(id, newRateCeiling, previousRateCeiling);
-    }
-
     function rateCeiling(Id id) external view override returns (uint256) {
         State storage state = states[id];
         return state.psm.rateCeiling;

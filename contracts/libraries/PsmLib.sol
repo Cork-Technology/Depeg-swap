@@ -46,7 +46,6 @@ library PsmLibrary {
         self.info = key;
         self.psm.balances.ra = RedemptionAssetManagerLibrary.initialize(key.redemptionAsset());
         self.psm.psmBaseRedemptionFeePercentage = psmBaseRedemptionFee;
-        self.psm.rateCeiling = DepegSwapLibrary.STATIC_RATE_CEILING;
     }
 
     function updateAutoSell(State storage self, address user, bool status) external {
@@ -62,10 +61,6 @@ library PsmLibrary {
         }
 
         self.ds[self.globalAssetIdx].updateExchangeRate(newRate);
-    }
-
-    function updateExchangeRateCeiling(State storage self, uint256 newCeiling) external {
-        self.psm.rateCeiling = newCeiling;
     }
 
     function autoSellStatus(State storage self, address user) external view returns (bool status) {
