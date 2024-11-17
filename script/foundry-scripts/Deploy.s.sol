@@ -40,7 +40,7 @@ contract DeployScript is Script {
     bool public isProd = vm.envBool("PRODUCTION");
     uint256 public base_redemption_fee = vm.envUint("PSM_BASE_REDEMPTION_FEE_PERCENTAGE");
     address public ceth = vm.envAddress("WETH");
-    address public cusd = 0x8cdd2A328F36601A559c321F0eA224Cc55d9EBAa;
+    address public cusd = 0xEEeA08E6F6F5abC28c821Ffe2035326C6Bfd2017;
     uint256 public pk = vm.envUint("PRIVATE_KEY");
 
     address internal constant CREATE_2_PROXY = 0x4e59b44847b379578588920cA78FbF26c0B4956C;
@@ -48,12 +48,12 @@ contract DeployScript is Script {
     address uniswapV2FactorySepolia = 0xF62c03E08ada871A0bEb309762E260a7a6a880E6;
     address uniswapV2RouterSepolia = 0xeE567Fe1712Faf6149d80dA1E6934E354124CfE3;
 
-    address bsETH = 0x71710AcACeD2b5Fb608a1371137CC1becFf391E0;
-    address wamuETH = 0x212542457f2F50Ab04e74187cE46b79A8B330567;
-    address mlETH = 0xc63b0e46FDA3be5c14719257A3EC235499Ca4D33;
-    address svbUSD = 0x80bA1d3DF59c62f3C469477C625F4F1D9a1532E6;
-    address fedUSD = 0x618134155a3aB48003EC137FF1984f79BaB20028;
-    address omgUSD = 0xD8CEF48A9dc21FFe2ef09A7BD247e28e11b5B754;
+    address bsETH = 0x0BAbf92b3e4fd64C26e1F6A05B59a7e0e0708378;
+    address wamuETH = 0xd9682A7CE1C48f1de323E9b27A5D0ff0bAA24254;
+    address mlETH = 0x98524CaB765Cb0De83F71871c56dc67C202e166d;
+    address svbUSD = 0x7AE4c173d473218b59bF8A1479BFC706F28C635b;
+    address fedUSD = 0xd8d134BEc26f7ebdAdC2508a403bf04bBC33fc7b;
+    address omgUSD = 0x182733031965686043d5196207BeEE1dadEde818;
 
     CETH cETH = CETH(ceth);
     CETH cUSD = CETH(cusd);
@@ -205,6 +205,9 @@ contract DeployScript is Script {
         config.setModuleCore(address(moduleCore));
         flashswapRouter.setModuleCore(address(moduleCore));
         console.log("Modulecore configured in Config contract");
+
+        flashswapRouter.setHook(address(hook));
+        console.log("Hook configured in FlashswapRouter contract");
 
         univ2Router = IUniswapV2Router02(uniswapV2RouterSepolia);
         console.log("Univ2 Router                    : ", uniswapV2RouterSepolia);

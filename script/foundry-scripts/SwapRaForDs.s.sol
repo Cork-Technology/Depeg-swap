@@ -17,24 +17,24 @@ contract SwapRAForDSScript is Script {
     address public ceth = vm.envAddress("WETH");
     uint256 public pk = vm.envUint("PRIVATE_KEY");
     address deployer = 0xBa66992bE4816Cc3877dA86fA982A93a6948dde9;
-    address public cUSD = 0x8cdd2A328F36601A559c321F0eA224Cc55d9EBAa;
+    address public cUSD = 0xEEeA08E6F6F5abC28c821Ffe2035326C6Bfd2017;
 
-    address bsETH = 0x71710AcACeD2b5Fb608a1371137CC1becFf391E0;
+    address bsETH = 0x0BAbf92b3e4fd64C26e1F6A05B59a7e0e0708378;
     uint256 bsETHexpiry = 302400;
 
-    address wamuETH = 0x212542457f2F50Ab04e74187cE46b79A8B330567;
+    address wamuETH = 0xd9682A7CE1C48f1de323E9b27A5D0ff0bAA24254;
     uint256 wamuETHexpiry = 302400;
 
-    address mlETH = 0xc63b0e46FDA3be5c14719257A3EC235499Ca4D33;
+    address mlETH = 0x98524CaB765Cb0De83F71871c56dc67C202e166d;
     uint256 mlETHexpiry = 86400;
 
-    address fedUSD = 0x618134155a3aB48003EC137FF1984f79BaB20028;
+    address fedUSD = 0xd8d134BEc26f7ebdAdC2508a403bf04bBC33fc7b;
     uint256 fedUSDexpiry = 302400;
 
-    address svbUSD = 0x80bA1d3DF59c62f3C469477C625F4F1D9a1532E6;
+    address svbUSD = 0x7AE4c173d473218b59bF8A1479BFC706F28C635b;
     uint256 svbUSDexpiry = 302400;
 
-    address omgUSD = 0xD8CEF48A9dc21FFe2ef09A7BD247e28e11b5B754;
+    address omgUSD = 0x182733031965686043d5196207BeEE1dadEde818;
     uint256 omgUSDexpiry = 43200;
 
     CETH cETH;
@@ -46,8 +46,8 @@ contract SwapRAForDSScript is Script {
     function run() public {
         vm.startBroadcast(pk);
 
-        moduleCore = ModuleCore(0x0e5212A25DDbf4CBEa390199b62C249aBf3637fF);
-        routerState = RouterState(0x7ff313778Ca50e1cB5BD8a3B1408D931F14FEce4);
+        moduleCore = ModuleCore(0x8445a4caD9F5a991E668427dC96A0a6b80ca629b);
+        routerState = RouterState(0xA4Ad536e6AE5D8B26b8AD079046dff60bAC9abad);
         console.log("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-");
 
         swapRaForDs(wamuETH, ceth, 500 ether, wamuETHexpiry);
