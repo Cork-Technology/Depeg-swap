@@ -9,6 +9,7 @@ import {IDsFlashSwapCore} from "../interfaces/IDsFlashSwapRouter.sol";
 import {Pair} from "../libraries/Pair.sol";
 import {ModuleCore} from "./ModuleCore.sol";
 import {IVault} from "./../interfaces/IVault.sol";
+import {CorkHook} from "Cork-Hook/CorkHook.sol";
 
 /**
  * @title Config Contract
@@ -21,6 +22,7 @@ contract CorkConfig is AccessControl, Pausable {
 
     ModuleCore public moduleCore;
     IDsFlashSwapCore public flashSwapRouter;
+    CorkHook public hook;
 
     /// @notice thrown when caller is not manager/Admin of Cork Protocol
     error CallerNotManager();
@@ -35,6 +37,10 @@ contract CorkConfig is AccessControl, Pausable {
     /// @notice Emitted when a flashSwapRouter variable set
     /// @param flashSwapRouter Address of flashSwapRouter contract
     event FlashSwapCoreSet(address flashSwapRouter);
+
+    /// @notice Emitted when a hook variable set
+    /// @param hook Address of hook contract
+    event HookSet(address hook);
 
     modifier onlyManager() {
         if (!hasRole(MANAGER_ROLE, msg.sender)) {
@@ -76,6 +82,18 @@ contract CorkConfig is AccessControl, Pausable {
         }
         flashSwapRouter = IDsFlashSwapCore(_flashSwapRouter);
         emit FlashSwapCoreSet(_flashSwapRouter);
+    }
+
+    function setHook(address _hook) external onlyManager {
+        if (_hook == address(0)) {
+            revert InvalidAddress();
+        }
+        hook = CorkHook(_hook);
+        emit HookSet(_hook);
+    }
+
+    function updateAmmBaseFeePercentage(address ra, address ct, uint256 newBaseFeePercentage) external onlyManager {
+        hook.updateBaseFeePercentage(ra, ct, newBaseFeePercentage);
     }
 
     /**
