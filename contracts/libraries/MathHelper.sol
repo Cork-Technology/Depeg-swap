@@ -95,7 +95,8 @@ library MathHelper {
      * @param amount the amount of lv user want to withdraw
      */
     function calculatePercentageFee(uint256 fee1e18, uint256 amount) external pure returns (uint256 percentage) {
-        UD60x18 fee = SwapperMathLibrary.calculatePercentage(ud(amount), convert(fee1e18));
+        UD60x18 fee = SwapperMathLibrary.calculatePercentage(ud(amount), ud(fee1e18));
+        return unwrap(fee);
     }
 
     /**

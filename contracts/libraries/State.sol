@@ -35,7 +35,6 @@ struct PsmState {
     bool isWithdrawalPaused;
     bool isRepurchasePaused;
     uint256 psmBaseRedemptionFeePercentage;
-    uint256 rateCeiling;
 }
 
 /**

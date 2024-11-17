@@ -46,7 +46,6 @@ library PsmLibrary {
         self.info = key;
         self.psm.balances.ra = RedemptionAssetManagerLibrary.initialize(key.redemptionAsset());
         self.psm.psmBaseRedemptionFeePercentage = psmBaseRedemptionFee;
-        self.psm.rateCeiling = DepegSwapLibrary.STATIC_RATE_CEILING;
     }
 
     function updateAutoSell(State storage self, address user, bool status) external {
@@ -56,16 +55,24 @@ library PsmLibrary {
     function updateExchangeRate(State storage self, uint256 newRate) external {
         uint256 currentRate = self.ds[self.globalAssetIdx].exchangeRate();
 
-        // new rate can only be lower than the ceiling
-        if (newRate > self.psm.rateCeiling) {
-            revert ICommon.InvalidRate();
-        }
+        _ensureRateIsInDeltaRange(currentRate, newRate);
 
         self.ds[self.globalAssetIdx].updateExchangeRate(newRate);
     }
 
-    function updateExchangeRateCeiling(State storage self, uint256 newCeiling) external {
-        self.psm.rateCeiling = newCeiling;
+    function _ensureRateIsInDeltaRange(uint256 currentRate, uint256 newRate) internal {
+        // rate must never go higher than the current rate
+        if (newRate > currentRate) {
+            revert ICommon.InvalidRate();
+        }
+        
+        uint256 delta = MathHelper.calculatePercentageFee(DepegSwapLibrary.MAX_RATE_DELTA_PERCENTAGE, currentRate);
+        delta = currentRate - delta;
+
+        // rate must never go down below delta
+        if (newRate < delta) {
+            revert ICommon.InvalidRate();
+        }
     }
 
     function autoSellStatus(State storage self, address user) external view returns (bool status) {
