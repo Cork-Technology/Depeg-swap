@@ -28,11 +28,6 @@ abstract contract PsmCore is IPSMcore, ModuleState, Context {
         emit RateUpdated(id, newRate, previousRate);
     }
 
-    function rateCeiling(Id id) external view override returns (uint256) {
-        State storage state = states[id];
-        return state.psm.rateCeiling;
-    }
-
     /**
      * @notice returns the fee percentage for repurchasing(1e18 = 1%)
      * @param id the id of PSM

@@ -243,6 +243,4 @@ interface IPSMcore is IRepurchase {
     function psmAutoSellStatus(Id id) external view returns (bool);
 
     function updateRate(Id id, uint256 newRate) external;
-
-    function rateCeiling(Id id) external view returns (uint256);
 }
