@@ -61,6 +61,10 @@ contract RouterState is
         _;
     }
 
+    constructor() {
+        _disableInitializers();
+    }
+
     function updateDiscountRateInDdays(Id id, uint256 discountRateInDays) external override onlyConfig {
         reserves[id].decayDiscountRateInDays = discountRateInDays;
     }
