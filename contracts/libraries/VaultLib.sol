@@ -277,6 +277,7 @@ library VaultLibrary {
         safeBeforeExpired(self);
 
         uint256 exchangeRate;
+        uint256 paAmount;
 
         // we mint 1:1 if it's the first deposit
         if (!self.vault.initialized) {
@@ -284,7 +285,8 @@ library VaultLibrary {
             self.vault.initialized = true;
         } else {
             // else we get the current exchange rate of LV
-            (exchangeRate,,,) = previewRedeemEarly(self, 1 ether, flashSwapRouter);
+            (exchangeRate,,, paAmount) = previewRedeemEarly(self, 1 ether, flashSwapRouter);
+            exchangeRate += paAmount;
         }
 
         self.vault.balances.ra.lockUnchecked(amount, from);
@@ -315,13 +317,15 @@ library VaultLibrary {
         returns (uint256 lvReceived, uint256 raAddedAsLiquidity, uint256 ctAddedAsLiquidity)
     {
         uint256 exchangeRate;
+        uint256 paAmount;
 
         // we mint 1:1 if it's the first deposit
         if (!self.vault.initialized) {
             exchangeRate = 1 ether;
         } else {
             // else we get the current exchange rate of LV
-            (exchangeRate,,,) = previewRedeemEarly(self, 1 ether, flashSwapRouter);
+            (exchangeRate,,, paAmount) = previewRedeemEarly(self, 1 ether, flashSwapRouter);
+            exchangeRate += paAmount;
         }
 
         // then we calculate how much LV we will get for the amount of RA we deposited with the exchange rate
