@@ -80,7 +80,7 @@ contract FlashSwapTest is Helper {
         // we fetch the hpa after expiry so that it's calculated
         uint256 hpa = flashSwapRouter.getHpa(currencyId);
 
-        IPSMcore(moduleCore).updatePsmAutoSellStatus(currencyId, DEFAULT_ADDRESS, true);
+        IPSMcore(moduleCore).updatePsmAutoSellStatus(currencyId, true);
 
         amountOutMin = flashSwapRouter.previewSwapRaforDs(currencyId, dsId, 0.1 ether);
 
