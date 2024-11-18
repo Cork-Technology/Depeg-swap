@@ -459,6 +459,7 @@ library VaultLibrary {
 
         // if there's no LP, then there's nothing to liquidate
         if (lpBalance == 0) {
+            self.vault.lpLiquidated.set(dsId);
             return;
         }
 
