@@ -65,7 +65,7 @@ library PsmLibrary {
         if (newRate > currentRate) {
             revert ICommon.InvalidRate();
         }
-        
+
         uint256 delta = MathHelper.calculatePercentageFee(DepegSwapLibrary.MAX_RATE_DELTA_PERCENTAGE, currentRate);
         delta = currentRate - delta;
 
@@ -390,6 +390,11 @@ library PsmLibrary {
     {
         // we separate the liquidity here, that means, LP liquidation on the LV also triggers
         _separateLiquidity(self, dsId);
+
+        // noop if amount is 0
+        if (amount == 0) {
+            return (0, 0);
+        }
 
         uint256 totalCtIssued = self.psm.poolArchive[dsId].ctAttributed;
         PsmPoolArchive storage archive = self.psm.poolArchive[dsId];

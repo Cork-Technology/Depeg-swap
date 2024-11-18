@@ -110,6 +110,9 @@ contract VaultRedeemTest is Helper {
     // }
 
     function test_reissueMany() external {
+        // wont' work because of the gas limit, so we ignore gas for this
+        vm.pauseGasMetering();
+
         for (uint256 i = 0; i < 100; i++) {
             ff_expired();
         }
