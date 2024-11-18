@@ -22,7 +22,6 @@ interface IVault {
 
     struct RedeemEarlyParams {
         Id id;
-        address receiver;
         uint256 amount;
         uint256 amountOutMin;
         uint256 ammDeadline;
@@ -36,14 +35,13 @@ interface IVault {
 
     /// @notice Emitted when a user redeems Lv before expiry
     /// @param Id The Module id that is used to reference both psm and lv of a given pair
-    /// @param receiver The address of the receiver
+    /// @param redeemer The address of the redeemer
     /// @param amount The amount of the asset redeemed
     /// @param fee The total fee charged for early redemption
     /// @param feePercentage The fee percentage for early redemption, denominated in 1e18 (e.g 100e18 = 100%)
     event LvRedeemEarly(
         Id indexed Id,
         address indexed redeemer,
-        address indexed receiver,
         uint256 amount,
         uint256 fee,
         uint256 feePercentage

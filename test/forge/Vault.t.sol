@@ -67,7 +67,6 @@ contract VaultRedeemTest is Helper {
 
         IVault.RedeemEarlyParams memory redeemParams = IVault.RedeemEarlyParams({
             id: currencyId,
-            receiver: DEFAULT_ADDRESS,
             amount: 0.9 ether,
             amountOutMin: 0,
             ammDeadline: block.timestamp
@@ -94,7 +93,6 @@ contract VaultRedeemTest is Helper {
         IERC20(lv).approve(address(moduleCore), 1 ether);
         redeemParams = IVault.RedeemEarlyParams({
             id: currencyId,
-            receiver: DEFAULT_ADDRESS,
             amount: lvReceived,
             amountOutMin: 0,
             ammDeadline: block.timestamp

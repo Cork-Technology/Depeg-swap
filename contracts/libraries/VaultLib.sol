@@ -737,7 +737,7 @@ library VaultLibrary {
         }
 
         ERC20Burnable(self.vault.lv._address).burnFrom(owner, redeemParams.amount);
-        self.vault.balances.ra.unlockToUnchecked(received, redeemParams.receiver);
+        self.vault.balances.ra.unlockToUnchecked(received, owner);
     }
 
     function previewRedeemEarly(State storage self, uint256 amount, IDsFlashSwapCore flashSwapRouter)

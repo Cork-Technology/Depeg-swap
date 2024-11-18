@@ -64,7 +64,7 @@ abstract contract VaultCore is ModuleState, Context, IVault {
         (received, fee, feePercentage, paAmount) =
             states[redeemParams.id].redeemEarly(redeemer, redeemParams, routers, permitParams);
 
-        emit LvRedeemEarly(redeemParams.id, redeemer, redeemParams.receiver, received, fee, feePercentage);
+        emit LvRedeemEarly(redeemParams.id, redeemer, received, fee, feePercentage);
     }
 
     /**
