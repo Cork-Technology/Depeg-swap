@@ -34,7 +34,6 @@ interface IPSMcore is IRepurchase {
     /// @param dsReceived The amount of DS received, if 0 then the DS is sold to flash swap router, and implies the user opt-in for DS auto-sell
     /// @param ctReceived The amount of CT received
     /// @param paReceived The amount of PA received
-    /// @param exchangeRate The exchange rate of DS at the time of rollover
     event RolledOver(
         Id indexed Id,
         uint256 indexed currentDsId,
@@ -43,8 +42,7 @@ interface IPSMcore is IRepurchase {
         uint256 amountCtRolledOver,
         uint256 dsReceived,
         uint256 ctReceived,
-        uint256 paReceived,
-        uint256 exchangeRate
+        uint256 paReceived
     );
 
     /// @notice Emitted when a user claims profit from a rollover
@@ -304,7 +302,7 @@ interface IPSMcore is IRepurchase {
         uint256 prevDsId,
         bytes memory rawCtPermitSig,
         uint256 ctDeadline
-    ) external returns (uint256 ctReceived, uint256 dsReceived, uint256 _exchangeRate, uint256 paReceived);
+    ) external returns (uint256 ctReceived, uint256 dsReceived, uint256 paReceived);
 
     function claimAutoSellProfit(Id id, uint256 prevDsId, uint256 amount)
         external
@@ -312,7 +310,7 @@ interface IPSMcore is IRepurchase {
 
     function rolloverCt(Id id, address owner, uint256 amount, uint256 prevDsId)
         external
-        returns (uint256 ctReceived, uint256 dsReceived, uint256 _exchangeRate, uint256 paReceived);
+        returns (uint256 ctReceived, uint256 dsReceived, uint256 paReceived);
 
     function updatePsmAutoSellStatus(Id id, bool status) external;
 

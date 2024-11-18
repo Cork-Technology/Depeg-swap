@@ -73,12 +73,12 @@ library PsmLibrary {
         IDsFlashSwapCore flashSwapRouter,
         bytes memory rawCtPermitSig,
         uint256 ctDeadline
-    ) external returns (uint256 ctReceived, uint256 dsReceived, uint256 _exchangeRate, uint256 paReceived) {
+    ) external returns (uint256 ctReceived, uint256 dsReceived, uint256 paReceived) {
         if (rawCtPermitSig.length > 0 && ctDeadline != 0) {
             DepegSwapLibrary.permit(self.ds[dsId].ct, rawCtPermitSig, owner, address(this), amount, ctDeadline, "rolloverCt");
         }
 
-        (ctReceived, dsReceived, _exchangeRate, paReceived) = _rolloverCt(self, owner, amount, dsId, flashSwapRouter);
+        (ctReceived, dsReceived, paReceived) = _rolloverCt(self, owner, amount, dsId, flashSwapRouter);
     }
 
     function claimAutoSellProfit(
@@ -106,7 +106,7 @@ library PsmLibrary {
         uint256 amount,
         uint256 prevDsId,
         IDsFlashSwapCore flashSwapRouter
-    ) internal returns (uint256 ctReceived, uint256 dsReceived, uint256 _exchangeRate, uint256 paReceived) {
+    ) internal returns (uint256 ctReceived, uint256 dsReceived, uint256 paReceived) {
         if (prevDsId == self.globalAssetIdx) {
             revert NoActiveIssuance();
         }

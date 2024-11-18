@@ -352,30 +352,30 @@ abstract contract PsmCore is IPSMcore, ModuleState, Context {
     )
         external
         PSMDepositNotPaused(id)
-        returns (uint256 ctReceived, uint256 dsReceived, uint256 _exchangeRate, uint256 paReceived)
+        returns (uint256 ctReceived, uint256 dsReceived, uint256 paReceived)
     {
         if (rawCtPermitSig.length == 0 || ctDeadline == 0) {
             revert InvalidSignature();
         }
         State storage state = states[id];
-        (ctReceived, dsReceived, _exchangeRate, paReceived) =
+        (ctReceived, dsReceived, paReceived) =
             state.rolloverCt(owner, amount, dsId, getRouterCore(), rawCtPermitSig, ctDeadline);
         emit RolledOver(
-            id, state.globalAssetIdx, owner, dsId, amount, dsReceived, ctReceived, paReceived, _exchangeRate
+            id, state.globalAssetIdx, owner, dsId, amount, dsReceived, ctReceived, paReceived
         );
     }
 
     function rolloverCt(Id id, address owner, uint256 amount, uint256 dsId)
         external
         PSMDepositNotPaused(id)
-        returns (uint256 ctReceived, uint256 dsReceived, uint256 _exchangeRate, uint256 paReceived)
+        returns (uint256 ctReceived, uint256 dsReceived, uint256 paReceived)
     {
         State storage state = states[id];
         bytes memory signaturePlaceHolder;
-        (ctReceived, dsReceived, _exchangeRate, paReceived) =
+        (ctReceived, dsReceived, paReceived) =
             state.rolloverCt(owner, amount, dsId, getRouterCore(), signaturePlaceHolder, 0);
         emit RolledOver(
-            id, state.globalAssetIdx, _msgSender(), dsId, amount, dsReceived, ctReceived, paReceived, _exchangeRate
+            id, state.globalAssetIdx, _msgSender(), dsId, amount, dsReceived, ctReceived, paReceived
         );
     }
 
