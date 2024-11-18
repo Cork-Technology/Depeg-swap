@@ -364,9 +364,8 @@ library PsmLibrary {
             // else we just decrease the locked RA, since all the RA is still locked state(will turn to attributed when separated at liquidity)
             // this'll happen when someone redeem early
             self.psm.balances.ra.decLocked(ra);
+            ds.burnBothforSelf(amount);
         }
-
-        ds.burnBothforSelf(amount);
     }
 
     function lvRedeemRaPaWithCt(State storage self, uint256 amount, uint256 dsId)
