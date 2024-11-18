@@ -16,6 +16,7 @@ import {
 import UNIV2FACTORY from "./ext-abi/hardhat/uni-v2-factory.json";
 import UNIV2ROUTER from "./ext-abi/hardhat/uni-v2-router.json";
 import { ethers } from "ethers";
+import { toUtf8Bytes } from "ethers/lib/utils";
 
 const DEVISOR = BigInt(1e18);
 export const DEFAULT_BASE_REDEMPTION_PERCENTAGE = parseEther("5");
@@ -453,9 +454,81 @@ export type PermitArg = {
   psmAddress: string;
   amount: bigint;
   deadline: bigint;
+  functionName?: string;
 };
 
 export async function permit(arg: PermitArg) {
+  const contractName = await hre.viem
+    .getContractAt("IERC20Metadata", arg.erc20contractAddress as Address)
+    .then((contract) => contract.read.name());
+
+  const nonces = await hre.viem
+    .getContractAt("IERC20Permit", arg.erc20contractAddress as Address)
+    .then((contract) =>
+      contract.read.nonces([arg.signer.account!.address as Address])
+    );
+
+      // Calculate the function hash using the provided functionName
+  const functionHash = keccak256(toUtf8Bytes(arg.functionName));
+
+  // set the Permit type parameters
+  const types = {
+    Permit: [
+      {
+        name: "owner",
+        type: "address",
+      },
+      {
+        name: "spender",
+        type: "address",
+      },
+      {
+        name: "value",
+        type: "uint256",
+      },
+      {
+        name: "nonce",
+        type: "uint256",
+      },
+      {
+        name: "deadline",
+        type: "uint256",
+      },
+      {
+        name: "functionHash",
+        type: "bytes32",
+      },
+    ],
+  };
+
+  // set the Permit type values
+  const values = {
+    owner: arg.signer.account!.address,
+    spender: arg.psmAddress,
+    value: arg.amount,
+    nonce: nonces,
+    deadline: arg.deadline,
+    functionHash: functionHash, // Add functionHash to values
+  };
+
+  // sign the Permit type data with the deployer's private key
+  const sig = await arg.signer.signTypedData({
+    domain: {
+      chainId: hre.network.config.chainId!,
+      name: contractName,
+      verifyingContract: arg.erc20contractAddress as Address,
+      version: "1",
+    },
+    account: arg.signer.account?.address as Address,
+    types: types,
+    primaryType: "Permit",
+    message: values,
+  });
+
+  return sig;
+}
+
+export async function permitForRA(arg: PermitArg) {
   const contractName = await hre.viem
     .getContractAt("IERC20Metadata", arg.erc20contractAddress as Address)
     .then((contract) => contract.read.name());

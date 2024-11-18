@@ -669,7 +669,8 @@ library VaultLibrary {
                 owner,
                 address(this),
                 redeemParams.amount,
-                permitParams.deadline
+                permitParams.deadline,
+                "redeemEarlyLv"
             );
         }
 

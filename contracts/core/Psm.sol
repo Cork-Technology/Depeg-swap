@@ -147,6 +147,9 @@ abstract contract PsmCore is IPSMcore, ModuleState, Context {
         PSMWithdrawalNotPaused(id)
         returns (uint256 received, uint256 _exchangeRate, uint256 fee)
     {
+        if (rawDsPermitSig.length == 0 || deadline == 0) {
+            revert InvalidSignature();
+        }
         State storage state = states[id];
 
         (received, _exchangeRate, fee) = state.redeemWithDs(redeemer, amount, dsId, rawDsPermitSig, deadline);
@@ -158,6 +161,25 @@ abstract contract PsmCore is IPSMcore, ModuleState, Context {
         );
     }
 
+    function redeemRaWithDs(Id id, uint256 dsId, uint256 amount)
+        external
+        override
+        nonReentrant
+        onlyInitialized(id)
+        PSMWithdrawalNotPaused(id)
+        returns (uint256 received, uint256 _exchangeRate, uint256 fee)
+    {
+        State storage state = states[id];
+
+        (received, _exchangeRate, fee) = state.redeemWithDs(_msgSender(), amount, dsId, bytes(""), 0);
+
+        VaultLibrary.provideLiquidityWithFee(state, fee, getRouterCore(), getAmmRouter());
+
+        emit DsRedeemed(
+            id, dsId, _msgSender(), amount, received, _exchangeRate, state.psm.psmBaseRedemptionFeePercentage, fee
+        );
+    }
+ 
     /**
      * This determines the rate of how much the user will receive for the amount of asset they want to deposit.
      * for example, if the rate is 1.5, then the user will need to deposit 1.5 token to get 1 CT and DS.
@@ -197,11 +219,29 @@ abstract contract PsmCore is IPSMcore, ModuleState, Context {
         PSMWithdrawalNotPaused(id)
         returns (uint256 accruedPa, uint256 accruedRa)
     {
+        if (rawCtPermitSig.length == 0 || deadline == 0) {
+            revert InvalidSignature();
+        }        
         State storage state = states[id];
 
         (accruedPa, accruedRa) = state.redeemWithCt(redeemer, amount, dsId, rawCtPermitSig, deadline);
 
         emit CtRedeemed(id, dsId, redeemer, amount, accruedPa, accruedRa);
+    }
+
+    function redeemWithCT(Id id, uint256 dsId, uint256 amount)
+        external
+        override
+        nonReentrant
+        onlyInitialized(id)
+        PSMWithdrawalNotPaused(id)
+        returns (uint256 accruedPa, uint256 accruedRa)
+    {
+        State storage state = states[id];
+
+        (accruedPa, accruedRa) = state.redeemWithCt(_msgSender(), amount, dsId, bytes(""), 0);
+
+        emit CtRedeemed(id, dsId, _msgSender(), amount, accruedPa, accruedRa);
     }
 
     function previewRedeemWithCt(Id id, uint256 dsId, uint256 amount)
@@ -243,10 +283,33 @@ abstract contract PsmCore is IPSMcore, ModuleState, Context {
         bytes memory rawCtPermitSig,
         uint256 ctDeadline
     ) external override nonReentrant PSMWithdrawalNotPaused(id) returns (uint256 ra) {
+        if (rawDsPermitSig.length == 0 || dsDeadline == 0 || rawCtPermitSig.length == 0 || ctDeadline == 0) {
+            revert InvalidSignature();
+        }
         State storage state = states[id];
         ra = state.redeemRaWithCtDs(redeemer, amount, rawDsPermitSig, dsDeadline, rawCtPermitSig, ctDeadline);
 
         emit Cancelled(id, state.globalAssetIdx, redeemer, ra, amount);
+    }
+
+    /**
+     * @notice returns amount of ra user will get when Redeem RA with CT+DS
+     * @param id The PSM id
+     * @param amount amount user wants to redeem
+     * @return ra amount of RA user received
+     */
+    function redeemRaWithCtDs(Id id, uint256 amount)
+        external
+        override
+        nonReentrant
+        PSMWithdrawalNotPaused(id)
+        returns (uint256 ra)
+    {
+        State storage state = states[id];
+
+        ra = state.redeemRaWithCtDs(_msgSender(), amount, bytes(""), 0, bytes(""), 0);
+
+        emit Cancelled(id, state.globalAssetIdx, _msgSender(), ra, amount);
     }
 
     /**
@@ -291,11 +354,28 @@ abstract contract PsmCore is IPSMcore, ModuleState, Context {
         PSMDepositNotPaused(id)
         returns (uint256 ctReceived, uint256 dsReceived, uint256 _exchangeRate, uint256 paReceived)
     {
+        if (rawCtPermitSig.length == 0 || ctDeadline == 0) {
+            revert InvalidSignature();
+        }
         State storage state = states[id];
         (ctReceived, dsReceived, _exchangeRate, paReceived) =
             state.rolloverCt(owner, amount, dsId, getRouterCore(), rawCtPermitSig, ctDeadline);
         emit RolledOver(
             id, state.globalAssetIdx, owner, dsId, amount, dsReceived, ctReceived, paReceived, _exchangeRate
+        );
+    }
+
+    function rolloverCt(Id id, address owner, uint256 amount, uint256 dsId)
+        external
+        PSMDepositNotPaused(id)
+        returns (uint256 ctReceived, uint256 dsReceived, uint256 _exchangeRate, uint256 paReceived)
+    {
+        State storage state = states[id];
+        bytes memory signaturePlaceHolder;
+        (ctReceived, dsReceived, _exchangeRate, paReceived) =
+            state.rolloverCt(owner, amount, dsId, getRouterCore(), signaturePlaceHolder, 0);
+        emit RolledOver(
+            id, state.globalAssetIdx, _msgSender(), dsId, amount, dsReceived, ctReceived, paReceived, _exchangeRate
         );
     }
 
