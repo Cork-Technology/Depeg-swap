@@ -61,7 +61,7 @@ library VaultLibrary {
         IUniswapV2Router02 ammRouter,
         uint256 raTolerance,
         uint256 ctTolerance
-    ) internal {
+    ) internal returns (uint256 dust) {
 
         IERC20(raAddress).safeIncreaseAllowance(address(ammRouter), raAmount);
         IERC20(ctAddress).safeIncreaseAllowance(address(ammRouter), ctAmount);
@@ -82,6 +82,7 @@ library VaultLibrary {
             SafeERC20.safeTransfer(IERC20(raAddress), msg.sender, dustRa);
         }
         self.vault.config.lpBalance += lp;
+        dust = dustRa + dustCt;
     }
 
     function _addFlashSwapReserveLv(
@@ -134,10 +135,10 @@ library VaultLibrary {
         address ctAddress,
         IUniswapV2Router02 ammRouter,
         Tolerance memory tolerance
-    ) internal returns (uint256 ra, uint256 ct) {
+    ) internal returns (uint256 ra, uint256 ct, uint256 dust) {
         (ra, ct) = __calculateProvideLiquidityAmount(self, amount, flashSwapRouter);
 
-        __provideLiquidity(self, ra, ct, flashSwapRouter, ctAddress, ammRouter, tolerance, amount);
+        dust = __provideLiquidity(self, ra, ct, flashSwapRouter, ctAddress, ammRouter, tolerance, amount);    
     }
 
     function __calculateProvideLiquidityAmount(State storage self, uint256 amount, IDsFlashSwapCore flashSwapRouter)
@@ -157,11 +158,11 @@ library VaultLibrary {
         IDsFlashSwapCore flashSwapRouter,
         address ctAddress,
         IUniswapV2Router02 ammRouter
-    ) internal returns (uint256 ra, uint256 ct) {
+    ) internal returns (uint256 ra, uint256 ct, uint256 dust) {
         (uint256 raTolerance, uint256 ctTolerance) =
             MathHelper.calculateWithTolerance(ra, ct, MathHelper.UNIV2_STATIC_TOLERANCE);
 
-        __provideLiquidityWithRatio(
+        (ra, ct, dust) = __provideLiquidityWithRatio(
             self, amount, flashSwapRouter, ctAddress, ammRouter, Tolerance(raTolerance, ctTolerance)
         );
     }
@@ -222,17 +223,17 @@ library VaultLibrary {
         IUniswapV2Router02 ammRouter,
         Tolerance memory tolerance,
         uint256 amountRaOriginal
-    ) internal {
+    ) internal returns (uint256 dust) {
         uint256 dsId = self.globalAssetIdx;
 
         // no need to provide liquidity if the amount is 0
         if (raAmount == 0 || ctAmount == 0) {
-            return;
+            return(0);
         }
 
         PsmLibrary.unsafeIssueToLv(self, MathHelper.calculateProvideLiquidityAmount(amountRaOriginal, raAmount));
 
-        __addLiquidityToAmmUnchecked(
+        dust = __addLiquidityToAmmUnchecked(
             self, raAmount, ctAmount, self.info.redemptionAsset(), ctAddress, ammRouter, tolerance.ra, tolerance.ct
         );
         _addFlashSwapReserveLv(self, flashSwapRouter, self.ds[dsId], ctAmount);
@@ -243,7 +244,7 @@ library VaultLibrary {
         IDsFlashSwapCore flashSwapRouter,
         address ctAddress,
         IUniswapV2Router02 ammRouter
-    ) internal {
+    ) internal returns (uint256 dust) {
         uint256 dsId = self.globalAssetIdx;
 
         uint256 ctRatio = __getAmmCtPriceRatio(self, flashSwapRouter, dsId);
@@ -255,7 +256,7 @@ library VaultLibrary {
         (uint256 raTolerance, uint256 ctTolerance) =
             MathHelper.calculateWithTolerance(ra, ct, MathHelper.UNIV2_STATIC_TOLERANCE);
 
-        __provideLiquidity(
+        dust = __provideLiquidity(
             self, ra, ct, flashSwapRouter, ctAddress, ammRouter, Tolerance(raTolerance, ctTolerance), originalBalance
         );
 
@@ -290,19 +291,25 @@ library VaultLibrary {
         }
 
         self.vault.balances.ra.lockUnchecked(amount, from);
-        __provideLiquidityWithRatio(
-            self,
-            amount,
-            flashSwapRouter,
-            self.ds[self.globalAssetIdx].ct,
-            ammRouter,
-            Tolerance(raTolerance, ctTolerance)
-        );
 
-        // then we calculate how much LV we will get for the amount of RA we deposited with the exchange rate
-        // this is to seprate the yield vs the actual deposit amount. so when a user withdraws their LV, they get their accrued yield properly
-        amount = MathHelper.calculateDepositAmountWithExchangeRate(amount, exchangeRate);
+        // Added {} block here to avoid stack too deep error
+        {      
+            uint256 dustAmount;
+            address ct = self.ds[self.globalAssetIdx].ct;
+            (,, dustAmount) = __provideLiquidityWithRatio(
+                self,
+                amount,
+                flashSwapRouter,
+                ct,
+                ammRouter,
+                Tolerance(raTolerance, ctTolerance)
+            );
 
+            // then we calculate how much LV we will get for the amount of RA we deposited with the exchange rate
+            // this is to seprate the yield vs the actual deposit amount. so when a user withdraws their LV, they get their accrued yield properly
+            // here we count amount - dustAmount, since dust amount is not counted as deposit
+            amount = MathHelper.calculateDepositAmountWithExchangeRate(amount - dustAmount, exchangeRate);
+        }
         self.vault.lv.issue(from, amount);
 
         self.vault.userLvBalance[from].balance += amount;
