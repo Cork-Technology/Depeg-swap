@@ -55,7 +55,6 @@ struct PsmPoolArchive {
 struct Balances {
     PsmRedemptionAssetManager ra;
     uint256 dsBalance;
-    uint256 ctBalance;
     uint256 paBalance;
 }
 
