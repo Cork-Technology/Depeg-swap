@@ -65,7 +65,7 @@ abstract contract Helper is SigUtils, TestHelper {
     }
 
     function defaultBuyApproxParams() internal pure returns (IDsFlashSwapCore.BuyAprroxParams memory) {
-        return IDsFlashSwapCore.BuyAprroxParams(256, 1e16, 1e9);
+        return IDsFlashSwapCore.BuyAprroxParams(256, 256, 1e16, 1e9, 1e9);
     }
 
     function initializeNewModuleCore(
@@ -157,7 +157,9 @@ abstract contract Helper is SigUtils, TestHelper {
 
         defaultCurrencyId = id;
 
-        initializeNewModuleCore(address(pa), address(ra), DEFAULT_LV_FEE, defaultInitialArp(), baseRedemptionFee, expiryInSeconds);
+        initializeNewModuleCore(
+            address(pa), address(ra), DEFAULT_LV_FEE, defaultInitialArp(), baseRedemptionFee, expiryInSeconds
+        );
         issueNewDs(
             id, DEFAULT_EXCHANGE_RATES, DEFAULT_REPURCHASE_FEE, DEFAULT_DECAY_DISCOUNT_RATE, DEFAULT_ROLLOVER_PERIOD
         );

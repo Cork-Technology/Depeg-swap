@@ -224,10 +224,21 @@ library DsFlashSwaplibrary {
         MarketSnapshot memory market = router.getMarketSnapshot(address(assetPair.ra), address(assetPair.ct));
 
         SwapperMathLibrary.OptimalBorrowParams memory optimalParams = SwapperMathLibrary.OptimalBorrowParams(
-            market, params.maxApproxIter, amountOut, borrowedAmount, amount, params.feeIntervalAdjustment
+            market,
+            params.maxApproxIter,
+            amountOut,
+            borrowedAmount,
+            amount,
+            params.feeIntervalAdjustment,
+            params.feeEpsilon
         );
-        
-        (repaymentAmount, borrowedAmount, amountOut) = SwapperMathLibrary.findOptimalBorrowedAmount(optimalParams);
+
+        SwapperMathLibrary.OptimalBorrowResult memory result =
+            SwapperMathLibrary.findOptimalBorrowedAmount(optimalParams);
+
+        amountOut = result.amountOut;
+        borrowedAmount = result.borrowedAmount;
+        repaymentAmount = result.repaymentAmount;
     }
 
     struct InitialTradeCaclParams {
