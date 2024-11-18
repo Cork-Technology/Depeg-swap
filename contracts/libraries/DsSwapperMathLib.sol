@@ -363,16 +363,33 @@ library SwapperMathLibrary {
         uint256 initialBorrowedAmount;
         uint256 amountSupplied;
         uint256 feeIntervalAdjustment;
+        uint256 feeEpsilon;
     }
 
-    /// @notice binary search the optimal borrowed amount
-    /// the lower bound is the initial borrowed amount - (feeIntervalAdjustment * maxIter). if this doesn't satisfy the condition we revert as there's no sane lower bounds
-    /// the upper bound is the initial borrowed amount.
+    struct OptimalBorrowResult {
+        uint256 repaymentAmount;
+        uint256 borrowedAmount;
+        uint256 amountOut;
+    }
+
+    /**
+     * @notice binary search to find the optimal borrowed amount
+     * lower bound = the initial borrowed amount - (feeIntervalAdjustment * maxIter). if this doesn't satisfy the condition we revert as there's no sane lower bounds
+     * upper = the initial borrowed amount.
+     */
     function findOptimalBorrowedAmount(OptimalBorrowParams memory params)
         internal
         pure
-        returns (uint256 repaymentAmount, uint256 borrowedAmount, uint256 amountOut)
+        returns (OptimalBorrowResult memory result)
     {
+        // we basically do nothing if there's no fee
+        if (params.market.baseFee == 0) {
+            result.repaymentAmount = params.market.getAmountIn(params.initialBorrowedAmount, false);
+            result.amountOut = params.initialAmountOut;
+            result.borrowedAmount = params.initialBorrowedAmount;
+            return (result);
+        }
+
         UD60x18 amountOutUd = convertUd(params.initialAmountOut);
         UD60x18 initialBorrowedAmountUd = convertUd(params.initialBorrowedAmount);
         UD60x18 suppliedAmountUd = convertUd(params.amountSupplied);
@@ -385,16 +402,27 @@ library SwapperMathLibrary {
         }
 
         UD60x18 upperBound = initialBorrowedAmountUd;
+        UD60x18 epsilon = convertUd(params.feeEpsilon);
 
         for (uint256 i = 0; i < params.maxIter; i++) {
+            // we break if we have reached the desired range
+            if (sub(upperBound, lowerBound) <= epsilon) {
+                break;
+            }
+
             UD60x18 midpoint = div(add(lowerBound, upperBound), convertUd(2));
             repaymentAmountUd = convertUd(params.market.getAmountIn(convertUd(midpoint), false));
+
             amountOutUd = add(midpoint, suppliedAmountUd);
 
-            if (repaymentAmountUd <= amountOutUd) {
-                return (convertUd(repaymentAmountUd), convertUd(midpoint), convertUd(amountOutUd));
-            } else {
+            if (repaymentAmountUd > amountOutUd) {
                 upperBound = midpoint;
+            } else {
+                result.repaymentAmount = convertUd(repaymentAmountUd);
+                result.borrowedAmount = convertUd(midpoint);
+                result.amountOut = convertUd(amountOutUd);
+
+                lowerBound = midpoint;
             }
         }
     }
