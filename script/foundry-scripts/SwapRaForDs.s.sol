@@ -63,7 +63,8 @@ contract SwapRAForDSScript is Script {
     function swapRaForDs(address cst, address cETHToken, uint256 liquidityAmt, uint256 expiryPeriod) public {
         Id reserveId = moduleCore.getId(cst, cETHToken, expiryPeriod);
         CETH(cETHToken).approve(address(routerState), swapAmt);
-        IDsFlashSwapCore.BuyAprroxParams memory params = IDsFlashSwapCore.BuyAprroxParams(256, 0.01 ether, 1 gwei);
+        IDsFlashSwapCore.BuyAprroxParams memory params =
+            IDsFlashSwapCore.BuyAprroxParams(256, 256, 0.01 ether, 1 gwei, 1 gwei);
         routerState.swapRaforDs(reserveId, 1, swapAmt, 0, deployer, bytes(""), 0, params);
         console.log("Swap RA for DS");
         console.log("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-");

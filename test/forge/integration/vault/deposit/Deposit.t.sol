@@ -12,10 +12,10 @@ contract DepositTest is Helper {
 
         vm.startPrank(DEFAULT_ADDRESS);
 
-        vm.deal(DEFAULT_ADDRESS, 1000 ether);
+        vm.deal(DEFAULT_ADDRESS, 10000000000 ether);
 
-        ra.deposit{value: 1000 ether}();
-        ra.approve(address(moduleCore), 1000 ether);
+        ra.deposit{value: 10000000000 ether}();
+        ra.approve(address(moduleCore), 10000000000 ether);
     }
 
     // TODO : adjust
@@ -23,6 +23,7 @@ contract DepositTest is Helper {
         Id id = defaultCurrencyId;
         // (uint256 expectedLv, uint256 raTolerance, uint256 ctTolerance) = moduleCore.previewLvDeposit(id, amount);
         uint256 received = moduleCore.depositLv(id, amount, 0, 0);
+        received = moduleCore.depositLv(id, amount, 0, 0);
 
         // vm.assertEq(received, expectedLv);
     }
@@ -31,9 +32,9 @@ contract DepositTest is Helper {
         Id id = defaultCurrencyId;
 
         // set the first deposit
-        uint256 received = moduleCore.depositLv(id, amount, 0 ether, 0  ether);
+        uint256 received = moduleCore.depositLv(id, amount, 0 ether, 0 ether);
 
         vm.expectRevert();
-        received = moduleCore.depositLv(id, amount, 100000 ether , 10000 ether);
+        received = moduleCore.depositLv(id, amount, 100000 ether, 10000 ether);
     }
 }
