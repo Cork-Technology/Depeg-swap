@@ -7,7 +7,7 @@ import {Liquidator} from "../../contracts/core/Liquidator.sol";
 import {HedgeUnit} from "../../contracts/core/assets/HedgeUnit.sol";
 import {HedgeUnitFactory} from "../../contracts/core/assets/HedgeUnitFactory.sol";
 
-contract DeployScript is Script {
+contract DeployHedgeUnitsScript is Script {
     ModuleCore public moduleCore;
     Liquidator public liquidator;
     HedgeUnitFactory public hedgeUnitFactory;
@@ -20,17 +20,17 @@ contract DeployScript is Script {
     HedgeUnit public hedgeUnitomgUSD;
 
     bool public isProd = vm.envBool("PRODUCTION");
-    uint256 public base_redemption_fee = vm.envUint("PSM_BASE_REDEMPTION_FEE_PERCENTAGE");
     uint256 public pk = vm.envUint("PRIVATE_KEY");
+    address sender = vm.addr(pk);
 
-    address ceth = 0x34505854505A4a4e898569564Fb91e17614e1969;
-    address cUSD = 0xEEeA08E6F6F5abC28c821Ffe2035326C6Bfd2017;
-    address bsETH = 0x0BAbf92b3e4fd64C26e1F6A05B59a7e0e0708378;
-    address wamuETH = 0xd9682A7CE1C48f1de323E9b27A5D0ff0bAA24254;
-    address mlETH = 0x98524CaB765Cb0De83F71871c56dc67C202e166d;
-    address svbUSD = 0x7AE4c173d473218b59bF8A1479BFC706F28C635b;
-    address fedUSD = 0xd8d134BEc26f7ebdAdC2508a403bf04bBC33fc7b;
-    address omgUSD = 0x182733031965686043d5196207BeEE1dadEde818;
+    address ceth = 0xD4B903723EbAf1Bf0a2D8373fd5764e050114Dcd;
+    address cUSD = 0x8cdd2A328F36601A559c321F0eA224Cc55d9EBAa;
+    address bsETH = 0x71710AcACeD2b5Fb608a1371137CC1becFf391E0;
+    address wamuETH = 0x212542457f2F50Ab04e74187cE46b79A8B330567;
+    address mlETH = 0xc63b0e46FDA3be5c14719257A3EC235499Ca4D33;
+    address svbUSD = 0x80bA1d3DF59c62f3C469477C625F4F1D9a1532E6;
+    address fedUSD = 0x618134155a3aB48003EC137FF1984f79BaB20028;
+    address omgUSD = 0xD8CEF48A9dc21FFe2ef09A7BD247e28e11b5B754;
 
     uint256 wamuETHExpiry = 3.5 days;
     uint256 bsETHExpiry = 3.5 days;
@@ -53,20 +53,23 @@ contract DeployScript is Script {
         console.log("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-");
 
         // Deploy the Liquidator contract
-        liquidator = new Liquidator(msg.sender, 10000, settlementContract);
+        liquidator = new Liquidator(sender, 10000, settlementContract);
         console.log("Liquidator                      : ", address(liquidator));
         console.log("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-");
 
         // Deploy the HedgeUnitFactry contract
         hedgeUnitFactory = new HedgeUnitFactory(address(moduleCore), address(liquidator));
-        hedgeUnitFactory.updateLiquidatorRole(msg.sender, true);
+        hedgeUnitFactory.updateLiquidatorRole(sender, true);
         console.log("HedgeUnit Factory               : ", address(hedgeUnitFactory));
         console.log("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-");
 
         // Deploy the HedgeUnit contract
         hedgeUnitwamuETH = HedgeUnit(
             hedgeUnitFactory.deployHedgeUnit(
-                moduleCore.getId(wamuETH, ceth), wamuETH, "Washington Mutual restaked ETH - CETH", INITIAL_MINT_CAP
+                moduleCore.getId(wamuETH, ceth, wamuETHExpiry),
+                wamuETH,
+                "Washington Mutual restaked ETH - CETH",
+                INITIAL_MINT_CAP
             )
         );
         liquidator.updateLiquidatorRole(address(hedgeUnitwamuETH), true);
@@ -74,7 +77,7 @@ contract DeployScript is Script {
 
         hedgeUnitbsETH = HedgeUnit(
             hedgeUnitFactory.deployHedgeUnit(
-                moduleCore.getId(bsETH, wamuETH),
+                moduleCore.getId(bsETH, wamuETH, bsETHExpiry),
                 bsETH,
                 "Bear Sterns Restaked ETH - Washington Mutual restaked ETH",
                 INITIAL_MINT_CAP
@@ -85,7 +88,7 @@ contract DeployScript is Script {
 
         hedgeUnitmlETH = HedgeUnit(
             hedgeUnitFactory.deployHedgeUnit(
-                moduleCore.getId(mlETH, bsETH),
+                moduleCore.getId(mlETH, bsETH, mlETHExpiry),
                 mlETH,
                 "Merrill Lynch staked ETH - Bear Sterns Restaked ETH",
                 INITIAL_MINT_CAP
@@ -96,30 +99,33 @@ contract DeployScript is Script {
 
         hedgeUnitfedUSD = HedgeUnit(
             hedgeUnitFactory.deployHedgeUnit(
-                moduleCore.getId(fedUSD, cUSD), fedUSD, "Fed Up USD - CUSD", INITIAL_MINT_CAP
+                moduleCore.getId(fedUSD, cUSD, fedUSDExpiry), fedUSD, "Fed Up USD - CUSD", INITIAL_MINT_CAP
             )
         );
         liquidator.updateLiquidatorRole(address(hedgeUnitfedUSD), true);
-        console.log("HU fedUSD                      : ", address(hedgeUnitfedUSD));
+        console.log("HU fedUSD                       : ", address(hedgeUnitfedUSD));
 
         hedgeUnitsvbUSD = HedgeUnit(
             hedgeUnitFactory.deployHedgeUnit(
-                moduleCore.getId(svbUSD, fedUSD), svbUSD, "Sillycoin Valley Bank USD - Fed Up USD", INITIAL_MINT_CAP
+                moduleCore.getId(svbUSD, fedUSD, svbUSDExpiry),
+                svbUSD,
+                "Sillycoin Valley Bank USD - Fed Up USD",
+                INITIAL_MINT_CAP
             )
         );
         liquidator.updateLiquidatorRole(address(hedgeUnitsvbUSD), true);
-        console.log("HU svbUSD                      : ", address(hedgeUnitsvbUSD));
+        console.log("HU svbUSD                       : ", address(hedgeUnitsvbUSD));
 
         hedgeUnitomgUSD = HedgeUnit(
             hedgeUnitFactory.deployHedgeUnit(
-                moduleCore.getId(omgUSD, svbUSD),
+                moduleCore.getId(omgUSD, svbUSD, omgUSDExpiry),
                 omgUSD,
                 "Own My Gold USD - Sillycoin Valley Bank USD",
                 INITIAL_MINT_CAP
             )
         );
         liquidator.updateLiquidatorRole(address(hedgeUnitomgUSD), true);
-        console.log("HU omgUSD                      : ", address(hedgeUnitomgUSD));
+        console.log("HU omgUSD                       : ", address(hedgeUnitomgUSD));
         console.log("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-");
         vm.stopBroadcast();
     }

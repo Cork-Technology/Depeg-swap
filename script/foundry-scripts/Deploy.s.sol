@@ -43,15 +43,18 @@ contract DeployScript is Script {
     HedgeUnitFactory public hedgeUnitFactory;
 
     HedgeUnit public hedgeUnitbsETH;
-    HedgeUnit public hedgeUnitlbETH;
     HedgeUnit public hedgeUnitwamuETH;
     HedgeUnit public hedgeUnitmlETH;
+    HedgeUnit public hedgeUnitsvbUSD;
+    HedgeUnit public hedgeUnitfedUSD;
+    HedgeUnit public hedgeUnitomgUSD;
 
     bool public isProd = vm.envBool("PRODUCTION");
     uint256 public base_redemption_fee = vm.envUint("PSM_BASE_REDEMPTION_FEE_PERCENTAGE");
     address public ceth = vm.envAddress("WETH");
     address public cusd = 0xEEeA08E6F6F5abC28c821Ffe2035326C6Bfd2017;
     uint256 public pk = vm.envUint("PRIVATE_KEY");
+    address sender = vm.addr(pk);
 
     address internal constant CREATE_2_PROXY = 0x4e59b44847b379578588920cA78FbF26c0B4956C;
 
@@ -65,6 +68,13 @@ contract DeployScript is Script {
     address fedUSD = 0xd8d134BEc26f7ebdAdC2508a403bf04bBC33fc7b;
     address omgUSD = 0x182733031965686043d5196207BeEE1dadEde818;
     address settlementContract = 0x9008D19f58AAbD9eD0D60971565AA8510560ab41;
+
+    uint256 wamuETHExpiry = 3.5 days;
+    uint256 bsETHExpiry = 3.5 days;
+    uint256 mlETHExpiry = 1 days;
+    uint256 svbUSDExpiry = 3.5 days;
+    uint256 fedUSDExpiry = 3.5 days;
+    uint256 omgUSDExpiry = 0.5 days;
 
     uint256 constant INITIAL_MINT_CAP = 1000 * 1e18; // 1000 tokens
 
@@ -81,26 +91,26 @@ contract DeployScript is Script {
         if (!isProd && ceth == address(0)) {
             // Deploy the WETH contract
             cETH = new CETH("Cork Competition ETH", "cETH");
-            cETH.mint(msg.sender, 100_000_000_000_000 ether);
+            cETH.mint(sender, 100_000_000_000_000 ether);
             ceth = address(cETH);
             console.log("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-");
             console.log("CETH                            : ", address(cETH));
 
-            CST wamuETHCST = new CST("Washington Mutual restaked ETH", "wamuETH", ceth, msg.sender, 480 hours, 3 ether);
+            CST wamuETHCST = new CST("Washington Mutual restaked ETH", "wamuETH", ceth, sender, 480 hours, 3 ether);
             wamuETH = address(wamuETHCST);
             cETH.addMinter(wamuETH);
             cETH.approve(wamuETH, 1_000_000 ether);
             wamuETHCST.deposit(1_000_000 ether);
             console.log("wamuETH                         : ", address(wamuETH));
 
-            CST bsETHCST = new CST("Bear Sterns Restaked ETH", "bsETH", ceth, msg.sender, 480 hours, 10 ether);
+            CST bsETHCST = new CST("Bear Sterns Restaked ETH", "bsETH", ceth, sender, 480 hours, 10 ether);
             bsETH = address(bsETHCST);
             cETH.addMinter(bsETH);
             cETH.approve(bsETH, 1_000_000 ether);
             bsETHCST.deposit(1_000_000 ether);
             console.log("bsETH                           : ", address(bsETH));
 
-            CST mlETHCST = new CST("Merrill Lynch staked ETH", "mlETH", ceth, msg.sender, 480 hours, 10 ether);
+            CST mlETHCST = new CST("Merrill Lynch staked ETH", "mlETH", ceth, sender, 480 hours, 10 ether);
             mlETH = address(mlETHCST);
             cETH.addMinter(mlETH);
             cETH.approve(mlETH, 1_000_000 ether);
@@ -108,26 +118,26 @@ contract DeployScript is Script {
             console.log("mlETH                           : ", address(mlETH));
 
             cUSD = new CETH("Cork Competition USD", "cUSD");
-            cUSD.mint(msg.sender, 100_000_000_000_000 ether);
+            cUSD.mint(sender, 100_000_000_000_000 ether);
             cusd = address(cUSD);
             console.log("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-");
             console.log("CUSD                            : ", address(cUSD));
 
-            CST svbUSDCST = new CST("Sillycoin Valley Bank USD", "svbUSD", cusd, msg.sender, 480 hours, 8 ether);
+            CST svbUSDCST = new CST("Sillycoin Valley Bank USD", "svbUSD", cusd, sender, 480 hours, 8 ether);
             svbUSD = address(svbUSDCST);
             cUSD.addMinter(svbUSD);
             cUSD.approve(svbUSD, 10_000_000_000 ether);
             svbUSDCST.deposit(10_000_000_000 ether);
             console.log("svbUSD                          : ", address(svbUSD));
 
-            CST fedUSDCST = new CST("Fed Up USD", "fedUSD", cusd, msg.sender, 480 hours, 5 ether);
+            CST fedUSDCST = new CST("Fed Up USD", "fedUSD", cusd, sender, 480 hours, 5 ether);
             fedUSD = address(fedUSDCST);
             cUSD.addMinter(fedUSD);
             cUSD.approve(fedUSD, 10_000_000_000 ether);
             fedUSDCST.deposit(10_000_000_000 ether);
             console.log("fedUSD                          : ", address(fedUSD));
 
-            CST omgUSDCST = new CST("Own My Gold USD", "omgUSD", cusd, msg.sender, 480 hours, 0);
+            CST omgUSDCST = new CST("Own My Gold USD", "omgUSD", cusd, sender, 480 hours, 0);
             omgUSD = address(omgUSDCST);
             cUSD.addMinter(omgUSD);
             cUSD.approve(omgUSD, 10_000_000_000 ether);
@@ -166,7 +176,7 @@ contract DeployScript is Script {
         console.log("Flashswap Router Proxy          : ", address(flashswapRouter));
 
         // Deploy the UniswapV2Factory contract
-        // address _factory = deployCode(v2FactoryArtifact, abi.encode(msg.sender, address(flashswapRouter)));
+        // address _factory = deployCode(v2FactoryArtifact, abi.encode(sender, address(flashswapRouter)));
         // factory = IUniswapV2Factory(_factory);
         // console.log("Univ2 Factory                   : ", _factory);
 
@@ -210,48 +220,79 @@ contract DeployScript is Script {
         console.log("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-");
 
         // Deploy the Liquidator contract
-        liquidator = new Liquidator(msg.sender, 10000, settlementContract);
+        liquidator = new Liquidator(sender, 10000, settlementContract);
         console.log("Liquidator                      : ", address(liquidator));
         console.log("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-");
 
         // Deploy the HedgeUnitFactry contract
         hedgeUnitFactory = new HedgeUnitFactory(address(moduleCore), address(liquidator));
-        hedgeUnitFactory.updateLiquidatorRole(msg.sender, true);
+        hedgeUnitFactory.updateLiquidatorRole(sender, true);
         console.log("HedgeUnit Factory               : ", address(hedgeUnitFactory));
         console.log("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-");
 
         // Deploy the HedgeUnit contract
-        hedgeUnitbsETH = HedgeUnit(
-            hedgeUnitFactory.deployHedgeUnit(
-                moduleCore.getId(bsETH, ceth), bsETH, "Bear Sterns Restaked ETH - CETH", INITIAL_MINT_CAP
-            )
-        );
-        liquidator.updateLiquidatorRole(address(hedgeUnitbsETH), true);
-        console.log("HU bsETH                        : ", address(hedgeUnitbsETH));
-
-        hedgeUnitlbETH = HedgeUnit(
-            hedgeUnitFactory.deployHedgeUnit(
-                moduleCore.getId(lbETH, ceth), lbETH, "Lehman Brothers Restaked ETH - CETH", INITIAL_MINT_CAP
-            )
-        );
-        liquidator.updateLiquidatorRole(address(hedgeUnitlbETH), true);
-        console.log("HU lbETH                        : ", address(hedgeUnitlbETH));
-
         hedgeUnitwamuETH = HedgeUnit(
             hedgeUnitFactory.deployHedgeUnit(
-                moduleCore.getId(wamuETH, ceth), wamuETH, "Washington Mutual restaked ETH - CETH", INITIAL_MINT_CAP
+                moduleCore.getId(wamuETH, ceth, wamuETHExpiry),
+                wamuETH,
+                "Washington Mutual restaked ETH - CETH",
+                INITIAL_MINT_CAP
             )
         );
         liquidator.updateLiquidatorRole(address(hedgeUnitwamuETH), true);
         console.log("HU wamuETH                      : ", address(hedgeUnitwamuETH));
 
+        hedgeUnitbsETH = HedgeUnit(
+            hedgeUnitFactory.deployHedgeUnit(
+                moduleCore.getId(bsETH, wamuETH, bsETHExpiry),
+                bsETH,
+                "Bear Sterns Restaked ETH - Washington Mutual restaked ETH",
+                INITIAL_MINT_CAP
+            )
+        );
+        liquidator.updateLiquidatorRole(address(hedgeUnitbsETH), true);
+        console.log("HU bsETH                        : ", address(hedgeUnitbsETH));
+
         hedgeUnitmlETH = HedgeUnit(
             hedgeUnitFactory.deployHedgeUnit(
-                moduleCore.getId(mlETH, ceth), mlETH, "Merrill Lynch staked ETH - CETH", INITIAL_MINT_CAP
+                moduleCore.getId(mlETH, bsETH, mlETHExpiry),
+                mlETH,
+                "Merrill Lynch staked ETH - Bear Sterns Restaked ETH",
+                INITIAL_MINT_CAP
             )
         );
         liquidator.updateLiquidatorRole(address(hedgeUnitmlETH), true);
         console.log("HU mlETH                        : ", address(hedgeUnitmlETH));
+
+        hedgeUnitfedUSD = HedgeUnit(
+            hedgeUnitFactory.deployHedgeUnit(
+                moduleCore.getId(fedUSD, cusd, fedUSDExpiry), fedUSD, "Fed Up USD - CUSD", INITIAL_MINT_CAP
+            )
+        );
+        liquidator.updateLiquidatorRole(address(hedgeUnitfedUSD), true);
+        console.log("HU fedUSD                      : ", address(hedgeUnitfedUSD));
+
+        hedgeUnitsvbUSD = HedgeUnit(
+            hedgeUnitFactory.deployHedgeUnit(
+                moduleCore.getId(svbUSD, fedUSD, svbUSDExpiry),
+                svbUSD,
+                "Sillycoin Valley Bank USD - Fed Up USD",
+                INITIAL_MINT_CAP
+            )
+        );
+        liquidator.updateLiquidatorRole(address(hedgeUnitsvbUSD), true);
+        console.log("HU svbUSD                      : ", address(hedgeUnitsvbUSD));
+
+        hedgeUnitomgUSD = HedgeUnit(
+            hedgeUnitFactory.deployHedgeUnit(
+                moduleCore.getId(omgUSD, svbUSD, omgUSDExpiry),
+                omgUSD,
+                "Own My Gold USD - Sillycoin Valley Bank USD",
+                INITIAL_MINT_CAP
+            )
+        );
+        liquidator.updateLiquidatorRole(address(hedgeUnitomgUSD), true);
+        console.log("HU omgUSD                      : ", address(hedgeUnitomgUSD));
         console.log("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-");
 
         // Transfer Ownership to moduleCore
@@ -273,26 +314,28 @@ contract DeployScript is Script {
 
         // EarlyRedemptionFee = 0.2%,  DSPrice=0.2%(or 20%)  repurchaseFee = 0.75%
         issueDSAndAddLiquidity(
-            wamuETH, ceth, 200_000 ether, 0.2 ether, 0.00375 ether, 0.75 ether, 3.5 days, 30_000 ether
+            wamuETH, ceth, 200_000 ether, 0.2 ether, 0.00375 ether, 0.75 ether, wamuETHExpiry, 30_000 ether
         );
         // EarlyRedemptionFee = 0.2%,  DSPrice=0.7%(or 70%)  repurchaseFee = 0.75%
         issueDSAndAddLiquidity(
-            bsETH, wamuETH, 200_000 ether, 0.2 ether, 0.01875 ether, 0.75 ether, 3.5 days, 30_000 ether
+            bsETH, wamuETH, 200_000 ether, 0.2 ether, 0.01875 ether, 0.75 ether, bsETHExpiry, 30_000 ether
         );
         // EarlyRedemptionFee = 0.2%,  DSPrice=0.3%(or 30%)  repurchaseFee = 0.75%
-        issueDSAndAddLiquidity(mlETH, bsETH, 200_000 ether, 0.2 ether, 0.00625 ether, 0.75 ether, 1 days, 30_000 ether);
-
         issueDSAndAddLiquidity(
-            svbUSD, fedUSD, 500_000_000 ether, 0.2 ether, 0.025 ether, 0.75 ether, 3.5 days, 75_000_000 ether
-        );
-        issueDSAndAddLiquidity(
-            fedUSD, cusd, 500_000_000 ether, 0.2 ether, 0.0125 ether, 0.75 ether, 3.5 days, 75_000_000 ether
-        );
-        issueDSAndAddLiquidity(
-            omgUSD, svbUSD, 500_000_000 ether, 0.08 ether, 0.002 ether, 0.75 ether, 0.5 days, 75_000_000 ether
+            mlETH, bsETH, 200_000 ether, 0.2 ether, 0.00625 ether, 0.75 ether, mlETHExpiry, 30_000 ether
         );
 
-        // moduleCore.redeemEarlyLv(id, msg.sender, 10 ether);
+        issueDSAndAddLiquidity(
+            svbUSD, fedUSD, 500_000_000 ether, 0.2 ether, 0.025 ether, 0.75 ether, svbUSDExpiry, 75_000_000 ether
+        );
+        issueDSAndAddLiquidity(
+            fedUSD, cusd, 500_000_000 ether, 0.2 ether, 0.0125 ether, 0.75 ether, fedUSDExpiry, 75_000_000 ether
+        );
+        issueDSAndAddLiquidity(
+            omgUSD, svbUSD, 500_000_000 ether, 0.08 ether, 0.002 ether, 0.75 ether, omgUSDExpiry, 75_000_000 ether
+        );
+
+        // moduleCore.redeemEarlyLv(id, sender, 10 ether);
         // uint256 result = flashswapRouter.previewSwapRaforDs(id, 1, 100 ether);
         // console.log(result);
         console.log("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-");
@@ -336,12 +379,12 @@ contract DeployScript is Script {
             liquidityAmt,
             liquidityAmt,
             liquidityAmt,
-            msg.sender,
+            sender,
             block.timestamp + 10000 minutes
         );
         console.log("Liquidity Added to AMM");
 
-        // moduleCore.redeemEarlyLv(id, msg.sender, 10 ether);
+        // moduleCore.redeemEarlyLv(id, sender, 10 ether);
         // uint256 result = flashswapRouter.previewSwapRaforDs(id, 1, 100 ether);
         // console.log(result);
         console.log("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-");
