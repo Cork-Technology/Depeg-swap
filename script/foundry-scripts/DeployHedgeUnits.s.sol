@@ -32,6 +32,13 @@ contract DeployScript is Script {
     address fedUSD = 0xd8d134BEc26f7ebdAdC2508a403bf04bBC33fc7b;
     address omgUSD = 0x182733031965686043d5196207BeEE1dadEde818;
 
+    uint256 wamuETHExpiry = 3.5 days;
+    uint256 bsETHExpiry = 3.5 days;
+    uint256 mlETHExpiry = 1 days;
+    uint256 svbUSDExpiry = 3.5 days;
+    uint256 fedUSDExpiry = 3.5 days;
+    uint256 omgUSDExpiry = 0.5 days;
+
     address settlementContract = 0x9008D19f58AAbD9eD0D60971565AA8510560ab41;
 
     uint256 constant INITIAL_MINT_CAP = 1000 * 1e18; // 1000 tokens
@@ -40,7 +47,6 @@ contract DeployScript is Script {
 
     function run() public {
         vm.startBroadcast(pk);
-        cETH = CETH(0xD4B903723EbAf1Bf0a2D8373fd5764e050114Dcd);
         moduleCore = ModuleCore(0x0e5212A25DDbf4CBEa390199b62C249aBf3637fF);
 
         console.log("Module Core                     : ", address(moduleCore));
@@ -58,14 +64,6 @@ contract DeployScript is Script {
         console.log("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-");
 
         // Deploy the HedgeUnit contract
-        hedgeUnitbsETH = HedgeUnit(
-            hedgeUnitFactory.deployHedgeUnit(
-                moduleCore.getId(bsETH, ceth), bsETH, "Bear Sterns Restaked ETH - CETH", INITIAL_MINT_CAP
-            )
-        );
-        liquidator.updateLiquidatorRole(address(hedgeUnitbsETH), true);
-        console.log("HU bsETH                        : ", address(hedgeUnitbsETH));
-
         hedgeUnitwamuETH = HedgeUnit(
             hedgeUnitFactory.deployHedgeUnit(
                 moduleCore.getId(wamuETH, ceth), wamuETH, "Washington Mutual restaked ETH - CETH", INITIAL_MINT_CAP
@@ -74,21 +72,27 @@ contract DeployScript is Script {
         liquidator.updateLiquidatorRole(address(hedgeUnitwamuETH), true);
         console.log("HU wamuETH                      : ", address(hedgeUnitwamuETH));
 
+        hedgeUnitbsETH = HedgeUnit(
+            hedgeUnitFactory.deployHedgeUnit(
+                moduleCore.getId(bsETH, wamuETH),
+                bsETH,
+                "Bear Sterns Restaked ETH - Washington Mutual restaked ETH",
+                INITIAL_MINT_CAP
+            )
+        );
+        liquidator.updateLiquidatorRole(address(hedgeUnitbsETH), true);
+        console.log("HU bsETH                        : ", address(hedgeUnitbsETH));
+
         hedgeUnitmlETH = HedgeUnit(
             hedgeUnitFactory.deployHedgeUnit(
-                moduleCore.getId(mlETH, ceth), mlETH, "Merrill Lynch staked ETH - CETH", INITIAL_MINT_CAP
+                moduleCore.getId(mlETH, bsETH),
+                mlETH,
+                "Merrill Lynch staked ETH - Bear Sterns Restaked ETH",
+                INITIAL_MINT_CAP
             )
         );
         liquidator.updateLiquidatorRole(address(hedgeUnitmlETH), true);
         console.log("HU mlETH                        : ", address(hedgeUnitmlETH));
-
-        hedgeUnitsvbUSD = HedgeUnit(
-            hedgeUnitFactory.deployHedgeUnit(
-                moduleCore.getId(svbUSD, cUSD), svbUSD, "SilliconSillycoin Valley Bank USD - CUSD", INITIAL_MINT_CAP
-            )
-        );
-        liquidator.updateLiquidatorRole(address(hedgeUnitwamuETH), true);
-        console.log("HU svbUSD                      : ", address(hedgeUnitwamuETH));
 
         hedgeUnitfedUSD = HedgeUnit(
             hedgeUnitFactory.deployHedgeUnit(
@@ -98,9 +102,20 @@ contract DeployScript is Script {
         liquidator.updateLiquidatorRole(address(hedgeUnitfedUSD), true);
         console.log("HU fedUSD                      : ", address(hedgeUnitfedUSD));
 
+        hedgeUnitsvbUSD = HedgeUnit(
+            hedgeUnitFactory.deployHedgeUnit(
+                moduleCore.getId(svbUSD, fedUSD), svbUSD, "Sillycoin Valley Bank USD - Fed Up USD", INITIAL_MINT_CAP
+            )
+        );
+        liquidator.updateLiquidatorRole(address(hedgeUnitsvbUSD), true);
+        console.log("HU svbUSD                      : ", address(hedgeUnitsvbUSD));
+
         hedgeUnitomgUSD = HedgeUnit(
             hedgeUnitFactory.deployHedgeUnit(
-                moduleCore.getId(omgUSD, cUSD), omgUSD, "Own My Gold USD - CUSD", INITIAL_MINT_CAP
+                moduleCore.getId(omgUSD, svbUSD),
+                omgUSD,
+                "Own My Gold USD - Sillycoin Valley Bank USD",
+                INITIAL_MINT_CAP
             )
         );
         liquidator.updateLiquidatorRole(address(hedgeUnitomgUSD), true);
