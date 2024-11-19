@@ -20,6 +20,7 @@ import {ICorkHook} from "../../interfaces/UniV4/IMinimalHook.sol";
 import {AmmId, toAmmId} from "Cork-Hook/lib/State.sol";
 import {CorkSwapCallback} from "Cork-Hook/interfaces/CorkSwapCallback.sol";
 import {IMathError} from "./../../interfaces/IMathError.sol";
+import "forge-std/console.sol";
 
 
 /**
@@ -250,6 +251,7 @@ contract RouterState is
         // try to swap the RA for DS via rollover, this will noop if the condition for rollover is not met
         (amount, dsReceived) = _swapRaForDsViaRollover(reserveId, dsId, amount, amountOutMin);
 
+        console.log("amount: %s, dsReceived: %s", amount, dsReceived);
         // short circuit if all the swap is filled using rollover
         if (amount == 0) {
             return dsReceived;
