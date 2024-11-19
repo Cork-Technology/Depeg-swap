@@ -58,16 +58,17 @@ contract DeployScript is Script {
 
     address internal constant CREATE_2_PROXY = 0x4e59b44847b379578588920cA78FbF26c0B4956C;
 
-    address uniswapV2FactorySepolia = 0xF62c03E08ada871A0bEb309762E260a7a6a880E6;
-    address uniswapV2RouterSepolia = 0xeE567Fe1712Faf6149d80dA1E6934E354124CfE3;
-
     address bsETH = 0x0BAbf92b3e4fd64C26e1F6A05B59a7e0e0708378;
     address wamuETH = 0xd9682A7CE1C48f1de323E9b27A5D0ff0bAA24254;
     address mlETH = 0x98524CaB765Cb0De83F71871c56dc67C202e166d;
     address svbUSD = 0x7AE4c173d473218b59bF8A1479BFC706F28C635b;
     address fedUSD = 0xd8d134BEc26f7ebdAdC2508a403bf04bBC33fc7b;
     address omgUSD = 0x182733031965686043d5196207BeEE1dadEde818;
+
+    // constants because they are external contracts
     address settlementContract = 0x9008D19f58AAbD9eD0D60971565AA8510560ab41;
+    address uniswapV2FactorySepolia = 0xF62c03E08ada871A0bEb309762E260a7a6a880E6;
+    address uniswapV2RouterSepolia = 0xeE567Fe1712Faf6149d80dA1E6934E354124CfE3;
 
     uint256 wamuETHExpiry = 3.5 days;
     uint256 bsETHExpiry = 3.5 days;

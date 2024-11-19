@@ -69,41 +69,41 @@ AFter that, you should see something like this on your terminal :
   Network                      : sepolia
   Chain Id                     : 11155111
   Deployer                     : 0xBa66992bE4816Cc3877dA86fA982A93a6948dde9
--=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-  CETH                            :  0xD4B903723EbAf1Bf0a2D8373fd5764e050114Dcd
-  wamuETH                         :  0x212542457f2F50Ab04e74187cE46b79A8B330567
-  bsETH                           :  0x71710AcACeD2b5Fb608a1371137CC1becFf391E0
-  mlETH                           :  0xc63b0e46FDA3be5c14719257A3EC235499Ca4D33
   -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-  CUSD                            :  0x8cdd2A328F36601A559c321F0eA224Cc55d9EBAa
-  svbUSD                          :  0x80bA1d3DF59c62f3C469477C625F4F1D9a1532E6
-  fedUSD                          :  0x618134155a3aB48003EC137FF1984f79BaB20028
-  omgUSD                          :  0xD8CEF48A9dc21FFe2ef09A7BD247e28e11b5B754
+  CETH                            :  0xa1c0010fc3006F9596C0D88558200caa53f74f21
+  wamuETH                         :  0x62488d9A025AC5EB7694eeb03BDA1F19b3b14b46
+  bsETH                           :  0x01CE7D0A18DCc77E22363Cb8e003f23f9De5a7fA
+  mlETH                           :  0x7078462DaB16849E12Ba5bCf4C5075088b0C93Dc
   -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-  Asset Factory Implementation    :  0x57B75AE79fb25113e3b3Aac576fE2121B44393c5
-  Asset Factory                   :  0x938A8Be7e60A666d807a7948304b82cFdEe67Af8
-  Cork Config                     :  0xcc79b14DA0891a00a6d3216b49d77815d1fEdC36
-  Flashswap Router Implementation :  0x6DDcfd062B05C3CE78100caE9E2a856ddf01b2AF
-  Flashswap Router Proxy          :  0x7ff313778Ca50e1cB5BD8a3B1408D931F14FEce4
-  ModuleCore Router Implementation:  0xBBAB023Aeb8b965689dd68fa6F2826F5078c13db
-  Pool Manager                    :  0x21E0D6713a5BE74BA3C3dA29a8Cdb2dD2854406f
-  Liquidity Token                 :  0x1359c5485dB6E9b4B9795b62F9c8528077dD0bea
-  Hook                            :  0x47e14768fFd0E5514cEe87E0e3dF23F7C5bfAA88
-  Module Core                     :  0x0e5212A25DDbf4CBEa390199b62C249aBf3637fF
+  CUSD                            :  0x2884B1a347AbBff7396565A4f8C2dA722642e932
+  svbUSD                          :  0x3e63b127287112D4A65CB09d348967c31b0DaB4c
+  fedUSD                          :  0x33A4C083aa34846D300954E17Ae72b675Fc7aC65
+  omgUSD                          :  0x3ccb5028dA93f5B226604f22Dd05d7b26eCfddf8
+  -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+  Asset Factory Implementation    :  0x0E660c060c73902ba54422A22580cC4a244d8943
+  Asset Factory                   :  0xBE663Ba82eBEb54bc4a3130069bE48771E2804C6
+  Cork Config                     :  0x0B2BaD357477624b4D8f59a706312806Df5B7f75
+  Flashswap Router Implementation :  0xea8AA1b8bE6C1Fc30e5Be038530C07c18d05Ad63
+  Flashswap Router Proxy          :  0x2F02D8202E201f1DC0a3AE286c266635bB3cF018
+  ModuleCore Router Implementation:  0x085f40cc08d4912E23b6F948A19c13E0CEC652CB
+  Pool Manager                    :  0xf8b38d5c78760b99436243f8D764B2bFd72471D5
+  Liquidity Token                 :  0xe3457C4D2Dc7e9E092EF00AE4A30dE82416BC077
+  Hook                            :  0xB358a02356191350dC79E89cA0E33fF1006dEa88
+  Module Core                     :  0xF0AE754660b418C99e4AbC3d4b1C96717CE7E4Fa
+  -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+  Liquidator                      :  0xF03c0d3c86424319613f6304D3ef1B741892f1c2
+  -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+  HedgeUnit Factory               :  0x354E95fBe8fC52bC449e2F4055eC00a790FcE823
+  -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
+  HU wamuETH                      :  0x66F630F948Dc011E9689629d3BBA27718C6470D3
+  HU bsETH                        :  0x10B32Dfbdd5fc6A5f6f7Ec2C53Ee53bA9cf4C5E6
+  HU mlETH                        :  0x0E5F5FB9DD212815c8aF87f98B3378e8E6138dB2
+  HU fedUSD                       :  0xE75CBBC83057928541a649AA25a6Cca8C64ea89E
+  HU svbUSD                       :  0xfD1916E0C43785D693259Db87f92AC85e2bd78B6
+  HU omgUSD                       :  0x492Cf38030A1c9D9Ee359F8628b1281722C0B184
   -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
   Univ2 Factory                   :  0xF62c03E08ada871A0bEb309762E260a7a6a880E6
   Univ2 Router                    :  0xeE567Fe1712Faf6149d80dA1E6934E354124CfE3
-  -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-  Liquidator                      :  0xbE312f50A41468DA8BB456FAdFddf4e096058510
-  -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-  HedgeUnit Factory               :  0x4F80d6c1d4Dda7f50b6E5aC32E53dd0f9B31f2ec
-  -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-  HU wamuETH                      :  0xC1B7C5ae32cE51aD0dcB2c4148106E6771Fd9C6F
-  HU bsETH                        :  0xF24F322665837D7b618c49F6Ba0bb6ADC6f0E6ee
-  HU mlETH                        :  0xf65f04F5dA7CD20056132D9e0f617d7d12d64A0C
-  HU fedUSD                       :  0xc9d6fC8e44C9860E969e6DC1F2294AB5bD62891A
-  HU svbUSD                       :  0x997D6216E30061896569Ec7FB8176908Eb8a00Cd
-  HU omgUSD                       :  0xbF1F8661BdBB2b7b9073D3369A017D52B584eaAd
   -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
   Funder Contract                 :  0xdAD2E0651F88D5EA6725274153209Fe94DF8c829
   Reader Contract                 :  0xC4736Ba3D54df3725771d889b964114535d4bF2D
