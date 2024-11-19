@@ -60,6 +60,11 @@ contract DeployScript is Script {
     address mlETH = 0xCDc1133148121F43bE5F1CfB3a6426BbC01a9AF6;
     address settlementContract = 0x9008D19f58AAbD9eD0D60971565AA8510560ab41;
 
+    uint256 mlETH_CETH_expiry = 4 days;
+    uint256 lbETH_CETH_expiry = 4 days;
+    uint256 bsETH_CETH_expiry = 0.4 days;
+    uint256 wamuETH_CETH_expiry = 6 days;
+
     uint256 constant INITIAL_MINT_CAP = 1000 * 1e18; // 1000 tokens
 
     CETH cETH = CETH(ceth);
@@ -194,9 +199,13 @@ contract DeployScript is Script {
         console.log("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-");
 
         // Deploy the HedgeUnit contract
+
         hedgeUnitbsETH = HedgeUnit(
             hedgeUnitFactory.deployHedgeUnit(
-                moduleCore.getId(bsETH, ceth), bsETH, "Bear Sterns Restaked ETH - CETH", INITIAL_MINT_CAP
+                moduleCore.getId(bsETH, ceth, bsETH_CETH_expiry),
+                bsETH,
+                "Bear Sterns Restaked ETH - CETH",
+                INITIAL_MINT_CAP
             )
         );
         liquidator.updateLiquidatorRole(address(hedgeUnitbsETH), true);
@@ -204,7 +213,10 @@ contract DeployScript is Script {
 
         hedgeUnitlbETH = HedgeUnit(
             hedgeUnitFactory.deployHedgeUnit(
-                moduleCore.getId(lbETH, ceth), lbETH, "Lehman Brothers Restaked ETH - CETH", INITIAL_MINT_CAP
+                moduleCore.getId(lbETH, ceth, lbETH_CETH_expiry),
+                lbETH,
+                "Lehman Brothers Restaked ETH - CETH",
+                INITIAL_MINT_CAP
             )
         );
         liquidator.updateLiquidatorRole(address(hedgeUnitlbETH), true);
@@ -212,7 +224,10 @@ contract DeployScript is Script {
 
         hedgeUnitwamuETH = HedgeUnit(
             hedgeUnitFactory.deployHedgeUnit(
-                moduleCore.getId(wamuETH, ceth), wamuETH, "Washington Mutual restaked ETH - CETH", INITIAL_MINT_CAP
+                moduleCore.getId(wamuETH, ceth, wamuETH_CETH_expiry),
+                wamuETH,
+                "Washington Mutual restaked ETH - CETH",
+                INITIAL_MINT_CAP
             )
         );
         liquidator.updateLiquidatorRole(address(hedgeUnitwamuETH), true);
@@ -220,7 +235,10 @@ contract DeployScript is Script {
 
         hedgeUnitmlETH = HedgeUnit(
             hedgeUnitFactory.deployHedgeUnit(
-                moduleCore.getId(mlETH, ceth), mlETH, "Merrill Lynch staked ETH - CETH", INITIAL_MINT_CAP
+                moduleCore.getId(mlETH, ceth, mlETH_CETH_expiry),
+                mlETH,
+                "Merrill Lynch staked ETH - CETH",
+                INITIAL_MINT_CAP
             )
         );
         liquidator.updateLiquidatorRole(address(hedgeUnitmlETH), true);

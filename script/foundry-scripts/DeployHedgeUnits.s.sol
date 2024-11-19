@@ -66,7 +66,10 @@ contract DeployScript is Script {
         // Deploy the HedgeUnit contract
         hedgeUnitwamuETH = HedgeUnit(
             hedgeUnitFactory.deployHedgeUnit(
-                moduleCore.getId(wamuETH, ceth), wamuETH, "Washington Mutual restaked ETH - CETH", INITIAL_MINT_CAP
+                moduleCore.getId(wamuETH, ceth, wamuETHExpiry),
+                wamuETH,
+                "Washington Mutual restaked ETH - CETH",
+                INITIAL_MINT_CAP
             )
         );
         liquidator.updateLiquidatorRole(address(hedgeUnitwamuETH), true);
@@ -74,7 +77,7 @@ contract DeployScript is Script {
 
         hedgeUnitbsETH = HedgeUnit(
             hedgeUnitFactory.deployHedgeUnit(
-                moduleCore.getId(bsETH, wamuETH),
+                moduleCore.getId(bsETH, wamuETH, bsETHExpiry),
                 bsETH,
                 "Bear Sterns Restaked ETH - Washington Mutual restaked ETH",
                 INITIAL_MINT_CAP
@@ -85,7 +88,7 @@ contract DeployScript is Script {
 
         hedgeUnitmlETH = HedgeUnit(
             hedgeUnitFactory.deployHedgeUnit(
-                moduleCore.getId(mlETH, bsETH),
+                moduleCore.getId(mlETH, bsETH, mlETHExpiry),
                 mlETH,
                 "Merrill Lynch staked ETH - Bear Sterns Restaked ETH",
                 INITIAL_MINT_CAP
@@ -96,7 +99,7 @@ contract DeployScript is Script {
 
         hedgeUnitfedUSD = HedgeUnit(
             hedgeUnitFactory.deployHedgeUnit(
-                moduleCore.getId(fedUSD, cUSD), fedUSD, "Fed Up USD - CUSD", INITIAL_MINT_CAP
+                moduleCore.getId(fedUSD, cUSD, fedUSDExpiry), fedUSD, "Fed Up USD - CUSD", INITIAL_MINT_CAP
             )
         );
         liquidator.updateLiquidatorRole(address(hedgeUnitfedUSD), true);
@@ -104,7 +107,10 @@ contract DeployScript is Script {
 
         hedgeUnitsvbUSD = HedgeUnit(
             hedgeUnitFactory.deployHedgeUnit(
-                moduleCore.getId(svbUSD, fedUSD), svbUSD, "Sillycoin Valley Bank USD - Fed Up USD", INITIAL_MINT_CAP
+                moduleCore.getId(svbUSD, fedUSD, svbUSDExpiry),
+                svbUSD,
+                "Sillycoin Valley Bank USD - Fed Up USD",
+                INITIAL_MINT_CAP
             )
         );
         liquidator.updateLiquidatorRole(address(hedgeUnitsvbUSD), true);
@@ -112,7 +118,7 @@ contract DeployScript is Script {
 
         hedgeUnitomgUSD = HedgeUnit(
             hedgeUnitFactory.deployHedgeUnit(
-                moduleCore.getId(omgUSD, svbUSD),
+                moduleCore.getId(omgUSD, svbUSD, omgUSDExpiry),
                 omgUSD,
                 "Own My Gold USD - Sillycoin Valley Bank USD",
                 INITIAL_MINT_CAP
