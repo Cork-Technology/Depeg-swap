@@ -22,7 +22,7 @@ contract FlashSwapTest is Helper {
     address public ct;
     address public ds;
 
-    function defaultInitialDsPrice() internal pure virtual override returns (uint256) {
+    function defaultInitialArp() internal pure virtual override returns (uint256) {
         return MERRYL_LYNCH_DEFAULT_INITIAL_DS_PRICE;
     }
 
@@ -69,37 +69,31 @@ contract FlashSwapTest is Helper {
 
     function test_buyBack() public virtual {
         uint256 prevDsId = dsId;
-        uint256 amountOutMin = flashSwapRouter.previewSwapRaforDs(currencyId, dsId, 1 ether);
 
         ra.approve(address(flashSwapRouter), type(uint256).max);
 
-        uint256 amountOut = flashSwapRouter.swapRaforDs(currencyId, dsId, 1 ether, 0);
-        uint256 hpaCummulated = flashSwapRouter.getHpaCumulated(currencyId);
-        uint256 vhpaCummulated = flashSwapRouter.getVhpaCumulated(currencyId);
-
-        // we fetch the hpa after expiry so that it's calculated
-        uint256 hpa = flashSwapRouter.getHpa(currencyId);
+        uint256 amountOut = flashSwapRouter.swapRaforDs(
+            currencyId, dsId, 1 ether, 0, DEFAULT_ADDRESS, bytes(""), 0, defaultBuyApproxParams()
+        );
 
         IPSMcore(moduleCore).updatePsmAutoSellStatus(currencyId, DEFAULT_ADDRESS, true);
 
-        amountOutMin = flashSwapRouter.previewSwapRaforDs(currencyId, dsId, 0.1 ether);
-
         // should fail, not enough liquidity
         vm.expectRevert();
-        uint256 amountOutSell = flashSwapRouter.previewSwapDsforRa(currencyId, dsId, 1000000 ether);
 
         // should work, even though there's insfuicient liquidity to sell the LV reserves
         uint256 lvReserveBefore = flashSwapRouter.getLvReserve(currencyId, dsId);
-        amountOutMin = flashSwapRouter.previewSwapRaforDs(currencyId, dsId, 100000 ether);
-        amountOut = flashSwapRouter.swapRaforDs(currencyId, dsId, 100000 ether, amountOutMin);
+        amountOut = flashSwapRouter.swapRaforDs(
+            currencyId, dsId, 100000 ether, 0, DEFAULT_ADDRESS, bytes(""), 0, defaultBuyApproxParams()
+        );
         uint256 lvReserveAfter = flashSwapRouter.getLvReserve(currencyId, dsId);
 
         vm.assertEq(lvReserveBefore, lvReserveAfter);
-        vm.assertEq(amountOut, amountOutMin);
 
         uint256 raBalanceBefore = ra.balanceOf(DEFAULT_ADDRESS);
         Asset(ds).approve(address(flashSwapRouter), 1000 ether);
-        amountOutSell = flashSwapRouter.swapDsforRa(currencyId, dsId, 1000 ether, 0);
+        uint256 amountOutSell =
+            flashSwapRouter.swapDsforRa(currencyId, dsId, 1000 ether, 0, DEFAULT_ADDRESS, bytes(""), 0);
         uint256 raBalanceAfter = ra.balanceOf(DEFAULT_ADDRESS);
 
         vm.assertEq(raBalanceAfter, raBalanceBefore + amountOutSell);
@@ -109,8 +103,9 @@ contract FlashSwapTest is Helper {
 
         // now if buy, it should sell from reserves
         lvReserveBefore = flashSwapRouter.getLvReserve(currencyId, dsId);
-        uint256 previewAmountOut = flashSwapRouter.previewSwapRaforDs(currencyId, dsId, 10 ether);
-        amountOut = flashSwapRouter.swapRaforDs(currencyId, dsId, 10 ether, 0);
+        amountOut = flashSwapRouter.swapRaforDs(
+            currencyId, dsId, 10 ether, 0, DEFAULT_ADDRESS, bytes(""), 0, defaultBuyApproxParams()
+        );
         lvReserveAfter = flashSwapRouter.getLvReserve(currencyId, dsId);
 
         vm.assertTrue(lvReserveAfter < lvReserveBefore);

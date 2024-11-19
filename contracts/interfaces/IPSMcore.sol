@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.24;
 
 import {Id} from "../libraries/Pair.sol";
@@ -9,6 +10,12 @@ import {IRepurchase} from "./IRepurchase.sol";
  * @notice IPSMcore interface for PSMCore contract
  */
 interface IPSMcore is IRepurchase {
+    /// @notice Emitted when the exchange rate is updated
+    /// @param id The PSM id
+    /// @param newRate The new rate
+    /// @param previousRate The previous rate
+    event RateUpdated(Id indexed id, uint256 newRate, uint256 previousRate);
+
     /// @notice Emitted when a user deposits assets into a given PSM
     /// @param Id The PSM id
     /// @param dsId The DS id
@@ -101,11 +108,7 @@ interface IPSMcore is IRepurchase {
     /// @param raAmount The amount of RA received
     /// @param swapAmount The amount of CT + DS swapped
     event Cancelled(
-        Id indexed Id,
-        uint256 indexed dsId,
-        address indexed redeemer,
-        uint256 raAmount,
-        uint256 swapAmount
+        Id indexed Id, uint256 indexed dsId, address indexed redeemer, uint256 raAmount, uint256 swapAmount
     );
 
     /// @notice Emitted when a Admin updates status of Deposit/Withdraw in the PSM / LV
@@ -151,19 +154,6 @@ interface IPSMcore is IRepurchase {
     function exchangeRate(Id id) external view returns (uint256 rates);
 
     /**
-     * @notice returns the amount of CT and DS tokens that will be received after deposit
-     * @param id the id of PSM
-     * @param amount the amount to be deposit
-     * @return ctReceived the amount of CT will be received
-     * @return dsReceived the amount of DS will be received
-     * @return dsId Id of DS
-     */
-    function previewDepositPsm(Id id, uint256 amount)
-        external
-        view
-        returns (uint256 ctReceived, uint256 dsReceived, uint256 dsId);
-
-    /**
      * @notice redeem RA with DS + PA
      * @param id The pair id
      * @param dsId The DS id
@@ -182,35 +172,6 @@ interface IPSMcore is IRepurchase {
     ) external returns (uint256 received, uint256 _exchangeRate, uint256 fee);
 
     /**
-     * @notice redeem RA with DS + PA
-     * @param id The pair id
-     * @param dsId The DS id
-     * @param amount The amount of DS + PA to redeem
-     * @return received The amount of RA user will get
-     * @return _exchangeRate The effective rate at the time of redemption
-     * @return fee The fee charged for redemption
-     */
-    function redeemRaWithDs(Id id, uint256 dsId, uint256 amount)
-        external
-        returns (uint256 received, uint256 _exchangeRate, uint256 fee);
-
-    /**
-     * @notice preview the amount of RA user will get when Redeem RA with DS+PA
-     * @param id The pair id
-     * @param dsId The DS id
-     * @param amount The amount of PA to redeem
-     * @return ra The amount of RA user will get
-     * @return ds The amount of DS user will have to provide
-     * @return fee The fee charged for redemption
-     * @return exchangeRates The effective rate at the time of redemption
-     * @return feePercentage The fee percentage charged for redemption
-     */
-    function previewRedeemRaWithDs(Id id, uint256 dsId, uint256 amount)
-        external
-        view
-        returns (uint256 ra, uint256 ds, uint256 fee, uint256 exchangeRates, uint256 feePercentage);
-
-    /**
      * @notice redeem RA + PA with CT at expiry
      * @param id The pair id
      * @param dsId The DS id
@@ -227,29 +188,6 @@ interface IPSMcore is IRepurchase {
         bytes memory rawCtPermitSig,
         uint256 deadline
     ) external returns (uint256 accruedPa, uint256 accruedRa);
-
-    /**
-     * @notice redeem RA + PA with CT at expiry
-     * @param id The pair id
-     * @param dsId The DS id
-     * @param amount The amount of CT to redeem
-     */
-    function redeemWithCT(Id id, uint256 dsId, uint256 amount)
-        external
-        returns (uint256 accruedPa, uint256 accruedRa);
-
-    /**
-     * @notice preview the amount of RA user will get when Redeem RA with CT+DS
-     * @param id The pair id
-     * @param dsId The DS id
-     * @param amount The amount of CT to redeem
-     * @return paReceived The amount of PA user will get
-     * @return raReceived The amount of RA user will get
-     */
-    function previewRedeemWithCt(Id id, uint256 dsId, uint256 amount)
-        external
-        view
-        returns (uint256 paReceived, uint256 raReceived);
 
     /**
      * @notice returns amount of ra user will get when Redeem RA with CT+DS
@@ -273,22 +211,6 @@ interface IPSMcore is IRepurchase {
     ) external returns (uint256 ra);
 
     /**
-     * @notice returns amount of ra user will get when Redeem RA with CT+DS
-     * @param id The PSM id
-     * @param amount amount user wants to redeem
-     * @return ra amount of RA user received
-     */
-    function redeemRaWithCtDs(Id id, uint256 amount) external returns (uint256 ra);
-
-    /**
-     * @notice returns amount of ra user will get when Redeem RA with CT+DS
-     * @param id The PSM id
-     * @param amount amount user wants to redeem
-     * @return ra amount of RA user will get
-     */
-    function previewRedeemRaWithCtDs(Id id, uint256 amount) external view returns (uint256 ra);
-
-    /**
      * @notice returns amount of value locked in LV
      * @param id The PSM id
      */
@@ -310,10 +232,6 @@ interface IPSMcore is IRepurchase {
         uint256 ctDeadline
     ) external returns (uint256 ctReceived, uint256 dsReceived, uint256 _exchangeRate, uint256 paReceived);
 
-    function rolloverCt(Id id, address owner, uint256 amount, uint256 prevDsId)
-        external
-        returns (uint256 ctReceived, uint256 dsReceived, uint256 _exchangeRate, uint256 paReceived);
-
     function claimAutoSellProfit(Id id, uint256 prevDsId, uint256 amount)
         external
         returns (uint256 profit, uint256 dsReceived);
@@ -321,4 +239,8 @@ interface IPSMcore is IRepurchase {
     function updatePsmAutoSellStatus(Id id, address user, bool status) external;
 
     function rolloverProfitRemaining(Id id, uint256 dsId) external view returns (uint256);
+
+    function psmAutoSellStatus(Id id) external view returns (bool);
+
+    function updateRate(Id id, uint256 newRate) external;
 }

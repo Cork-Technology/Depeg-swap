@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.24;
 
 import {Pair} from "./Pair.sol";
@@ -55,8 +56,8 @@ struct PsmPoolArchive {
 struct Balances {
     PsmRedemptionAssetManager ra;
     uint256 dsBalance;
-    uint256 ctBalance;
     uint256 paBalance;
+    uint256 ctBalance;
 }
 
 /**
@@ -110,11 +111,15 @@ struct VaultState {
     LvAsset lv;
     BitMaps.BitMap lpLiquidated;
     VaultPool pool;
-    uint256 initialDsPrice;
+    uint256 initialArp;
     // will be set to true after first deposit to LV.
     // to prevent manipulative behavior when depositing to Lv since we depend on preview redeem early to get
     // the correct exchange rate of LV
     bool initialized;
+    /// @notice the percentage of which the RA that user deposit will be split
+    /// e.g 40% means that 40% of the RA that user deposit will be splitted into CT and DS
+    /// the CT will be held in the vault while the DS is held in the vault reserve to be selled in the router
+    uint256 ctHeldPercetage;
     mapping(address => LvInternalBalance) userLvBalance;
 }
 

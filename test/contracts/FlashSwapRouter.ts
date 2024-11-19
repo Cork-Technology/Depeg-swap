@@ -161,6 +161,9 @@ describe("FlashSwapRouter", function () {
         pool.dsId!,
         dsAmount,
         BigInt(0),
+        defaultSigner.account.address,
+        "0x",
+        0n,
       ]);
 
       const event = await fixture.dsFlashSwapRouter.contract.getEvents
@@ -234,6 +237,9 @@ describe("FlashSwapRouter", function () {
         pool.dsId!,
         dsAmount,
         BigInt(0),
+        defaultSigner.account.address,
+        "0x",
+        0n,
       ]);
 
       const event = await fixture.dsFlashSwapRouter.contract.getEvents
@@ -288,7 +294,7 @@ describe("FlashSwapRouter", function () {
         psmAddress: fixture.dsFlashSwapRouter.contract.address,
         signer: defaultSigner,
       });
-
+      console.log("def", defaultSigner.account.address);
       await fixture.dsFlashSwapRouter.contract.write.swapRaforDs([
         pool.Id,
         pool.dsId!,
@@ -298,6 +304,7 @@ describe("FlashSwapRouter", function () {
         permitmsg,
         deadline,
       ]);
+      console.log("d");
 
       const event = await fixture.dsFlashSwapRouter.contract.getEvents
         .RaSwapped({
@@ -327,6 +334,9 @@ describe("FlashSwapRouter", function () {
         pool.dsId!,
         raProvided,
         BigInt(0),
+        defaultSigner.account.address,
+        "0x",
+        0n,
       ]);
 
       const event = await fixture.dsFlashSwapRouter.contract.getEvents
@@ -369,6 +379,9 @@ describe("FlashSwapRouter", function () {
         pool.dsId!,
         raProvided,
         BigInt(0),
+        defaultSigner.account.address,
+        "0x",
+        0n,
       ]);
 
       const event = await fixture.dsFlashSwapRouter.contract.getEvents

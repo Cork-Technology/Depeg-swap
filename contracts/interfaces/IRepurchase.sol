@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.24;
 
 import {Id} from "../libraries/Pair.sol";
@@ -72,28 +73,6 @@ interface IRepurchase {
             uint256 exchangeRates
         );
 
-    /**
-     * @notice returns the amount of pa and ds tokens that will be received after repurchasing
-     * @param id the id of PSM
-     * @param amount the amount of RA to use
-     * @return dsId the id of the DS
-     * @return receivedPa the amount of PA received
-     * @return receivedDs the amount of DS received
-     * @return feePercentage the fee in percentage
-     * @return fee the fee charged
-     * @return exchangeRates the effective DS exchange rate at the time of repurchase
-     */
-    function previewRepurchase(Id id, uint256 amount)
-        external
-        view
-        returns (
-            uint256 dsId,
-            uint256 receivedPa,
-            uint256 receivedDs,
-            uint256 feePercentage,
-            uint256 fee,
-            uint256 exchangeRates
-        );
 
     /**
      * @notice return the amount of available PA and DS to purchase.

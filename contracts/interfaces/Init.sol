@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.24;
 
 import {Id} from "../libraries/Pair.sol";
@@ -13,15 +14,22 @@ interface Initialize {
      * @param pa address of PA token(e.g stETH)
      * @param ra address of RA token(e.g WETH)
      * @param lvFee fees for Liquidity Vault early withdrawal, make sure it has 18 decimals(e.g 1% = 1e18)
-     * @param initialDsPrice initial target price of DS, will be used to derive optimal ratio to provide AMM from liquidity vault, make sure it has 18 decimals(e.g 0.1 = 1e17)
-     *
+     * @param initialArp initial assets ARP. the initial ds price will be derived from this value. must be in 18 decimals(e.g 1% = 1e18)
+     * @param psmBaseRedemptionFeePercentage base redemption fee for PSM, make sure it has 18 decimals(e.g 1% = 1e18)
+     * @param expiryInterval expiry interval for DS, this will be used to calculate the next expiry time for DS(block.timestamp + expiryInterval)
      */
-    function initializeModuleCore(address pa, address ra, uint256 lvFee, uint256 initialDsPrice, uint256 _psmBaseRedemptionFeePercentage) external;
+    function initializeModuleCore(
+        address pa,
+        address ra,
+        uint256 lvFee,
+        uint256 initialArp,
+        uint256 psmBaseRedemptionFeePercentage,
+        uint256 expiryInterval
+    ) external;
 
     /**
      * @notice issue a new DS, can only be done after the previous DS has expired(if any). will deploy CT, DS and initialize new AMM and increment ds Id
      * @param id the id of the pair
-     * @param expiry time in seconds after which the DS will expire
      * @param exchangeRates the exchange rate of the DS, token that are non-rebasing MUST set this to 1e18, and rebasing tokens should set this to the current exchange rate in the market
      * @param repurchaseFeePercentage the repurchase fee for the DS, make sure it has 18 decimals(e.g 1% = 1e18)
      * @param decayDiscountRateInDays the decay discount rate in days, make sure it has 18 decimals(e.g 1% = 1e18)
@@ -29,7 +37,6 @@ interface Initialize {
      */
     function issueNewDs(
         Id id,
-        uint256 expiry,
         uint256 exchangeRates,
         uint256 repurchaseFeePercentage,
         uint256 decayDiscountRateInDays,
