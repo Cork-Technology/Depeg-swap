@@ -89,6 +89,8 @@ interface IDsFlashSwapCore is IDsFlashSwapUtility {
     struct BuyAprroxParams {
         /// @dev the maximum amount of iterations to find the optimal amount of DS to swap, 256 is a good number
         uint256 maxApproxIter;
+        /// @dev the maximum amount of iterations to find the optimal RA borrow amount(needed because of the fee, if any)
+        uint256 maxFeeIter;
         /// @dev the amount that will be used to subtract borrowed amount to find the optimal amount for borrowing RA
         /// the lower the value, the more accurate the approximation will be but will be more expensive
         /// when in doubt use 0.01 ether or 1e16
@@ -96,7 +98,10 @@ interface IDsFlashSwapCore is IDsFlashSwapUtility {
         /// @dev the threshold tolerance that's used to find the optimal DS amount
         /// when in doubt use 1e9
         uint256 epsilon;
+        /// @dev the threshold tolerance that's used to find the optimal RA amount to borrow, the smaller, the more accurate but more gas intensive it will be
+        uint256 feeEpsilon;
     }
+
     /**
      * @notice Emitted when DS is swapped for RA
      * @param reserveId the reserve id same as the id on PSM and LV
