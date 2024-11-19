@@ -166,6 +166,7 @@ contract DeployScript is Script {
 
         // Deploy the HedgeUnitFactry contract
         hedgeUnitFactory = new HedgeUnitFactory(address(moduleCore), address(liquidator));
+        hedgeUnitFactory.updateLiquidatorRole(msg.sender, true);
         console.log("HedgeUnit Factory               : ", address(hedgeUnitFactory));
         console.log("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-");
 
