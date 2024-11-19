@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.24;
+pragma solidity ^0.8.24;
 
 import {Helper} from "./Helper.sol";
 import {HedgeUnit} from "../../contracts/core/assets/HedgeUnit.sol";
