@@ -7,7 +7,7 @@ import "forge-std/console.sol";
 
 contract ArpMath is Test {
     function test_fixedCtPrice() external {
-        uint256 arp = 5 ether;
+        uint256 arp = 0.05 ether;
 
         uint256 ratio = unwrap(SwapperMathLibrary.calcPtConstFixed(ud(arp)));
 

@@ -13,7 +13,7 @@ contract RolloverTest is Helper {
     DummyWETH internal pa;
     Id public currencyId;
 
-    uint256 public DEFAULT_DEPOSIT_AMOUNT = 1900 ether;
+    uint256 public DEFAULT_DEPOSIT_AMOUNT = 2050 ether;
 
     uint256 public dsId;
 
@@ -259,6 +259,9 @@ contract RolloverTest is Helper {
 
         ra.approve(address(flashSwapRouter), 100 ether);
 
+        uint256 expiry = Asset(ds).expiry();
+        vm.warp(expiry - 100);
+
         uint256 amountOut = flashSwapRouter.swapRaforDs(
             currencyId, dsId, 1 ether, 0, DEFAULT_ADDRESS_ROLLOVER, bytes(""), 0, defaultBuyApproxParams()
         );
@@ -275,7 +278,8 @@ contract RolloverTest is Helper {
         vm.assertNotEq(HiyaCummulated, 0);
 
         // take into account the discount rate, so it won't be exactly 0.1 ether
-        vm.assertApproxEqAbs(Hiya, 0.1 ether, 0.002 ether);
+        // expected to be around 1% ARP
+        vm.assertApproxEqAbs(Hiya, 0.017103690021973857 ether, 0.01 ether);
 
         IPSMcore(moduleCore).updatePsmAutoSellStatus(currencyId, DEFAULT_ADDRESS_ROLLOVER, true);
 
@@ -288,14 +292,17 @@ contract RolloverTest is Helper {
 
         vm.assertEq(true, flashSwapRouter.isRolloverSale(currencyId, dsId));
 
+        // based on the Hiya = 0.017103690021973857 (~1% ARP)
+        uint256 expectedHPA = 0.016816073119943497 ether;
+
         amountOut = flashSwapRouter.swapRaforDs(
-            currencyId, dsId, Hiya, 0, DEFAULT_ADDRESS_ROLLOVER, bytes(""), 0, defaultBuyApproxParams()
+            currencyId, dsId, expectedHPA, 0, DEFAULT_ADDRESS_ROLLOVER, bytes(""), 0, defaultBuyApproxParams()
         );
 
         vm.assertEq(amountOut, 1 ether);
 
         amountOut = flashSwapRouter.swapRaforDs(
-            currencyId, dsId, Hiya * 10, 0, DEFAULT_ADDRESS_ROLLOVER, bytes(""), 0, defaultBuyApproxParams()
+            currencyId, dsId, expectedHPA * 10, 0, DEFAULT_ADDRESS_ROLLOVER, bytes(""), 0, defaultBuyApproxParams()
         );
 
         vm.assertEq(amountOut, 10 ether);
