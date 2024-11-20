@@ -356,6 +356,9 @@ describe("CorkConfig", function () {
           fixture.Id,
           dsId!,
           depositAmount,
+          defaultSigner.account.address,
+          "0x",
+          0n,
         ])
       ).to.be.rejectedWith("PSMWithdrawalPaused()");
 
@@ -380,6 +383,9 @@ describe("CorkConfig", function () {
           fixture.Id,
           dsId!,
           depositAmount,
+          defaultSigner.account.address,
+          "0x",
+          0n,
         ])
       ).to.be.rejectedWith("PSMWithdrawalPaused()");
 
@@ -392,7 +398,15 @@ describe("CorkConfig", function () {
       ).to.be.rejectedWith("PSMWithdrawalPaused()");
 
       await expect(
-        fixture.moduleCore.write.redeemRaWithCtDs([fixture.Id, parseEther("2")])
+        fixture.moduleCore.write.redeemRaWithCtDs([
+          fixture.Id,
+          parseEther("2"),
+          defaultSigner.account.address,
+          "0x",
+          0n,
+          "0x",
+          0n,
+        ])
       ).to.be.rejectedWith("PSMWithdrawalPaused()");
 
       await expect(
@@ -403,7 +417,12 @@ describe("CorkConfig", function () {
       ).to.be.rejectedWith("PSMWithdrawalPaused()");
 
       await expect(
-        fixture.moduleCore.write.depositLv([fixture.Id, parseEther("2"), 0n, 0n])
+        fixture.moduleCore.write.depositLv([
+          fixture.Id,
+          parseEther("2"),
+          0n,
+          0n,
+        ])
       ).to.be.rejectedWith("LVDepositPaused()");
 
       await expect(
@@ -412,11 +431,18 @@ describe("CorkConfig", function () {
 
       await expect(
         fixture.moduleCore.write.redeemEarlyLv([
-          fixture.Id,
+          {
+            id: fixture.Id, // Id
+            receiver: defaultSigner.account.address, // receiver
+            amount: parseEther("1"), // amount
+            amountOutMin: preview, // amountOutMin
+            ammDeadline: BigInt(helper.expiry(1000000)), // ammDeadline
+          },
           defaultSigner.account.address,
-          parseEther("1"),
-          preview,
-          BigInt(helper.expiry(1000000)),
+          {
+            deadline: BigInt("0"),
+            rawLvPermitSig: "0x",
+          },
         ])
       ).to.be.rejectedWith("LVWithdrawalPaused()");
     });

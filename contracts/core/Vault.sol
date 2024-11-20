@@ -49,64 +49,22 @@ abstract contract VaultCore is ModuleState, Context, IVault {
 
     /**
      * @notice Redeem lv before expiry
-     * @param id The Module id that is used to reference both psm and lv of a given pair
+     * @param redeemParams The object with details like id, reciever, amount, amountOutMin, ammDeadline
      * @param redeemer The address of the redeemer
-     * @param receiver The address of the receiver
-     * @param amount The amount of the asset to be redeemed
-     * @param rawLvPermitSig Raw signature for LV approval permit
-     * @param deadline deadline for Approval permit signature
-     * @param amountOutMin The minimum amount of the asset to be received
+     * @param permitParams The object with details for permit like rawLvPermitSig(Raw signature for LV approval permit) and deadline for signature
      */
-    function redeemEarlyLv(
-        Id id,
-        address redeemer,
-        address receiver,
-        uint256 amount,
-        bytes memory rawLvPermitSig,
-        uint256 deadline,
-        uint256 amountOutMin,
-        uint256 ammDeadline
-    )
+    function redeemEarlyLv(RedeemEarlyParams memory redeemParams, address redeemer, PermitParams memory permitParams)
         external
         override
         nonReentrant
-        LVWithdrawalNotPaused(id)
-        returns (uint256 received, uint256 fee, uint256 feePercentage)
+        LVWithdrawalNotPaused(redeemParams.id)
+        returns (uint256 received, uint256 fee, uint256 feePercentage, uint256 paAmount)
     {
-        (received, fee, feePercentage) = states[id].redeemEarly(
-            _msgSender(),
-            receiver,
-            amount,
-            getRouterCore(),
-            getAmmRouter(),
-            rawLvPermitSig,
-            deadline,
-            amountOutMin,
-            ammDeadline
-        );
+        Routers memory routers = Routers({flashSwapRouter: getRouterCore(), ammRouter: getAmmRouter()});
+        (received, fee, feePercentage, paAmount) =
+            states[redeemParams.id].redeemEarly(redeemer, redeemParams, routers, permitParams);
 
-        emit LvRedeemEarly(id, redeemer, receiver, received, fee, feePercentage);
-    }
-
-    /**
-     * @notice Redeem lv before expiry
-     * @param id The Module id that is used to reference both psm and lv of a given pair
-     * @param receiver The address of the receiver
-     * @param amount The amount of the asset to be redeemed
-     * @param amountOutMin The minimum amount of the asset to be received
-     */
-    function redeemEarlyLv(Id id, address receiver, uint256 amount, uint256 amountOutMin, uint256 ammDeadline)
-        external
-        override
-        nonReentrant
-        LVWithdrawalNotPaused(id)
-        returns (uint256 received, uint256 fee, uint256 feePercentage)
-    {
-        (received, fee, feePercentage) = states[id].redeemEarly(
-            _msgSender(), receiver, amount, getRouterCore(), getAmmRouter(), bytes(""), 0, amountOutMin, ammDeadline
-        );
-
-        emit LvRedeemEarly(id, _msgSender(), receiver, received, fee, feePercentage);
+        emit LvRedeemEarly(redeemParams.id, redeemer, redeemParams.receiver, received, fee, feePercentage);
     }
 
     /**
@@ -119,10 +77,10 @@ abstract contract VaultCore is ModuleState, Context, IVault {
         view
         override
         LVWithdrawalNotPaused(id)
-        returns (uint256 received, uint256 fee, uint256 feePercentage)
+        returns (uint256 received, uint256 fee, uint256 feePercentage, uint256 paAmount)
     {
         State storage state = states[id];
-        (received, fee, feePercentage) = state.previewRedeemEarly(amount, getRouterCore());
+        (received, fee, feePercentage, paAmount) = state.previewRedeemEarly(amount, getRouterCore());
     }
 
     /**

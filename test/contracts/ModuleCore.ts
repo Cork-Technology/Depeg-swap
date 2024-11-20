@@ -40,6 +40,10 @@ describe("Module Core", function () {
     return await hre.viem.getContractAt("CorkConfig", address);
   };
 
+  const getDs = async (address: Address) => {
+    return await hre.viem.getContractAt("Asset", address);
+  };
+
   before(async () => {
     const __signers = await hre.viem.getWalletClients();
     ({ defaultSigner, secondSigner, signers } = helper.getSigners(__signers));
@@ -289,6 +293,9 @@ describe("Module Core", function () {
       expect(events[0].args.expiry).to.equal(BigInt(expiryTime));
       expect(events[0].args.ds).to.equal(assets[1]);
       expect(events[0].args.ct).to.equal(assets[0]);
+
+      let ds = await getDs(assets[1]);
+      expect(await ds.read.dsId()).to.equal(1n);
     });
 
     it("initialize should revert when AlreadyInitialized", async function () {
@@ -531,4 +538,23 @@ describe("Module Core", function () {
       ).to.be.rejectedWith("OnlyConfigAllowed()");
     });
   });
+
+  describe("expiry", function () {
+    it("should return the correct expiry time for a given ID", async function () {
+      const currentTime = await time.latest();
+      const expiryTime = currentTime + 86400; 
+      await corkConfig.write.issueNewDs([
+        fixture.Id,
+        BigInt(expiryTime),
+        parseEther("1"),
+        parseEther("5"),
+        parseEther("1"),
+        10n,
+        BigInt(helper.expiry(1000000)),
+      ]);
+      const expectedExpiry = await moduleCore.read.expiry([fixture.Id]);
+      expect(expectedExpiry).to.equal(BigInt(expiryTime));
+    });
+  });
+   
 });

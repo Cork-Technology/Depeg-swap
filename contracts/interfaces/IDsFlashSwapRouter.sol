@@ -163,14 +163,7 @@ interface IDsFlashSwapCore is IDsFlashSwapUtility {
      * @param ra the address of RA token
      * @param ct the address of CT token
      */
-    function onNewIssuance(
-        Id reserveId,
-        uint256 dsId,
-        address ds,
-        address pair,
-        address ra,
-        address ct
-    ) external;
+    function onNewIssuance(Id reserveId, uint256 dsId, address ds, address pair, address ra, address ct) external;
 
     /**
      * @notice set the discount rate rate and rollover for the new issuance
@@ -227,9 +220,15 @@ interface IDsFlashSwapCore is IDsFlashSwapUtility {
      * @param amountOutMin the minimum amount of DS to receive, will revert if the actual amount is less than this. should be inserted with value from previewSwapRaforDs
      * @return amountOut amount of DS that's received
      */
-    function swapRaforDs(Id reserveId, uint256 dsId, uint256 amount, uint256 amountOutMin)
-        external
-        returns (uint256 amountOut);
+    function swapRaforDs(
+        Id reserveId,
+        uint256 dsId,
+        uint256 amount,
+        uint256 amountOutMin,
+        address user,
+        bytes memory rawRaPermitSig,
+        uint256 deadline
+    ) external returns (uint256 amountOut);
 
     /**
      * @notice Preview the amount of DS that will be received from swapping RA
@@ -248,9 +247,15 @@ interface IDsFlashSwapCore is IDsFlashSwapUtility {
      * @param amountOutMin the minimum amount of RA to receive, will revert if the actual amount is less than this. should be inserted with value from previewSwapDsforRa
      * @return amountOut amount of RA that's received
      */
-    function swapDsforRa(Id reserveId, uint256 dsId, uint256 amount, uint256 amountOutMin)
-        external
-        returns (uint256 amountOut);
+    function swapDsforRa(
+        Id reserveId,
+        uint256 dsId,
+        uint256 amount,
+        uint256 amountOutMin,
+        address user,
+        bytes memory rawDsPermitSig,
+        uint256 deadline
+    ) external returns (uint256 amountOut);
 
     /**
      * @notice Preview the amount of RA that will be received from swapping DS

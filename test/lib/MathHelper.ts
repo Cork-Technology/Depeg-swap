@@ -19,13 +19,10 @@ describe("Math Helper", function () {
       const ratio = parseEther("0.5");
       const amount = parseEther("10");
 
-      const defaultCtPrice = parseEther("1");
-
       const [wa, ct] =
         await contract.read.calculateProvideLiquidityAmountBasedOnCtPrice([
           amount,
           ratio,
-          defaultCtPrice,
         ]);
 
       // since it costs a half of whatever ct here, it essentially boils down
@@ -43,13 +40,11 @@ describe("Math Helper", function () {
       // ct price
       const ratio = parseEther("2");
       const amount = parseEther("10");
-      const defaultCtPrice = parseEther("1");
 
       const [wa, ct] =
         await contract.read.calculateProvideLiquidityAmountBasedOnCtPrice([
           amount,
           ratio,
-          defaultCtPrice,
         ]);
 
       // this is just basically a reverse from the above with some imprecision of ~0,000000000000000001
@@ -109,13 +104,11 @@ describe("Math Helper", function () {
       expect(ratio).to.equal(expectedRatio);
 
       const amount = parseEther("10");
-      const defaultCtPrice = parseEther("1");
 
       const [wa, ct] =
         await contract.read.calculateProvideLiquidityAmountBasedOnCtPrice([
           amount,
           ratio,
-          defaultCtPrice,
         ]);
 
       expect(ct).to.equal(parseEther("2"));
