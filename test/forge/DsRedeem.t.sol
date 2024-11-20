@@ -61,7 +61,7 @@ contract VaultRedeemTest is Helper {
         vm.assertEq(ra, redeemAmount - fee);
 
         uint256 received;
-        (received,, fee) = moduleCore.redeemRaWithDs(currencyId, dsId, redeemAmount, DEFAULT_ADDRESS, bytes(""), 0);
+        (received,, fee) = moduleCore.redeemRaWithDs(currencyId, dsId, redeemAmount);
         vm.assertEq(received, ra);
         vm.assertEq(fee, expectedFee);
     }

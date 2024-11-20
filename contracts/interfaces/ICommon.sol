@@ -51,6 +51,9 @@ interface ICommon {
     /// @notice Thrown this error when fees are more than 5%
     error InvalidFees();
 
+    /// @notice Revert when Signature is valid or signature deadline is incorrect
+    error InvalidSignature();
+
     /// @notice Emitted when a new LV and PSM is initialized with a given pair
     /// @param id The PSM id
     /// @param pa The address of the pegged asset

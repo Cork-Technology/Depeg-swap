@@ -195,6 +195,7 @@ describe("PSM core", function () {
         erc20contractAddress: ds!,
         psmAddress: fixture.moduleCore.address,
         signer: defaultSigner,
+        functionName: "redeemRaWithDs",
       });
 
       await fixture.moduleCore.write.redeemRaWithDs([
@@ -252,9 +253,6 @@ describe("PSM core", function () {
         fixture.Id,
         dsId!,
         parseEther("10"),
-        defaultSigner.account.address,
-        "0x",
-        0n,
       ]);
 
       const event = await fixture.moduleCore.getEvents.DsRedeemed({
@@ -292,6 +290,7 @@ describe("PSM core", function () {
         erc20contractAddress: ct!,
         psmAddress: fixture.moduleCore.address,
         signer: defaultSigner,
+        functionName: "redeemWithCT",
       });
 
       const [_, raReceivedPreview] =
@@ -356,9 +355,6 @@ describe("PSM core", function () {
         fixture.Id,
         dsId!,
         redeemAmount,
-        defaultSigner.account.address,
-        "0x",
-        0n,
       ]);
 
       const event = await fixture.moduleCore.getEvents.CtRedeemed({
@@ -429,6 +425,7 @@ describe("PSM core", function () {
         erc20contractAddress: ds!,
         psmAddress: fixture.moduleCore.address,
         signer: defaultSigner,
+        functionName: "redeemRaWithDs",
       });
 
       await fixture.moduleCore.write.redeemRaWithDs([
@@ -522,6 +519,7 @@ describe("PSM core", function () {
         erc20contractAddress: ds!,
         psmAddress: fixture.moduleCore.address,
         signer: defaultSigner,
+        functionName: "redeemRaWithCtDs",
       });
       const msgPermit2 = await helper.permit({
         amount: parseEther("1"),
@@ -529,6 +527,7 @@ describe("PSM core", function () {
         erc20contractAddress: ct!,
         psmAddress: fixture.moduleCore.address,
         signer: defaultSigner,
+        functionName: "redeemRaWithCtDs",
       });
 
       await fixture.moduleCore.write.redeemRaWithCtDs([
@@ -611,11 +610,6 @@ describe("PSM core", function () {
       await fixture.moduleCore.write.redeemRaWithCtDs([
         fixture.Id,
         parseEther("1"),
-        defaultSigner.account.address,
-        "0x",
-        0n,
-        "0x",
-        0n,
       ]);
 
       const events = await fixture.moduleCore.getEvents.Cancelled({
@@ -703,6 +697,7 @@ describe("PSM core", function () {
         erc20contractAddress: ds!,
         psmAddress: fixture.moduleCore.address,
         signer: defaultSigner,
+        functionName: "redeemRaWithDs",
       });
 
       await fixture.moduleCore.write.redeemRaWithDs([
@@ -785,6 +780,7 @@ describe("PSM core", function () {
         erc20contractAddress: ds!,
         psmAddress: fixture.moduleCore.address,
         signer: defaultSigner,
+        functionName: "redeemRaWithDs",
       });
 
       await fixture.moduleCore.write.redeemRaWithDs([
@@ -846,6 +842,7 @@ describe("PSM core", function () {
         erc20contractAddress: ds!,
         psmAddress: fixture.moduleCore.address,
         signer: defaultSigner,
+        functionName: "redeemRaWithDs",
       });
 
       await fixture.moduleCore.write.redeemRaWithDs([
@@ -885,6 +882,7 @@ describe("PSM core", function () {
         erc20contractAddress: ct!,
         psmAddress: fixture.moduleCore.address,
         signer: defaultSigner,
+        functionName: "redeemWithCT",
       });
 
       await fixture.moduleCore.write.redeemWithCT([
@@ -1029,6 +1027,7 @@ describe("PSM core", function () {
         erc20contractAddress: ct!,
         psmAddress: fixture.moduleCore.address,
         signer: defaultSigner,
+        functionName: "redeemWithCT",
       });
 
       await time.increaseTo(newExpiry);
@@ -1129,6 +1128,7 @@ describe("PSM core", function () {
         erc20contractAddress: ds!,
         psmAddress: fixture.moduleCore.address,
         signer: defaultSigner,
+        functionName: "redeemRaWithDs",
       });
 
       await fixture.moduleCore.write.redeemRaWithDs([
@@ -1243,9 +1243,6 @@ describe("PSM core", function () {
         fixture.Id,
         dsId!,
         parseEther("9.987"),
-        defaultSigner.account.address,
-        "0x",
-        0n,
       ]);
       [availablePa, availableDs] =
         await fixture.moduleCore.read.availableForRepurchase([fixture.Id]);

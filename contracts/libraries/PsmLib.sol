@@ -73,12 +73,12 @@ library PsmLibrary {
         IDsFlashSwapCore flashSwapRouter,
         bytes memory rawCtPermitSig,
         uint256 ctDeadline
-    ) external returns (uint256 ctReceived, uint256 dsReceived, uint256 _exchangeRate, uint256 paReceived) {
+    ) external returns (uint256 ctReceived, uint256 dsReceived, uint256 paReceived) {
         if (rawCtPermitSig.length > 0 && ctDeadline != 0) {
-            DepegSwapLibrary.permit(self.ds[dsId].ct, rawCtPermitSig, owner, address(this), amount, ctDeadline);
+            DepegSwapLibrary.permit(self.ds[dsId].ct, rawCtPermitSig, owner, address(this), amount, ctDeadline, "rolloverCt");
         }
 
-        (ctReceived, dsReceived, _exchangeRate, paReceived) = _rolloverCt(self, owner, amount, dsId, flashSwapRouter);
+        (ctReceived, dsReceived, paReceived) = _rolloverCt(self, owner, amount, dsId, flashSwapRouter);
     }
 
     function claimAutoSellProfit(
@@ -106,7 +106,7 @@ library PsmLibrary {
         uint256 amount,
         uint256 prevDsId,
         IDsFlashSwapCore flashSwapRouter
-    ) internal returns (uint256 ctReceived, uint256 dsReceived, uint256 _exchangeRate, uint256 paReceived) {
+    ) internal returns (uint256 ctReceived, uint256 dsReceived, uint256 paReceived) {
         if (prevDsId == self.globalAssetIdx) {
             revert NoActiveIssuance();
         }
@@ -332,6 +332,21 @@ library PsmLibrary {
         ds.issue(address(this), received);
     }
 
+    function _handleExpiredDsRedeem(PsmPoolArchive storage archive, uint256 amount)
+        internal
+        returns (uint256 accruedRa)
+    {
+        uint256 totalCtIssued = archive.ctAttributed;
+
+        (, accruedRa) = _calcRedeemAmount(amount, totalCtIssued, archive.raAccrued, archive.paAccrued);
+
+        // because the PSM treats all CT issued(including to itself) as redeemable, we need to decrease the total amount of CT issued
+        archive.ctAttributed -= amount;
+        archive.raAccrued -= accruedRa;
+
+        return accruedRa;
+    }
+
     function lvRedeemRaWithCtDs(State storage self, uint256 amount, uint256 dsId) internal returns (uint256 ra) {
         // separate if its hasnt been separated and is expired, if expired withdraw from archive, if not, decrease locked RA
 
@@ -344,16 +359,13 @@ library PsmLibrary {
             _separateLiquidity(self, dsId);
             PsmPoolArchive storage archive = self.psm.poolArchive[dsId];
 
-            // because the PSM treats all CT issued(including to itself) as redeemable, we need to decrease the total amount of CT issued
-            archive.ctAttributed -= amount;
-            archive.raAccrued -= ra;
+            ra = _handleExpiredDsRedeem(archive, amount);
         } else {
             // else we just decrease the locked RA, since all the RA is still locked state(will turn to attributed when separated at liquidity)
             // this'll happen when someone redeem early
             self.psm.balances.ra.decLocked(ra);
+            ds.burnBothforSelf(amount);
         }
-
-        ds.burnBothforSelf(amount);
     }
 
     function lvRedeemRaPaWithCt(State storage self, uint256 amount, uint256 dsId)
@@ -418,8 +430,8 @@ library PsmLibrary {
         Guard.safeBeforeExpired(ds);
 
         if (dsDeadline != 0 && ctDeadline != 0) {
-            DepegSwapLibrary.permit(ds._address, rawDsPermitSig, owner, address(this), amount, dsDeadline);
-            DepegSwapLibrary.permit(ds.ct, rawCtPermitSig, owner, address(this), amount, ctDeadline);
+            DepegSwapLibrary.permit(ds._address, rawDsPermitSig, owner, address(this), amount, dsDeadline, "redeemRaWithCtDs");
+            DepegSwapLibrary.permit(ds.ct, rawCtPermitSig, owner, address(this), amount, ctDeadline, "redeemRaWithCtDs");
         }
 
         ra = _redeemRaWithCtDs(self, ds, owner, amount);
@@ -503,8 +515,8 @@ library PsmLibrary {
             revert IRepurchase.InsufficientLiquidity(available, receivedPa);
         }
 
-        if (receivedDs > self.psm.balances.ra.locked) {
-            revert IRepurchase.InsufficientLiquidity(amount, self.psm.balances.ra.locked);
+        if (receivedDs > self.psm.balances.dsBalance) {
+            revert IRepurchase.InsufficientLiquidity(amount, self.psm.balances.dsBalance);
         }
     }
 
@@ -609,7 +621,7 @@ library PsmLibrary {
         (received, dsProvided, fee, _exchangeRate) = previewRedeemWithDs(self, dsId, amount);
 
         if (deadline != 0) {
-            DepegSwapLibrary.permit(ds._address, rawDsPermitSig, owner, address(this), dsProvided, deadline);
+            DepegSwapLibrary.permit(ds._address, rawDsPermitSig, owner, address(this), dsProvided, deadline, "redeemRaWithDs");
         }
 
         _redeemDs(self.psm.balances, amount, dsProvided);
@@ -698,7 +710,7 @@ library PsmLibrary {
         DepegSwap storage ds = self.ds[dsId];
         Guard.safeAfterExpired(ds);
         if (deadline != 0) {
-            DepegSwapLibrary.permit(ds.ct, rawCtPermitSig, owner, address(this), amount, deadline);
+            DepegSwapLibrary.permit(ds.ct, rawCtPermitSig, owner, address(this), amount, deadline, "redeemWithCT");
         }
         _separateLiquidity(self, dsId);
 
