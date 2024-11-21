@@ -1,6 +1,6 @@
 import "./../../Helper.sol";
 
-contract rateTest is Helper {
+contract whitelistTest is Helper {
     uint256 amount = 1 ether;
 
     address constant DUMMY_LIQUIDATOR_ADDRESS = address(420);
