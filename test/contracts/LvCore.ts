@@ -157,6 +157,7 @@ describe("LvCore", function () {
         erc20contractAddress: fixture.lv.address!,
         psmAddress: moduleCore.address,
         signer: defaultSigner,
+        functionName: "redeemEarlyLv",
       });
 
       const [preview, , ,] = await moduleCore.read.previewRedeemEarlyLv([
@@ -169,7 +170,6 @@ describe("LvCore", function () {
           {
             // RedeemEarlyParams
             id: Id, // Id
-            receiver: defaultSigner.account.address, // receiver
             amount: redeemAmount, // amount
             amountOutMin: preview, // amountOutMin
             ammDeadline: BigInt(helper.expiry(1000000)), // ammDeadline
@@ -188,7 +188,6 @@ describe("LvCore", function () {
       const event = await moduleCore.getEvents
         .LvRedeemEarly({
           Id: Id,
-          receiver: defaultSigner.account.address,
           redeemer: defaultSigner.account.address,
         })
         .then((e) => e[0]);
@@ -235,21 +234,14 @@ describe("LvCore", function () {
       await moduleCore.write.redeemEarlyLv([
         {
           id: Id, // Id
-          receiver: defaultSigner.account.address, // receiver
           amount: redeemAmount, // amount
           amountOutMin: preview, // amountOutMin
           ammDeadline: BigInt(helper.expiry(1000000)), // ammDeadline
-        },
-        defaultSigner.account.address,
-        {
-          rawLvPermitSig: "0x",
-          deadline: 0n,
         },
       ]);
       const event = await moduleCore.getEvents
         .LvRedeemEarly({
           Id: Id,
-          receiver: defaultSigner.account.address,
           redeemer: defaultSigner.account.address,
         })
         .then((e) => e[0]);
@@ -281,6 +273,7 @@ describe("LvCore", function () {
         erc20contractAddress: fixture.lv.address!,
         psmAddress: moduleCore.address,
         signer: secondSigner,
+        functionName: "redeemEarlyLv",
       });
 
       // don't actually matter right now
@@ -293,7 +286,6 @@ describe("LvCore", function () {
             {
               // RedeemEarlyParams
               id: Id, // Id
-              receiver: defaultSigner.account.address, // receiver
               amount: redeemAmount, // amount
               amountOutMin: preview, // amountOutMin
               ammDeadline: BigInt(helper.expiry(1000000)), // ammDeadline
@@ -314,15 +306,9 @@ describe("LvCore", function () {
         moduleCore.write.redeemEarlyLv([
           {
             id: Id, // Id
-            receiver: defaultSigner.account.address, // receiver
             amount: redeemAmount, // amount
             amountOutMin: preview, // amountOutMin
             ammDeadline: BigInt(helper.expiry(1000000)), // ammDeadline
-          },
-          defaultSigner.account.address,
-          {
-            rawLvPermitSig: msgPermit,
-            deadline: deadline,
           },
         ])
       ).to.be.rejectedWith("LVWithdrawalPaused()");
@@ -343,15 +329,9 @@ describe("LvCore", function () {
       moduleCore.write.redeemEarlyLv([
         {
           id: Id, // Id
-          receiver: defaultSigner.account.address, // receiver
           amount: redeemAmount, // amount
           amountOutMin: preview + 1n, // amountOutMin
           ammDeadline: BigInt(helper.expiry(1000000)), // ammDeadline
-        },
-        defaultSigner.account.address,
-        {
-          rawLvPermitSig: "0x",
-          deadline: 0n,
         },
       ])
     ).to.be.rejected;
@@ -371,22 +351,15 @@ describe("LvCore", function () {
     await moduleCore.write.redeemEarlyLv([
       {
         id: Id, // Id
-        receiver: defaultSigner.account.address, // receiver
         amount: redeemAmount, // amount
         amountOutMin: preview, // amountOutMin
         ammDeadline: BigInt(helper.expiry(1000000)), // ammDeadline
-      },
-      defaultSigner.account.address,
-      {
-        rawLvPermitSig: "0x",
-        deadline: 0n,
       },
     ]);
 
     const event = await moduleCore.getEvents
       .LvRedeemEarly({
         Id: Id,
-        receiver: defaultSigner.account.address,
         redeemer: defaultSigner.account.address,
       })
       .then((e) => e[0]);

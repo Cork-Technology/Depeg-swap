@@ -69,6 +69,10 @@ contract RouterState is
         _;
     }
 
+    constructor() {
+        _disableInitializers();
+    }
+
     function updateDiscountRateInDdays(Id id, uint256 discountRateInDays) external override onlyConfig {
         reserves[id].decayDiscountRateInDays = discountRateInDays;
     }
@@ -345,15 +349,17 @@ contract RouterState is
         uint256 deadline,
         BuyAprroxParams memory params
     ) external returns (uint256 amountOut) {
+        if (rawRaPermitSig.length == 0 || deadline == 0) {
+            revert InvalidSignature();
+        }
         ReserveState storage self = reserves[reserveId];
         AssetPair storage assetPair = self.ds[dsId];
 
-        if (rawRaPermitSig.length > 0 && deadline != 0) {
-            if (!DsFlashSwaplibrary.isRAsupportsPermit(address(assetPair.ra))) {
-                revert PermitNotSupported();
-            }
-            DepegSwapLibrary.permit(address(assetPair.ra), rawRaPermitSig, user, address(this), amount, deadline);
+        if (!DsFlashSwaplibrary.isRAsupportsPermit(address(assetPair.ra))) {
+            revert PermitNotSupported();
         }
+
+        DepegSwapLibrary.permitForRA(address(assetPair.ra), rawRaPermitSig, user, address(this), amount, deadline);
         IERC20(assetPair.ra).safeTransferFrom(user, address(this), amount);
 
         amountOut = _swapRaforDs(self, assetPair, reserveId, dsId, amount, amountOutMin, params);
@@ -361,6 +367,30 @@ contract RouterState is
         self.recalculateHIYA(dsId, amount, amountOut);
 
         emit RaSwapped(reserveId, dsId, user, amount, amountOut);
+    }
+
+    /**
+     * @notice Swaps RA for DS
+     * @param reserveId the reserve id same as the id on PSM and LV
+     * @param dsId the ds id of the pair, the same as the DS id on PSM and LV
+     * @param amount the amount of RA to swap
+     * @param amountOutMin the minimum amount of DS to receive, will revert if the actual amount is less than this. should be inserted with value from previewSwapRaforDs
+     * @return amountOut amount of DS that's received
+     */
+    function swapRaforDs(Id reserveId, uint256 dsId, uint256 amount, uint256 amountOutMin, BuyAprroxParams memory params)
+        external
+        returns (uint256 amountOut)
+    {
+        ReserveState storage self = reserves[reserveId];
+        AssetPair storage assetPair = self.ds[dsId];
+
+        IERC20(assetPair.ra).safeTransferFrom(msg.sender, address(this), amount);
+
+        amountOut = _swapRaforDs(self, assetPair, reserveId, dsId, amount, amountOutMin, params);
+
+        self.recalculateHIYA(dsId, amount, amountOut);
+
+        emit RaSwapped(reserveId, dsId, msg.sender, amount, amountOut);
     }
 
     function isRolloverSale(Id id, uint256 dsId) external view returns (bool) {
@@ -376,12 +406,15 @@ contract RouterState is
         bytes memory rawDsPermitSig,
         uint256 deadline
     ) external returns (uint256 amountOut) {
+        if (rawDsPermitSig.length == 0 || deadline == 0) {
+            revert InvalidSignature();
+        }
         ReserveState storage self = reserves[reserveId];
         AssetPair storage assetPair = self.ds[dsId];
 
-        if (rawDsPermitSig.length > 0 && deadline != 0) {
-            DepegSwapLibrary.permit(address(assetPair.ds), rawDsPermitSig, user, address(this), amount, deadline);
-        }
+        DepegSwapLibrary.permit(
+            address(assetPair.ds), rawDsPermitSig, user, address(this), amount, deadline, "swapDsforRa"
+        );
         assetPair.ds.transferFrom(user, address(this), amount);
 
         bool success;
@@ -395,6 +428,37 @@ contract RouterState is
         self.recalculateHIYA(dsId, amountOut, amount);
 
         emit DsSwapped(reserveId, dsId, user, amount, amountOut);
+    }
+
+    /**
+     * @notice Swaps DS for RA
+     * @param reserveId the reserve id same as the id on PSM and LV
+     * @param dsId the ds id of the pair, the same as the DS id on PSM and LV
+     * @param amount the amount of DS to swap
+     * @param amountOutMin the minimum amount of RA to receive, will revert if the actual amount is less than this. should be inserted with value from previewSwapDsforRa
+     * @return amountOut amount of RA that's received
+     */
+    function swapDsforRa(Id reserveId, uint256 dsId, uint256 amount, uint256 amountOutMin)
+        external
+        returns (uint256 amountOut)
+    {
+        ReserveState storage self = reserves[reserveId];
+        AssetPair storage assetPair = self.ds[dsId];
+
+        assetPair.ds.transferFrom(msg.sender, address(this), amount);
+
+        bool success;
+        uint256 repaymentAmount;
+        (amountOut, repaymentAmount, success) =
+            __swapDsforRa(assetPair, reserveId, dsId, amount, amountOutMin, msg.sender);
+
+        if (!success) {
+            (uint112 raReserve, uint112 ctReserve) = assetPair.getReservesSorted(hook);
+            revert IMathError.InsufficientLiquidity();
+        }
+        self.recalculateHIYA(dsId, amountOut, amount);
+
+        emit DsSwapped(reserveId, dsId, msg.sender, amount, amountOut);
     }
 
     function __swapDsforRa(
@@ -571,7 +635,7 @@ contract RouterState is
 
         IPSMcore psm = IPSMcore(_moduleCore);
 
-        uint256 received = psm.redeemRaWithCtDs(reserveId, ctAmount, address(this), bytes(""), 0, bytes(""), 0);
+        uint256 received = psm.redeemRaWithCtDs(reserveId, ctAmount);
 
         uint256 repaymentAmount = received - raAttributed;
 

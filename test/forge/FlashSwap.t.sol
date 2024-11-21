@@ -76,7 +76,7 @@ contract FlashSwapTest is Helper {
             currencyId, dsId, 1 ether, 0, DEFAULT_ADDRESS, bytes(""), 0, defaultBuyApproxParams()
         );
 
-        IPSMcore(moduleCore).updatePsmAutoSellStatus(currencyId, DEFAULT_ADDRESS, true);
+        IPSMcore(moduleCore).updatePsmAutoSellStatus(currencyId, true);
 
         // should fail, not enough liquidity
         vm.expectRevert();

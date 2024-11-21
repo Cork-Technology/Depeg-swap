@@ -16,6 +16,7 @@ import {
 import UNIV2FACTORY from "./ext-abi/hardhat/uni-v2-factory.json";
 import UNIV2ROUTER from "./ext-abi/hardhat/uni-v2-router.json";
 import { ethers } from "ethers";
+import { toUtf8Bytes } from "ethers/lib/utils";
 
 const DEVISOR = BigInt(1e18);
 export const DEFAULT_BASE_REDEMPTION_PERCENTAGE = parseEther("5");
@@ -86,11 +87,25 @@ export function getSigners(
 export async function deployAssetFactory() {
   const signers = await hre.viem.getWalletClients();
   const { defaultSigner } = getSigners(signers);
-  const contract = await hre.viem.deployContract("AssetFactory", [], {
-    client: {
-      wallet: defaultSigner,
-    },
-  });
+  const assetFactorycontract = await hre.viem.deployContract(
+    "AssetFactory",
+    [],
+    {
+      client: {
+        wallet: defaultSigner,
+      },
+    }
+  );
+
+  const initializeData = "0x8129fc1c";
+  const assetFactoryProxy = await hre.viem.deployContract("ERC1967Proxy", [
+    assetFactorycontract.address,
+    initializeData,
+  ]);
+  const contract = await hre.viem.getContractAt(
+    "AssetFactory",
+    assetFactoryProxy.address
+  );
 
   return {
     contract,
@@ -119,14 +134,30 @@ export async function deployWeth() {
   };
 }
 
-export async function deployFlashSwapRouter(mathHelper: Address) {
+export async function deployFlashSwapRouter(
+  mathHelper: Address,
+  config: Address
+) {
   const mathLib = await hre.viem.deployContract("SwapperMathLibrary");
-  const contract = await hre.viem.deployContract("RouterState", [], {
+  const routerContract = await hre.viem.deployContract("RouterState", [], {
     libraries: {
       SwapperMathLibrary: mathLib.address,
       MathHelper: mathHelper,
     },
   });
+
+  // Step 3: Manually encode the initialization data (initialize(address))
+  // 'initialize(address)' has the function selector 'initialize(address)' and takes a single 'address' argument
+  const initializeData = "0xc4d66de8" + config.slice(2).padStart(64, "0");
+  const routerProxy = await hre.viem.deployContract(
+    "ERC1967Proxy",
+    [routerContract.address, initializeData],
+    {}
+  );
+  const contract = await hre.viem.getContractAt(
+    "RouterState",
+    routerProxy.address
+  );
 
   return {
     contract,
@@ -196,7 +227,10 @@ export async function deployModuleCore(
     },
   });
 
-  const dsFlashSwapRouter = await deployFlashSwapRouter(mathLib.address);
+  const dsFlashSwapRouter = await deployFlashSwapRouter(
+    mathLib.address,
+    config
+  );
   const univ2Factory = await deployUniV2Factory(
     dsFlashSwapRouter.contract.address
   );
@@ -207,7 +241,7 @@ export async function deployModuleCore(
     dsFlashSwapRouter.contract.address
   );
 
-  const contract = await hre.viem.deployContract("ModuleCore", [], {
+  const moduleCoreContract = await hre.viem.deployContract("ModuleCore", [], {
     client: {
       wallet: defaultSigner,
     },
@@ -217,17 +251,28 @@ export async function deployModuleCore(
     },
   });
 
-  contract.write.initialize([
-    swapAssetFactory,
-    univ2Factory,
-    dsFlashSwapRouter.contract.address,
-    univ2Router,
-    config,
-  ]);
+  const initializeData =
+    "0x1459457a" +
+    [
+      swapAssetFactory,
+      univ2Factory,
+      dsFlashSwapRouter.contract.address,
+      univ2Router,
+      config,
+    ]
+      .map((address) => address.slice(2).padStart(64, "0"))
+      .join(""); // Remove `0x` and pad each address to 32 bytes
 
-  await dsFlashSwapRouter.contract.write.initialize([
-    dsFlashSwapRouter.contract.address,
-  ]);
+  const moduleCoreProxy = await hre.viem.deployContract(
+    "ERC1967Proxy",
+    [moduleCoreContract.address, initializeData],
+    {}
+  );
+  const contract = await hre.viem.getContractAt(
+    "ModuleCore",
+    moduleCoreProxy.address
+  );
+
   await dsFlashSwapRouter.contract.write.setModuleCore([contract.address]);
   // await dsFlashSwapRouter.contract.write.transferOwnership([contract.address]);
 
@@ -409,9 +454,81 @@ export type PermitArg = {
   psmAddress: string;
   amount: bigint;
   deadline: bigint;
+  functionName?: string;
 };
 
 export async function permit(arg: PermitArg) {
+  const contractName = await hre.viem
+    .getContractAt("IERC20Metadata", arg.erc20contractAddress as Address)
+    .then((contract) => contract.read.name());
+
+  const nonces = await hre.viem
+    .getContractAt("IERC20Permit", arg.erc20contractAddress as Address)
+    .then((contract) =>
+      contract.read.nonces([arg.signer.account!.address as Address])
+    );
+
+      // Calculate the function hash using the provided functionName
+  const functionHash = keccak256(toUtf8Bytes(arg.functionName));
+
+  // set the Permit type parameters
+  const types = {
+    Permit: [
+      {
+        name: "owner",
+        type: "address",
+      },
+      {
+        name: "spender",
+        type: "address",
+      },
+      {
+        name: "value",
+        type: "uint256",
+      },
+      {
+        name: "nonce",
+        type: "uint256",
+      },
+      {
+        name: "deadline",
+        type: "uint256",
+      },
+      {
+        name: "functionHash",
+        type: "bytes32",
+      },
+    ],
+  };
+
+  // set the Permit type values
+  const values = {
+    owner: arg.signer.account!.address,
+    spender: arg.psmAddress,
+    value: arg.amount,
+    nonce: nonces,
+    deadline: arg.deadline,
+    functionHash: functionHash, // Add functionHash to values
+  };
+
+  // sign the Permit type data with the deployer's private key
+  const sig = await arg.signer.signTypedData({
+    domain: {
+      chainId: hre.network.config.chainId!,
+      name: contractName,
+      verifyingContract: arg.erc20contractAddress as Address,
+      version: "1",
+    },
+    account: arg.signer.account?.address as Address,
+    types: types,
+    primaryType: "Permit",
+    message: values,
+  });
+
+  return sig;
+}
+
+export async function permitForRA(arg: PermitArg) {
   const contractName = await hre.viem
     .getContractAt("IERC20Metadata", arg.erc20contractAddress as Address)
     .then((contract) => contract.read.name());
@@ -483,7 +600,6 @@ export async function onlymoduleCoreWithFactory(basePsmRedemptionFee: bigint) {
       config.contract.address,
     );
   const moduleCore = contract;
-  await factory.contract.write.initialize();
   await factory.contract.write.transferOwnership([moduleCore.address]);
 
   return {

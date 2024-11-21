@@ -102,6 +102,9 @@ interface IDsFlashSwapCore is IDsFlashSwapUtility {
         uint256 feeEpsilon;
     }
 
+    /// @notice Revert when Signature is valid or signature deadline is incorrect
+    error InvalidSignature();
+
     /**
      * @notice Emitted when DS is swapped for RA
      * @param reserveId the reserve id same as the id on PSM and LV
@@ -233,6 +236,18 @@ interface IDsFlashSwapCore is IDsFlashSwapUtility {
      * @param deadline the deadline for the swap
      * @param params the buy approximation params(math stuff)
      */
+    function swapRaforDs(Id reserveId, uint256 dsId, uint256 amount, uint256 amountOutMin, BuyAprroxParams memory params)
+        external
+        returns (uint256 amountOut);
+
+    /**
+     * @notice Swaps RA for DS
+     * @param reserveId the reserve id same as the id on PSM and LV
+     * @param dsId the ds id of the pair, the same as the DS id on PSM and LV
+     * @param amount the amount of RA to swap
+     * @param amountOutMin the minimum amount of DS to receive, will revert if the actual amount is less than this. should be inserted with value from previewSwapRaforDs
+     * @return amountOut amount of DS that's received
+     */
     function swapRaforDs(
         Id reserveId,
         uint256 dsId,
@@ -250,6 +265,18 @@ interface IDsFlashSwapCore is IDsFlashSwapUtility {
      * @param dsId the ds id of the pair, the same as the DS id on PSM and LV
      * @param amount the amount of DS to swap
      * @param amountOutMin the minimum amount of RA to receive, will revert if the actual amount is less than this.
+     * @return amountOut amount of RA that's received
+     */
+    function swapDsforRa(Id reserveId, uint256 dsId, uint256 amount, uint256 amountOutMin)
+        external
+        returns (uint256 amountOut);
+
+    /**
+     * @notice Swaps DS for RA
+     * @param reserveId the reserve id same as the id on PSM and LV
+     * @param dsId the ds id of the pair, the same as the DS id on PSM and LV
+     * @param amount the amount of DS to swap
+     * @param amountOutMin the minimum amount of RA to receive, will revert if the actual amount is less than this. should be inserted with value from previewSwapDsforRa
      * @return amountOut amount of RA that's received
      */
     function swapDsforRa(
