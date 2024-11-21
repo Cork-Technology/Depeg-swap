@@ -39,7 +39,6 @@ interface IVault {
         uint256 dsReceived;
         uint256 fee;
         uint256 feePercentage;
-        uint256 paReceived;
     }
 
     /// @notice Emitted when a user deposits assets into a given Vault
@@ -57,8 +56,7 @@ interface IVault {
         uint256 ctReceivedFromVault,
         uint256 dsReceived,
         uint256 fee,
-        uint256 feePercentage,
-        uint256 paReceived
+        uint256 feePercentage
     );
 
     /// @notice Emitted when a early redemption fee is updated for a given Vault
@@ -83,6 +81,9 @@ interface IVault {
 
     /// @notice insufficient output amount, e.g trying to redeem 100 LV whcih you expect 100 RA but only received 50 RA
     error InsufficientOutputAmount(uint256 amountOutMin, uint256 received);
+
+    /// @notice vault does not have sufficient funds to do something
+    error InsufficientFunds();
 
     /**
      * @notice Deposit a wrapped asset into a given vault

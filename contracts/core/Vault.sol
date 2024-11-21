@@ -7,13 +7,14 @@ import {State} from "../libraries/State.sol";
 import {ModuleState} from "./ModuleState.sol";
 import {Context} from "@openzeppelin/contracts/utils/Context.sol";
 import {IVault} from "../interfaces/IVault.sol";
-
+import {IVaultLiquidation} from "./../interfaces/IVaultLiquidation.sol";
 /**
  * @title VaultCore Abstract Contract
  * @author Cork Team
  * @notice Abstract VaultCore contract which provides Vault related logics
  */
-abstract contract VaultCore is ModuleState, Context, IVault {
+
+abstract contract VaultCore is ModuleState, Context, IVault, IVaultLiquidation {
     using PairLibrary for Pair;
     using VaultLibrary for State;
 
@@ -59,8 +60,7 @@ abstract contract VaultCore is ModuleState, Context, IVault {
             result.ctReceivedFromVault,
             result.dsReceived,
             result.fee,
-            result.feePercentage,
-            result.paReceived
+            result.feePercentage
         );
     }
 
@@ -90,7 +90,7 @@ abstract contract VaultCore is ModuleState, Context, IVault {
      * @param id The Module id that is used to reference both psm and lv of a given pair
      */
     function vaultLp(Id id) external view returns (uint256) {
-        return states[id].vault.config.lpBalance;
+        return states[id].vaultLp(getAmmRouter());
     }
 
     function lvAcceptRolloverProfit(Id id, uint256 amount) external onlyFlashSwapRouter {
@@ -100,5 +100,34 @@ abstract contract VaultCore is ModuleState, Context, IVault {
 
     function updateCtHeldPercentage(Id id, uint256 ctHeldPercentage) external onlyConfig {
         states[id].updateCtHeldPercentage(ctHeldPercentage);
+    }
+
+    function requestLiquidationFunds(Id id, uint256 amount) external override onlyWhiteListedLiquidationContract {
+        State storage state = states[id];
+        state.requestLiquidationFunds(amount, msg.sender);
+
+        emit LiquidationFundsRequested(id, msg.sender, amount);
+    }
+
+    function receiveTradeExecuctionResultFunds(Id id, uint256 amount) external override {
+        State storage state = states[id];
+        state.receiveTradeExecuctionResultFunds(amount, msg.sender);
+
+        emit TradeExecutionResultFundsReceived(id, msg.sender, amount);
+    }
+
+    function useTradeExecutionResultFunds(Id id) external override onlyConfig {
+        State storage state = states[id];
+        uint256 used = state.useTradeExecutionResultFunds(getRouterCore(), getAmmRouter());
+
+        emit TradeExecutionResultFundsUsed(id, msg.sender, used);
+    }
+
+    function liquidationFundsAvailable(Id id) external view returns (uint256) {
+        return states[id].liquidationFundsAvailable();
+    }
+
+    function tradeExecutionFundsAvailable(Id id) external view returns (uint256) {
+        return states[id].tradeExecutionFundsAvailable();
     }
 }

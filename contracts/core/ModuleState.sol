@@ -10,6 +10,7 @@ import {RouterState} from "./flash-swaps/FlashSwapRouter.sol";
 import {IUniswapV2Router02} from "../interfaces/uniswap-v2/RouterV2.sol";
 import {NoReentrant} from "../libraries/MutexLock.sol";
 import {ICorkHook} from "./../interfaces/UniV4/IMinimalHook.sol";
+import {ILiquidatorRegistry} from "./../interfaces/ILiquidatorRegistry.sol";
 /**
  * @title ModuleState Abstract Contract
  * @author Cork Team
@@ -119,5 +120,12 @@ abstract contract ModuleState is ICommon {
         NoReentrant.acquire();
         _;
         NoReentrant.release();
+    }
+
+    modifier onlyWhiteListedLiquidationContract() {
+        if (!ILiquidatorRegistry(CONFIG).isLiquidationWhitelisted(msg.sender)) {
+            revert OnlyWhiteListed();
+        }
+        _;
     }
 }

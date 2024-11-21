@@ -47,6 +47,9 @@ abstract contract Helper is SigUtils, TestHelper {
     // 1% initial ds price
     uint256 internal constant DEFAULT_INITIAL_DS_PRICE = 0.1 ether;
 
+    // 50% split percentage
+    uint256 internal DEFAULT_CT_SPLIT_PERCENTAGE = 50 ether;
+
     function defaultInitialArp() internal pure virtual returns (uint256) {
         return DEFAULT_INITIAL_DS_PRICE;
     }
@@ -219,5 +222,7 @@ abstract contract Helper is SigUtils, TestHelper {
         initializeConfig();
         initializeFlashSwapRouter();
         initializeModuleCore();
+
+        corkConfig.updateLvStrategyCtSplitPercentage(defaultCurrencyId, DEFAULT_CT_SPLIT_PERCENTAGE);
     }
 }

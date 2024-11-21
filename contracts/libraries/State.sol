@@ -2,7 +2,7 @@
 pragma solidity ^0.8.24;
 
 import {Pair} from "./Pair.sol";
-import {PsmRedemptionAssetManager} from "./RedemptionAssetManagerLib.sol";
+import {RedemptionAssetManager} from "./RedemptionAssetManagerLib.sol";
 import {LvAsset} from "./LvAssetLib.sol";
 import {BitMaps} from "@openzeppelin/contracts/utils/structs/BitMaps.sol";
 import {DepegSwap} from "./DepegSwapLib.sol";
@@ -54,7 +54,7 @@ struct PsmPoolArchive {
  * @dev Balances structure for managing balances in PSM Core
  */
 struct Balances {
-    PsmRedemptionAssetManager ra;
+    RedemptionAssetManager ra;
     uint256 dsBalance;
     uint256 paBalance;
     uint256 ctBalance;
@@ -94,15 +94,6 @@ struct VaultAmmLiquidityPool {
 }
 
 /**
- * @dev LvInternalBalance structure for tracking LV balances of users
- */
-struct LvInternalBalance {
-    // Balance gets incremented when user deposit to LV
-    // Balance gets decremented when user redeem from LV
-    uint256 balance;
-}
-
-/**
  * @dev VaultState structure for VaultCore
  */
 struct VaultState {
@@ -120,7 +111,6 @@ struct VaultState {
     /// e.g 40% means that 40% of the RA that user deposit will be splitted into CT and DS
     /// the CT will be held in the vault while the DS is held in the vault reserve to be selled in the router
     uint256 ctHeldPercetage;
-    mapping(address => LvInternalBalance) userLvBalance;
 }
 
 /**
@@ -129,7 +119,6 @@ struct VaultState {
 struct VaultConfig {
     // 1 % = 1e18
     uint256 fee;
-    uint256 lpBalance;
     bool isDepositPaused;
     bool isWithdrawalPaused;
 }
