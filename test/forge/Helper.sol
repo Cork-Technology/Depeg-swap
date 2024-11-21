@@ -12,9 +12,9 @@ import {RouterState} from "./../../contracts/core/flash-swaps/FlashSwapRouter.so
 import {DummyWETH} from "./../../contracts/dummy/DummyWETH.sol";
 import {TestModuleCore} from "./TestModuleCore.sol";
 import {TestFlashSwapRouter} from "./TestFlashSwapRouter.sol";
-import "./SigUtils.sol";
+import {SigUtils} from "./SigUtils.sol";
 import {TestHelper} from "Cork-Hook/../test/Helper.sol";
-import "./../../contracts/interfaces/IDsFlashSwapRouter.sol";
+import {IDsFlashSwapCore} from "./../../contracts/interfaces/IDsFlashSwapRouter.sol";
 
 abstract contract Helper is SigUtils, TestHelper {
     TestModuleCore internal moduleCore;
