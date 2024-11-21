@@ -24,6 +24,11 @@ contract CorkConfig is AccessControl, Pausable {
     IDsFlashSwapCore public flashSwapRouter;
     CorkHook public hook;
 
+    uint256 public constant WHITELIST_TIME_DELAY = 7 days;
+
+    /// @notice liquidation address => timestamp when liquidation is allowed
+    mapping(address => uint256) liquidationWhitelist;
+
     /// @notice thrown when caller is not manager/Admin of Cork Protocol
     error CallerNotManager();
 
@@ -62,6 +67,18 @@ contract CorkConfig is AccessControl, Pausable {
 
     function grantRole(bytes32 role, address account) public override onlyManager {
         _grantRole(role, account);
+    }
+
+    function isLiquidationWhitelisted(address liquidationAddress) external view returns (bool) {
+        return liquidationWhitelist[liquidationAddress] <= block.timestamp && liquidationWhitelist[liquidationAddress] != 0;
+    }
+
+    function blacklist(address liquidationAddress) external onlyManager {
+        delete liquidationWhitelist[liquidationAddress];
+    }
+
+    function whitelist(address liquidationAddress) external onlyManager {
+        liquidationWhitelist[liquidationAddress] = block.timestamp + WHITELIST_TIME_DELAY;
     }
 
     /**
