@@ -6,7 +6,7 @@ import {VaultConfigLibrary} from "./VaultConfig.sol";
 import {Pair, PairLibrary, Id} from "./Pair.sol";
 import {LvAsset, LvAssetLibrary} from "./LvAssetLib.sol";
 import {PsmLibrary} from "./PsmLib.sol";
-import {PsmRedemptionAssetManager, RedemptionAssetManagerLibrary} from "./RedemptionAssetManagerLib.sol";
+import {RedemptionAssetManager, RedemptionAssetManagerLibrary} from "./RedemptionAssetManagerLib.sol";
 import {MathHelper} from "./MathHelper.sol";
 import {Guard} from "./Guard.sol";
 import {BitMaps} from "@openzeppelin/contracts/utils/structs/BitMaps.sol";
@@ -33,7 +33,7 @@ library VaultLibrary {
     using PairLibrary for Pair;
     using LvAssetLibrary for LvAsset;
     using PsmLibrary for State;
-    using RedemptionAssetManagerLibrary for PsmRedemptionAssetManager;
+    using RedemptionAssetManagerLibrary for RedemptionAssetManager;
     using BitMaps for BitMaps.BitMap;
     using DepegSwapLibrary for DepegSwap;
     using VaultPoolLibrary for VaultPool;

@@ -2,7 +2,7 @@
 pragma solidity ^0.8.24;
 
 import {Pair} from "./Pair.sol";
-import {PsmRedemptionAssetManager} from "./RedemptionAssetManagerLib.sol";
+import {RedemptionAssetManager} from "./RedemptionAssetManagerLib.sol";
 import {LvAsset} from "./LvAssetLib.sol";
 import {BitMaps} from "@openzeppelin/contracts/utils/structs/BitMaps.sol";
 import {DepegSwap} from "./DepegSwapLib.sol";
@@ -54,7 +54,7 @@ struct PsmPoolArchive {
  * @dev Balances structure for managing balances in PSM Core
  */
 struct Balances {
-    PsmRedemptionAssetManager ra;
+    RedemptionAssetManager ra;
     uint256 dsBalance;
     uint256 paBalance;
     uint256 ctBalance;
