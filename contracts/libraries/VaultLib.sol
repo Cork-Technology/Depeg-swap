@@ -132,17 +132,31 @@ library VaultLibrary {
         Guard.safeAfterExpired(ds);
     }
 
-    function __provideLiquidityWithRatio(
+    function __provideLiquidityWithRatioGetLP(
         State storage self,
         uint256 amount,
         IDsFlashSwapCore flashSwapRouter,
         address ctAddress,
         ICorkHook ammRouter,
         Tolerance memory tolerance
-    ) internal returns (uint256 ra, uint256 ct, uint256 lp, uint256 dust) {
+    ) internal returns (uint256 ra, uint256 ct, uint256 lp) {
         (ra, ct) = __calculateProvideLiquidityAmount(self, amount, flashSwapRouter);
 
-        (lp, dust) = __provideLiquidity(self, ra, ct, flashSwapRouter, ctAddress, ammRouter, tolerance, amount);
+        (lp,) = __provideLiquidity(self, ra, ct, flashSwapRouter, ctAddress, ammRouter, tolerance, amount);
+    }
+
+    // Duplicate function of __provideLiquidityWithRatioGetLP to avoid stack too deep error
+    function __provideLiquidityWithRatioGetDust(
+        State storage self,
+        uint256 amount,
+        IDsFlashSwapCore flashSwapRouter,
+        address ctAddress,
+        ICorkHook ammRouter,
+        Tolerance memory tolerance
+    ) internal returns (uint256 ra, uint256 ct, uint256 dust) {
+        (ra, ct) = __calculateProvideLiquidityAmount(self, amount, flashSwapRouter);
+
+        (, dust) = __provideLiquidity(self, ra, ct, flashSwapRouter, ctAddress, ammRouter, tolerance, amount);
     }
 
     function __calculateProvideLiquidityAmount(State storage self, uint256 amount, IDsFlashSwapCore flashSwapRouter)
@@ -166,7 +180,7 @@ library VaultLibrary {
         (uint256 raTolerance, uint256 ctTolerance) =
             MathHelper.calculateWithTolerance(ra, ct, MathHelper.UNI_STATIC_TOLERANCE);
 
-        (ra, ct, , dust) = __provideLiquidityWithRatio(
+        (ra, ct, dust) = __provideLiquidityWithRatioGetDust(
             self, amount, flashSwapRouter, ctAddress, ammRouter, Tolerance(raTolerance, ctTolerance)
         );
     }
@@ -294,7 +308,7 @@ library VaultLibrary {
         {
             address ct = self.ds[dsId].ct;
 
-            (,, lp,) = __provideLiquidityWithRatio(
+            (,, lp) = __provideLiquidityWithRatioGetLP(
                 self, amount, flashSwapRouter, ct, ammRouter, Tolerance(raTolerance, ctTolerance)
             );
         }
