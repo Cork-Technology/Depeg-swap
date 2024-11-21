@@ -55,6 +55,9 @@ interface ICommon {
     /// @notice thrown when trying to update rate with invalid rate
     error InvalidRate();
 
+    /// @notice thrown when blacklisted liquidation contract tries to request funds from the vault
+    error OnlyWhiteListed();
+
     /// @notice Emitted when a new LV and PSM is initialized with a given pair
     /// @param id The PSM id
     /// @param pa The address of the pegged asset
