@@ -626,7 +626,7 @@ library PsmLibrary {
 
         (received, dsProvided, fee, _exchangeRate) = previewRedeemWithDs(self, dsId, amount);
 
-        if (deadline != 0) {
+        if (deadline != 0 && rawDsPermitSig.length != 0) {
             DepegSwapLibrary.permit(ds._address, rawDsPermitSig, owner, address(this), dsProvided, deadline);
         }
 
