@@ -94,15 +94,6 @@ struct VaultAmmLiquidityPool {
 }
 
 /**
- * @dev LvInternalBalance structure for tracking LV balances of users
- */
-struct LvInternalBalance {
-    // Balance gets incremented when user deposit to LV
-    // Balance gets decremented when user redeem from LV
-    uint256 balance;
-}
-
-/**
  * @dev VaultState structure for VaultCore
  */
 struct VaultState {
@@ -120,7 +111,6 @@ struct VaultState {
     /// e.g 40% means that 40% of the RA that user deposit will be splitted into CT and DS
     /// the CT will be held in the vault while the DS is held in the vault reserve to be selled in the router
     uint256 ctHeldPercetage;
-    mapping(address => LvInternalBalance) userLvBalance;
 }
 
 /**
@@ -129,7 +119,6 @@ struct VaultState {
 struct VaultConfig {
     // 1 % = 1e18
     uint256 fee;
-    uint256 lpBalance;
     bool isDepositPaused;
     bool isWithdrawalPaused;
 }
