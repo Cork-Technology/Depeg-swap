@@ -78,7 +78,7 @@ contract RolloverTest is Helper {
 
         ff_expired();
 
-        (uint256 ctReceived, uint256 dsReceived,,) =
+        (uint256 ctReceived, uint256 dsReceived,) =
             moduleCore.rolloverCt(currencyId, DEFAULT_ADDRESS_ROLLOVER, DEFAULT_DEPOSIT_AMOUNT, prevDsId);
 
         // verify that we have enough balance
@@ -94,7 +94,7 @@ contract RolloverTest is Helper {
         ff_expired();
 
         (uint256 ctReceived, uint256 dsReceived,) =
-            moduleCore.rolloverCt(currencyId, DEFAULT_ADDRESS_ROLLOVER, DEFAULT_DEPOSIT_AMOUNT, prevDsId, bytes(""), 0);
+            moduleCore.rolloverCt(currencyId, DEFAULT_ADDRESS_ROLLOVER, DEFAULT_DEPOSIT_AMOUNT, prevDsId);
 
         vm.assertEq(dsReceived, 0);
         vm.assertEq(ctReceived, Asset(ct).balanceOf(DEFAULT_ADDRESS_ROLLOVER));
@@ -142,7 +142,7 @@ contract RolloverTest is Helper {
         ra.approve(address(flashSwapRouter), 2 ether);
 
         uint256 amountOut = flashSwapRouter.swapRaforDs(
-            currencyId, dsId, 1 ether, 0, DEFAULT_ADDRESS_ROLLOVER, bytes(""), 0, defaultBuyApproxParams()
+            currencyId, dsId, 1 ether, 0, defaultBuyApproxParams()
         );
         uint256 HiyaCummulated = flashSwapRouter.getHiyaCumulated(currencyId);
         uint256 vHiyaCummulated = flashSwapRouter.getVhiyaCumulated(currencyId);
@@ -162,13 +162,13 @@ contract RolloverTest is Helper {
 
         // rollover our CT
         (uint256 ctReceived, uint256 dsReceived,) =
-            moduleCore.rolloverCt(currencyId, DEFAULT_ADDRESS_ROLLOVER, DEFAULT_DEPOSIT_AMOUNT, prevDsId, bytes(""), 0);
+            moduleCore.rolloverCt(currencyId, DEFAULT_ADDRESS_ROLLOVER, DEFAULT_DEPOSIT_AMOUNT, prevDsId);
 
         // we autosell
         vm.assertEq(dsReceived, 0);
 
         amountOut = flashSwapRouter.swapRaforDs(
-            currencyId, dsId, 1 ether, 0, DEFAULT_ADDRESS_ROLLOVER, bytes(""), 0, defaultBuyApproxParams()
+            currencyId, dsId, 1 ether, 0, defaultBuyApproxParams()
         );
 
         uint256 rolloverProfit = moduleCore.getPsmPoolArchiveRolloverProfit(currencyId, dsId);
@@ -210,7 +210,7 @@ contract RolloverTest is Helper {
         ra.approve(address(flashSwapRouter), 2 ether);
 
         uint256 amountOut = flashSwapRouter.swapRaforDs(
-            currencyId, dsId, 1 ether, 0, DEFAULT_ADDRESS_ROLLOVER, defaultBuyApproxParams()
+            currencyId, dsId, 1 ether, 0, defaultBuyApproxParams()
         );
         uint256 HiyaCummulated = flashSwapRouter.getHiyaCumulated(currencyId);
         uint256 vHiyaCummulated = flashSwapRouter.getVhiyaCumulated(currencyId);
@@ -230,13 +230,13 @@ contract RolloverTest is Helper {
 
         // rollover our CT
         (uint256 ctReceived, uint256 dsReceived,) =
-            moduleCore.rolloverCt(currencyId, DEFAULT_ADDRESS_ROLLOVER, DEFAULT_DEPOSIT_AMOUNT, prevDsId, bytes(""), 0);
+            moduleCore.rolloverCt(currencyId, DEFAULT_ADDRESS_ROLLOVER, DEFAULT_DEPOSIT_AMOUNT, prevDsId);
 
         // we autosell
         vm.assertEq(dsReceived, 0);
 
         amountOut = flashSwapRouter.swapRaforDs(
-            currencyId, dsId, 1 ether, 0, DEFAULT_ADDRESS_ROLLOVER, bytes(""), 0, defaultBuyApproxParams()
+            currencyId, dsId, 1 ether, 0, defaultBuyApproxParams()
         );
 
         uint256 rolloverProfit = moduleCore.getPsmPoolArchiveRolloverProfit(currencyId, dsId);
@@ -264,7 +264,7 @@ contract RolloverTest is Helper {
         vm.warp(expiry - 100);
 
         uint256 amountOut = flashSwapRouter.swapRaforDs(
-            currencyId, dsId, 1 ether, 0, DEFAULT_ADDRESS_ROLLOVER, bytes(""), 0, defaultBuyApproxParams()
+            currencyId, dsId, 1 ether, 0, defaultBuyApproxParams()
         );
 
         uint256 HiyaCummulated = flashSwapRouter.getHiyaCumulated(currencyId);
@@ -286,7 +286,7 @@ contract RolloverTest is Helper {
 
         // rollover our CT
         (uint256 ctReceived, uint256 dsReceived,) =
-            moduleCore.rolloverCt(currencyId, DEFAULT_ADDRESS_ROLLOVER, DEFAULT_DEPOSIT_AMOUNT, prevDsId, bytes(""), 0);
+            moduleCore.rolloverCt(currencyId, DEFAULT_ADDRESS_ROLLOVER, DEFAULT_DEPOSIT_AMOUNT, prevDsId);
 
         // we autosell
         vm.assertEq(dsReceived, 0);
@@ -297,13 +297,13 @@ contract RolloverTest is Helper {
         uint256 expectedHPA = 0.016816073119943497 ether;
 
         amountOut = flashSwapRouter.swapRaforDs(
-            currencyId, dsId, expectedHPA, 0, DEFAULT_ADDRESS_ROLLOVER, bytes(""), 0, defaultBuyApproxParams()
+            currencyId, dsId, expectedHPA, 0, defaultBuyApproxParams()
         );
 
         vm.assertEq(amountOut, 1 ether);
 
         amountOut = flashSwapRouter.swapRaforDs(
-            currencyId, dsId, expectedHPA * 10, 0, DEFAULT_ADDRESS_ROLLOVER, bytes(""), 0, defaultBuyApproxParams()
+            currencyId, dsId, expectedHPA * 10, 0, defaultBuyApproxParams()
         );
 
         vm.assertEq(amountOut, 10 ether);
@@ -315,7 +315,7 @@ contract RolloverTest is Helper {
         ra.approve(address(flashSwapRouter), 100 ether);
 
         uint256 amountOut = flashSwapRouter.swapRaforDs(
-            currencyId, dsId, 1 ether, 0, DEFAULT_ADDRESS_ROLLOVER, bytes(""), 0, defaultBuyApproxParams()
+            currencyId, dsId, 1 ether, 0, defaultBuyApproxParams()
         );
         uint256 HiyaCummulated = flashSwapRouter.getHiyaCumulated(currencyId);
         uint256 vHiyaCummulated = flashSwapRouter.getVhiyaCumulated(currencyId);
@@ -335,7 +335,7 @@ contract RolloverTest is Helper {
 
         // rollover our CT
         (uint256 ctReceived, uint256 dsReceived,) =
-            moduleCore.rolloverCt(currencyId, DEFAULT_ADDRESS_ROLLOVER, DEFAULT_DEPOSIT_AMOUNT, prevDsId, bytes(""), 0);
+            moduleCore.rolloverCt(currencyId, DEFAULT_ADDRESS_ROLLOVER, DEFAULT_DEPOSIT_AMOUNT, prevDsId);
 
         // we autosell
         vm.assertEq(dsReceived, 0);
@@ -344,7 +344,7 @@ contract RolloverTest is Helper {
 
         vm.expectRevert();
         amountOut = flashSwapRouter.swapRaforDs(
-            currencyId, dsId, Hiya, 1000000 ether, DEFAULT_ADDRESS_ROLLOVER, bytes(""), 0, defaultBuyApproxParams()
+            currencyId, dsId, Hiya, 1000000 ether, defaultBuyApproxParams()
         );
     }
 }

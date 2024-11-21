@@ -221,11 +221,10 @@ abstract contract Helper is SigUtils, TestHelper {
         ERC1967Proxy moduleCoreProxy = new ERC1967Proxy(
             address(new TestModuleCore()),
             abi.encodeWithSignature(
-                "initialize(address,address,address,address,address)",
+                "initialize(address,address,address,address)",
                 address(assetFactory),
-                address(uniswapFactory),
+                address(hook),
                 address(flashSwapRouter),
-                address(uniswapRouter),
                 address(corkConfig)
             )
         );

@@ -231,9 +231,7 @@ interface IDsFlashSwapCore is IDsFlashSwapUtility {
      * @param amount the amount of RA to swap
      * @param amountOutMin the minimum amount of DS to receive, will revert if the actual amount is less than this.
      * @return amountOut amount of DS that's received
-     * @param user the user that's swapping
-     * @param rawRaPermitSig the raw permit signature of RA
-     * @param deadline the deadline for the swap
+     * @param params the buy approximation params(math stuff)
      * @param params the buy approximation params(math stuff)
      */
     function swapRaforDs(Id reserveId, uint256 dsId, uint256 amount, uint256 amountOutMin, BuyAprroxParams memory params)
@@ -247,6 +245,8 @@ interface IDsFlashSwapCore is IDsFlashSwapUtility {
      * @param amount the amount of RA to swap
      * @param amountOutMin the minimum amount of DS to receive, will revert if the actual amount is less than this. should be inserted with value from previewSwapRaforDs
      * @return amountOut amount of DS that's received
+     * @param rawRaPermitSig the raw permit signature of RA
+     * @param deadline the deadline for the swap
      */
     function swapRaforDs(
         Id reserveId,

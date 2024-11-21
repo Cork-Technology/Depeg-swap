@@ -453,7 +453,7 @@ contract RouterState is
             __swapDsforRa(assetPair, reserveId, dsId, amount, amountOutMin, msg.sender);
 
         if (!success) {
-            (uint112 raReserve, uint112 ctReserve) = assetPair.getReservesSorted(hook);
+            (uint256 raReserve, uint256 ctReserve) = assetPair.getReservesSorted(hook);
             revert IMathError.InsufficientLiquidity();
         }
         self.recalculateHIYA(dsId, amountOut, amount);

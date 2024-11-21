@@ -70,7 +70,7 @@ contract SellDsTest is Helper {
         hook.updateBaseFeePercentage(address(ra), ct, 1 ether);
        
         uint256 amountOut = flashSwapRouter.swapDsforRa(
-            currencyId, dsId, amount, 0, DEFAULT_ADDRESS, bytes(""), block.timestamp
+            currencyId, dsId, amount, 0
         );
 
         uint256 balanceRaAfter = ra.balanceOf(DEFAULT_ADDRESS);

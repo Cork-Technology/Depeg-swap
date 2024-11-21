@@ -56,7 +56,7 @@ abstract contract VaultCore is ModuleState, Context, IVault {
         emit LvRedeemEarly(
             redeemParams.id,
             redeemer,
-            redeemParams.receiver,
+            redeemer,
             redeemParams.amount,
             result.ctReceivedFromAmm,
             result.ctReceivedFromVault,
@@ -76,7 +76,7 @@ abstract contract VaultCore is ModuleState, Context, IVault {
         override
         nonReentrant
         LVWithdrawalNotPaused(redeemParams.id)
-        returns (uint256 received, uint256 fee, uint256 feePercentage, uint256 paAmount)
+        returns (IVault.RedeemEarlyResult memory result)
     {
         Routers memory routers = Routers({flashSwapRouter: getRouterCore(), ammRouter: getAmmRouter()});
         PermitParams memory permitParams = PermitParams({rawLvPermitSig: bytes(""), deadline: 0});
@@ -86,7 +86,7 @@ abstract contract VaultCore is ModuleState, Context, IVault {
         emit LvRedeemEarly(
             redeemParams.id,
             _msgSender(),
-            redeemParams.receiver,
+            _msgSender(),
             redeemParams.amount,
             result.ctReceivedFromAmm,
             result.ctReceivedFromVault,

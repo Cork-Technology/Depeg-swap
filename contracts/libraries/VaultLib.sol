@@ -139,7 +139,7 @@ library VaultLibrary {
         address ctAddress,
         ICorkHook ammRouter,
         Tolerance memory tolerance
-    ) internal returns (uint256 ra, uint256 ct, uint256 lp) {
+    ) internal returns (uint256 ra, uint256 ct, uint256 lp, uint256 dust) {
         (ra, ct) = __calculateProvideLiquidityAmount(self, amount, flashSwapRouter);
 
         (lp, dust) = __provideLiquidity(self, ra, ct, flashSwapRouter, ctAddress, ammRouter, tolerance, amount);
@@ -166,7 +166,7 @@ library VaultLibrary {
         (uint256 raTolerance, uint256 ctTolerance) =
             MathHelper.calculateWithTolerance(ra, ct, MathHelper.UNI_STATIC_TOLERANCE);
 
-        (ra, ct, dust) = __provideLiquidityWithRatio(
+        (ra, ct, , dust) = __provideLiquidityWithRatio(
             self, amount, flashSwapRouter, ctAddress, ammRouter, Tolerance(raTolerance, ctTolerance)
         );
     }
@@ -261,7 +261,7 @@ library VaultLibrary {
         (uint256 raTolerance, uint256 ctTolerance) =
             MathHelper.calculateWithTolerance(ra, ct, MathHelper.UNI_STATIC_TOLERANCE);
 
-        (lp, dust) = __provideLiquidity(
+        (, dust) = __provideLiquidity(
             self, ra, ct, flashSwapRouter, ctAddress, ammRouter, Tolerance(raTolerance, ctTolerance), originalBalance
         );
 
@@ -282,12 +282,7 @@ library VaultLibrary {
         }
         safeBeforeExpired(self);
 
-<<<<<<< HEAD
         self.vault.balances.ra.lockUnchecked(amount, from);
-=======
-        uint256 exchangeRate;
-        uint256 paAmount;
->>>>>>> audit/cantina
 
         uint256 splitted;
         // split the RA first according to the lv strategy
@@ -299,7 +294,7 @@ library VaultLibrary {
         {
             address ct = self.ds[dsId].ct;
 
-            (,, lp) = __provideLiquidityWithRatio(
+            (,, lp,) = __provideLiquidityWithRatio(
                 self, amount, flashSwapRouter, ct, ammRouter, Tolerance(raTolerance, ctTolerance)
             );
         }
@@ -309,7 +304,6 @@ library VaultLibrary {
             received = amount;
             self.vault.initialized = true;
         } else {
-<<<<<<< HEAD
             received = _calculateReceivedDeposit(self, ammRouter, splitted, lp, dsId, amount, flashSwapRouter);
         }
 
@@ -352,56 +346,6 @@ library VaultLibrary {
         // must be between 0.001% and 100%
         if (ctHeldPercentage > 100 ether || ctHeldPercentage < 0.001 ether) {
             revert IVault.InvalidParams();
-=======
-            // else we get the current exchange rate of LV
-            (exchangeRate,,, paAmount) = previewRedeemEarly(self, 1 ether, flashSwapRouter);
-            exchangeRate += paAmount;
-        }
-
-        self.vault.balances.ra.lockUnchecked(amount, from);
-
-        // Added {} block here to avoid stack too deep error
-        {      
-            uint256 dustAmount;
-            address ct = self.ds[self.globalAssetIdx].ct;
-            (,, dustAmount) = __provideLiquidityWithRatio(
-                self,
-                amount,
-                flashSwapRouter,
-                ct,
-                ammRouter,
-                Tolerance(raTolerance, ctTolerance)
-            );
-
-            // then we calculate how much LV we will get for the amount of RA we deposited with the exchange rate
-            // this is to seprate the yield vs the actual deposit amount. so when a user withdraws their LV, they get their accrued yield properly
-            // here we count amount - dustAmount, since dust amount is not counted as deposit
-            amount = MathHelper.calculateDepositAmountWithExchangeRate(amount - dustAmount, exchangeRate);
-        }
-        self.vault.lv.issue(from, amount);
-
-        self.vault.userLvBalance[from].balance += amount;
-        received = amount;
-    }
-
-    // preview a deposit action with current exchange rate,
-    // returns the amount of shares(share pool token) that user will receive
-    function previewDeposit(State storage self, IDsFlashSwapCore flashSwapRouter, uint256 amount)
-        external
-        view
-        returns (uint256 lvReceived, uint256 raAddedAsLiquidity, uint256 ctAddedAsLiquidity)
-    {
-        uint256 exchangeRate;
-        uint256 paAmount;
-
-        // we mint 1:1 if it's the first deposit
-        if (!self.vault.initialized) {
-            exchangeRate = 1 ether;
-        } else {
-            // else we get the current exchange rate of LV
-            (exchangeRate,,, paAmount) = previewRedeemEarly(self, 1 ether, flashSwapRouter);
-            exchangeRate += paAmount;
->>>>>>> audit/cantina
         }
 
         self.vault.ctHeldPercetage = ctHeldPercentage;
@@ -613,11 +557,10 @@ library VaultLibrary {
         result.feePercentage = self.vault.config.fee;
         result.fee = MathHelper.calculatePercentageFee(result.feePercentage, redeemParams.amount);
 
-<<<<<<< HEAD
         redeemParams.amount -= result.fee;
         
         result.id = redeemParams.id;
-        result.receiver = redeemParams.receiver;
+        result.receiver = owner;
 
         result.paReceived = _redeemPa(self, redeemParams, owner);
 
@@ -645,12 +588,6 @@ library VaultLibrary {
             self.vault.balances.ctBalance -= result.ctReceivedFromVault;
 
             result.dsReceived = dsReceived;
-=======
-        if (redeemParams.amount > ERC20(self.vault.lv._address).balanceOf(owner)) {
-            revert IVault.InsufficientBalance(
-                owner, redeemParams.amount, ERC20(self.vault.lv._address).balanceOf(owner)
-            );
->>>>>>> audit/cantina
         }
 
         {
@@ -669,14 +606,14 @@ library VaultLibrary {
         ERC20Burnable(self.vault.lv._address).burnFrom(owner, redeemParams.amount + result.fee);
 
         // send RA amm to user
-        self.vault.balances.ra.unlockToUnchecked(result.raReceivedFromAmm, redeemParams.receiver);
+        self.vault.balances.ra.unlockToUnchecked(result.raReceivedFromAmm, owner);
 
         // send CT received from AMM and held in vault to user
-        SafeERC20.safeTransfer(IERC20(ds.ct), redeemParams.receiver, result.ctReceivedFromVault + result.ctReceivedFromAmm);
+        SafeERC20.safeTransfer(IERC20(ds.ct), owner, result.ctReceivedFromVault + result.ctReceivedFromAmm);
 
         // empty the DS reserve in router and send it to user
         routers.flashSwapRouter.emptyReservePartialLv(redeemParams.id, dsId, result.dsReceived);
-        SafeERC20.safeTransfer(IERC20(ds._address), redeemParams.receiver, result.dsReceived);
+        SafeERC20.safeTransfer(IERC20(ds._address), owner, result.dsReceived);
     }
 
     function _redeemPa(State storage self, IVault.RedeemEarlyParams memory redeemParams, address owner)
@@ -693,52 +630,6 @@ library VaultLibrary {
 
         paAmount = _calculatePaPriceForLv(self, redeemParams.amount);
         self.vault.pool.withdrawalPool.paBalance -= paAmount;
-<<<<<<< HEAD
         ERC20(self.info.pa).transfer(owner, paAmount);
-=======
-        ERC20(self.info.pair0).transfer(owner, paAmount);
-
-        feePercentage = self.vault.config.fee;
-
-        received = _liquidateLpPartial(
-            self,
-            self.globalAssetIdx,
-            routers.flashSwapRouter,
-            routers.ammRouter,
-            redeemParams.amount,
-            redeemParams.ammDeadline
-        );
-
-        fee = MathHelper.calculatePercentageFee(received, feePercentage);
-
-        if (fee != 0) {
-            provideLiquidityWithFee(self, fee, routers.flashSwapRouter, routers.ammRouter);
-            received = received - fee;
-        }
-
-        if (received < redeemParams.amountOutMin) {
-            revert IVault.InsufficientOutputAmount(redeemParams.amountOutMin, received);
-        }
-
-        ERC20Burnable(self.vault.lv._address).burnFrom(owner, redeemParams.amount);
-        self.vault.balances.ra.unlockToUnchecked(received, owner);
-    }
-
-    function previewRedeemEarly(State storage self, uint256 amount, IDsFlashSwapCore flashSwapRouter)
-        public
-        view
-        returns (uint256 received, uint256 fee, uint256 feePercentage, uint256 paAmpount)
-    {
-        safeBeforeExpired(self);
-
-        feePercentage = self.vault.config.fee;
-
-        (received,) = _tryLiquidateLpAndSellCtToAmm(self, self.globalAssetIdx, flashSwapRouter, amount);
-
-        fee = MathHelper.calculatePercentageFee(received, feePercentage);
-
-        received -= fee;
-        paAmpount = _calculatePaPriceForLv(self, amount);
->>>>>>> audit/cantina
     }
 }
