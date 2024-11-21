@@ -247,6 +247,10 @@ contract CorkConfig is AccessControl, Pausable {
         moduleCore.updateRate(id, newRate);
     }
 
+    function useVaultTradeExecutionResultFunds(Id id) external onlyManager {
+        moduleCore.useTradeExecutionResultFunds(id);
+    }
+
     /**
      * @notice Pause this contract
      */
