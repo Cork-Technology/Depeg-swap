@@ -8,6 +8,7 @@ import {ILiquidator} from "../../interfaces/ILiquidator.sol";
 import {BalancesSnapshot} from "./../../libraries/BalanceSnapshotLib.sol";
 import {IVaultLiquidation} from "./../../interfaces/IVaultLiquidation.sol";
 import {Id} from "./../../libraries/Pair.sol";
+import {CorkConfig} from "./../CorkConfig.sol";
 
 interface GPv2SettlementContract {
     function setPreSignature(bytes calldata orderUid, bool signed) external;
@@ -15,8 +16,6 @@ interface GPv2SettlementContract {
 
 contract Liquidator is AccessControl, ReentrancyGuardTransient, ILiquidator {
     using SafeERC20 for IERC20;
-
-    GPv2SettlementContract settlement;
 
     struct Details {
         address sellToken;
@@ -26,16 +25,37 @@ contract Liquidator is AccessControl, ReentrancyGuardTransient, ILiquidator {
         Call postHookCall;
     }
 
+    GPv2SettlementContract settlement;
+
     mapping(bytes32 => Details) internal orderCalls;
 
-    constructor(address _admin, uint256 _expiryInterval, address _settlementContract) {
-        settlement = GPv2SettlementContract(_settlementContract);
+    address public config;
+    address public hookTrampoline;
+
+    modifier onlyTrampoline() {
+        if (msg.sender != hookTrampoline) {
+            revert ILiquidator.OnlyTrampoline();
+        }
+        _;
     }
 
-    // TODO :  only be callable by trusted liquidator
+    modifier onlyLiquidator() {
+        if (!CorkConfig(config).isTrustedLiquidationExecutor(address(this), msg.sender)) {
+            revert ILiquidator.OnlyLiquidator();
+        }
+        _;
+    }
+
+    constructor(address _config, address _hookTrampoline, address _settlementContract) {
+        settlement = GPv2SettlementContract(_settlementContract);
+        config = _config;
+        hookTrampoline = _hookTrampoline;
+    }
+
     function createOrder(ILiquidator.CreateOrderParams memory params, uint32 expiryPeriodInSecods)
         external
         nonReentrant
+        onlyLiquidator
     {
         // record the order details
         orderCalls[params.internalRefId] =
@@ -48,8 +68,7 @@ contract Liquidator is AccessControl, ReentrancyGuardTransient, ILiquidator {
         emit OrderSubmitted(params.internalRefId, params.orderUid, params.sellToken, params.sellAmount, params.buyToken);
     }
 
-    // TODO :  only be callable from trampoline contract
-    function preHook(bytes32 refId) external {
+    function preHook(bytes32 refId) external onlyTrampoline {
         Details memory details = orderCalls[refId];
 
         if (details.preHookCall.target == address(0)) {
@@ -66,8 +85,7 @@ contract Liquidator is AccessControl, ReentrancyGuardTransient, ILiquidator {
         SafeERC20.safeIncreaseAllowance(IERC20(details.sellToken), address(settlement), details.sellAmount);
     }
 
-    // TODO :  only be callable from trampoline contract
-    function postHook(bytes32 refId) external {
+    function postHook(bytes32 refId) external onlyTrampoline {
         Details memory details = orderCalls[refId];
 
         if (details.preHookCall.target == address(0)) {
@@ -82,8 +100,11 @@ contract Liquidator is AccessControl, ReentrancyGuardTransient, ILiquidator {
         // increase allowance
         SafeERC20.safeTransfer(IERC20(details.buyToken), details.postHookCall.target, balanceDiff);
 
-        // call the funds owner, the funds is expected to be in the liquidator contract after this call
+        // call the 
         details.postHookCall.target.call(details.postHookCall.data);
+
+        // remove the order details to save gas
+        delete orderCalls[refId];
     }
 
     function encodePreHookCallData(bytes32 refId) external returns (bytes memory data) {

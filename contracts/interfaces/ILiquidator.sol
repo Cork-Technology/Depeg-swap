@@ -36,6 +36,12 @@ interface ILiquidator {
     /// @notice thrown when the internal reference id is invalid
     error InalidRefId();
 
+    /// @notice thrown when the caller is not the hook trampoline
+    error OnlyTrampoline();
+
+    /// @notice thrown when the caller is not the liquidator
+    error OnlyLiquidator();
+
     function createOrder(ILiquidator.CreateOrderParams memory params, uint32 expiryPeriodInSecods) external;
 
     function encodePreHookCallData(bytes32 refId) external returns (bytes memory data);
