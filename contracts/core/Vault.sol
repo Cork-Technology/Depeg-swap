@@ -63,8 +63,7 @@ abstract contract VaultCore is ModuleState, Context, IVault, IVaultLiquidation {
             result.ctReceivedFromVault,
             result.dsReceived,
             result.fee,
-            result.feePercentage,
-            result.paReceived
+            result.feePercentage
         );
     }
 

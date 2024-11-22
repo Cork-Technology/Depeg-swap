@@ -1,4 +1,5 @@
 pragma solidity ^0.8.24;
+import  "./../libraries/Pair.sol";
 
 /**
  * @title ILiquidator Interface
