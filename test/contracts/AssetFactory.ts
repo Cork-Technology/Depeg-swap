@@ -42,9 +42,15 @@ describe("Asset Factory", function () {
     ) as Address;
     assetFactory = await loadFixture(deployFactory);
 
-    await assetFactory.write.initialize({
-      account: defaultSigner.account,
-    });
+    const initializeData = "0x8129fc1c";
+    const assetFactoryProxy = await hre.viem.deployContract("ERC1967Proxy", [
+      assetFactory.address,
+      initializeData,
+    ]);
+    assetFactory = await hre.viem.getContractAt(
+      "AssetFactory",
+      assetFactoryProxy.address
+    );
   });
 
   it("should deploy AssetFactory", async function () {

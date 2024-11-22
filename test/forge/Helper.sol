@@ -1,5 +1,6 @@
 pragma solidity ^0.8.24;
 
+import {ERC1967Proxy} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 import {ModuleCore} from "./../../contracts/core/ModuleCore.sol";
 import {AssetFactory} from "./../../contracts/core/assets/AssetFactory.sol";
 import "forge-std/Test.sol";
@@ -59,11 +60,12 @@ abstract contract Helper is SigUtils, TestHelper {
     }
 
     function deployAssetFactory() internal {
-        assetFactory = new AssetFactory();
+        ERC1967Proxy assetFactoryProxy =
+            new ERC1967Proxy(address(new AssetFactory()), abi.encodeWithSignature("initialize()"));
+        assetFactory = AssetFactory(address(assetFactoryProxy));
     }
 
-    function initializeAssetFactory() internal {
-        assetFactory.initialize();
+    function setupAssetFactory() internal {
         assetFactory.transferOwnership(address(moduleCore));
     }
 
@@ -191,17 +193,19 @@ abstract contract Helper is SigUtils, TestHelper {
         corkConfig = new CorkConfig();
     }
 
-    function initializeConfig() internal {
+    function setupConfig() internal {
         corkConfig.setModuleCore(address(moduleCore));
         corkConfig.setFlashSwapCore(address(flashSwapRouter));
     }
 
     function deployFlashSwapRouter() internal {
-        flashSwapRouter = new TestFlashSwapRouter();
+        ERC1967Proxy flashswapProxy = new ERC1967Proxy(
+            address(new TestFlashSwapRouter()), abi.encodeWithSignature("initialize(address)", address(corkConfig))
+        );
+        flashSwapRouter = TestFlashSwapRouter(address(flashswapProxy));
     }
 
-    function initializeFlashSwapRouter() internal {
-        flashSwapRouter.initialize(address(corkConfig));
+    function setupFlashSwapRouter() internal {
         flashSwapRouter.setModuleCore(address(moduleCore));
         flashSwapRouter.setHook(address(hook));
     }
@@ -217,11 +221,20 @@ abstract contract Helper is SigUtils, TestHelper {
         deployFlashSwapRouter();
         deployAssetFactory();
 
-        moduleCore = new TestModuleCore();
-        initializeAssetFactory();
-        initializeConfig();
-        initializeFlashSwapRouter();
-        initializeModuleCore();
+        ERC1967Proxy moduleCoreProxy = new ERC1967Proxy(
+            address(new TestModuleCore()),
+            abi.encodeWithSignature(
+                "initialize(address,address,address,address)",
+                address(assetFactory),
+                address(hook),
+                address(flashSwapRouter),
+                address(corkConfig)
+            )
+        );
+        moduleCore = TestModuleCore(address(moduleCoreProxy));
+        setupAssetFactory();
+        setupConfig();
+        setupFlashSwapRouter();
 
         corkConfig.updateLvStrategyCtSplitPercentage(defaultCurrencyId, DEFAULT_CT_SPLIT_PERCENTAGE);
     }

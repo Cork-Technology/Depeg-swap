@@ -54,6 +54,9 @@ interface ICommon {
 
     /// @notice thrown when trying to update rate with invalid rate
     error InvalidRate();
+    
+    /// @notice Revert when Signature is valid or signature deadline is incorrect
+    error InvalidSignature();
 
     /// @notice thrown when blacklisted liquidation contract tries to request funds from the vault
     error OnlyWhiteListed();
