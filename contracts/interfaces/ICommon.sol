@@ -19,7 +19,7 @@ interface ICommon {
     error OnlyConfigAllowed();
 
     /// @notice module is not initialized, i.e thrown when interacting with uninitialized module
-    error Uninitializedlized();
+    error Uninitialized();
 
     /// @notice module is already initialized, i.e thrown when trying to reinitialize a module
     error AlreadyInitialized();

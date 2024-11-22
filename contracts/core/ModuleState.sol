@@ -67,7 +67,7 @@ abstract contract ModuleState is ICommon, ReentrancyGuardTransient {
 
     modifier onlyInitialized(Id id) {
         if (!states[id].isInitialized()) {
-            revert Uninitializedlized();
+            revert Uninitialized();
         }
         _;
     }
