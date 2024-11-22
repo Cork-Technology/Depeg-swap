@@ -1,6 +1,5 @@
 @ensdomains/=lib/Cork-Hook/lib/v4-periphery/lib/v4-core/node_modules/@ensdomains/
 @ethereum-waffle/=node_modules/@ethereum-waffle/
-@openzeppelin/=node_modules/@openzeppelin/
 @openzeppelin/contracts-upgradeable/=lib/openzeppelin-contracts-upgradeable/contracts/
 @openzeppelin/contracts/=lib/openzeppelin-contracts/contracts/
 @uniswap/v4-core/=lib/Cork-Hook/lib/v4-periphery/lib/v4-core/

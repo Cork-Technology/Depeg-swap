@@ -24,7 +24,6 @@ interface IVault {
 
     struct RedeemEarlyParams {
         Id id;
-        address receiver;
         uint256 amount;
         uint256 amountOutMin;
         uint256 ammDeadline;
@@ -104,6 +103,13 @@ interface IVault {
         external
         returns (RedeemEarlyResult memory result);
 
+    /**
+     * @notice Redeem lv before expiry
+     * @param redeemParams The object with details like id, reciever, amount, amountOutMin, ammDeadline
+     */
+    function redeemEarlyLv(RedeemEarlyParams memory redeemParams)
+        external
+        returns (RedeemEarlyResult memory result);
    
     /**
      * Returns the early redemption fee percentage
