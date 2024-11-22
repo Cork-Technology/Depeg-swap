@@ -1,4 +1,4 @@
-pragma solidity 0.8.24;
+pragma solidity ^0.8.24;
 
 import {IUniswapV2Factory} from "v2-core/interfaces/IUniswapV2Factory.sol";
 import {IUniswapV2Router02} from "v2-periphery/interfaces/IUniswapV2Router02.sol";
@@ -52,11 +52,11 @@ contract RolloverScript is Script {
 
         console.log("--------------- %s (%s) ---------------", tokenName, tokenSymbol);
 
-        Id id = PairLibrary.toId(PairLibrary.initalize(asset.peggedAsset, asset.redemptionAsset));
+        Id id = PairLibrary.toId(PairLibrary.initalize(asset.peggedAsset, asset.redemptionAsset, asset.expiryInterval));
 
-        uint256 currentHPA = flashSwapRouter.getCurrentCumulativeHPA(id);
+        uint256 currentHPA = flashSwapRouter.getCurrentCumulativeHIYA(id);
 
-        console.log("Current HPA  : ", currentHPA);
+        console.log("Current HIYA  : ", currentHPA);
 
         uint256 dsId = moduleCore.lastDsId(id);
 
@@ -81,7 +81,6 @@ contract RolloverScript is Script {
         console.log("Issuing new DS...");
         config.issueNewDs(
             id,
-            block.timestamp + asset.expiryInterval,
             DEFAULT_EXCHANGE_RATE,
             asset.repruchaseFee,
             DEFAULT_DECAY_DISCOUNT_RATE,
@@ -99,9 +98,9 @@ contract RolloverScript is Script {
 
         console.log("New DS Expiry      : ", expiry);
 
-        currentHPA = flashSwapRouter.getCurrentEffectiveHPA(id);
+        currentHPA = flashSwapRouter.getCurrentEffectiveHIYA(id);
 
-        console.log("Current HPA        : ", currentHPA);
+        console.log("Current HIYA        : ", currentHPA);
     }
 
     function run() public {

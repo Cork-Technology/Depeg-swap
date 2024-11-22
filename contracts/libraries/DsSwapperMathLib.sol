@@ -1,9 +1,119 @@
+// SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.24;
 
-import {UQ112x112} from "./UQ112x112.sol";
 import {SignedMath} from "@openzeppelin/contracts/utils/math/SignedMath.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
+import {SD59x18, convert, sd, add, mul, pow, sub, div, abs, unwrap, intoUD60x18} from "@prb/math/src/SD59x18.sol";
+import {UD60x18, convert as convertUd, ud, add, mul, pow, sub, div, unwrap} from "@prb/math/src/UD60x18.sol";
+import {IMathError} from "./../interfaces/IMathError.sol";
+import {MarketSnapshot, MarketSnapshotLib} from "Cork-Hook/lib/MarketSnapshot.sol";
+import "forge-std/console.sol";
+
+
+library BuyMathBisectionSolver {
+    /// @notice returns the the normalized time to maturity from 1-0
+    /// 1 means we're at the start of the period, 0 means we're at the end
+    function computeT(SD59x18 start, SD59x18 end, SD59x18 current) public pure returns (SD59x18) {
+        SD59x18 minimumElapsed = convert(1);
+
+        SD59x18 elapsedTime = sub(current, start);
+        elapsedTime = elapsedTime == convert(0) ? minimumElapsed : elapsedTime;
+        SD59x18 totalDuration = sub(end, start);
+
+        // we return 0 in case it's past maturity time
+        if (elapsedTime >= totalDuration) {
+            return convert(0);
+        }
+
+        // Return a normalized time between 0 and 1 (as a percentage in 18 decimals)
+        return sub(convert(1), div(elapsedTime, totalDuration));
+    }
+
+    function computeOneMinusT(SD59x18 start, SD59x18 end, SD59x18 current) public pure returns (SD59x18) {
+        return sub(convert(1), computeT(start, end, current));
+    }
+
+    /// @notice f(s) = x^1-t + y^t - (x - s + e)^1-t - (y + s)^1-t
+    function f(SD59x18 x, SD59x18 y, SD59x18 e, SD59x18 s, SD59x18 _1MinusT) public pure returns (SD59x18) {
+        SD59x18 xMinSplusE = sub(x, s);
+        xMinSplusE = add(xMinSplusE, e);
+
+        SD59x18 yPlusS = add(y, s);
+
+        {
+            SD59x18 zero = convert(0);
+
+            if (xMinSplusE < zero && yPlusS < zero) {
+                revert IMathError.InvalidS();
+            }
+        }
+
+        SD59x18 xPow = pow(x, _1MinusT);
+        SD59x18 yPow = pow(y, _1MinusT);
+        SD59x18 xMinSplusEPow = pow(xMinSplusE, _1MinusT);
+        SD59x18 yPlusSPow = pow(yPlusS, _1MinusT);
+
+        return sub(sub(add(xPow, yPow), xMinSplusEPow), yPlusSPow);
+    }
+
+    function findRoot(SD59x18 x, SD59x18 y, SD59x18 e, SD59x18 _1MinusT, SD59x18 epsilon, uint256 maxIter)
+        public
+        pure
+        returns (SD59x18)
+    {
+        SD59x18 a = sd(0);
+        SD59x18 b;
+
+        {
+            SD59x18 delta = sd(1e12);
+            b = sub(add(x, e), delta);
+        }
+
+        SD59x18 fA = f(x, y, e, a, _1MinusT);
+        SD59x18 fB = f(x, y, e, b, _1MinusT);
+        {
+            if (mul(fA, fB) >= sd(0)) {
+                uint256 maxAdjustments = 1000;
+
+                SD59x18 adjustment = mul(convert(-1e4), b);
+                for (uint256 i = 0; i < maxAdjustments; i++) {
+                    b = sub(b, adjustment);
+                    fB = f(x, y, e, b, _1MinusT);
+
+                    if (mul(fA, fB) < sd(0)) {
+                        break;
+                    }
+                }
+
+                revert IMathError.NoSignChange();
+            }
+        }
+
+        for (uint256 i = 0; i < maxIter; i++) {
+            SD59x18 c = div(add(a, b), convert(2));
+            SD59x18 fC = f(x, y, e, c, _1MinusT);
+
+            if (abs(fC) < epsilon) {
+                return c;
+            }
+
+            if (mul(fA, fC) < sd(0)) {
+                b = c;
+                fB = fC;
+            } else {
+                a = c;
+                fA = fC;
+            }
+
+            if (sub(b, a) < epsilon) {
+                return div(add(a, b), convert(2));
+            }
+        }
+
+        revert IMathError.NoConverge();
+    }
+}
 
 /**
  * @title SwapperMathLibrary Contract
@@ -11,161 +121,157 @@ import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
  * @notice SwapperMath library which implements math operations for DS swap contract
  */
 library SwapperMathLibrary {
-    using UQ112x112 for uint224;
-    using Math for uint256;
-
-    /// @notice thrown when Reserve is Zero
-    error ZeroReserve();
-
-    /// @notice thrown when Input amount is not sufficient
-    error InsufficientInputAmount();
-
-    /// @notice thrown when not having sufficient Liquidity
-    error InsufficientLiquidity();
-
-    /// @notice thrown when Output amount is not sufficient
-    error InsufficientOutputAmount();
-
-    /// @notice thrown when the number is too big
-    error TooBig();
+    using MarketSnapshotLib for MarketSnapshot;
 
     // Calculate price ratio of two tokens in a uniswap v2 pair, will return ratio on 18 decimals precision
-    function getPriceRatioUniv2(uint112 raReserve, uint112 ctReserve)
+    function getPriceRatio(uint256 raReserve, uint256 ctReserve)
         public
         pure
         returns (uint256 raPriceRatio, uint256 ctPriceRatio)
     {
         if (raReserve <= 0 || ctReserve <= 0) {
-            revert ZeroReserve();
+            revert IMathError.ZeroReserve();
         }
 
-        // Encode uni v2 reserves to UQ112x112 format
-        uint224 encodedRaReserve = UQ112x112.encode(raReserve);
-        uint224 encodedCtReserve = UQ112x112.encode(ctReserve);
-
-        // Calculate price ratios using uqdiv
-        uint224 raPriceRatioUQ = encodedCtReserve.uqdiv(raReserve);
-        uint224 ctPriceRatioUQ = encodedRaReserve.uqdiv(ctReserve);
-
-        // Convert UQ112x112 to regular uint (divide by 2**112)
-        // we time by 18 to have 18 decimals precision
-        raPriceRatio = (uint256(raPriceRatioUQ) * 1e18) / UQ112x112.Q112;
-        ctPriceRatio = (uint256(ctPriceRatioUQ) * 1e18) / UQ112x112.Q112;
-    }
-    /*
-     * S = (E + x - y + sqrt(E^2 + 2E(x + y) + (x - y)^2)) / 2
-     *
-     * Where:
-     *   - s: Amount DS user received
-     *   - e: RA user provided
-     *   - x: RA reserve
-     *   - y: CT reserve
-     *   - r: RA needed to borrow from AMM
-     *
-     */
-
-    function getAmountOutBuyDs(uint256 _x, uint256 _y, uint256 _e) external pure returns (uint256 r, uint256 s) {
-        // first we solve the sqrt part of the equation first
-
-        int256 x = SafeCast.toInt256(_x);
-        int256 y = SafeCast.toInt256(_y);
-        int256 e = SafeCast.toInt256(_e);
-
-        // E^2
-        int256 q1 = e ** 2;
-        // 2E(x + y)
-        int256 q2 = 2 * e * (x + y);
-        // (x - y)^2
-        int256 q3 = (x - y) ** 2;
-
-        // q = sqrt(E^2 + 2E(x + y) + (x - y)^2)
-        uint256 q = SignedMath.abs(q1 + q2 + q3);
-        q = Math.sqrt(q);
-
-        // then we substitue back the sqrt part to the main equation
-        // S = (E + x - y + q) / 2
-
-        // r1 = x - y (to absolute, and we reverse the equation)
-        uint256 r1 = SignedMath.abs(x - y);
-        // r2 = -r1 + q  = q - r1
-        uint256 r2 = q - r1;
-        // E + r2
-        uint256 r3 = r2 + SignedMath.abs(e);
-
-        // S = r3/2 (we multiply by 1e18 to have 18 decimals precision)
-        s = (r3 * 1e18) / 2e18;
-
-        // R = s - e (should be fine with direct typecasting)
-        r = s - SignedMath.abs(e);
+        raPriceRatio = unwrap(div(ud(ctReserve), ud(raReserve)));
+        ctPriceRatio = unwrap(div(ud(raReserve), ud(ctReserve)));
     }
 
-    function calculatePercentage(uint256 amount, uint256 percentage) private pure returns (uint256 result) {
-        result = (((amount * 1e18) * percentage) / (100 * 1e18)) / 1e18;
+    function getAmountOutBuyDs(
+        uint256 x,
+        uint256 y,
+        uint256 e,
+        uint256 start,
+        uint256 end,
+        uint256 current,
+        uint256 epsilon,
+        uint256 maxIter
+    ) external pure returns (uint256 s) {
+        if (x < 0 || y < 0 || e < 0) {
+            revert IMathError.InvalidParam();
+        }
+
+        if (e > x && x < y) {
+            revert IMathError.InsufficientLiquidity();
+        }
+
+        SD59x18 oneMinusT = BuyMathBisectionSolver.computeOneMinusT(
+            convert(int256(start)), convert(int256(end)), convert(int256(current))
+        );
+        SD59x18 root = BuyMathBisectionSolver.findRoot(
+            convert(int256(x)), convert(int256(y)), convert(int256(e)), oneMinusT, sd(int256(epsilon)), maxIter
+        );
+
+        return uint256(convert(root));
     }
 
-    /**
-     * cumulatedHPA = Price_i × Volume_i × 1 - ((Discount / 86400) * (currentTime - issuanceTime))
-     */
-    function calculateHPAcumulated(
-        uint256 effectiveDsPrice,
+    function calculatePercentage(UD60x18 amount, UD60x18 percentage) internal pure returns (UD60x18 result) {
+        result = div(mul(amount, percentage), convertUd(100));
+    }
+
+    /// @notice HIYA_acc = Ri x Volume_i x 1 - ((Discount / 86400) * (currentTime - issuanceTime))
+    function calcHIYAaccumulated(
+        uint256 startTime,
+        uint256 maturityTime,
+        uint256 currentTime,
         uint256 amount,
-        uint256 decayDiscountInDays,
-        uint256 issuanceTimestamp,
-        uint256 currentTime
-    ) external pure returns (uint256 cumulatedHPA) {
-        uint256 decay = calculateDecayDiscount(decayDiscountInDays, issuanceTimestamp, currentTime);
+        uint256 raProvided,
+        uint256 decayDiscountInDays
+    ) internal pure returns (uint256) {
+        UD60x18 t = intoUD60x18(
+            BuyMathBisectionSolver.computeT(
+                convert(int256(startTime)), convert(int256(maturityTime)), convert(int256(currentTime))
+            )
+        );
+        UD60x18 effectiveDsPrice = calculateEffectiveDsPrice(convertUd(amount), convertUd(raProvided));
+        UD60x18 rateI = calcSpotArp(t, effectiveDsPrice);
+        UD60x18 decay = calculateDecayDiscount(ud(decayDiscountInDays), convertUd(startTime), convertUd(currentTime));
 
-        cumulatedHPA = calculatePercentage(effectiveDsPrice * amount / 1e18, decay);
+        return convertUd(calculatePercentage(calculatePercentage(convertUd(amount), rateI), decay));
     }
 
-    function calculateEffectiveDsPrice(uint256 dsAmount, uint256 raProvided)
-        external
+    /// @notice VHIYA_acc =  Volume_i  - ((Discount / 86400) * (currentTime - issuanceTime))
+    function calcVHIYAaccumulated(
+        uint256 startTime,
+        uint256 maturityTime,
+        uint256 currentTime,
+        uint256 decayDiscountInDays,
+        uint256 amount
+    ) internal pure returns (uint256) {
+        UD60x18 decay = calculateDecayDiscount(ud(decayDiscountInDays), convertUd(startTime), convertUd(currentTime));
+
+        return convertUd(calculatePercentage(convertUd(amount), decay));
+    }
+
+    function calculateEffectiveDsPrice(UD60x18 dsAmount, UD60x18 raProvided)
+        internal
         pure
-        returns (uint256 effectiveDsPrice)
+        returns (UD60x18 effectiveDsPrice)
     {
-        effectiveDsPrice = raProvided * 1e18 / dsAmount;
+        effectiveDsPrice = div(raProvided, dsAmount);
     }
 
-    function calculateVHPAcumulated(
-        uint256 amount,
-        uint256 decayDiscountInDays,
-        uint256 issuanceTimestamp,
-        uint256 currentTime
-    ) external pure returns (uint256 cumulatedVHPA) {
-        uint256 decay = calculateDecayDiscount(decayDiscountInDays, issuanceTimestamp, currentTime);
-
-        cumulatedVHPA = calculatePercentage(amount, decay);
-    }
-
-    function calculateHPA(uint256 cumulatedHPA, uint256 cumulatedVHPA) external pure returns (uint256 hpa) {
-        hpa = cumulatedHPA * 1e18 / cumulatedVHPA;
+    function calculateHIYA(uint256 cumulatedHIYA, uint256 cumulatedVHIYA) external pure returns (uint256 hiya) {
+        // we unwrap here since we want to keep the precision when storing
+        hiya = unwrap(div(convertUd(cumulatedHIYA), convertUd(cumulatedVHIYA)));
     }
 
     /**
-     * decay = 1 - ((Discount / 86400) * (currentTime - issuanceTime))
+     * decay = 100 - ((Discount / 86400) * (currentTime - issuanceTime))
      * requirements :
      * Discount * (currentTime - issuanceTime) < 100
      */
-    function calculateDecayDiscount(uint256 decayDiscountInDays, uint256 issuanceTime, uint256 currentTime)
-        public
+    function calculateDecayDiscount(UD60x18 decayDiscountInDays, UD60x18 issuanceTime, UD60x18 currentTime)
+        internal
         pure
-        returns (uint256 decay)
+        returns (UD60x18 decay)
     {
-        if (decayDiscountInDays > type(uint112).max) {
-            revert TooBig();
-        }
-
-        uint224 discPerSec = UQ112x112.encode(uint112(decayDiscountInDays)) / 1 days;
-        uint256 t = currentTime - issuanceTime;
-        uint256 discount = (discPerSec * t / UQ112x112.Q112) + 1;
+        UD60x18 discPerSec = div(decayDiscountInDays, convertUd(86400));
+        UD60x18 t = sub(currentTime, issuanceTime);
+        UD60x18 discount = mul(discPerSec, t);
 
         // this must hold true, it doesn't make sense to have a discount above 100%
-        assert(discount < 100e18);
-        decay = 100e18 - discount;
+        assert(discount < convertUd(100));
+        decay = sub(convertUd(100), discount);
     }
 
-    function calculateRolloverSale(uint256 lvDsReserve, uint256 psmDsReserve, uint256 raProvided, uint256 hpa)
-        external
+    // TODO : confirm with Peter that the t for fixed price rollover sale is constant at 1 since it's fixed price
+    function _calculateRolloverSale(UD60x18 lvDsReserve, UD60x18 psmDsReserve, UD60x18 raProvided, UD60x18 hpa)
+        internal
+        view
+        returns (
+            UD60x18 lvProfit,
+            UD60x18 psmProfit,
+            UD60x18 raLeft,
+            UD60x18 dsReceived,
+            UD60x18 lvReserveUsed,
+            UD60x18 psmReserveUsed
+        )
+    {
+        UD60x18 totalDsReserve = add(lvDsReserve, psmDsReserve);
+
+        // calculate the amount of DS user will receive
+        dsReceived = mul(raProvided, hpa);
+
+        // returns the RA if, the total reserve cannot cover the DS that user will receive. this Ra left must subject to the AMM rates
+        raLeft = totalDsReserve > dsReceived ? convertUd(0) : div(sub(dsReceived, totalDsReserve), hpa);
+
+        // recalculate the DS user will receive, after the RA left is deducted
+        raProvided = sub(raProvided, raLeft);
+        dsReceived = div(raProvided, hpa);
+
+        // proportionally calculate how much DS should be taken from LV and PSM
+        // e.g if LV has 60% of the total reserve, then 60% of the DS should be taken from LV
+        lvReserveUsed = div(mul(lvDsReserve, dsReceived), totalDsReserve);
+        psmReserveUsed = sub(dsReceived, lvReserveUsed);
+
+        // calculate the RA profit of LV and PSM
+        lvProfit = mul(lvReserveUsed, hpa);
+        psmProfit = mul(psmReserveUsed, hpa);
+    }
+
+    function calculateRolloverSale(uint256 lvDsReserve, uint256 psmDsReserve, uint256 raProvided, uint256 hiya)
+        internal
         view
         returns (
             uint256 lvProfit,
@@ -176,70 +282,149 @@ library SwapperMathLibrary {
             uint256 psmReserveUsed
         )
     {
-        uint256 totalDsReserve = lvDsReserve + psmDsReserve;
+        UD60x18 _lvDsReserve = ud(lvDsReserve);
+        UD60x18 _psmDsReserve = ud(psmDsReserve);
+        UD60x18 _raProvided = ud(raProvided);
+        UD60x18 _hpa = sub(convertUd(1), calcPtConstFixed(ud(hiya)));
+        console.log("hiya", hiya);
+        console.log("hpa", unwrap(_hpa));
 
-        // calculate the amount of DS user will receive
-        dsReceived = raProvided * hpa / 1e18;
+        (
+            UD60x18 _lvProfit,
+            UD60x18 _psmProfit,
+            UD60x18 _raLeft,
+            UD60x18 _dsReceived,
+            UD60x18 _lvReserveUsed,
+            UD60x18 _psmReserveUsed
+        ) = _calculateRolloverSale(_lvDsReserve, _psmDsReserve, _raProvided, _hpa);
 
-        // returns the RA if, the total reserve cannot cover the DS that user will receive. this Ra left must subject to the AMM rates
-        raLeft = totalDsReserve > dsReceived ? 0 : ((dsReceived - totalDsReserve) * 1e18) / hpa;
-
-        // recalculate the DS user will receive, after the RA left is deducted
-        raProvided -= raLeft;
-        dsReceived = raProvided * 1e18 / hpa;
-
-        // proportionally calculate how much DS should be taken from LV and PSM
-        // e.g if LV has 60% of the total reserve, then 60% of the DS should be taken from LV
-        lvReserveUsed = (lvDsReserve * dsReceived * 1e18) / totalDsReserve / 1e18;
-        psmReserveUsed = dsReceived - lvReserveUsed;
-
-        // calculate the RA profit of LV and PSM
-        lvProfit = (lvReserveUsed * hpa) / 1e18;
-        psmProfit = (psmReserveUsed * hpa) / 1e18;
-
-        // for rounding errors
-        lvProfit = lvProfit + psmProfit + 1 == raProvided ? lvProfit + 1 : lvProfit;
-
-        // for rounding errors
-        psmReserveUsed = lvReserveUsed + psmReserveUsed + 1 == dsReceived ? psmReserveUsed + 1 : psmReserveUsed;
-
-        assert(lvProfit + psmProfit == raProvided);
-        assert(lvReserveUsed + psmReserveUsed == dsReceived);
+        lvProfit = unwrap(_lvProfit);
+        psmProfit = unwrap(_psmProfit);
+        raLeft = unwrap(_raLeft);
+        dsReceived = unwrap(_dsReceived);
+        lvReserveUsed = unwrap(_lvReserveUsed);
+        psmReserveUsed = unwrap(_psmReserveUsed);
     }
 
     /**
-     * @notice  e =  s - p
-     *          p = (((x*y) / (y-s)) - x)
+     * @notice  e =  s - (x' - x)
+     *          x' - x = (k - (reserveOut - amountOut)^(1-t))^1/(1-t) - reserveIn
+     *          x' - x and x should be fetched directly from the hook
+     *          x' - x is the same as regular getAmountIn
+     * @param xIn the RA we must pay, get it from the hook using getAmountIn
+     * @param s Amount DS user want to sell and how much CT we should borrow from the AMM and also the RA we receive from the PSM
      *
-     * @param x Ra reserve
-     * @param y Ct reserve
-     * @param s Amount DS user want to sell and how much CT we should borrow from the AMM
      * @return success true if the operation is successful, false otherwise. happen generally if there's insufficient liquidity
      * @return e Amount of RA user will receive
-     * @return p amount needed to repay the flash loan
      */
-    function getAmountOutSellDs(uint256 x, uint256 y, uint256 s)
-        external
+    function getAmountOutSellDs(uint256 xIn, uint256 s) external pure returns (bool success, uint256 e) {
+        if (s < xIn) {
+            return (false, 0);
+        } else {
+            e = s - xIn;
+            return (true, e);
+        }
+    }
+
+    /// @notice rT = (f/pT)^1/t - 1
+    function calcRt(UD60x18 pT, UD60x18 t) internal pure returns (UD60x18) {
+        UD60x18 onePerT = div(convertUd(1), t);
+        // TODO : confirm with peter
+        UD60x18 fConst = convertUd(1);
+
+        UD60x18 fPerPt = div(fConst, pT);
+        UD60x18 fPerPtPow = pow(fPerPt, onePerT);
+
+        return sub(fPerPtPow, convertUd(1));
+    }
+
+    function calcSpotArp(UD60x18 t, UD60x18 effectiveDsPrice) internal pure returns (UD60x18) {
+        UD60x18 pt = calcPt(effectiveDsPrice);
+        return calcRt(pt, t);
+    }
+
+    /// @notice pt = 1 - effectiveDsPrice
+    // TODO : confirm with peter
+    function calcPt(UD60x18 effectiveDsPrice) internal pure returns (UD60x18) {
+        return sub(convertUd(1), effectiveDsPrice);
+    }
+
+    /// @notice ptConstFixed = f / (rate +1)^t
+    /// where f = 1, and t = 1
+    /// we expect that the rate is in 1e18 precision BEFORE passing it to this function
+    function calcPtConstFixed(UD60x18 rate) internal pure returns (UD60x18) {
+        UD60x18 ratePlusOne = add(convertUd(1), rate);
+        return div(convertUd(1), ratePlusOne);
+    }
+
+    struct OptimalBorrowParams {
+        MarketSnapshot market;
+        uint256 maxIter;
+        uint256 initialAmountOut;
+        uint256 initialBorrowedAmount;
+        uint256 amountSupplied;
+        uint256 feeIntervalAdjustment;
+        uint256 feeEpsilon;
+    }
+
+    struct OptimalBorrowResult {
+        uint256 repaymentAmount;
+        uint256 borrowedAmount;
+        uint256 amountOut;
+    }
+
+    /**
+     * @notice binary search to find the optimal borrowed amount
+     * lower bound = the initial borrowed amount - (feeIntervalAdjustment * maxIter). if this doesn't satisfy the condition we revert as there's no sane lower bounds
+     * upper = the initial borrowed amount.
+     */
+    function findOptimalBorrowedAmount(OptimalBorrowParams memory params)
+        internal
         pure
-        returns (bool success, uint256 e, uint256 p)
+        returns (OptimalBorrowResult memory result)
     {
-        // can't do a swap if we can't borrow an equal amount of CT from the pool
-        if (x > y - s) {
-            return (false, 0, 0);
+        // we basically do nothing if there's no fee
+        if (params.market.baseFee == 0) {
+            result.repaymentAmount = params.market.getAmountIn(params.initialBorrowedAmount, false);
+            result.amountOut = params.initialAmountOut;
+            result.borrowedAmount = params.initialBorrowedAmount;
+            return (result);
         }
 
-        // calculate the amount of RA user will receive
-        e = s;
+        UD60x18 amountOutUd = convertUd(params.initialAmountOut);
+        UD60x18 initialBorrowedAmountUd = convertUd(params.initialBorrowedAmount);
+        UD60x18 suppliedAmountUd = convertUd(params.amountSupplied);
 
-        // calculate the amount of RA user need to repay the flash loan
-        p = ((x * y) / (y - s)) - x;
+        UD60x18 lowerBound = sub(initialBorrowedAmountUd, convertUd(params.feeIntervalAdjustment * params.maxIter));
+        UD60x18 repaymentAmountUd = convertUd(params.market.getAmountIn(convertUd(lowerBound), false));
 
-        // if the amount of RA user need to repay the flash loan is bigger than the amount of RA user will receive, then the operation is not successful
-        if (p > e) {
-            return (false, 0, 0);
+        if (repaymentAmountUd > amountOutUd) {
+            revert IMathError.NoLowerBound();
         }
 
-        success = true;
-        e -= p;
+        UD60x18 upperBound = initialBorrowedAmountUd;
+        UD60x18 epsilon = convertUd(params.feeEpsilon);
+
+        for (uint256 i = 0; i < params.maxIter; i++) {
+            // we break if we have reached the desired range
+            if (sub(upperBound, lowerBound) <= epsilon) {
+                break;
+            }
+
+            UD60x18 midpoint = div(add(lowerBound, upperBound), convertUd(2));
+            repaymentAmountUd = convertUd(params.market.getAmountIn(convertUd(midpoint), false));
+
+            amountOutUd = add(midpoint, suppliedAmountUd);
+
+            if (repaymentAmountUd > amountOutUd) {
+                upperBound = midpoint;
+            } else {
+                result.repaymentAmount = convertUd(repaymentAmountUd);
+                result.borrowedAmount = convertUd(midpoint);
+                result.amountOut = convertUd(amountOutUd);
+
+                lowerBound = midpoint;
+            }
+        }
     }
 }

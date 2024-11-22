@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.24;
 
 import {Id} from "../libraries/Pair.sol";
@@ -18,7 +19,7 @@ interface ICommon {
     error OnlyConfigAllowed();
 
     /// @notice module is not initialized, i.e thrown when interacting with uninitialized module
-    error Uinitialized();
+    error Uninitializedlized();
 
     /// @notice module is already initialized, i.e thrown when trying to reinitialize a module
     error AlreadyInitialized();
@@ -51,6 +52,9 @@ interface ICommon {
     /// @notice Thrown this error when fees are more than 5%
     error InvalidFees();
 
+    /// @notice thrown when trying to update rate with invalid rate
+    error InvalidRate();
+    
     /// @notice Revert when Signature is valid or signature deadline is incorrect
     error InvalidSignature();
 
@@ -59,7 +63,8 @@ interface ICommon {
     /// @param pa The address of the pegged asset
     /// @param ra The address of the redemption asset
     /// @param lv The address of the LV
-    event InitializedModuleCore(Id indexed id, address indexed pa, address indexed ra, address lv);
+    /// @param expiry The expiry interval of the DS
+    event InitializedModuleCore(Id indexed id, address indexed pa, address indexed ra, address lv, uint256 expiry);
 
     /// @notice Emitted when a new DS is issued for a given PSM
     /// @param Id The PSM id
@@ -67,9 +72,9 @@ interface ICommon {
     /// @param expiry The expiry of the DS
     /// @param ds The address of the DS token
     /// @param ct The address of the CT token
-    /// @param raCtUniPair The address of the uniswap-v2 pair between RA and CT
+    /// @param raCtUniPairId The id of the uniswap-v4 pair between RA and CT
     event Issued(
-        Id indexed Id, uint256 indexed dsId, uint256 indexed expiry, address ds, address ct, address raCtUniPair
+        Id indexed Id, uint256 indexed dsId, uint256 indexed expiry, address ds, address ct, bytes32 raCtUniPairId
     );
 
     /**
@@ -96,4 +101,6 @@ interface ICommon {
      * @return ds address of the DS token
      */
     function swapAsset(Id id, uint256 dsId) external view returns (address ct, address ds);
+
+    function getId(address pa, address ra, uint256 expiryInterva) external pure returns (Id id);
 }

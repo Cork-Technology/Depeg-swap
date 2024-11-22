@@ -1,4 +1,4 @@
-pragma solidity 0.8.24;
+pragma solidity ^0.8.24;
 
 import {IUniswapV2Router02} from "v2-periphery/interfaces/IUniswapV2Router02.sol";
 
@@ -23,9 +23,16 @@ contract LiquidityScript is Script {
     uint256 public pk = vm.envUint("PRIVATE_KEY");
 
     address bsETH = 0xb194fc7C6ab86dCF5D96CF8525576245d0459ea9;
+    uint256 bsETHexpiry = 0;
+
     address lbETH = 0xF24177162B1604e56EB338dd9775d75CC79DaC2B;
+    uint256 lbETHexpiry = 0;
+
     address wamuETH = 0x38B61B429a3526cC6C446400DbfcA4c1ae61F11B;
+    uint256 wamuETHexpiry = 0;
+
     address mlETH = 0xCDc1133148121F43bE5F1CfB3a6426BbC01a9AF6;
+    uint256 mlETHexpiry = 0;
 
     CETH cETH = CETH(ceth);
 
@@ -40,16 +47,16 @@ contract LiquidityScript is Script {
         moduleCore = ModuleCore(0xe56565c208d0a8Ca28FB632aD7F6518f273B8B9f);
         console.log("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-");
 
-        issueDSAndAddLiquidity(mlETH, 300_000 ether);
-        issueDSAndAddLiquidity(lbETH, 300_000 ether);
-        issueDSAndAddLiquidity(bsETH, 300_000 ether);
-        issueDSAndAddLiquidity(wamuETH, 500_000 ether);
+        issueDSAndAddLiquidity(mlETH, 300_000 ether, mlETHexpiry);
+        issueDSAndAddLiquidity(lbETH, 300_000 ether, lbETHexpiry);
+        issueDSAndAddLiquidity(bsETH, 300_000 ether, bsETHexpiry);
+        issueDSAndAddLiquidity(wamuETH, 500_000 ether, wamuETHexpiry);
         console.log("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-");
         vm.stopBroadcast();
     }
 
-    function issueDSAndAddLiquidity(address cst, uint256 liquidityAmt) public {
-        Id id = moduleCore.getId(cst, ceth);
+    function issueDSAndAddLiquidity(address cst, uint256 liquidityAmt, uint256 expiryPeriod) public {
+        Id id = moduleCore.getId(cst, ceth, expiryPeriod);
         cETH.approve(address(univ2Router), liquidityAmt);
         IERC20(cst).approve(address(univ2Router), liquidityAmt);
         univ2Router.addLiquidity(

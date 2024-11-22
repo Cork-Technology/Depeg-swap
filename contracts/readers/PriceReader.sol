@@ -1,4 +1,5 @@
-pragma solidity 0.8.24;
+// SPDX-License-Identifier: BUSL-1.1
+pragma solidity ^0.8.24;
 
 import {IUniswapV2Factory} from "../interfaces/uniswap-v2/factory.sol";
 import {MinimalUniswapV2Library} from "../libraries/uni-v2/UniswapV2Library.sol"; // Assumes you have this library from the router contract

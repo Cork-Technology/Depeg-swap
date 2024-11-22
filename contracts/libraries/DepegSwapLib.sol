@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.24;
 
 import {IERC20Permit} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Permit.sol";
@@ -11,8 +12,6 @@ struct DepegSwap {
     bool expiredEventEmitted;
     address _address;
     address ct;
-    /// @dev right now this the RA:CT AMM pair address
-    address ammPair;
     uint256 ctRedeemed;
 }
 
@@ -23,6 +22,9 @@ struct DepegSwap {
  */
 library DepegSwapLibrary {
     using MinimalSignatureHelper for Signature;
+
+    /// @notice the exchange rate of DS can only go down at maximum 10% at a time
+    uint256 internal constant MAX_RATE_DELTA_PERCENTAGE = 10e18;
 
     function isExpired(DepegSwap storage self) internal view returns (bool) {
         return Asset(self._address).isExpired();
@@ -36,8 +38,8 @@ library DepegSwapLibrary {
         return Asset(self._address).exchangeRate();
     }
 
-    function initialize(address _address, address ct, address ammPair) internal pure returns (DepegSwap memory) {
-        return DepegSwap({expiredEventEmitted: false, _address: _address, ammPair: ammPair, ct: ct, ctRedeemed: 0});
+    function initialize(address _address, address ct) internal pure returns (DepegSwap memory) {
+        return DepegSwap({expiredEventEmitted: false, _address: _address, ct: ct, ctRedeemed: 0});
     }
 
     function permitForRA(
@@ -79,5 +81,10 @@ library DepegSwapLibrary {
     function burnBothforSelf(DepegSwap storage self, uint256 amount) internal {
         Asset(self._address).burn(amount);
         Asset(self.ct).burn(amount);
+    }
+
+    function updateExchangeRate(DepegSwap storage self, uint256 rate) internal {
+        Asset(self._address).updateRate(rate);
+        Asset(self.ct).updateRate(rate); 
     }
 }

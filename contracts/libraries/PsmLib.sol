@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.24;
 
 import {Asset, ERC20Burnable} from "../core/assets/Asset.sol";
@@ -15,6 +16,7 @@ import {IDsFlashSwapCore} from "../interfaces/IDsFlashSwapRouter.sol";
 import {VaultLibrary} from "./VaultLib.sol";
 import {IUniswapV2Router02} from "../interfaces/uniswap-v2/RouterV2.sol";
 import {SafeERC20, IERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import {ICorkHook} from "./../interfaces/UniV4/IMinimalHook.sol";
 
 /**
  * @title Psm Library Contract
@@ -48,6 +50,33 @@ library PsmLibrary {
 
     function updateAutoSell(State storage self, address user, bool status) external {
         self.psm.autoSell[user] = status;
+    }
+
+    function updateExchangeRate(State storage self, uint256 newRate) external {
+        uint256 currentRate = self.ds[self.globalAssetIdx].exchangeRate();
+
+        _ensureRateIsInDeltaRange(currentRate, newRate);
+
+        self.ds[self.globalAssetIdx].updateExchangeRate(newRate);
+    }
+
+    function _ensureRateIsInDeltaRange(uint256 currentRate, uint256 newRate) internal {
+        // rate must never go higher than the current rate
+        if (newRate > currentRate) {
+            revert ICommon.InvalidRate();
+        }
+
+        uint256 delta = MathHelper.calculatePercentageFee(DepegSwapLibrary.MAX_RATE_DELTA_PERCENTAGE, currentRate);
+        delta = currentRate - delta;
+
+        // rate must never go down below delta
+        if (newRate < delta) {
+            revert ICommon.InvalidRate();
+        }
+    }
+
+    function autoSellStatus(State storage self, address user) external view returns (bool status) {
+        return self.psm.autoSell[user];
     }
 
     function acceptRolloverProfit(State storage self, uint256 amount) external {
@@ -248,7 +277,6 @@ library PsmLibrary {
         State storage self,
         address ct,
         address ds,
-        address ammPair,
         uint256 idx,
         uint256 prevIdx,
         uint256 repurchaseFeePercent
@@ -263,7 +291,7 @@ library PsmLibrary {
         self.psm.balances.dsBalance = 0;
 
         self.psm.repurchaseFeePercentage = repurchaseFeePercent;
-        self.ds[idx] = DepegSwapLibrary.initialize(ds, ct, ammPair);
+        self.ds[idx] = DepegSwapLibrary.initialize(ds, ct);
     }
 
     function _separateLiquidity(State storage self, uint256 prevIdx) internal {
@@ -366,6 +394,7 @@ library PsmLibrary {
             self.psm.balances.ra.decLocked(ra);
             ds.burnBothforSelf(amount);
         }
+        return ra;
     }
 
     function lvRedeemRaPaWithCt(State storage self, uint256 amount, uint256 dsId)
@@ -375,33 +404,17 @@ library PsmLibrary {
         // we separate the liquidity here, that means, LP liquidation on the LV also triggers
         _separateLiquidity(self, dsId);
 
+        // noop if amount is 0
+        if (amount == 0) {
+            return (0, 0);
+        }
+
         uint256 totalCtIssued = self.psm.poolArchive[dsId].ctAttributed;
         PsmPoolArchive storage archive = self.psm.poolArchive[dsId];
 
         (accruedPa, accruedRa) = _calcRedeemAmount(amount, totalCtIssued, archive.raAccrued, archive.paAccrued);
 
         _beforeCtRedeem(self, self.ds[dsId], dsId, amount, accruedPa, accruedRa);
-    }
-
-    /// @notice preview deposit
-    /// @dev since we mint 1:1, we return the same amount,
-    /// since rate only effective when redeeming with DS
-    function previewDeposit(State storage self, uint256 amount)
-        external
-        view
-        returns (uint256 ctReceived, uint256 dsReceived, uint256 dsId)
-    {
-        if (amount == 0) {
-            revert ICommon.ZeroDeposit();
-        }
-
-        dsId = self.globalAssetIdx;
-        DepegSwap storage ds = self.ds[dsId];
-
-        Guard.safeBeforeExpired(ds);
-
-        ctReceived = amount;
-        dsReceived = amount;
     }
 
     function _redeemRaWithCtDs(State storage self, DepegSwap storage ds, address owner, uint256 amount)
@@ -481,7 +494,7 @@ library PsmLibrary {
     }
 
     function previewRepurchase(State storage self, uint256 amount)
-        public
+        internal
         view
         returns (
             uint256 dsId,
@@ -501,8 +514,14 @@ library PsmLibrary {
         exchangeRates = ds.exchangeRate();
 
         // the fee is taken directly from RA before it's even converted to DS
-        feePercentage = self.psm.repurchaseFeePercentage;
-        fee = MathHelper.calculatePercentageFee(amount, feePercentage);
+        {
+            Asset dsToken = Asset(ds._address);
+
+            (fee, feePercentage) = MathHelper.calculateRepurchaseFee(
+                dsToken.issuedAt(), dsToken.expiry(), block.timestamp, amount, self.psm.repurchaseFeePercentage
+            );
+        }
+
         amount = amount - fee;
 
         // we use deposit here because technically the user deposit RA to the PSM when repurchasing
@@ -525,7 +544,7 @@ library PsmLibrary {
         address buyer,
         uint256 amount,
         IDsFlashSwapCore flashSwapRouter,
-        IUniswapV2Router02 ammRouter
+        ICorkHook ammRouter
     )
         external
         returns (
@@ -722,31 +741,6 @@ library PsmLibrary {
         _beforeCtRedeem(self, ds, dsId, amount, accruedPa, accruedRa);
 
         _afterCtRedeem(self, ds, owner, amount, accruedPa, accruedRa);
-    }
-
-    /// @notice simulate a ct redeem. will fail if not expired.
-    /// @return accruedPa the amount of PA the user would receive
-    /// @return accruedRa the amount of RA the user would receive
-    function previewRedeemWithCt(State storage self, uint256 dsId, uint256 amount)
-        external
-        view
-        returns (uint256 accruedPa, uint256 accruedRa)
-    {
-        DepegSwap storage ds = self.ds[dsId];
-        Guard.safeAfterExpired(ds);
-
-        uint256 totalCtIssued = IERC20(ds.ct).totalSupply();
-        uint256 availableRa = self.psm.balances.ra.tryConvertAllToFree();
-        uint256 availablePa = self.psm.balances.paBalance;
-
-        if (self.psm.liquiditySeparated.get(dsId)) {
-            PsmPoolArchive storage archive = self.psm.poolArchive[dsId];
-            totalCtIssued = archive.ctAttributed;
-            availableRa = archive.raAccrued;
-            availablePa = archive.paAccrued;
-        }
-
-        (accruedPa, accruedRa) = _calcRedeemAmount(amount, totalCtIssued, availableRa, availablePa);
     }
 
     function updatePSMBaseRedemptionFeePercentage(State storage self, uint256 newFees) external {

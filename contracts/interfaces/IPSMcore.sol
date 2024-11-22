@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.24;
 
 import {Id} from "../libraries/Pair.sol";
@@ -9,6 +10,12 @@ import {IRepurchase} from "./IRepurchase.sol";
  * @notice IPSMcore interface for PSMCore contract
  */
 interface IPSMcore is IRepurchase {
+    /// @notice Emitted when the exchange rate is updated
+    /// @param id The PSM id
+    /// @param newRate The new rate
+    /// @param previousRate The previous rate
+    event RateUpdated(Id indexed id, uint256 newRate, uint256 previousRate);
+
     /// @notice Emitted when a user deposits assets into a given PSM
     /// @param Id The PSM id
     /// @param dsId The DS id
@@ -145,19 +152,6 @@ interface IPSMcore is IRepurchase {
     function exchangeRate(Id id) external view returns (uint256 rates);
 
     /**
-     * @notice returns the amount of CT and DS tokens that will be received after deposit
-     * @param id the id of PSM
-     * @param amount the amount to be deposit
-     * @return ctReceived the amount of CT will be received
-     * @return dsReceived the amount of DS will be received
-     * @return dsId Id of DS
-     */
-    function previewDepositPsm(Id id, uint256 amount)
-        external
-        view
-        returns (uint256 ctReceived, uint256 dsReceived, uint256 dsId);
-
-    /**
      * @notice redeem RA with DS + PA
      * @param id The pair id
      * @param dsId The DS id
@@ -189,22 +183,6 @@ interface IPSMcore is IRepurchase {
         returns (uint256 received, uint256 _exchangeRate, uint256 fee);
 
     /**
-     * @notice preview the amount of RA user will get when Redeem RA with DS+PA
-     * @param id The pair id
-     * @param dsId The DS id
-     * @param amount The amount of PA to redeem
-     * @return ra The amount of RA user will get
-     * @return ds The amount of DS user will have to provide
-     * @return fee The fee charged for redemption
-     * @return exchangeRates The effective rate at the time of redemption
-     * @return feePercentage The fee percentage charged for redemption
-     */
-    function previewRedeemRaWithDs(Id id, uint256 dsId, uint256 amount)
-        external
-        view
-        returns (uint256 ra, uint256 ds, uint256 fee, uint256 exchangeRates, uint256 feePercentage);
-
-    /**
      * @notice redeem RA + PA with CT at expiry
      * @param id The pair id
      * @param dsId The DS id
@@ -231,19 +209,6 @@ interface IPSMcore is IRepurchase {
     function redeemWithCT(Id id, uint256 dsId, uint256 amount)
         external
         returns (uint256 accruedPa, uint256 accruedRa);
-
-    /**
-     * @notice preview the amount of RA user will get when Redeem RA with CT+DS
-     * @param id The pair id
-     * @param dsId The DS id
-     * @param amount The amount of CT to redeem
-     * @return paReceived The amount of PA user will get
-     * @return raReceived The amount of RA user will get
-     */
-    function previewRedeemWithCt(Id id, uint256 dsId, uint256 amount)
-        external
-        view
-        returns (uint256 paReceived, uint256 raReceived);
 
     /**
      * @notice returns amount of ra user will get when Redeem RA with CT+DS
@@ -273,14 +238,6 @@ interface IPSMcore is IRepurchase {
      * @return ra amount of RA user received
      */
     function redeemRaWithCtDs(Id id, uint256 amount) external returns (uint256 ra);
-
-    /**
-     * @notice returns amount of ra user will get when Redeem RA with CT+DS
-     * @param id The PSM id
-     * @param amount amount user wants to redeem
-     * @return ra amount of RA user will get
-     */
-    function previewRedeemRaWithCtDs(Id id, uint256 amount) external view returns (uint256 ra);
 
     /**
      * @notice returns amount of value locked in LV
@@ -315,4 +272,8 @@ interface IPSMcore is IRepurchase {
     function updatePsmAutoSellStatus(Id id, bool status) external;
 
     function rolloverProfitRemaining(Id id, uint256 dsId) external view returns (uint256);
+
+    function psmAutoSellStatus(Id id) external view returns (bool);
+
+    function updateRate(Id id, uint256 newRate) external;
 }
