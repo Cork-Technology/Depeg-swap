@@ -32,6 +32,7 @@ contract Liquidator is AccessControl, ReentrancyGuardTransient, ILiquidator {
         settlement = GPv2SettlementContract(_settlementContract);
     }
 
+    // TODO :  only be callable by trusted liquidator
     function createOrder(ILiquidator.CreateOrderParams memory params, uint32 expiryPeriodInSecods)
         external
         nonReentrant
@@ -47,6 +48,7 @@ contract Liquidator is AccessControl, ReentrancyGuardTransient, ILiquidator {
         emit OrderSubmitted(params.internalRefId, params.orderUid, params.sellToken, params.sellAmount, params.buyToken);
     }
 
+    // TODO :  only be callable from trampoline contract
     function preHook(bytes32 refId) external {
         Details memory details = orderCalls[refId];
 
@@ -64,6 +66,7 @@ contract Liquidator is AccessControl, ReentrancyGuardTransient, ILiquidator {
         SafeERC20.safeIncreaseAllowance(IERC20(details.sellToken), address(settlement), details.sellAmount);
     }
 
+    // TODO :  only be callable from trampoline contract
     function postHook(bytes32 refId) external {
         Details memory details = orderCalls[refId];
 
