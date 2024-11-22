@@ -34,10 +34,4 @@ interface ILiquidator {
         string reason
     );
 
-    // Liquidate RA for PA for any RA-PA pair specified in function call
-    function liquidateRaForPa(address raToken, address paToken, uint256 raAmount, uint256 paAmount)
-        external
-        returns (bool);
-
-    function updateLiquidatorRole(address _hedgeUnit, bool _isSet) external;
 }

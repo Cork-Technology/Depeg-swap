@@ -1,7 +1,7 @@
 pragma solidity ^0.8.24;
 
 import {Script, console} from "forge-std/Script.sol";
-import {Liquidator} from "../../../contracts/core/Liquidator.sol";
+import {Liquidator} from "../../../contracts/core/liquidators/Liquidator.sol";
 import {Utils} from "../Utils/Utils.s.sol"; // Import the Utils contract
 import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 

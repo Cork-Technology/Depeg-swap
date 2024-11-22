@@ -9,7 +9,7 @@ import {AssetFactory} from "../../contracts/core/assets/AssetFactory.sol";
 import {CorkConfig} from "../../contracts/core/CorkConfig.sol";
 import {RouterState} from "../../contracts/core/flash-swaps/FlashSwapRouter.sol";
 import {ModuleCore} from "../../contracts/core/ModuleCore.sol";
-import {Liquidator} from "../../contracts/core/Liquidator.sol";
+import {Liquidator} from "../../contracts/core/liquidators/Liquidator.sol";
 import {HedgeUnit} from "../../contracts/core/assets/HedgeUnit.sol";
 import {HedgeUnitFactory} from "../../contracts/core/assets/HedgeUnitFactory.sol";
 import {CETH} from "../../contracts/tokens/CETH.sol";
@@ -25,13 +25,6 @@ interface ICST {
 }
 
 contract DeployScript is Script {
-    // // TODO : check if univ2 compilation with foundry is same as hardhat compiled bytecode
-    // string constant v2FactoryArtifact = "test/helper/ext-abi/foundry/uni-v2-factory.json";
-    // string constant v2RouterArtifact = "test/helper/ext-abi/foundry/uni-v2-router.json";
-
-    // IUniswapV2Factory public factory;
-    // IUniswapV2Router02 public univ2Router;
-
     AssetFactory public assetFactory;
     CorkConfig public config;
     RouterState public flashswapRouter;
