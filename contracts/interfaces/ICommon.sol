@@ -54,6 +54,9 @@ interface ICommon {
 
     /// @notice thrown when trying to update rate with invalid rate
     error InvalidRate();
+    
+    /// @notice Revert when Signature is valid or signature deadline is incorrect
+    error InvalidSignature();
 
     /// @notice Emitted when a new LV and PSM is initialized with a given pair
     /// @param id The PSM id

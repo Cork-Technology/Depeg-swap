@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity 0.8.26;
 
+import {IERC20Permit} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Permit.sol";
 import {Asset} from "../core/assets/Asset.sol";
 import {Signature, MinimalSignatureHelper} from "./SignatureHelperLib.sol";
 
@@ -41,7 +42,7 @@ library DepegSwapLibrary {
         return DepegSwap({expiredEventEmitted: false, _address: _address, ct: ct, ctRedeemed: 0});
     }
 
-    function permit(
+    function permitForRA(
         address contract_,
         bytes memory rawSig,
         address owner,
@@ -49,9 +50,27 @@ library DepegSwapLibrary {
         uint256 value,
         uint256 deadline
     ) internal {
+        // Split the raw signature
         Signature memory sig = MinimalSignatureHelper.split(rawSig);
 
-        Asset(contract_).permit(owner, spender, value, deadline, sig.v, sig.r, sig.s);
+        // Call the underlying ERC-20 contract's permit function
+        IERC20Permit(contract_).permit(owner, spender, value, deadline, sig.v, sig.r, sig.s);
+    }
+
+    function permit(
+        address contract_,
+        bytes memory rawSig,
+        address owner,
+        address spender,
+        uint256 value,
+        uint256 deadline,
+        string memory functionName
+    ) internal {
+        // Split the raw signature
+        Signature memory sig = MinimalSignatureHelper.split(rawSig);
+
+        // Call the underlying ERC-20 contract's permit function
+        Asset(contract_).permit(owner, spender, value, deadline, sig.v, sig.r, sig.s, functionName);
     }
 
     function issue(DepegSwap memory self, address to, uint256 amount) internal {

@@ -28,6 +28,10 @@ contract ModuleCore is OwnableUpgradeable, UUPSUpgradeable, PsmCore, Initialize,
     using PsmLibrary for State;
     using PairLibrary for Pair;
 
+    constructor() {
+        _disableInitializers();
+    }
+
     /// @notice Initializer function for upgradeable contracts
     function initialize(address _swapAssetFactory, address _ammHook, address _flashSwapRouter, address _config)
         external

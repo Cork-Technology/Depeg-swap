@@ -41,7 +41,6 @@ interface IPSMcore is IRepurchase {
     /// @param dsReceived The amount of DS received, if 0 then the DS is sold to flash swap router, and implies the user opt-in for DS auto-sell
     /// @param ctReceived The amount of CT received
     /// @param paReceived The amount of PA received
-    /// @param exchangeRate The exchange rate of DS at the time of rollover
     event RolledOver(
         Id indexed Id,
         uint256 indexed currentDsId,
@@ -50,8 +49,7 @@ interface IPSMcore is IRepurchase {
         uint256 amountCtRolledOver,
         uint256 dsReceived,
         uint256 ctReceived,
-        uint256 paReceived,
-        uint256 exchangeRate
+        uint256 paReceived
     );
 
     /// @notice Emitted when a user claims profit from a rollover
@@ -172,6 +170,19 @@ interface IPSMcore is IRepurchase {
     ) external returns (uint256 received, uint256 _exchangeRate, uint256 fee);
 
     /**
+     * @notice redeem RA with DS + PA
+     * @param id The pair id
+     * @param dsId The DS id
+     * @param amount The amount of DS + PA to redeem
+     * @return received The amount of RA user will get
+     * @return _exchangeRate The effective rate at the time of redemption
+     * @return fee The fee charged for redemption
+     */
+    function redeemRaWithDs(Id id, uint256 dsId, uint256 amount)
+        external
+        returns (uint256 received, uint256 _exchangeRate, uint256 fee);
+
+    /**
      * @notice redeem RA + PA with CT at expiry
      * @param id The pair id
      * @param dsId The DS id
@@ -188,6 +199,16 @@ interface IPSMcore is IRepurchase {
         bytes memory rawCtPermitSig,
         uint256 deadline
     ) external returns (uint256 accruedPa, uint256 accruedRa);
+
+    /**
+     * @notice redeem RA + PA with CT at expiry
+     * @param id The pair id
+     * @param dsId The DS id
+     * @param amount The amount of CT to redeem
+     */
+    function redeemWithCT(Id id, uint256 dsId, uint256 amount)
+        external
+        returns (uint256 accruedPa, uint256 accruedRa);
 
     /**
      * @notice returns amount of ra user will get when Redeem RA with CT+DS
@@ -211,6 +232,14 @@ interface IPSMcore is IRepurchase {
     ) external returns (uint256 ra);
 
     /**
+     * @notice returns amount of ra user will get when Redeem RA with CT+DS
+     * @param id The PSM id
+     * @param amount amount user wants to redeem
+     * @return ra amount of RA user received
+     */
+    function redeemRaWithCtDs(Id id, uint256 amount) external returns (uint256 ra);
+
+    /**
      * @notice returns amount of value locked in LV
      * @param id The PSM id
      */
@@ -230,13 +259,17 @@ interface IPSMcore is IRepurchase {
         uint256 prevDsId,
         bytes memory rawCtPermitSig,
         uint256 ctDeadline
-    ) external returns (uint256 ctReceived, uint256 dsReceived, uint256 _exchangeRate, uint256 paReceived);
+    ) external returns (uint256 ctReceived, uint256 dsReceived, uint256 paReceived);
 
     function claimAutoSellProfit(Id id, uint256 prevDsId, uint256 amount)
         external
         returns (uint256 profit, uint256 dsReceived);
 
-    function updatePsmAutoSellStatus(Id id, address user, bool status) external;
+    function rolloverCt(Id id, address owner, uint256 amount, uint256 prevDsId)
+        external
+        returns (uint256 ctReceived, uint256 dsReceived, uint256 paReceived);
+
+    function updatePsmAutoSellStatus(Id id, bool status) external;
 
     function rolloverProfitRemaining(Id id, uint256 dsId) external view returns (uint256);
 

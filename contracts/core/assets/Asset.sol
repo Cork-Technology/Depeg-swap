@@ -3,11 +3,10 @@ pragma solidity 0.8.26;
 
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {IERC20, ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
-import {ERC20Permit} from "@openzeppelin/contracts/token/ERC20/extensions/ERC20Permit.sol";
 import {ERC20Burnable} from "@openzeppelin/contracts/token/ERC20/extensions/ERC20Burnable.sol";
 import {IExpiry} from "../../interfaces/IExpiry.sol";
 import {IRates} from "../../interfaces/IRates.sol";
-
+import {CustomERC20Permit} from "../../libraries/ERC/CustomERC20Permit.sol";
 /**
  * @title Contract for Adding Exchange Rate functionality
  * @author Cork Team
@@ -75,13 +74,13 @@ abstract contract Expiry is IExpiry {
  * @author Cork Team
  * @notice Contract for implementing assets like DS/CT etc
  */
-contract Asset is ERC20Burnable, ERC20Permit, Ownable, Expiry, ExchangeRate {
+contract Asset is ERC20Burnable, CustomERC20Permit, Ownable, Expiry, ExchangeRate {
     uint256 internal immutable DS_ID;
 
     constructor(string memory prefix, string memory pairName, address _owner, uint256 _expiry, uint256 _rate, uint256 _dsId)
         ExchangeRate(_rate)
         ERC20(string(abi.encodePacked(prefix, "-", pairName)), string(abi.encodePacked(prefix, "-", pairName)))
-        ERC20Permit(string(abi.encodePacked(prefix, "-", pairName)))
+        CustomERC20Permit(string(abi.encodePacked(prefix, "-", pairName)))
         Ownable(_owner)
         Expiry(_expiry)
     {
