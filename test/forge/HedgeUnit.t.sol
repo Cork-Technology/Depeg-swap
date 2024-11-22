@@ -28,6 +28,9 @@ contract HedgeUnitTest is Helper {
     uint256 constant INITIAL_MINT_CAP = 1000 * 1e18; // 1000 tokens
     uint256 constant USER_BALANCE = 500 * 1e18;
 
+    // TODO : Add the hookTrampoline address
+    address hookTrampoline = DEFAULT_ADDRESS;
+
     address settlementContract = 0x9008D19f58AAbD9eD0D60971565AA8510560ab41;
 
     function setUp() public {
@@ -52,7 +55,7 @@ contract HedgeUnitTest is Helper {
         fetchProtocolGeneralInfo();
 
         // Deploy the Liquidator contract
-        liquidator = new Liquidator(DEFAULT_ADDRESS, 10000, settlementContract);
+        liquidator = new Liquidator(DEFAULT_ADDRESS, hookTrampoline, settlementContract);
 
         // Deploy the HedgeUnit contract
         hedgeUnit = new HedgeUnit(

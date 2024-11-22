@@ -58,6 +58,9 @@ contract DeployScript is Script {
     uint256 bsETH_CETH_expiry = 0.4 days;
     uint256 wamuETH_CETH_expiry = 6 days;
 
+    // TODO : plz fix this properly
+    address hookTrampoline = vm.addr(pk);
+
     uint256 constant INITIAL_MINT_CAP = 1000 * 1e18; // 1000 tokens
 
     CETH cETH = CETH(ceth);
@@ -181,7 +184,7 @@ contract DeployScript is Script {
         console.log("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-");
 
         // Deploy the Liquidator contract
-        liquidator = new Liquidator(msg.sender, 10000, settlementContract);
+        liquidator = new Liquidator(msg.sender, hookTrampoline, settlementContract);
         console.log("Liquidator                      : ", address(liquidator));
         console.log("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-");
 

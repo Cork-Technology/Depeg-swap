@@ -39,6 +39,9 @@ contract DeployScript is Script {
     uint256 fedUSDExpiry = 3.5 days;
     uint256 omgUSDExpiry = 0.5 days;
 
+// TODO: Add the hookTrampoline address
+    address hookTrampoline = vm.addr(pk);
+
     address settlementContract = 0x9008D19f58AAbD9eD0D60971565AA8510560ab41;
 
     uint256 constant INITIAL_MINT_CAP = 1000 * 1e18; // 1000 tokens
@@ -53,7 +56,7 @@ contract DeployScript is Script {
         console.log("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-");
 
         // Deploy the Liquidator contract
-        liquidator = new Liquidator(msg.sender, 10000, settlementContract);
+        liquidator = new Liquidator(msg.sender, hookTrampoline, settlementContract);
         console.log("Liquidator                      : ", address(liquidator));
         console.log("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-");
 
