@@ -5,71 +5,103 @@ import {AccessControl} from "@openzeppelin/contracts/access/AccessControl.sol";
 import {ReentrancyGuardTransient} from "@openzeppelin/contracts/utils/ReentrancyGuardTransient.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {ILiquidator} from "../../interfaces/ILiquidator.sol";
-import {OrderHelper} from "./OrderHelper.sol";
+import {BalancesSnapshot} from "./../../libraries/BalanceSnapshotLib.sol";
+import {IVaultLiquidation} from "./../../interfaces/IVaultLiquidation.sol";
+import {Id} from "./../../libraries/Pair.sol";
 
-interface ISettlement {
+interface GPv2SettlementContract {
     function setPreSignature(bytes calldata orderUid, bool signed) external;
 }
 
 contract Liquidator is AccessControl, ReentrancyGuardTransient, ILiquidator {
     using SafeERC20 for IERC20;
 
-    bytes32 public constant LIQUIDATOR_ROLE = keccak256("LIQUIDATOR_ROLE");
+    GPv2SettlementContract settlement;
 
-    // Default expiry interval for orders, can be updated
-    uint256 public expiryInterval;
-    // Address of the CowSwap settlement contract
-    address public settlementContract;
+    struct Details {
+        address sellToken;
+        uint256 sellAmount;
+        address buyToken;
+        Call preHookCall;
+        Call postHookCall;
+    }
+
+    mapping(bytes32 => Details) internal orderCalls;
 
     constructor(address _admin, uint256 _expiryInterval, address _settlementContract) {
-        expiryInterval = _expiryInterval;
-        settlementContract = _settlementContract;
-
-
+        settlement = GPv2SettlementContract(_settlementContract);
     }
 
-    // Liquidate RA for PA for any RA-PA pair specified in function call
-    function liquidateRaForPa(address raToken, address paToken, uint256 raAmount, uint256 paAmount)
+    function createOrder(ILiquidator.CreateOrderParams memory params, uint32 expiryPeriodInSecods)
         external
-        onlyRole(LIQUIDATOR_ROLE)
         nonReentrant
-        returns (bool)
     {
-        uint256 expiry = block.timestamp + expiryInterval;
-
-        // Transfer RA tokens from caller to this contract
-        IERC20(raToken).safeTransferFrom(msg.sender, address(this), raAmount);
-        // Approve the CowSwap settlement contract to spend `amount` of `raToken`
-        IERC20(raToken).safeIncreaseAllowance(settlementContract, raAmount);
-
-        CowswapHelper.Data memory order = CowswapHelper.Data({
-            sellToken: IERC20(raToken),
-            buyToken: IERC20(paToken),
-            receiver: address(this),
-            sellAmount: raAmount,
-            buyAmount: paAmount,
-            validTo: uint32(expiry),
-            appData: 0xb48d38f93eaa084033fc5970bf96e559c33c4cdc07d889ab00b4d63f9590739d,
-            feeAmount: 0,
-            kind: keccak256("sell"),
-            partiallyFillable: true,
-            sellTokenBalance: keccak256("erc20"),
-            buyTokenBalance: keccak256("erc20")
-        });
-
-        bytes32 orderDigest = cowswapHelper.hash(order);
-        bytes memory orderUid = cowswapHelper.packOrderUidParams(orderDigest, address(this), uint32(expiry));
+        // record the order details
+        orderCalls[params.internalRefId] =
+            Details(params.sellToken, params.sellAmount, params.buyToken, params.preHookCall, params.postHookCall);
 
         // Call the settlement contract to set pre-signature
-        ISettlement(settlementContract).setPreSignature(orderUid, true);
+        settlement.setPreSignature(params.orderUid, true);
 
         // Emit an event with order details for the backend to pick up
-        emit OrderRequest(raToken, paToken, raAmount, paAmount, expiry, msg.sender, orderUid);
-
-        return true;
+        emit OrderSubmitted(params.internalRefId, params.orderUid, params.sellToken, params.sellAmount, params.buyToken);
     }
 
-    function preHook() external override {}
+    function preHook(bytes32 refId) external {
+        Details memory details = orderCalls[refId];
 
-    function postHook() external override {}
+        if (details.preHookCall.target == address(0)) {
+            revert ILiquidator.InalidRefId();
+        }
+
+        // call the funds owner, the funds is expected to be in the liquidator contract after this call
+        details.preHookCall.target.call(details.preHookCall.data);
+
+        // make a snapshot of the liquidation contract balance
+        BalancesSnapshot.takeSnapshot(details.buyToken);
+
+        // give the settlement contract allowance to spend the funds
+        SafeERC20.safeIncreaseAllowance(IERC20(details.sellToken), address(settlement), details.sellAmount);
+    }
+
+    function postHook(bytes32 refId) external {
+        Details memory details = orderCalls[refId];
+
+        if (details.preHookCall.target == address(0)) {
+            revert ILiquidator.InalidRefId();
+        }
+
+        uint256 balanceDiff = BalancesSnapshot.getDifferences(details.buyToken);
+
+        // actually encode the balance difference in the postHookCall data
+        details.postHookCall.data = bytes.concat(details.postHookCall.data, abi.encode(balanceDiff));
+
+        // increase allowance
+        SafeERC20.safeTransfer(IERC20(details.buyToken), details.postHookCall.target, balanceDiff);
+
+        // call the funds owner, the funds is expected to be in the liquidator contract after this call
+        details.postHookCall.target.call(details.postHookCall.data);
+    }
+
+    function encodePreHookCallData(bytes32 refId) external returns (bytes memory data) {
+        data = abi.encodeCall(this.preHook, refId);
+    }
+
+    function encodePostHookCallData(bytes32 refId) external returns (bytes memory data) {
+        data = abi.encodeCall(this.postHook, refId);
+    }
+
+    // needed since the resulting trade amount isn't fixed and can get more than the expected amount
+    // IMPORTANT:  this will encode all the data needed EXCEPT the amount of the trade, it's important that the amount
+    // is placed LAST in terms of the function signature variable ordering
+    function encodeVaultPostHook(Id vaultId) external returns (bytes memory data) {
+        data = abi.encodeWithSelector(IVaultLiquidation.receiveTradeExecuctionResultFunds.selector, vaultId);
+    }
+
+    // needed since the resulting trade amount isn't fixed and can get more than the expected amount
+    // IMPORTANT:  this will encode all the data needed EXCEPT the amount of the trade, it's important that the amount
+    // is placed LAST in terms of the function signature variable ordering
+    function encodeHedgeUnitPostHook() external {
+        // TODO
+    }
 }
