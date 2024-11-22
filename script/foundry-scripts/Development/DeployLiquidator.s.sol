@@ -29,7 +29,6 @@ contract DeployLiquidatorScript is Script {
         ERC20 WETH = ERC20(weth);
         WETH.approve(address(liquidator), raAmount);
 
-        liquidator.liquidateRaForPa(weth, usdc, raAmount, paAmount);
         console.log("order request sent");
         console.log("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-==-=-=-=-=-");
         vm.stopBroadcast();

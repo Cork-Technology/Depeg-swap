@@ -72,7 +72,6 @@ contract DeployScript is Script {
                 INITIAL_MINT_CAP
             )
         );
-        liquidator.updateLiquidatorRole(address(hedgeUnitwamuETH), true);
         console.log("HU wamuETH                      : ", address(hedgeUnitwamuETH));
 
         hedgeUnitbsETH = HedgeUnit(
@@ -83,7 +82,6 @@ contract DeployScript is Script {
                 INITIAL_MINT_CAP
             )
         );
-        liquidator.updateLiquidatorRole(address(hedgeUnitbsETH), true);
         console.log("HU bsETH                        : ", address(hedgeUnitbsETH));
 
         hedgeUnitmlETH = HedgeUnit(
@@ -94,7 +92,6 @@ contract DeployScript is Script {
                 INITIAL_MINT_CAP
             )
         );
-        liquidator.updateLiquidatorRole(address(hedgeUnitmlETH), true);
         console.log("HU mlETH                        : ", address(hedgeUnitmlETH));
 
         hedgeUnitfedUSD = HedgeUnit(
@@ -102,7 +99,6 @@ contract DeployScript is Script {
                 moduleCore.getId(fedUSD, cUSD, fedUSDExpiry), fedUSD, "Fed Up USD - CUSD", INITIAL_MINT_CAP
             )
         );
-        liquidator.updateLiquidatorRole(address(hedgeUnitfedUSD), true);
         console.log("HU fedUSD                      : ", address(hedgeUnitfedUSD));
 
         hedgeUnitsvbUSD = HedgeUnit(
@@ -113,7 +109,6 @@ contract DeployScript is Script {
                 INITIAL_MINT_CAP
             )
         );
-        liquidator.updateLiquidatorRole(address(hedgeUnitsvbUSD), true);
         console.log("HU svbUSD                      : ", address(hedgeUnitsvbUSD));
 
         hedgeUnitomgUSD = HedgeUnit(
@@ -124,7 +119,6 @@ contract DeployScript is Script {
                 INITIAL_MINT_CAP
             )
         );
-        liquidator.updateLiquidatorRole(address(hedgeUnitomgUSD), true);
         console.log("HU omgUSD                      : ", address(hedgeUnitomgUSD));
         console.log("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-");
         vm.stopBroadcast();

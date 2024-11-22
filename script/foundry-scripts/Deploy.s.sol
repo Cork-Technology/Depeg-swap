@@ -201,7 +201,6 @@ contract DeployScript is Script {
                 INITIAL_MINT_CAP
             )
         );
-        liquidator.updateLiquidatorRole(address(hedgeUnitbsETH), true);
         console.log("HU bsETH                        : ", address(hedgeUnitbsETH));
 
         hedgeUnitlbETH = HedgeUnit(
@@ -212,7 +211,6 @@ contract DeployScript is Script {
                 INITIAL_MINT_CAP
             )
         );
-        liquidator.updateLiquidatorRole(address(hedgeUnitlbETH), true);
         console.log("HU lbETH                        : ", address(hedgeUnitlbETH));
 
         hedgeUnitwamuETH = HedgeUnit(
@@ -223,7 +221,6 @@ contract DeployScript is Script {
                 INITIAL_MINT_CAP
             )
         );
-        liquidator.updateLiquidatorRole(address(hedgeUnitwamuETH), true);
         console.log("HU wamuETH                      : ", address(hedgeUnitwamuETH));
 
         hedgeUnitmlETH = HedgeUnit(
@@ -234,7 +231,6 @@ contract DeployScript is Script {
                 INITIAL_MINT_CAP
             )
         );
-        liquidator.updateLiquidatorRole(address(hedgeUnitmlETH), true);
         console.log("HU mlETH                        : ", address(hedgeUnitmlETH));
         console.log("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-");
 

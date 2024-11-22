@@ -64,7 +64,6 @@ contract HedgeUnitTest is Helper {
             INITIAL_MINT_CAP,
             DEFAULT_ADDRESS
         );
-        liquidator.updateLiquidatorRole(address(hedgeUnit), true);
 
         // Transfer tokens to user for testing
         dsToken.transfer(user, USER_BALANCE);
