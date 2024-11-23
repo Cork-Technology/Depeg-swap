@@ -1,7 +1,6 @@
 pragma solidity ^0.8.24;
 
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import {AccessControl} from "@openzeppelin/contracts/access/AccessControl.sol";
 import {ReentrancyGuardTransient} from "@openzeppelin/contracts/utils/ReentrancyGuardTransient.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {ILiquidator} from "../../interfaces/ILiquidator.sol";
@@ -14,7 +13,7 @@ interface GPv2SettlementContract {
     function setPreSignature(bytes calldata orderUid, bool signed) external;
 }
 
-contract Liquidator is AccessControl, ReentrancyGuardTransient, ILiquidator {
+contract Liquidator is ReentrancyGuardTransient, ILiquidator {
     using SafeERC20 for IERC20;
 
     struct Details {
@@ -68,7 +67,7 @@ contract Liquidator is AccessControl, ReentrancyGuardTransient, ILiquidator {
         emit OrderSubmitted(params.internalRefId, params.orderUid, params.sellToken, params.sellAmount, params.buyToken);
     }
 
-    function preHook(bytes32 refId) external onlyTrampoline {
+    function preHook(bytes32 refId) external nonReentrant onlyTrampoline {
         Details memory details = orderCalls[refId];
 
         if (details.preHookCall.target == address(0)) {
@@ -85,7 +84,7 @@ contract Liquidator is AccessControl, ReentrancyGuardTransient, ILiquidator {
         SafeERC20.safeIncreaseAllowance(IERC20(details.sellToken), address(settlement), details.sellAmount);
     }
 
-    function postHook(bytes32 refId) external onlyTrampoline {
+    function postHook(bytes32 refId) external nonReentrant onlyTrampoline {
         Details memory details = orderCalls[refId];
 
         if (details.preHookCall.target == address(0)) {
@@ -98,9 +97,9 @@ contract Liquidator is AccessControl, ReentrancyGuardTransient, ILiquidator {
         details.postHookCall.data = bytes.concat(details.postHookCall.data, abi.encode(balanceDiff));
 
         // increase allowance
-        SafeERC20.safeTransfer(IERC20(details.buyToken), details.postHookCall.target, balanceDiff);
+        SafeERC20.safeIncreaseAllowance(IERC20(details.buyToken), details.postHookCall.target, balanceDiff);
 
-        // call the 
+        // call the funds owner, we expect the funds to be taken away from the liquidator contract after this call
         details.postHookCall.target.call(details.postHookCall.data);
 
         // remove the order details to save gas
@@ -120,6 +119,10 @@ contract Liquidator is AccessControl, ReentrancyGuardTransient, ILiquidator {
     // is placed LAST in terms of the function signature variable ordering
     function encodeVaultPostHook(Id vaultId) external returns (bytes memory data) {
         data = abi.encodeWithSelector(IVaultLiquidation.receiveTradeExecuctionResultFunds.selector, vaultId);
+    }
+
+    function encodeVaultPreHook(Id vaultId, uint256 amount) external returns (bytes memory data) {
+        data = abi.encodeWithSelector(IVaultLiquidation.requestLiquidationFunds.selector, vaultId, amount);
     }
 
     // needed since the resulting trade amount isn't fixed and can get more than the expected amount
