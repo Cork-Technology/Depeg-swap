@@ -1,7 +1,7 @@
 pragma solidity ^0.8.24;
 
 import {Script, console} from "forge-std/Script.sol";
-import {Liquidator} from "../../../contracts/core/Liquidator.sol";
+import {Liquidator} from "../../../contracts/core/liquidators/Liquidator.sol";
 import {Utils} from "../Utils/Utils.s.sol"; // Import the Utils contract
 import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
@@ -17,11 +17,14 @@ contract DeployLiquidatorScript is Script {
     uint256 public raAmount = 10000000000000000;
     uint256 public paAmount = 4550200000000000000;
 
+    // TODO : Add the hookTrampoline address
+    address hookTrampoline = vm.addr(pk);
+
     function setUp() public {}
 
     function run() public {
         vm.startBroadcast(pk);
-        liquidator = new Liquidator(deployer, 10000, settlementContract);
+        liquidator = new Liquidator(deployer, hookTrampoline, settlementContract);
 
         console.log("liquidator Contract: ", address(liquidator));
         console.log("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-==-=-=-=-=-");
@@ -29,7 +32,6 @@ contract DeployLiquidatorScript is Script {
         ERC20 WETH = ERC20(weth);
         WETH.approve(address(liquidator), raAmount);
 
-        liquidator.liquidateRaForPa(weth, usdc, raAmount, paAmount);
         console.log("order request sent");
         console.log("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-==-=-=-=-=-");
         vm.stopBroadcast();

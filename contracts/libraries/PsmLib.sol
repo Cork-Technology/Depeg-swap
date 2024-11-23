@@ -4,7 +4,7 @@ pragma solidity ^0.8.24;
 import {Asset, ERC20Burnable} from "../core/assets/Asset.sol";
 import {Pair, PairLibrary} from "./Pair.sol";
 import {DepegSwap, DepegSwapLibrary} from "./DepegSwapLib.sol";
-import {PsmRedemptionAssetManager, RedemptionAssetManagerLibrary} from "./RedemptionAssetManagerLib.sol";
+import {RedemptionAssetManager, RedemptionAssetManagerLibrary} from "./RedemptionAssetManagerLib.sol";
 import {Signature, MinimalSignatureHelper} from "./SignatureHelperLib.sol";
 import {PeggedAsset, PeggedAssetLibrary} from "./PeggedAssetLib.sol";
 import {State, BitMaps, Balances, PsmPoolArchive} from "./State.sol";
@@ -27,7 +27,7 @@ library PsmLibrary {
     using MinimalSignatureHelper for Signature;
     using PairLibrary for Pair;
     using DepegSwapLibrary for DepegSwap;
-    using RedemptionAssetManagerLibrary for PsmRedemptionAssetManager;
+    using RedemptionAssetManagerLibrary for RedemptionAssetManager;
     using PeggedAssetLibrary for PeggedAsset;
     using BitMaps for BitMaps.BitMap;
     using SafeERC20 for IERC20;
@@ -639,7 +639,7 @@ library PsmLibrary {
 
         (received, dsProvided, fee, _exchangeRate) = previewRedeemWithDs(self, dsId, amount);
 
-        if (deadline != 0) {
+        if (deadline != 0 && rawDsPermitSig.length != 0) {
             DepegSwapLibrary.permit(ds._address, rawDsPermitSig, owner, address(this), dsProvided, deadline, "redeemRaWithDs");
         }
 
