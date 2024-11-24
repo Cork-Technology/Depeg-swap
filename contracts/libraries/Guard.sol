@@ -20,7 +20,7 @@ library Guard {
     error NotExpired();
 
     /// @notice asset is not initialized
-    error Uninitializedlized();
+    error Uninitialized();
 
     function _onlyNotExpired(DepegSwap storage ds) internal view {
         if (ds.isExpired()) {
@@ -36,7 +36,7 @@ library Guard {
 
     function _onlyInitialized(DepegSwap storage ds) internal view {
         if (!ds.isInitialized()) {
-            revert Uninitializedlized();
+            revert Uninitialized();
         }
     }
 

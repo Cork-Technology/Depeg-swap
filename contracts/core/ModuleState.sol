@@ -9,6 +9,7 @@ import {IUniswapV2Factory} from "../interfaces/uniswap-v2/factory.sol";
 import {RouterState} from "./flash-swaps/FlashSwapRouter.sol";
 import {IUniswapV2Router02} from "../interfaces/uniswap-v2/RouterV2.sol";
 import {ICorkHook} from "./../interfaces/UniV4/IMinimalHook.sol";
+import {ILiquidatorRegistry} from "./../interfaces/ILiquidatorRegistry.sol";
 import {ReentrancyGuardTransient} from "@openzeppelin/contracts/utils/ReentrancyGuardTransient.sol";
 
 /**
@@ -66,7 +67,7 @@ abstract contract ModuleState is ICommon, ReentrancyGuardTransient {
 
     modifier onlyInitialized(Id id) {
         if (!states[id].isInitialized()) {
-            revert Uninitializedlized();
+            revert Uninitialized();
         }
         _;
     }
@@ -109,6 +110,13 @@ abstract contract ModuleState is ICommon, ReentrancyGuardTransient {
     modifier LVWithdrawalNotPaused(Id id) {
         if (states[id].vault.config.isWithdrawalPaused) {
             revert LVWithdrawalPaused();
+        }
+        _;
+    }
+
+    modifier onlyWhiteListedLiquidationContract() {
+        if (!ILiquidatorRegistry(CONFIG).isLiquidationWhitelisted(msg.sender)) {
+            revert OnlyWhiteListed();
         }
         _;
     }

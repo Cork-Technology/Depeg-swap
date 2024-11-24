@@ -9,7 +9,7 @@ import {AssetFactory} from "../../contracts/core/assets/AssetFactory.sol";
 import {CorkConfig} from "../../contracts/core/CorkConfig.sol";
 import {RouterState} from "../../contracts/core/flash-swaps/FlashSwapRouter.sol";
 import {ModuleCore} from "../../contracts/core/ModuleCore.sol";
-import {Liquidator} from "../../contracts/core/Liquidator.sol";
+import {Liquidator} from "../../contracts/core/liquidators/Liquidator.sol";
 import {HedgeUnit} from "../../contracts/core/assets/HedgeUnit.sol";
 import {HedgeUnitFactory} from "../../contracts/core/assets/HedgeUnitFactory.sol";
 import {CETH} from "../../contracts/tokens/CETH.sol";
@@ -76,6 +76,9 @@ contract DeployScript is Script {
     uint256 svbUSDExpiry = 3.5 days;
     uint256 fedUSDExpiry = 3.5 days;
     uint256 omgUSDExpiry = 0.5 days;
+
+    // TODO : plz fix this properly
+    address hookTrampoline = vm.addr(pk);
 
     uint256 constant INITIAL_MINT_CAP = 1000 * 1e18; // 1000 tokens
 
@@ -221,7 +224,7 @@ contract DeployScript is Script {
         console.log("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-");
 
         // Deploy the Liquidator contract
-        liquidator = new Liquidator(sender, 10000, settlementContract);
+        liquidator = new Liquidator(msg.sender, hookTrampoline, settlementContract);
         console.log("Liquidator                      : ", address(liquidator));
         console.log("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-");
 
@@ -232,6 +235,27 @@ contract DeployScript is Script {
         console.log("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-");
 
         // Deploy the HedgeUnit contract
+
+        hedgeUnitbsETH = HedgeUnit(
+            hedgeUnitFactory.deployHedgeUnit(
+                moduleCore.getId(bsETH, ceth, bsETH_CETH_expiry),
+                bsETH,
+                "Bear Sterns Restaked ETH - CETH",
+                INITIAL_MINT_CAP
+            )
+        );
+        console.log("HU bsETH                        : ", address(hedgeUnitbsETH));
+
+        hedgeUnitlbETH = HedgeUnit(
+            hedgeUnitFactory.deployHedgeUnit(
+                moduleCore.getId(lbETH, ceth, lbETH_CETH_expiry),
+                lbETH,
+                "Lehman Brothers Restaked ETH - CETH",
+                INITIAL_MINT_CAP
+            )
+        );
+        console.log("HU lbETH                        : ", address(hedgeUnitlbETH));
+
         hedgeUnitwamuETH = HedgeUnit(
             hedgeUnitFactory.deployHedgeUnit(
                 moduleCore.getId(wamuETH, ceth, wamuETHExpiry),
@@ -240,7 +264,6 @@ contract DeployScript is Script {
                 INITIAL_MINT_CAP
             )
         );
-        liquidator.updateLiquidatorRole(address(hedgeUnitwamuETH), true);
         console.log("HU wamuETH                      : ", address(hedgeUnitwamuETH));
 
         hedgeUnitbsETH = HedgeUnit(
@@ -262,7 +285,6 @@ contract DeployScript is Script {
                 INITIAL_MINT_CAP
             )
         );
-        liquidator.updateLiquidatorRole(address(hedgeUnitmlETH), true);
         console.log("HU mlETH                        : ", address(hedgeUnitmlETH));
 
         hedgeUnitfedUSD = HedgeUnit(
