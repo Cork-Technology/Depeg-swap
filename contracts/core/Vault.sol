@@ -162,4 +162,8 @@ abstract contract VaultCore is ModuleState, Context, IVault, IVaultLiquidation {
     function tradeExecutionFundsAvailable(Id id) external view returns (uint256) {
         return states[id].tradeExecutionFundsAvailable();
     }
+
+    function lvAsset(Id id) external view override returns (address lv) {
+        lv = states[id].vault.lv._address;
+    }
 }
