@@ -25,16 +25,32 @@ struct Assets {
 }
 
 contract RolloverScript is Script {
-    address ceth = 0x93D16d90490d812ca6fBFD29E8eF3B31495d257D;
+    address ceth = 0xa1c0010fc3006F9596C0D88558200caa53f74f21;
+    address cusd = 0x2884B1a347AbBff7396565A4f8C2dA722642e932;
+    address bsETHAdd = 0x01CE7D0A18DCc77E22363Cb8e003f23f9De5a7fA;
+    address wamuETHAdd = 0x62488d9A025AC5EB7694eeb03BDA1F19b3b14b46;
+    address mlETHAdd = 0x7078462DaB16849E12Ba5bCf4C5075088b0C93Dc;
+    address svbUSDAdd = 0x3e63b127287112D4A65CB09d348967c31b0DaB4c;
+    address fedUSDAdd = 0x33A4C083aa34846D300954E17Ae72b675Fc7aC65;
+    address omgUSDAdd = 0x3ccb5028dA93f5B226604f22Dd05d7b26eCfddf8;
 
-    Assets mlETH = Assets(ceth, 0xCDc1133148121F43bE5F1CfB3a6426BbC01a9AF6, 4 days, 1 ether);
-    Assets lbETH = Assets(ceth, 0xF24177162B1604e56EB338dd9775d75CC79DaC2B, 4 days, 0.5 ether);
-    Assets bsETH = Assets(ceth, 0xb194fc7C6ab86dCF5D96CF8525576245d0459ea9, 4 days, 0);
-    Assets wamuETH = Assets(ceth, 0x38B61B429a3526cC6C446400DbfcA4c1ae61F11B, 6 days, 0.25 ether);
+    uint256 wamuETHExpiry = 3.5 days;
+    uint256 bsETHExpiry = 3.5 days;
+    uint256 mlETHExpiry = 1 days;
+    uint256 svbUSDExpiry = 3.5 days;
+    uint256 fedUSDExpiry = 3.5 days;
+    uint256 omgUSDExpiry = 0.5 days;
 
-    CorkConfig config = CorkConfig(0x8c996E7f76fB033cDb83CE1de7c3A134e17Cc227);
-    RouterState flashSwapRouter = RouterState(0x6629e017455CB886669e725AF1BC826b65cB6f24);
-    ModuleCore moduleCore = ModuleCore(0xe56565c208d0a8Ca28FB632aD7F6518f273B8B9f);
+    Assets mlETH = Assets(bsETHAdd, mlETHAdd, mlETHExpiry, 0.75 ether);
+    Assets bsETH = Assets(wamuETHAdd, bsETHAdd, bsETHExpiry, 0.75 ether);
+    Assets wamuETH = Assets(ceth, wamuETHAdd, wamuETHExpiry, 0.75 ether);
+    Assets svbUSD = Assets(fedUSDAdd, svbUSDAdd, svbUSDExpiry, 0.75 ether);
+    Assets fedUSD = Assets(cusd, fedUSDAdd, fedUSDExpiry, 0.75 ether);
+    Assets omgUSD = Assets(svbUSDAdd, omgUSDAdd, omgUSDExpiry, 0.75 ether);
+
+    CorkConfig config = CorkConfig(0x0B2BaD357477624b4D8f59a706312806Df5B7f75);
+    RouterState flashSwapRouter = RouterState(0x2F02D8202E201f1DC0a3AE286c266635bB3cF018);
+    ModuleCore moduleCore = ModuleCore(0xF0AE754660b418C99e4AbC3d4b1C96717CE7E4Fa);
 
     // 6% decay discount rate
     uint256 internal constant DEFAULT_DECAY_DISCOUNT_RATE = 6 ether;
@@ -85,7 +101,7 @@ contract RolloverScript is Script {
             asset.repruchaseFee,
             DEFAULT_DECAY_DISCOUNT_RATE,
             DEFAULT_ROLLOVER_PERIOD,
-            block.timestamp + 10 seconds 
+            block.timestamp + 20 minutes
         );
 
         uint256 afterDsId = moduleCore.lastDsId(id);
@@ -105,7 +121,8 @@ contract RolloverScript is Script {
 
     function run() public {
         vm.startBroadcast(pk);
-        Assets[4] memory assets = [bsETH, lbETH, mlETH, wamuETH];
+        Assets[6] memory assets = [mlETH, bsETH, wamuETH, svbUSD, fedUSD, omgUSD];
+        // Assets[1] memory assets = [mlETH];
 
         for (uint256 i = 0; i < assets.length; i++) {
             issueNewDs(assets[i]);
