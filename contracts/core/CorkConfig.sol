@@ -25,7 +25,7 @@ contract CorkConfig is AccessControl, Pausable {
     IDsFlashSwapCore public flashSwapRouter;
     CorkHook public hook;
 
-    uint256 public constant WHITELIST_TIME_DELAY = 7 days;
+    uint256 public constant WHITELIST_TIME_DELAY = 0 days;
 
     /// @notice liquidation address => timestamp when liquidation is allowed
     mapping(address => uint256) liquidationWhitelist;
