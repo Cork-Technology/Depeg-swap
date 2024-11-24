@@ -268,15 +268,14 @@ contract DeployScript is Script {
         console.log("New DS issued");
 
         //Uniswap V4 constant
-        uint160 SQRT_PRICE_1_1 = 79228162514264337593543950336;
+        // uint160 SQRT_PRICE_1_1 = 79228162514264337593543950336;
 
         (address ctToken,) = moduleCore.swapAsset(id, 1);
-        (address ra, address ct) = sortTokens(raToken, ctToken);
-        PoolKey memory key = PoolKey(Currency.wrap(address(ra)), Currency.wrap(address(ct)), 0, 1, hook);
-        poolManager.initialize(key, SQRT_PRICE_1_1);
-        config.updateAmmBaseFeePercentage(ra, ct, ammBaseFeePercentage);
+        // (address ra, address ct) = sortTokens(raToken, ctToken);
+        // PoolKey memory key = PoolKey(Currency.wrap(address(ra)), Currency.wrap(address(ct)), 0, 1, hook);
+        // poolManager.initialize(key, SQRT_PRICE_1_1);
+        config.updateAmmBaseFeePercentage(raToken, ctToken, ammBaseFeePercentage);
         console.log("Initialised V4 RA-CT pool");
-        console.log("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-");
 
         CETH(raToken).approve(address(moduleCore), depositLVAmt);
         moduleCore.depositLv(id, depositLVAmt, 0, 0);
@@ -302,7 +301,6 @@ contract DeployScript is Script {
             block.timestamp + 10000 minutes
         );
         console.log("Liquidity Added to AMM");
-        console.log("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-");
     }
 
     // returns sorted token addresses, used to handle V4 pairs sorted in this order
