@@ -13,3 +13,6 @@
 [submodule "lib/Cork-Hook"]
 	path = lib/Cork-Hook
 	url = https://github.com/Cork-Technology/Cork-Hook
+[submodule "lib/BokkyPooBahsDateTimeLibrary"]
+	path = lib/BokkyPooBahsDateTimeLibrary
+	url = https://github.com/bokkypoobah/BokkyPooBahsDateTimeLibrary
