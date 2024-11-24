@@ -31,7 +31,6 @@ contract DepositTest is Helper {
         uint256 balanceBefore = lv.balanceOf(DEFAULT_ADDRESS);
 
         uint256 received = moduleCore.depositLv(id, amount, 0, 0);
-        received = moduleCore.depositLv(id, amount, 0, 0);
 
         uint256 balanceAfter = lv.balanceOf(DEFAULT_ADDRESS);
 
