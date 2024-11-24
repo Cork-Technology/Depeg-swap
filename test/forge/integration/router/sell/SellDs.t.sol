@@ -16,7 +16,7 @@ contract SellDsTest is Helper {
     address ds;
     Id public currencyId;
 
-    uint256 public DEFAULT_DEPOSIT_AMOUNT = 1900 ether;
+    uint256 public DEFAULT_DEPOSIT_AMOUNT = 2050 ether;
 
     uint256 end = block.timestamp + 10 days;
     uint256 current = block.timestamp + 1 days;
@@ -24,7 +24,7 @@ contract SellDsTest is Helper {
     uint256 public dsId;
 
     function defaultInitialArp() internal pure virtual override returns (uint256) {
-        return 0.1 ether;
+        return 5 ether;
     }
 
     function defaultExchangeRate() internal pure virtual override returns (uint256) {
@@ -57,7 +57,7 @@ contract SellDsTest is Helper {
 
         (uint256 raReserve, uint256 ctReserve) = hook.getReserves(address(ra), address(ct));
 
-        uint256 amount = 5 ether;
+        uint256 amount = 0.5 ether;
         
         Asset(ds).approve(address(flashSwapRouter), amount);
 
@@ -70,7 +70,7 @@ contract SellDsTest is Helper {
         hook.updateBaseFeePercentage(address(ra), ct, 1 ether);
        
         uint256 amountOut = flashSwapRouter.swapDsforRa(
-            currencyId, dsId, amount, 0, DEFAULT_ADDRESS, bytes(""), block.timestamp
+            currencyId, dsId, amount, 0
         );
 
         uint256 balanceRaAfter = ra.balanceOf(DEFAULT_ADDRESS);

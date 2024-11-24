@@ -92,8 +92,10 @@ describe("Module Core", function () {
       },
     });
 
+    const config = await helper.deployCorkConfig();
     const dsFlashSwapRouter = await helper.deployFlashSwapRouter(
-      mathLib.address
+      mathLib.address,
+      config.contract.address
     );
     const univ2Factory = await helper.deployUniV2Factory(
       dsFlashSwapRouter.contract.address
@@ -105,25 +107,40 @@ describe("Module Core", function () {
       dsFlashSwapRouter.contract.address
     );
     const swapAssetFactory = await helper.deployAssetFactory();
-    const config = await helper.deployCorkConfig();
 
-    const moduleCore = await hre.viem.deployContract("ModuleCore", [], {
+    const moduleCoreContract = await hre.viem.deployContract("ModuleCore", [], {
       client: {
         wallet: defaultSigner,
       },
       libraries: {
-        PsmLibrary: psm.address,
         VaultLibrary: vault.address,
+        PsmLibrary: psm.address,
       },
     });
-    let tx = await moduleCore.write.initialize([
-      swapAssetFactory.contract.address,
-      univ2Factory,
-      dsFlashSwapRouter.contract.address,
-      univ2Router,
-      config.contract.address,
-    ]);
-    expect(tx).to.be.ok;
+
+    const initializeData =
+      "0x1459457a" +
+      [
+        swapAssetFactory.contract.address,
+        univ2Factory,
+        dsFlashSwapRouter.contract.address,
+        univ2Router,
+        config.contract.address,
+      ]
+        .map((address) => address.slice(2).padStart(64, "0"))
+        .join(""); // Remove `0x` and pad each address to 32 bytes
+
+    const moduleCoreProxy = await hre.viem.deployContract(
+      "ERC1967Proxy",
+      [moduleCoreContract.address, initializeData],
+      {}
+    );
+
+    const moduleCore = await hre.viem.getContractAt(
+      "ModuleCore",
+      moduleCoreProxy.address
+    );
+    expect(moduleCore).to.be.ok;
   });
 
   it("getId should work correctly", async function () {
@@ -141,6 +158,33 @@ describe("Module Core", function () {
   });
 
   describe("initialize", function () {
+    function encodeModuleCoreInitializeData(
+      swapAssetFactoryAddress: Address,
+      univ2FactoryAddress: Address,
+      flashSwapRouterAddress: Address,
+      univ2RouterAddress: Address,
+      configAddress: Address
+    ) {
+      // Step 1: Function selector for `initialize(address,address,address,address,address)`
+      const functionSelector = "0x1459457a"; // Keccak-256 hash of `initialize(address,address,address,address,address)` and take the first 4 bytes
+
+      // Step 2: Remove `0x` prefix from each address and pad each address to 32 bytes
+      const encodedAddresses = [
+        swapAssetFactoryAddress,
+        univ2FactoryAddress,
+        flashSwapRouterAddress,
+        univ2RouterAddress,
+        configAddress,
+      ]
+        .map((address) => address.slice(2).padStart(64, "0")) // Remove `0x` and pad to 64 hex characters (32 bytes)
+        .join(""); // Join all addresses into a single string
+
+      // Step 3: Concatenate function selector and encoded addresses
+      const initializeData = functionSelector + encodedAddresses;
+
+      return initializeData;
+    }
+
     it("initialize should revert when passed Zero Addresses", async function () {
       const mathLib = await hre.viem.deployContract("MathHelper");
       const psm = await hre.viem.deployContract("PsmLibrary", [], {
@@ -162,53 +206,74 @@ describe("Module Core", function () {
           PsmLibrary: psm.address,
         },
       });
+      let initializeData = encodeModuleCoreInitializeData(
+        zeroAddress,
+        defaultSigner.account.address,
+        defaultSigner.account.address,
+        defaultSigner.account.address,
+        defaultSigner.account.address
+      );
       await expect(
-        moduleCore1.write.initialize([
-          zeroAddress,
-          defaultSigner.account.address,
-          defaultSigner.account.address,
-          defaultSigner.account.address,
-          defaultSigner.account.address,
+        hre.viem.deployContract("ERC1967Proxy", [
+          moduleCore1.address,
+          initializeData,
         ])
       ).to.be.rejectedWith("ZeroAddress()");
 
+      initializeData = encodeModuleCoreInitializeData(
+        defaultSigner.account.address,
+        zeroAddress,
+        defaultSigner.account.address,
+        defaultSigner.account.address,
+        defaultSigner.account.address
+      );
+
       await expect(
-        moduleCore1.write.initialize([
-          defaultSigner.account.address,
-          zeroAddress,
-          defaultSigner.account.address,
-          defaultSigner.account.address,
-          defaultSigner.account.address,
+        hre.viem.deployContract("ERC1967Proxy", [
+          moduleCore1.address,
+          initializeData,
         ])
       ).to.be.rejectedWith("ZeroAddress()");
 
+      initializeData = encodeModuleCoreInitializeData(
+        defaultSigner.account.address,
+        defaultSigner.account.address,
+        zeroAddress,
+        defaultSigner.account.address,
+        defaultSigner.account.address
+      );
       await expect(
-        moduleCore1.write.initialize([
-          defaultSigner.account.address,
-          defaultSigner.account.address,
-          zeroAddress,
-          defaultSigner.account.address,
-          defaultSigner.account.address,
+        hre.viem.deployContract("ERC1967Proxy", [
+          moduleCore1.address,
+          initializeData,
         ])
       ).to.be.rejectedWith("ZeroAddress()");
 
+      initializeData = encodeModuleCoreInitializeData(
+        defaultSigner.account.address,
+        defaultSigner.account.address,
+        defaultSigner.account.address,
+        zeroAddress,
+        defaultSigner.account.address
+      );
       await expect(
-        moduleCore1.write.initialize([
-          defaultSigner.account.address,
-          defaultSigner.account.address,
-          defaultSigner.account.address,
-          zeroAddress,
-          defaultSigner.account.address,
+        hre.viem.deployContract("ERC1967Proxy", [
+          moduleCore1.address,
+          initializeData,
         ])
       ).to.be.rejectedWith("ZeroAddress()");
 
+      initializeData = encodeModuleCoreInitializeData(
+        defaultSigner.account.address,
+        defaultSigner.account.address,
+        defaultSigner.account.address,
+        defaultSigner.account.address,
+        zeroAddress
+      );
       await expect(
-        moduleCore1.write.initialize([
-          defaultSigner.account.address,
-          defaultSigner.account.address,
-          defaultSigner.account.address,
-          defaultSigner.account.address,
-          zeroAddress,
+        hre.viem.deployContract("ERC1967Proxy", [
+          moduleCore1.address,
+          initializeData,
         ])
       ).to.be.rejectedWith("ZeroAddress()");
     });

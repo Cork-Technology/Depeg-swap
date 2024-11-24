@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BUSL-1.1
-pragma solidity ^0.8.24;
+pragma solidity 0.8.26;
 
 import {SignedMath} from "@openzeppelin/contracts/utils/math/SignedMath.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
@@ -7,13 +7,14 @@ import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 import {SD59x18, convert, sd, add, mul, pow, sub, div, abs, unwrap, intoUD60x18} from "@prb/math/src/SD59x18.sol";
 import {UD60x18, convert as convertUd, ud, add, mul, pow, sub, div, unwrap} from "@prb/math/src/UD60x18.sol";
 import {IMathError} from "./../interfaces/IMathError.sol";
-import "forge-std/console.sol";
 import {MarketSnapshot, MarketSnapshotLib} from "Cork-Hook/lib/MarketSnapshot.sol";
+import "forge-std/console.sol";
+
 
 library BuyMathBisectionSolver {
     /// @notice returns the the normalized time to maturity from 1-0
     /// 1 means we're at the start of the period, 0 means we're at the end
-    function computeT(SD59x18 start, SD59x18 end, SD59x18 current) internal pure returns (SD59x18) {
+    function computeT(SD59x18 start, SD59x18 end, SD59x18 current) public pure returns (SD59x18) {
         SD59x18 minimumElapsed = convert(1);
 
         SD59x18 elapsedTime = sub(current, start);
@@ -29,12 +30,12 @@ library BuyMathBisectionSolver {
         return sub(convert(1), div(elapsedTime, totalDuration));
     }
 
-    function computeOneMinusT(SD59x18 start, SD59x18 end, SD59x18 current) internal pure returns (SD59x18) {
+    function computeOneMinusT(SD59x18 start, SD59x18 end, SD59x18 current) public pure returns (SD59x18) {
         return sub(convert(1), computeT(start, end, current));
     }
 
     /// @notice f(s) = x^1-t + y^t - (x - s + e)^1-t - (y + s)^1-t
-    function f(SD59x18 x, SD59x18 y, SD59x18 e, SD59x18 s, SD59x18 _1MinusT) internal pure returns (SD59x18) {
+    function f(SD59x18 x, SD59x18 y, SD59x18 e, SD59x18 s, SD59x18 _1MinusT) public pure returns (SD59x18) {
         SD59x18 xMinSplusE = sub(x, s);
         xMinSplusE = add(xMinSplusE, e);
 
@@ -57,7 +58,7 @@ library BuyMathBisectionSolver {
     }
 
     function findRoot(SD59x18 x, SD59x18 y, SD59x18 e, SD59x18 _1MinusT, SD59x18 epsilon, uint256 maxIter)
-        internal
+        public
         pure
         returns (SD59x18)
     {
@@ -229,8 +230,6 @@ library SwapperMathLibrary {
         UD60x18 t = sub(currentTime, issuanceTime);
         UD60x18 discount = mul(discPerSec, t);
 
-        console.log(unwrap(discount));
-        console.log(convertUd(discount));
         // this must hold true, it doesn't make sense to have a discount above 100%
         assert(discount < convertUd(100));
         decay = sub(convertUd(100), discount);
@@ -287,6 +286,8 @@ library SwapperMathLibrary {
         UD60x18 _psmDsReserve = ud(psmDsReserve);
         UD60x18 _raProvided = ud(raProvided);
         UD60x18 _hpa = sub(convertUd(1), calcPtConstFixed(ud(hiya)));
+        console.log("hiya", hiya);
+        console.log("hpa", unwrap(_hpa));
 
         (
             UD60x18 _lvProfit,
@@ -352,9 +353,6 @@ library SwapperMathLibrary {
     /// where f = 1, and t = 1
     /// we expect that the rate is in 1e18 precision BEFORE passing it to this function
     function calcPtConstFixed(UD60x18 rate) internal pure returns (UD60x18) {
-        // normalize to 0-1
-        rate = div(rate, convertUd(100));
-
         UD60x18 ratePlusOne = add(convertUd(1), rate);
         return div(convertUd(1), ratePlusOne);
     }
@@ -366,16 +364,33 @@ library SwapperMathLibrary {
         uint256 initialBorrowedAmount;
         uint256 amountSupplied;
         uint256 feeIntervalAdjustment;
+        uint256 feeEpsilon;
     }
 
-    /// @notice binary search the optimal borrowed amount
-    /// the lower bound is the initial borrowed amount - (feeIntervalAdjustment * maxIter). if this doesn't satisfy the condition we revert as there's no sane lower bounds
-    /// the upper bound is the initial borrowed amount.
+    struct OptimalBorrowResult {
+        uint256 repaymentAmount;
+        uint256 borrowedAmount;
+        uint256 amountOut;
+    }
+
+    /**
+     * @notice binary search to find the optimal borrowed amount
+     * lower bound = the initial borrowed amount - (feeIntervalAdjustment * maxIter). if this doesn't satisfy the condition we revert as there's no sane lower bounds
+     * upper = the initial borrowed amount.
+     */
     function findOptimalBorrowedAmount(OptimalBorrowParams memory params)
         internal
         pure
-        returns (uint256 repaymentAmount, uint256 borrowedAmount, uint256 amountOut)
+        returns (OptimalBorrowResult memory result)
     {
+        // we basically do nothing if there's no fee
+        if (params.market.baseFee == 0) {
+            result.repaymentAmount = params.market.getAmountIn(params.initialBorrowedAmount, false);
+            result.amountOut = params.initialAmountOut;
+            result.borrowedAmount = params.initialBorrowedAmount;
+            return (result);
+        }
+
         UD60x18 amountOutUd = convertUd(params.initialAmountOut);
         UD60x18 initialBorrowedAmountUd = convertUd(params.initialBorrowedAmount);
         UD60x18 suppliedAmountUd = convertUd(params.amountSupplied);
@@ -388,18 +403,27 @@ library SwapperMathLibrary {
         }
 
         UD60x18 upperBound = initialBorrowedAmountUd;
+        UD60x18 epsilon = convertUd(params.feeEpsilon);
 
         for (uint256 i = 0; i < params.maxIter; i++) {
-            console.log("on iter", i);
+            // we break if we have reached the desired range
+            if (sub(upperBound, lowerBound) <= epsilon) {
+                break;
+            }
+
             UD60x18 midpoint = div(add(lowerBound, upperBound), convertUd(2));
             repaymentAmountUd = convertUd(params.market.getAmountIn(convertUd(midpoint), false));
+
             amountOutUd = add(midpoint, suppliedAmountUd);
 
-            if (repaymentAmountUd <= amountOutUd) {
-                console.log("converged", convertUd(amountOutUd));
-                return (convertUd(repaymentAmountUd), convertUd(midpoint), convertUd(amountOutUd));
-            } else {
+            if (repaymentAmountUd > amountOutUd) {
                 upperBound = midpoint;
+            } else {
+                result.repaymentAmount = convertUd(repaymentAmountUd);
+                result.borrowedAmount = convertUd(midpoint);
+                result.amountOut = convertUd(amountOutUd);
+
+                lowerBound = midpoint;
             }
         }
     }

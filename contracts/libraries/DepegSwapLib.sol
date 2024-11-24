@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: BUSL-1.1
-pragma solidity ^0.8.24;
+pragma solidity 0.8.26;
 
+import {IERC20Permit} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Permit.sol";
 import {Asset} from "../core/assets/Asset.sol";
 import {Signature, MinimalSignatureHelper} from "./SignatureHelperLib.sol";
 
@@ -22,10 +23,8 @@ struct DepegSwap {
 library DepegSwapLibrary {
     using MinimalSignatureHelper for Signature;
 
-    /// @notice the rate can't change by default after initialization
-    /// though this doesn't prevent initialization with a rate that is not STATIC_RATE_CEILING
-    /// main prupose of this is to prevent accidental rate change after initialization
-    uint256 internal constant STATIC_RATE_CEILING = 1e18;
+    /// @notice the exchange rate of DS can only go down at maximum 10% at a time
+    uint256 internal constant MAX_RATE_DELTA_PERCENTAGE = 10e18;
 
     function isExpired(DepegSwap storage self) internal view returns (bool) {
         return Asset(self._address).isExpired();
@@ -43,7 +42,7 @@ library DepegSwapLibrary {
         return DepegSwap({expiredEventEmitted: false, _address: _address, ct: ct, ctRedeemed: 0});
     }
 
-    function permit(
+    function permitForRA(
         address contract_,
         bytes memory rawSig,
         address owner,
@@ -51,9 +50,27 @@ library DepegSwapLibrary {
         uint256 value,
         uint256 deadline
     ) internal {
+        // Split the raw signature
         Signature memory sig = MinimalSignatureHelper.split(rawSig);
 
-        Asset(contract_).permit(owner, spender, value, deadline, sig.v, sig.r, sig.s);
+        // Call the underlying ERC-20 contract's permit function
+        IERC20Permit(contract_).permit(owner, spender, value, deadline, sig.v, sig.r, sig.s);
+    }
+
+    function permit(
+        address contract_,
+        bytes memory rawSig,
+        address owner,
+        address spender,
+        uint256 value,
+        uint256 deadline,
+        string memory functionName
+    ) internal {
+        // Split the raw signature
+        Signature memory sig = MinimalSignatureHelper.split(rawSig);
+
+        // Call the underlying ERC-20 contract's permit function
+        Asset(contract_).permit(owner, spender, value, deadline, sig.v, sig.r, sig.s, functionName);
     }
 
     function issue(DepegSwap memory self, address to, uint256 amount) internal {

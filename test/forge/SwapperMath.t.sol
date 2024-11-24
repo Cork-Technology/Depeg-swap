@@ -26,7 +26,7 @@ contract SwapMathTest is Test {
         uint256 lvReserve = 100 ether;
         uint256 psmReserve = 100 ether;
         uint256 raProvided = 1 ether;
-        uint256 hiya = 11.11111111 ether;
+        uint256 hiya = 0.1111111111 ether;
 
         (
             uint256 lvProfit,

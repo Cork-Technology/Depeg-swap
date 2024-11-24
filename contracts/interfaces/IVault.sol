@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BUSL-1.1
-pragma solidity ^0.8.24;
+pragma solidity 0.8.26;
 
 import {Id} from "../libraries/Pair.sol";
 import {IDsFlashSwapCore} from "../interfaces/IDsFlashSwapRouter.sol";
@@ -24,7 +24,6 @@ interface IVault {
 
     struct RedeemEarlyParams {
         Id id;
-        address receiver;
         uint256 amount;
         uint256 amountOutMin;
         uint256 ammDeadline;
@@ -103,6 +102,13 @@ interface IVault {
         external
         returns (RedeemEarlyResult memory result);
 
+    /**
+     * @notice Redeem lv before expiry
+     * @param redeemParams The object with details like id, reciever, amount, amountOutMin, ammDeadline
+     */
+    function redeemEarlyLv(RedeemEarlyParams memory redeemParams)
+        external
+        returns (RedeemEarlyResult memory result);
    
     /**
      * Returns the early redemption fee percentage

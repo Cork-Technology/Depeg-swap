@@ -73,10 +73,10 @@ contract FlashSwapTest is Helper {
         ra.approve(address(flashSwapRouter), type(uint256).max);
 
         uint256 amountOut = flashSwapRouter.swapRaforDs(
-            currencyId, dsId, 1 ether, 0, DEFAULT_ADDRESS, bytes(""), 0, defaultBuyApproxParams()
+            currencyId, dsId, 1 ether, 0, defaultBuyApproxParams()
         );
 
-        IPSMcore(moduleCore).updatePsmAutoSellStatus(currencyId, DEFAULT_ADDRESS, true);
+        IPSMcore(moduleCore).updatePsmAutoSellStatus(currencyId, true);
 
         // should fail, not enough liquidity
         vm.expectRevert();
@@ -84,7 +84,7 @@ contract FlashSwapTest is Helper {
         // should work, even though there's insfuicient liquidity to sell the LV reserves
         uint256 lvReserveBefore = flashSwapRouter.getLvReserve(currencyId, dsId);
         amountOut = flashSwapRouter.swapRaforDs(
-            currencyId, dsId, 100000 ether, 0, DEFAULT_ADDRESS, bytes(""), 0, defaultBuyApproxParams()
+            currencyId, dsId, 100000 ether, 0, defaultBuyApproxParams()
         );
         uint256 lvReserveAfter = flashSwapRouter.getLvReserve(currencyId, dsId);
 
@@ -93,7 +93,7 @@ contract FlashSwapTest is Helper {
         uint256 raBalanceBefore = ra.balanceOf(DEFAULT_ADDRESS);
         Asset(ds).approve(address(flashSwapRouter), 1000 ether);
         uint256 amountOutSell =
-            flashSwapRouter.swapDsforRa(currencyId, dsId, 1000 ether, 0, DEFAULT_ADDRESS, bytes(""), 0);
+            flashSwapRouter.swapDsforRa(currencyId, dsId, 1000 ether, 0);
         uint256 raBalanceAfter = ra.balanceOf(DEFAULT_ADDRESS);
 
         vm.assertEq(raBalanceAfter, raBalanceBefore + amountOutSell);
@@ -104,7 +104,7 @@ contract FlashSwapTest is Helper {
         // now if buy, it should sell from reserves
         lvReserveBefore = flashSwapRouter.getLvReserve(currencyId, dsId);
         amountOut = flashSwapRouter.swapRaforDs(
-            currencyId, dsId, 10 ether, 0, DEFAULT_ADDRESS, bytes(""), 0, defaultBuyApproxParams()
+            currencyId, dsId, 10 ether, 0, defaultBuyApproxParams()
         );
         lvReserveAfter = flashSwapRouter.getLvReserve(currencyId, dsId);
 

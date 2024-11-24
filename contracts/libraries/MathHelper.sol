@@ -1,6 +1,6 @@
 // TODO : change math related contract license to MIT/GPL
 // SPDX-License-Identifier: BUSL-1.1
-pragma solidity ^0.8.24;
+pragma solidity 0.8.26;
 
 import {BuyMathBisectionSolver, SwapperMathLibrary} from "./DsSwapperMathLib.sol";
 
@@ -95,7 +95,8 @@ library MathHelper {
      * @param amount the amount of lv user want to withdraw
      */
     function calculatePercentageFee(uint256 fee1e18, uint256 amount) external pure returns (uint256 percentage) {
-        UD60x18 fee = SwapperMathLibrary.calculatePercentage(ud(amount), convert(fee1e18));
+        UD60x18 fee = SwapperMathLibrary.calculatePercentage(ud(amount), ud(fee1e18));
+        return unwrap(fee);
     }
 
     /**

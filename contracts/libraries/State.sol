@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BUSL-1.1
-pragma solidity ^0.8.24;
+pragma solidity 0.8.26;
 
 import {Pair} from "./Pair.sol";
 import {PsmRedemptionAssetManager} from "./RedemptionAssetManagerLib.sol";
@@ -35,7 +35,6 @@ struct PsmState {
     bool isWithdrawalPaused;
     bool isRepurchasePaused;
     uint256 psmBaseRedemptionFeePercentage;
-    uint256 rateCeiling;
 }
 
 /**

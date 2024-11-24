@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BUSL-1.1
-pragma solidity ^0.8.24;
+pragma solidity 0.8.26;
 
 import {Id} from "../libraries/Pair.sol";
 import {IUniswapV2Pair} from "./uniswap-v2/pair.sol";
@@ -89,6 +89,8 @@ interface IDsFlashSwapCore is IDsFlashSwapUtility {
     struct BuyAprroxParams {
         /// @dev the maximum amount of iterations to find the optimal amount of DS to swap, 256 is a good number
         uint256 maxApproxIter;
+        /// @dev the maximum amount of iterations to find the optimal RA borrow amount(needed because of the fee, if any)
+        uint256 maxFeeIter;
         /// @dev the amount that will be used to subtract borrowed amount to find the optimal amount for borrowing RA
         /// the lower the value, the more accurate the approximation will be but will be more expensive
         /// when in doubt use 0.01 ether or 1e16
@@ -96,7 +98,13 @@ interface IDsFlashSwapCore is IDsFlashSwapUtility {
         /// @dev the threshold tolerance that's used to find the optimal DS amount
         /// when in doubt use 1e9
         uint256 epsilon;
+        /// @dev the threshold tolerance that's used to find the optimal RA amount to borrow, the smaller, the more accurate but more gas intensive it will be
+        uint256 feeEpsilon;
     }
+
+    /// @notice Revert when Signature is valid or signature deadline is incorrect
+    error InvalidSignature();
+
     /**
      * @notice Emitted when DS is swapped for RA
      * @param reserveId the reserve id same as the id on PSM and LV
@@ -223,10 +231,22 @@ interface IDsFlashSwapCore is IDsFlashSwapUtility {
      * @param amount the amount of RA to swap
      * @param amountOutMin the minimum amount of DS to receive, will revert if the actual amount is less than this.
      * @return amountOut amount of DS that's received
-     * @param user the user that's swapping
+     * @param params the buy approximation params(math stuff)
+     * @param params the buy approximation params(math stuff)
+     */
+    function swapRaforDs(Id reserveId, uint256 dsId, uint256 amount, uint256 amountOutMin, BuyAprroxParams memory params)
+        external
+        returns (uint256 amountOut);
+
+    /**
+     * @notice Swaps RA for DS
+     * @param reserveId the reserve id same as the id on PSM and LV
+     * @param dsId the ds id of the pair, the same as the DS id on PSM and LV
+     * @param amount the amount of RA to swap
+     * @param amountOutMin the minimum amount of DS to receive, will revert if the actual amount is less than this. should be inserted with value from previewSwapRaforDs
+     * @return amountOut amount of DS that's received
      * @param rawRaPermitSig the raw permit signature of RA
      * @param deadline the deadline for the swap
-     * @param params the buy approximation params(math stuff)
      */
     function swapRaforDs(
         Id reserveId,
@@ -245,6 +265,18 @@ interface IDsFlashSwapCore is IDsFlashSwapUtility {
      * @param dsId the ds id of the pair, the same as the DS id on PSM and LV
      * @param amount the amount of DS to swap
      * @param amountOutMin the minimum amount of RA to receive, will revert if the actual amount is less than this.
+     * @return amountOut amount of RA that's received
+     */
+    function swapDsforRa(Id reserveId, uint256 dsId, uint256 amount, uint256 amountOutMin)
+        external
+        returns (uint256 amountOut);
+
+    /**
+     * @notice Swaps DS for RA
+     * @param reserveId the reserve id same as the id on PSM and LV
+     * @param dsId the ds id of the pair, the same as the DS id on PSM and LV
+     * @param amount the amount of DS to swap
+     * @param amountOutMin the minimum amount of RA to receive, will revert if the actual amount is less than this. should be inserted with value from previewSwapDsforRa
      * @return amountOut amount of RA that's received
      */
     function swapDsforRa(

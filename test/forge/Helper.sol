@@ -1,5 +1,6 @@
 pragma solidity ^0.8.24;
 
+import {ERC1967Proxy} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 import {ModuleCore} from "./../../contracts/core/ModuleCore.sol";
 import {AssetFactory} from "./../../contracts/core/assets/AssetFactory.sol";
 import "forge-std/Test.sol";
@@ -12,9 +13,9 @@ import {RouterState} from "./../../contracts/core/flash-swaps/FlashSwapRouter.so
 import {DummyWETH} from "./../../contracts/dummy/DummyWETH.sol";
 import {TestModuleCore} from "./TestModuleCore.sol";
 import {TestFlashSwapRouter} from "./TestFlashSwapRouter.sol";
-import "./SigUtils.sol";
+import {SigUtils} from "./SigUtils.sol";
 import {TestHelper} from "Cork-Hook/../test/Helper.sol";
-import "./../../contracts/interfaces/IDsFlashSwapRouter.sol";
+import {IDsFlashSwapCore} from "./../../contracts/interfaces/IDsFlashSwapRouter.sol";
 
 abstract contract Helper is SigUtils, TestHelper {
     TestModuleCore internal moduleCore;
@@ -56,16 +57,17 @@ abstract contract Helper is SigUtils, TestHelper {
     }
 
     function deployAssetFactory() internal {
-        assetFactory = new AssetFactory();
+        ERC1967Proxy assetFactoryProxy =
+            new ERC1967Proxy(address(new AssetFactory()), abi.encodeWithSignature("initialize()"));
+        assetFactory = AssetFactory(address(assetFactoryProxy));
     }
 
-    function initializeAssetFactory() internal {
-        assetFactory.initialize();
+    function setupAssetFactory() internal {
         assetFactory.transferOwnership(address(moduleCore));
     }
 
     function defaultBuyApproxParams() internal pure returns (IDsFlashSwapCore.BuyAprroxParams memory) {
-        return IDsFlashSwapCore.BuyAprroxParams(256, 1e16, 1e9);
+        return IDsFlashSwapCore.BuyAprroxParams(256, 256, 1e16, 1e9, 1e9);
     }
 
     function initializeNewModuleCore(
@@ -157,7 +159,9 @@ abstract contract Helper is SigUtils, TestHelper {
 
         defaultCurrencyId = id;
 
-        initializeNewModuleCore(address(pa), address(ra), DEFAULT_LV_FEE, defaultInitialArp(), baseRedemptionFee, expiryInSeconds);
+        initializeNewModuleCore(
+            address(pa), address(ra), DEFAULT_LV_FEE, defaultInitialArp(), baseRedemptionFee, expiryInSeconds
+        );
         issueNewDs(
             id, DEFAULT_EXCHANGE_RATES, DEFAULT_REPURCHASE_FEE, DEFAULT_DECAY_DISCOUNT_RATE, DEFAULT_ROLLOVER_PERIOD
         );
@@ -186,17 +190,19 @@ abstract contract Helper is SigUtils, TestHelper {
         corkConfig = new CorkConfig();
     }
 
-    function initializeConfig() internal {
+    function setupConfig() internal {
         corkConfig.setModuleCore(address(moduleCore));
         corkConfig.setFlashSwapCore(address(flashSwapRouter));
     }
 
     function deployFlashSwapRouter() internal {
-        flashSwapRouter = new TestFlashSwapRouter();
+        ERC1967Proxy flashswapProxy = new ERC1967Proxy(
+            address(new TestFlashSwapRouter()), abi.encodeWithSignature("initialize(address)", address(corkConfig))
+        );
+        flashSwapRouter = TestFlashSwapRouter(address(flashswapProxy));
     }
 
-    function initializeFlashSwapRouter() internal {
-        flashSwapRouter.initialize(address(corkConfig));
+    function setupFlashSwapRouter() internal {
         flashSwapRouter.setModuleCore(address(moduleCore));
         flashSwapRouter.setHook(address(hook));
     }
@@ -212,10 +218,19 @@ abstract contract Helper is SigUtils, TestHelper {
         deployFlashSwapRouter();
         deployAssetFactory();
 
-        moduleCore = new TestModuleCore();
-        initializeAssetFactory();
-        initializeConfig();
-        initializeFlashSwapRouter();
-        initializeModuleCore();
+        ERC1967Proxy moduleCoreProxy = new ERC1967Proxy(
+            address(new TestModuleCore()),
+            abi.encodeWithSignature(
+                "initialize(address,address,address,address)",
+                address(assetFactory),
+                address(hook),
+                address(flashSwapRouter),
+                address(corkConfig)
+            )
+        );
+        moduleCore = TestModuleCore(address(moduleCoreProxy));
+        setupAssetFactory();
+        setupConfig();
+        setupFlashSwapRouter();
     }
 }
