@@ -6,7 +6,9 @@ import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/Own
 import {UUPSUpgradeable} from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import {Strings} from "openzeppelin-contracts/contracts/utils/Strings.sol";
 import {Id, Pair, PairLibrary} from "../../libraries/Pair.sol";
+import {IERC20Metadata} from "@openzeppelin/contracts/interfaces/IERC20Metadata.sol";
 import {Asset} from "./Asset.sol";
+import {BokkyPooBahsDateTimeLibrary} from "BokkyPooBahsDateTimeLibrary/BokkyPooBahsDateTimeLibrary.sol";
 
 /**
  * @title Factory contract for Assets
@@ -163,16 +165,25 @@ contract AssetFactory is IAssetFactory, OwnableUpgradeable, UUPSUpgradeable {
         uint256 dsId
     ) external override onlyOwner returns (address ct, address ds) {
         Pair memory asset = Pair(_pa, _ra, expiryInterval);
+
         uint256 expiry = block.timestamp + expiryInterval;
+
+        string memory pairname;
+
+        {
+            (uint256 year, uint256 month, uint256 day) = BokkyPooBahsDateTimeLibrary.timestampToDate(expiry);
+            string memory expiryAsStrings =
+                string.concat(Strings.toString(year), "-", Strings.toString(month), "-", Strings.toString(day));
+
+            pairname =
+                string.concat(IERC20Metadata(_ra).symbol(), "-", IERC20Metadata(_pa).symbol(), "-", expiryAsStrings);
+        }
 
         // prevent deploying a swap asset of a non existent pair, logically won't ever happen
         // just to be safe
         if (lvs[asset.toId()] == address(0)) {
             revert NotExist(_ra, _pa);
         }
-
-        string memory pairname =
-            string.concat(Strings.toHexString(uint160(_ra)), "-", Strings.toHexString(uint160(_pa)));
 
         ct = address(new Asset(CT_PREFIX, pairname, _owner, expiry, psmExchangeRate, dsId));
         ds = address(new Asset(DS_PREFIX, pairname, _owner, expiry, psmExchangeRate, dsId));
@@ -198,8 +209,12 @@ contract AssetFactory is IAssetFactory, OwnableUpgradeable, UUPSUpgradeable {
         onlyOwner
         returns (address lv)
     {
-        string memory pairname =
-            string.concat(Strings.toHexString(uint160(_ra)), "-", Strings.toHexString(uint160(_pa)));
+        string memory pairname;
+
+        {
+            pairname = string.concat(IERC20Metadata(_ra).symbol(), "-", IERC20Metadata(_pa).symbol());
+        }
+
         lv = address(new Asset(LV_PREFIX, pairname, _owner, 0, 0, 0));
 
         // signal that a pair actually exists. Only after this it's possible to deploy a swap asset for this pair

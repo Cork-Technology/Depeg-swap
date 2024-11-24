@@ -127,6 +127,7 @@ contract CorkConfig is AccessControl, Pausable {
         emit HookSet(_hook);
     }
 
+    // Fees values is in ether format : 1% = 1 ether
     function updateAmmBaseFeePercentage(address ra, address ct, uint256 newBaseFeePercentage) external onlyManager {
         hook.updateBaseFeePercentage(ra, ct, newBaseFeePercentage);
     }

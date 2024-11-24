@@ -20,3 +20,4 @@ v2-periphery/=lib/Cork-Hook/lib/Depeg-swap/lib/v2-periphery/contracts/
 v4-core/=lib/Cork-Hook/lib/v4-periphery/lib/v4-core/src/
 v4-periphery/=lib/Cork-Hook/lib/v4-periphery/
 @prb/math/=lib/prb-math/
+BokkyPooBahsDateTimeLibrary/=lib/BokkyPooBahsDateTimeLibrary/contracts/

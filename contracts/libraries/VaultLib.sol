@@ -205,7 +205,7 @@ library VaultLibrary {
         ratio = _determineRatio(hpa, marketRatio, self.vault.initialArp, isRollover, dsId);
     }
 
-    function _determineRatio(uint256 hpa, uint256 marketRatio, uint256 initialArp, bool isRollover, uint256 dsId)
+    function _determineRatio(uint256 hiya, uint256 marketRatio, uint256 initialArp, bool isRollover, uint256 dsId)
         internal
         pure
         returns (uint256 ratio)
@@ -213,16 +213,17 @@ library VaultLibrary {
         // fallback to initial ds price ratio if hpa is 0, and market ratio is 0
         // usually happens when there's no trade on the router AND is not the first issuance
         // OR it's the first issuance
-        if (hpa == 0 && marketRatio == 0) {
+        if (hiya == 0 && marketRatio == 0) {
             // TODO : test vault initialization works
             ratio = MathHelper.calculateInitialCtRatio(initialArp);
             return ratio;
         }
 
-        // this will return the hpa as ratio when it's basically not the first issuance, and there's actually an hpa to rely on
+        // this will return the hiya as hpa as ratio when it's basically not the first issuance, and there's actually an hiya to rely on
         // we must specifically check for market ratio since, we want to trigger this only when there's no market ratio(i.e freshly after a rollover)
-        if (dsId != 1 && isRollover && hpa != 0 && marketRatio == 0) {
-            ratio = hpa;
+        if (dsId != 1 && isRollover && hiya != 0 && marketRatio == 0) {
+            // we add 2 zerom since the function will normalize it to 0-1 from 1-100
+            ratio = MathHelper.calculateInitialCtRatio(hiya * 100);
             return ratio;
         }
 
@@ -655,9 +656,7 @@ library VaultLibrary {
         self.vault.balances.ra.unlockToUnchecked(result.raReceivedFromAmm, owner);
 
         // send CT received from AMM and held in vault to user
-        SafeERC20.safeTransfer(
-            IERC20(ds.ct), owner, result.ctReceivedFromVault + result.ctReceivedFromAmm
-        );
+        SafeERC20.safeTransfer(IERC20(ds.ct), owner, result.ctReceivedFromVault + result.ctReceivedFromAmm);
 
         // empty the DS reserve in router and send it to user
         routers.flashSwapRouter.emptyReservePartialLv(redeemParams.id, dsId, result.dsReceived);

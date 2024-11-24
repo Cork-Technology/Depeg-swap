@@ -133,4 +133,6 @@ interface IVault {
     function lvAcceptRolloverProfit(Id id, uint256 amount) external;
 
     function updateCtHeldPercentage(Id id, uint256 ctHeldPercentage) external;
+
+    function lvAsset(Id id) external view returns (address lv);
 }

@@ -17,7 +17,7 @@ import {Id} from "../../contracts/libraries/Pair.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import {PoolManager} from "v4-core/PoolManager.sol";
 import {HookMiner} from "./Utils/HookMiner.sol";
-import {CorkHook, LiquidityToken, Hooks} from "Cork-Hook/CorkHook.sol";
+import {PoolKey, Currency, CorkHook, LiquidityToken, Hooks} from "Cork-Hook/CorkHook.sol";
 
 contract DeployScript is Script {
     IUniswapV2Router02 public univ2Router;
@@ -169,11 +169,11 @@ contract DeployScript is Script {
         console.log("Liquidity Token                 : ", address(liquidityToken));
 
         bytes memory creationCode = type(CorkHook).creationCode;
-        bytes memory constructorArgs = abi.encode(poolManager, liquidityToken);
+        bytes memory constructorArgs = abi.encode(poolManager, liquidityToken, sender);
 
         (address hookAddress, bytes32 salt) = HookMiner.find(CREATE_2_PROXY, hookFlags, creationCode, constructorArgs);
 
-        hook = new CorkHook{salt: salt}(poolManager, liquidityToken);
+        hook = new CorkHook{salt: salt}(poolManager, liquidityToken, sender);
         require(address(hook) == hookAddress, "hook address mismatch");
         console.log("Hook                            : ", hookAddress);
 
@@ -200,12 +200,14 @@ contract DeployScript is Script {
 
         // Transfer Ownership to moduleCore
         assetFactory.transferOwnership(address(moduleCore));
+        hook.transferOwnership(address(config));
         console.log("Transferred ownerships to Modulecore");
 
         config.setModuleCore(address(moduleCore));
         flashswapRouter.setModuleCore(address(moduleCore));
         console.log("Modulecore configured in Config contract");
 
+        config.setHook(address(hook));
         flashswapRouter.setHook(address(hook));
         console.log("Hook configured in FlashswapRouter contract");
 
@@ -213,16 +215,24 @@ contract DeployScript is Script {
         console.log("Univ2 Router                    : ", uniswapV2RouterSepolia);
         console.log("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-");
 
-        // EarlyRedemptionFee = 0.2%,  DSPrice=0.2%(or 20%)  repurchaseFee = 0.75%
-        issueDSAndDepositToLv(wamuETH, ceth, 0.2 ether, 0.00375 ether, 0.75 ether, wamuETHExpiry, 30_000 ether);
-        // EarlyRedemptionFee = 0.2%,  DSPrice=0.7%(or 70%)  repurchaseFee = 0.75%
-        issueDSAndDepositToLv(bsETH, wamuETH, 0.2 ether, 0.01875 ether, 0.75 ether, bsETHExpiry, 30_000 ether);
-        // EarlyRedemptionFee = 0.2%,  DSPrice=0.3%(or 30%)  repurchaseFee = 0.75%
-        issueDSAndDepositToLv(mlETH, bsETH, 0.2 ether, 0.00625 ether, 0.75 ether, mlETHExpiry, 30_000 ether);
+        // EarlyRedemptionFee = 0.2%,  DSPrice=1.285%  repurchaseFee = 0.75%
+        issueDSAndDepositToLv(
+            wamuETH, ceth, 0.2 ether, 1.285 ether, 0.75 ether, wamuETHExpiry, 30_000 ether, 0.15 ether
+        );
+        // EarlyRedemptionFee = 0.2%,  DSPrice=6.428%  repurchaseFee = 0.75%
+        issueDSAndDepositToLv(bsETH, wamuETH, 0.2 ether, 6.428 ether, 0.75 ether, bsETHExpiry, 30_000 ether, 0.3 ether);
+        // EarlyRedemptionFee = 0.2%,  DSPrice=7.5%  repurchaseFee = 0.75%
+        issueDSAndDepositToLv(mlETH, bsETH, 0.2 ether, 7.5 ether, 0.75 ether, mlETHExpiry, 30_000 ether, 0.3 ether);
 
-        issueDSAndDepositToLv(svbUSD, fedUSD, 0.2 ether, 0.025 ether, 0.75 ether, svbUSDExpiry, 75_000_000 ether);
-        issueDSAndDepositToLv(fedUSD, cusd, 0.2 ether, 0.0125 ether, 0.75 ether, fedUSDExpiry, 75_000_000 ether);
-        issueDSAndDepositToLv(omgUSD, svbUSD, 0.08 ether, 0.002 ether, 0.75 ether, omgUSDExpiry, 75_000_000 ether);
+        issueDSAndDepositToLv(
+            svbUSD, fedUSD, 0.2 ether, 8.571 ether, 0.75 ether, svbUSDExpiry, 75_000_000 ether, 0.3 ether
+        );
+        issueDSAndDepositToLv(
+            fedUSD, cusd, 0.2 ether, 4.285 ether, 0.75 ether, fedUSDExpiry, 75_000_000 ether, 0.15 ether
+        );
+        issueDSAndDepositToLv(
+            omgUSD, svbUSD, 0.08 ether, 5.1 ether, 0.75 ether, omgUSDExpiry, 75_000_000 ether, 0.3 ether
+        );
 
         // Add liquidity for given pairs to AMM
         AddAMMLiquidity(wamuETH, ceth, 200_000 ether);
@@ -236,29 +246,39 @@ contract DeployScript is Script {
     }
 
     function issueDSAndDepositToLv(
-        address cstToken,
-        address cethToken,
+        address paToken,
+        address raToken,
         uint256 redmptionFee,
         uint256 dsPrice,
         uint256 repurchaseFee,
         uint256 expiryPeriod,
-        uint256 depositLVAmt
+        uint256 depositLVAmt,
+        uint256 ammBaseFeePercentage
     ) public {
-        config.initializeModuleCore(cstToken, cethToken, redmptionFee, dsPrice, base_redemption_fee, expiryPeriod);
-
-        Id id = moduleCore.getId(cstToken, cethToken, expiryPeriod);
+        config.initializeModuleCore(paToken, raToken, redmptionFee, dsPrice, base_redemption_fee, expiryPeriod);
+        Id id = moduleCore.getId(paToken, raToken, expiryPeriod);
         config.issueNewDs(
             id,
             1 ether, // exchange rate = 1:1
             repurchaseFee,
             6 ether, // 6% per day TODO
             block.timestamp + 6600, // 1 block per 12 second and 22 hours rollover during TC = 6600 // TODO
-            block.timestamp + 10 seconds
+            block.timestamp + 10 minutes
         );
         console.log("New DS issued");
+
+        //Uniswap V4 constant
+        uint160 SQRT_PRICE_1_1 = 79228162514264337593543950336;
+
+        (address ctToken,) = moduleCore.swapAsset(id, 1);
+        (address ra, address ct) = sortTokens(raToken, ctToken);
+        PoolKey memory key = PoolKey(Currency.wrap(address(ra)), Currency.wrap(address(ct)), 0, 1, hook);
+        poolManager.initialize(key, SQRT_PRICE_1_1);
+        config.updateAmmBaseFeePercentage(ra, ct, ammBaseFeePercentage);
+        console.log("Initialised V4 RA-CT pool");
         console.log("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-");
 
-        CETH(cethToken).approve(address(moduleCore), depositLVAmt);
+        CETH(raToken).approve(address(moduleCore), depositLVAmt);
         moduleCore.depositLv(id, depositLVAmt, 0, 0);
         console.log("LV Deposited");
 
@@ -268,12 +288,12 @@ contract DeployScript is Script {
         console.log("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-");
     }
 
-    function AddAMMLiquidity(address cstToken, address cethToken, uint256 liquidityAmt) public {
-        CETH(cethToken).approve(uniswapV2RouterSepolia, liquidityAmt);
-        IERC20(cstToken).approve(uniswapV2RouterSepolia, liquidityAmt);
+    function AddAMMLiquidity(address paToken, address raToken, uint256 liquidityAmt) public {
+        CETH(raToken).approve(uniswapV2RouterSepolia, liquidityAmt);
+        IERC20(paToken).approve(uniswapV2RouterSepolia, liquidityAmt);
         univ2Router.addLiquidity(
-            cethToken,
-            cstToken,
+            raToken,
+            paToken,
             liquidityAmt,
             liquidityAmt,
             liquidityAmt,
@@ -283,5 +303,12 @@ contract DeployScript is Script {
         );
         console.log("Liquidity Added to AMM");
         console.log("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-");
+    }
+
+    // returns sorted token addresses, used to handle V4 pairs sorted in this order
+    function sortTokens(address ra, address ct) internal pure returns (address token0, address token1) {
+        assert(ra != ct);
+        (token0, token1) = ra < ct ? (ra, ct) : (ct, ra);
+        assert(token0 != address(0));
     }
 }
