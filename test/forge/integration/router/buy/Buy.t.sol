@@ -74,11 +74,35 @@ contract BuyDsTest is Helper {
 
         hook.updateBaseFeePercentage(address(ra), ct, 1 ether);
 
-        uint256 amountOut = flashSwapRouter.swapRaforDs(
-            currencyId, dsId, amount, 0,defaultBuyApproxParams()
-        );
+        uint256 amountOut = flashSwapRouter.swapRaforDs(currencyId, dsId, amount, 0, defaultBuyApproxParams());
         uint256 balanceRaAfter = Asset(address(ds)).balanceOf(DEFAULT_ADDRESS);
 
         vm.assertEq(balanceRaAfter - balanceRaBefore, amountOut);
+
+        ff_expired();
+
+        // should work after expiry
+        flashSwapRouter.swapRaforDs(currencyId, dsId, amount, 0, defaultBuyApproxParams());
+    }
+
+    // ff to expiry and update infos
+    function ff_expired() internal {
+        // fast forward to expiry
+        uint256 expiry = Asset(ds).expiry();
+        vm.warp(expiry);
+
+        uint256 rolloverBlocks = flashSwapRouter.getRolloverEndInBlockNumber(currencyId);
+        vm.roll(block.number + rolloverBlocks);
+
+        Asset(ct).approve(address(moduleCore), DEFAULT_DEPOSIT_AMOUNT);
+
+        issueNewDs(currencyId, block.timestamp + 1 days);
+
+        fetchProtocolGeneralInfo();
+    }
+
+    function fetchProtocolGeneralInfo() internal {
+        dsId = moduleCore.lastDsId(currencyId);
+        (ct, ds) = moduleCore.swapAsset(currencyId, dsId);
     }
 }
