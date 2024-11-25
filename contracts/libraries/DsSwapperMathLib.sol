@@ -431,5 +431,10 @@ library SwapperMathLibrary {
                 lowerBound = midpoint;
             }
         }
+
+        // this means that there's no suitable borrowed amount that satisfies the fee constraints
+        if(result.borrowedAmount == 0) {
+            revert IMathError.NoConverge();
+        }
     }
 }
