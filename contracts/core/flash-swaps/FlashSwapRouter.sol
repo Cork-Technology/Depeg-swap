@@ -221,11 +221,11 @@ contract RouterState is
             revert InsufficientOutputAmount();
         }
 
-        // we know that the math is correct, but for edge case protection, we don't subtract it directly but 
+        // we know that the math is correct, but for edge case protection, we don't subtract it directly but
         // instead set it to 0 if it's less than the used amount, again this is meant to handle precision issues
         assetPair.psmReserve = assetPair.psmReserve < psmReserveUsed ? 0 : assetPair.psmReserve - psmReserveUsed;
         assetPair.lvReserve = assetPair.lvReserve < lvReserveUsed ? 0 : assetPair.lvReserve - lvReserveUsed;
-
+        
         IERC20(assetPair.ra).safeTransfer(_moduleCore, lvProfit + psmProfit);
 
         IPSMcore(_moduleCore).psmAcceptFlashSwapProfit(reserveId, psmProfit);
