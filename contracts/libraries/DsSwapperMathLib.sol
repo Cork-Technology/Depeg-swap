@@ -175,17 +175,17 @@ library SwapperMathLibrary {
         uint256 amount,
         uint256 raProvided,
         uint256 decayDiscountInDays
-    ) internal pure returns (uint256) {
+    ) external pure returns (uint256) {
         UD60x18 t = intoUD60x18(
             BuyMathBisectionSolver.computeT(
                 convert(int256(startTime)), convert(int256(maturityTime)), convert(int256(currentTime))
             )
         );
-        UD60x18 effectiveDsPrice = calculateEffectiveDsPrice(convertUd(amount), convertUd(raProvided));
+        UD60x18 effectiveDsPrice = calculateEffectiveDsPrice(ud(amount), ud(raProvided));
         UD60x18 rateI = calcSpotArp(t, effectiveDsPrice);
-        UD60x18 decay = calculateDecayDiscount(ud(decayDiscountInDays), convertUd(startTime), convertUd(currentTime));
+        UD60x18 decay = calculateDecayDiscount(ud(decayDiscountInDays), ud(startTime), ud(currentTime));
 
-        return convertUd(calculatePercentage(calculatePercentage(convertUd(amount), rateI), decay));
+        return unwrap(calculatePercentage(calculatePercentage(ud(amount), rateI), decay));
     }
 
     /// @notice VHIYA_acc =  Volume_i  - ((Discount / 86400) * (currentTime - issuanceTime))
@@ -195,8 +195,8 @@ library SwapperMathLibrary {
         uint256 currentTime,
         uint256 decayDiscountInDays,
         uint256 amount
-    ) internal pure returns (uint256) {
-        UD60x18 decay = calculateDecayDiscount(ud(decayDiscountInDays), convertUd(startTime), convertUd(currentTime));
+    ) external pure returns (uint256) {
+        UD60x18 decay = calculateDecayDiscount(ud(decayDiscountInDays), ud(startTime), ud(currentTime));
 
         return convertUd(calculatePercentage(convertUd(amount), decay));
     }
@@ -235,7 +235,7 @@ library SwapperMathLibrary {
 
     // TODO : confirm with Peter that the t for fixed price rollover sale is constant at 1 since it's fixed price
     function _calculateRolloverSale(UD60x18 lvDsReserve, UD60x18 psmDsReserve, UD60x18 raProvided, UD60x18 hpa)
-        internal
+        public
         view
         returns (
             UD60x18 lvProfit,
@@ -249,10 +249,10 @@ library SwapperMathLibrary {
         UD60x18 totalDsReserve = add(lvDsReserve, psmDsReserve);
 
         // calculate the amount of DS user will receive
-        dsReceived = mul(raProvided, hpa);
+        dsReceived = div(raProvided, hpa);
 
         // returns the RA if, the total reserve cannot cover the DS that user will receive. this Ra left must subject to the AMM rates
-        raLeft = totalDsReserve > dsReceived ? convertUd(0) : div(sub(dsReceived, totalDsReserve), hpa);
+        raLeft = totalDsReserve >= dsReceived ? convertUd(0) : mul(sub(dsReceived, totalDsReserve), hpa);
 
         // recalculate the DS user will receive, after the RA left is deducted
         raProvided = sub(raProvided, raLeft);
@@ -269,7 +269,7 @@ library SwapperMathLibrary {
     }
 
     function calculateRolloverSale(uint256 lvDsReserve, uint256 psmDsReserve, uint256 raProvided, uint256 hiya)
-        internal
+        external
         view
         returns (
             uint256 lvProfit,
@@ -375,7 +375,7 @@ library SwapperMathLibrary {
      * upper = the initial borrowed amount.
      */
     function findOptimalBorrowedAmount(OptimalBorrowParams memory params)
-        internal
+        external
         pure
         returns (OptimalBorrowResult memory result)
     {
@@ -391,10 +391,19 @@ library SwapperMathLibrary {
         UD60x18 initialBorrowedAmountUd = convertUd(params.initialBorrowedAmount);
         UD60x18 suppliedAmountUd = convertUd(params.amountSupplied);
 
-        UD60x18 lowerBound = sub(initialBorrowedAmountUd, convertUd(params.feeIntervalAdjustment * params.maxIter));
-        UD60x18 repaymentAmountUd = convertUd(params.market.getAmountIn(convertUd(lowerBound), false));
+        UD60x18 lowerBound;
+        {
+            UD60x18 maxLowerBound = convertUd(params.feeIntervalAdjustment * params.maxIter);
+            lowerBound =
+                maxLowerBound > initialBorrowedAmountUd ? convertUd(0) : sub(initialBorrowedAmountUd, maxLowerBound);
+        }
+        UD60x18 repaymentAmountUd = lowerBound == convertUd(0)
+            ? convertUd(0)
+            : convertUd(params.market.getAmountIn(convertUd(lowerBound), false));
 
-        if (repaymentAmountUd > amountOutUd) {
+        // we skip bounds check if the max lower bound is bigger than the initial borrowed amount
+        // since it's guranteed to have enough liquidity if we never borrow
+        if (repaymentAmountUd > amountOutUd && lowerBound != convertUd(0)) {
             revert IMathError.NoLowerBound();
         }
 
