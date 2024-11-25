@@ -81,8 +81,18 @@ contract BuyDsTest is Helper {
 
         ff_expired();
 
+        // should work even if the resulting lowerbound is very large(won't be gas efficient)
+        IDsFlashSwapCore.BuyAprroxParams memory params = defaultBuyApproxParams();
+        params.maxFeeIter = 100000;
+        params.feeIntervalAdjustment = 1 ether;
+
         // should work after expiry
-        flashSwapRouter.swapRaforDs(currencyId, dsId, amount, 0, defaultBuyApproxParams());
+        flashSwapRouter.swapRaforDs(currencyId, dsId, amount, 0, params);
+
+        // there's no sufficient liquidity due to very low HIYA, so we disable the fee to make it work
+        hook.updateBaseFeePercentage(address(ra), ct, 0 ether);
+
+        flashSwapRouter.swapRaforDs(currencyId, dsId, 0.01 ether, 0, params);
     }
 
     // ff to expiry and update infos
