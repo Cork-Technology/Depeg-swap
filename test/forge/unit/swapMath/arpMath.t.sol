@@ -89,7 +89,7 @@ contract ArpMath is Test {
     }
 
     function calcSpotArp() external {
-        UD60x18 result = SwapperMathLibrary.calcSpotArp(convert(1), ud(0.4 ether));
+        UD60x18 result = SwapperMathLibrary.calcSpotArp(convert(1), convert(0.4 ether));
         vm.assertApproxEqAbs(0.66 ether, unwrap(result), 0.01 ether);
     }
 }
