@@ -12,6 +12,7 @@ import {Liquidator} from "../../contracts/core/liquidators/Liquidator.sol";
 import {HedgeUnit} from "../../contracts/core/assets/HedgeUnit.sol";
 import {HedgeUnitFactory} from "../../contracts/core/assets/HedgeUnitFactory.sol";
 import {CETH} from "../../contracts/tokens/CETH.sol";
+import {CUSD} from "../../contracts/tokens/CUSD.sol";
 import {CST} from "../../contracts/tokens/CST.sol";
 import {Id} from "../../contracts/libraries/Pair.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
@@ -62,7 +63,7 @@ contract DeployScript is Script {
     uint256 constant INITIAL_MINT_CAP = 1000 * 1e18; // 1000 tokens
 
     CETH cETH = CETH(ceth);
-    CETH cUSD = CETH(cusd);
+    CUSD cUSD = CUSD(cusd);
 
     uint160 hookFlags = uint160(
         Hooks.BEFORE_INITIALIZE_FLAG | Hooks.BEFORE_ADD_LIQUIDITY_FLAG | Hooks.BEFORE_REMOVE_LIQUIDITY_FLAG
@@ -100,7 +101,7 @@ contract DeployScript is Script {
             mlETHCST.deposit(1_000_000 ether);
             console.log("mlETH                           : ", address(mlETH));
 
-            cUSD = new CETH("Cork Competition USD", "cUSD");
+            cUSD = new CUSD("Cork Competition USD", "cUSD");
             cUSD.mint(sender, 100_000_000_000_000 ether);
             cusd = address(cUSD);
             console.log("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-");

@@ -8,7 +8,7 @@ import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 contract DeployLiquidatorScript is Script {
     Liquidator public liquidator;
 
-    address deployer = 0xBa66992bE4816Cc3877dA86fA982A93a6948dde9;
+    address deployer = 0x036febB27d1da9BFF69600De3C9E5b6cd6A7d275;
     address weth = 0xfFf9976782d46CC05630D1f6eBAb18b2324d6B14;
     address usdc = 0xbe72E441BF55620febc26715db68d3494213D8Cb;
     address settlementContract = 0x9008D19f58AAbD9eD0D60971565AA8510560ab41;

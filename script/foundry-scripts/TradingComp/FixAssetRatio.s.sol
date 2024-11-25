@@ -18,7 +18,7 @@ contract FixAssetRatioScript is Script {
 
     address user1 = 0x8e6dd65c50b57fD5935788Dc24d3E954Cd8fc019;
     address user2 = 0xFFB6b6896D469798cE64136fd3129979411B5514;
-    address user3 = 0xBa66992bE4816Cc3877dA86fA982A93a6948dde9;
+    address user3 = 0x036febB27d1da9BFF69600De3C9E5b6cd6A7d275;
 
     address bsETH = 0xb194fc7C6ab86dCF5D96CF8525576245d0459ea9;
     address lbETH = 0xF24177162B1604e56EB338dd9775d75CC79DaC2B;
