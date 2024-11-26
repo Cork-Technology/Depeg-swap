@@ -26,7 +26,6 @@ contract DepositTest is Helper {
 
         Id id = defaultCurrencyId;
         Asset lv = Asset(moduleCore.lvAsset(id));
-        console.log("lv symbol: ", lv.symbol());
 
         uint256 balanceBefore = lv.balanceOf(DEFAULT_ADDRESS);
 
@@ -41,7 +40,10 @@ contract DepositTest is Helper {
         IVault.RedeemEarlyParams memory redeemParams =
             IVault.RedeemEarlyParams({id: id, amount: received, amountOutMin: 0, ammDeadline: block.timestamp});
 
-        moduleCore.redeemEarlyLv(redeemParams);
+        IVault.RedeemEarlyResult memory result = moduleCore.redeemEarlyLv(redeemParams);
+        vm.warp(3 days + 1);
+
+        withdrawalContract.claimToSelf(result.withdrawalId);
     }
 
     function test_RevertWhenToleranceIsWorking() external {
