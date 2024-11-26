@@ -33,13 +33,15 @@ contract ModuleCore is OwnableUpgradeable, UUPSUpgradeable, PsmCore, Initialize,
     }
 
     /// @notice Initializer function for upgradeable contracts
-    function initialize(address _swapAssetFactory, address _ammHook, address _flashSwapRouter, address _config)
-        external
-        initializer
-    {
+    function initialize(
+        address _swapAssetFactory,
+        address _ammHook,
+        address _flashSwapRouter,
+        address _config
+    ) external initializer {
         if (
             _swapAssetFactory == address(0) || _ammHook == address(0) || _flashSwapRouter == address(0)
-                || _config == address(0)
+                || _config == address(0) 
         ) {
             revert ZeroAddress();
         }
@@ -47,6 +49,12 @@ contract ModuleCore is OwnableUpgradeable, UUPSUpgradeable, PsmCore, Initialize,
         __Ownable_init(msg.sender);
         __UUPSUpgradeable_init();
         initializeModuleState(_swapAssetFactory, _ammHook, _flashSwapRouter, _config);
+    }
+
+    function setWithdrawalContract(address _withdrawalContract) external  {
+        onlyConfig();
+        
+        _setWithdrawalContract(_withdrawalContract);
     }
 
     /// @notice Authorization function for UUPS proxy upgrades
@@ -107,7 +115,7 @@ contract ModuleCore is OwnableUpgradeable, UUPSUpgradeable, PsmCore, Initialize,
     ) external override {
         onlyConfig();
         onlyInitialized(id);
-   
+
         if (repurchaseFeePercentage > 5 ether) {
             revert InvalidFees();
         }
@@ -149,7 +157,7 @@ contract ModuleCore is OwnableUpgradeable, UUPSUpgradeable, PsmCore, Initialize,
         emit Issued(id, idx, block.timestamp + _expiryInterval, ds, ct, AmmId.unwrap(toAmmId(ra, ct)));
     }
 
-    function updateRepurchaseFeeRate(Id id, uint256 newRepurchaseFeePercentage) external  {
+    function updateRepurchaseFeeRate(Id id, uint256 newRepurchaseFeePercentage) external {
         onlyConfig();
 
         State storage state = states[id];
@@ -158,7 +166,7 @@ contract ModuleCore is OwnableUpgradeable, UUPSUpgradeable, PsmCore, Initialize,
         emit RepurchaseFeeRateUpdated(id, newRepurchaseFeePercentage);
     }
 
-    function updateEarlyRedemptionFeeRate(Id id, uint256 newEarlyRedemptionFeeRate) external  {
+    function updateEarlyRedemptionFeeRate(Id id, uint256 newEarlyRedemptionFeeRate) external {
         onlyConfig();
 
         State storage state = states[id];
@@ -174,7 +182,7 @@ contract ModuleCore is OwnableUpgradeable, UUPSUpgradeable, PsmCore, Initialize,
         bool isPSMRepurchasePaused,
         bool isLVDepositPaused,
         bool isLVWithdrawalPaused
-    ) external  {
+    ) external {
         onlyConfig();
 
         State storage state = states[id];
@@ -233,12 +241,9 @@ contract ModuleCore is OwnableUpgradeable, UUPSUpgradeable, PsmCore, Initialize,
      * @notice update value of PSMBaseRedemption fees
      * @param newPsmBaseRedemptionFeePercentage new value of fees
      */
-    function updatePsmBaseRedemptionFeePercentage(Id id, uint256 newPsmBaseRedemptionFeePercentage)
-        external
-        
-    {
+    function updatePsmBaseRedemptionFeePercentage(Id id, uint256 newPsmBaseRedemptionFeePercentage) external {
         onlyConfig();
-        
+
         if (newPsmBaseRedemptionFeePercentage > 5 ether) {
             revert InvalidFees();
         }

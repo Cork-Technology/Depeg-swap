@@ -131,6 +131,10 @@ contract CorkConfig is AccessControl, Pausable {
         hook.updateBaseFeePercentage(ra, ct, newBaseFeePercentage);
     }
 
+    function setWithdrawalContract(address _withdrawalContract) external onlyManager {
+        moduleCore.setWithdrawalContract(_withdrawalContract);
+    }
+
     /**
      * @dev Initialize Module Core
      * @param pa Address of PA

@@ -11,6 +11,7 @@ import {IUniswapV2Router02} from "../interfaces/uniswap-v2/RouterV2.sol";
 import {ICorkHook} from "./../interfaces/UniV4/IMinimalHook.sol";
 import {ILiquidatorRegistry} from "./../interfaces/ILiquidatorRegistry.sol";
 import {ReentrancyGuardTransient} from "@openzeppelin/contracts/utils/ReentrancyGuardTransient.sol";
+import {Withdrawal} from "./Withdrawal.sol";
 
 /**
  * @title ModuleState Abstract Contract
@@ -30,6 +31,8 @@ abstract contract ModuleState is ICommon, ReentrancyGuardTransient {
     address internal AMM_HOOK;
 
     address internal CONFIG;
+
+    address internal WITHDRAWAL_CONTRACT;
 
     /**
      * @dev checks if caller is config contract or not
@@ -56,12 +59,20 @@ abstract contract ModuleState is ICommon, ReentrancyGuardTransient {
         AMM_HOOK = _ammHook;
     }
 
+    function _setWithdrawalContract(address _withdrawalContract) internal{
+        WITHDRAWAL_CONTRACT = _withdrawalContract;
+    }
+
     function getRouterCore() internal view returns (RouterState) {
         return RouterState(DS_FLASHSWAP_ROUTER);
     }
 
     function getAmmRouter() internal view returns (ICorkHook) {
         return ICorkHook(AMM_HOOK);
+    }
+
+    function getWithdrawalContract() internal view returns (Withdrawal) {
+        return Withdrawal(WITHDRAWAL_CONTRACT);
     }
 
     function onlyInitialized(Id id) internal {
