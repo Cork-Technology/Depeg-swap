@@ -34,11 +34,10 @@ abstract contract ModuleState is ICommon, ReentrancyGuardTransient {
     /**
      * @dev checks if caller is config contract or not
      */
-    modifier onlyConfig() {
+    function onlyConfig() internal {
         if (msg.sender != CONFIG) {
             revert OnlyConfigAllowed();
         }
-        _;
     }
 
     function factory() external view returns (address) {
@@ -65,59 +64,51 @@ abstract contract ModuleState is ICommon, ReentrancyGuardTransient {
         return ICorkHook(AMM_HOOK);
     }
 
-    modifier onlyInitialized(Id id) {
+    function onlyInitialized(Id id) internal {
         if (!states[id].isInitialized()) {
             revert Uninitialized();
         }
-        _;
     }
 
-    modifier PSMDepositNotPaused(Id id) {
+    function PSMDepositNotPaused(Id id) internal {
         if (states[id].psm.isDepositPaused) {
             revert PSMDepositPaused();
         }
-        _;
     }
 
-    modifier onlyFlashSwapRouter() {
+    function onlyFlashSwapRouter() internal {
         if (msg.sender != DS_FLASHSWAP_ROUTER) {
             revert OnlyFlashSwapRouterAllowed();
         }
-        _;
     }
 
-    modifier PSMWithdrawalNotPaused(Id id) {
+    function PSMWithdrawalNotPaused(Id id) internal {
         if (states[id].psm.isWithdrawalPaused) {
             revert PSMWithdrawalPaused();
         }
-        _;
     }
 
-    modifier PSMRepurchaseNotPaused(Id id) {
+    function PSMRepurchaseNotPaused(Id id) internal {
         if (states[id].psm.isRepurchasePaused) {
             revert PSMRepurchasePaused();
         }
-        _;
     }
 
-    modifier LVDepositNotPaused(Id id) {
+    function LVDepositNotPaused(Id id) internal {
         if (states[id].vault.config.isDepositPaused) {
             revert LVDepositPaused();
         }
-        _;
     }
 
-    modifier LVWithdrawalNotPaused(Id id) {
+    function LVWithdrawalNotPaused(Id id) internal {
         if (states[id].vault.config.isWithdrawalPaused) {
             revert LVWithdrawalPaused();
         }
-        _;
     }
 
-    modifier onlyWhiteListedLiquidationContract() {
+    function onlyWhiteListedLiquidationContract() internal {
         if (!ILiquidatorRegistry(CONFIG).isLiquidationWhitelisted(msg.sender)) {
             revert OnlyWhiteListed();
         }
-        _;
     }
 }

@@ -75,7 +75,9 @@ contract ModuleCore is OwnableUpgradeable, UUPSUpgradeable, PsmCore, Initialize,
         uint256 initialArp,
         uint256 psmBaseRedemptionFeePercentage,
         uint256 expiryInterval
-    ) external override onlyConfig {
+    ) external override {
+        onlyConfig();
+
         Pair memory key = PairLibrary.initalize(pa, ra, expiryInterval);
         Id id = key.toId();
 
@@ -102,7 +104,10 @@ contract ModuleCore is OwnableUpgradeable, UUPSUpgradeable, PsmCore, Initialize,
         // won't have effect on first issuance
         uint256 rolloverPeriodInblocks,
         uint256 ammLiquidationDeadline
-    ) external override onlyConfig onlyInitialized(id) {
+    ) external override {
+        onlyConfig();
+        onlyInitialized(id);
+   
         if (repurchaseFeePercentage > 5 ether) {
             revert InvalidFees();
         }
@@ -110,7 +115,6 @@ contract ModuleCore is OwnableUpgradeable, UUPSUpgradeable, PsmCore, Initialize,
         State storage state = states[id];
 
         Pair storage info = state.info;
-
 
         (address ct, address ds) = IAssetFactory(SWAP_ASSET_FACTORY).deploySwapAssets(
             info.ra, state.info.pa, address(this), info.expiryInterval, exchangeRates, state.globalAssetIdx + 1
@@ -145,14 +149,18 @@ contract ModuleCore is OwnableUpgradeable, UUPSUpgradeable, PsmCore, Initialize,
         emit Issued(id, idx, block.timestamp + _expiryInterval, ds, ct, AmmId.unwrap(toAmmId(ra, ct)));
     }
 
-    function updateRepurchaseFeeRate(Id id, uint256 newRepurchaseFeePercentage) external onlyConfig {
+    function updateRepurchaseFeeRate(Id id, uint256 newRepurchaseFeePercentage) external  {
+        onlyConfig();
+
         State storage state = states[id];
         PsmLibrary.updateRepurchaseFeePercentage(state, newRepurchaseFeePercentage);
 
         emit RepurchaseFeeRateUpdated(id, newRepurchaseFeePercentage);
     }
 
-    function updateEarlyRedemptionFeeRate(Id id, uint256 newEarlyRedemptionFeeRate) external onlyConfig {
+    function updateEarlyRedemptionFeeRate(Id id, uint256 newEarlyRedemptionFeeRate) external  {
+        onlyConfig();
+
         State storage state = states[id];
         VaultConfigLibrary.updateFee(state.vault.config, newEarlyRedemptionFeeRate);
 
@@ -166,7 +174,9 @@ contract ModuleCore is OwnableUpgradeable, UUPSUpgradeable, PsmCore, Initialize,
         bool isPSMRepurchasePaused,
         bool isLVDepositPaused,
         bool isLVWithdrawalPaused
-    ) external onlyConfig {
+    ) external  {
+        onlyConfig();
+
         State storage state = states[id];
         PsmLibrary.updatePoolsStatus(
             state,
@@ -225,8 +235,10 @@ contract ModuleCore is OwnableUpgradeable, UUPSUpgradeable, PsmCore, Initialize,
      */
     function updatePsmBaseRedemptionFeePercentage(Id id, uint256 newPsmBaseRedemptionFeePercentage)
         external
-        onlyConfig
+        
     {
+        onlyConfig();
+        
         if (newPsmBaseRedemptionFeePercentage > 5 ether) {
             revert InvalidFees();
         }

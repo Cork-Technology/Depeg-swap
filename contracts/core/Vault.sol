@@ -27,9 +27,11 @@ abstract contract VaultCore is ModuleState, Context, IVault, IVaultLiquidation {
     function depositLv(Id id, uint256 amount, uint256 raTolerance, uint256 ctTolerance)
         external
         override
-        LVDepositNotPaused(id)
+        
         returns (uint256 received)
     {
+        LVDepositNotPaused(id);
+
         State storage state = states[id];
         received = state.deposit(_msgSender(), amount, getRouterCore(), getAmmRouter(), raTolerance, ctTolerance);
         emit LvDeposited(id, _msgSender(), received);
@@ -45,9 +47,10 @@ abstract contract VaultCore is ModuleState, Context, IVault, IVaultLiquidation {
         external
         override
         nonReentrant
-        LVWithdrawalNotPaused(redeemParams.id)
         returns (IVault.RedeemEarlyResult memory result)
     {
+                LVWithdrawalNotPaused(redeemParams.id)
+;
         if (permitParams.rawLvPermitSig.length == 0 || permitParams.deadline == 0) {
             revert InvalidSignature();
         }
@@ -75,9 +78,10 @@ abstract contract VaultCore is ModuleState, Context, IVault, IVaultLiquidation {
         external
         override
         nonReentrant
-        LVWithdrawalNotPaused(redeemParams.id)
         returns (IVault.RedeemEarlyResult memory result)
     {
+                LVWithdrawalNotPaused(redeemParams.id)
+;
         Routers memory routers = Routers({flashSwapRouter: getRouterCore(), ammRouter: getAmmRouter()});
         PermitParams memory permitParams = PermitParams({rawLvPermitSig: bytes(""), deadline: 0});
 
@@ -111,7 +115,9 @@ abstract contract VaultCore is ModuleState, Context, IVault, IVaultLiquidation {
      * @param amount the amount of RA received from selling DS
      * @dev assumes that `amount` is already transferred to the vault
      */
-    function provideLiquidityWithFlashSwapFee(Id id, uint256 amount) external onlyFlashSwapRouter {
+    function provideLiquidityWithFlashSwapFee(Id id, uint256 amount) external  {
+        onlyFlashSwapRouter();
+
         State storage state = states[id];
         state.provideLiquidityWithFee(amount, getRouterCore(), getAmmRouter());
         emit ProfitReceived(msg.sender, amount);
@@ -125,16 +131,22 @@ abstract contract VaultCore is ModuleState, Context, IVault, IVaultLiquidation {
         return states[id].vaultLp(getAmmRouter());
     }
 
-    function lvAcceptRolloverProfit(Id id, uint256 amount) external onlyFlashSwapRouter {
+    function lvAcceptRolloverProfit(Id id, uint256 amount) external  {
+        onlyFlashSwapRouter();
+
         State storage state = states[id];
         state.provideLiquidityWithFee(amount, getRouterCore(), getAmmRouter());
     }
 
-    function updateCtHeldPercentage(Id id, uint256 ctHeldPercentage) external onlyConfig {
+    function updateCtHeldPercentage(Id id, uint256 ctHeldPercentage) external  {
+        onlyConfig();
+
         states[id].updateCtHeldPercentage(ctHeldPercentage);
     }
 
-    function requestLiquidationFunds(Id id, uint256 amount) external override onlyWhiteListedLiquidationContract {
+    function requestLiquidationFunds(Id id, uint256 amount) external override  {
+        onlyWhiteListedLiquidationContract();
+        
         State storage state = states[id];
         state.requestLiquidationFunds(amount, msg.sender);
 
@@ -148,7 +160,9 @@ abstract contract VaultCore is ModuleState, Context, IVault, IVaultLiquidation {
         emit TradeExecutionResultFundsReceived(id, msg.sender, amount);
     }
 
-    function useTradeExecutionResultFunds(Id id) external override onlyConfig {
+    function useTradeExecutionResultFunds(Id id) external override  {
+        onlyConfig();
+
         State storage state = states[id];
         uint256 used = state.useTradeExecutionResultFunds(getRouterCore(), getAmmRouter());
 
