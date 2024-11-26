@@ -160,11 +160,11 @@ contract DeployScript is Script {
         liquidityToken = new LiquidityToken();
 
         bytes memory creationCode = type(CorkHook).creationCode;
-        bytes memory constructorArgs = abi.encode(poolManager, liquidityToken);
+        bytes memory constructorArgs = abi.encode(poolManager, liquidityToken, address(config));
 
         (address hookAddress, bytes32 salt) = HookMiner.find(CREATE_2_PROXY, hookFlags, creationCode, constructorArgs);
 
-        hook = new CorkHook{salt: salt}(poolManager, liquidityToken);
+        hook = new CorkHook{salt: salt}(poolManager, liquidityToken, address(config));
         require(address(hook) == hookAddress, "hook address mismatch");
 
         // Deploy the ModuleCore Proxy contract

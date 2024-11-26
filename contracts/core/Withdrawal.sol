@@ -15,7 +15,7 @@ contract Withdrawal is IWithdrawal {
 
     address public vault;
 
-    mapping(bytes32 => WithdrawalInfo) public withdrawals;
+    mapping(bytes32 => WithdrawalInfo) internal withdrawals;
 
     // unique nonces to generate withdrawal id
     mapping(address => uint256) public nonces;
@@ -30,6 +30,10 @@ contract Withdrawal is IWithdrawal {
         // TODO : move to interface
         require(msg.sender == vault, "Withdrawal: only vault");
         _;
+    }
+
+    function getWithdrawal(bytes32 withdrawalId) external view returns (WithdrawalInfo memory) {
+        return withdrawals[withdrawalId];
     }
 
     // the token is expected to be transferred to this contract before calling this function
