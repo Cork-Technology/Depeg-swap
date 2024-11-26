@@ -9,6 +9,8 @@ contract DepositTest is Helper {
     uint256 amount = 1 ether;
     uint256 internal constant DEPOSIT_AMOUNT = 1_000_000_000 ether;
 
+    mapping(address => uint256) public balances;
+
     function setUp() external {
         deployModuleCore();
         (DummyWETH ra,,) = initializeAndIssueNewDs(block.timestamp + 1 days);
@@ -26,7 +28,6 @@ contract DepositTest is Helper {
 
         Id id = defaultCurrencyId;
         Asset lv = Asset(moduleCore.lvAsset(id));
-        console.log("lv symbol: ", lv.symbol());
 
         uint256 balanceBefore = lv.balanceOf(DEFAULT_ADDRESS);
 
@@ -41,7 +42,48 @@ contract DepositTest is Helper {
         IVault.RedeemEarlyParams memory redeemParams =
             IVault.RedeemEarlyParams({id: id, amount: received, amountOutMin: 0, ammDeadline: block.timestamp});
 
-        moduleCore.redeemEarlyLv(redeemParams);
+        IVault.RedeemEarlyResult memory result = moduleCore.redeemEarlyLv(redeemParams);
+        vm.warp(3 days + 1);
+
+        withdrawalContract.claimToSelf(result.withdrawalId);
+    }
+
+    function test_depositRedeem() external {
+        amount = bound(amount, 0.001 ether, DEPOSIT_AMOUNT);
+
+        Id id = defaultCurrencyId;
+        Asset lv = Asset(moduleCore.lvAsset(id));
+
+        uint256 balanceBefore = lv.balanceOf(DEFAULT_ADDRESS);
+
+        uint256 received = moduleCore.depositLv(id, amount, 0, 0);
+
+        uint256 balanceAfter = lv.balanceOf(DEFAULT_ADDRESS);
+
+        vm.assertEq(balanceAfter, balanceBefore + received);
+
+        lv.approve(address(moduleCore), received);
+
+        IVault.RedeemEarlyParams memory redeemParams =
+            IVault.RedeemEarlyParams({id: id, amount: received, amountOutMin: 0, ammDeadline: block.timestamp});
+
+        IVault.RedeemEarlyResult memory result = moduleCore.redeemEarlyLv(redeemParams);
+        vm.warp(3 days + 1);
+
+        Withdrawal.WithdrawalInfo memory info = withdrawalContract.getWithdrawal(result.withdrawalId);
+
+        for (uint256 i = 0; i < info.tokens.length; i++) {
+            // record balances before
+            balances[info.tokens[i].token] = IERC20(info.tokens[i].token).balanceOf(DEFAULT_ADDRESS);
+        }
+
+        withdrawalContract.claimToSelf(result.withdrawalId);
+
+        for (uint256 i = 0; i < info.tokens.length; i++) {
+            // record balances after
+            uint256 balanceAfterClaim = IERC20(info.tokens[i].token).balanceOf(DEFAULT_ADDRESS);
+            vm.assertEq(balanceAfterClaim, balances[info.tokens[i].token] + info.tokens[i].amount);
+        }
     }
 
     function test_RevertWhenToleranceIsWorking() external {

@@ -5,6 +5,7 @@ import {Id} from "../libraries/Pair.sol";
 import {IDsFlashSwapCore} from "../interfaces/IDsFlashSwapRouter.sol";
 import {IUniswapV2Router02} from "../interfaces/uniswap-v2/RouterV2.sol";
 import {ICorkHook} from "./../interfaces/UniV4/IMinimalHook.sol";
+import {IWithdrawal}from "./IWithdrawal.sol";
 
 /**
  * @title IVault Interface
@@ -12,9 +13,10 @@ import {ICorkHook} from "./../interfaces/UniV4/IMinimalHook.sol";
  * @notice IVault interface for VaultCore contract
  */
 interface IVault {
-    struct Routers {
+    struct ProtocolContracts {
         IDsFlashSwapCore flashSwapRouter;
         ICorkHook ammRouter;
+        IWithdrawal withdrawalContract;
     }
 
     struct PermitParams {
@@ -38,6 +40,7 @@ interface IVault {
         uint256 dsReceived;
         uint256 fee;
         uint256 feePercentage;
+        bytes32 withdrawalId;
     }
 
     /// @notice Emitted when a user deposits assets into a given Vault
@@ -55,7 +58,8 @@ interface IVault {
         uint256 ctReceivedFromVault,
         uint256 dsReceived,
         uint256 fee,
-        uint256 feePercentage
+        uint256 feePercentage,
+        bytes32 withdrawalId
     );
 
     /// @notice Emitted when a early redemption fee is updated for a given Vault
