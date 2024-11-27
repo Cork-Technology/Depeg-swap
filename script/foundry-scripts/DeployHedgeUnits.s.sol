@@ -3,7 +3,7 @@ pragma solidity ^0.8.24;
 import {Script, console} from "forge-std/Script.sol";
 import {ERC1967Proxy} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 import {ModuleCore} from "../../contracts/core/ModuleCore.sol";
-import {Liquidator} from "../../contracts/core/liquidators/Liquidator.sol";
+import {Liquidator} from "../../../contracts/core/liquidators/cow-protocol/Liquidator.sol";
 import {HedgeUnit} from "../../contracts/core/assets/HedgeUnit.sol";
 import {HedgeUnitFactory} from "../../contracts/core/assets/HedgeUnitFactory.sol";
 

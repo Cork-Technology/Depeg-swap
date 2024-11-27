@@ -11,7 +11,7 @@ import "./../../../../contracts/interfaces/IPSMcore.sol";
 import "forge-std/console.sol";
 import "./../../../../contracts/interfaces/IVault.sol";
 import "./../../../../contracts/interfaces/ICommon.sol";
-import "./../../../../contracts/core/liquidators/Liquidator.sol";
+import "./../../../../../contracts/core/liquidators/cow-protocol/Liquidator.sol";
 
 contract VaultLiquidationTest is Helper {
     DummyWETH internal ra;
