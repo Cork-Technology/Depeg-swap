@@ -100,6 +100,10 @@ interface IDsFlashSwapCore is IDsFlashSwapUtility {
         uint256 epsilon;
         /// @dev the threshold tolerance that's used to find the optimal RA amount to borrow, the smaller, the more accurate but more gas intensive it will be
         uint256 feeEpsilon;
+        /// @dev the percentage buffer that's used to find the optimal DS amount. needed due to the inherent nature
+        /// of the math that has some imprecision, this will be used to subtract the original amount, to offset the precision
+        /// when in doubt use 0.01%(1e16) if you're trading above 0.0001 RA. Below that use 1-10%(1e17-1e18)
+        uint256 precisionBufferPercentage;
     }
 
     /// @notice Revert when Signature is valid or signature deadline is incorrect

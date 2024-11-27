@@ -167,6 +167,10 @@ library SwapperMathLibrary {
         result = div(mul(amount, percentage), convertUd(100));
     }
 
+    function calculatePercentage(uint256 amount, uint256 percentage) internal pure returns (uint256 result) {
+        result = unwrap(calculatePercentage(ud(amount), ud(percentage)));
+    }
+
     /// @notice HIYA_acc = Ri x Volume_i x 1 - ((Discount / 86400) * (currentTime - issuanceTime))
     function calcHIYAaccumulated(
         uint256 startTime,
@@ -379,13 +383,6 @@ library SwapperMathLibrary {
         pure
         returns (OptimalBorrowResult memory result)
     {
-        // we basically do nothing if there's no fee
-        if (params.market.baseFee == 0) {
-            result.repaymentAmount = params.market.getAmountIn(params.initialBorrowedAmount, false);
-            result.amountOut = params.initialAmountOut;
-            result.borrowedAmount = params.initialBorrowedAmount;
-            return (result);
-        }
 
         UD60x18 amountOutUd = convertUd(params.initialAmountOut);
         UD60x18 initialBorrowedAmountUd = convertUd(params.initialBorrowedAmount);
@@ -433,7 +430,7 @@ library SwapperMathLibrary {
         }
 
         // this means that there's no suitable borrowed amount that satisfies the fee constraints
-        if(result.borrowedAmount == 0) {
+        if (result.borrowedAmount == 0) {
             revert IMathError.NoConverge();
         }
     }

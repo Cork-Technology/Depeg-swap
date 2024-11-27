@@ -214,14 +214,17 @@ library DsFlashSwaplibrary {
     ) external view returns (uint256 amountOut, uint256 borrowedAmount, uint256 repaymentAmount) {
         (uint256 raReserve, uint256 ctReserve) = getReservesSorted(assetPair, router);
 
+        MarketSnapshot memory market = router.getMarketSnapshot(address(assetPair.ra), address(assetPair.ct));
+        
         uint256 issuedAt = assetPair.ds.issuedAt();
         uint256 end = assetPair.ds.expiry();
 
         amountOut = _calculateInitialBuyOut(InitialTradeCaclParams(raReserve, ctReserve, issuedAt, end, amount, params));
 
-        borrowedAmount = amountOut - amount;
+        // we subtract some percentage of it to account for dust imprecisions
+        amountOut -= SwapperMathLibrary.calculatePercentage(amountOut, params.precisionBufferPercentage);
 
-        MarketSnapshot memory market = router.getMarketSnapshot(address(assetPair.ra), address(assetPair.ct));
+        borrowedAmount = amountOut - amount;
 
         SwapperMathLibrary.OptimalBorrowParams memory optimalParams = SwapperMathLibrary.OptimalBorrowParams(
             market,

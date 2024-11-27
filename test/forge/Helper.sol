@@ -70,7 +70,7 @@ abstract contract Helper is SigUtils, TestHelper {
     }
 
     function defaultBuyApproxParams() internal pure returns (IDsFlashSwapCore.BuyAprroxParams memory) {
-        return IDsFlashSwapCore.BuyAprroxParams(256, 256, 1e16, 1e9, 1e9);
+        return IDsFlashSwapCore.BuyAprroxParams(256, 256, 1e16, 1e9, 1e9, 0.01 ether);
     }
 
     function initializeNewModuleCore(
