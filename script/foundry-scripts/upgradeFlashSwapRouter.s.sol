@@ -12,7 +12,10 @@ contract UpgradeUUPSScript is Script {
 
         // Begin broadcasting (i.e., sending transactions)
         vm.startBroadcast(deployerPrivateKey);
-        address flashSwapProxyAddress = 0x6629e017455CB886669e725AF1BC826b65cB6f24;
+        address user = vm.addr(deployerPrivateKey);
+        address flashSwapProxyAddress = 0x96EE05bA5F2F2D3b4a44f174e5Df3bba1B9C0D17;
+
+        RouterState(flashSwapProxyAddress).grantRole(keccak256("CONFIG"), address(user));
 
         // Step 1: Deploy the new implementation contract (RouterState)
         RouterState newImplementation = new RouterState();
