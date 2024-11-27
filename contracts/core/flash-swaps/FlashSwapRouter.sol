@@ -199,8 +199,8 @@ contract RouterState is
         internal
         returns (uint256 raLeft, uint256 dsReceived)
     {
-        // this means that we ignore and don't do rollover sale when it's first issuance or it's not rollover time
-        if (dsId == DsFlashSwaplibrary.FIRST_ISSUANCE || !reserves[reserveId].rolloverSale()) {
+        // this means that we ignore and don't do rollover sale when it's first issuance or it's not rollover time, or no hiya(means no trade, unlikely but edge case)
+        if (dsId == DsFlashSwaplibrary.FIRST_ISSUANCE || !reserves[reserveId].rolloverSale(), || reserves[reserveId].hiya == 0) {
             // noop and return back the full amountRa
             return (amountRa, 0);
         }
