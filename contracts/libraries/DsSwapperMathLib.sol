@@ -53,7 +53,7 @@ library SwapperMathLibrary {
     }
 
     /**
-     * @notice  S = (x - r * y + E) + sqrt((x - r * y)^2 + 4 * r * E * y)) / (2 * r)
+     * @notice  S = (x - r * y + E) + sqrt((x - r * y + E)^2 + 4 * r * E * y)) / (2 * r)
      *  @param r RA exchange rate for CT:DS
      *  @param x RA reserve
      *  @param y CT reserve
