@@ -25,14 +25,14 @@ struct Assets {
 }
 
 contract RolloverScript is Script {
-    address ceth = 0x0905A6A8Ad90d747D7cc57c0c043D4Fbb01BAC4f;
-    address cusd = 0xcb5F36D3697DcB218Cb2266b373D5d7AA2745157;
-    address bsETHAdd = 0x30806bb1685Cd68DFb68a4616003Acc238412aF2;
-    address wamuETHAdd = 0x69C1AF6a0FEA0AcEc09C084bE81C26A525Ba0702;
-    address mlETHAdd = 0xEcF2D124EE25EA4eB4bB834229537DBDb38560fe;
-    address svbUSDAdd = 0x31d576311E302CeF0E3bA80644c23333fd113c8f;
-    address fedUSDAdd = 0x218780f6Ad2D26A65AeE30C5F9624304C31EECd0;
-    address omgUSDAdd = 0x5F73549336B58d0a61345934D4878078b50743B2;
+    address ceth = 0x11649B3aEc3D4Cd35D0727D786c234329B756fd9;
+    address cusd = 0x4c82BdeDD41bf0284fd6BCa1b6A317fEF6A6d237;
+    address bsETHAdd = 0x2019e2E0D0DE78b65ce698056EAE468192b40daC;
+    address wamuETHAdd = 0x81EcEa063eB1E477365bd6c0AE7E1d1f3d84442E;
+    address mlETHAdd = 0xD1813fD95E557d273E8009db91C6BC412F56eE56;
+    address svbUSDAdd = 0xeD273d746bC1CefA9467ea5e81e9cd22eaC27397;
+    address fedUSDAdd = 0xEBdc16512a8c79c39EB27cc27e387039AF573f82;
+    address omgUSDAdd = 0x42B025047A12c403803805195230C257D2170Bb1;
 
     uint256 wamuETHExpiry = 3.5 days;
     uint256 bsETHExpiry = 3.5 days;
@@ -48,9 +48,9 @@ contract RolloverScript is Script {
     Assets fedUSD = Assets(cusd, fedUSDAdd, fedUSDExpiry, 0.75 ether);
     Assets omgUSD = Assets(svbUSDAdd, omgUSDAdd, omgUSDExpiry, 0.75 ether);
 
-    CorkConfig config = CorkConfig(0x2039a7923b275efB3b211e58720F5AD77a3a4cCC);
-    RouterState flashSwapRouter = RouterState(0x6B7406Ab9fa8d26B8E85060977e6737E0dF32b83);
-    ModuleCore moduleCore = ModuleCore(0xC675522e3047b417F7CB5dD2d7Ef4c48b318DadF);
+    CorkConfig config = CorkConfig(0xCA98b865821850dea56ab65F3f6C90E78D550015);
+    RouterState flashSwapRouter = RouterState(0x96EE05bA5F2F2D3b4a44f174e5Df3bba1B9C0D17);
+    ModuleCore moduleCore = ModuleCore(0x3390573A8Cd1aB9CFaE5e1720e4e7867Ed074a38);
 
     // 6% decay discount rate
     uint256 internal constant DEFAULT_DECAY_DISCOUNT_RATE = 6 ether;

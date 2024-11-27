@@ -7,6 +7,7 @@ import {CETH} from "../../contracts/tokens/CETH.sol";
 import {CST} from "../../contracts/tokens/CST.sol";
 import {Id, PairLibrary} from "../../contracts/libraries/Pair.sol";
 import {IDsFlashSwapCore} from "../../contracts/interfaces/IDsFlashSwapRouter.sol";
+import {CorkConfig} from "../../contracts/core/CorkConfig.sol";
 
 struct Assets {
     address redemptionAsset;
@@ -15,9 +16,10 @@ struct Assets {
     uint256 repruchaseFee;
 }
 
-contract SwapRAForDSScript is Script {
+contract ZeroScript is Script {
     ModuleCore public moduleCore;
     RouterState public routerState;
+    CorkConfig public config;
 
     bool public isProd = vm.envBool("PRODUCTION");
     uint256 public base_redemption_fee = vm.envUint("PSM_BASE_REDEMPTION_FEE_PERCENTAGE");
@@ -53,32 +55,25 @@ contract SwapRAForDSScript is Script {
 
         moduleCore = ModuleCore(0x3390573A8Cd1aB9CFaE5e1720e4e7867Ed074a38);
         routerState = RouterState(0x96EE05bA5F2F2D3b4a44f174e5Df3bba1B9C0D17);
+        config = CorkConfig(0xCA98b865821850dea56ab65F3f6C90E78D550015);
         console.log("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-");
 
-        Assets[6] memory assets = [mlETH, bsETH, wamuETH, svbUSD, fedUSD, omgUSD];
-        // Assets[3] memory assets = [mlETH, bsETH, omgUSD];
-        // Assets[1] memory assets = [fedUSD];
+        // Assets[6] memory assets = [mlETH, bsETH, wamuETH, svbUSD, fedUSD, omgUSD];
+        Assets[1] memory assets = [wamuETH];
 
         for (uint256 i = 0; i < assets.length; i++) {
-            for (uint256 j = 0; j < 100; j++) {
-                swapRaForDs(assets[i], 0.01 ether);
-            }
+            updateFees(assets[i]);
         }
 
         console.log("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-");
         vm.stopBroadcast();
     }
 
-    function swapRaForDs(Assets memory asset, uint256 swapAmt) public {
-        Id reserveId = moduleCore.getId(asset.peggedAsset, asset.redemptionAsset, asset.expiryInterval);
-        Id id = PairLibrary.toId(PairLibrary.initalize(asset.peggedAsset, asset.redemptionAsset, asset.expiryInterval));
-        uint256 dsId = moduleCore.lastDsId(id);
-
-        CETH(asset.redemptionAsset).approve(address(routerState), swapAmt);
-        IDsFlashSwapCore.BuyAprroxParams memory params =
-            IDsFlashSwapCore.BuyAprroxParams(108, 108, 1 ether, 1 gwei, 1 gwei);
-        routerState.swapRaforDs(reserveId, dsId, swapAmt, 0, params);
-        console.log("Swap RA for DS");
+    function updateFees(Assets memory asset) public {
+        Id id = moduleCore.getId(asset.peggedAsset, asset.redemptionAsset, asset.expiryInterval);
+        (address ctToken,) = moduleCore.swapAsset(id, 1);
+        config.updateAmmBaseFeePercentage(asset.redemptionAsset, ctToken, 0);
+        console.log("Fees zero now");
         console.log("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-");
     }
 }
