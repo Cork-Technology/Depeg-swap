@@ -239,7 +239,7 @@ library VaultLibrary {
         uint256 dsId = self.globalAssetIdx;
 
         // no need to provide liquidity if the amount is 0
-        if (raAmount == 0 && ctAmount == 0) {
+        if (raAmount == 0 || ctAmount == 0) {
             return;
         }
 
