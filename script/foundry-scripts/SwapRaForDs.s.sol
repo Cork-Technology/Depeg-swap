@@ -50,6 +50,7 @@ contract SwapRAForDSScript is Script {
 
     function run() public {
         vm.startBroadcast(pk);
+        vm.pauseGasMetering();
 
         moduleCore = ModuleCore(0x3390573A8Cd1aB9CFaE5e1720e4e7867Ed074a38);
         routerState = RouterState(0x96EE05bA5F2F2D3b4a44f174e5Df3bba1B9C0D17);
@@ -60,7 +61,9 @@ contract SwapRAForDSScript is Script {
         // Assets[1] memory assets = [fedUSD];
 
         for (uint256 i = 0; i < assets.length; i++) {
+
             for (uint256 j = 0; j < 100; j++) {
+                console.log("Swapping iteration: ", j);
                 swapRaForDs(assets[i], 0.01 ether);
             }
         }
