@@ -293,6 +293,7 @@ library VaultLibrary {
 
         // we mint 1:1 if it's the first deposit
         if (!self.vault.initialized) {
+            self.vault.lv.locked = 1 ether;
             exchangeRate = 1 ether;
             self.vault.initialized = true;
         } else {
