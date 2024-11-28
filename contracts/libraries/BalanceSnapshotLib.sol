@@ -1,6 +1,6 @@
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
-pragma solidity ^0.8.24;
+pragma solidity 0.8.26;
 
 library BalancesSnapshot {
     function takeSnapshot(address token) internal {

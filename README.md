@@ -55,13 +55,7 @@ This is because we actualy don't use ignition when deploying uniswap v2 related 
 ```bash
 npx hardhat run script/hardhat-scripts/deploy.ts --network <network>
 
-forge script script/foundry-scripts/DeployTokens.s.sol:DeployTokensScript
-
 forge script script/foundry-scripts/Deploy.s.sol:DeployScript --rpc-url https://1rpc.io/sepolia --broadcast -vvv --with-gas-price 25000000000 --verify
-
-// For deploying HedgeUnits separately
-forge script script/foundry-scripts/DeployHedgeUnits.s.sol:DeployHedgeUnitsScript --rpc-url https://1rpc.io/sepolia --broadcast -vvv
-
 ```
 
 AFter that, you should see something like this on your terminal :
