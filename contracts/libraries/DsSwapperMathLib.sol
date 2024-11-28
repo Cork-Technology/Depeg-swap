@@ -121,6 +121,11 @@ library BuyMathBisectionSolver {
 library SwapperMathLibrary {
     using MarketSnapshotLib for MarketSnapshot;
 
+    // needed since, if it's near expiry and the value goes higher than this,
+    // the math would fail, since near expiry it would behave similar to CSM curve,
+    // it's fine if the actual value go higher since that means we would only overestimate on how much we actually need to repay
+    int256 internal constant ONE_MINUS_T_CAP = 99e17;
+
     // Calculate price ratio of two tokens in a uniswap v2 pair, will return ratio on 18 decimals precision
     function getPriceRatio(uint256 raReserve, uint256 ctReserve)
         public
@@ -156,6 +161,11 @@ library SwapperMathLibrary {
         SD59x18 oneMinusT = BuyMathBisectionSolver.computeOneMinusT(
             convert(int256(start)), convert(int256(end)), convert(int256(current))
         );
+
+        if (unwrap(oneMinusT) > ONE_MINUS_T_CAP) {
+            oneMinusT = sd(ONE_MINUS_T_CAP);
+        }
+
         SD59x18 root = BuyMathBisectionSolver.findRoot(
             convert(int256(x)), convert(int256(y)), convert(int256(e)), oneMinusT, sd(int256(epsilon)), maxIter
         );
@@ -383,7 +393,6 @@ library SwapperMathLibrary {
         pure
         returns (OptimalBorrowResult memory result)
     {
-
         UD60x18 amountOutUd = convertUd(params.initialAmountOut);
         UD60x18 initialBorrowedAmountUd = convertUd(params.initialBorrowedAmount);
         UD60x18 suppliedAmountUd = convertUd(params.amountSupplied);
