@@ -2,7 +2,6 @@
 pragma solidity ^0.8.24;
 
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import {ReentrancyGuardTransient} from "@openzeppelin/contracts/utils/ReentrancyGuardTransient.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {ILiquidator} from "../../../interfaces/ILiquidator.sol";
 import {BalancesSnapshot} from "./../../../libraries/BalanceSnapshotLib.sol";
@@ -16,7 +15,7 @@ interface GPv2SettlementContract {
     function setPreSignature(bytes calldata orderUid, bool signed) external;
 }
 
-contract Liquidator is ReentrancyGuardTransient, ILiquidator {
+contract Liquidator is ILiquidator {
     using SafeERC20 for IERC20;
 
     struct Details {
@@ -80,7 +79,7 @@ contract Liquidator is ReentrancyGuardTransient, ILiquidator {
         SafeERC20.safeTransfer(IERC20(details.sellToken), liquidator, details.sellAmount);
     }
 
-    function createOrderVault(ILiquidator.CreateVaultOrderParams memory params) external nonReentrant onlyLiquidator {
+    function createOrderVault(ILiquidator.CreateVaultOrderParams memory params) external onlyLiquidator {
         Details memory details = Details(params.sellToken, params.sellAmount, params.buyToken);
 
         address liquidator = _initializeVaultLiquidator(params.internalRefId, details, params.orderUid);
