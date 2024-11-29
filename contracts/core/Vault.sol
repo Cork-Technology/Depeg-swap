@@ -191,6 +191,7 @@ abstract contract VaultCore is ModuleState, Context, IVault, IVaultLiquidation {
         lv = states[id].vault.lv._address;
     }
 
-    // TODO
-    function receiveLeftoverFunds(Id id, uint256 amount) external{}
+    function receiveLeftoverFunds(Id id, uint256 amount) external {
+        states[id].receiveLeftoverFunds(amount, _msgSender());
+    }
 }
