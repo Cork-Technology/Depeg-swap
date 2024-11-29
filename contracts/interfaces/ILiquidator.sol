@@ -1,5 +1,6 @@
 pragma solidity ^0.8.24;
-import  "./../libraries/Pair.sol";
+
+import "./../libraries/Pair.sol";
 
 /**
  * @title ILiquidator Interface
@@ -26,7 +27,14 @@ interface ILiquidator {
         bytes data;
     }
 
-    event OrderSubmitted(bytes32 indexed internalRefId, bytes orderUid, address sellToken, uint256 sellAmount, address buyToken, address liquidator);
+    event OrderSubmitted(
+        bytes32 indexed internalRefId,
+        bytes orderUid,
+        address sellToken,
+        uint256 sellAmount,
+        address buyToken,
+        address liquidator
+    );
 
     /// @notice thrown when the internal reference id is invalid
     error InalidRefId();
@@ -37,5 +45,7 @@ interface ILiquidator {
     /// @notice thrown when the caller is not the liquidator
     error OnlyLiquidator();
 
+    function createOrderVault(ILiquidator.CreateVaultOrderParams memory params) external;
 
+    function finishVaultOrder(bytes32 refId) external;
 }
