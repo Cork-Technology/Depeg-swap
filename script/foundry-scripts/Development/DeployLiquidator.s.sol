@@ -1,7 +1,7 @@
 pragma solidity ^0.8.24;
 
 import {Script, console} from "forge-std/Script.sol";
-import {Liquidator} from "../../../../contracts/core/liquidators/cow-protocol/Liquidator.sol";
+import {Liquidator} from "../../../contracts/core/liquidators/cow-protocol/Liquidator.sol";
 import {Utils} from "../Utils/Utils.s.sol"; // Import the Utils contract
 import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
@@ -20,11 +20,15 @@ contract DeployLiquidatorScript is Script {
     // TODO : Add the hookTrampoline address
     address hookTrampoline = vm.addr(pk);
 
+    // TODO : insert this
+    address corkConfig = address(0);
+    address moduleCore = address(0);
+
     function setUp() public {}
 
     function run() public {
         vm.startBroadcast(pk);
-        liquidator = new Liquidator(deployer, hookTrampoline, settlementContract);
+        liquidator = new Liquidator(address(corkConfig), hookTrampoline, settlementContract, moduleCore);
 
         console.log("liquidator Contract: ", address(liquidator));
         console.log("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-==-=-=-=-=-");
