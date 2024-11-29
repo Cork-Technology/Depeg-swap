@@ -9,7 +9,7 @@ import {BalancesSnapshot} from "./../../../libraries/BalanceSnapshotLib.sol";
 import {IVaultLiquidation} from "./../../../interfaces/IVaultLiquidation.sol";
 import {Id} from "./../../../libraries/Pair.sol";
 import {CorkConfig} from "./../../CorkConfig.sol";
-// import {VaultChildLiquidator} from "./VaultChildLiquidator.sol";
+import {VaultChildLiquidator} from "./ChildLiquidatorVault.sol";
 import {Clones} from "@openzeppelin/contracts/proxy/Clones.sol";
 
 interface GPv2SettlementContract {
@@ -23,18 +23,23 @@ contract Liquidator is ReentrancyGuardTransient, ILiquidator {
         address sellToken;
         uint256 sellAmount;
         address buyToken;
-        Call preHookCall;
-        Call postHookCall;
+    }
+
+    struct Orders {
+        Details details;
+        address liquidator;
     }
 
     GPv2SettlementContract public settlement;
 
-    mapping(bytes32 => Details) internal orderCalls;
-    mapping(address => bool) public liquidators;
+    mapping(bytes32 => Orders) internal orderCalls;
+
+    mapping(bytes32 => bytes32) public refIdToVaultId;
 
     address public config;
     address public hookTrampoline;
     address public vaultLiquidatorBase;
+    address public moduleCore;
 
     modifier onlyTrampoline() {
         if (msg.sender != hookTrampoline) {
@@ -50,95 +55,56 @@ contract Liquidator is ReentrancyGuardTransient, ILiquidator {
         _;
     }
 
-    constructor(address _config, address _hookTrampoline, address _settlementContract) {
+    constructor(address _config, address _hookTrampoline, address _settlementContract, address _moduleCore) {
         settlement = GPv2SettlementContract(_settlementContract);
         config = _config;
         hookTrampoline = _hookTrampoline;
+        vaultLiquidatorBase = address(new VaultChildLiquidator());
     }
 
-    // function registerRefId(bytes32 refId) external onlyLiquidator {
-    //     Clones.cloneDeterministic(implementation, salt);
-    //     Clones.predictDeterministicAddress(implementation, salt);
-    // }
+    function fetchVaultReciver(bytes32 refId) external returns (address receiver) {
+        receiver = Clones.predictDeterministicAddress(vaultLiquidatorBase, refId, address(this));
+    }
 
-    function createOrder(ILiquidator.CreateOrderParams memory params, uint32 expiryPeriodInSecods)
-        external
-        nonReentrant
-        onlyLiquidator
+    function _initializeVaultLiquidator(bytes32 refId, Details memory order, bytes memory orderUid)
+        internal
+        returns (address liquidator)
     {
-        // record the order details
-        orderCalls[params.internalRefId] =
-            Details(params.sellToken, params.sellAmount, params.buyToken, params.preHookCall, params.postHookCall);
+        liquidator = Clones.cloneDeterministic(vaultLiquidatorBase, refId);
+        VaultChildLiquidator(liquidator).initialize(this, order, orderUid, moduleCore, refId);
+    }
 
-        // Call the settlement contract to set pre-signature
-        settlement.setPreSignature(params.orderUid, true);
+    function _moveVaultFunds(Details memory details, Id id, address liquidator) internal {
+        IVaultLiquidation(moduleCore).requestLiquidationFunds(id, details.sellAmount);
+
+        SafeERC20.safeTransfer(IERC20(details.sellToken), liquidator, details.sellAmount);
+    }
+
+    function createOrderVault(ILiquidator.CreateVaultOrderParams memory params) external nonReentrant onlyLiquidator {
+        Details memory details = Details(params.sellToken, params.sellAmount, params.buyToken);
+
+        address liquidator = _initializeVaultLiquidator(params.internalRefId, details, params.orderUid);
+
+        // record the order details
+        orderCalls[params.internalRefId] = Orders(details, liquidator);
+
+        _moveVaultFunds(details, params.vaultId, liquidator);
+
+        refIdToVaultId[params.internalRefId] = Id.unwrap(params.vaultId);
 
         // Emit an event with order details for the backend to pick up
-        emit OrderSubmitted(params.internalRefId, params.orderUid, params.sellToken, params.sellAmount, params.buyToken);
+        emit OrderSubmitted(
+            params.internalRefId, params.orderUid, params.sellToken, params.sellAmount, params.buyToken, liquidator
+        );
     }
 
-    function preHook(bytes32 refId) external nonReentrant onlyTrampoline {
-        Details memory details = orderCalls[refId];
+    function finishVaultOrder(bytes32 refId) external onlyLiquidator {
+        Id id = Id.wrap(refIdToVaultId[refId]);
+        Orders memory order = orderCalls[refId];
 
-        if (details.preHookCall.target == address(0)) {
-            revert ILiquidator.InalidRefId();
-        }
+        VaultChildLiquidator(order.liquidator).moveFunds(id);
 
-        // call the funds owner, the funds is expected to be in the liquidator contract after this call
-        details.preHookCall.target.call(details.preHookCall.data);
-
-        // make a snapshot of the liquidation contract balance
-        BalancesSnapshot.takeSnapshot(details.buyToken);
-
-        // give the settlement contract allowance to spend the funds
-        SafeERC20.safeIncreaseAllowance(IERC20(details.sellToken), address(settlement), details.sellAmount);
-    }
-
-    function postHook(bytes32 refId) external nonReentrant onlyTrampoline {
-        Details memory details = orderCalls[refId];
-
-        if (details.preHookCall.target == address(0)) {
-            revert ILiquidator.InalidRefId();
-        }
-
-        uint256 balanceDiff = BalancesSnapshot.getDifferences(details.buyToken);
-
-        // actually encode the balance difference in the postHookCall data
-        details.postHookCall.data = bytes.concat(details.postHookCall.data, abi.encode(balanceDiff));
-
-        // increase allowance
-        SafeERC20.safeIncreaseAllowance(IERC20(details.buyToken), details.postHookCall.target, balanceDiff);
-
-        // call the funds owner, we expect the funds to be taken away from the liquidator contract after this call
-        details.postHookCall.target.call(details.postHookCall.data);
-
-        // remove the order details to save gas
         delete orderCalls[refId];
-    }
-
-    function encodePreHookCallData(bytes32 refId) external returns (bytes memory data) {
-        data = abi.encodeCall(this.preHook, refId);
-    }
-
-    function encodePostHookCallData(bytes32 refId) external returns (bytes memory data) {
-        data = abi.encodeCall(this.postHook, refId);
-    }
-
-    // needed since the resulting trade amount isn't fixed and can get more than the expected amount
-    // IMPORTANT:  this will encode all the data needed EXCEPT the amount of the trade, it's important that the amount
-    // is placed LAST in terms of the function signature variable ordering
-    function encodeVaultPostHook(Id vaultId) external returns (bytes memory data) {
-        data = abi.encodeWithSelector(IVaultLiquidation.receiveTradeExecuctionResultFunds.selector, vaultId);
-    }
-
-    function encodeVaultPreHook(Id vaultId, uint256 amount) external returns (bytes memory data) {
-        data = abi.encodeWithSelector(IVaultLiquidation.requestLiquidationFunds.selector, vaultId, amount);
-    }
-
-    // needed since the resulting trade amount isn't fixed and can get more than the expected amount
-    // IMPORTANT:  this will encode all the data needed EXCEPT the amount of the trade, it's important that the amount
-    // is placed LAST in terms of the function signature variable ordering
-    function encodeHedgeUnitPostHook() external {
-        // TODO
+        delete refIdToVaultId[refId];
     }
 }

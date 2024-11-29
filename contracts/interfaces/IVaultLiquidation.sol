@@ -6,7 +6,7 @@ import "./../libraries/Pair.sol";
 /// @notice This contract is responsible for providing a way for liquidation contracts to request and send back funds
 /// IMPORTANT :  the vault must make sure only authorized adddress can call the functions in this interface
 interface IVaultLiquidation {
-    /// @notice Request funds for liquidation
+    /// @notice Request funds for liquidation, will transfer the funds directly from the vault to the liquidation contract
     /// @param id The id of the vault
     /// @param amount The amount of funds to request
     /// will revert if there's not enough funds in the vault
