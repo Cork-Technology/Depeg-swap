@@ -170,11 +170,11 @@ contract DeployScript is Script {
         console.log("Liquidity Token                 : ", address(liquidityToken));
 
         bytes memory creationCode = type(CorkHook).creationCode;
-        bytes memory constructorArgs = abi.encode(poolManager, liquidityToken, sender);
+        bytes memory constructorArgs = abi.encode(poolManager, liquidityToken, address(config));
 
         (address hookAddress, bytes32 salt) = HookMiner.find(CREATE_2_PROXY, hookFlags, creationCode, constructorArgs);
 
-        hook = new CorkHook{salt: salt}(poolManager, liquidityToken, sender);
+        hook = new CorkHook{salt: salt}(poolManager, liquidityToken, address(config));
         require(address(hook) == hookAddress, "hook address mismatch");
         console.log("Hook                            : ", hookAddress);
 
@@ -201,7 +201,7 @@ contract DeployScript is Script {
 
         // Transfer Ownership to moduleCore
         assetFactory.transferOwnership(address(moduleCore));
-        hook.transferOwnership(address(config));
+        // hook.transferOwnership(address(config));
         console.log("Transferred ownerships to Modulecore");
 
         config.setModuleCore(address(moduleCore));

@@ -16,6 +16,7 @@ import {TestFlashSwapRouter} from "./TestFlashSwapRouter.sol";
 import {SigUtils} from "./SigUtils.sol";
 import {TestHelper} from "Cork-Hook/../test/Helper.sol";
 import {IDsFlashSwapCore} from "./../../contracts/interfaces/IDsFlashSwapRouter.sol";
+import "./../../contracts/core/Withdrawal.sol";
 
 abstract contract Helper is SigUtils, TestHelper {
     TestModuleCore internal moduleCore;
@@ -25,6 +26,7 @@ abstract contract Helper is SigUtils, TestHelper {
     CorkConfig internal corkConfig;
     TestFlashSwapRouter internal flashSwapRouter;
     DummyWETH internal weth = new DummyWETH();
+    Withdrawal internal withdrawalContract;
 
     Id defaultCurrencyId;
 
@@ -214,6 +216,12 @@ abstract contract Helper is SigUtils, TestHelper {
         moduleCore.initialize(address(assetFactory), address(hook), address(flashSwapRouter), address(corkConfig));
     }
 
+    function initializeWithdrawalContract() internal {
+        withdrawalContract = new Withdrawal(address(moduleCore));
+
+        corkConfig.setWithdrawalContract(address(withdrawalContract));
+    }
+
     function deployModuleCore() internal {
         setupTest();
 
@@ -237,5 +245,6 @@ abstract contract Helper is SigUtils, TestHelper {
         setupFlashSwapRouter();
 
         corkConfig.updateLvStrategyCtSplitPercentage(defaultCurrencyId, DEFAULT_CT_SPLIT_PERCENTAGE);
+        initializeWithdrawalContract();
     }
 }

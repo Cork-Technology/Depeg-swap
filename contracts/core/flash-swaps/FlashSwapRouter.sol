@@ -200,7 +200,10 @@ contract RouterState is
         returns (uint256 raLeft, uint256 dsReceived)
     {
         // this means that we ignore and don't do rollover sale when it's first issuance or it's not rollover time, or no hiya(means no trade, unlikely but edge case)
-        if (dsId == DsFlashSwaplibrary.FIRST_ISSUANCE || !reserves[reserveId].rolloverSale() || reserves[reserveId].hiya == 0) {
+        if (
+            dsId == DsFlashSwaplibrary.FIRST_ISSUANCE || !reserves[reserveId].rolloverSale()
+                || reserves[reserveId].hiya == 0
+        ) {
             // noop and return back the full amountRa
             return (amountRa, 0);
         }
@@ -225,7 +228,7 @@ contract RouterState is
         // instead set it to 0 if it's less than the used amount, again this is meant to handle precision issues
         assetPair.psmReserve = assetPair.psmReserve < psmReserveUsed ? 0 : assetPair.psmReserve - psmReserveUsed;
         assetPair.lvReserve = assetPair.lvReserve < lvReserveUsed ? 0 : assetPair.lvReserve - lvReserveUsed;
-        
+
         IERC20(assetPair.ra).safeTransfer(_moduleCore, lvProfit + psmProfit);
 
         IPSMcore(_moduleCore).psmAcceptFlashSwapProfit(reserveId, psmProfit);
