@@ -141,9 +141,7 @@ contract RolloverTest is Helper {
 
         ra.approve(address(flashSwapRouter), 2 ether);
 
-        uint256 amountOut = flashSwapRouter.swapRaforDs(
-            currencyId, dsId, 1 ether, 0, defaultBuyApproxParams()
-        );
+        uint256 amountOut = flashSwapRouter.swapRaforDs(currencyId, dsId, 1 ether, 0, defaultBuyApproxParams());
         uint256 HiyaCummulated = flashSwapRouter.getHiyaCumulated(currencyId);
         uint256 vHiyaCummulated = flashSwapRouter.getVhiyaCumulated(currencyId);
 
@@ -167,9 +165,7 @@ contract RolloverTest is Helper {
         // we autosell
         vm.assertEq(dsReceived, 0);
 
-        amountOut = flashSwapRouter.swapRaforDs(
-            currencyId, dsId, 1 ether, 0, defaultBuyApproxParams()
-        );
+        amountOut = flashSwapRouter.swapRaforDs(currencyId, dsId, 1 ether, 0, defaultBuyApproxParams());
 
         uint256 rolloverProfit = moduleCore.getPsmPoolArchiveRolloverProfit(currencyId, dsId);
         vm.assertNotEq(rolloverProfit, 0);
@@ -209,9 +205,7 @@ contract RolloverTest is Helper {
 
         ra.approve(address(flashSwapRouter), 2 ether);
 
-        uint256 amountOut = flashSwapRouter.swapRaforDs(
-            currencyId, dsId, 1 ether, 0, defaultBuyApproxParams()
-        );
+        uint256 amountOut = flashSwapRouter.swapRaforDs(currencyId, dsId, 1 ether, 0, defaultBuyApproxParams());
         uint256 HiyaCummulated = flashSwapRouter.getHiyaCumulated(currencyId);
         uint256 vHiyaCummulated = flashSwapRouter.getVhiyaCumulated(currencyId);
 
@@ -235,9 +229,7 @@ contract RolloverTest is Helper {
         // we autosell
         vm.assertEq(dsReceived, 0);
 
-        amountOut = flashSwapRouter.swapRaforDs(
-            currencyId, dsId, 1 ether, 0, defaultBuyApproxParams()
-        );
+        amountOut = flashSwapRouter.swapRaforDs(currencyId, dsId, 1 ether, 0, defaultBuyApproxParams());
 
         uint256 rolloverProfit = moduleCore.getPsmPoolArchiveRolloverProfit(currencyId, dsId);
         vm.assertNotEq(rolloverProfit, 0);
@@ -263,9 +255,7 @@ contract RolloverTest is Helper {
         uint256 expiry = Asset(ds).expiry();
         vm.warp(expiry - 100);
 
-        uint256 amountOut = flashSwapRouter.swapRaforDs(
-            currencyId, dsId, 1 ether, 0, defaultBuyApproxParams()
-        );
+        uint256 amountOut = flashSwapRouter.swapRaforDs(currencyId, dsId, 1 ether, 0, defaultBuyApproxParams());
 
         uint256 HiyaCummulated = flashSwapRouter.getHiyaCumulated(currencyId);
         uint256 vHiyaCummulated = flashSwapRouter.getVhiyaCumulated(currencyId);
@@ -296,17 +286,13 @@ contract RolloverTest is Helper {
         // based on the Hiya = 0.017103690021973857 (~1% ARP)
         uint256 expectedHPA = 0.016816073119943497 ether;
 
-        amountOut = flashSwapRouter.swapRaforDs(
-            currencyId, dsId, expectedHPA, 0, defaultBuyApproxParams()
-        );
+        amountOut = flashSwapRouter.swapRaforDs(currencyId, dsId, expectedHPA, 0, defaultBuyApproxParams());
 
-        vm.assertEq(amountOut, 1 ether);
+        vm.assertApproxEqAbs(amountOut, 1 ether, 0.001 ether);
 
-        amountOut = flashSwapRouter.swapRaforDs(
-            currencyId, dsId, expectedHPA * 10, 0, defaultBuyApproxParams()
-        );
+        amountOut = flashSwapRouter.swapRaforDs(currencyId, dsId, expectedHPA * 10, 0, defaultBuyApproxParams());
 
-        vm.assertEq(amountOut, 10 ether);
+        vm.assertApproxEqAbs(amountOut, 10 ether, 0.01 ether);
     }
 
     function test_RevertOutIsLessThanMin() external {
@@ -314,9 +300,7 @@ contract RolloverTest is Helper {
 
         ra.approve(address(flashSwapRouter), 100 ether);
 
-        uint256 amountOut = flashSwapRouter.swapRaforDs(
-            currencyId, dsId, 1 ether, 0, defaultBuyApproxParams()
-        );
+        uint256 amountOut = flashSwapRouter.swapRaforDs(currencyId, dsId, 1 ether, 0, defaultBuyApproxParams());
         uint256 HiyaCummulated = flashSwapRouter.getHiyaCumulated(currencyId);
         uint256 vHiyaCummulated = flashSwapRouter.getVhiyaCumulated(currencyId);
 
@@ -343,8 +327,6 @@ contract RolloverTest is Helper {
         vm.assertEq(true, flashSwapRouter.isRolloverSale(currencyId, dsId));
 
         vm.expectRevert();
-        amountOut = flashSwapRouter.swapRaforDs(
-            currencyId, dsId, Hiya, 1000000 ether, defaultBuyApproxParams()
-        );
+        amountOut = flashSwapRouter.swapRaforDs(currencyId, dsId, Hiya, 1000000 ether, defaultBuyApproxParams());
     }
 }

@@ -8,6 +8,7 @@ import {SD59x18, convert, sd, add, mul, pow, sub, div, abs, unwrap, intoUD60x18}
 import {UD60x18, convert as convertUd, ud, add, mul, pow, sub, div, unwrap} from "@prb/math/src/UD60x18.sol";
 import {IMathError} from "./../interfaces/IMathError.sol";
 import {MarketSnapshot, MarketSnapshotLib} from "Cork-Hook/lib/MarketSnapshot.sol";
+import "forge-std/console.sol";
 
 library BuyMathBisectionSolver {
     /// @notice returns the the normalized time to maturity from 1-0
@@ -121,6 +122,11 @@ library BuyMathBisectionSolver {
 library SwapperMathLibrary {
     using MarketSnapshotLib for MarketSnapshot;
 
+    // needed since, if it's near expiry and the value goes higher than this,
+    // the math would fail, since near expiry it would behave similar to CSM curve,
+    // it's fine if the actual value go higher since that means we would only overestimate on how much we actually need to repay
+    int256 internal constant ONE_MINUS_T_CAP = 99e17;
+
     // Calculate price ratio of two tokens in a uniswap v2 pair, will return ratio on 18 decimals precision
     function getPriceRatio(uint256 raReserve, uint256 ctReserve)
         public
@@ -156,6 +162,11 @@ library SwapperMathLibrary {
         SD59x18 oneMinusT = BuyMathBisectionSolver.computeOneMinusT(
             convert(int256(start)), convert(int256(end)), convert(int256(current))
         );
+
+        if (unwrap(oneMinusT) > ONE_MINUS_T_CAP) {
+            oneMinusT = sd(ONE_MINUS_T_CAP);
+        }
+
         SD59x18 root = BuyMathBisectionSolver.findRoot(
             convert(int256(x)), convert(int256(y)), convert(int256(e)), oneMinusT, sd(int256(epsilon)), maxIter
         );
@@ -165,6 +176,10 @@ library SwapperMathLibrary {
 
     function calculatePercentage(UD60x18 amount, UD60x18 percentage) internal pure returns (UD60x18 result) {
         result = div(mul(amount, percentage), convertUd(100));
+    }
+
+    function calculatePercentage(uint256 amount, uint256 percentage) internal pure returns (uint256 result) {
+        result = unwrap(calculatePercentage(ud(amount), ud(percentage)));
     }
 
     /// @notice HIYA_acc = Ri x Volume_i x 1 - ((Discount / 86400) * (currentTime - issuanceTime))
@@ -379,14 +394,6 @@ library SwapperMathLibrary {
         pure
         returns (OptimalBorrowResult memory result)
     {
-        // we basically do nothing if there's no fee
-        if (params.market.baseFee == 0) {
-            result.repaymentAmount = params.market.getAmountIn(params.initialBorrowedAmount, false);
-            result.amountOut = params.initialAmountOut;
-            result.borrowedAmount = params.initialBorrowedAmount;
-            return (result);
-        }
-
         UD60x18 amountOutUd = convertUd(params.initialAmountOut);
         UD60x18 initialBorrowedAmountUd = convertUd(params.initialBorrowedAmount);
         UD60x18 suppliedAmountUd = convertUd(params.amountSupplied);
@@ -433,7 +440,7 @@ library SwapperMathLibrary {
         }
 
         // this means that there's no suitable borrowed amount that satisfies the fee constraints
-        if(result.borrowedAmount == 0) {
+        if (result.borrowedAmount == 0) {
             revert IMathError.NoConverge();
         }
     }
