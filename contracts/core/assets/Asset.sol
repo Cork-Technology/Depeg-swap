@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BUSL-1.1
-pragma solidity 0.8.26;
+pragma solidity ^0.8.24;
 
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {IERC20, ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
@@ -87,7 +87,7 @@ contract Asset is ERC20Burnable, CustomERC20Permit, Ownable, Expiry, ExchangeRat
         uint256 _dsId
     )
         ExchangeRate(_rate)
-        ERC20(string(abi.encodePacked(prefix, "-", pairName)), "CORK")
+        ERC20(string(abi.encodePacked(prefix, "-", pairName)), string(abi.encodePacked(prefix, "-", pairName)))
         CustomERC20Permit(string(abi.encodePacked(prefix, "-", pairName)))
         Ownable(_owner)
         Expiry(_expiry)
