@@ -27,13 +27,12 @@ contract Liquidator is ILiquidator {
     struct Orders {
         Details details;
         address liquidator;
+        Id vaultId;
     }
 
     GPv2SettlementContract public settlement;
 
     mapping(bytes32 => Orders) internal orderCalls;
-
-    mapping(bytes32 => bytes32) public refIdToVaultId;
 
     address public config;
     address public hookTrampoline;
@@ -59,6 +58,7 @@ contract Liquidator is ILiquidator {
         config = _config;
         hookTrampoline = _hookTrampoline;
         vaultLiquidatorBase = address(new VaultChildLiquidator());
+        moduleCore = _moduleCore;
     }
 
     function fetchVaultReciver(bytes32 refId) external returns (address receiver) {
@@ -85,11 +85,9 @@ contract Liquidator is ILiquidator {
         address liquidator = _initializeVaultLiquidator(params.internalRefId, details, params.orderUid);
 
         // record the order details
-        orderCalls[params.internalRefId] = Orders(details, liquidator);
+        orderCalls[params.internalRefId] = Orders(details, liquidator, params.vaultId);
 
         _moveVaultFunds(details, params.vaultId, liquidator);
-
-        refIdToVaultId[params.internalRefId] = Id.unwrap(params.vaultId);
 
         // Emit an event with order details for the backend to pick up
         emit OrderSubmitted(
@@ -98,12 +96,10 @@ contract Liquidator is ILiquidator {
     }
 
     function finishVaultOrder(bytes32 refId) external onlyLiquidator {
-        Id id = Id.wrap(refIdToVaultId[refId]);
         Orders memory order = orderCalls[refId];
 
-        VaultChildLiquidator(order.liquidator).moveFunds(id);
+        VaultChildLiquidator(order.liquidator).moveFunds(order.vaultId);
 
         delete orderCalls[refId];
-        delete refIdToVaultId[refId];
     }
 }
