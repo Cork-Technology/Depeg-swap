@@ -190,4 +190,8 @@ abstract contract VaultCore is ModuleState, Context, IVault, IVaultLiquidation {
     function lvAsset(Id id) external view override returns (address lv) {
         lv = states[id].vault.lv._address;
     }
+
+    function receiveLeftoverFunds(Id id, uint256 amount) external {
+        states[id].receiveLeftoverFunds(amount, _msgSender());
+    }
 }

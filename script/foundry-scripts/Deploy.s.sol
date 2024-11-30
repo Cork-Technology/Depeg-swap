@@ -9,7 +9,7 @@ import {AssetFactory} from "../../contracts/core/assets/AssetFactory.sol";
 import {CorkConfig} from "../../contracts/core/CorkConfig.sol";
 import {RouterState} from "../../contracts/core/flash-swaps/FlashSwapRouter.sol";
 import {ModuleCore} from "../../contracts/core/ModuleCore.sol";
-import {Liquidator} from "../../contracts/core/liquidators/Liquidator.sol";
+import {Liquidator} from "../../contracts/core/liquidators/cow-protocol/Liquidator.sol";
 import {HedgeUnit} from "../../contracts/core/assets/HedgeUnit.sol";
 import {HedgeUnitFactory} from "../../contracts/core/assets/HedgeUnitFactory.sol";
 import {CETH} from "../../contracts/tokens/CETH.sol";
@@ -184,7 +184,7 @@ contract DeployScript is Script {
         console.log("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-");
 
         // Deploy the Liquidator contract
-        liquidator = new Liquidator(msg.sender, hookTrampoline, settlementContract);
+        liquidator = new Liquidator(address(config), hookTrampoline, settlementContract, address(moduleCore));
         console.log("Liquidator                      : ", address(liquidator));
         console.log("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-");
 

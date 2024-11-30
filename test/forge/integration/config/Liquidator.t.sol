@@ -1,3 +1,4 @@
+pragma solidity ^0.8.24;
 import "./../../Helper.sol";
 
 contract liquidatorRoleTest is Helper {

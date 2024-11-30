@@ -3,7 +3,7 @@ pragma solidity ^0.8.24;
 
 import {Helper} from "./Helper.sol";
 import {HedgeUnit} from "../../contracts/core/assets/HedgeUnit.sol";
-import {Liquidator} from "../../contracts/core/liquidators/Liquidator.sol";
+import {Liquidator} from "../../contracts/core/liquidators/cow-protocol/Liquidator.sol";
 import {IHedgeUnit} from "../../contracts/interfaces/IHedgeUnit.sol";
 import {DummyWETH} from "../../contracts/dummy/DummyWETH.sol";
 import {Id} from "./../../contracts/libraries/Pair.sol";
@@ -55,7 +55,7 @@ contract HedgeUnitTest is Helper {
         fetchProtocolGeneralInfo();
 
         // Deploy the Liquidator contract
-        liquidator = new Liquidator(DEFAULT_ADDRESS, hookTrampoline, settlementContract);
+        liquidator = new Liquidator(address(corkConfig), hookTrampoline, settlementContract, address(moduleCore));
 
         // Deploy the HedgeUnit contract
         hedgeUnit = new HedgeUnit(
