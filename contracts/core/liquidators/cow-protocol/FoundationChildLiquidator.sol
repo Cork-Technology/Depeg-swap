@@ -19,7 +19,7 @@ abstract contract ChildLiquidatorBase is OwnableUpgradeable {
     }
 
     modifier onlyLiquidator() {
-        if (msg.sender == owner()) {
+        if (msg.sender != owner()) {
             revert ILiquidator.OnlyLiquidator();
         }
         _;
