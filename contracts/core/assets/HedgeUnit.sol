@@ -212,4 +212,23 @@ contract HedgeUnit is ERC20, ReentrancyGuard, Ownable, Pausable, IHedgeUnit {
     function unpause() external onlyOwner {
         _unpause();
     }
+
+    // TODO : move all fo this to the interface
+    function requestLiquidationFunds(uint256 amount) external {}
+
+    function receiveTradeExecuctionResultFunds(uint256 amount) external {}
+
+    function useTradeExecutionResultFunds() external {}
+
+    function receiveLeftoverFunds(uint256 amount) external {}
+
+    function liquidationFundsAvailable() external view returns (uint256);
+
+    function tradeExecutionFundsAvailable() external view returns (uint256);
+
+    event LiquidationFundsRequested(address indexed who, uint256 amount);
+
+    event TradeExecutionResultFundsReceived(address indexed who, uint256 amount);
+
+    event TradeExecutionResultFundsUsed(address indexed who, uint256 amount);
 }
