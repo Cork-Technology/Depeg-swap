@@ -16,4 +16,6 @@ interface IWithdrawal {
     error NotYetClaimable(uint256 claimableAt, uint256 blockTimestamp);
 
     error NotOwner(address owner, address msgSender);
+
+    error OnlyVault();
 }

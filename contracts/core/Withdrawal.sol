@@ -24,11 +24,24 @@ contract Withdrawal is IWithdrawal {
         vault = _vault;
     }
 
-    // TODO : move to interface
-
     modifier onlyVault() {
-        // TODO : move to interface
-        require(msg.sender == vault, "Withdrawal: only vault");
+        if (msg.sender != vault) {
+            revert OnlyVault();
+        }
+        _;
+    }
+
+    modifier onlyOwner(bytes32 withdrawalId) {
+        if (withdrawals[withdrawalId].owner != msg.sender) {
+            revert NotOwner(withdrawals[withdrawalId].owner, msg.sender);
+        }
+        _;
+    }
+
+    modifier onlyWhenClaimable(bytes32 withdrawalId) {
+        if (withdrawals[withdrawalId].claimableAt > block.timestamp) {
+            revert NotYetClaimable(withdrawals[withdrawalId].claimableAt, block.timestamp);
+        }
         _;
     }
 
@@ -62,15 +75,8 @@ contract Withdrawal is IWithdrawal {
         emit WithdrawalRequested(withdrawalId, owner, claimableAt);
     }
 
-    function claimToSelf(bytes32 withdrawalId) external {
+    function claimToSelf(bytes32 withdrawalId) external onlyOwner(withdrawalId) onlyWhenClaimable(withdrawalId) {
         WithdrawalInfo storage withdrawal = withdrawals[withdrawalId];
-        if (withdrawal.owner != msg.sender) {
-            revert NotOwner(withdrawal.owner, msg.sender);
-        }
-
-        if (withdrawal.claimableAt > block.timestamp) {
-            revert NotYetClaimable(withdrawal.claimableAt, block.timestamp);
-        }
 
         for (uint256 i = 0; i < withdrawal.tokens.length; i++) {
             IERC20(withdrawal.tokens[i].token).transfer(withdrawal.owner, withdrawal.tokens[i].amount);
@@ -81,15 +87,12 @@ contract Withdrawal is IWithdrawal {
         emit WithdrawalClaimed(withdrawalId, msg.sender);
     }
 
-    function claimRouted(bytes32 withdrawalId, address router) external {
+    function claimRouted(bytes32 withdrawalId, address router)
+        external
+        onlyOwner(withdrawalId)
+        onlyWhenClaimable(withdrawalId)
+    {
         WithdrawalInfo storage withdrawal = withdrawals[withdrawalId];
-        if (withdrawal.owner != msg.sender) {
-            revert NotOwner(withdrawal.owner, msg.sender);
-        }
-
-        if (withdrawal.claimableAt > block.timestamp) {
-            revert NotYetClaimable(withdrawal.claimableAt, block.timestamp);
-        }
 
         //  transfer funds to router
         for (uint256 i = 0; i < withdrawal.tokens.length; i++) {

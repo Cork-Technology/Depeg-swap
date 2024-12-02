@@ -222,6 +222,14 @@ abstract contract Helper is SigUtils, TestHelper {
         corkConfig.setWithdrawalContract(address(withdrawalContract));
     }
 
+    function disableDsGradualSale() internal {
+        disableDsGradualSale(defaultCurrencyId);
+    }
+
+    function disableDsGradualSale(Id id) internal {
+        corkConfig.updateRouterGradualSaleStatus(id, true);
+    }
+
     function deployModuleCore() internal {
         setupTest();
 

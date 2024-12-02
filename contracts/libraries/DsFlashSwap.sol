@@ -38,7 +38,7 @@ struct ReserveState {
     uint256 decayDiscountRateInDays;
     uint256 rolloverEndInBlockNumber;
     uint256 hiya;
-    bool gradualSale;
+    bool gradualSaleDisabled;
 }
 
 /**
