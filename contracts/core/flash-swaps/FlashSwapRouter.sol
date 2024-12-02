@@ -76,7 +76,7 @@ contract RouterState is
     }
 
     function updateGradualSaleStatus(Id id, bool status) external override onlyConfig {
-        reserves[id].gradualSale = status;
+        reserves[id].gradualSaleDisabled = status;
     }
 
     function getCurrentCumulativeHIYA(Id id) external view returns (uint256 hpaCummulative) {
@@ -280,9 +280,14 @@ contract RouterState is
         }
 
         // sell the DS tokens from the reserve if there's any
-        if (amountSellFromReserve != 0 && self.gradualSale) {
-            (amountOut, borrowedAmount) =
+        if (amountSellFromReserve != 0 && !self.gradualSaleDisabled) {
+            SellResult memory sellDsReserveResult =
                 _sellDsReserve(assetPair, SellDsParams(reserveId, dsId, amountSellFromReserve, amount, approxParams));
+
+            if (sellDsReserveResult.success) {
+                amountOut = sellDsReserveResult.amountOut;
+                borrowedAmount = sellDsReserveResult.borrowedAmount;
+            }
         }
 
         // slippage protection, revert if the amount of DS tokens received is less than the minimum amount
@@ -305,9 +310,15 @@ contract RouterState is
         BuyAprroxParams approxParams;
     }
 
+    struct SellResult {
+        uint256 amountOut;
+        uint256 borrowedAmount;
+        bool success;
+    }
+
     function _sellDsReserve(AssetPair storage assetPair, SellDsParams memory params)
         internal
-        returns (uint256 amountOut, uint256 borrowedAmount)
+        returns (SellResult memory result)
     {
         // sell the DS tokens from the reserve and accrue value to LV holders
         // it's safe to transfer all profit to the module core since the profit for each PSM and LV is calculated separately and we invoke
@@ -316,6 +327,8 @@ contract RouterState is
         // this function can fail, if there's not enough CT liquidity to sell the DS tokens, in that case, we skip the selling part and let user buy the DS tokens
         (uint256 profitRa,, bool success) =
             __swapDsforRa(assetPair, params.reserveId, params.dsId, params.amountSellFromReserve, 0, _moduleCore);
+
+        result.success = success;
 
         if (success) {
             // TODO : move this to a separate function
@@ -339,7 +352,8 @@ contract RouterState is
             IPSMcore(_moduleCore).psmAcceptFlashSwapProfit(params.reserveId, profitRa - vaultProfit);
 
             // recalculate the amount of DS tokens attributed, since we sold some from the reserve
-            (amountOut, borrowedAmount,) = assetPair.getAmountOutBuyDS(params.amount, hook, params.approxParams);
+            (result.amountOut, result.borrowedAmount,) =
+                assetPair.getAmountOutBuyDS(params.amount, hook, params.approxParams);
         }
     }
 
