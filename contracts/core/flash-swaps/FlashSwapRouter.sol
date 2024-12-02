@@ -220,10 +220,6 @@ contract RouterState is
         (lvProfit, psmProfit, raLeft, dsReceived, lvReserveUsed, psmReserveUsed) =
             SwapperMathLibrary.calculateRolloverSale(assetPair.lvReserve, assetPair.psmReserve, amountRa, self.hiya);
 
-        if (dsReceived < amountOutMin) {
-            revert InsufficientOutputAmount();
-        }
-
         // we know that the math is correct, but for edge case protection, we don't subtract it directly but
         // instead set it to 0 if it's less than the used amount, again this is meant to handle precision issues
         assetPair.psmReserve = assetPair.psmReserve < psmReserveUsed ? 0 : assetPair.psmReserve - psmReserveUsed;
