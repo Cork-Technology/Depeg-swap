@@ -38,7 +38,7 @@ struct ReserveState {
     uint256 decayDiscountRateInDays;
     uint256 rolloverEndInBlockNumber;
     uint256 hiya;
-    bool gradualSale;
+    bool gradualSaleDisabled;
 }
 
 /**
@@ -215,7 +215,7 @@ library DsFlashSwaplibrary {
         (uint256 raReserve, uint256 ctReserve) = getReservesSorted(assetPair, router);
 
         MarketSnapshot memory market = router.getMarketSnapshot(address(assetPair.ra), address(assetPair.ct));
-        
+
         uint256 issuedAt = assetPair.ds.issuedAt();
         uint256 end = assetPair.ds.expiry();
 
