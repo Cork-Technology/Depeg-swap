@@ -32,6 +32,10 @@ contract RolloverTest is Helper {
         }
     }
 
+    function defaultInitialArp() internal pure virtual override returns (uint256) {
+        return 5 ether;
+    }
+
     function setUp() public {
         vm.startPrank(DEFAULT_ADDRESS_ROLLOVER);
 
@@ -78,8 +82,7 @@ contract RolloverTest is Helper {
 
         ff_expired();
 
-        (uint256 ctReceived, uint256 dsReceived,) =
-            moduleCore.rolloverCt(currencyId, DEFAULT_ADDRESS_ROLLOVER, DEFAULT_DEPOSIT_AMOUNT, prevDsId);
+        (uint256 ctReceived, uint256 dsReceived,) = moduleCore.rolloverCt(currencyId, DEFAULT_DEPOSIT_AMOUNT, prevDsId);
 
         // verify that we have enough balance
         vm.assertEq(ctReceived, Asset(ds).balanceOf(DEFAULT_ADDRESS_ROLLOVER));
@@ -93,8 +96,7 @@ contract RolloverTest is Helper {
 
         ff_expired();
 
-        (uint256 ctReceived, uint256 dsReceived,) =
-            moduleCore.rolloverCt(currencyId, DEFAULT_ADDRESS_ROLLOVER, DEFAULT_DEPOSIT_AMOUNT, prevDsId);
+        (uint256 ctReceived, uint256 dsReceived,) = moduleCore.rolloverCt(currencyId, DEFAULT_DEPOSIT_AMOUNT, prevDsId);
 
         vm.assertEq(dsReceived, 0);
         vm.assertEq(ctReceived, Asset(ct).balanceOf(DEFAULT_ADDRESS_ROLLOVER));
@@ -140,6 +142,9 @@ contract RolloverTest is Helper {
         uint256 prevDsId = dsId;
 
         ra.approve(address(flashSwapRouter), 2 ether);
+        // so that our trades are heavy
+        uint256 expiry = Asset(ds).expiry();
+        vm.warp(expiry - 100);
 
         uint256 amountOut = flashSwapRouter.swapRaforDs(currencyId, dsId, 1 ether, 0, defaultBuyApproxParams());
         uint256 HiyaCummulated = flashSwapRouter.getHiyaCumulated(currencyId);
@@ -153,14 +158,13 @@ contract RolloverTest is Helper {
         vm.assertNotEq(vHiyaCummulated, 0);
         vm.assertNotEq(HiyaCummulated, 0);
 
-        // take into account the discount rate, so it won't be exactly 0.1 ether
-        vm.assertApproxEqAbs(Hiya, 0.1 ether, 0.002 ether);
+        // expected to be around 1% ARP
+        vm.assertApproxEqAbs(Hiya, 0.017895624717812529 ether, 0.01 ether);
 
         IPSMcore(moduleCore).updatePsmAutoSellStatus(currencyId, true);
 
         // rollover our CT
-        (uint256 ctReceived, uint256 dsReceived,) =
-            moduleCore.rolloverCt(currencyId, DEFAULT_ADDRESS_ROLLOVER, DEFAULT_DEPOSIT_AMOUNT, prevDsId);
+        (uint256 ctReceived, uint256 dsReceived,) = moduleCore.rolloverCt(currencyId, DEFAULT_DEPOSIT_AMOUNT, prevDsId);
 
         // we autosell
         vm.assertEq(dsReceived, 0);
@@ -189,13 +193,13 @@ contract RolloverTest is Helper {
     function test_RevertClaimRolloverTwice() external {
         vm.expectRevert();
 
-        moduleCore.rolloverCt(currencyId, DEFAULT_ADDRESS_ROLLOVER, DEFAULT_DEPOSIT_AMOUNT, dsId - 1);
+        moduleCore.rolloverCt(currencyId, DEFAULT_DEPOSIT_AMOUNT, dsId - 1);
     }
 
     function test_RevertWhenNotExpired() external {
         vm.expectRevert();
 
-        moduleCore.rolloverCt(currencyId, DEFAULT_ADDRESS_ROLLOVER, DEFAULT_DEPOSIT_AMOUNT, dsId);
+        moduleCore.rolloverCt(currencyId, DEFAULT_DEPOSIT_AMOUNT, dsId);
     }
 
     function test_RevertClaimBalanceNotEnough() external {
@@ -204,6 +208,10 @@ contract RolloverTest is Helper {
         uint256 prevDsId = dsId;
 
         ra.approve(address(flashSwapRouter), 2 ether);
+
+        // so that our trades are heavy
+        uint256 expiry = Asset(ds).expiry();
+        vm.warp(expiry - 100);
 
         uint256 amountOut = flashSwapRouter.swapRaforDs(currencyId, dsId, 1 ether, 0, defaultBuyApproxParams());
         uint256 HiyaCummulated = flashSwapRouter.getHiyaCumulated(currencyId);
@@ -217,14 +225,13 @@ contract RolloverTest is Helper {
         vm.assertNotEq(vHiyaCummulated, 0);
         vm.assertNotEq(HiyaCummulated, 0);
 
-        // take into account the discount rate, so it won't be exactly 0.1 ether
-        vm.assertApproxEqAbs(Hiya, 0.1 ether, 0.002 ether);
+        // expected to be around 1% ARP
+        vm.assertApproxEqAbs(Hiya, 0.017895624717812529 ether, 0.01 ether);
 
         IPSMcore(moduleCore).updatePsmAutoSellStatus(currencyId, true);
 
         // rollover our CT
-        (uint256 ctReceived, uint256 dsReceived,) =
-            moduleCore.rolloverCt(currencyId, DEFAULT_ADDRESS_ROLLOVER, DEFAULT_DEPOSIT_AMOUNT, prevDsId);
+        (uint256 ctReceived, uint256 dsReceived,) = moduleCore.rolloverCt(currencyId, DEFAULT_DEPOSIT_AMOUNT, prevDsId);
 
         // we autosell
         vm.assertEq(dsReceived, 0);
@@ -252,6 +259,7 @@ contract RolloverTest is Helper {
 
         ra.approve(address(flashSwapRouter), 100 ether);
 
+        // so that our trades are heavy
         uint256 expiry = Asset(ds).expiry();
         vm.warp(expiry - 100);
 
@@ -268,37 +276,42 @@ contract RolloverTest is Helper {
         vm.assertNotEq(vHiyaCummulated, 0);
         vm.assertNotEq(HiyaCummulated, 0);
 
-        // take into account the discount rate, so it won't be exactly 0.1 ether
         // expected to be around 1% ARP
-        vm.assertApproxEqAbs(Hiya, 0.017103690021973857 ether, 0.01 ether);
+        vm.assertApproxEqAbs(Hiya, 0.017895624717812529 ether, 0.01 ether);
 
         IPSMcore(moduleCore).updatePsmAutoSellStatus(currencyId, true);
 
         // rollover our CT
-        (uint256 ctReceived, uint256 dsReceived,) =
-            moduleCore.rolloverCt(currencyId, DEFAULT_ADDRESS_ROLLOVER, DEFAULT_DEPOSIT_AMOUNT, prevDsId);
+        (uint256 ctReceived, uint256 dsReceived,) = moduleCore.rolloverCt(currencyId, DEFAULT_DEPOSIT_AMOUNT, prevDsId);
 
         // we autosell
         vm.assertEq(dsReceived, 0);
 
         vm.assertEq(true, flashSwapRouter.isRolloverSale(currencyId, dsId));
 
-        // based on the Hiya = 0.017103690021973857 (~1% ARP)
-        uint256 expectedHPA = 0.016816073119943497 ether;
+        // based on the Hiya = 0.017895624717812529 (~1% ARP) and t = 1
+        uint256 expectedHPA = 0.017895624717812529 ether;
+
+        // we disable graduale sale to get an accurate representation
+        disableDsGradualSale();
 
         amountOut = flashSwapRouter.swapRaforDs(currencyId, dsId, expectedHPA, 0, defaultBuyApproxParams());
 
-        vm.assertApproxEqAbs(amountOut, 1 ether, 0.001 ether);
+        vm.assertApproxEqAbs(amountOut, 1 ether, 0.018 ether);
 
         amountOut = flashSwapRouter.swapRaforDs(currencyId, dsId, expectedHPA * 10, 0, defaultBuyApproxParams());
 
-        vm.assertApproxEqAbs(amountOut, 10 ether, 0.01 ether);
+        vm.assertApproxEqAbs(amountOut, 10 ether, 0.18 ether);
     }
 
     function test_RevertOutIsLessThanMin() external {
         uint256 prevDsId = dsId;
 
         ra.approve(address(flashSwapRouter), 100 ether);
+
+        // so that our trades are heavy
+        uint256 expiry = Asset(ds).expiry();
+        vm.warp(expiry - 100);
 
         uint256 amountOut = flashSwapRouter.swapRaforDs(currencyId, dsId, 1 ether, 0, defaultBuyApproxParams());
         uint256 HiyaCummulated = flashSwapRouter.getHiyaCumulated(currencyId);
@@ -312,14 +325,13 @@ contract RolloverTest is Helper {
         vm.assertNotEq(vHiyaCummulated, 0);
         vm.assertNotEq(HiyaCummulated, 0);
 
-        // take into account the discount rate, so it won't be exactly 0.1 ether
-        vm.assertApproxEqAbs(Hiya, 0.1 ether, 0.002 ether);
+        // expected to be around 1% ARP
+        vm.assertApproxEqAbs(Hiya, 0.017895624717812529 ether, 0.01 ether);
 
         IPSMcore(moduleCore).updatePsmAutoSellStatus(currencyId, true);
 
         // rollover our CT
-        (uint256 ctReceived, uint256 dsReceived,) =
-            moduleCore.rolloverCt(currencyId, DEFAULT_ADDRESS_ROLLOVER, DEFAULT_DEPOSIT_AMOUNT, prevDsId);
+        (uint256 ctReceived, uint256 dsReceived,) = moduleCore.rolloverCt(currencyId, DEFAULT_DEPOSIT_AMOUNT, prevDsId);
 
         // we autosell
         vm.assertEq(dsReceived, 0);

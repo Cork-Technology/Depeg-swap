@@ -83,6 +83,10 @@ library DepegSwapLibrary {
         Asset(self.ct).burn(amount);
     }
 
+    function burnCtSelf(DepegSwap storage self, uint256 amount) internal {
+        Asset(self.ct).burn(amount);
+    }
+
     function updateExchangeRate(DepegSwap storage self, uint256 rate) internal {
         Asset(self._address).updateRate(rate);
         Asset(self.ct).updateRate(rate); 

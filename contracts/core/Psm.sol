@@ -284,7 +284,7 @@ abstract contract PsmCore is IPSMcore, ModuleState, Context {
         emit RolledOver(id, state.globalAssetIdx, owner, dsId, amount, dsReceived, ctReceived, paReceived);
     }
 
-    function rolloverCt(Id id, address owner, uint256 amount, uint256 dsId)
+    function rolloverCt(Id id, uint256 amount, uint256 dsId)
         external
         returns (uint256 ctReceived, uint256 dsReceived, uint256 paReceived)
     {
@@ -293,7 +293,7 @@ abstract contract PsmCore is IPSMcore, ModuleState, Context {
         State storage state = states[id];
         bytes memory signaturePlaceHolder;
         (ctReceived, dsReceived, paReceived) =
-            state.rolloverCt(owner, amount, dsId, getRouterCore(), signaturePlaceHolder, 0);
+            state.rolloverCt(_msgSender(), amount, dsId, getRouterCore(), signaturePlaceHolder, 0);
         emit RolledOver(id, state.globalAssetIdx, _msgSender(), dsId, amount, dsReceived, ctReceived, paReceived);
     }
 

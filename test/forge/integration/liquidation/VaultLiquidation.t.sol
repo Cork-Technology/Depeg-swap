@@ -9,7 +9,7 @@ import "./../../../../contracts/interfaces/IPSMcore.sol";
 import "forge-std/console.sol";
 import "./../../../../contracts/interfaces/IVault.sol";
 import "./../../../../contracts/interfaces/ICommon.sol";
-import "./../../../../contracts/core/liquidators/Liquidator.sol";
+import "./../../../../contracts/core/liquidators/cow-protocol/Liquidator.sol";
 
 contract VaultLiquidationTest is Helper {
     DummyWETH internal ra;
@@ -44,7 +44,7 @@ contract VaultLiquidationTest is Helper {
         moduleCore.depositPsm(currencyId, DEFAULT_DEPOSIT_AMOUNT);
         moduleCore.depositLv(currencyId, DEFAULT_DEPOSIT_AMOUNT, 0, 0);
 
-        liquidator = new Liquidator(address(corkConfig), DEFAULT_ADDRESS, address(this));
+        liquidator = new Liquidator(address(corkConfig), DEFAULT_ADDRESS, address(this), address(moduleCore));
 
         corkConfig.grantLiquidatorRole(address(liquidator), DEFAULT_ADDRESS);
         corkConfig.whitelist(address(liquidator));
@@ -78,7 +78,7 @@ contract VaultLiquidationTest is Helper {
         issueNewDs(currencyId, block.timestamp + 1 days);
     }
 
-    function test_liquidation() external {
+    function test_liquidationFull() external {
         uint256 amountToSell = 10 ether;
 
         // we redeem 1000 RA first first
@@ -99,40 +99,38 @@ contract VaultLiquidationTest is Helper {
         // irrelevant, since we're testing the logic ourself
         bytes memory randomOrderUid = bytes.concat(keccak256("orderUid"));
 
-        ILiquidator.Call memory prehookCall =
-            ILiquidator.Call(address(moduleCore), liquidator.encodeVaultPreHook(currencyId, amountToSell));
-        ILiquidator.Call memory posthookCall =
-            ILiquidator.Call(address(moduleCore), liquidator.encodeVaultPostHook(currencyId));
-
-        ILiquidator.CreateOrderParams memory params = ILiquidator.CreateOrderParams({
+        ILiquidator.CreateVaultOrderParams memory params = ILiquidator.CreateVaultOrderParams({
             internalRefId: randomRefId,
             orderUid: randomOrderUid,
-            preHookCall: prehookCall,
-            postHookCall: posthookCall,
             sellToken: address(pa),
             sellAmount: amountToSell,
-            buyToken: address(ra)
+            buyToken: address(ra),
+            vaultId: defaultCurrencyId
         });
 
-        liquidator.createOrder(params, 10 days);
+        liquidator.createOrderVault(params);
 
-        liquidator.preHook(randomRefId);
+        address receiver = liquidator.fetchVaultReceiver(randomRefId);
 
         // mimic trade execution
         vm.stopPrank();
-        pa.transferFrom(address(liquidator), address(this), amountToSell);
-        vm.startPrank(DEFAULT_ADDRESS);
-        ra.transfer(address(liquidator), amountToSell);
+        pa.transferFrom(address(receiver), address(this), amountToSell);
 
-        liquidator.postHook(randomRefId);
+        vm.startPrank(DEFAULT_ADDRESS);
+        ra.transfer(address(receiver), amountToSell);
+
+        liquidator.finishVaultOrder(randomRefId);
 
         tradeFundsAvailable = moduleCore.tradeExecutionFundsAvailable(currencyId);
 
         vm.assertEq(tradeFundsAvailable, amountToSell);
     }
 
-    function test_revertIfNotLiquidator() external {
-         uint256 amountToSell = 10 ether;
+    function test_liquidationPartial() external {
+        uint256 amountToSell = 10 ether;
+        uint256 amountFilled = 4 ether;
+        uint256 amountTaken = 4 ether;
+        uint256 expectedLeftover = 6 ether;
 
         // we redeem 1000 RA first first
         Asset(ds).approve(address(moduleCore), 1000 ether);
@@ -152,25 +150,75 @@ contract VaultLiquidationTest is Helper {
         // irrelevant, since we're testing the logic ourself
         bytes memory randomOrderUid = bytes.concat(keccak256("orderUid"));
 
-        ILiquidator.Call memory prehookCall =
-            ILiquidator.Call(address(moduleCore), liquidator.encodeVaultPreHook(currencyId, amountToSell));
-        ILiquidator.Call memory posthookCall =
-            ILiquidator.Call(address(moduleCore), liquidator.encodeVaultPostHook(currencyId));
-
-        ILiquidator.CreateOrderParams memory params = ILiquidator.CreateOrderParams({
+        ILiquidator.CreateVaultOrderParams memory params = ILiquidator.CreateVaultOrderParams({
             internalRefId: randomRefId,
             orderUid: randomOrderUid,
-            preHookCall: prehookCall,
-            postHookCall: posthookCall,
             sellToken: address(pa),
             sellAmount: amountToSell,
-            buyToken: address(ra)
+            buyToken: address(ra),
+            vaultId: defaultCurrencyId
         });
 
-        vm.stopPrank();
+        liquidator.createOrderVault(params);
 
-        vm.prank(address(8));
+        address receiver = liquidator.fetchVaultReceiver(randomRefId);
+
+        // mimic trade execution
+        vm.stopPrank();
+        pa.transferFrom(address(receiver), address(this), amountTaken);
+
+        vm.startPrank(DEFAULT_ADDRESS);
+        ra.transfer(address(receiver), amountFilled);
+
+        uint256 leftoverBefore = moduleCore.liquidationFundsAvailable(currencyId);
+
+        liquidator.finishVaultOrder(randomRefId);
+
+        tradeFundsAvailable = moduleCore.tradeExecutionFundsAvailable(currencyId);
+
+        vm.assertEq(tradeFundsAvailable, amountFilled);
+
+        uint256 leftoverAfter = moduleCore.liquidationFundsAvailable(currencyId);
+
+        vm.assertEq(leftoverAfter, leftoverBefore + expectedLeftover);
+    }
+
+    function test_revertIfNotLiquidator() external {
+        uint256 amountToSell = 10 ether;
+
+        // we redeem 1000 RA first first
+        Asset(ds).approve(address(moduleCore), 1000 ether);
+        moduleCore.redeemRaWithDs(currencyId, dsId, 1000 ether);
+
+        ff_expired();
+
+        uint256 fundsAvailable = moduleCore.liquidationFundsAvailable(currencyId);
+
+        vm.assertTrue(fundsAvailable > amountToSell);
+
+        uint256 tradeFundsAvailable = moduleCore.tradeExecutionFundsAvailable(currencyId);
+
+        vm.assertEq(tradeFundsAvailable, 0);
+
+        bytes32 randomRefId = keccak256("ref");
+        // irrelevant, since we're testing the logic ourself
+        bytes memory randomOrderUid = bytes.concat(keccak256("orderUid"));
+
+        ILiquidator.CreateVaultOrderParams memory params = ILiquidator.CreateVaultOrderParams({
+            internalRefId: randomRefId,
+            orderUid: randomOrderUid,
+            sellToken: address(pa),
+            sellAmount: amountToSell,
+            buyToken: address(ra),
+            vaultId: defaultCurrencyId
+        });
+        vm.stopPrank();
+        vm.startPrank(address(8));
+
         vm.expectRevert(ILiquidator.OnlyLiquidator.selector);
-        liquidator.createOrder(params, 10 days);
+        liquidator.createOrderVault(params);
+
+        vm.expectRevert(ILiquidator.OnlyLiquidator.selector);
+        liquidator.finishVaultOrder(randomRefId);
     }
 }

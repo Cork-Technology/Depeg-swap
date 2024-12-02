@@ -719,4 +719,10 @@ library VaultLibrary {
     function tradeExecutionFundsAvailable(State storage self) internal view returns (uint256) {
         return self.vault.balances.ra.locked;
     }
+
+    function receiveLeftoverFunds(State storage self, uint256 amount, address from) internal {
+        // transfer PA to the vault
+        SafeERC20.safeTransferFrom(IERC20(self.info.pa), from, address(this), amount);
+        self.vault.pool.withdrawalPool.paBalance += amount;
+    }
 }

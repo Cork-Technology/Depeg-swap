@@ -415,6 +415,8 @@ library PsmLibrary {
         (accruedPa, accruedRa) = _calcRedeemAmount(amount, totalCtIssued, archive.raAccrued, archive.paAccrued);
 
         _beforeCtRedeem(self, self.ds[dsId], dsId, amount, accruedPa, accruedRa);
+
+        self.ds[dsId].burnCtSelf(amount);
     }
 
     function _redeemRaWithCtDs(State storage self, DepegSwap storage ds, address owner, uint256 amount)

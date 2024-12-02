@@ -3,7 +3,7 @@ pragma solidity ^0.8.24;
 import {Script, console} from "forge-std/Script.sol";
 import {ERC1967Proxy} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 import {ModuleCore} from "../../contracts/core/ModuleCore.sol";
-import {Liquidator} from "../../contracts/core/liquidators/Liquidator.sol";
+import {Liquidator} from "../../contracts/core/liquidators/cow-protocol/Liquidator.sol";
 import {HedgeUnit} from "../../contracts/core/assets/HedgeUnit.sol";
 import {HedgeUnitFactory} from "../../contracts/core/assets/HedgeUnitFactory.sol";
 
@@ -11,6 +11,8 @@ contract DeployHedgeUnitsScript is Script {
     ModuleCore public moduleCore;
     Liquidator public liquidator;
     HedgeUnitFactory public hedgeUnitFactory;
+    // TODO : insert this
+    address corkConfig = address(0);
 
     HedgeUnit public hedgeUnitbsETH;
     HedgeUnit public hedgeUnitwamuETH;
@@ -39,7 +41,7 @@ contract DeployHedgeUnitsScript is Script {
     uint256 fedUSDExpiry = 3.5 days;
     uint256 omgUSDExpiry = 0.5 days;
 
-// TODO: Add the hookTrampoline address
+    // TODO: Add the hookTrampoline address
     address hookTrampoline = vm.addr(pk);
 
     address settlementContract = 0x9008D19f58AAbD9eD0D60971565AA8510560ab41;
@@ -56,7 +58,7 @@ contract DeployHedgeUnitsScript is Script {
         console.log("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-");
 
         // Deploy the Liquidator contract
-        liquidator = new Liquidator(msg.sender, hookTrampoline, settlementContract);
+        liquidator = new Liquidator(corkConfig, hookTrampoline, settlementContract, address(moduleCore));
         console.log("Liquidator                      : ", address(liquidator));
         console.log("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-");
 
