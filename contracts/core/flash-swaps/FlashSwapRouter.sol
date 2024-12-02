@@ -458,9 +458,9 @@ contract RouterState is
             __swapDsforRa(assetPair, reserveId, dsId, amount, amountOutMin, msg.sender);
 
         if (!success) {
-            (uint256 raReserve, uint256 ctReserve) = assetPair.getReservesSorted(hook);
             revert IMathError.InsufficientLiquidity();
         }
+
         self.recalculateHIYA(dsId, amountOut, amount);
 
         emit DsSwapped(reserveId, dsId, msg.sender, amount, amountOut);
@@ -647,15 +647,16 @@ contract RouterState is
         Asset ra = assetPair.ra;
 
         if (actualRepaymentAmount > repaymentAmount) {
-            {
-                (uint256 raReserve, uint256 ctReserve) = hook.getReserves(address(assetPair.ra), address(assetPair.ct));
-                revert IMathError.InsufficientLiquidity();
-            }
+            revert IMathError.InsufficientLiquidity();
+        } else if (actualRepaymentAmount < repaymentAmount) {
+            // refund excess
+            uint256 refunded = repaymentAmount - actualRepaymentAmount;
+            raAttributed += refunded;
         }
 
         // send caller their RA
         IERC20(ra).safeTransfer(caller, raAttributed);
         // repay flash loan
-        IERC20(ra).safeTransfer(poolManager, repaymentAmount);
+        IERC20(ra).safeTransfer(poolManager, actualRepaymentAmount);
     }
 }

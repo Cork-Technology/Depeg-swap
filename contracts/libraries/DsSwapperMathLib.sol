@@ -151,10 +151,6 @@ library SwapperMathLibrary {
         uint256 epsilon,
         uint256 maxIter
     ) external pure returns (uint256 s) {
-        if (x < 0 || y < 0 || e < 0) {
-            revert IMathError.InvalidParam();
-        }
-
         if (e > x && x < y) {
             revert IMathError.InsufficientLiquidity();
         }
