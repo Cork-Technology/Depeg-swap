@@ -71,7 +71,7 @@ abstract contract VaultCore is ModuleState, Context, IVault, IVaultLiquidation {
             result.dsReceived,
             result.fee,
             result.feePercentage,
-            result.withdrawalId
+            bytes32("")
         );
     }
 
@@ -87,10 +87,10 @@ abstract contract VaultCore is ModuleState, Context, IVault, IVaultLiquidation {
     {
         LVWithdrawalNotPaused(redeemParams.id);
 
-        ProtocolContracts memory routers = ProtocolContracts({
+        IVault.Routers memory routers = ProtocolContracts({
             flashSwapRouter: getRouterCore(),
-            ammRouter: getAmmRouter(),
-            withdrawalContract: getWithdrawalContract()
+            ammRouter: getAmmRouter()
+            // withdrawalContract: getWithdrawalContract()
         });
         PermitParams memory permitParams = PermitParams({rawLvPermitSig: bytes(""), deadline: 0});
 
@@ -106,7 +106,7 @@ abstract contract VaultCore is ModuleState, Context, IVault, IVaultLiquidation {
             result.dsReceived,
             result.fee,
             result.feePercentage,
-            result.withdrawalId
+            bytes32("")
         );
     }
 

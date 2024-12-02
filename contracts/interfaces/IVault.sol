@@ -5,7 +5,7 @@ import {Id} from "../libraries/Pair.sol";
 import {IDsFlashSwapCore} from "../interfaces/IDsFlashSwapRouter.sol";
 import {IUniswapV2Router02} from "../interfaces/uniswap-v2/RouterV2.sol";
 import {ICorkHook} from "./../interfaces/UniV4/IMinimalHook.sol";
-import {IWithdrawal}from "./IWithdrawal.sol";
+import {IWithdrawal} from "./IWithdrawal.sol";
 
 /**
  * @title IVault Interface
@@ -13,6 +13,11 @@ import {IWithdrawal}from "./IWithdrawal.sol";
  * @notice IVault interface for VaultCore contract
  */
 interface IVault {
+    struct Routers {
+        IDsFlashSwapCore flashSwapRouter;
+        ICorkHook ammRouter;
+    }
+
     struct ProtocolContracts {
         IDsFlashSwapCore flashSwapRouter;
         ICorkHook ammRouter;
@@ -111,10 +116,8 @@ interface IVault {
      * @notice Redeem lv before expiry
      * @param redeemParams The object with details like id, reciever, amount, amountOutMin, ammDeadline
      */
-    function redeemEarlyLv(RedeemEarlyParams memory redeemParams)
-        external
-        returns (RedeemEarlyResult memory result);
-   
+    function redeemEarlyLv(RedeemEarlyParams memory redeemParams) external returns (RedeemEarlyResult memory result);
+
     /**
      * Returns the early redemption fee percentage
      * @param id The Module id that is used to reference both psm and lv of a given pair

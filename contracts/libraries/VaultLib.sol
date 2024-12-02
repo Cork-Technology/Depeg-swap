@@ -22,8 +22,7 @@ import {IVault} from "../interfaces/IVault.sol";
 import {ICorkHook} from "./../interfaces/UniV4/IMinimalHook.sol";
 import {LiquidityToken} from "Cork-Hook/LiquidityToken.sol";
 import {MarketSnapshot} from "Cork-Hook/lib/MarketSnapshot.sol";
-import {Withdrawal} from "./../core/Withdrawal.sol";
-import {IWithdrawalRouter} from "./../interfaces/IWithdrawalRouter.sol";
+import "forge-std/console.sol";
 
 /**
  * @title Vault Library Contract
@@ -583,7 +582,7 @@ library VaultLibrary {
         State storage self,
         address owner,
         IVault.RedeemEarlyParams memory redeemParams,
-        IVault.ProtocolContracts memory contracts,
+        IVault.Routers memory routers,
         IVault.PermitParams memory permitParams
     ) external returns (IVault.RedeemEarlyResult memory result) {
         safeBeforeExpired(self);
@@ -615,7 +614,7 @@ library VaultLibrary {
         {
             uint256 lpBalance;
             {
-                IERC20 lpToken = IERC20(contracts.ammRouter.getLiquidityToken(pair.ra, ds.ct));
+                IERC20 lpToken = IERC20(routers.ammRouter.getLiquidityToken(pair.ra, ds.ct));
                 lpBalance = lpToken.balanceOf(address(this));
             }
 
@@ -624,7 +623,7 @@ library VaultLibrary {
                 totalLvIssued: Asset(self.vault.lv._address).totalSupply(),
                 totalVaultLp: lpBalance,
                 totalVaultCt: self.vault.balances.ctBalance,
-                totalVaultDs: contracts.flashSwapRouter.getLvReserve(redeemParams.id, dsId)
+                totalVaultDs: routers.flashSwapRouter.getLvReserve(redeemParams.id, dsId)
             });
 
             uint256 ctReceived;
@@ -640,7 +639,7 @@ library VaultLibrary {
 
         {
             (uint256 raFromAmm, uint256 ctFromAmm) =
-                __liquidateUnchecked(self, pair.ra, ds.ct, contracts.ammRouter, lpLiquidated, redeemParams.ammDeadline);
+                __liquidateUnchecked(self, pair.ra, ds.ct, routers.ammRouter, lpLiquidated, redeemParams.ammDeadline);
 
             result.raReceivedFromAmm = raFromAmm;
             result.ctReceivedFromAmm = ctFromAmm;
@@ -653,30 +652,15 @@ library VaultLibrary {
         // burn lv amount + fee
         ERC20Burnable(self.vault.lv._address).burnFrom(owner, redeemParams.amount + result.fee);
 
-        // fetch ds from flash swap router
-        contracts.flashSwapRouter.emptyReservePartialLv(redeemParams.id, dsId, result.dsReceived);
-
-        {
-            IWithdrawalRouter.Tokens[] memory tokens = new IWithdrawalRouter.Tokens[](3);
-
-            tokens[0] = IWithdrawalRouter.Tokens(pair.ra, result.raReceivedFromAmm);
-            tokens[1] = IWithdrawalRouter.Tokens(ds.ct, result.ctReceivedFromVault + result.ctReceivedFromAmm);
-            tokens[2] = IWithdrawalRouter.Tokens(ds._address, result.dsReceived);
-
-            bytes32 withdrawalId = contracts.withdrawalContract.add(owner, tokens);
-
-            result.withdrawalId = withdrawalId;
-        }
-
         // send RA amm to user
-        self.vault.balances.ra.unlockToUnchecked(result.raReceivedFromAmm, address(contracts.withdrawalContract));
+        self.vault.balances.ra.unlockToUnchecked(result.raReceivedFromAmm, owner);
 
         // send CT received from AMM and held in vault to user
-        SafeERC20.safeTransfer(
-            IERC20(ds.ct), address(contracts.withdrawalContract), result.ctReceivedFromVault + result.ctReceivedFromAmm
-        );
+        SafeERC20.safeTransfer(IERC20(ds.ct), owner, result.ctReceivedFromVault + result.ctReceivedFromAmm);
 
-        SafeERC20.safeTransfer(IERC20(ds._address), address(contracts.withdrawalContract), result.dsReceived);
+        // empty the DS reserve in router and send it to user
+        routers.flashSwapRouter.emptyReservePartialLv(redeemParams.id, dsId, result.dsReceived);
+        SafeERC20.safeTransfer(IERC20(ds._address), owner, result.dsReceived);
     }
 
     function vaultLp(State storage self, ICorkHook ammRotuer) internal view returns (uint256) {
@@ -718,11 +702,5 @@ library VaultLibrary {
 
     function tradeExecutionFundsAvailable(State storage self) internal view returns (uint256) {
         return self.vault.balances.ra.locked;
-    }
-
-    function receiveLeftoverFunds(State storage self, uint256 amount, address from) internal {
-        // transfer PA to the vault
-        SafeERC20.safeTransferFrom(IERC20(self.info.pa), from, address(this), amount);
-        self.vault.pool.withdrawalPool.paBalance += amount;
     }
 }
