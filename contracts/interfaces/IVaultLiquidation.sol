@@ -25,12 +25,12 @@ interface IVaultLiquidation {
     function useTradeExecutionResultFunds(Id id) external;
 
 
+    // TODO : Commented for now
     /// @notice Receive leftover funds from liquidation, the vault will do a transferFrom from the liquidation contract
     /// it is important to note that the vault will only transfer PA from the liquidation contract
     /// @param id The id of the vault
     /// @param amount The amount of funds to receive
-    function receiveLeftoverFunds(Id id, uint256 amount) external;
-
+    // function receiveLeftoverFunds(Id id, uint256 amount) external;
 
     /// @notice Returns the amount of funds available for liquidation
     /// @param id The id of the vault

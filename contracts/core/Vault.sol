@@ -53,10 +53,9 @@ abstract contract VaultCore is ModuleState, Context, IVault, IVaultLiquidation {
         if (permitParams.rawLvPermitSig.length == 0 || permitParams.deadline == 0) {
             revert InvalidSignature();
         }
-        ProtocolContracts memory routers = ProtocolContracts({
+        Routers memory routers = Routers({
             flashSwapRouter: getRouterCore(),
-            ammRouter: getAmmRouter(),
-            withdrawalContract: getWithdrawalContract()
+            ammRouter: getAmmRouter()
         });
 
         result = states[redeemParams.id].redeemEarly(redeemer, redeemParams, routers, permitParams);
@@ -87,10 +86,9 @@ abstract contract VaultCore is ModuleState, Context, IVault, IVaultLiquidation {
     {
         LVWithdrawalNotPaused(redeemParams.id);
 
-        IVault.Routers memory routers = ProtocolContracts({
+        IVault.Routers memory routers = Routers({
             flashSwapRouter: getRouterCore(),
             ammRouter: getAmmRouter()
-            // withdrawalContract: getWithdrawalContract()
         });
         PermitParams memory permitParams = PermitParams({rawLvPermitSig: bytes(""), deadline: 0});
 
@@ -189,9 +187,5 @@ abstract contract VaultCore is ModuleState, Context, IVault, IVaultLiquidation {
 
     function lvAsset(Id id) external view override returns (address lv) {
         lv = states[id].vault.lv._address;
-    }
-
-    function receiveLeftoverFunds(Id id, uint256 amount) external {
-        states[id].receiveLeftoverFunds(amount, _msgSender());
     }
 }

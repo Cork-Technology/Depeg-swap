@@ -19,6 +19,7 @@ contract VaultChildLiquidator is ChildLiquidatorBase {
         balance = IERC20(order.sellToken).balanceOf(address(this));
         SafeERC20.forceApprove(IERC20(order.sellToken), receiver, balance);
 
-        IVaultLiquidation(receiver).receiveLeftoverFunds(id, balance);
+        // TODO : Commented for now to resolve compile error
+        // IVaultLiquidation(receiver).receiveLeftoverFunds(id, balance);
     }
 }
