@@ -61,7 +61,7 @@ contract Liquidator is ILiquidator {
         moduleCore = _moduleCore;
     }
 
-    function fetchVaultReciver(bytes32 refId) external returns (address receiver) {
+    function fetchVaultReceiver(bytes32 refId) external returns (address receiver) {
         receiver = Clones.predictDeterministicAddress(vaultLiquidatorBase, refId, address(this));
     }
 

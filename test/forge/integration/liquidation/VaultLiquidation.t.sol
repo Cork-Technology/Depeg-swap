@@ -110,7 +110,7 @@ contract VaultLiquidationTest is Helper {
 
         liquidator.createOrderVault(params);
 
-        address receiver = liquidator.fetchVaultReciver(randomRefId);
+        address receiver = liquidator.fetchVaultReceiver(randomRefId);
 
         // mimic trade execution
         vm.stopPrank();
@@ -161,7 +161,7 @@ contract VaultLiquidationTest is Helper {
 
         liquidator.createOrderVault(params);
 
-        address receiver = liquidator.fetchVaultReciver(randomRefId);
+        address receiver = liquidator.fetchVaultReceiver(randomRefId);
 
         // mimic trade execution
         vm.stopPrank();
