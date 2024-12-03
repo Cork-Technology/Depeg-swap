@@ -67,28 +67,28 @@ AFter that, you should see something like this on your terminal :
   Chain Id                     : 11155111
   Deployer                     : 0xBa66992bE4816Cc3877dA86fA982A93a6948dde9
  -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-  CETH                            :  0x11649B3aEc3D4Cd35D0727D786c234329B756fd9
-  wamuETH                         :  0x81EcEa063eB1E477365bd6c0AE7E1d1f3d84442E
-  bsETH                           :  0x2019e2E0D0DE78b65ce698056EAE468192b40daC
-  mlETH                           :  0xD1813fD95E557d273E8009db91C6BC412F56eE56
+  CETH                            :  0xc3E528E9675920dA0b03556719402D05d6b9A475
+  wamuETH                         :  0x6915f849a6cdE397cb455ca18C15Cb2844522170
+  bsETH                           :  0x51ca8a8BdB714ED0F4b565394675d864a41c65a7
+  mlETH                           :  0xf5F20dfC98aE76d2905A82508cf609573B4D2a83
   -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-  CUSD                            :  0x4c82BdeDD41bf0284fd6BCa1b6A317fEF6A6d237
-  svbUSD                          :  0xeD273d746bC1CefA9467ea5e81e9cd22eaC27397
-  fedUSD                          :  0xEBdc16512a8c79c39EB27cc27e387039AF573f82
-  omgUSD                          :  0x42B025047A12c403803805195230C257D2170Bb1
+  CUSD                            :  0x26E69813240faf8f3e06c7B907cff78b99a28C97
+  svbUSD                          :  0x03B03D8dc8d536C068eCf61b444c410aF2D8Ffee
+  fedUSD                          :  0x7976B317bEB15d538c3d86fBeD661Dc511030998
+  omgUSD                          :  0x0A19aF443f5677602D139344100F5Bc25A7Ef9A5
   -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-  Asset Factory Implementation    :  0xd048242Be976cd502b776fd6B2929778151f67dD
-  Asset Factory                   :  0x63D1F2Aa11bA5d576bFACb419BB918F2E5f000F0
-  Cork Config                     :  0xCA98b865821850dea56ab65F3f6C90E78D550015
-  Flashswap Router Implementation :  0x939ed4Edf62277983111d0C116CC27191404E596
-  Flashswap Router Proxy          :  0x96EE05bA5F2F2D3b4a44f174e5Df3bba1B9C0D17
-  ModuleCore Router Implementation:  0x45833844EecDE4Ce59402B638c0B2CfD27E45C72
-  Pool Manager                    :  0xFA681f1Acc6BB8dF53BdA809bE517628bDDdbD5a
-  Liquidity Token                 :  0x34C759A661EC463a93e5ba2d902C4134c53c9765
-  Hook                            :  0x77f003DC035F5215A9aEEF350e4e44236dB5aa88
-  Module Core                     :  0x3390573A8Cd1aB9CFaE5e1720e4e7867Ed074a38
+  Asset Factory Implementation    :  0x78c21D1dC07E364e972993219223CE5dEbaEfbba
+  Asset Factory                   :  0xcf17533a7424444c02C3f3E517B28Db039Abd0FF
+  Cork Config                     :  0x7D5c1F170329ce40169Bc1a833EB2D5760aA57d3
+  Flashswap Router Implementation :  0xa85395c50092A8Fb9638bcBFB15098525c678D02
+  Flashswap Router Proxy          :  0xDD08E978C78F48811B6DE871E14F017DD8feCe39
+  ModuleCore Router Implementation:  0xed78ee3715D7CB74D17277B65cEFB2c19610A10F
+  Pool Manager                    :  0xD311Df5688385BC0f8D8C3c4512ea7C9e354Bb68
+  Liquidity Token                 :  0x49B1C03B0cA9D39e0B52c5c8Ca28F4807959e76c
+  Hook                            :  0x77714c73431b785DC2fC9A318f57f92a6CD3AA88
+  Module Core                     :  0x750a8Ea50082aF3dB2dd7c500AEDE2676363e54e
   -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-  Liquidator                      :  0x15c3f629b4443EaE0225E85E91D1e0a7E587a641
+  Liquidator                      :  0x8fBD6580B35816aC091bA6fbf2aDF2884581C606
   -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
   Univ2 Factory                   :  0xF62c03E08ada871A0bEb309762E260a7a6a880E6
   Univ2 Router                    :  0xeE567Fe1712Faf6149d80dA1E6934E354124CfE3

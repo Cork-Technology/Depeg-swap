@@ -194,7 +194,7 @@ contract DeployScript is Script {
         console.log("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-");
 
         // Deploy the Liquidator contract
-        liquidator = new Liquidator(address(config), hookTrampoline, settlementContract, address(moduleCore));
+        liquidator = new Liquidator(address(config), sender, settlementContract, address(moduleCore));
         console.log("Liquidator                      : ", address(liquidator));
         console.log("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-");
 
