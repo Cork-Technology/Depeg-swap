@@ -286,11 +286,6 @@ contract RouterState is
             }
         }
 
-        // slippage protection, revert if the amount of DS tokens received is less than the minimum amount
-        if (amountOut + dsReceived < amountOutMin) {
-            revert InsufficientOutputAmount();
-        }
-
         // trigger flash swaps and send the attributed DS tokens to the user
         __flashSwap(assetPair, borrowedAmount, 0, dsId, reserveId, true, amountOut, msg.sender, amount);
 
@@ -378,6 +373,11 @@ contract RouterState is
 
         amountOut = _swapRaforDs(self, assetPair, reserveId, dsId, amount, amountOutMin, params);
 
+        // slippage protection, revert if the amount of DS tokens received is less than the minimum amount
+        if (amountOut < amountOutMin) {
+            revert InsufficientOutputAmount();
+        }
+
         self.recalculateHIYA(dsId, amount, amountOut);
 
         emit RaSwapped(reserveId, dsId, user, amount, amountOut);
@@ -404,6 +404,11 @@ contract RouterState is
         IERC20(assetPair.ra).safeTransferFrom(msg.sender, address(this), amount);
 
         amountOut = _swapRaforDs(self, assetPair, reserveId, dsId, amount, amountOutMin, params);
+
+        // slippage protection, revert if the amount of DS tokens received is less than the minimum amount
+        if (amountOut < amountOutMin) {
+            revert InsufficientOutputAmount();
+        }
 
         self.recalculateHIYA(dsId, amount, amountOut);
 
@@ -439,9 +444,9 @@ contract RouterState is
         (amountOut, repaymentAmount, success) = __swapDsforRa(assetPair, reserveId, dsId, amount, amountOutMin, user);
 
         if (!success) {
-            (uint256 raReserve, uint256 ctReserve) = assetPair.getReservesSorted(hook);
             revert IMathError.InsufficientLiquidity();
         }
+
         self.recalculateHIYA(dsId, amountOut, amount);
 
         emit DsSwapped(reserveId, dsId, user, amount, amountOut);
