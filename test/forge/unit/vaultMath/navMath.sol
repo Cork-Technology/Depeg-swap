@@ -39,7 +39,8 @@ contract NavMathTest is Test {
             lvSupply: 2050 ether,
             vaultCt: 1000 ether,
             vaultDs: 2050 ether,
-            vaultLp: 1024 ether
+            vaultLp: 1024 ether,
+            vaultIdleRa: 15 ether
         });
 
         MathHelper.InternalPrices memory prices = MathHelper.calculateInternalPrice(params);
@@ -58,13 +59,15 @@ contract NavMathTest is Test {
             lvSupply: 2050 ether,
             vaultCt: 1000 ether,
             vaultDs: 2050 ether,
-            vaultLp: 1024 ether
+            vaultLp: 1024 ether,
+            vaultIdleRa: 15 ether
         });
 
-        (UD60x18 navLp, UD60x18 navCt, UD60x18 navDs) = MathHelper.calculateNavCombined(params);
+        (UD60x18 navLp, UD60x18 navCt, UD60x18 navDs, UD60x18 navIdleRa) = MathHelper.calculateNavCombined(params);
         vm.assertApproxEqAbs(unwrap(navLp), 2004.31706 ether, 0.00001 ether);
         vm.assertApproxEqAbs(unwrap(navCt), 957.03 ether, 0.01 ether);
         vm.assertApproxEqAbs(unwrap(navDs), 88.07 ether, 0.01 ether);
+        vm.assertApproxEqAbs(unwrap(navIdleRa), 15 ether, 0.0001 ether);
     }
 
     function test_calculateLvMinted() external {
@@ -77,10 +80,11 @@ contract NavMathTest is Test {
             lvSupply: 2050 ether,
             vaultCt: 1000 ether,
             vaultDs: 2050 ether,
-            vaultLp: 1024 ether
+            vaultLp: 1024 ether,
+            vaultIdleRa: 15 ether
         });
         uint256 minted = MathHelper.calculateDepositLv(params);
-        vm.assertApproxEqAbs(minted, 0.672 ether, 0.01 ether);
+        vm.assertApproxEqAbs(minted, 0.668 ether, 0.01 ether);
     }
 
     function test_Claim() external {
@@ -89,12 +93,17 @@ contract NavMathTest is Test {
             totalLvIssued: 100 ether,
             totalVaultLp: 450 ether,
             totalVaultCt: 300 ether,
-            totalVaultDs: 700 ether
+            totalVaultDs: 700 ether,
+            totalVaultPA: 24 ether,
+            totalVaultIdleRa: 15 ether
         });
 
-        (uint256 ctReceived, uint256 dsReceived, uint256 lpLiquidated) = MathHelper.calculateRedeemLv(params);
-        vm.assertEq(ctReceived, 30 ether);
-        vm.assertEq(dsReceived, 70 ether);
-        vm.assertEq(lpLiquidated, 45 ether);
+        MathHelper.RedeemResult memory result = MathHelper.calculateRedeemLv(params);
+
+        vm.assertEq(result.ctReceived, 30 ether);
+        vm.assertEq(result.dsReceived, 70 ether);
+        vm.assertEq(result.lpLiquidated, 45 ether);
+        vm.assertEq(result.idleRaReceived, 1.5 ether);
+        vm.assertEq(result.paReceived, 2.4 ether);
     }
 }
