@@ -111,12 +111,29 @@ library VaultLibrary {
             return;
         }
 
+        // do nothing if there's no LV token minted(no liquidity to act anything)
+        if (self.vault.lv.totalIssued() == 0) {
+            return;
+        }
+
         if (!self.vault.lpLiquidated.get(prevDsId)) {
             _liquidatedLp(self, prevDsId, ammRouter, flashSwapRouter, deadline);
             _redeemCtStrategy(self, prevDsId);
+            _takeRaSnapshot(self, prevDsId);
+            _pauseDepositIfPaIsPresent(self);
         }
 
         __provideAmmLiquidityFromPool(self, flashSwapRouter, self.ds[self.globalAssetIdx].ct, ammRouter);
+    }
+
+    function _takeRaSnapshot(State storage self, uint256 dsId) internal {
+        self.vault.totalRaSnapshot[dsId] = self.vault.pool.ammLiquidityPool.balance;
+    }
+
+    function _pauseDepositIfPaIsPresent(State storage self) internal {
+        if (self.vault.pool.withdrawalPool.paBalance > 0) {
+            self.vault.config.isDepositPaused = true;
+        }
     }
 
     function safeBeforeExpired(State storage self) internal view {
@@ -191,7 +208,6 @@ library VaultLibrary {
         returns (uint256 ratio)
     {
         Id id = self.info.toId();
-        // TODO : adjust rate initialization
         uint256 hpa = flashSwapRouter.getCurrentEffectiveHIYA(id);
         bool isRollover = flashSwapRouter.isRolloverSale(id, dsId);
 
@@ -215,7 +231,6 @@ library VaultLibrary {
         // usually happens when there's no trade on the router AND is not the first issuance
         // OR it's the first issuance
         if (hiya == 0 && marketRatio == 0) {
-            // TODO : test vault initialization works
             ratio = MathHelper.calculateInitialCtRatio(initialArp);
             return ratio;
         }
@@ -349,15 +364,16 @@ library VaultLibrary {
             // the provide liquidity automatically adds the lp, so we need to subtract it first here
             vaultCt: self.vault.balances.ctBalance - ctSplitted,
             vaultDs: flashSwapRouter.getLvReserve(id, dsId) - ctSplitted,
-            vaultLp: IERC20(snapshot.liquidityToken).balanceOf(address(this))
+            vaultLp: IERC20(snapshot.liquidityToken).balanceOf(address(this)),
+            vaultIdleRa: self.vault.pool.ammLiquidityPool.balance
         });
 
         received = MathHelper.calculateDepositLv(params);
     }
 
     function updateCtHeldPercentage(State storage self, uint256 ctHeldPercentage) external {
-        // must be between 0.001% and 100%
-        if (ctHeldPercentage > 100 ether || ctHeldPercentage < 0.001 ether) {
+        // must be between 0% and 100%
+        if (ctHeldPercentage >= 100 ether) {
             revert IVault.InvalidParams();
         }
 
@@ -368,7 +384,6 @@ library VaultLibrary {
         uint256 ctHeldPercentage = self.vault.ctHeldPercetage;
         splitted = MathHelper.calculatePercentageFee(ctHeldPercentage, amount);
     }
-    // TODO : test
 
     function _splitCtWithStrategy(State storage self, IDsFlashSwapCore flashSwapRouter, uint256 amount)
         internal
@@ -578,7 +593,6 @@ library VaultLibrary {
     }
 
     // this will give user their respective balance in mixed form of CT, DS, RA, PA
-    // TODO : test
     function redeemEarly(
         State storage self,
         address owner,
@@ -606,12 +620,12 @@ library VaultLibrary {
         result.id = redeemParams.id;
         result.receiver = owner;
 
-        uint256 lpLiquidated;
         uint256 dsId = self.globalAssetIdx;
 
         Pair storage pair = self.info;
         DepegSwap storage ds = self.ds[dsId];
 
+        MathHelper.RedeemResult memory redeemAmount;
         {
             uint256 lpBalance;
             {
@@ -624,23 +638,25 @@ library VaultLibrary {
                 totalLvIssued: Asset(self.vault.lv._address).totalSupply(),
                 totalVaultLp: lpBalance,
                 totalVaultCt: self.vault.balances.ctBalance,
-                totalVaultDs: contracts.flashSwapRouter.getLvReserve(redeemParams.id, dsId)
+                totalVaultDs: contracts.flashSwapRouter.getLvReserve(redeemParams.id, dsId),
+                totalVaultPA: self.vault.pool.withdrawalPool.paBalance,
+                totalVaultIdleRa: self.vault.balances.ra.locked
             });
 
-            uint256 ctReceived;
-            uint256 dsReceived;
-
-            (ctReceived, dsReceived, lpLiquidated) = MathHelper.calculateRedeemLv(params);
-            result.ctReceivedFromVault = ctReceived;
+            redeemAmount = MathHelper.calculateRedeemLv(params);
+            result.ctReceivedFromVault = redeemAmount.ctReceived;
             // decrease the ct balance in the vault
             self.vault.balances.ctBalance -= result.ctReceivedFromVault;
 
-            result.dsReceived = dsReceived;
+            result.dsReceived = redeemAmount.dsReceived;
+            result.raIdleReceived = redeemAmount.idleRaReceived;
+            result.paReceived = redeemAmount.paReceived;
         }
 
         {
-            (uint256 raFromAmm, uint256 ctFromAmm) =
-                __liquidateUnchecked(self, pair.ra, ds.ct, contracts.ammRouter, lpLiquidated, redeemParams.ammDeadline);
+            (uint256 raFromAmm, uint256 ctFromAmm) = __liquidateUnchecked(
+                self, pair.ra, ds.ct, contracts.ammRouter, redeemAmount.lpLiquidated, redeemParams.ammDeadline
+            );
 
             result.raReceivedFromAmm = raFromAmm;
             result.ctReceivedFromAmm = ctFromAmm;
@@ -656,12 +672,14 @@ library VaultLibrary {
         // fetch ds from flash swap router
         contracts.flashSwapRouter.emptyReservePartialLv(redeemParams.id, dsId, result.dsReceived);
 
+        uint256 raReceived = result.raReceivedFromAmm + result.raIdleReceived;
         {
-            IWithdrawalRouter.Tokens[] memory tokens = new IWithdrawalRouter.Tokens[](3);
+            IWithdrawalRouter.Tokens[] memory tokens = new IWithdrawalRouter.Tokens[](4);
 
-            tokens[0] = IWithdrawalRouter.Tokens(pair.ra, result.raReceivedFromAmm);
+            tokens[0] = IWithdrawalRouter.Tokens(pair.ra, raReceived);
             tokens[1] = IWithdrawalRouter.Tokens(ds.ct, result.ctReceivedFromVault + result.ctReceivedFromAmm);
             tokens[2] = IWithdrawalRouter.Tokens(ds._address, result.dsReceived);
+            tokens[3] = IWithdrawalRouter.Tokens(pair.pa, result.paReceived);
 
             bytes32 withdrawalId = contracts.withdrawalContract.add(owner, tokens);
 
@@ -669,14 +687,18 @@ library VaultLibrary {
         }
 
         // send RA amm to user
-        self.vault.balances.ra.unlockToUnchecked(result.raReceivedFromAmm, address(contracts.withdrawalContract));
+        self.vault.balances.ra.unlockToUnchecked(raReceived, address(contracts.withdrawalContract));
 
         // send CT received from AMM and held in vault to user
         SafeERC20.safeTransfer(
             IERC20(ds.ct), address(contracts.withdrawalContract), result.ctReceivedFromVault + result.ctReceivedFromAmm
         );
 
+        // send DS to user
         SafeERC20.safeTransfer(IERC20(ds._address), address(contracts.withdrawalContract), result.dsReceived);
+
+        // send PA to user
+        SafeERC20.safeTransfer(IERC20(pair.pa), address(contracts.withdrawalContract), result.paReceived);
     }
 
     function vaultLp(State storage self, ICorkHook ammRotuer) internal view returns (uint256) {

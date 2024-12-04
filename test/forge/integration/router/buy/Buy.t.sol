@@ -106,7 +106,7 @@ contract BuyDsTest is Helper {
 
         Asset(ct).approve(address(moduleCore), DEFAULT_DEPOSIT_AMOUNT);
 
-        issueNewDs(currencyId, block.timestamp + 1 days);
+        issueNewDs(currencyId);
 
         fetchProtocolGeneralInfo();
     }
