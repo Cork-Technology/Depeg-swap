@@ -51,6 +51,9 @@ interface ICommon {
     /// @notice Thrown this error when fees are more than 5%
     error InvalidFees();
 
+    /// @notice Thrown when DS is not active
+    error InvalidDsId();
+
     /// @notice Emitted when a new LV and PSM is initialized with a given pair
     /// @param id The PSM id
     /// @param pa The address of the pegged asset
@@ -68,6 +71,9 @@ interface ICommon {
     event Issued(
         Id indexed Id, uint256 indexed dsId, uint256 indexed expiry, address ds, address ct, address raCtUniPair
     );
+
+    /// @notice Emitted when treasury is updated
+    event TreasuryUpdated(address newTreasury);
 
     /**
      * @notice Get the last DS id issued for a given module, the returned DS doesn't guarantee to be active

@@ -30,6 +30,8 @@ abstract contract ModuleState is ICommon {
 
     address internal CONFIG;
 
+    address internal treasury;
+
     /**
      * @dev checks if caller is config contract or not
      */

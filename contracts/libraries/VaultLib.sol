@@ -656,7 +656,7 @@ library VaultLibrary {
         IDsFlashSwapCore flashSwapRouter,
         IUniswapV2Router02 ammRouter
     ) public {
-        self.vault.pool.pendingRAFees += amount;
+        self.vault.pool.pendingRAFees[self.globalAssetIdx] += amount;
     }
 
     function provideLiquidityWithFee(
@@ -665,12 +665,24 @@ library VaultLibrary {
         IDsFlashSwapCore flashSwapRouter,
         IUniswapV2Router02 ammRouter,
         uint256 minRA,
-        uint256 minCT
+        uint256 minCT,
+        address treasury,
+        uint256 dsId
     ) public {
-        if(self.vault.pool.pendingRAFees < amount) {
+        if(dsId > self.globalAssetIdx) {
+            // invalid when future dsId is passed
+            revert ICommon.InvalidDsId();
+        }else if(dsId<self.globalAssetIdx) {
+            // sent to treasury if past dsId is passed
+            IERC20(self.info.redemptionAsset()).safeTransfer(treasury, amount);
+        }
+
+        // Provide liquidity when current dsId is passed
+        if(self.vault.pool.pendingRAFees[self.globalAssetIdx] < amount) {
             revert ICommon.InvalidFees();
         }
-        self.vault.pool.pendingRAFees -= amount;
+        
+        self.vault.pool.pendingRAFees[self.globalAssetIdx] -= amount;
         __provideLiquidityWithRatio(self, amount, flashSwapRouter, self.ds[self.globalAssetIdx].ct, ammRouter, Tolerance(minRA, minCT));
     }
     // taken directly from spec document, technically below is what should happen in this function

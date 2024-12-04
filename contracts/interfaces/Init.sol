@@ -76,5 +76,7 @@ interface Initialize {
      */
     function updatePsmBaseRedemptionFeePercentage(Id id,uint256 newPsmBaseRedemptionFeePercentage) external;
 
-    function provideLiquidityWithFeeByAdmin(Id id, uint256 amount, uint256 minRA, uint256 minCT) external;
+    function provideLiquidityByAdmin(Id id, uint256 amount, uint256 minRA, uint256 minCT, uint256 dsId) external;
+
+    function updateTreasury(address newTreasury) external;
 }

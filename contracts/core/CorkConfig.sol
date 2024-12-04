@@ -142,8 +142,11 @@ contract CorkConfig is AccessControl, Pausable {
         );
     }
 
-    function provideLiquidityWithFeeByAdmin(Id id, uint256 amount, uint256 minRA, uint256 minCT) external onlyManager {
-        moduleCore.provideLiquidityWithFeeByAdmin(id, amount, minRA, minCT);
+    /**
+     * @notice Admin can provide liquidity to AMMs
+     */
+    function provideLiquidityByAdmin(Id id, uint256 amount, uint256 minRA, uint256 minCT, uint256 dsId) external onlyManager {
+        moduleCore.provideLiquidityByAdmin(id, amount, minRA, minCT, dsId);
     }
 
     /**
@@ -156,6 +159,14 @@ contract CorkConfig is AccessControl, Pausable {
 
     function updateFlashSwapRouterDiscountInDays(Id id, uint256 newDiscountInDays) external onlyManager {
         flashSwapRouter.updateDiscountRateInDdays(id, newDiscountInDays);
+    }
+
+    /**
+     * @notice Updates treasury address
+     * @param newTreasury new address of treasury
+     */
+    function updateTreasury(address newTreasury) external onlyManager {
+        moduleCore.updateTreasury(newTreasury);
     }
 
     /**

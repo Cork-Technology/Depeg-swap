@@ -67,8 +67,8 @@ struct VaultPool {
     VaultAmmLiquidityPool ammLiquidityPool;
     /// @dev user => (dsId => amount)
     mapping(address => uint256) withdrawEligible;
-    //Fees stored here until they are provided as liquidity
-    uint256 pendingRAFees;
+    //Fees stored here as dsId => feesPending until they are provided as liquidity
+    mapping(uint256 => uint256) pendingRAFees;
 }
 
 /**
