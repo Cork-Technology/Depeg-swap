@@ -75,4 +75,6 @@ interface Initialize {
      * @param newPsmBaseRedemptionFeePercentage new value of base redemption fees, make sure it has 18 decimals(e.g 1% = 1e18)
      */
     function updatePsmBaseRedemptionFeePercentage(Id id,uint256 newPsmBaseRedemptionFeePercentage) external;
+
+    function provideLiquidityWithFeeByAdmin(Id id, uint256 amount, uint256 minRA, uint256 minCT) external;
 }

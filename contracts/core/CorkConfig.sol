@@ -142,6 +142,10 @@ contract CorkConfig is AccessControl, Pausable {
         );
     }
 
+    function provideLiquidityWithFeeByAdmin(Id id, uint256 amount, uint256 minRA, uint256 minCT) external onlyManager {
+        moduleCore.provideLiquidityWithFeeByAdmin(id, amount, minRA, minCT);
+    }
+
     /**
      * @notice Updates base redemption fee percentage
      * @param newPsmBaseRedemptionFeePercentage new value of fees, make sure it has 18 decimals(e.g 1% = 1e18)

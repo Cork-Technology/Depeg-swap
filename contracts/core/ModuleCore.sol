@@ -236,4 +236,9 @@ contract ModuleCore is OwnableUpgradeable, UUPSUpgradeable, PsmCore, Initialize,
         PsmLibrary.updatePSMBaseRedemptionFeePercentage(state, newPsmBaseRedemptionFeePercentage);
         emit PsmBaseRedemptionFeePercentageUpdated(id, newPsmBaseRedemptionFeePercentage);
     }
+
+    function provideLiquidityWithFeeByAdmin(Id id, uint256 amount, uint256 minRA, uint256 minCT) external onlyConfig {
+        State storage state = states[id];
+        VaultLibrary.provideLiquidityWithFee(state, amount, getRouterCore(), getAmmRouter(), minRA, minCT);
+    }
 }

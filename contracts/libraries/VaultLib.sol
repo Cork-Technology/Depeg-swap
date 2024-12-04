@@ -656,7 +656,22 @@ library VaultLibrary {
         IDsFlashSwapCore flashSwapRouter,
         IUniswapV2Router02 ammRouter
     ) public {
-        __provideLiquidityWithRatio(self, amount, flashSwapRouter, self.ds[self.globalAssetIdx].ct, ammRouter);
+        self.vault.pool.pendingRAFees += amount;
+    }
+
+    function provideLiquidityWithFee(
+        State storage self,
+        uint256 amount,
+        IDsFlashSwapCore flashSwapRouter,
+        IUniswapV2Router02 ammRouter,
+        uint256 minRA,
+        uint256 minCT
+    ) public {
+        if(self.vault.pool.pendingRAFees < amount) {
+            revert ICommon.InvalidFees();
+        }
+        self.vault.pool.pendingRAFees -= amount;
+        __provideLiquidityWithRatio(self, amount, flashSwapRouter, self.ds[self.globalAssetIdx].ct, ammRouter, Tolerance(minRA, minCT));
     }
     // taken directly from spec document, technically below is what should happen in this function
     //
