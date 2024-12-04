@@ -65,35 +65,34 @@ AFter that, you should see something like this on your terminal :
   PRODUCTION                   : undefined
   Network                      : sepolia
   Chain Id                     : 11155111
-  Deployer                     : 0xBa66992bE4816Cc3877dA86fA982A93a6948dde9
+  Deployer                     : 0x036febB27d1da9BFF69600De3C9E5b6cd6A7d275
  -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-  CETH                            :  0xc3E528E9675920dA0b03556719402D05d6b9A475
-  wamuETH                         :  0x6915f849a6cdE397cb455ca18C15Cb2844522170
-  bsETH                           :  0x51ca8a8BdB714ED0F4b565394675d864a41c65a7
-  mlETH                           :  0xf5F20dfC98aE76d2905A82508cf609573B4D2a83
+  CETH                            :  0x0000000237805496906796B1e767640a804576DF
+  wamuETH                         :  0x22222228802B45325E0b8D0152C633449Ab06913
+  bsETH                           :  0x33333335a697843FDd47D599680Ccb91837F59aF
+  mlETH                           :  0x44444447386435500C5a06B167269f42FA4ae8d4
   -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-  CUSD                            :  0x26E69813240faf8f3e06c7B907cff78b99a28C97
-  svbUSD                          :  0x03B03D8dc8d536C068eCf61b444c410aF2D8Ffee
-  fedUSD                          :  0x7976B317bEB15d538c3d86fBeD661Dc511030998
-  omgUSD                          :  0x0A19aF443f5677602D139344100F5Bc25A7Ef9A5
+  CUSD                            :  0x1111111A3Ae9c9b133Ea86BdDa837E7E796450EA
+  svbUSD                          :  0x5555555eBBf30a4b084078319Da2348fD7B9e470
+  fedUSD                          :  0x666666685C211074C1b0cFed7e43E1e7D8749E43
+  omgUSD                          :  0x7777777707136263F82775e7ED0Fc99Bbe6f5eB0
   -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-  Asset Factory Implementation    :  0x78c21D1dC07E364e972993219223CE5dEbaEfbba
-  Asset Factory                   :  0xcf17533a7424444c02C3f3E517B28Db039Abd0FF
-  Cork Config                     :  0x7D5c1F170329ce40169Bc1a833EB2D5760aA57d3
-  Flashswap Router Implementation :  0xa85395c50092A8Fb9638bcBFB15098525c678D02
-  Flashswap Router Proxy          :  0xDD08E978C78F48811B6DE871E14F017DD8feCe39
-  ModuleCore Router Implementation:  0xed78ee3715D7CB74D17277B65cEFB2c19610A10F
-  Pool Manager                    :  0xD311Df5688385BC0f8D8C3c4512ea7C9e354Bb68
-  Liquidity Token                 :  0x49B1C03B0cA9D39e0B52c5c8Ca28F4807959e76c
-  Hook                            :  0x77714c73431b785DC2fC9A318f57f92a6CD3AA88
-  Module Core                     :  0x750a8Ea50082aF3dB2dd7c500AEDE2676363e54e
+  Asset Factory Implementation    :  0x60360DF3de6c4bD6F5Fd2e7ba592303485fA9A9B
+  Asset Factory                   :  0xf000cdA13733437Dfb12FeAE0A13d4763E990DB4
+  Cork Config                     :  0x52741B3B3eF35595a4556060f6684a58460b275d
+  Flashswap Router Implementation :  0x7633c1cb10a154096a7Ed3bf314822674D99A235
+  Flashswap Router Proxy          :  0xAbc045f9BA3Ef72eD85A775F5d21356068AB4C10
+  ModuleCore Router Implementation:  0x856df8aA608CCE52FF980BA382771d6Dc9AdeB7b
+  Pool Manager                    :  0xDe8e90c3fea6e6A26F925f9b4c1C4e7084B6a676
+  Liquidity Token                 :  0xC64AFb900B33EeCa2CE59A4d09fd2bF6b6971444
+  Hook                            :  0x1Db7052Fbe1458FC507F2054090DAAb10c3bEa88
+  Module Core                     :  0x2A97d50f625974A708eDbF6cF7ABA3fd9c08554F
   -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-  Liquidator                      :  0x8fBD6580B35816aC091bA6fbf2aDF2884581C606
+  Liquidator                      :  0x6cFc16600d1db1Ae34353e881B3AD79C346EaBea
   -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
   Univ2 Factory                   :  0xF62c03E08ada871A0bEb309762E260a7a6a880E6
   Univ2 Router                    :  0xeE567Fe1712Faf6149d80dA1E6934E354124CfE3
   -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-  Funder Contract                 :  0xdAD2E0651F88D5EA6725274153209Fe94DF8c829
-  Reader Contract                 :  0xC4736Ba3D54df3725771d889b964114535d4bF2D
+  Reader Contract                 :  0x9c706773f25213B1a08f0D33E96b39D019b1DC66
   -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
 ```

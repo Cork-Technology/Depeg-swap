@@ -41,12 +41,12 @@ contract DeployScript is Script {
 
     address internal constant CREATE_2_PROXY = 0x4e59b44847b379578588920cA78FbF26c0B4956C;
 
-    address bsETH = 0x0BAbf92b3e4fd64C26e1F6A05B59a7e0e0708378;
-    address wamuETH = 0xd9682A7CE1C48f1de323E9b27A5D0ff0bAA24254;
-    address mlETH = 0x98524CaB765Cb0De83F71871c56dc67C202e166d;
-    address svbUSD = 0x7AE4c173d473218b59bF8A1479BFC706F28C635b;
-    address fedUSD = 0xd8d134BEc26f7ebdAdC2508a403bf04bBC33fc7b;
-    address omgUSD = 0x182733031965686043d5196207BeEE1dadEde818;
+    address wamuETH = 0x22222228802B45325E0b8D0152C633449Ab06913;
+    address bsETH = 0x33333335a697843FDd47D599680Ccb91837F59aF;
+    address mlETH = 0x44444447386435500C5a06B167269f42FA4ae8d4;
+    address svbUSD = 0x5555555eBBf30a4b084078319Da2348fD7B9e470;
+    address fedUSD = 0x666666685C211074C1b0cFed7e43E1e7D8749E43;
+    address omgUSD = 0x7777777707136263F82775e7ED0Fc99Bbe6f5eB0;
 
     // constants because they are external contracts
     address settlementContract = 0x9008D19f58AAbD9eD0D60971565AA8510560ab41;
@@ -134,6 +134,7 @@ contract DeployScript is Script {
             console.log("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-");
         }
         cETH = CETH(ceth);
+        cUSD = CUSD(cusd);
 
         // Deploy the Asset Factory implementation (logic) contract
         AssetFactory assetFactoryImplementation = new AssetFactory();

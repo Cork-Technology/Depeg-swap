@@ -12,7 +12,7 @@ contract UpgradeUUPSScript is Script {
 
         // Begin broadcasting (i.e., sending transactions)
         vm.startBroadcast(deployerPrivateKey);
-        address moduleCoreProxyAddress = 0xe56565c208d0a8Ca28FB632aD7F6518f273B8B9f;
+        address moduleCoreProxyAddress = 0x2A97d50f625974A708eDbF6cF7ABA3fd9c08554F;
 
         // Step 1: Deploy the new implementation contract (RouterState)
         ModuleCore newImplementation = new ModuleCore();
