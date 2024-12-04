@@ -13,7 +13,8 @@ contract RolloverTest is Helper {
     DummyWETH internal pa;
     Id public currencyId;
 
-    uint256 public DEFAULT_DEPOSIT_AMOUNT = 2050 ether;
+    // we double the amount(should be 2050) since we're splitting CT when user deposit RA to the test default(50%)
+    uint256 public DEFAULT_DEPOSIT_AMOUNT = 4100 ether;
 
     uint256 public dsId;
 
@@ -46,14 +47,15 @@ contract RolloverTest is Helper {
         ra.deposit{value: 100000 ether}();
         pa.deposit{value: 100000 ether}();
 
+        // save initial data
+        fetchProtocolGeneralInfo();
+       
+
         // 10000 for psm 10000 for LV
         ra.approve(address(moduleCore), 100_000_000 ether);
 
         moduleCore.depositPsm(currencyId, DEFAULT_DEPOSIT_AMOUNT);
         moduleCore.depositLv(currencyId, DEFAULT_DEPOSIT_AMOUNT, 0, 0);
-
-        // save initial data
-        fetchProtocolGeneralInfo();
     }
 
     function fetchProtocolGeneralInfo() internal {
@@ -72,7 +74,7 @@ contract RolloverTest is Helper {
 
         Asset(ct).approve(address(moduleCore), DEFAULT_DEPOSIT_AMOUNT);
 
-        issueNewDs(currencyId, block.timestamp + 1 days);
+        issueNewDs(currencyId);
 
         fetchProtocolGeneralInfo();
     }

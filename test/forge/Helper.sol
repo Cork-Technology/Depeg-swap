@@ -113,7 +113,7 @@ abstract contract Helper is SigUtils, TestHelper {
         );
     }
 
-    function issueNewDs(Id id, uint256 expiryInSeconds) internal {
+    function issueNewDs(Id id) internal {
         issueNewDs(
             id,
             defaultExchangeRate(),
@@ -144,6 +144,8 @@ abstract contract Helper is SigUtils, TestHelper {
         issueNewDs(
             id, defaultExchangeRate(), DEFAULT_REPURCHASE_FEE, DEFAULT_DECAY_DISCOUNT_RATE, DEFAULT_ROLLOVER_PERIOD
         );
+        
+        corkConfig.updateLvStrategyCtSplitPercentage(defaultCurrencyId, DEFAULT_CT_SPLIT_PERCENTAGE);
     }
 
     function initializeAndIssueNewDs(uint256 expiryInSeconds, uint256 baseRedemptionFee)
@@ -252,7 +254,14 @@ abstract contract Helper is SigUtils, TestHelper {
         setupConfig();
         setupFlashSwapRouter();
 
-        corkConfig.updateLvStrategyCtSplitPercentage(defaultCurrencyId, DEFAULT_CT_SPLIT_PERCENTAGE);
         initializeWithdrawalContract();
+    }
+
+    function forceUnpause(Id id) internal {
+        corkConfig.updatePoolsStatus(id, false, false, false, false, false);
+    }
+
+    function forceUnpause() internal {
+        forceUnpause(defaultCurrencyId);
     }
 }
