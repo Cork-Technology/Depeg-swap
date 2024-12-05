@@ -672,18 +672,20 @@ library VaultLibrary {
         if(dsId > self.globalAssetIdx) {
             // invalid when future dsId is passed
             revert ICommon.InvalidDsId();
-        }else if(dsId<self.globalAssetIdx) {
-            // sent to treasury if past dsId is passed
-            IERC20(self.info.redemptionAsset()).safeTransfer(treasury, amount);
         }
 
-        // Provide liquidity when current dsId is passed
         if(self.vault.pool.pendingRAFees[self.globalAssetIdx] < amount) {
             revert ICommon.InvalidFees();
         }
         
         self.vault.pool.pendingRAFees[self.globalAssetIdx] -= amount;
-        __provideLiquidityWithRatio(self, amount, flashSwapRouter, self.ds[self.globalAssetIdx].ct, ammRouter, Tolerance(minRA, minCT));
+        if(dsId < self.globalAssetIdx) {
+            // sent to treasury if past dsId is expired
+            IERC20(self.info.redemptionAsset()).safeTransfer(treasury, amount);
+        }else{
+            // Provide liquidity when current dsId is used
+            __provideLiquidityWithRatio(self, amount, flashSwapRouter, self.ds[self.globalAssetIdx].ct, ammRouter, Tolerance(minRA, minCT));
+        }
     }
     // taken directly from spec document, technically below is what should happen in this function
     //
