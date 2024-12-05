@@ -77,18 +77,18 @@ AFter that, you should see something like this on your terminal :
   fedUSD                          :  0x666666685C211074C1b0cFed7e43E1e7D8749E43
   omgUSD                          :  0x7777777707136263F82775e7ED0Fc99Bbe6f5eB0
   -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-  Asset Factory Implementation    :  0x60360DF3de6c4bD6F5Fd2e7ba592303485fA9A9B
-  Asset Factory                   :  0xf000cdA13733437Dfb12FeAE0A13d4763E990DB4
-  Cork Config                     :  0x52741B3B3eF35595a4556060f6684a58460b275d
-  Flashswap Router Implementation :  0x7633c1cb10a154096a7Ed3bf314822674D99A235
-  Flashswap Router Proxy          :  0xAbc045f9BA3Ef72eD85A775F5d21356068AB4C10
-  ModuleCore Router Implementation:  0x856df8aA608CCE52FF980BA382771d6Dc9AdeB7b
-  Pool Manager                    :  0xDe8e90c3fea6e6A26F925f9b4c1C4e7084B6a676
-  Liquidity Token                 :  0xC64AFb900B33EeCa2CE59A4d09fd2bF6b6971444
-  Hook                            :  0x1Db7052Fbe1458FC507F2054090DAAb10c3bEa88
-  Module Core                     :  0x2A97d50f625974A708eDbF6cF7ABA3fd9c08554F
+  Asset Factory Implementation    :  0x09bDC1d05CC708C8fB9fB3558046F4357EF98C23
+  Asset Factory                   :  0x0e2da77bc7033a0D64992965a2262b7B9F3AbB07
+  Cork Config                     :  0x190305d34e061F7739CbfaD9fC8e5Ece94C86467
+  Flashswap Router Implementation :  0xF0eBa41b2E6deB47faECF8eD5d9d79A94A6E7312
+  Flashswap Router Proxy          :  0x8547ac5A696bEB301D5239CdE9F3894B106476C9
+  ModuleCore Router Implementation:  0x4932A32D731f5C4D37864f6655dEE26777182E79
+  Pool Manager                    :  0x229433FC92588C5D164408939e4c460dC845372e
+  Liquidity Token                 :  0xcCCA584A5ca7B82f10ad54b53e8d860Fb8c06889
+  Hook                            :  0xf190c07670Db093962814393daCbF833CE02ea88
+  Module Core                     :  0xF6a5b7319DfBc84EB94872478be98462aA9Aab99
   -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
-  Liquidator                      :  0x6cFc16600d1db1Ae34353e881B3AD79C346EaBea
+  Liquidator                      :  0x9700a0ca88BC835E992d819e59029965DBBfb1d6
   -=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-
   Univ2 Factory                   :  0xF62c03E08ada871A0bEb309762E260a7a6a880E6
   Univ2 Router                    :  0xeE567Fe1712Faf6149d80dA1E6934E354124CfE3
