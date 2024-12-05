@@ -8,6 +8,7 @@ import {SD59x18, convert, sd, add, mul, pow, sub, div, abs, unwrap, intoUD60x18}
 import {UD60x18, convert as convertUd, ud, add, mul, pow, sub, div, unwrap} from "@prb/math/src/UD60x18.sol";
 import {IMathError} from "./../interfaces/IMathError.sol";
 import {MarketSnapshot, MarketSnapshotLib} from "Cork-Hook/lib/MarketSnapshot.sol";
+import "./LogExpMath.sol";
 
 library BuyMathBisectionSolver {
     /// @notice returns the the normalized time to maturity from 1-0
@@ -47,12 +48,20 @@ library BuyMathBisectionSolver {
             }
         }
 
-        SD59x18 xPow = pow(x, _1MinusT);
-        SD59x18 yPow = pow(y, _1MinusT);
-        SD59x18 xMinSplusEPow = pow(xMinSplusE, _1MinusT);
-        SD59x18 yPlusSPow = pow(yPlusS, _1MinusT);
+        SD59x18 xPow = _pow(x, _1MinusT);
+        SD59x18 yPow = _pow(y, _1MinusT);
+        SD59x18 xMinSplusEPow = _pow(xMinSplusE, _1MinusT);
+        SD59x18 yPlusSPow = _pow(yPlusS, _1MinusT);
 
         return sub(sub(add(xPow, yPow), xMinSplusEPow), yPlusSPow);
+    }
+
+    // more gas efficient than PRB
+    function _pow(SD59x18 x, SD59x18 y) public pure returns (SD59x18) {
+        uint256 _x = uint256(unwrap(x));
+        uint256 _y = uint256(unwrap(y));
+
+        return sd(int256(LogExpMath.pow(_x, _y)));
     }
 
     function findRoot(SD59x18 x, SD59x18 y, SD59x18 e, SD59x18 _1MinusT, SD59x18 epsilon, uint256 maxIter)
@@ -64,7 +73,7 @@ library BuyMathBisectionSolver {
         SD59x18 b;
 
         {
-            SD59x18 delta = sd(1e12);
+            SD59x18 delta = sd(1e6);
             b = sub(add(x, e), delta);
         }
 
