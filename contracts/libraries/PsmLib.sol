@@ -335,22 +335,28 @@ library PsmLibrary {
         ds.issue(address(this), received);
     }
 
+    function _handleDsRedeem(PsmPoolArchive storage archive, uint256 amount) internal returns (uint256 accruedRa) {
+        // because the PSM treats all CT issued(including to itself) as redeemable, we need to decrease the total amount of CT issued
+        archive.ctAttributed -= amount;
+        archive.raAccrued -= amount;
+
+        return amount;
+    }
+
     function lvRedeemRaWithCtDs(State storage self, uint256 amount, uint256 dsId) internal returns (uint256 ra) {
         // separate if its hasnt been separated and is expired, if expired withdraw from archive, if not, decrease locked RA
 
         DepegSwap storage ds = self.ds[dsId];
 
-        uint256 rates = ds.exchangeRate();
-        ra = MathHelper.calculateRedeemAmountWithExchangeRate(amount, rates);
+        ra = amount;
 
         // separate liquidity if the DS is expired(if hasn't been separated)
         if (ds.isExpired()) {
             _separateLiquidity(self, dsId);
             PsmPoolArchive storage archive = self.psm.poolArchive[dsId];
 
-            // because the PSM treats all CT issued(including to itself) as redeemable, we need to decrease the total amount of CT issued 
-            archive.ctAttributed -= amount;
-            archive.raAccrued -= ra;
+            // here we make an exception where instead of we rollovering and redeeming CT + DS, we redeem directly to RA in here. this essentially gives us the same result with less steps
+            ra = _handleDsRedeem(archive, amount);
         } else {
             // else we just decrease the locked RA, since all the RA is still locked state(will turn to attributed when separated at liquidity)
             // this'll happen when someone redeem early
