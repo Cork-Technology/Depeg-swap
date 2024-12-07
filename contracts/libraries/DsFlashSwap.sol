@@ -79,7 +79,7 @@ library DsFlashSwaplibrary {
     }
 
     function emptyReserveLv(ReserveState storage self, uint256 dsId, address to) external returns (uint256 emptied) {
-        emptied = emptyReservePartialLv(self, dsId, self.ds[dsId].lvReserve, to);
+        emptied = emptyReservePartialLv(self, dsId, self.ds[dsId].lvReserve - 1, to);
     }
 
     function getEffectiveHIYA(ReserveState storage self) external view returns (uint256) {
@@ -110,7 +110,7 @@ library DsFlashSwaplibrary {
         returns (uint256 emptied)
     {
         // TODO : hotfix
-        self.ds[dsId].lvReserve -= amount - 1;
+        self.ds[dsId].lvReserve -= amount;
         self.ds[dsId].ds.transfer(to, amount);
         emptied = amount;
     }
