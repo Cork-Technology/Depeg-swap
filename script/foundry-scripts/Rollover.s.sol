@@ -48,9 +48,9 @@ contract RolloverScript is Script {
     Assets fedUSD = Assets(cusd, fedUSDAdd, fedUSDExpiry, 0.75 ether);
     Assets omgUSD = Assets(svbUSDAdd, omgUSDAdd, omgUSDExpiry, 0.75 ether);
 
-    CorkConfig config = CorkConfig(0x52741B3B3eF35595a4556060f6684a58460b275d);
-    RouterState flashSwapRouter = RouterState(0xAbc045f9BA3Ef72eD85A775F5d21356068AB4C10);
-    ModuleCore moduleCore = ModuleCore(0x2A97d50f625974A708eDbF6cF7ABA3fd9c08554F);
+    CorkConfig config = CorkConfig(0x190305d34e061F7739CbfaD9fC8e5Ece94C86467);
+    RouterState flashSwapRouter = RouterState(0x8547ac5A696bEB301D5239CdE9F3894B106476C9);
+    ModuleCore moduleCore = ModuleCore(0xF6a5b7319DfBc84EB94872478be98462aA9Aab99);
 
     // 6% decay discount rate
     uint256 internal constant DEFAULT_DECAY_DISCOUNT_RATE = 6 ether;
