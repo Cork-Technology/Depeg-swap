@@ -628,7 +628,7 @@ contract RouterState is
         // for rounding error protection
         dsAttributed -= 1;
 
-        // assert(received >= dsAttributed);
+        assert(received >= dsAttributed);
 
         // should be the same, we don't compare with the RA amount since we maybe dealing
         // with a non-rebasing token, in which case the amount deposited and the amount received will always be different

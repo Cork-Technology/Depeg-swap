@@ -9,6 +9,7 @@ import {UD60x18, convert as convertUd, ud, add, mul, pow, sub, div, unwrap} from
 import {IMathError} from "./../interfaces/IMathError.sol";
 import {MarketSnapshot, MarketSnapshotLib} from "Cork-Hook/lib/MarketSnapshot.sol";
 import "./LogExpMath.sol";
+import "forge-std/console.sol";
 
 library BuyMathBisectionSolver {
     /// @notice returns the the normalized time to maturity from 1-0
@@ -271,16 +272,43 @@ library SwapperMathLibrary {
         dsReceived = div(raProvided, hpa);
 
         // returns the RA if, the total reserve cannot cover the DS that user will receive. this Ra left must subject to the AMM rates
-        raLeft = totalDsReserve >= dsReceived ? convertUd(0) : mul(sub(dsReceived, totalDsReserve), hpa);
+        if (totalDsReserve >= dsReceived) {
+            raLeft = convertUd(0); // No shortfall
+        } else {
+            // Calculate the RA needed for the shortfall in DS
+            UD60x18 dsShortfall = sub(dsReceived, totalDsReserve);
+            raLeft = mul(dsShortfall, hpa);
+
+            // Adjust the DS received to match the total reserve
+            dsReceived = totalDsReserve;
+        }
 
         // recalculate the DS user will receive, after the RA left is deducted
         raProvided = sub(raProvided, raLeft);
-        dsReceived = div(raProvided, hpa);
 
         // proportionally calculate how much DS should be taken from LV and PSM
         // e.g if LV has 60% of the total reserve, then 60% of the DS should be taken from LV
         lvReserveUsed = div(mul(lvDsReserve, dsReceived), totalDsReserve);
         psmReserveUsed = sub(dsReceived, lvReserveUsed);
+
+        assert(unwrap(dsReceived) == unwrap(psmReserveUsed + lvReserveUsed));
+
+        if (psmReserveUsed > psmDsReserve) {
+            UD60x18 diff = sub(psmReserveUsed, psmDsReserve);
+            psmReserveUsed = sub(psmReserveUsed, diff);
+            lvReserveUsed = add(lvReserveUsed, diff);
+        }
+
+        if (lvReserveUsed > lvDsReserve) {
+            UD60x18 diff = sub(lvReserveUsed, lvDsReserve);
+            lvReserveUsed = sub(lvReserveUsed, diff);
+            psmReserveUsed = add(psmReserveUsed, diff);
+        }
+
+        console.log("total reserve              :", unwrap(totalDsReserve));
+        console.log("total reserve used         :", unwrap(psmReserveUsed + lvReserveUsed));
+
+        assert(totalDsReserve >= lvReserveUsed + psmReserveUsed);
 
         // calculate the RA profit of LV and PSM
         lvProfit = mul(lvReserveUsed, hpa);

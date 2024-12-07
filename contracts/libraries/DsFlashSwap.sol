@@ -109,7 +109,8 @@ library DsFlashSwaplibrary {
         public
         returns (uint256 emptied)
     {
-        self.ds[dsId].lvReserve -= amount;
+        // TODO : hotfix
+        self.ds[dsId].lvReserve -= amount - 1;
         self.ds[dsId].ds.transfer(to, amount);
         emptied = amount;
     }
