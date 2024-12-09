@@ -5,7 +5,7 @@ import {Test} from "forge-std/Test.sol";
 import {CorkConfig} from "../../contracts/core/CorkConfig.sol";
 import {ModuleCore} from "../../contracts/core/ModuleCore.sol";
 import {CorkHook} from "Cork-Hook/CorkHook.sol";
-import {IDsFlashSwapCore} from "../interfaces/IDsFlashSwapRouter.sol";
+import {IDsFlashSwapCore} from "../../contracts/interfaces/IDsFlashSwapRouter.sol";
 
 contract CorkConfigTest is Test {
     CorkConfig private config;
