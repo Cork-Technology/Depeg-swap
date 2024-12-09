@@ -1,100 +1,116 @@
-// SPDX-License-Identifier: MIT
 pragma solidity ^0.8.24;
 
-import "forge-std/Test.sol";
-import "../../contracts/core/Psm.sol";
-import "../../contracts/libraries/State.sol";
-import "../../contracts/libraries/Pair.sol";
+import {Helper} from "./Helper.sol";
+import {DummyWETH} from "./../../contracts/dummy/DummyWETH.sol";
+import {Id, Pair, PairLibrary} from "./../../contracts/libraries/Pair.sol";
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "forge-std/console.sol";
 
-contract PsmCoreTest is Test {
-    PsmCore psmCore;
-    Id mockId;
+contract PsmCoreTest is Helper {
+    DummyWETH internal ra;
+    DummyWETH internal pa;
+    Id public currencyId;
+
+    uint256 public constant DEFAULT_DEPOSIT_AMOUNT = 10000 ether;
+    uint256 public constant EXPIRY = 1 days;
+
+    address user2 = address(30);
 
     function setUp() public {
-        // Deploying the PsmCore contract
-        psmCore = new PsmCoreImplementation();
-       mockId = Id.wrap(bytes32(uint256(1))); 
-    }
+        vm.startPrank(DEFAULT_ADDRESS);
 
-    function testUpdateRate() public {
-        // Arrange
-        uint256 newRate = 200e18;
-        vm.startPrank(address(this)); 
+        deployModuleCore();
 
-        // Act
-        psmCore.updateRate(mockId, newRate);
+        // Initialize PSM with dummy tokens
+        (ra, pa, currencyId) = initializeAndIssueNewDs(EXPIRY, 1 ether);
 
-        // Assert
-        uint256 currentRate = psmCore.exchangeRate(mockId);
-        assertEq(currentRate, newRate, "Rate update failed");
+        // Fund addresses with max value
+        vm.deal(DEFAULT_ADDRESS, type(uint256).max);
+        vm.deal(user2, type(uint256).max);
+
+        // Deposit tokens
+        ra.deposit{value: type(uint128).max}();
+        pa.deposit{value: type(uint128).max}();
+
+        // Approve tokens for module core
+        ra.approve(address(moduleCore), type(uint256).max);
+        pa.approve(address(moduleCore), type(uint256).max);
+
+        // Deposit into PSM
+        moduleCore.depositPsm(currencyId, DEFAULT_DEPOSIT_AMOUNT);
 
         vm.stopPrank();
     }
 
-    function testRepurchaseFee() public {
-        // Arrange
-        uint256 expectedFee = 5e16; 
-        vm.mockCall(
-            address(psmCore),
-            abi.encodeWithSelector(State.repurchaseFeePercentage.selector),
-            abi.encode(expectedFee)
-        );
+    function test_depositPsm() public {
+        // Ensure sufficient allowance
+        vm.startPrank(DEFAULT_ADDRESS);
+        ra.approve(address(moduleCore), 1000 ether);
 
-        // Act
-        uint256 fee = psmCore.repurchaseFee(mockId);
+        // Deposit PSM and check received amount
+        (uint256 received, uint256 exchangeRate) = moduleCore.depositPsm(currencyId, 1000 ether);
 
-        // Assert
-        assertEq(fee, expectedFee, "Repurchase fee mismatch");
+        assertTrue(received > 0, "Should receive tokens");
+        assertEq(exchangeRate, defaultExchangeRate(), "Exchange rate should match default");
+
+        vm.stopPrank();
     }
 
-    function testRepurchase() public {
-        // Arrange
-        uint256 amount = 100e18;
-        uint256 expectedReceivedPa = 95e18;
-        uint256 expectedFee = 5e18;
-        vm.mockCall(
-            address(psmCore),
-            abi.encodeWithSelector(State.repurchase.selector),
-            abi.encode(0, expectedReceivedPa, 0, 5e16, expectedFee, 1e18)
-        );
+    function test_repurchase() public {
+        // Ensure sufficient liquidity and allowance
+        vm.startPrank(DEFAULT_ADDRESS);
+        pa.approve(address(moduleCore), 1000 ether);
 
-        // Act
-        (uint256 dsId, uint256 receivedPa, uint256 receivedDs, uint256 feePercentage, uint256 fee, uint256 exchangeRates) =
-            psmCore.repurchase(mockId, amount);
+        // Perform repurchase and check returned values
+        (
+            uint256 dsId,
+            uint256 receivedPa,
+            uint256 receivedDs,
+            uint256 feePercentage,
+            uint256 fee,
+            uint256 exchangeRates
+        ) = moduleCore.repurchase(currencyId, 1000 ether);
 
-        // Assert
-        assertEq(receivedPa, expectedReceivedPa, "Incorrect PA received");
-        assertEq(fee, expectedFee, "Incorrect fee calculated");
+        assertTrue(receivedPa > 0, "Should receive PA tokens");
+        assertTrue(receivedDs > 0, "Should receive DS tokens");
+        assertTrue(fee > 0, "Should have fee");
+
+        vm.stopPrank();
     }
 
-    function testAvailableForRepurchase() public {
-        // Arrange
-        uint256 expectedPa = 1000e18;
-        uint256 expectedDs = 500e18;
-        uint256 expectedDsId = 1;
-        vm.mockCall(
-            address(psmCore),
-            abi.encodeWithSelector(State.availableForRepurchase.selector),
-            abi.encode(expectedPa, expectedDs, expectedDsId)
-        );
+    function test_redeemWithDs() public {
+        // Ensure sufficient allowance
+        vm.startPrank(DEFAULT_ADDRESS);
+        ra.approve(address(moduleCore), 1000 ether);
 
-        // Act
-        (uint256 pa, uint256 ds, uint256 dsId) = psmCore.availableForRepurchase(mockId);
+        uint256 dsId = moduleCore.lastDsId(currencyId);
 
-        // Assert
-        assertEq(pa, expectedPa, "Incorrect PA available");
-        assertEq(ds, expectedDs, "Incorrect DS available");
-        assertEq(dsId, expectedDsId, "Incorrect DS ID");
+        // Redeem RA with DS
+        (uint256 received, uint256 exchangeRate, uint256 fee) = moduleCore.redeemRaWithDs(currencyId, dsId, 1000 ether);
+
+        assertTrue(received > 0, "Should receive tokens");
+        assertTrue(fee > 0, "Should have fee");
+
+        vm.stopPrank();
     }
-}
 
-// Implementation stub for testing
-contract PsmCoreImplementation is PsmCore {
-    function onlyConfig() internal view override {}
-    function getRouterCore() internal view override returns (address) {
-        return address(this);
+    function test_exchangeRate() public {
+        uint256 rate = moduleCore.exchangeRate(currencyId);
+        assertEq(rate, defaultExchangeRate(), "Exchange rate should match default");
     }
-    function getAmmRouter() internal view override returns (address) {
-        return address(this);
+
+    function test_availableForRepurchase() public {
+        // Ensure sufficient liquidity
+        moduleCore.depositPsm(currencyId, 1000 ether);
+
+        (uint256 pa, uint256 ds, uint256 dsId) = moduleCore.availableForRepurchase(currencyId);
+
+        assertTrue(pa > 0, "PA should be available");
+        assertTrue(ds > 0, "DS should be available");
+        assertTrue(dsId > 0, "DS ID should be valid");
+    }
+
+    function defaultExchangeRate() internal pure override returns (uint256) {
+        return 1.5 ether;
     }
 }
