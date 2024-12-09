@@ -122,11 +122,18 @@ contract RolloverScript is Script {
     function run() public {
         vm.startBroadcast(pk);
         Assets[6] memory assets = [mlETH, bsETH, wamuETH, svbUSD, fedUSD, omgUSD];
-        // Assets[1] memory assets = [mlETH];
+
 
         for (uint256 i = 0; i < assets.length; i++) {
             issueNewDs(assets[i]);
         }
+        
         vm.stopBroadcast();
+    }
+
+    function forceUpdateReserve(Assets memory asset, uint256 dsId, uint256 lvReserve) internal {
+        Id id = PairLibrary.toId(PairLibrary.initalize(asset.peggedAsset, asset.redemptionAsset, asset.expiryInterval));
+
+        flashSwapRouter.forceUpdateLvReserve(id, dsId, lvReserve);
     }
 }

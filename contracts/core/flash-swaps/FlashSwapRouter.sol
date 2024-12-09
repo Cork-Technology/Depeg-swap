@@ -71,6 +71,17 @@ contract RouterState is
         _disableInitializers();
     }
 
+    event ForceUpdateLvReserve(Id id, uint256 dsId, uint256 lvReserve, uint256 before);
+
+    /// DANGEROUS, ONLY FOR HOTFIXES, REMOVE IN PRODUCTION.
+    function forceUpdateLvReserve(Id id, uint256 dsId, uint256 lvReserve) external onlyDefaultAdmin {
+        ReserveState storage self = reserves[id];
+        uint256 before = self.ds[dsId].lvReserve;
+        self.ds[dsId].lvReserve = lvReserve;
+
+        emit ForceUpdateLvReserve(id, dsId, lvReserve, before);
+    }
+
     function updateDiscountRateInDdays(Id id, uint256 discountRateInDays) external override onlyConfig {
         reserves[id].decayDiscountRateInDays = discountRateInDays;
     }
