@@ -20,7 +20,6 @@ import {ICorkHook} from "../../interfaces/UniV4/IMinimalHook.sol";
 import {AmmId, toAmmId} from "Cork-Hook/lib/State.sol";
 import {CorkSwapCallback} from "Cork-Hook/interfaces/CorkSwapCallback.sol";
 import {IMathError} from "./../../interfaces/IMathError.sol";
-import "forge-std/console.sol";
 
 /**
  * @title Router contract for Flashswap
@@ -44,7 +43,7 @@ contract RouterState is
     address public _moduleCore;
     ICorkHook public hook;
 
-    uint256 public constant MINIMUM_BUY_AMOUNT = 0.001 ether;
+    uint256 public constant RESERVE_MINIMUM_SELL_AMOUNT = 0.001 ether;
 
     /// @notice __gap variable to prevent storage collisions
     uint256[49] __gap;
@@ -223,14 +222,6 @@ contract RouterState is
         (lvProfit, psmProfit, raLeft, dsReceived, lvReserveUsed, psmReserveUsed) =
             SwapperMathLibrary.calculateRolloverSale(assetPair.lvReserve, assetPair.psmReserve, amountRa, self.hiya);
 
-        console.log("ds received                        : ", dsReceived);
-
-        console.log("psm reserve used                   : ", psmReserveUsed);
-        console.log("psm reserve                        : ", assetPair.psmReserve);
-
-        console.log("lv reserve used                    : ", lvReserveUsed);
-        console.log("lv reserve                         : ", assetPair.lvReserve);
-
         // we know that the math is correct, but for edge case protection, we don't subtract it directly but
         // instead set it to 0 if it's less than the used amount, again this is meant to handle precision issues
         assetPair.psmReserve = assetPair.psmReserve < psmReserveUsed ? 0 : assetPair.psmReserve - psmReserveUsed;
@@ -270,15 +261,8 @@ contract RouterState is
             return dsReceived;
         }
 
-        console.log("amount after rollover              : ", amount);
-        // refund the RA if the RA doesn' met the minimum amount to buy DS, this is because the math won't work if the amount is too small
-        if (amount <= MINIMUM_BUY_AMOUNT) {
-            IERC20(assetPair.ra).safeTransfer(msg.sender, amount);
-            return dsReceived;
-        }
-
         // calculate the amount of DS tokens attributed
-        (amountOut, borrowedAmount,) = assetPair.getAmountOutBuyDS(amount, hook, approxParams);
+        (amountOut, borrowedAmount) = assetPair.getAmountOutBuyDS(amount, hook, approxParams);
 
         // TODO : move this to a separate function
         // calculate the amount of DS tokens that will be sold from reserve
@@ -292,9 +276,8 @@ contract RouterState is
             // sell all tokens if the sell amount is higher than the available reserve
             amountSellFromReserve = totalReserve < amountSellFromReserve ? totalReserve : amountSellFromReserve;
         }
-
         // sell the DS tokens from the reserve if there's any
-        if (amountSellFromReserve != 0 && !self.gradualSaleDisabled) {
+        if (amountSellFromReserve > RESERVE_MINIMUM_SELL_AMOUNT && !self.gradualSaleDisabled) {
             SellResult memory sellDsReserveResult =
                 _sellDsReserve(assetPair, SellDsParams(reserveId, dsId, amountSellFromReserve, amount, approxParams));
 
@@ -361,7 +344,7 @@ contract RouterState is
             IPSMcore(_moduleCore).psmAcceptFlashSwapProfit(params.reserveId, profitRa - vaultProfit);
 
             // recalculate the amount of DS tokens attributed, since we sold some from the reserve
-            (result.amountOut, result.borrowedAmount,) =
+            (result.amountOut, result.borrowedAmount) =
                 assetPair.getAmountOutBuyDS(params.amount, hook, params.approxParams);
         }
     }
