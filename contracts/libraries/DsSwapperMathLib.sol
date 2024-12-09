@@ -271,16 +271,40 @@ library SwapperMathLibrary {
         dsReceived = div(raProvided, hpa);
 
         // returns the RA if, the total reserve cannot cover the DS that user will receive. this Ra left must subject to the AMM rates
-        raLeft = totalDsReserve >= dsReceived ? convertUd(0) : mul(sub(dsReceived, totalDsReserve), hpa);
+        if (totalDsReserve >= dsReceived) {
+            raLeft = convertUd(0); // No shortfall
+        } else {
+            // Calculate the RA needed for the shortfall in DS
+            UD60x18 dsShortfall = sub(dsReceived, totalDsReserve);
+            raLeft = mul(dsShortfall, hpa);
+
+            // Adjust the DS received to match the total reserve
+            dsReceived = totalDsReserve;
+        }
 
         // recalculate the DS user will receive, after the RA left is deducted
         raProvided = sub(raProvided, raLeft);
-        dsReceived = div(raProvided, hpa);
 
         // proportionally calculate how much DS should be taken from LV and PSM
         // e.g if LV has 60% of the total reserve, then 60% of the DS should be taken from LV
         lvReserveUsed = div(mul(lvDsReserve, dsReceived), totalDsReserve);
         psmReserveUsed = sub(dsReceived, lvReserveUsed);
+
+        assert(unwrap(dsReceived) == unwrap(psmReserveUsed + lvReserveUsed));
+
+        if (psmReserveUsed > psmDsReserve) {
+            UD60x18 diff = sub(psmReserveUsed, psmDsReserve);
+            psmReserveUsed = sub(psmReserveUsed, diff);
+            lvReserveUsed = add(lvReserveUsed, diff);
+        }
+
+        if (lvReserveUsed > lvDsReserve) {
+            UD60x18 diff = sub(lvReserveUsed, lvDsReserve);
+            lvReserveUsed = sub(lvReserveUsed, diff);
+            psmReserveUsed = add(psmReserveUsed, diff);
+        }
+
+        assert(totalDsReserve >= lvReserveUsed + psmReserveUsed);
 
         // calculate the RA profit of LV and PSM
         lvProfit = mul(lvReserveUsed, hpa);
@@ -408,6 +432,7 @@ library SwapperMathLibrary {
             lowerBound =
                 maxLowerBound > initialBorrowedAmountUd ? convertUd(0) : sub(initialBorrowedAmountUd, maxLowerBound);
         }
+
         UD60x18 repaymentAmountUd = lowerBound == convertUd(0)
             ? convertUd(0)
             : convertUd(params.market.getAmountIn(convertUd(lowerBound), false));

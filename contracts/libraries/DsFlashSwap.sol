@@ -109,7 +109,8 @@ library DsFlashSwaplibrary {
         public
         returns (uint256 emptied)
     {
-        self.ds[dsId].lvReserve -= amount;
+        // TODO : hotfix
+        self.ds[dsId].lvReserve -= amount - 1;
         self.ds[dsId].ds.transfer(to, amount);
         emptied = amount;
     }
@@ -211,11 +212,11 @@ library DsFlashSwaplibrary {
         uint256 amount,
         ICorkHook router,
         IDsFlashSwapCore.BuyAprroxParams memory params
-    ) external view returns (uint256 amountOut, uint256 borrowedAmount, uint256 repaymentAmount) {
+    ) external view returns (uint256 amountOut, uint256 borrowedAmount) {
         (uint256 raReserve, uint256 ctReserve) = getReservesSorted(assetPair, router);
 
         MarketSnapshot memory market = router.getMarketSnapshot(address(assetPair.ra), address(assetPair.ct));
-        
+
         uint256 issuedAt = assetPair.ds.issuedAt();
         uint256 end = assetPair.ds.expiry();
 
@@ -241,7 +242,6 @@ library DsFlashSwaplibrary {
 
         amountOut = result.amountOut;
         borrowedAmount = result.borrowedAmount;
-        repaymentAmount = result.repaymentAmount;
     }
 
     struct InitialTradeCaclParams {
