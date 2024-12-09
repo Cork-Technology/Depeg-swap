@@ -9,7 +9,6 @@ import {UD60x18, convert as convertUd, ud, add, mul, pow, sub, div, unwrap} from
 import {IMathError} from "./../interfaces/IMathError.sol";
 import {MarketSnapshot, MarketSnapshotLib} from "Cork-Hook/lib/MarketSnapshot.sol";
 import "./LogExpMath.sol";
-import "forge-std/console.sol";
 
 library BuyMathBisectionSolver {
     /// @notice returns the the normalized time to maturity from 1-0
@@ -291,11 +290,6 @@ library SwapperMathLibrary {
         lvReserveUsed = div(mul(lvDsReserve, dsReceived), totalDsReserve);
         psmReserveUsed = sub(dsReceived, lvReserveUsed);
 
-        console.log("total reserve              :", unwrap(totalDsReserve));
-        console.log("ra left                    :", unwrap(raLeft));
-        console.log("total reserve used         :", unwrap(psmReserveUsed + lvReserveUsed));
-        console.log("ds received                :", unwrap(dsReceived));
-
         assert(unwrap(dsReceived) == unwrap(psmReserveUsed + lvReserveUsed));
 
         if (psmReserveUsed > psmDsReserve) {
@@ -309,9 +303,6 @@ library SwapperMathLibrary {
             lvReserveUsed = sub(lvReserveUsed, diff);
             psmReserveUsed = add(psmReserveUsed, diff);
         }
-
-        console.log("total reserve              :", unwrap(totalDsReserve));
-        console.log("total reserve used         :", unwrap(psmReserveUsed + lvReserveUsed));
 
         assert(totalDsReserve >= lvReserveUsed + psmReserveUsed);
 
@@ -441,6 +432,7 @@ library SwapperMathLibrary {
             lowerBound =
                 maxLowerBound > initialBorrowedAmountUd ? convertUd(0) : sub(initialBorrowedAmountUd, maxLowerBound);
         }
+
         UD60x18 repaymentAmountUd = lowerBound == convertUd(0)
             ? convertUd(0)
             : convertUd(params.market.getAmountIn(convertUd(lowerBound), false));
