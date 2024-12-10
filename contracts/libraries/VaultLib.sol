@@ -159,11 +159,8 @@ library VaultLibrary {
         address ctAddress,
         IUniswapV2Router02 ammRouter
     ) internal returns (uint256 ra, uint256 ct, uint256 dust) {
-        (uint256 raTolerance, uint256 ctTolerance) =
-            MathHelper.calculateWithTolerance(ra, ct, MathHelper.UNIV2_STATIC_TOLERANCE);
-
         (ra, ct, dust) = __provideLiquidityWithRatio(
-            self, amount, flashSwapRouter, ctAddress, ammRouter, Tolerance(raTolerance, ctTolerance)
+            self, amount, flashSwapRouter, ctAddress, ammRouter, Tolerance(0, 0)
         );
     }
 
