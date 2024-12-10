@@ -27,12 +27,19 @@ contract HedgeUnitFactory {
     event HedgeUnitDeployed(Id indexed pairId, address indexed hedgeUnitAddress);
 
     error HedgeUnitExists();
+
     error InvalidPairId();
+
+    modifier onlyConfig() {
+        // TODO: move to interface with custom errors
+        require(msg.sender == config, "HedgeUnitFactory: Only config contract can call this function");
+        _;
+    }
 
     /**
      * @notice Constructor sets the initial addresses for MODULE_CORE and LIQUIDATOR.
      * @param _moduleCore Address of the MODULE_CORE.
-     * @param _liquidator Address of the LIQUIDATOR.
+     * @param _config Address of the config contract
      */
     constructor(address _moduleCore, address _config) {
         moduleCore = _moduleCore;
@@ -84,7 +91,7 @@ contract HedgeUnitFactory {
      */
     function deployHedgeUnit(Id _id, address _pa, address _ra, string memory _pairName, uint256 _mintCap)
         external
-        onlyRole(DEPLOYER_ROLE)
+        onlyConfig
         returns (address newUnit)
     {
         if (hedgeUnitContracts[_id] != address(0)) {
@@ -92,7 +99,7 @@ contract HedgeUnitFactory {
         }
 
         // Deploy a new HedgeUnit contract
-        HedgeUnit newHedgeUnit = new HedgeUnit(moduleCore, _id, _pa, _ra, _pairName, _mintCap, msg.sender);
+        HedgeUnit newHedgeUnit = new HedgeUnit(moduleCore, _id, _pa, _ra, _pairName, _mintCap, config);
         newUnit = address(newHedgeUnit);
 
         // Store the address of the new contract
@@ -114,17 +121,7 @@ contract HedgeUnitFactory {
         return hedgeUnitContracts[_id];
     }
 
-    // Update the Liquidator contract address
-    function updateLiquidatorContract(address newLiquidatorContract) external onlyRole(DEFAULT_ADMIN_ROLE) {
-        liquidator = newLiquidatorContract;
-    }
-
-    // update DEPLOYER_ROLE for deploying contracts
-    function updateLiquidatorRole(address _deployer, bool _isSet) external onlyRole(DEFAULT_ADMIN_ROLE) {
-        if (_isSet) {
-            grantRole(DEPLOYER_ROLE, _deployer);
-        } else {
-            revokeRole(DEPLOYER_ROLE, _deployer);
-        }
+    function deRegisterHedgeUnit(Id _id) external onlyConfig {
+        delete hedgeUnitContracts[_id];
     }
 }
