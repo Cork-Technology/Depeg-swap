@@ -3,23 +3,12 @@ pragma solidity ^0.8.24;
 import {UD60x18, convert, ud, add, mul, pow, sub, div, unwrap, intoSD59x18, sqrt} from "@prb/math/src/UD60x18.sol";
 import "./../interfaces/IHedgeUnit.sol";
 
-library HedgeUnitLiquidityMath {
-    // Adding Liquidity (Pure Function)
+library HedgeUnitMath {
     // caller of this contract must ensure the both amount is already proportional in amount!
-    function addLiquidity(
-        uint256 reservePa,
-        uint256 reserveDs,
-        uint256 totalLiquidity,
-        uint256 amountPa,
-        uint256 amountDs
-    )
+    function mint(uint256 reservePa, uint256 reserveDs, uint256 totalLiquidity, uint256 amountPa, uint256 amountDs)
         internal
         pure
-        returns (
-            uint256 newReservePa,
-            uint256 newReserveDs,
-            uint256 liquidityMinted // Amount of liquidity tokens minted
-        )
+        returns (uint256 liquidityMinted)
     {
         // Calculate the liquidity tokens minted based on the added amounts and the current reserves
         // we mint 1:1 if total liquidity is 0, also enforce that the amount must be the same
@@ -33,20 +22,41 @@ library HedgeUnitLiquidityMath {
             // Mint liquidity proportional to the added amounts
             liquidityMinted = unwrap(div(mul((ud(amountPa)), ud(totalLiquidity)), ud(reservePa)));
         }
-
-        // Update reserves
-        newReservePa = unwrap(add(ud(reservePa), ud(amountPa)));
-        newReserveDs = unwrap(add(ud(reserveDs), ud(amountDs)));
-
-        return (newReservePa, newReserveDs, liquidityMinted);
     }
 
-    function getProportionalAmount(uint256 amountPa, uint256 reservePa, uint256 reserveDs)
+    function getProportionalAmount(uint256 amount0, uint256 reserve0, uint256 reserve1)
         internal
         pure
-        returns (uint256 amountDs)
+        returns (uint256 amount1)
     {
-        return unwrap(div(mul(ud(amountPa), ud(reserveDs)), ud(reservePa)));
+        return unwrap(div(mul(ud(amount0), ud(reserve1)), ud(reserve0)));
+    }
+
+    function previewMint(uint256 amount, uint256 paReserve, uint256 dsReserve, uint256 totalLiquidity)
+        internal
+        pure
+        returns (uint256 dsAmount, uint256 paAmount)
+    {
+        dsAmount = unwrap(mul(ud(amount), div(ud(dsReserve), ud(totalLiquidity))));
+        paAmount = unwrap(mul(ud(amount), div(ud(paReserve), ud(totalLiquidity))));
+    }
+
+    function normalizeDecimals(uint256 amount, uint8 decimalsBefore, uint8 decimalsAfter)
+        internal
+        pure
+        returns (uint256)
+    {
+        // If we need to increase the decimals
+        if (decimalsBefore > decimalsAfter) {
+            // Then we shift right the amount by the number of decimals
+            amount = amount / 10 ** (decimalsBefore - decimalsAfter);
+            // If we need to decrease the number
+        } else if (decimalsBefore < decimalsAfter) {
+            // then we shift left by the difference
+            amount = amount * 10 ** (decimalsAfter - decimalsBefore);
+        }
+        // If nothing changed this is a no-op
+        return amount;
     }
 
     // uni v2 style proportional add liquidity
@@ -79,22 +89,13 @@ library HedgeUnitLiquidityMath {
         }
     }
 
-    // Removing Liquidity (Pure Function)
-    function removeLiquidity(
-        uint256 reservePa, // Current reserve of RA (target token)
-        uint256 reserveDs, // Current reserve of CT (yield-bearing token)
-        uint256 totalLiquidity, // Total current liquidity (LP token supply)
-        uint256 liquidityAmount // Amount of liquidity tokens being removed
-    )
-        internal
-        pure
-        returns (
-            uint256 amountPa, // Amount of RA returned to the LP
-            uint256 amountDs, // Amount of CT returned to the LP
-            uint256 newReservePa, // Updated reserve of RA
-            uint256 newReserveDs // Updated reserve of CT
-        )
-    {
+    function withdraw(
+        uint256 reservePa,
+        uint256 reserveDs,
+        uint256 reserveRa,
+        uint256 totalLiquidity,
+        uint256 liquidityAmount
+    ) internal pure returns (uint256 amountPa, uint256 amountDs, uint256 amountRa) {
         if (liquidityAmount <= 0) {
             revert IHedgeUnit.InvalidAmount();
         }
@@ -108,11 +109,6 @@ library HedgeUnitLiquidityMath {
 
         amountDs = unwrap(div(mul(ud(liquidityAmount), ud(reserveDs)), ud(totalLiquidity)));
 
-        // Update reserves after removing liquidity
-        newReservePa = unwrap(sub(ud(reservePa), ud(amountPa)));
-
-        newReserveDs = unwrap(sub(ud(reserveDs), ud(amountDs)));
-
-        return (amountPa, amountDs, newReservePa, newReserveDs);
+        amountRa = unwrap(div(mul(ud(liquidityAmount), ud(reserveRa)), ud(totalLiquidity)));
     }
 }

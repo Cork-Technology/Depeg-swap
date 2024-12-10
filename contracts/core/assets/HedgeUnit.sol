@@ -10,6 +10,7 @@ import {ICommon} from "../../interfaces/ICommon.sol";
 import {ILiquidator} from "../../interfaces/ILiquidator.sol";
 import {Id} from "../../libraries/Pair.sol";
 import {Asset} from "./Asset.sol";
+import {HedgeUnitMath} from "./../../libraries/HedgeUnitMath.sol";
 
 struct DSData {
     address dsAddress;
@@ -23,6 +24,8 @@ struct DSData {
  */
 contract HedgeUnit is ERC20, ReentrancyGuard, Ownable, Pausable, IHedgeUnit {
     using SafeERC20 for IERC20;
+
+    uint8 internal constant TARGET_DECIMALS = 18;
 
     ICommon public immutable MODULE_CORE;
     ILiquidator public immutable LIQUIDATOR;
@@ -211,5 +214,19 @@ contract HedgeUnit is ERC20, ReentrancyGuard, Ownable, Pausable, IHedgeUnit {
      */
     function unpause() external onlyOwner {
         _unpause();
+    }
+
+    function _tokenNativeDecimalsToFixed(uint256 amount, address token) internal view returns (uint256) {
+        uint8 decimals = ERC20(token).decimals();
+        return _normalize(amount, decimals, TARGET_DECIMALS);
+    }
+
+    function _fixedToTokenNativeDecimals(uint256 amount, address token) internal view returns (uint256) {
+        uint8 decimals = ERC20(token).decimals();
+        return _normalize(amount, TARGET_DECIMALS, decimals);
+    }
+
+    function _normalize(uint256 amount, uint8 decimalsBefore, uint8 decimalsAfter) internal pure returns (uint256) {
+        HedgeUnitMath.normalizeDecimals(amount, decimalsBefore, decimalsAfter);
     }
 }
