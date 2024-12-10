@@ -24,6 +24,9 @@ struct DepegSwap {
 library DepegSwapLibrary {
     using MinimalSignatureHelper for Signature;
 
+    /// @notice Zero Address error, thrown when passed address is 0
+    error ZeroAddress();
+
     function isExpired(DepegSwap storage self) internal view returns (bool) {
         return Asset(self._address).isExpired();
     }
@@ -37,6 +40,9 @@ library DepegSwapLibrary {
     }
 
     function initialize(address _address, address ct, address ammPair) internal pure returns (DepegSwap memory) {
+        if(_address == address(0) || ct == address(0) || ammPair == address(0)) {
+            revert ZeroAddress();
+        }
         return DepegSwap({expiredEventEmitted: false, _address: _address, ammPair: ammPair, ct: ct, ctRedeemed: 0});
     }
 
