@@ -37,6 +37,10 @@ library HedgeUnitMath {
         pure
         returns (uint256 dsAmount, uint256 paAmount)
     {
+        if (totalLiquidity == 0) {
+            return (amount, amount);
+        }
+
         dsAmount = unwrap(mul(ud(amount), div(ud(dsReserve), ud(totalLiquidity))));
         paAmount = unwrap(mul(ud(amount), div(ud(paReserve), ud(totalLiquidity))));
     }
