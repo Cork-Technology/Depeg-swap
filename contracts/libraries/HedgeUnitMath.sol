@@ -1,116 +1,118 @@
 pragma solidity ^0.8.24;
 
 import {UD60x18, convert, ud, add, mul, pow, sub, div, unwrap, intoSD59x18, sqrt} from "@prb/math/src/UD60x18.sol";
-import "./../interfaces/IErrors.sol";
+import "./../interfaces/IHedgeUnit.sol";
 
-library LiquidityMath {
+library HedgeUnitLiquidityMath {
     // Adding Liquidity (Pure Function)
     // caller of this contract must ensure the both amount is already proportional in amount!
     function addLiquidity(
-        uint256 reserve0, // Current reserve of RA (target token)
-        uint256 reserve1, // Current reserve of CT (yield-bearing token)
-        uint256 totalLiquidity, // Total current liquidity (LP token supply)
-        uint256 amount0, // Amount of RA to add
-        uint256 amount1 // Amount of CT to add
+        uint256 reservePa,
+        uint256 reserveDs,
+        uint256 totalLiquidity,
+        uint256 amountPa,
+        uint256 amountDs
     )
         internal
         pure
         returns (
-            uint256 newReserve0, // Updated reserve of RA
-            uint256 newReserve1, // Updated reserve of CT
+            uint256 newReservePa,
+            uint256 newReserveDs,
             uint256 liquidityMinted // Amount of liquidity tokens minted
         )
     {
         // Calculate the liquidity tokens minted based on the added amounts and the current reserves
         // we mint 1:1 if total liquidity is 0, also enforce that the amount must be the same
         if (totalLiquidity == 0) {
-            assert(amount0 == amount1);
+            if (amountPa != amountDs) {
+                revert IHedgeUnit.InvalidAmount();
+            }
 
-            liquidityMinted = amount0;
+            liquidityMinted = amountPa;
         } else {
             // Mint liquidity proportional to the added amounts
-            liquidityMinted = unwrap(div(mul((ud(amount0)), ud(totalLiquidity)), ud(reserve0)));
+            liquidityMinted = unwrap(div(mul((ud(amountPa)), ud(totalLiquidity)), ud(reservePa)));
         }
 
         // Update reserves
-        newReserve0 = unwrap(add(ud(reserve0), ud(amount0)));
-        newReserve1 = unwrap(add(ud(reserve1), ud(amount1)));
+        newReservePa = unwrap(add(ud(reservePa), ud(amountPa)));
+        newReserveDs = unwrap(add(ud(reserveDs), ud(amountDs)));
 
-        return (newReserve0, newReserve1, liquidityMinted);
+        return (newReservePa, newReserveDs, liquidityMinted);
     }
 
-    function getProportionalAmount(uint256 amount0, uint256 reserve0, uint256 reserve1)
+    function getProportionalAmount(uint256 amountPa, uint256 reservePa, uint256 reserveDs)
         internal
         pure
-        returns (uint256 amount1)
+        returns (uint256 amountDs)
     {
-        return unwrap(div(mul(ud(amount0), ud(reserve1)), ud(reserve0)));
+        return unwrap(div(mul(ud(amountPa), ud(reserveDs)), ud(reservePa)));
     }
 
     // uni v2 style proportional add liquidity
     function inferOptimalAmount(
-        uint256 reserve0,
-        uint256 reserve1,
-        uint256 amount0Desired,
-        uint256 amount1Desired,
-        uint256 amount0Min,
-        uint256 amount1Min
-    ) internal pure returns (uint256 amount0, uint256 amount1) {
-        if (reserve0 == 0 && reserve1 == 0) {
-            (amount0, amount1) = (amount0Desired, amount1Desired);
+        uint256 reservePa,
+        uint256 reserveDs,
+        uint256 amountPaDesired,
+        uint256 amountDsDesired,
+        uint256 amountPaMin,
+        uint256 amountDsMin
+    ) internal pure returns (uint256 amountPa, uint256 amountDs) {
+        if (reservePa == 0 && reserveDs == 0) {
+            (amountPa, amountDs) = (amountPaDesired, amountDsDesired);
         } else {
-            uint256 amount1Optimal = getProportionalAmount(amount0Desired, reserve0, reserve1);
+            uint256 amountDsOptimal = getProportionalAmount(amountPaDesired, reservePa, reserveDs);
 
-            if (amount1Optimal <= amount1Desired) {
-                if (amount1Optimal < amount1Min) {
-                    revert IErrors.Insufficient1Amount();
+            if (amountDsOptimal <= amountDsDesired) {
+                if (amountDsOptimal < amountDsMin) {
+                    revert IHedgeUnit.InsufficientDsAmount();
                 }
 
-                (amount0, amount1) = (amount0Desired, amount1Optimal);
+                (amountPa, amountDs) = (amountPaDesired, amountDsOptimal);
             } else {
-                uint256 amount0Optimal = getProportionalAmount(amount1Desired, reserve1, reserve0);
-                if (amount0Optimal < amount0Min || amount0Optimal > amount0Desired) {
-                    revert IErrors.Insufficient0Amount();
+                uint256 amountPaOptimal = getProportionalAmount(amountDsDesired, reserveDs, reservePa);
+                if (amountPaOptimal < amountPaMin || amountPaOptimal > amountPaDesired) {
+                    revert IHedgeUnit.InsufficientPaAmount();
                 }
-                (amount0, amount1) = (amount0Optimal, amount1Desired);
+                (amountPa, amountDs) = (amountPaOptimal, amountDsDesired);
             }
         }
     }
 
     // Removing Liquidity (Pure Function)
     function removeLiquidity(
-        uint256 reserve0, // Current reserve of RA (target token)
-        uint256 reserve1, // Current reserve of CT (yield-bearing token)
+        uint256 reservePa, // Current reserve of RA (target token)
+        uint256 reserveDs, // Current reserve of CT (yield-bearing token)
         uint256 totalLiquidity, // Total current liquidity (LP token supply)
         uint256 liquidityAmount // Amount of liquidity tokens being removed
     )
         internal
         pure
         returns (
-            uint256 amount0, // Amount of RA returned to the LP
-            uint256 amount1, // Amount of CT returned to the LP
-            uint256 newReserve0, // Updated reserve of RA
-            uint256 newReserve1 // Updated reserve of CT
+            uint256 amountPa, // Amount of RA returned to the LP
+            uint256 amountDs, // Amount of CT returned to the LP
+            uint256 newReservePa, // Updated reserve of RA
+            uint256 newReserveDs // Updated reserve of CT
         )
     {
         if (liquidityAmount <= 0) {
-            revert IErrors.InvalidAmount();
+            revert IHedgeUnit.InvalidAmount();
         }
 
         if (totalLiquidity <= 0) {
-            revert IErrors.NotEnoughLiquidity();
+            revert IHedgeUnit.NotEnoughLiquidity();
         }
 
         // Calculate the proportion of reserves to return based on the liquidity removed
-        amount0 = unwrap(div(mul(ud(liquidityAmount), ud(reserve0)), ud(totalLiquidity)));
+        amountPa = unwrap(div(mul(ud(liquidityAmount), ud(reservePa)), ud(totalLiquidity)));
 
-        amount1 = unwrap(div(mul(ud(liquidityAmount), ud(reserve1)), ud(totalLiquidity)));
+        amountDs = unwrap(div(mul(ud(liquidityAmount), ud(reserveDs)), ud(totalLiquidity)));
 
         // Update reserves after removing liquidity
-        newReserve0 = unwrap(sub(ud(reserve0), ud(amount0)));
+        newReservePa = unwrap(sub(ud(reservePa), ud(amountPa)));
 
-        newReserve1 = unwrap(sub(ud(reserve1), ud(amount1)));
+        newReserveDs = unwrap(sub(ud(reserveDs), ud(amountDs)));
 
-        return (amount0, amount1, newReserve0, newReserve1);
+        return (amountPa, amountDs, newReservePa, newReserveDs);
     }
 }
