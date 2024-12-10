@@ -728,4 +728,12 @@ library VaultLibrary {
         received -= fee;
         paAmpount = _calculatePaPriceForLv(self, amount);
     }
+
+    function updateLvDepositsStatus(State storage self, bool isLVDepositPaused) external {
+        self.vault.config.isDepositPaused = isLVDepositPaused;
+    }
+
+    function updateLvWithdrawalsStatus(State storage self, bool isLVWithdrawalPaused) external {
+        self.vault.config.isWithdrawalPaused = isLVWithdrawalPaused;
+    }
 }

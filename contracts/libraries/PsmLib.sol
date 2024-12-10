@@ -471,19 +471,16 @@ library PsmLibrary {
         self.psm.repurchaseFeePercentage = newFees;
     }
 
-    function updatePoolsStatus(
-        State storage self,
-        bool isPSMDepositPaused,
-        bool isPSMWithdrawalPaused,
-        bool isPSMRepurchasePaused,
-        bool isLVDepositPaused,
-        bool isLVWithdrawalPaused
-    ) external {
+    function updatePsmDepositsStatus(State storage self, bool isPSMDepositPaused) external {
         self.psm.isDepositPaused = isPSMDepositPaused;
+    }
+
+    function updatePsmWithdrawalsStatus(State storage self, bool isPSMWithdrawalPaused) external {
         self.psm.isWithdrawalPaused = isPSMWithdrawalPaused;
+    }
+
+    function updatePsmRepurchasesStatus(State storage self, bool isPSMRepurchasePaused) external {
         self.psm.isRepurchasePaused = isPSMRepurchasePaused;
-        self.vault.config.isDepositPaused = isLVDepositPaused;
-        self.vault.config.isWithdrawalPaused = isLVWithdrawalPaused;
     }
 
     function previewRepurchase(State storage self, uint256 amount)
