@@ -12,6 +12,7 @@ import {ILiquidator} from "../../interfaces/ILiquidator.sol";
 import {Id} from "../../libraries/Pair.sol";
 import {Asset} from "./Asset.sol";
 import {HedgeUnitMath} from "./../../libraries/HedgeUnitMath.sol";
+import {CorkConfig} from "./../CorkConfig.sol";
 import "forge-std/console.sol";
 
 struct DSData {
@@ -29,13 +30,13 @@ contract HedgeUnit is ERC20, ReentrancyGuard, Ownable, Pausable, IHedgeUnit {
 
     uint8 internal constant TARGET_DECIMALS = 18;
 
-    ICommon public immutable moduleCore;
-    ILiquidator public immutable liquidator;
-    Id public immutable id;
+    ICommon public moduleCore;
+    CorkConfig public config;
+    Id public id;
 
     /// @notice The ERC20 token representing the pa asset.
-    ERC20 public immutable pa;
-    uint8 public immutable paDecimals;
+    ERC20 public pa;
+    ERC20 public ra;
 
     /// @notice The ERC20 token representing the ds asset.
     Asset public ds;
@@ -45,7 +46,6 @@ contract HedgeUnit is ERC20, ReentrancyGuard, Ownable, Pausable, IHedgeUnit {
 
     DSData[] public dsHistory;
     mapping(address => uint256) private dsIndexMap;
-
 
     /**
      * @dev Constructor that sets the DS and pa tokens and initializes the mint cap.
@@ -61,16 +61,22 @@ contract HedgeUnit is ERC20, ReentrancyGuard, Ownable, Pausable, IHedgeUnit {
         address _ra,
         string memory _pairName,
         uint256 _mintCap,
-        address _owner
+        address _config
     )
         ERC20(string(abi.encodePacked("Hedge Unit - ", _pairName)), string(abi.encodePacked("HU - ", _pairName)))
-        Ownable(_owner)
+        Ownable(_config)
     {
         moduleCore = ICommon(_moduleCore);
         id = _id;
         pa = ERC20(_pa);
-        paDecimals = uint8(ERC20(_pa).decimals());
+        ra = ERC20(_ra);
         mintCap = _mintCap;
+        config = CorkConfig(_config);
+    }
+
+    modifier autoUpdateDS() {
+        _getLastDS();
+        _;
     }
 
     function fetchLatestDS() internal view returns (Asset) {
@@ -114,6 +120,24 @@ contract HedgeUnit is ERC20, ReentrancyGuard, Ownable, Pausable, IHedgeUnit {
         return _tokenNativeDecimalsToFixed(pa.balanceOf(address(this)), pa);
     }
 
+    function _selfRaReserve() internal view returns (uint256) {
+        return _tokenNativeDecimalsToFixed(ra.balanceOf(address(this)), ra);
+    }
+
+    function _transferNormalize(ERC20 token, address _to, uint256 _amount) internal {
+        uint256 amount = _fixedToTokenNativeDecimals(_amount, token);
+        IERC20(pa).safeTransfer(_to, amount);
+    }
+
+    function _transferFromNormalize(ERC20 token, address _from, uint256 _amount) internal {
+        uint256 amount = _fixedToTokenNativeDecimals(_amount, token);
+        IERC20(pa).safeTransferFrom(_from, address(this), amount);
+    }
+
+    function _transferDs(address _to, uint256 _amount) internal {
+        IERC20(ds).safeTransfer(_to, _amount);
+    }
+
     // TODO : handle Ds renewal
     /**
      * @notice Returns the dsAmount and paAmount required to mint the specified amount of HedgeUnit tokens.
@@ -143,11 +167,16 @@ contract HedgeUnit is ERC20, ReentrancyGuard, Ownable, Pausable, IHedgeUnit {
      * @return dsAmount The amount of DS tokens used to mint HedgeUnit tokens.
      * @return paAmount The amount of pa tokens used to mint HedgeUnit tokens.
      */
-    function mint(uint256 amount) external whenNotPaused nonReentrant returns (uint256 dsAmount, uint256 paAmount) {
+    function mint(uint256 amount)
+        external
+        whenNotPaused
+        nonReentrant
+        autoUpdateDS
+        returns (uint256 dsAmount, uint256 paAmount)
+    {
         if (totalSupply() + amount > mintCap) {
             revert MintCapExceeded();
         }
-        _getLastDS();
 
         {
             uint256 paReserve = _selfPaReserve();
@@ -176,13 +205,20 @@ contract HedgeUnit is ERC20, ReentrancyGuard, Ownable, Pausable, IHedgeUnit {
      * @return dsAmount The amount of DS tokens received for dissolving the specified amount of HedgeUnit tokens.
      * @return paAmount The amount of pa tokens received for dissolving the specified amount of HedgeUnit tokens.
      */
-    function previewDissolve(uint256 amount) external view returns (uint256 dsAmount, uint256 paAmount) {
+    function previewDissolve(uint256 amount)
+        public
+        view
+        returns (uint256 dsAmount, uint256 paAmount, uint256 raAmount)
+    {
         if (amount > balanceOf(msg.sender)) {
             revert InvalidAmount();
         }
-        uint256 totalSupplyHU = totalSupply();
-        dsAmount = (amount * ds.balanceOf(address(this))) / totalSupplyHU;
-        paAmount = (amount * pa.balanceOf(address(this))) / (totalSupplyHU * (10 ** (18 - paDecimals)));
+        uint256 totalLiquidity = totalSupply();
+        uint256 reservePa = _selfPaReserve();
+        uint256 reserveDs = ds.balanceOf(address(this));
+        uint256 reserveRa = _selfRaReserve();
+
+        (paAmount, dsAmount, raAmount) = HedgeUnitMath.withdraw(reservePa, reserveDs, reserveRa, totalLiquidity, amount);
     }
 
     /**
@@ -197,20 +233,20 @@ contract HedgeUnit is ERC20, ReentrancyGuard, Ownable, Pausable, IHedgeUnit {
         external
         whenNotPaused
         nonReentrant
-        returns (uint256 dsAmount, uint256 paAmount)
+        autoUpdateDS
+        returns (uint256 dsAmount, uint256 paAmount, uint256 raAmount)
     {
         if (amount > balanceOf(msg.sender)) {
             revert InvalidAmount();
         }
 
-        uint256 totalSupplyHU = totalSupply();
+        (dsAmount, paAmount, raAmount) = previewDissolve(amount);
 
-        dsAmount = (amount * ds.balanceOf(address(this))) / totalSupplyHU;
-        paAmount = (amount * pa.balanceOf(address(this))) / (totalSupplyHU * (10 ** (18 - paDecimals)));
+        _transferNormalize(pa, msg.sender, paAmount);
+        _transferDs(msg.sender, dsAmount);
+        _transferNormalize(ra, msg.sender, raAmount);
 
         _burn(msg.sender, amount);
-        IERC20(ds).safeTransfer(msg.sender, dsAmount);
-        IERC20(pa).safeTransfer(msg.sender, paAmount);
 
         emit Dissolve(msg.sender, amount, dsAmount, paAmount);
     }
