@@ -14,52 +14,65 @@ contract CorkConfigTest is Test {
     address private liquidationContract;
     address private user;
 
+    // events
+    event ModuleCoreSet(address moduleCore);
+    event FlashSwapCoreSet(address flashSwapRouter);
+    event HookSet(address hook);
+
     function setUp() public {
         manager = address(1);
         updater = address(2);
         liquidationContract = address(3);
         user = address(4);
 
-        // Deploy CorkConfig contract
         config = new CorkConfig();
 
-        // Assign MANAGER_ROLE to the manager
         vm.prank(manager);
         config.grantRole(config.MANAGER_ROLE(), manager);
     }
 
     function testSetModuleCore() public {
         address mockModuleCore = address(5);
-
-        // Only manager can call this function
         vm.prank(manager);
         config.setModuleCore(mockModuleCore);
 
         assertEq(address(config.moduleCore()), mockModuleCore);
+
+        vm.expectEmit(false, false, false, true);
+        emit ModuleCoreSet(mockModuleCore);
+        config.setModuleCore(address(config.moduleCore()));
     }
 
     function testSetFlashSwapCore() public {
         address mockFlashSwapRouter = address(6);
 
-        // Only manager can call this function
         vm.prank(manager);
         config.setFlashSwapCore(mockFlashSwapRouter);
 
         assertEq(address(config.flashSwapRouter()), mockFlashSwapRouter);
+
+        vm.expectEmit(false, false, false, true);
+        emit FlashSwapCoreSet(mockFlashSwapRouter);
+        config.setFlashSwapCore(mockFlashSwapRouter);
     }
 
     function testSetHook() public {
         address mockHook = address(7);
-
-        // Only manager can call this function
         vm.prank(manager);
         config.setHook(mockHook);
 
         assertEq(address(config.hook()), mockHook);
+
+        vm.expectEmit(false, false, false, true);
+        emit HookSet(mockHook);
+        config.setHook(mockHook);
+
+        vm.expectRevert();
+        config.setHook(address(0));
     }
 
     function testWhitelistAddress() public {
-        vm.warp(0); // Set block.timestamp to 0 for deterministic testing
+        vm.warp(0);
         vm.prank(manager);
         config.whitelist(liquidationContract);
 
@@ -78,7 +91,6 @@ contract CorkConfigTest is Test {
     }
 
     function testGrantRole() public {
-        // Grant RATE_UPDATERS_ROLE to the updater
         vm.prank(manager);
         config.grantRole(config.RATE_UPDATERS_ROLE(), updater);
 
