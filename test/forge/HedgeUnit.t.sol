@@ -59,13 +59,7 @@ contract HedgeUnitTest is Helper {
 
         // Deploy the HedgeUnit contract
         hedgeUnit = new HedgeUnit(
-            address(moduleCore),
-            address(liquidator),
-            currencyId,
-            address(pa),
-            "DS/PA",
-            INITIAL_MINT_CAP,
-            DEFAULT_ADDRESS
+            address(moduleCore), currencyId, address(pa), address(ra), "DS/PA", INITIAL_MINT_CAP, address(corkConfig)
         );
 
         // Transfer tokens to user for testing
@@ -141,7 +135,7 @@ contract HedgeUnitTest is Helper {
         hedgeUnit.mint(mintAmount);
 
         // Preview dissolving 50 tokens
-        (uint256 dsAmount, uint256 paAmount) = hedgeUnit.previewDissolve(50 * 1e18);
+        (uint256 dsAmount, uint256 paAmount,) = hedgeUnit.previewDissolve(50 * 1e18);
 
         // Check that the DS and PA amounts are correct
         assertEq(dsAmount, 50 * 1e18);
@@ -183,7 +177,7 @@ contract HedgeUnitTest is Helper {
 
     function testMintingPaused() public {
         // Pause minting
-        hedgeUnit.pause();
+        corkConfig.pauseHedgeUnit(address(hedgeUnit));
 
         // Expect revert when minting while paused
         vm.startPrank(user);
@@ -197,7 +191,7 @@ contract HedgeUnitTest is Helper {
     function testMintCapUpdate() public {
         // Update mint cap to a new value
         uint256 newMintCap = 2000 * 1e18;
-        hedgeUnit.updateMintCap(newMintCap);
+        corkConfig.updateHedgeUnitMintCap(address(hedgeUnit), newMintCap);
 
         // Check that the mint cap was updated
         assertEq(hedgeUnit.mintCap(), newMintCap);
@@ -206,6 +200,9 @@ contract HedgeUnitTest is Helper {
     function testMintCapUpdateRevert() public {
         // Try to update the mint cap to the same value
         vm.expectRevert(IHedgeUnit.InvalidValue.selector);
-        hedgeUnit.updateMintCap(INITIAL_MINT_CAP);
+        corkConfig.updateHedgeUnitMintCap(address(hedgeUnit), INITIAL_MINT_CAP);
     }
+
+    // TODO
+    function test_deRegister() external {}
 }

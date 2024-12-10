@@ -17,6 +17,7 @@ import "./SigUtils.sol";
 import {TestHelper} from "Cork-Hook/../test/Helper.sol";
 import "./../../contracts/interfaces/IDsFlashSwapRouter.sol";
 import "./../../contracts/core/Withdrawal.sol";
+import "./../../contracts/core/assets/HedgeUnitFactory.sol";
 
 abstract contract Helper is SigUtils, TestHelper {
     TestModuleCore internal moduleCore;
@@ -27,6 +28,7 @@ abstract contract Helper is SigUtils, TestHelper {
     TestFlashSwapRouter internal flashSwapRouter;
     DummyWETH internal weth = new DummyWETH();
     Withdrawal internal withdrawalContract;
+    HedgeUnitFactory internal hedgeUnitFactory;
 
     Id defaultCurrencyId;
 
@@ -144,7 +146,7 @@ abstract contract Helper is SigUtils, TestHelper {
         issueNewDs(
             id, defaultExchangeRate(), DEFAULT_REPURCHASE_FEE, DEFAULT_DECAY_DISCOUNT_RATE, DEFAULT_ROLLOVER_PERIOD
         );
-        
+
         corkConfig.updateLvStrategyCtSplitPercentage(defaultCurrencyId, DEFAULT_CT_SPLIT_PERCENTAGE);
     }
 
@@ -253,8 +255,13 @@ abstract contract Helper is SigUtils, TestHelper {
         setupAssetFactory();
         setupConfig();
         setupFlashSwapRouter();
-
         initializeWithdrawalContract();
+        initializeHedgeUnitFactory();
+    }
+
+    function initializeHedgeUnitFactory() internal {
+        hedgeUnitFactory = new HedgeUnitFactory(address(moduleCore), address(corkConfig));
+        corkConfig.setHedgeUnitFactory(address(hedgeUnitFactory));
     }
 
     function forceUnpause(Id id) internal {
