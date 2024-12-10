@@ -23,16 +23,16 @@ contract PsmCoreTest is Helper {
 
         deployModuleCore();
 
-        // Initialize PSM with dummy tokens
+       
         (ra, pa, currencyId) = initializeAndIssueNewDs(EXPIRY, 1 ether);
 
-        // Fund addresses with max value
+       
         vm.deal(DEFAULT_ADDRESS, type(uint256).max);
         vm.stopPrank();
         vm.startPrank(user2);
         vm.deal(user2, type(uint256).max);
 
-        // Deposit tokens
+       
         ra.deposit{value: type(uint128).max}();
         pa.deposit{value: type(uint128).max}();
 
@@ -40,7 +40,7 @@ contract PsmCoreTest is Helper {
 
         vm.startPrank(DEFAULT_ADDRESS);
 
-        // 10000 for psm 10000 for LV
+       
         ra.approve(address(moduleCore), type(uint256).max);
         pa.approve(address(moduleCore), type(uint256).max);
 
@@ -53,11 +53,11 @@ contract PsmCoreTest is Helper {
     }
 
     function test_depositPsm() public {
-        // Ensure sufficient allowance
+       
         vm.startPrank(DEFAULT_ADDRESS);
         ra.approve(address(moduleCore), 1000 ether);
 
-        // Deposit PSM and check received amount
+      
         (uint256 received, uint256 exchangeRate) = moduleCore.depositPsm(currencyId, 1000 ether);
 
         assertTrue(received > 0, "Should receive tokens");
@@ -67,11 +67,11 @@ contract PsmCoreTest is Helper {
     }
 
     function test_repurchase() public {
-        // Ensure sufficient liquidity and allowance
+      
         vm.startPrank(DEFAULT_ADDRESS);
         pa.approve(address(moduleCore), 1000 ether);
 
-        // Perform repurchase and check returned values
+      
         (
             uint256 dsId,
             uint256 receivedPa,
@@ -89,13 +89,13 @@ contract PsmCoreTest is Helper {
     }
 
     function test_redeemWithDs() public {
-        // Ensure sufficient allowance
+       
         vm.startPrank(DEFAULT_ADDRESS);
         ra.approve(address(moduleCore), 1000 ether);
 
         uint256 dsId = moduleCore.lastDsId(currencyId);
 
-        // Redeem RA with DS
+     
         (uint256 received, uint256 exchangeRate, uint256 fee) = moduleCore.redeemRaWithDs(currencyId, dsId, 1000 ether);
 
         assertTrue(received > 0, "Should receive tokens");
@@ -110,7 +110,7 @@ contract PsmCoreTest is Helper {
     }
 
     function test_availableForRepurchase() public {
-        // Ensure sufficient liquidity
+        
         moduleCore.depositPsm(currencyId, 1000 ether);
 
         (uint256 pa, uint256 ds, uint256 dsId) = moduleCore.availableForRepurchase(currencyId);
