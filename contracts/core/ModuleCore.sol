@@ -105,7 +105,7 @@ contract ModuleCore is OwnableUpgradeable, UUPSUpgradeable, PsmCore, Initialize,
         uint256 rolloverPeriodInblocks,
         uint256 ammLiquidationDeadline
     ) external override onlyConfig onlyInitialized(id) {
-        if (repurchaseFeePercentage > 5 ether) {
+        if (repurchaseFeePercentage > PsmLibrary.MAX_ALLOWED_FEES) {
             revert InvalidFees();
         }
 
@@ -233,7 +233,7 @@ contract ModuleCore is OwnableUpgradeable, UUPSUpgradeable, PsmCore, Initialize,
         external
         onlyConfig
     {
-        if (newPsmBaseRedemptionFeePercentage > 5 ether) {
+        if (newPsmBaseRedemptionFeePercentage > PsmLibrary.MAX_ALLOWED_FEES) {
             revert InvalidFees();
         }
         State storage state = states[id];

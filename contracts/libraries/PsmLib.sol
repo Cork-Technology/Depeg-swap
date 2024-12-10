@@ -30,6 +30,12 @@ library PsmLibrary {
     using BitMaps for BitMaps.BitMap;
     using SafeERC20 for IERC20;
 
+    /**
+     *   This denotes maximum fee allowed in contract
+     *   Here 1 ether = 1e18 so maximum 5% fee allowed
+     */
+    uint256 constant internal MAX_ALLOWED_FEES = 5 ether;
+
     /// @notice inssuficient balance to perform rollover redeem(e.g having 5 CT worth of rollover to redeem but trying to redeem 10)
     error InsufficientRolloverBalance(address caller, uint256 requested, uint256 balance);
 
@@ -459,7 +465,7 @@ library PsmLibrary {
     }
 
     function updateRepurchaseFeePercentage(State storage self, uint256 newFees) external {
-        if (newFees > 5 ether) {
+        if (newFees > MAX_ALLOWED_FEES) {
             revert ICommon.InvalidFees();
         }
         self.psm.repurchaseFeePercentage = newFees;
@@ -750,7 +756,7 @@ library PsmLibrary {
     }
 
     function updatePSMBaseRedemptionFeePercentage(State storage self, uint256 newFees) external {
-        if (newFees > 5 ether) {
+        if (newFees > MAX_ALLOWED_FEES) {
             revert ICommon.InvalidFees();
         }
         self.psm.psmBaseRedemptionFeePercentage = newFees;
