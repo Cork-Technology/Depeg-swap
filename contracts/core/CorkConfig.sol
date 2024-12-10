@@ -28,7 +28,7 @@ contract CorkConfig is AccessControl, Pausable {
     uint256 public constant WHITELIST_TIME_DELAY = 7 days;
 
     /// @notice liquidation address => timestamp when liquidation is allowed
-    mapping(address => uint256) public liquidationWhitelist;
+    mapping(address => uint256)  liquidationWhitelist;
 
     /// @notice thrown when caller is not manager/Admin of Cork Protocol
     error CallerNotManager();
