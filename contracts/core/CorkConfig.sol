@@ -10,6 +10,8 @@ import {Pair} from "../libraries/Pair.sol";
 import {ModuleCore} from "./ModuleCore.sol";
 import {IVault} from "./../interfaces/IVault.sol";
 import {CorkHook} from "Cork-Hook/CorkHook.sol";
+import {HedgeUnitFactory} from "./assets/HedgeUnitFactory.sol";
+import {HedgeUnit} from "./assets/HedgeUnit.sol";
 
 /**
  * @title Config Contract
@@ -24,6 +26,7 @@ contract CorkConfig is AccessControl, Pausable {
     ModuleCore public moduleCore;
     IDsFlashSwapCore public flashSwapRouter;
     CorkHook public hook;
+    HedgeUnitFactory public hedgeUnitFactory;
 
     uint256 public constant WHITELIST_TIME_DELAY = 7 days;
 
@@ -47,6 +50,10 @@ contract CorkConfig is AccessControl, Pausable {
     /// @notice Emitted when a hook variable set
     /// @param hook Address of hook contract
     event HookSet(address hook);
+
+    /// @notice Emitted when a hedgeUnitFactory variable set
+    /// @param hedgeUnitFactory Address of hedgeUnitFactory contract
+    event HedgeUnitFactorySet(address hedgeUnitFactory);
 
     modifier onlyManager() {
         if (!hasRole(MANAGER_ROLE, msg.sender)) {
@@ -126,6 +133,8 @@ contract CorkConfig is AccessControl, Pausable {
         hook = CorkHook(_hook);
         emit HookSet(_hook);
     }
+
+    function setHedgeUnitFactory(address _hedgeUnitFactory) external onlyManager {}
 
     function updateAmmBaseFeePercentage(address ra, address ct, uint256 newBaseFeePercentage) external onlyManager {
         hook.updateBaseFeePercentage(ra, ct, newBaseFeePercentage);
@@ -253,6 +262,25 @@ contract CorkConfig is AccessControl, Pausable {
 
     function useVaultTradeExecutionResultFunds(Id id) external onlyManager {
         moduleCore.useTradeExecutionResultFunds(id);
+    }
+
+    function updateHedgeUnitMintCap(address hedgeUnit, uint256 newMintCap) external onlyManager {
+        HedgeUnit(hedgeUnit).updateMintCap(newMintCap);
+    }
+
+    function deployHedgeUnit(Id id, address pa, address ra, string memory pairName, uint256 mintCap)
+        external
+        onlyManager
+    {
+        hedgeUnitFactory.deployHedgeUnit(id, pa, ra, pairName, mintCap);
+    }
+
+    function deRegisterHedgeUnit(Id id) external onlyManager {
+        hedgeUnitFactory.deRegisterHedgeUnit(id);
+    }
+
+    function pauseHedgeUnit(address hedgeUnit) external onlyManager {
+        HedgeUnit(hedgeUnit).pause();
     }
 
     /**
