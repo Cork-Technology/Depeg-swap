@@ -46,7 +46,6 @@ contract HedgeUnit is ERC20, ReentrancyGuard, Ownable, Pausable, IHedgeUnit {
     DSData[] public dsHistory;
     mapping(address => uint256) private dsIndexMap;
 
-    error NoValidDSExist();
 
     /**
      * @dev Constructor that sets the DS and pa tokens and initializes the mint cap.
@@ -57,7 +56,6 @@ contract HedgeUnit is ERC20, ReentrancyGuard, Ownable, Pausable, IHedgeUnit {
      */
     constructor(
         address _moduleCore,
-        address _liquidator,
         Id _id,
         address _pa,
         address _ra,
@@ -69,7 +67,6 @@ contract HedgeUnit is ERC20, ReentrancyGuard, Ownable, Pausable, IHedgeUnit {
         Ownable(_owner)
     {
         moduleCore = ICommon(_moduleCore);
-        liquidator = ILiquidator(_liquidator);
         id = _id;
         pa = ERC20(_pa);
         paDecimals = uint8(ERC20(_pa).decimals());

@@ -10,10 +10,9 @@ import {Id, Pair, PairLibrary} from "../../libraries/Pair.sol";
  * @notice This contract is used to deploy and manage multiple HedgeUnit contracts for different asset pairs.
  * @dev The factory contract keeps track of all deployed HedgeUnit contracts.
  */
-contract HedgeUnitFactory is AccessControl {
+contract HedgeUnitFactory {
     using PairLibrary for Pair;
 
-    bytes32 public constant DEPLOYER_ROLE = keccak256("DEPLOYER_ROLE");
     uint256 internal idx;
 
     // Mapping to keep track of HedgeUnit contracts by a unique pair identifier
@@ -21,8 +20,8 @@ contract HedgeUnitFactory is AccessControl {
     mapping(uint256 => Id) internal hedgeUnits;
 
     // Addresses needed for the construction of new HedgeUnit contracts
-    address private moduleCore;
-    address private liquidator;
+    address public moduleCore;
+    address public config;
 
     // Event emitted when a new HedgeUnit contract is deployed
     event HedgeUnitDeployed(Id indexed pairId, address indexed hedgeUnitAddress);
@@ -35,12 +34,9 @@ contract HedgeUnitFactory is AccessControl {
      * @param _moduleCore Address of the MODULE_CORE.
      * @param _liquidator Address of the LIQUIDATOR.
      */
-    constructor(address _moduleCore, address _liquidator) {
+    constructor(address _moduleCore, address _config) {
         moduleCore = _moduleCore;
-        liquidator = _liquidator;
-
-        // Grant the contract deployer the default admin role
-        _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
+        config = _config;
     }
 
     /**
@@ -81,12 +77,12 @@ contract HedgeUnitFactory is AccessControl {
     /**
      * @notice Deploys a new HedgeUnit contract for a specific asset pair.
      * @param _id Id of the pair to be managed by the HedgeUnit contract.
-     * @param _PA Address of the PA token.
+     * @param _pa Address of the PA token.
      * @param _pairName Name of the HedgeUnit pair.
      * @param _mintCap Initial mint cap for the HedgeUnit tokens.
      * @return newUnit of the newly deployed HedgeUnit contract.
      */
-    function deployHedgeUnit(Id _id, address _PA, string memory _pairName, uint256 _mintCap)
+    function deployHedgeUnit(Id _id, address _pa, address _ra, string memory _pairName, uint256 _mintCap)
         external
         onlyRole(DEPLOYER_ROLE)
         returns (address newUnit)
@@ -96,7 +92,7 @@ contract HedgeUnitFactory is AccessControl {
         }
 
         // Deploy a new HedgeUnit contract
-        HedgeUnit newHedgeUnit = new HedgeUnit(moduleCore, liquidator, _id, _PA, _pairName, _mintCap, msg.sender);
+        HedgeUnit newHedgeUnit = new HedgeUnit(moduleCore, _id, _pa, _ra, _pairName, _mintCap, msg.sender);
         newUnit = address(newHedgeUnit);
 
         // Store the address of the new contract

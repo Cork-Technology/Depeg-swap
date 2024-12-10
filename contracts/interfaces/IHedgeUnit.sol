@@ -38,12 +38,13 @@ interface IHedgeUnit {
     /// @notice Thrown when the DS given when minting HU isn't proportional
     error InsufficientDsAmount();
 
-    
     /// @notice Thrown when the PA given when minting HU isn't proportional
     error InsufficientPaAmount();
 
     /// @notice Thrown when trying to overdraw HU exceeding the available liquidity
     error NotEnoughLiquidity();
+
+    error NoValidDSExist();
 
     // Read functions
     /**
