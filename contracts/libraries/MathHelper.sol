@@ -154,7 +154,6 @@ library MathHelper {
 
         // with 1e18 precision
         UD60x18 _ratePerLv = div(ud(totalAmount), ud(totalLvIssued));
-        ratePerLv = ((totalAmount * 1e18) / totalLvIssued);
 
         UD60x18 _attributedWithdrawal = mul(_ratePerLv, ud(totalLvWithdrawn));
 
