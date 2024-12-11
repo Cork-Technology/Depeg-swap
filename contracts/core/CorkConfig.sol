@@ -134,7 +134,14 @@ contract CorkConfig is AccessControl, Pausable {
         emit HookSet(_hook);
     }
 
-    function setHedgeUnitFactory(address _hedgeUnitFactory) external onlyManager {}
+    function setHedgeUnitFactory(address _hedgeUnitFactory) external onlyManager {
+        if (_hedgeUnitFactory == address(0)) {
+            revert InvalidAddress();
+        }
+        
+        hedgeUnitFactory = HedgeUnitFactory(_hedgeUnitFactory);
+        emit HedgeUnitFactorySet(_hedgeUnitFactory);
+    }
 
     function updateAmmBaseFeePercentage(address ra, address ct, uint256 newBaseFeePercentage) external onlyManager {
         hook.updateBaseFeePercentage(ra, ct, newBaseFeePercentage);

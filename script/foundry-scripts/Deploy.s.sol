@@ -188,10 +188,10 @@ contract DeployScript is Script {
         console.log("Liquidator                      : ", address(liquidator));
         console.log("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-");
 
-        // Deploy the HedgeUnitFactry contract
-        hedgeUnitFactory = new HedgeUnitFactory(address(moduleCore), address(liquidator));
-        console.log("HedgeUnit Factory               : ", address(hedgeUnitFactory));
-        console.log("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-");
+        // // Deploy the HedgeUnitFactry contract
+        // hedgeUnitFactory = new HedgeUnitFactory(address(moduleCore), address(liquidator));
+        // console.log("HedgeUnit Factory               : ", address(hedgeUnitFactory));
+        // console.log("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-");
 
         // Deploy the HedgeUnit contract
 

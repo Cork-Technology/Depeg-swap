@@ -96,4 +96,6 @@ interface IHedgeUnit {
      * @custom:reverts InvalidValue if the mint cap is not changed.
      */
     function updateMintCap(uint256 _newMintCap) external;
+
+    function getReserves() external view returns (uint256 dsReserves, uint256 paReserves, uint256 raReserves);
 }

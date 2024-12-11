@@ -57,10 +57,9 @@ contract HedgeUnitTest is Helper {
         // Deploy the Liquidator contract
         liquidator = new Liquidator(address(corkConfig), hookTrampoline, settlementContract, address(moduleCore));
 
+        corkConfig.deployHedgeUnit(currencyId, address(pa), address(ra), "DS/PA", INITIAL_MINT_CAP);
         // Deploy the HedgeUnit contract
-        hedgeUnit = new HedgeUnit(
-            address(moduleCore), currencyId, address(pa), address(ra), "DS/PA", INITIAL_MINT_CAP, address(corkConfig)
-        );
+        hedgeUnit = HedgeUnit(hedgeUnitFactory.getHedgeUnitAddress(currencyId));
 
         // Transfer tokens to user for testing
         dsToken.transfer(user, USER_BALANCE);

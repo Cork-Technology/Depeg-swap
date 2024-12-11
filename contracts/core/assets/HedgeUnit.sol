@@ -13,6 +13,8 @@ import {Id} from "../../libraries/Pair.sol";
 import {Asset} from "./Asset.sol";
 import {HedgeUnitMath} from "./../../libraries/HedgeUnitMath.sol";
 import {CorkConfig} from "./../CorkConfig.sol";
+import {IHedgeUnitLiquidation} from "./../../interfaces/IHedgeUnitLiquidation.sol";
+import {IDsFlashSwapCore} from "./../../interfaces/IDsFlashSwapRouter.sol";
 import "forge-std/console.sol";
 
 struct DSData {
@@ -25,13 +27,14 @@ struct DSData {
  * @notice This contract allows minting and dissolving HedgeUnit tokens in exchange for two underlying assets.
  * @dev The contract uses OpenZeppelin's ERC20, ReentrancyGuard,Pausable and Ownable modules.
  */
-contract HedgeUnit is ERC20, ReentrancyGuard, Ownable, Pausable, IHedgeUnit {
+contract HedgeUnit is ERC20, ReentrancyGuard, Ownable, Pausable, IHedgeUnit, IHedgeUnitLiquidation {
     using SafeERC20 for IERC20;
 
     uint8 internal constant TARGET_DECIMALS = 18;
 
     ICommon public moduleCore;
     CorkConfig public config;
+    IDsFlashSwapCore public flashSwapRouter;
     Id public id;
 
     /// @notice The ERC20 token representing the pa asset.
@@ -61,7 +64,8 @@ contract HedgeUnit is ERC20, ReentrancyGuard, Ownable, Pausable, IHedgeUnit {
         address _ra,
         string memory _pairName,
         uint256 _mintCap,
-        address _config
+        address _config,
+        address _flashSwapRouter
     )
         ERC20(string(abi.encodePacked("Hedge Unit - ", _pairName)), string(abi.encodePacked("HU - ", _pairName)))
         Ownable(_config)
@@ -71,11 +75,28 @@ contract HedgeUnit is ERC20, ReentrancyGuard, Ownable, Pausable, IHedgeUnit {
         pa = ERC20(_pa);
         ra = ERC20(_ra);
         mintCap = _mintCap;
+        flashSwapRouter = IDsFlashSwapCore(_flashSwapRouter);
         config = CorkConfig(_config);
     }
 
     modifier autoUpdateDS() {
         _getLastDS();
+        _;
+    }
+
+    modifier onlyLiquidationContract() {
+        if (!config.isLiquidationWhitelisted(msg.sender)) {
+            // TODO : replace with custom error
+            revert("Only liquidation contract can call this function");
+        }
+        _;
+    }
+
+    modifier onlyValidToken(address token) {
+        if (token != address(pa) && token != address(ra)) {
+            // TODO : replace with custom error
+            revert("Invalid token");
+        }
         _;
     }
 
@@ -89,11 +110,58 @@ contract HedgeUnit is ERC20, ReentrancyGuard, Ownable, Pausable, IHedgeUnit {
 
         return Asset(dsAdd);
     }
+
+    function getReserves() external view returns (uint256 dsReserves, uint256 paReserves, uint256 raReserves) {
+        Asset _ds = fetchLatestDS();
+
+        dsReserves = _ds.balanceOf(address(this));
+        paReserves = pa.balanceOf(address(this));
+        raReserves = ra.balanceOf(address(this));
+    }
+
+    function requestLiquidationFunds(uint256 amount, address token)
+        external
+        onlyLiquidationContract
+        onlyValidToken(token)
+    {
+        uint256 balance = IERC20(token).balanceOf(address(this));
+
+        if (balance < amount) {
+            // TODO : replace with custom error
+            revert("Not enough funds");
+        }
+
+        IERC20(token).safeTransfer(msg.sender, amount);
+
+        emit LiquidationFundsRequested(msg.sender, token, amount);
+    }
+
+    function receiveFunds(uint256 amount, address token) external onlyValidToken(token) {
+        IERC20(token).safeTransferFrom(msg.sender, address(this), amount);
+
+        emit FundsReceived(msg.sender, token, amount);
+    }
+
+    function useFunds(uint256 amount, uint256 amountOutMin, IDsFlashSwapCore.BuyAprroxParams calldata params)
+        external
+        autoUpdateDS
+        returns (uint256 amountOut)
+    {
+        uint256 dsId = moduleCore.lastDsId(id);
+
+        amountOut = flashSwapRouter.swapRaforDs(id, dsId, amount, amountOutMin, params);
+
+        emit FundsUsed(msg.sender, dsId, amount, amountOut);
+    }
+
+    function fundsAvailable(address token) external view onlyValidToken(token) returns (uint256) {
+        return IERC20(token).balanceOf(address(this));
+    }
+
     /**
      * @dev Internal function to get the latest DS address.
      * Calls moduleCore to get the latest DS id and retrieves the associated DS address.
      */
-
     function _getLastDS() internal {
         if (address(ds) == address(0) || ds.isExpired()) {
             Asset _ds = fetchLatestDS();
