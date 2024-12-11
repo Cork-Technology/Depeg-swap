@@ -29,7 +29,8 @@ interface ILiquidator {
 
     event OrderSubmitted(
         bytes32 indexed internalRefId,
-        bytes orderUid,
+        address indexed owner,
+        bytes indexed orderUid,
         address sellToken,
         uint256 sellAmount,
         address buyToken,

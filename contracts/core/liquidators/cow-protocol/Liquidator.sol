@@ -91,7 +91,13 @@ contract Liquidator is ILiquidator {
 
         // Emit an event with order details for the backend to pick up
         emit OrderSubmitted(
-            params.internalRefId, params.orderUid, params.sellToken, params.sellAmount, params.buyToken, liquidator
+            params.internalRefId,
+            address(moduleCore),
+            params.orderUid,
+            params.sellToken,
+            params.sellAmount,
+            params.buyToken,
+            liquidator
         );
     }
 
