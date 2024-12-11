@@ -177,11 +177,8 @@ library VaultLibrary {
         address ctAddress,
         ICorkHook ammRouter
     ) internal returns (uint256 ra, uint256 ct, uint256 dust) {
-        (uint256 raTolerance, uint256 ctTolerance) =
-            MathHelper.calculateWithTolerance(ra, ct, MathHelper.UNI_STATIC_TOLERANCE);
-
         (ra, ct, dust) = __provideLiquidityWithRatioGetDust(
-            self, amount, flashSwapRouter, ctAddress, ammRouter, Tolerance(raTolerance, ctTolerance)
+            self, amount, flashSwapRouter, ctAddress, ammRouter, Tolerance(0, 0)
         );
     }
 
@@ -645,5 +642,13 @@ library VaultLibrary {
         paAmount = _calculatePaPriceForLv(self, redeemParams.amount);
         self.vault.pool.withdrawalPool.paBalance -= paAmount;
         ERC20(self.info.pa).transfer(owner, paAmount);
+    }
+
+    function updateLvDepositsStatus(State storage self, bool isLVDepositPaused) external {
+        self.vault.config.isDepositPaused = isLVDepositPaused;
+    }
+
+    function updateLvWithdrawalsStatus(State storage self, bool isLVWithdrawalPaused) external {
+        self.vault.config.isWithdrawalPaused = isLVWithdrawalPaused;
     }
 }
