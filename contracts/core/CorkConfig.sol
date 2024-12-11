@@ -138,7 +138,7 @@ contract CorkConfig is AccessControl, Pausable {
         if (_hedgeUnitFactory == address(0)) {
             revert InvalidAddress();
         }
-        
+
         hedgeUnitFactory = HedgeUnitFactory(_hedgeUnitFactory);
         emit HedgeUnitFactorySet(_hedgeUnitFactory);
     }
@@ -275,11 +275,11 @@ contract CorkConfig is AccessControl, Pausable {
         HedgeUnit(hedgeUnit).updateMintCap(newMintCap);
     }
 
-    function deployHedgeUnit(Id id, address pa, address ra, string memory pairName, uint256 mintCap)
+    function deployHedgeUnit(Id id, address pa, address ra, string memory pairName, uint256 mintCap, uint256 dsPriceTolerance)
         external
         onlyManager
     {
-        hedgeUnitFactory.deployHedgeUnit(id, pa, ra, pairName, mintCap);
+        hedgeUnitFactory.deployHedgeUnit(id, pa, ra, pairName, mintCap, dsPriceTolerance);
     }
 
     function deRegisterHedgeUnit(Id id) external onlyManager {
@@ -288,6 +288,10 @@ contract CorkConfig is AccessControl, Pausable {
 
     function pauseHedgeUnit(address hedgeUnit) external onlyManager {
         HedgeUnit(hedgeUnit).pause();
+    }
+
+    function updateHedgeUnitDsPriceTolerance(address hedgeUnit, uint256 newDsPriceTolerance) external onlyManager {
+        HedgeUnit(hedgeUnit).updateDsPriceTolerance(newDsPriceTolerance);
     }
 
     /**
