@@ -160,4 +160,18 @@ contract LiquidityMathTest is Test {
         vm.assertEq(amountPa, 0.25 ether);
         vm.assertEq(amountDs, amount1Desired);
     }
+
+    function test_spotDsPrice() external {
+        // 0.7
+        uint256 start = 0;
+        uint256 current = 3 days;
+        uint256 end = 10 days;
+
+        // 2% arp
+        uint256 arp = 2 ether;
+
+        uint256 price = HedgeUnitMath.calculateSpotDsPrice(arp, start, current, end);
+
+        vm.assertApproxEqAbs(price, 0.01376620621 ether, 0.0001 ether);
+    }
 }
