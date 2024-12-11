@@ -44,6 +44,9 @@ contract HedgeUnit is ERC20, ReentrancyGuard, Ownable, Pausable, IHedgeUnit, IHe
     /// @notice The ERC20 token representing the ds asset.
     Asset public ds;
 
+    /// @notice The price tolerance when buying DS. denominated in APY% and 18 decimals. e.g. 1% = 1e18
+    uint256 public dsPriceTolerance;
+
     /// @notice Maximum supply cap for minting HedgeUnit tokens.
     uint256 public mintCap;
 
@@ -65,7 +68,8 @@ contract HedgeUnit is ERC20, ReentrancyGuard, Ownable, Pausable, IHedgeUnit, IHe
         string memory _pairName,
         uint256 _mintCap,
         address _config,
-        address _flashSwapRouter
+        address _flashSwapRouter,
+        uint256 _dsPriceTolerance
     )
         ERC20(string(abi.encodePacked("Hedge Unit - ", _pairName)), string(abi.encodePacked("HU - ", _pairName)))
         Ownable(_config)
@@ -77,6 +81,7 @@ contract HedgeUnit is ERC20, ReentrancyGuard, Ownable, Pausable, IHedgeUnit, IHe
         mintCap = _mintCap;
         flashSwapRouter = IDsFlashSwapCore(_flashSwapRouter);
         config = CorkConfig(_config);
+        dsPriceTolerance = _dsPriceTolerance;
     }
 
     modifier autoUpdateDS() {
@@ -100,7 +105,16 @@ contract HedgeUnit is ERC20, ReentrancyGuard, Ownable, Pausable, IHedgeUnit, IHe
         _;
     }
 
-    function fetchLatestDS() internal view returns (Asset) {
+    function _calculateSpotTolerance() internal view returns (uint256) {
+        Asset ds = _fetchLatestDS();
+
+        uint256 start = ds.issuedAt();
+        uint256 end = ds.expiry();
+
+        HedgeUnitMath.calculateSpotDsPrice(dsPriceTolerance, start, block.timestamp, end);
+    }
+
+    function _fetchLatestDS() internal view returns (Asset) {
         uint256 dsId = moduleCore.lastDsId(id);
         (, address dsAdd) = moduleCore.swapAsset(id, dsId);
 
@@ -112,7 +126,7 @@ contract HedgeUnit is ERC20, ReentrancyGuard, Ownable, Pausable, IHedgeUnit, IHe
     }
 
     function getReserves() external view returns (uint256 dsReserves, uint256 paReserves, uint256 raReserves) {
-        Asset _ds = fetchLatestDS();
+        Asset _ds = _fetchLatestDS();
 
         dsReserves = _ds.balanceOf(address(this));
         paReserves = pa.balanceOf(address(this));
@@ -149,7 +163,14 @@ contract HedgeUnit is ERC20, ReentrancyGuard, Ownable, Pausable, IHedgeUnit, IHe
     {
         uint256 dsId = moduleCore.lastDsId(id);
 
+        uint256 dsPriceTolerance = _calculateSpotTolerance();
+
         amountOut = flashSwapRouter.swapRaforDs(id, dsId, amount, amountOutMin, params);
+
+        if (HedgeUnitMath.isAboveTolerance(dsPriceTolerance, amountOut, amount)) {
+            // TODO : replace with custom error
+            revert("DS price tolerance exceeded");
+        }
 
         emit FundsUsed(msg.sender, dsId, amount, amountOut);
     }
@@ -164,7 +185,7 @@ contract HedgeUnit is ERC20, ReentrancyGuard, Ownable, Pausable, IHedgeUnit, IHe
      */
     function _getLastDS() internal {
         if (address(ds) == address(0) || ds.isExpired()) {
-            Asset _ds = fetchLatestDS();
+            Asset _ds = _fetchLatestDS();
 
             // Check if the DS address already exists in history
             bool found = false;
@@ -217,7 +238,7 @@ contract HedgeUnit is ERC20, ReentrancyGuard, Ownable, Pausable, IHedgeUnit, IHe
             revert MintCapExceeded();
         }
 
-        Asset _ds = fetchLatestDS();
+        Asset _ds = _fetchLatestDS();
 
         uint256 paReserve = _selfPaReserve();
 
@@ -330,6 +351,10 @@ contract HedgeUnit is ERC20, ReentrancyGuard, Ownable, Pausable, IHedgeUnit, IHe
         }
         mintCap = _newMintCap;
         emit MintCapUpdated(_newMintCap);
+    }
+
+    function updateDsPriceTolerance(uint256 _dsPriceTolerance) external onlyOwner {
+        dsPriceTolerance = _dsPriceTolerance;
     }
 
     /**
