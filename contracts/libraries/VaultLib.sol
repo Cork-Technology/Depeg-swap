@@ -226,7 +226,7 @@ library VaultLibrary {
             ratio = hpa;
             return ratio;
         }
-
+    
         // this will be the default ratio to use
         if (marketRatio != 0) {
             ratio = marketRatio;
