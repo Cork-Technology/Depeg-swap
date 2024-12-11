@@ -368,7 +368,6 @@ library SwapperMathLibrary {
     /// @notice rT = (f/pT)^1/t - 1
     function calcRt(UD60x18 pT, UD60x18 t) internal pure returns (UD60x18) {
         UD60x18 onePerT = div(convertUd(1), t);
-        // TODO : confirm with peter
         UD60x18 fConst = convertUd(1);
 
         UD60x18 fPerPt = div(fConst, pT);
@@ -383,7 +382,6 @@ library SwapperMathLibrary {
     }
 
     /// @notice pt = 1 - effectiveDsPrice
-    // TODO : confirm with peter
     function calcPt(UD60x18 effectiveDsPrice) internal pure returns (UD60x18) {
         return sub(convertUd(1), effectiveDsPrice);
     }
