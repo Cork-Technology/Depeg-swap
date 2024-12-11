@@ -51,8 +51,8 @@ abstract contract ModuleState is ICommon, ReentrancyGuardTransient {
         address _config
     ) internal {
         if (
-            _swapAssetFactory == address(0) || _ammFactory == address(0) || _dsFlashSwapRouter == address(0)
-                || _ammRouter == address(0) || _config == address(0)
+            _swapAssetFactory == address(0) || _ammHook == address(0) || _dsFlashSwapRouter == address(0)
+                || _config == address(0)
         ) {
             revert ZeroAddress();
         }
