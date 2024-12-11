@@ -15,6 +15,7 @@ import {HedgeUnitMath} from "./../../libraries/HedgeUnitMath.sol";
 import {CorkConfig} from "./../CorkConfig.sol";
 import {IHedgeUnitLiquidation} from "./../../interfaces/IHedgeUnitLiquidation.sol";
 import {IDsFlashSwapCore} from "./../../interfaces/IDsFlashSwapRouter.sol";
+import {ModuleCore} from "./../ModuleCore.sol";
 import "forge-std/console.sol";
 
 struct DSData {
@@ -32,7 +33,7 @@ contract HedgeUnit is ERC20, ReentrancyGuard, Ownable, Pausable, IHedgeUnit, IHe
 
     uint8 internal constant TARGET_DECIMALS = 18;
 
-    ICommon public moduleCore;
+    ModuleCore public moduleCore;
     CorkConfig public config;
     IDsFlashSwapCore public flashSwapRouter;
     Id public id;
@@ -74,7 +75,7 @@ contract HedgeUnit is ERC20, ReentrancyGuard, Ownable, Pausable, IHedgeUnit, IHe
         ERC20(string(abi.encodePacked("Hedge Unit - ", _pairName)), string(abi.encodePacked("HU - ", _pairName)))
         Ownable(_config)
     {
-        moduleCore = ICommon(_moduleCore);
+        moduleCore = ModuleCore(_moduleCore);
         id = _id;
         pa = ERC20(_pa);
         ra = ERC20(_ra);
@@ -173,6 +174,20 @@ contract HedgeUnit is ERC20, ReentrancyGuard, Ownable, Pausable, IHedgeUnit, IHe
         }
 
         emit FundsUsed(msg.sender, dsId, amount, amountOut);
+    }
+
+    function redeemRaWithDsPa(uint256 amount, uint256 amountDs) external autoUpdateDS onlyOwner {
+        uint256 dsId = moduleCore.lastDsId(id);
+
+        ds.approve(address(moduleCore), amountDs);
+        pa.approve(address(moduleCore), amount);
+
+        moduleCore.redeemRaWithDs(id, dsId, amount);
+
+        // auto pause
+        _pause();
+
+        emit RaRedeemed(msg.sender, dsId, amount);
     }
 
     function fundsAvailable(address token) external view onlyValidToken(token) returns (uint256) {

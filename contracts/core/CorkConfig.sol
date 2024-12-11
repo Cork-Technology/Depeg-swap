@@ -275,10 +275,14 @@ contract CorkConfig is AccessControl, Pausable {
         HedgeUnit(hedgeUnit).updateMintCap(newMintCap);
     }
 
-    function deployHedgeUnit(Id id, address pa, address ra, string memory pairName, uint256 mintCap, uint256 dsPriceTolerance)
-        external
-        onlyManager
-    {
+    function deployHedgeUnit(
+        Id id,
+        address pa,
+        address ra,
+        string memory pairName,
+        uint256 mintCap,
+        uint256 dsPriceTolerance
+    ) external onlyManager {
         hedgeUnitFactory.deployHedgeUnit(id, pa, ra, pairName, mintCap, dsPriceTolerance);
     }
 
@@ -292,6 +296,18 @@ contract CorkConfig is AccessControl, Pausable {
 
     function updateHedgeUnitDsPriceTolerance(address hedgeUnit, uint256 newDsPriceTolerance) external onlyManager {
         HedgeUnit(hedgeUnit).updateDsPriceTolerance(newDsPriceTolerance);
+    }
+
+    function pauseHedgeUnitMinting(address hedgeUnit) external onlyManager {
+        HedgeUnit(hedgeUnit).pause();
+    }
+
+    function resumeHedgeUnitMinting(address hedgeUnit) external onlyManager {
+        HedgeUnit(hedgeUnit).unpause();
+    }
+
+    function redeemRaFromHedgeUnit(address hedgeUnit, uint256 amount, uint256 amountDS) external onlyManager {
+        HedgeUnit(hedgeUnit).redeemRaWithDsPa(amount, amountDS);
     }
 
     /**

@@ -24,6 +24,8 @@ interface IHedgeUnit {
      */
     event MintCapUpdated(uint256 newMintCap);
 
+    event RaRedeemed(address indexed redeemer, uint256 dsId, uint256 amount);
+
     // Errors
 
     /// @notice Error indicating an invalid amount was provided.
