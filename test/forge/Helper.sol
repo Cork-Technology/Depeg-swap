@@ -16,6 +16,7 @@ import {TestFlashSwapRouter} from "./TestFlashSwapRouter.sol";
 import "./SigUtils.sol";
 import {TestHelper} from "Cork-Hook/../test/Helper.sol";
 import "./../../contracts/interfaces/IDsFlashSwapRouter.sol";
+import "./../../contracts/core/Withdrawal.sol";
 
 abstract contract Helper is SigUtils, TestHelper {
     TestModuleCore internal moduleCore;
@@ -25,6 +26,7 @@ abstract contract Helper is SigUtils, TestHelper {
     CorkConfig internal corkConfig;
     TestFlashSwapRouter internal flashSwapRouter;
     DummyWETH internal weth = new DummyWETH();
+    Withdrawal internal withdrawalContract;
 
     Id defaultCurrencyId;
 
@@ -48,6 +50,9 @@ abstract contract Helper is SigUtils, TestHelper {
     // 1% initial ds price
     uint256 internal constant DEFAULT_INITIAL_DS_PRICE = 0.1 ether;
 
+    // 50% split percentage
+    uint256 internal DEFAULT_CT_SPLIT_PERCENTAGE = 50 ether;
+
     function defaultInitialArp() internal pure virtual returns (uint256) {
         return DEFAULT_INITIAL_DS_PRICE;
     }
@@ -67,7 +72,7 @@ abstract contract Helper is SigUtils, TestHelper {
     }
 
     function defaultBuyApproxParams() internal pure returns (IDsFlashSwapCore.BuyAprroxParams memory) {
-        return IDsFlashSwapCore.BuyAprroxParams(256, 256, 1e16, 1e9, 1e9);
+        return IDsFlashSwapCore.BuyAprroxParams(256, 256, 1e16, 1e9, 1e9, 0.01 ether);
     }
 
     function initializeNewModuleCore(
@@ -108,7 +113,7 @@ abstract contract Helper is SigUtils, TestHelper {
         );
     }
 
-    function issueNewDs(Id id, uint256 expiryInSeconds) internal {
+    function issueNewDs(Id id) internal {
         issueNewDs(
             id,
             defaultExchangeRate(),
@@ -139,6 +144,8 @@ abstract contract Helper is SigUtils, TestHelper {
         issueNewDs(
             id, defaultExchangeRate(), DEFAULT_REPURCHASE_FEE, DEFAULT_DECAY_DISCOUNT_RATE, DEFAULT_ROLLOVER_PERIOD
         );
+        
+        corkConfig.updateLvStrategyCtSplitPercentage(defaultCurrencyId, DEFAULT_CT_SPLIT_PERCENTAGE);
     }
 
     function initializeAndIssueNewDs(uint256 expiryInSeconds, uint256 baseRedemptionFee)
@@ -211,6 +218,20 @@ abstract contract Helper is SigUtils, TestHelper {
         moduleCore.initialize(address(assetFactory), address(hook), address(flashSwapRouter), address(corkConfig));
     }
 
+    function initializeWithdrawalContract() internal {
+        withdrawalContract = new Withdrawal(address(moduleCore));
+
+        corkConfig.setWithdrawalContract(address(withdrawalContract));
+    }
+
+    function disableDsGradualSale() internal {
+        disableDsGradualSale(defaultCurrencyId);
+    }
+
+    function disableDsGradualSale(Id id) internal {
+        corkConfig.updateRouterGradualSaleStatus(id, true);
+    }
+
     function deployModuleCore() internal {
         setupTest();
 
@@ -232,5 +253,19 @@ abstract contract Helper is SigUtils, TestHelper {
         setupAssetFactory();
         setupConfig();
         setupFlashSwapRouter();
+
+        initializeWithdrawalContract();
+    }
+
+    function forceUnpause(Id id) internal {
+        corkConfig.updatePsmDepositsStatus(id, false);
+        corkConfig.updatePsmWithdrawalsStatus(id, false);
+        corkConfig.updatePsmRepurchasesStatus(id, false);
+        corkConfig.updateLvDepositsStatus(id, false);
+        corkConfig.updateLvWithdrawalsStatus(id, false);
+    }
+
+    function forceUnpause() internal {
+        forceUnpause(defaultCurrencyId);
     }
 }

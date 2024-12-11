@@ -8,8 +8,7 @@ import {SD59x18, convert, sd, add, mul, pow, sub, div, abs, unwrap, intoUD60x18}
 import {UD60x18, convert as convertUd, ud, add, mul, pow, sub, div, unwrap} from "@prb/math/src/UD60x18.sol";
 import {IMathError} from "./../interfaces/IMathError.sol";
 import {MarketSnapshot, MarketSnapshotLib} from "Cork-Hook/lib/MarketSnapshot.sol";
-import "forge-std/console.sol";
-
+import "./LogExpMath.sol";
 
 library BuyMathBisectionSolver {
     /// @notice returns the the normalized time to maturity from 1-0
@@ -49,12 +48,20 @@ library BuyMathBisectionSolver {
             }
         }
 
-        SD59x18 xPow = pow(x, _1MinusT);
-        SD59x18 yPow = pow(y, _1MinusT);
-        SD59x18 xMinSplusEPow = pow(xMinSplusE, _1MinusT);
-        SD59x18 yPlusSPow = pow(yPlusS, _1MinusT);
+        SD59x18 xPow = _pow(x, _1MinusT);
+        SD59x18 yPow = _pow(y, _1MinusT);
+        SD59x18 xMinSplusEPow = _pow(xMinSplusE, _1MinusT);
+        SD59x18 yPlusSPow = _pow(yPlusS, _1MinusT);
 
         return sub(sub(add(xPow, yPow), xMinSplusEPow), yPlusSPow);
+    }
+
+    // more gas efficient than PRB
+    function _pow(SD59x18 x, SD59x18 y) public pure returns (SD59x18) {
+        uint256 _x = uint256(unwrap(x));
+        uint256 _y = uint256(unwrap(y));
+
+        return sd(int256(LogExpMath.pow(_x, _y)));
     }
 
     function findRoot(SD59x18 x, SD59x18 y, SD59x18 e, SD59x18 _1MinusT, SD59x18 epsilon, uint256 maxIter)
@@ -66,7 +73,7 @@ library BuyMathBisectionSolver {
         SD59x18 b;
 
         {
-            SD59x18 delta = sd(1e12);
+            SD59x18 delta = sd(1e6);
             b = sub(add(x, e), delta);
         }
 
@@ -123,6 +130,11 @@ library BuyMathBisectionSolver {
 library SwapperMathLibrary {
     using MarketSnapshotLib for MarketSnapshot;
 
+    // needed since, if it's near expiry and the value goes higher than this,
+    // the math would fail, since near expiry it would behave similar to CSM curve,
+    // it's fine if the actual value go higher since that means we would only overestimate on how much we actually need to repay
+    int256 internal constant ONE_MINUS_T_CAP = 99e17;
+
     // Calculate price ratio of two tokens in a uniswap v2 pair, will return ratio on 18 decimals precision
     function getPriceRatio(uint256 raReserve, uint256 ctReserve)
         public
@@ -147,10 +159,6 @@ library SwapperMathLibrary {
         uint256 epsilon,
         uint256 maxIter
     ) external pure returns (uint256 s) {
-        if (x < 0 || y < 0 || e < 0) {
-            revert IMathError.InvalidParam();
-        }
-
         if (e > x && x < y) {
             revert IMathError.InsufficientLiquidity();
         }
@@ -158,6 +166,11 @@ library SwapperMathLibrary {
         SD59x18 oneMinusT = BuyMathBisectionSolver.computeOneMinusT(
             convert(int256(start)), convert(int256(end)), convert(int256(current))
         );
+
+        if (unwrap(oneMinusT) > ONE_MINUS_T_CAP) {
+            oneMinusT = sd(ONE_MINUS_T_CAP);
+        }
+
         SD59x18 root = BuyMathBisectionSolver.findRoot(
             convert(int256(x)), convert(int256(y)), convert(int256(e)), oneMinusT, sd(int256(epsilon)), maxIter
         );
@@ -169,6 +182,10 @@ library SwapperMathLibrary {
         result = div(mul(amount, percentage), convertUd(100));
     }
 
+    function calculatePercentage(uint256 amount, uint256 percentage) internal pure returns (uint256 result) {
+        result = unwrap(calculatePercentage(ud(amount), ud(percentage)));
+    }
+
     /// @notice HIYA_acc = Ri x Volume_i x 1 - ((Discount / 86400) * (currentTime - issuanceTime))
     function calcHIYAaccumulated(
         uint256 startTime,
@@ -177,17 +194,17 @@ library SwapperMathLibrary {
         uint256 amount,
         uint256 raProvided,
         uint256 decayDiscountInDays
-    ) internal pure returns (uint256) {
+    ) external pure returns (uint256) {
         UD60x18 t = intoUD60x18(
             BuyMathBisectionSolver.computeT(
                 convert(int256(startTime)), convert(int256(maturityTime)), convert(int256(currentTime))
             )
         );
-        UD60x18 effectiveDsPrice = calculateEffectiveDsPrice(convertUd(amount), convertUd(raProvided));
+        UD60x18 effectiveDsPrice = calculateEffectiveDsPrice(ud(amount), ud(raProvided));
         UD60x18 rateI = calcSpotArp(t, effectiveDsPrice);
-        UD60x18 decay = calculateDecayDiscount(ud(decayDiscountInDays), convertUd(startTime), convertUd(currentTime));
+        UD60x18 decay = calculateDecayDiscount(ud(decayDiscountInDays), ud(startTime), ud(currentTime));
 
-        return convertUd(calculatePercentage(calculatePercentage(convertUd(amount), rateI), decay));
+        return unwrap(calculatePercentage(calculatePercentage(ud(amount), rateI), decay));
     }
 
     /// @notice VHIYA_acc =  Volume_i  - ((Discount / 86400) * (currentTime - issuanceTime))
@@ -197,8 +214,8 @@ library SwapperMathLibrary {
         uint256 currentTime,
         uint256 decayDiscountInDays,
         uint256 amount
-    ) internal pure returns (uint256) {
-        UD60x18 decay = calculateDecayDiscount(ud(decayDiscountInDays), convertUd(startTime), convertUd(currentTime));
+    ) external pure returns (uint256) {
+        UD60x18 decay = calculateDecayDiscount(ud(decayDiscountInDays), ud(startTime), ud(currentTime));
 
         return convertUd(calculatePercentage(convertUd(amount), decay));
     }
@@ -237,7 +254,7 @@ library SwapperMathLibrary {
 
     // TODO : confirm with Peter that the t for fixed price rollover sale is constant at 1 since it's fixed price
     function _calculateRolloverSale(UD60x18 lvDsReserve, UD60x18 psmDsReserve, UD60x18 raProvided, UD60x18 hpa)
-        internal
+        public
         view
         returns (
             UD60x18 lvProfit,
@@ -251,19 +268,43 @@ library SwapperMathLibrary {
         UD60x18 totalDsReserve = add(lvDsReserve, psmDsReserve);
 
         // calculate the amount of DS user will receive
-        dsReceived = mul(raProvided, hpa);
+        dsReceived = div(raProvided, hpa);
 
         // returns the RA if, the total reserve cannot cover the DS that user will receive. this Ra left must subject to the AMM rates
-        raLeft = totalDsReserve > dsReceived ? convertUd(0) : div(sub(dsReceived, totalDsReserve), hpa);
+        if (totalDsReserve >= dsReceived) {
+            raLeft = convertUd(0); // No shortfall
+        } else {
+            // Calculate the RA needed for the shortfall in DS
+            UD60x18 dsShortfall = sub(dsReceived, totalDsReserve);
+            raLeft = mul(dsShortfall, hpa);
+
+            // Adjust the DS received to match the total reserve
+            dsReceived = totalDsReserve;
+        }
 
         // recalculate the DS user will receive, after the RA left is deducted
         raProvided = sub(raProvided, raLeft);
-        dsReceived = div(raProvided, hpa);
 
         // proportionally calculate how much DS should be taken from LV and PSM
         // e.g if LV has 60% of the total reserve, then 60% of the DS should be taken from LV
         lvReserveUsed = div(mul(lvDsReserve, dsReceived), totalDsReserve);
         psmReserveUsed = sub(dsReceived, lvReserveUsed);
+
+        assert(unwrap(dsReceived) == unwrap(psmReserveUsed + lvReserveUsed));
+
+        if (psmReserveUsed > psmDsReserve) {
+            UD60x18 diff = sub(psmReserveUsed, psmDsReserve);
+            psmReserveUsed = sub(psmReserveUsed, diff);
+            lvReserveUsed = add(lvReserveUsed, diff);
+        }
+
+        if (lvReserveUsed > lvDsReserve) {
+            UD60x18 diff = sub(lvReserveUsed, lvDsReserve);
+            lvReserveUsed = sub(lvReserveUsed, diff);
+            psmReserveUsed = add(psmReserveUsed, diff);
+        }
+
+        assert(totalDsReserve >= lvReserveUsed + psmReserveUsed);
 
         // calculate the RA profit of LV and PSM
         lvProfit = mul(lvReserveUsed, hpa);
@@ -271,7 +312,7 @@ library SwapperMathLibrary {
     }
 
     function calculateRolloverSale(uint256 lvDsReserve, uint256 psmDsReserve, uint256 raProvided, uint256 hiya)
-        internal
+        external
         view
         returns (
             uint256 lvProfit,
@@ -286,8 +327,6 @@ library SwapperMathLibrary {
         UD60x18 _psmDsReserve = ud(psmDsReserve);
         UD60x18 _raProvided = ud(raProvided);
         UD60x18 _hpa = sub(convertUd(1), calcPtConstFixed(ud(hiya)));
-        console.log("hiya", hiya);
-        console.log("hpa", unwrap(_hpa));
 
         (
             UD60x18 _lvProfit,
@@ -379,26 +418,28 @@ library SwapperMathLibrary {
      * upper = the initial borrowed amount.
      */
     function findOptimalBorrowedAmount(OptimalBorrowParams memory params)
-        internal
+        external
         pure
         returns (OptimalBorrowResult memory result)
     {
-        // we basically do nothing if there's no fee
-        if (params.market.baseFee == 0) {
-            result.repaymentAmount = params.market.getAmountIn(params.initialBorrowedAmount, false);
-            result.amountOut = params.initialAmountOut;
-            result.borrowedAmount = params.initialBorrowedAmount;
-            return (result);
-        }
-
         UD60x18 amountOutUd = convertUd(params.initialAmountOut);
         UD60x18 initialBorrowedAmountUd = convertUd(params.initialBorrowedAmount);
         UD60x18 suppliedAmountUd = convertUd(params.amountSupplied);
 
-        UD60x18 lowerBound = sub(initialBorrowedAmountUd, convertUd(params.feeIntervalAdjustment * params.maxIter));
-        UD60x18 repaymentAmountUd = convertUd(params.market.getAmountIn(convertUd(lowerBound), false));
+        UD60x18 lowerBound;
+        {
+            UD60x18 maxLowerBound = convertUd(params.feeIntervalAdjustment * params.maxIter);
+            lowerBound =
+                maxLowerBound > initialBorrowedAmountUd ? convertUd(0) : sub(initialBorrowedAmountUd, maxLowerBound);
+        }
 
-        if (repaymentAmountUd > amountOutUd) {
+        UD60x18 repaymentAmountUd = lowerBound == convertUd(0)
+            ? convertUd(0)
+            : convertUd(params.market.getAmountIn(convertUd(lowerBound), false));
+
+        // we skip bounds check if the max lower bound is bigger than the initial borrowed amount
+        // since it's guranteed to have enough liquidity if we never borrow
+        if (repaymentAmountUd > amountOutUd && lowerBound != convertUd(0)) {
             revert IMathError.NoLowerBound();
         }
 
@@ -425,6 +466,11 @@ library SwapperMathLibrary {
 
                 lowerBound = midpoint;
             }
+        }
+
+        // this means that there's no suitable borrowed amount that satisfies the fee constraints
+        if (result.borrowedAmount == 0) {
+            revert IMathError.NoConverge();
         }
     }
 }

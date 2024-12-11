@@ -20,8 +20,6 @@ import {ICorkHook} from "../../interfaces/UniV4/IMinimalHook.sol";
 import {AmmId, toAmmId} from "Cork-Hook/lib/State.sol";
 import {CorkSwapCallback} from "Cork-Hook/interfaces/CorkSwapCallback.sol";
 import {IMathError} from "./../../interfaces/IMathError.sol";
-import "forge-std/console.sol";
-
 
 /**
  * @title Router contract for Flashswap
@@ -44,6 +42,8 @@ contract RouterState is
 
     address public _moduleCore;
     ICorkHook public hook;
+
+    uint256 public constant RESERVE_MINIMUM_SELL_AMOUNT = 0.001 ether;
 
     /// @notice __gap variable to prevent storage collisions
     uint256[49] __gap;
@@ -78,7 +78,7 @@ contract RouterState is
     }
 
     function updateGradualSaleStatus(Id id, bool status) external override onlyConfig {
-        reserves[id].gradualSale = status;
+        reserves[id].gradualSaleDisabled = status;
     }
 
     function getCurrentCumulativeHIYA(Id id) external view returns (uint256 hpaCummulative) {
@@ -201,8 +201,11 @@ contract RouterState is
         internal
         returns (uint256 raLeft, uint256 dsReceived)
     {
-        // this means that we ignore and don't do rollover sale when it's first issuance or it's not rollover time
-        if (dsId == DsFlashSwaplibrary.FIRST_ISSUANCE || !reserves[reserveId].rolloverSale()) {
+        // this means that we ignore and don't do rollover sale when it's first issuance or it's not rollover time, or no hiya(means no trade, unlikely but edge case)
+        if (
+            dsId == DsFlashSwaplibrary.FIRST_ISSUANCE || !reserves[reserveId].rolloverSale()
+                || reserves[reserveId].hiya == 0
+        ) {
             // noop and return back the full amountRa
             return (amountRa, 0);
         }
@@ -219,12 +222,10 @@ contract RouterState is
         (lvProfit, psmProfit, raLeft, dsReceived, lvReserveUsed, psmReserveUsed) =
             SwapperMathLibrary.calculateRolloverSale(assetPair.lvReserve, assetPair.psmReserve, amountRa, self.hiya);
 
-        if (dsReceived < amountOutMin) {
-            revert InsufficientOutputAmount();
-        }
-
-        assetPair.psmReserve -= psmReserveUsed;
-        assetPair.lvReserve -= lvReserveUsed;
+        // we know that the math is correct, but for edge case protection, we don't subtract it directly but
+        // instead set it to 0 if it's less than the used amount, again this is meant to handle precision issues
+        assetPair.psmReserve = assetPair.psmReserve < psmReserveUsed ? 0 : assetPair.psmReserve - psmReserveUsed;
+        assetPair.lvReserve = assetPair.lvReserve < lvReserveUsed ? 0 : assetPair.lvReserve - lvReserveUsed;
 
         IERC20(assetPair.ra).safeTransfer(_moduleCore, lvProfit + psmProfit);
 
@@ -255,15 +256,15 @@ contract RouterState is
         // try to swap the RA for DS via rollover, this will noop if the condition for rollover is not met
         (amount, dsReceived) = _swapRaForDsViaRollover(reserveId, dsId, amount, amountOutMin);
 
-        console.log("amount: %s, dsReceived: %s", amount, dsReceived);
         // short circuit if all the swap is filled using rollover
         if (amount == 0) {
             return dsReceived;
         }
 
         // calculate the amount of DS tokens attributed
-        (amountOut, borrowedAmount,) = assetPair.getAmountOutBuyDS(amount, hook, approxParams);
+        (amountOut, borrowedAmount) = assetPair.getAmountOutBuyDS(amount, hook, approxParams);
 
+        // TODO : move this to a separate function
         // calculate the amount of DS tokens that will be sold from reserve
         uint256 amountSellFromReserve =
             amountOut - MathHelper.calculatePercentageFee(self.reserveSellPressurePercentage, amountOut);
@@ -275,16 +276,15 @@ contract RouterState is
             // sell all tokens if the sell amount is higher than the available reserve
             amountSellFromReserve = totalReserve < amountSellFromReserve ? totalReserve : amountSellFromReserve;
         }
-
         // sell the DS tokens from the reserve if there's any
-        if (amountSellFromReserve != 0 && self.gradualSale) {
-            (amountOut, borrowedAmount) =
+        if (amountSellFromReserve > RESERVE_MINIMUM_SELL_AMOUNT && !self.gradualSaleDisabled) {
+            SellResult memory sellDsReserveResult =
                 _sellDsReserve(assetPair, SellDsParams(reserveId, dsId, amountSellFromReserve, amount, approxParams));
-        }
 
-        // slippage protection, revert if the amount of DS tokens received is less than the minimum amount
-        if (amountOut + dsReceived < amountOutMin) {
-            revert InsufficientOutputAmount();
+            if (sellDsReserveResult.success) {
+                amountOut = sellDsReserveResult.amountOut;
+                borrowedAmount = sellDsReserveResult.borrowedAmount;
+            }
         }
 
         // trigger flash swaps and send the attributed DS tokens to the user
@@ -302,9 +302,15 @@ contract RouterState is
         BuyAprroxParams approxParams;
     }
 
+    struct SellResult {
+        uint256 amountOut;
+        uint256 borrowedAmount;
+        bool success;
+    }
+
     function _sellDsReserve(AssetPair storage assetPair, SellDsParams memory params)
         internal
-        returns (uint256 amountOut, uint256 borrowedAmount)
+        returns (SellResult memory result)
     {
         // sell the DS tokens from the reserve and accrue value to LV holders
         // it's safe to transfer all profit to the module core since the profit for each PSM and LV is calculated separately and we invoke
@@ -314,7 +320,10 @@ contract RouterState is
         (uint256 profitRa,, bool success) =
             __swapDsforRa(assetPair, params.reserveId, params.dsId, params.amountSellFromReserve, 0, _moduleCore);
 
+        result.success = success;
+
         if (success) {
+            // TODO : move this to a separate function
             uint256 lvReserve = assetPair.lvReserve;
             uint256 totalReserve = lvReserve + assetPair.psmReserve;
 
@@ -335,7 +344,8 @@ contract RouterState is
             IPSMcore(_moduleCore).psmAcceptFlashSwapProfit(params.reserveId, profitRa - vaultProfit);
 
             // recalculate the amount of DS tokens attributed, since we sold some from the reserve
-            (amountOut, borrowedAmount,) = assetPair.getAmountOutBuyDS(params.amount, hook, params.approxParams);
+            (result.amountOut, result.borrowedAmount) =
+                assetPair.getAmountOutBuyDS(params.amount, hook, params.approxParams);
         }
     }
 
@@ -364,6 +374,11 @@ contract RouterState is
 
         amountOut = _swapRaforDs(self, assetPair, reserveId, dsId, amount, amountOutMin, params);
 
+        // slippage protection, revert if the amount of DS tokens received is less than the minimum amount
+        if (amountOut < amountOutMin) {
+            revert InsufficientOutputAmount();
+        }
+
         self.recalculateHIYA(dsId, amount, amountOut);
 
         emit RaSwapped(reserveId, dsId, user, amount, amountOut);
@@ -377,16 +392,24 @@ contract RouterState is
      * @param amountOutMin the minimum amount of DS to receive, will revert if the actual amount is less than this. should be inserted with value from previewSwapRaforDs
      * @return amountOut amount of DS that's received
      */
-    function swapRaforDs(Id reserveId, uint256 dsId, uint256 amount, uint256 amountOutMin, BuyAprroxParams memory params)
-        external
-        returns (uint256 amountOut)
-    {
+    function swapRaforDs(
+        Id reserveId,
+        uint256 dsId,
+        uint256 amount,
+        uint256 amountOutMin,
+        BuyAprroxParams memory params
+    ) external returns (uint256 amountOut) {
         ReserveState storage self = reserves[reserveId];
         AssetPair storage assetPair = self.ds[dsId];
 
         IERC20(assetPair.ra).safeTransferFrom(msg.sender, address(this), amount);
 
         amountOut = _swapRaforDs(self, assetPair, reserveId, dsId, amount, amountOutMin, params);
+
+        // slippage protection, revert if the amount of DS tokens received is less than the minimum amount
+        if (amountOut < amountOutMin) {
+            revert InsufficientOutputAmount();
+        }
 
         self.recalculateHIYA(dsId, amount, amountOut);
 
@@ -422,9 +445,9 @@ contract RouterState is
         (amountOut, repaymentAmount, success) = __swapDsforRa(assetPair, reserveId, dsId, amount, amountOutMin, user);
 
         if (!success) {
-            (uint256 raReserve, uint256 ctReserve) = assetPair.getReservesSorted(hook);
             revert IMathError.InsufficientLiquidity();
         }
+
         self.recalculateHIYA(dsId, amountOut, amount);
 
         emit DsSwapped(reserveId, dsId, user, amount, amountOut);
@@ -453,9 +476,9 @@ contract RouterState is
             __swapDsforRa(assetPair, reserveId, dsId, amount, amountOutMin, msg.sender);
 
         if (!success) {
-            (uint256 raReserve, uint256 ctReserve) = assetPair.getReservesSorted(hook);
             revert IMathError.InsufficientLiquidity();
         }
+
         self.recalculateHIYA(dsId, amountOut, amount);
 
         emit DsSwapped(reserveId, dsId, msg.sender, amount, amountOut);
@@ -606,7 +629,7 @@ contract RouterState is
         // for rounding error protection
         dsAttributed -= 1;
 
-        // assert(received >= dsAttributed);
+        assert(received >= dsAttributed);
 
         // should be the same, we don't compare with the RA amount since we maybe dealing
         // with a non-rebasing token, in which case the amount deposited and the amount received will always be different
@@ -642,15 +665,16 @@ contract RouterState is
         Asset ra = assetPair.ra;
 
         if (actualRepaymentAmount > repaymentAmount) {
-            {
-                (uint256 raReserve, uint256 ctReserve) = hook.getReserves(address(assetPair.ra), address(assetPair.ct));
-                revert IMathError.InsufficientLiquidity();
-            }
+            revert IMathError.InsufficientLiquidity();
+        } else if (actualRepaymentAmount < repaymentAmount) {
+            // refund excess
+            uint256 refunded = repaymentAmount - actualRepaymentAmount;
+            raAttributed += refunded;
         }
 
         // send caller their RA
         IERC20(ra).safeTransfer(caller, raAttributed);
         // repay flash loan
-        IERC20(ra).safeTransfer(poolManager, repaymentAmount);
+        IERC20(ra).safeTransfer(poolManager, actualRepaymentAmount);
     }
 }

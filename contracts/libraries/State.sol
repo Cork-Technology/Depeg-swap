@@ -2,7 +2,7 @@
 pragma solidity ^0.8.24;
 
 import {Pair} from "./Pair.sol";
-import {PsmRedemptionAssetManager} from "./RedemptionAssetManagerLib.sol";
+import {RedemptionAssetManager} from "./RedemptionAssetManagerLib.sol";
 import {LvAsset} from "./LvAssetLib.sol";
 import {BitMaps} from "@openzeppelin/contracts/utils/structs/BitMaps.sol";
 import {DepegSwap} from "./DepegSwapLib.sol";
@@ -54,9 +54,17 @@ struct PsmPoolArchive {
  * @dev Balances structure for managing balances in PSM Core
  */
 struct Balances {
-    PsmRedemptionAssetManager ra;
+    RedemptionAssetManager ra;
     uint256 dsBalance;
     uint256 paBalance;
+    uint256 ctBalance;
+}
+
+/**
+ * @dev Balances structure for managing balances in PSM Core
+ */
+struct VaultBalances {
+    RedemptionAssetManager ra;
     uint256 ctBalance;
 }
 
@@ -79,11 +87,6 @@ struct VaultWithdrawalPool {
     uint256 paExchangeRate;
     uint256 raBalance;
     uint256 paBalance;
-    // FIXME : this is only temporary, for now
-    // we trate PA the same as RA, thus we also separate PA
-    // the difference is the PA here isn't being used as anything
-    // and for now will just sit there until rationed again at next expiry.
-    uint256 stagnatedPaBalance;
 }
 
 /**
@@ -94,19 +97,10 @@ struct VaultAmmLiquidityPool {
 }
 
 /**
- * @dev LvInternalBalance structure for tracking LV balances of users
- */
-struct LvInternalBalance {
-    // Balance gets incremented when user deposit to LV
-    // Balance gets decremented when user redeem from LV
-    uint256 balance;
-}
-
-/**
  * @dev VaultState structure for VaultCore
  */
 struct VaultState {
-    Balances balances;
+    VaultBalances balances;
     VaultConfig config;
     LvAsset lv;
     BitMaps.BitMap lpLiquidated;
@@ -120,7 +114,8 @@ struct VaultState {
     /// e.g 40% means that 40% of the RA that user deposit will be splitted into CT and DS
     /// the CT will be held in the vault while the DS is held in the vault reserve to be selled in the router
     uint256 ctHeldPercetage;
-    mapping(address => LvInternalBalance) userLvBalance;
+    /// @notice dsId => totalRA. will be updated on every new issuance, so dsId 1 would be update at new issuance of dsId 2
+    mapping(uint256 => uint256) totalRaSnapshot;
 }
 
 /**
@@ -129,7 +124,6 @@ struct VaultState {
 struct VaultConfig {
     // 1 % = 1e18
     uint256 fee;
-    uint256 lpBalance;
     bool isDepositPaused;
     bool isWithdrawalPaused;
 }

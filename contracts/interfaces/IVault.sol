@@ -5,16 +5,19 @@ import {Id} from "../libraries/Pair.sol";
 import {IDsFlashSwapCore} from "../interfaces/IDsFlashSwapRouter.sol";
 import {IUniswapV2Router02} from "../interfaces/uniswap-v2/RouterV2.sol";
 import {ICorkHook} from "./../interfaces/UniV4/IMinimalHook.sol";
+import {IWithdrawal} from "./IWithdrawal.sol";
+import {ICommon} from "./ICommon.sol";
 
 /**
  * @title IVault Interface
  * @author Cork Team
  * @notice IVault interface for VaultCore contract
  */
-interface IVault {
-    struct Routers {
+interface IVault is ICommon {
+    struct ProtocolContracts {
         IDsFlashSwapCore flashSwapRouter;
         ICorkHook ammRouter;
+        IWithdrawal withdrawalContract;
     }
 
     struct PermitParams {
@@ -33,12 +36,14 @@ interface IVault {
         Id id;
         address receiver;
         uint256 raReceivedFromAmm;
+        uint256 raIdleReceived;
+        uint256 paReceived;
         uint256 ctReceivedFromAmm;
         uint256 ctReceivedFromVault;
         uint256 dsReceived;
         uint256 fee;
         uint256 feePercentage;
-        uint256 paReceived;
+        bytes32 withdrawalId;
     }
 
     /// @notice Emitted when a user deposits assets into a given Vault
@@ -55,9 +60,12 @@ interface IVault {
         uint256 ctReceivedFromAmm,
         uint256 ctReceivedFromVault,
         uint256 dsReceived,
+        uint256 paReceived,
+        uint256 raReceivedFromAmm,
+        uint256 raIdleReceived,
         uint256 fee,
         uint256 feePercentage,
-        uint256 paReceived
+        bytes32 withdrawalId
     );
 
     /// @notice Emitted when a Admin updates status of Deposit in the LV 
@@ -99,6 +107,9 @@ interface IVault {
     /// @notice insufficient output amount, e.g trying to redeem 100 LV whcih you expect 100 RA but only received 50 RA
     error InsufficientOutputAmount(uint256 amountOutMin, uint256 received);
 
+    /// @notice vault does not have sufficient funds to do something
+    error InsufficientFunds();
+
     /**
      * @notice Deposit a wrapped asset into a given vault
      * @param id The Module id that is used to reference both psm and lv of a given pair
@@ -122,10 +133,8 @@ interface IVault {
      * @notice Redeem lv before expiry
      * @param redeemParams The object with details like id, reciever, amount, amountOutMin, ammDeadline
      */
-    function redeemEarlyLv(RedeemEarlyParams memory redeemParams)
-        external
-        returns (RedeemEarlyResult memory result);
-   
+    function redeemEarlyLv(RedeemEarlyParams memory redeemParams) external returns (RedeemEarlyResult memory result);
+
     /**
      * Returns the early redemption fee percentage
      * @param id The Module id that is used to reference both psm and lv of a given pair
@@ -148,4 +157,14 @@ interface IVault {
     function lvAcceptRolloverProfit(Id id, uint256 amount) external;
 
     function updateCtHeldPercentage(Id id, uint256 ctHeldPercentage) external;
+
+    function lvAsset(Id id) external view returns (address lv);
+
+    /**
+     * Returns the total RA tokens that the vault at a given time, will be updated on every new issuance.(e.g total ra of dsId of 1 will be updated when Ds with dsId of 2 is issued)
+     * Cork's team will use this snapshot value + internal tolerance(likelky would be 0.01%)to determine when the vault should resume deposits
+     * @param id The Module id that is used to reference both psm and lv of a given pair
+     * @param dsId The DsId
+     */
+    function totalRaAt(Id id, uint256 dsId) external view returns (uint256);
 }

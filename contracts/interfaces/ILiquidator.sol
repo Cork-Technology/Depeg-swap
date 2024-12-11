@@ -1,43 +1,51 @@
 pragma solidity ^0.8.24;
 
+import "./../libraries/Pair.sol";
+
 /**
  * @title ILiquidator Interface
  * @author Cork Team
  * @notice Interface which provides common errors, events and functions for Liquidator contract
  */
 interface ILiquidator {
-    event OrderRequest(
-        address indexed raToken,
-        address indexed paToken,
-        uint256 amount,
-        uint256 minAmount,
-        uint256 expiry,
-        address owner,
-        bytes orderUid
+    struct CreateVaultOrderParams {
+        /// the internal reference id, used to associate which order is being liquidated in the liquidation contract
+        /// sinceit's impossible to add the order id in the appData directly,
+        /// backend must generate a random hash to be used as internalRefId when creating the order
+        /// and include
+        bytes32 internalRefId;
+        /// the actual cow protocol order id
+        bytes orderUid;
+        address sellToken;
+        uint256 sellAmount;
+        address buyToken;
+        Id vaultId;
+    }
+
+    struct Call {
+        address target;
+        bytes data;
+    }
+
+    event OrderSubmitted(
+        bytes32 indexed internalRefId,
+        bytes orderUid,
+        address sellToken,
+        uint256 sellAmount,
+        address buyToken,
+        address liquidator
     );
 
-    event SwapExecuted(
-        uint256 indexed orderId,
-        address indexed raToken,
-        address indexed paToken,
-        uint256 amount,
-        uint256 receivedAmount,
-        string status
-    );
+    /// @notice thrown when the internal reference id is invalid
+    error InalidRefId();
 
-    event SwapFailed(
-        address indexed raToken,
-        address indexed paToken,
-        uint256 amount,
-        uint256 minAmount,
-        uint256 expiry,
-        string reason
-    );
+    /// @notice thrown when the caller is not the hook trampoline
+    error OnlyTrampoline();
 
-    // Liquidate RA for PA for any RA-PA pair specified in function call
-    function liquidateRaForPa(address raToken, address paToken, uint256 raAmount, uint256 paAmount)
-        external
-        returns (bool);
+    /// @notice thrown when the caller is not the liquidator
+    error OnlyLiquidator();
 
-    function updateLiquidatorRole(address _hedgeUnit, bool _isSet) external;
+    function createOrderVault(ILiquidator.CreateVaultOrderParams memory params) external;
+
+    function finishVaultOrder(bytes32 refId) external;
 }

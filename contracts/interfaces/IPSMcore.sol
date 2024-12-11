@@ -273,7 +273,7 @@ interface IPSMcore is IRepurchase {
         external
         returns (uint256 profit, uint256 dsReceived);
 
-    function rolloverCt(Id id, address owner, uint256 amount, uint256 prevDsId)
+    function rolloverCt(Id id, uint256 amount, uint256 prevDsId)
         external
         returns (uint256 ctReceived, uint256 dsReceived, uint256 paReceived);
 

@@ -3,7 +3,7 @@ pragma solidity ^0.8.24;
 import {Script, console} from "forge-std/Script.sol";
 import {ERC1967Proxy} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 import {ModuleCore} from "../../contracts/core/ModuleCore.sol";
-import {Liquidator} from "../../contracts/core/Liquidator.sol";
+import {Liquidator} from "../../contracts/core/liquidators/cow-protocol/Liquidator.sol";
 import {HedgeUnit} from "../../contracts/core/assets/HedgeUnit.sol";
 import {HedgeUnitFactory} from "../../contracts/core/assets/HedgeUnitFactory.sol";
 
@@ -11,6 +11,8 @@ contract DeployScript is Script {
     ModuleCore public moduleCore;
     Liquidator public liquidator;
     HedgeUnitFactory public hedgeUnitFactory;
+    // TODO : insert this
+    address corkConfig = address(0);
 
     HedgeUnit public hedgeUnitbsETH;
     HedgeUnit public hedgeUnitwamuETH;
@@ -39,6 +41,9 @@ contract DeployScript is Script {
     uint256 fedUSDExpiry = 3.5 days;
     uint256 omgUSDExpiry = 0.5 days;
 
+    // TODO: Add the hookTrampoline address
+    address hookTrampoline = vm.addr(pk);
+
     address settlementContract = 0x9008D19f58AAbD9eD0D60971565AA8510560ab41;
 
     uint256 constant INITIAL_MINT_CAP = 1000 * 1e18; // 1000 tokens
@@ -53,7 +58,7 @@ contract DeployScript is Script {
         console.log("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-");
 
         // Deploy the Liquidator contract
-        liquidator = new Liquidator(msg.sender, 10000, settlementContract);
+        liquidator = new Liquidator(corkConfig, hookTrampoline, settlementContract, address(moduleCore));
         console.log("Liquidator                      : ", address(liquidator));
         console.log("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-");
 
@@ -72,7 +77,6 @@ contract DeployScript is Script {
                 INITIAL_MINT_CAP
             )
         );
-        liquidator.updateLiquidatorRole(address(hedgeUnitwamuETH), true);
         console.log("HU wamuETH                      : ", address(hedgeUnitwamuETH));
 
         hedgeUnitbsETH = HedgeUnit(
@@ -83,7 +87,6 @@ contract DeployScript is Script {
                 INITIAL_MINT_CAP
             )
         );
-        liquidator.updateLiquidatorRole(address(hedgeUnitbsETH), true);
         console.log("HU bsETH                        : ", address(hedgeUnitbsETH));
 
         hedgeUnitmlETH = HedgeUnit(
@@ -94,7 +97,6 @@ contract DeployScript is Script {
                 INITIAL_MINT_CAP
             )
         );
-        liquidator.updateLiquidatorRole(address(hedgeUnitmlETH), true);
         console.log("HU mlETH                        : ", address(hedgeUnitmlETH));
 
         hedgeUnitfedUSD = HedgeUnit(
@@ -102,7 +104,6 @@ contract DeployScript is Script {
                 moduleCore.getId(fedUSD, cUSD, fedUSDExpiry), fedUSD, "Fed Up USD - CUSD", INITIAL_MINT_CAP
             )
         );
-        liquidator.updateLiquidatorRole(address(hedgeUnitfedUSD), true);
         console.log("HU fedUSD                      : ", address(hedgeUnitfedUSD));
 
         hedgeUnitsvbUSD = HedgeUnit(
@@ -113,7 +114,6 @@ contract DeployScript is Script {
                 INITIAL_MINT_CAP
             )
         );
-        liquidator.updateLiquidatorRole(address(hedgeUnitsvbUSD), true);
         console.log("HU svbUSD                      : ", address(hedgeUnitsvbUSD));
 
         hedgeUnitomgUSD = HedgeUnit(
@@ -124,7 +124,6 @@ contract DeployScript is Script {
                 INITIAL_MINT_CAP
             )
         );
-        liquidator.updateLiquidatorRole(address(hedgeUnitomgUSD), true);
         console.log("HU omgUSD                      : ", address(hedgeUnitomgUSD));
         console.log("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-");
         vm.stopBroadcast();

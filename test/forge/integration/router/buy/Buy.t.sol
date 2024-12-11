@@ -74,11 +74,81 @@ contract BuyDsTest is Helper {
 
         hook.updateBaseFeePercentage(address(ra), ct, 1 ether);
 
-        uint256 amountOut = flashSwapRouter.swapRaforDs(
-            currencyId, dsId, amount, 0,defaultBuyApproxParams()
-        );
+        uint256 amountOut = flashSwapRouter.swapRaforDs(currencyId, dsId, amount, 0, defaultBuyApproxParams());
         uint256 balanceRaAfter = Asset(address(ds)).balanceOf(DEFAULT_ADDRESS);
 
         vm.assertEq(balanceRaAfter - balanceRaBefore, amountOut);
+
+        ff_expired();
+
+        // should work even if the resulting lowerbound is very large(won't be gas efficient)
+        IDsFlashSwapCore.BuyAprroxParams memory params = defaultBuyApproxParams();
+        params.maxFeeIter = 100000;
+        params.feeIntervalAdjustment = 1 ether;
+
+        // should work after expiry
+        flashSwapRouter.swapRaforDs(currencyId, dsId, amount, 0, params);
+
+        // there's no sufficient liquidity due to very low HIYA, so we disable the fee to make it work
+        hook.updateBaseFeePercentage(address(ra), ct, 0 ether);
+
+        flashSwapRouter.swapRaforDs(currencyId, dsId, 0.01 ether, 0, params);
+    }
+
+    function testFuzz_buyDS(uint256 amount) public virtual {
+        amount = bound(amount, 1 ether, 100 ether);
+
+        ra.approve(address(flashSwapRouter), type(uint256).max);
+
+        (uint256 raReserve, uint256 ctReserve) = hook.getReserves(address(ra), address(ct));
+
+        Asset(ds).approve(address(flashSwapRouter), amount);
+
+        uint256 balanceRaBefore = Asset(ds).balanceOf(DEFAULT_ADDRESS);
+        vm.warp(current);
+
+        // TODO : figure out the out of whack gas consumption
+        vm.pauseGasMetering();
+
+        uint256 amountOut = flashSwapRouter.swapRaforDs(currencyId, dsId, amount, 0, defaultBuyApproxParams());
+        uint256 balanceRaAfter = Asset(address(ds)).balanceOf(DEFAULT_ADDRESS);
+
+        vm.assertEq(balanceRaAfter - balanceRaBefore, amountOut);
+
+        ff_expired();
+
+        // should work even if the resulting lowerbound is very large(won't be gas efficient)
+        IDsFlashSwapCore.BuyAprroxParams memory params = defaultBuyApproxParams();
+        params.maxFeeIter = 100000;
+        params.feeIntervalAdjustment = 1000 ether;
+
+        // should work after expiry
+        flashSwapRouter.swapRaforDs(currencyId, dsId, amount, 0, params);
+
+        // there's no sufficient liquidity due to very low HIYA, so we disable the fee to make it work
+        hook.updateBaseFeePercentage(address(ra), ct, 0 ether);
+
+        flashSwapRouter.swapRaforDs(currencyId, dsId, 0.001 ether, 0, params);
+    }
+
+    // ff to expiry and update infos
+    function ff_expired() internal {
+        // fast forward to expiry
+        uint256 expiry = Asset(ds).expiry();
+        vm.warp(expiry);
+
+        uint256 rolloverBlocks = flashSwapRouter.getRolloverEndInBlockNumber(currencyId);
+        vm.roll(block.number + rolloverBlocks);
+
+        Asset(ct).approve(address(moduleCore), DEFAULT_DEPOSIT_AMOUNT);
+
+        issueNewDs(currencyId);
+
+        fetchProtocolGeneralInfo();
+    }
+
+    function fetchProtocolGeneralInfo() internal {
+        dsId = moduleCore.lastDsId(currencyId);
+        (ct, ds) = moduleCore.swapAsset(currencyId, dsId);
     }
 }

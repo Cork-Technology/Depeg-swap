@@ -24,8 +24,7 @@ library VaultPoolLibrary {
 
         // PA
         uint256 totalPa = self.withdrawalPool.paBalance + addedPa;
-        (, attributedToAmm, ratePerLv) =
-            MathHelper.separateLiquidity(totalPa, totalLvIssued, 0);
+        (, attributedToAmm, ratePerLv) = MathHelper.separateLiquidity(totalPa, totalLvIssued, 0);
 
         self.withdrawalPool.paBalance = attributedToAmm;
         self.withdrawalPool.paExchangeRate = ratePerLv;
@@ -33,11 +32,14 @@ library VaultPoolLibrary {
         assert(totalRa == self.withdrawalPool.raBalance + self.ammLiquidityPool.balance);
     }
 
-    function rationedToAmm(VaultPool storage self, uint256 ratio) internal view returns (uint256 ra, uint256 ct, uint256 originalBalance) {
+    function rationedToAmm(VaultPool storage self, uint256 ratio)
+        internal
+        view
+        returns (uint256 ra, uint256 ct, uint256 originalBalance)
+    {
         originalBalance = self.ammLiquidityPool.balance;
 
         (ra, ct) = MathHelper.calculateProvideLiquidityAmountBasedOnCtPrice(originalBalance, ratio);
-        
     }
 
     function resetAmmPool(VaultPool storage self) internal {

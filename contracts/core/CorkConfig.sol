@@ -19,10 +19,16 @@ import {CorkHook} from "Cork-Hook/CorkHook.sol";
 contract CorkConfig is AccessControl, Pausable {
     bytes32 public constant MANAGER_ROLE = keccak256("MANAGER_ROLE");
     bytes32 public constant RATE_UPDATERS_ROLE = keccak256("RATE_UPDATERS_ROLE");
+    bytes32 public constant BASE_LIQUIDATOR_ROLE = keccak256("BASE_LIQUIDATOR_ROLE");
 
     ModuleCore public moduleCore;
     IDsFlashSwapCore public flashSwapRouter;
     CorkHook public hook;
+
+    uint256 public constant WHITELIST_TIME_DELAY = 7 days;
+
+    /// @notice liquidation address => timestamp when liquidation is allowed
+    mapping(address => uint256) liquidationWhitelist;
 
     /// @notice thrown when caller is not manager/Admin of Cork Protocol
     error CallerNotManager();
@@ -60,8 +66,37 @@ contract CorkConfig is AccessControl, Pausable {
         _grantRole(MANAGER_ROLE, msg.sender);
     }
 
+    function _computLiquidatorRoleHash(address account) public view returns (bytes32) {
+        return keccak256(abi.encodePacked(BASE_LIQUIDATOR_ROLE, account));
+    }
+
     function grantRole(bytes32 role, address account) public override onlyManager {
         _grantRole(role, account);
+    }
+
+    function isTrustedLiquidationExecutor(address liquidationContract, address user) external view returns (bool) {
+        return hasRole(_computLiquidatorRoleHash(liquidationContract), user);
+    }
+
+    function grantLiquidatorRole(address liquidationContract, address account) external onlyManager {
+        _grantRole(_computLiquidatorRoleHash(liquidationContract), account);
+    }
+
+    function revokeLiquidatorRole(address liquidationContract, address account) external onlyManager {
+        _revokeRole(_computLiquidatorRoleHash(liquidationContract), account);
+    }
+
+    function isLiquidationWhitelisted(address liquidationAddress) external view returns (bool) {
+        return
+            liquidationWhitelist[liquidationAddress] <= block.timestamp && liquidationWhitelist[liquidationAddress] != 0;
+    }
+
+    function blacklist(address liquidationAddress) external onlyManager {
+        delete liquidationWhitelist[liquidationAddress];
+    }
+
+    function whitelist(address liquidationAddress) external onlyManager {
+        liquidationWhitelist[liquidationAddress] = block.timestamp + WHITELIST_TIME_DELAY;
     }
 
     /**
@@ -94,6 +129,10 @@ contract CorkConfig is AccessControl, Pausable {
 
     function updateAmmBaseFeePercentage(address ra, address ct, uint256 newBaseFeePercentage) external onlyManager {
         hook.updateBaseFeePercentage(ra, ct, newBaseFeePercentage);
+    }
+
+    function setWithdrawalContract(address _withdrawalContract) external onlyManager {
+        moduleCore.setWithdrawalContract(_withdrawalContract);
     }
 
     /**
@@ -243,6 +282,10 @@ contract CorkConfig is AccessControl, Pausable {
 
     function updatePsmRate(Id id, uint256 newRate) external onlyUpdaterOrManager {
         moduleCore.updateRate(id, newRate);
+    }
+
+    function useVaultTradeExecutionResultFunds(Id id) external onlyManager {
+        moduleCore.useTradeExecutionResultFunds(id);
     }
 
     /**

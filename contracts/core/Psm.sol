@@ -19,7 +19,8 @@ abstract contract PsmCore is IPSMcore, ModuleState, Context {
     using PsmLibrary for State;
     using PairLibrary for Pair;
 
-    function updateRate(Id id, uint256 newRate) external onlyConfig {
+    function updateRate(Id id, uint256 newRate) external  {
+        onlyConfig()    ;
         State storage state = states[id];
         uint256 previousRate = state.exchangeRate();
 
@@ -46,7 +47,6 @@ abstract contract PsmCore is IPSMcore, ModuleState, Context {
         external
         override
         nonReentrant
-        PSMRepurchaseNotPaused(id)
         returns (
             uint256 dsId,
             uint256 receivedPa,
@@ -56,6 +56,8 @@ abstract contract PsmCore is IPSMcore, ModuleState, Context {
             uint256 exchangeRates
         )
     {
+        PSMRepurchaseNotPaused(id);
+
         State storage state = states[id];
 
         (dsId, receivedPa, receivedDs, feePercentage, fee, exchangeRates) =
@@ -92,13 +94,10 @@ abstract contract PsmCore is IPSMcore, ModuleState, Context {
      * @return received the amount of CT/DS received
      * @return _exchangeRate effective exchange rate at time of deposit
      */
-    function depositPsm(Id id, uint256 amount)
-        external
-        override
-        onlyInitialized(id)
-        PSMDepositNotPaused(id)
-        returns (uint256 received, uint256 _exchangeRate)
-    {
+    function depositPsm(Id id, uint256 amount) external override returns (uint256 received, uint256 _exchangeRate) {
+        onlyInitialized(id);
+        PSMDepositNotPaused(id);
+
         State storage state = states[id];
         uint256 dsId;
         (dsId, received, _exchangeRate) = state.deposit(_msgSender(), amount);
@@ -112,14 +111,10 @@ abstract contract PsmCore is IPSMcore, ModuleState, Context {
         address redeemer,
         bytes memory rawDsPermitSig,
         uint256 deadline
-    )
-        external
-        override
-        nonReentrant
-        onlyInitialized(id)
-        PSMWithdrawalNotPaused(id)
-        returns (uint256 received, uint256 _exchangeRate, uint256 fee)
-    {
+    ) external override nonReentrant returns (uint256 received, uint256 _exchangeRate, uint256 fee) {
+        onlyInitialized(id);
+        PSMWithdrawalNotPaused(id);
+
         if (rawDsPermitSig.length == 0 || deadline == 0) {
             revert InvalidSignature();
         }
@@ -138,10 +133,11 @@ abstract contract PsmCore is IPSMcore, ModuleState, Context {
         external
         override
         nonReentrant
-        onlyInitialized(id)
-        PSMWithdrawalNotPaused(id)
         returns (uint256 received, uint256 _exchangeRate, uint256 fee)
     {
+        onlyInitialized(id);
+        PSMWithdrawalNotPaused(id);
+
         State storage state = states[id];
 
         (received, _exchangeRate, fee) = state.redeemWithDs(_msgSender(), amount, dsId, bytes(""), 0);
@@ -152,7 +148,7 @@ abstract contract PsmCore is IPSMcore, ModuleState, Context {
             id, dsId, _msgSender(), amount, received, _exchangeRate, state.psm.psmBaseRedemptionFeePercentage, fee
         );
     }
- 
+
     /**
      * This determines the rate of how much the user will receive for the amount of asset they want to deposit.
      * for example, if the rate is 1.5, then the user will need to deposit 1.5 token to get 1 CT and DS.
@@ -170,17 +166,13 @@ abstract contract PsmCore is IPSMcore, ModuleState, Context {
         address redeemer,
         bytes memory rawCtPermitSig,
         uint256 deadline
-    )
-        external
-        override
-        nonReentrant
-        onlyInitialized(id)
-        PSMWithdrawalNotPaused(id)
-        returns (uint256 accruedPa, uint256 accruedRa)
-    {
+    ) external override nonReentrant returns (uint256 accruedPa, uint256 accruedRa) {
+        onlyInitialized(id);
+        PSMWithdrawalNotPaused(id);
+
         if (rawCtPermitSig.length == 0 || deadline == 0) {
             revert InvalidSignature();
-        }        
+        }
         State storage state = states[id];
 
         (accruedPa, accruedRa) = state.redeemWithCt(redeemer, amount, dsId, rawCtPermitSig, deadline);
@@ -192,10 +184,11 @@ abstract contract PsmCore is IPSMcore, ModuleState, Context {
         external
         override
         nonReentrant
-        onlyInitialized(id)
-        PSMWithdrawalNotPaused(id)
         returns (uint256 accruedPa, uint256 accruedRa)
     {
+        onlyInitialized(id);
+        PSMWithdrawalNotPaused(id);
+
         State storage state = states[id];
 
         (accruedPa, accruedRa) = state.redeemWithCt(_msgSender(), amount, dsId, bytes(""), 0);
@@ -229,7 +222,9 @@ abstract contract PsmCore is IPSMcore, ModuleState, Context {
         uint256 dsDeadline,
         bytes memory rawCtPermitSig,
         uint256 ctDeadline
-    ) external override nonReentrant PSMWithdrawalNotPaused(id) returns (uint256 ra) {
+    ) external override nonReentrant returns (uint256 ra) {
+        PSMWithdrawalNotPaused(id);
+
         if (rawDsPermitSig.length == 0 || dsDeadline == 0 || rawCtPermitSig.length == 0 || ctDeadline == 0) {
             revert InvalidSignature();
         }
@@ -245,13 +240,9 @@ abstract contract PsmCore is IPSMcore, ModuleState, Context {
      * @param amount amount user wants to redeem
      * @return ra amount of RA user received
      */
-    function redeemRaWithCtDs(Id id, uint256 amount)
-        external
-        override
-        nonReentrant
-        PSMWithdrawalNotPaused(id)
-        returns (uint256 ra)
-    {
+    function redeemRaWithCtDs(Id id, uint256 amount) external override nonReentrant returns (uint256 ra) {
+        PSMWithdrawalNotPaused(id);
+
         State storage state = states[id];
 
         ra = state.redeemRaWithCtDs(_msgSender(), amount, bytes(""), 0, bytes(""), 0);
@@ -267,7 +258,9 @@ abstract contract PsmCore is IPSMcore, ModuleState, Context {
         return state.psm.psmBaseRedemptionFeePercentage;
     }
 
-    function psmAcceptFlashSwapProfit(Id id, uint256 profit) external onlyFlashSwapRouter {
+    function psmAcceptFlashSwapProfit(Id id, uint256 profit) external {
+        onlyFlashSwapRouter();
+
         State storage state = states[id];
         state.acceptRolloverProfit(profit);
     }
@@ -279,34 +272,29 @@ abstract contract PsmCore is IPSMcore, ModuleState, Context {
         uint256 dsId,
         bytes memory rawCtPermitSig,
         uint256 ctDeadline
-    )
-        external
-        PSMDepositNotPaused(id)
-        returns (uint256 ctReceived, uint256 dsReceived, uint256 paReceived)
-    {
+    ) external returns (uint256 ctReceived, uint256 dsReceived, uint256 paReceived) {
+        PSMDepositNotPaused(id);
+
         if (rawCtPermitSig.length == 0 || ctDeadline == 0) {
             revert InvalidSignature();
         }
         State storage state = states[id];
         (ctReceived, dsReceived, paReceived) =
             state.rolloverCt(owner, amount, dsId, getRouterCore(), rawCtPermitSig, ctDeadline);
-        emit RolledOver(
-            id, state.globalAssetIdx, owner, dsId, amount, dsReceived, ctReceived, paReceived
-        );
+        emit RolledOver(id, state.globalAssetIdx, owner, dsId, amount, dsReceived, ctReceived, paReceived);
     }
 
-    function rolloverCt(Id id, address owner, uint256 amount, uint256 dsId)
+    function rolloverCt(Id id, uint256 amount, uint256 dsId)
         external
-        PSMDepositNotPaused(id)
         returns (uint256 ctReceived, uint256 dsReceived, uint256 paReceived)
     {
+        PSMDepositNotPaused(id);
+
         State storage state = states[id];
         bytes memory signaturePlaceHolder;
         (ctReceived, dsReceived, paReceived) =
-            state.rolloverCt(owner, amount, dsId, getRouterCore(), signaturePlaceHolder, 0);
-        emit RolledOver(
-            id, state.globalAssetIdx, _msgSender(), dsId, amount, dsReceived, ctReceived, paReceived
-        );
+            state.rolloverCt(_msgSender(), amount, dsId, getRouterCore(), signaturePlaceHolder, 0);
+        emit RolledOver(id, state.globalAssetIdx, _msgSender(), dsId, amount, dsReceived, ctReceived, paReceived);
     }
 
     function claimAutoSellProfit(Id id, uint256 dsId, uint256 amount)

@@ -20,7 +20,7 @@ library VaultConfigLibrary {
         if (fee > MAX_ALLOWED_FEES) {
             revert ICommon.InvalidFees();
         }
-        return VaultConfig({fee: fee, lpBalance: 0, isDepositPaused: false, isWithdrawalPaused: false});
+        return VaultConfig({fee: fee, isDepositPaused: false, isWithdrawalPaused: false});
     }
 
     function updateFee(VaultConfig storage self, uint256 fee) internal {

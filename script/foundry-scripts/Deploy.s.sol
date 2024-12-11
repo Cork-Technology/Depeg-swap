@@ -9,7 +9,7 @@ import {AssetFactory} from "../../contracts/core/assets/AssetFactory.sol";
 import {CorkConfig} from "../../contracts/core/CorkConfig.sol";
 import {RouterState} from "../../contracts/core/flash-swaps/FlashSwapRouter.sol";
 import {ModuleCore} from "../../contracts/core/ModuleCore.sol";
-import {Liquidator} from "../../contracts/core/Liquidator.sol";
+import {Liquidator} from "../../contracts/core/liquidators/cow-protocol/Liquidator.sol";
 import {HedgeUnit} from "../../contracts/core/assets/HedgeUnit.sol";
 import {HedgeUnitFactory} from "../../contracts/core/assets/HedgeUnitFactory.sol";
 import {CETH} from "../../contracts/tokens/CETH.sol";
@@ -25,13 +25,6 @@ interface ICST {
 }
 
 contract DeployScript is Script {
-    // // TODO : check if univ2 compilation with foundry is same as hardhat compiled bytecode
-    // string constant v2FactoryArtifact = "test/helper/ext-abi/foundry/uni-v2-factory.json";
-    // string constant v2RouterArtifact = "test/helper/ext-abi/foundry/uni-v2-router.json";
-
-    // IUniswapV2Factory public factory;
-    // IUniswapV2Router02 public univ2Router;
-
     AssetFactory public assetFactory;
     CorkConfig public config;
     RouterState public flashswapRouter;
@@ -64,6 +57,9 @@ contract DeployScript is Script {
     uint256 lbETH_CETH_expiry = 4 days;
     uint256 bsETH_CETH_expiry = 0.4 days;
     uint256 wamuETH_CETH_expiry = 6 days;
+
+    // TODO : plz fix this properly
+    address hookTrampoline = vm.addr(pk);
 
     uint256 constant INITIAL_MINT_CAP = 1000 * 1e18; // 1000 tokens
 
@@ -164,11 +160,11 @@ contract DeployScript is Script {
         liquidityToken = new LiquidityToken();
 
         bytes memory creationCode = type(CorkHook).creationCode;
-        bytes memory constructorArgs = abi.encode(poolManager, liquidityToken);
+        bytes memory constructorArgs = abi.encode(poolManager, liquidityToken, address(config));
 
         (address hookAddress, bytes32 salt) = HookMiner.find(CREATE_2_PROXY, hookFlags, creationCode, constructorArgs);
 
-        hook = new CorkHook{salt: salt}(poolManager, liquidityToken);
+        hook = new CorkHook{salt: salt}(poolManager, liquidityToken, address(config));
         require(address(hook) == hookAddress, "hook address mismatch");
 
         // Deploy the ModuleCore Proxy contract
@@ -188,7 +184,7 @@ contract DeployScript is Script {
         console.log("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-");
 
         // Deploy the Liquidator contract
-        liquidator = new Liquidator(msg.sender, 10000, settlementContract);
+        liquidator = new Liquidator(address(config), hookTrampoline, settlementContract, address(moduleCore));
         console.log("Liquidator                      : ", address(liquidator));
         console.log("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-");
 
@@ -208,7 +204,6 @@ contract DeployScript is Script {
                 INITIAL_MINT_CAP
             )
         );
-        liquidator.updateLiquidatorRole(address(hedgeUnitbsETH), true);
         console.log("HU bsETH                        : ", address(hedgeUnitbsETH));
 
         hedgeUnitlbETH = HedgeUnit(
@@ -219,7 +214,6 @@ contract DeployScript is Script {
                 INITIAL_MINT_CAP
             )
         );
-        liquidator.updateLiquidatorRole(address(hedgeUnitlbETH), true);
         console.log("HU lbETH                        : ", address(hedgeUnitlbETH));
 
         hedgeUnitwamuETH = HedgeUnit(
@@ -230,7 +224,6 @@ contract DeployScript is Script {
                 INITIAL_MINT_CAP
             )
         );
-        liquidator.updateLiquidatorRole(address(hedgeUnitwamuETH), true);
         console.log("HU wamuETH                      : ", address(hedgeUnitwamuETH));
 
         hedgeUnitmlETH = HedgeUnit(
@@ -241,7 +234,6 @@ contract DeployScript is Script {
                 INITIAL_MINT_CAP
             )
         );
-        liquidator.updateLiquidatorRole(address(hedgeUnitmlETH), true);
         console.log("HU mlETH                        : ", address(hedgeUnitmlETH));
         console.log("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-");
 

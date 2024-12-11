@@ -38,7 +38,7 @@ struct ReserveState {
     uint256 decayDiscountRateInDays;
     uint256 rolloverEndInBlockNumber;
     uint256 hiya;
-    bool gradualSale;
+    bool gradualSaleDisabled;
 }
 
 /**
@@ -211,17 +211,20 @@ library DsFlashSwaplibrary {
         uint256 amount,
         ICorkHook router,
         IDsFlashSwapCore.BuyAprroxParams memory params
-    ) external view returns (uint256 amountOut, uint256 borrowedAmount, uint256 repaymentAmount) {
+    ) external view returns (uint256 amountOut, uint256 borrowedAmount) {
         (uint256 raReserve, uint256 ctReserve) = getReservesSorted(assetPair, router);
+
+        MarketSnapshot memory market = router.getMarketSnapshot(address(assetPair.ra), address(assetPair.ct));
 
         uint256 issuedAt = assetPair.ds.issuedAt();
         uint256 end = assetPair.ds.expiry();
 
         amountOut = _calculateInitialBuyOut(InitialTradeCaclParams(raReserve, ctReserve, issuedAt, end, amount, params));
 
-        borrowedAmount = amountOut - amount;
+        // we subtract some percentage of it to account for dust imprecisions
+        amountOut -= SwapperMathLibrary.calculatePercentage(amountOut, params.precisionBufferPercentage);
 
-        MarketSnapshot memory market = router.getMarketSnapshot(address(assetPair.ra), address(assetPair.ct));
+        borrowedAmount = amountOut - amount;
 
         SwapperMathLibrary.OptimalBorrowParams memory optimalParams = SwapperMathLibrary.OptimalBorrowParams(
             market,
@@ -238,7 +241,6 @@ library DsFlashSwaplibrary {
 
         amountOut = result.amountOut;
         borrowedAmount = result.borrowedAmount;
-        repaymentAmount = result.repaymentAmount;
     }
 
     struct InitialTradeCaclParams {
