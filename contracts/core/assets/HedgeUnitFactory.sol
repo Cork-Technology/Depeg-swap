@@ -2,7 +2,6 @@
 pragma solidity ^0.8.24;
 
 import {HedgeUnit} from "./HedgeUnit.sol";
-import {AccessControl} from "@openzeppelin/contracts/access/AccessControl.sol";
 import {Id, Pair, PairLibrary} from "../../libraries/Pair.sol";
 
 /**

@@ -1,10 +1,9 @@
 pragma solidity ^0.8.24;
 
-import {SD59x18, convert, intoUD60x18} from "@prb/math/src/SD59x18.sol";
-import {UD60x18, convert, ud, add, mul, pow, sub, div, unwrap, intoSD59x18, sqrt} from "@prb/math/src/UD60x18.sol";
-import "./../interfaces/IHedgeUnit.sol";
+import {convert, intoUD60x18} from "@prb/math/src/SD59x18.sol";
+import {UD60x18, convert, ud, add, mul, pow, sub, div, unwrap} from "@prb/math/src/UD60x18.sol";
+import {IHedgeUnit} from "./../interfaces/IHedgeUnit.sol";
 import "./DsSwapperMathLib.sol";
-import "forge-std/console.sol";
 
 library HedgeUnitMath {
     // caller of this contract must ensure the both amount is already proportional in amount!

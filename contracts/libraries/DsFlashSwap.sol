@@ -1,14 +1,12 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.24;
 
-import {IUniswapV2Pair} from "../interfaces/uniswap-v2/pair.sol";
 import {Asset} from "../core/assets/Asset.sol";
 import {SwapperMathLibrary} from "./DsSwapperMathLib.sol";
-import {MinimalUniswapV2Library} from "./uni-v2/UniswapV2Library.sol";
 import {PermitChecker} from "./PermitChecker.sol";
 import {ICorkHook} from "../interfaces/UniV4/IMinimalHook.sol";
-import "Cork-Hook/lib/MarketSnapshot.sol";
-import "./../interfaces/IDsFlashSwapRouter.sol";
+import {MarketSnapshot, MarketSnapshotLib} from "Cork-Hook/lib/MarketSnapshot.sol";
+import {IDsFlashSwapCore} from "./../interfaces/IDsFlashSwapRouter.sol";
 
 /**
  * @dev AssetPair structure for Asset Pairs
@@ -199,8 +197,6 @@ library DsFlashSwaplibrary {
         view
         returns (uint256 amountOut, uint256 repaymentAmount, bool success)
     {
-        (uint256 raReserve, uint256 ctReserve) = getReservesSorted(assetPair, router);
-
         repaymentAmount = router.getAmountIn(address(assetPair.ra), address(assetPair.ct), true, amount);
 
         (success, amountOut) = SwapperMathLibrary.getAmountOutSellDs(repaymentAmount, amount);

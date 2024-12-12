@@ -1,6 +1,6 @@
 pragma solidity ^0.8.24;
 
-import "./IWithdrawalRouter.sol";
+import {IWithdrawalRouter} from "./IWithdrawalRouter.sol";
 
 interface IWithdrawal {
     function add(address owner, IWithdrawalRouter.Tokens[] calldata tokens) external returns (bytes32 withdrawalId);

@@ -289,7 +289,7 @@ contract RolloverTest is Helper {
         // we autosell
         vm.assertEq(dsReceived, 0);
 
-        vm.assertEq(true, flashSwapRouter.isRolloverSale(currencyId, dsId));
+        vm.assertEq(true, flashSwapRouter.isRolloverSale(currencyId));
 
         // based on the Hiya = 0.017895624717812529 (~1% ARP) and t = 1
         uint256 expectedHPA = 0.017895624717812529 ether;
@@ -338,7 +338,7 @@ contract RolloverTest is Helper {
         // we autosell
         vm.assertEq(dsReceived, 0);
 
-        vm.assertEq(true, flashSwapRouter.isRolloverSale(currencyId, dsId));
+        vm.assertEq(true, flashSwapRouter.isRolloverSale(currencyId));
 
         vm.expectRevert();
         amountOut = flashSwapRouter.swapRaforDs(currencyId, dsId, Hiya, 1000000 ether, defaultBuyApproxParams());

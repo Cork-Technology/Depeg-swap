@@ -3,7 +3,7 @@ pragma solidity ^0.8.24;
 
 import {Id} from "../libraries/Pair.sol";
 import {IUniswapV2Pair} from "./uniswap-v2/pair.sol";
-import "./IMathError.sol";
+import {IMathError} from "./IMathError.sol";
 
 /**
  * @title IDsFlashSwapUtility Interface
@@ -305,7 +305,7 @@ interface IDsFlashSwapCore is IDsFlashSwapUtility {
      */
     function updateGradualSaleStatus(Id id, bool status) external;
 
-    function isRolloverSale(Id id, uint256 dsId) external view returns (bool);
+    function isRolloverSale(Id id) external view returns (bool);
 
     function updateReserveSellPressurePercentage(Id id, uint256 newPercentage) external;
 }

@@ -8,8 +8,6 @@ import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol
 import {SafeERC20, IERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import {IHedgeUnit} from "../../interfaces/IHedgeUnit.sol";
-import {ICommon} from "../../interfaces/ICommon.sol";
-import {ILiquidator} from "../../interfaces/ILiquidator.sol";
 import {Id} from "../../libraries/Pair.sol";
 import {Asset} from "./Asset.sol";
 import {HedgeUnitMath} from "./../../libraries/HedgeUnitMath.sol";
@@ -17,9 +15,9 @@ import {CorkConfig} from "./../CorkConfig.sol";
 import {IHedgeUnitLiquidation} from "./../../interfaces/IHedgeUnitLiquidation.sol";
 import {IDsFlashSwapCore} from "./../../interfaces/IDsFlashSwapRouter.sol";
 import {ModuleCore} from "./../ModuleCore.sol";
-import "openzeppelin-contracts/contracts/token/ERC20/extensions/ERC20Permit.sol";
-import "./../../libraries/SignatureHelperLib.sol";
-import "./../../libraries/DepegSwapLib.sol";
+import {ERC20Permit} from "@openzeppelin/contracts/token/ERC20/extensions/ERC20Permit.sol";
+import {Signature, MinimalSignatureHelper} from "./../../libraries/SignatureHelperLib.sol";
+import {DepegSwapLibrary} from "./../../libraries/DepegSwapLib.sol";
 
 struct DSData {
     address dsAddress;
