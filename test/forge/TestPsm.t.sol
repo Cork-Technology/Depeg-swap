@@ -14,20 +14,6 @@ contract PsmCoreTest is Helper {
     uint256 public constant DEFAULT_DEPOSIT_AMOUNT = 10000 ether;
     uint256 public constant EXPIRY = 1 days;
 
-      event Repurchased(
-        Id indexed id,
-        address indexed buyer,
-        uint256 indexed dsId,
-        uint256 raUsed,
-        uint256 receivedPa,
-        uint256 receivedDs,
-        uint256 feePercentage,
-        uint256 fee,
-        uint256 exchangeRates
-    );
-
-
-
     address user2 = address(30);
       address public lv;
       uint256 public dsId;
@@ -53,12 +39,9 @@ contract PsmCoreTest is Helper {
         vm.stopPrank();
         vm.startPrank(DEFAULT_ADDRESS);
 
-        // 10000 for psm 10000 for LV
         ra.approve(address(moduleCore), type(uint256).max);
 
-        // moduleCore.depositPsm(currencyId, DEFAULT_DEPOSIT_AMOUNT);
         moduleCore.depositLv(currencyId, DEFAULT_DEPOSIT_AMOUNT, 0, 0);
-
     }
 
     function test_depositPsm() public {
