@@ -24,7 +24,6 @@ library BalancesSnapshot {
         bytes32 slot = _computeSlot(token);
         uint256 _balance = IERC20(token).balanceOf(address(this));
 
-
         assembly ("memory-safe") {
             _difference := sub(_balance, tload(slot))
         }

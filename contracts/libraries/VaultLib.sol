@@ -194,9 +194,8 @@ library VaultLibrary {
         address ctAddress,
         ICorkHook ammRouter
     ) internal returns (uint256 ra, uint256 ct, uint256 dust) {
-        (ra, ct, dust) = __provideLiquidityWithRatioGetDust(
-            self, amount, flashSwapRouter, ctAddress, ammRouter, Tolerance(0, 0)
-        );
+        (ra, ct, dust) =
+            __provideLiquidityWithRatioGetDust(self, amount, flashSwapRouter, ctAddress, ammRouter, Tolerance(0, 0));
     }
 
     function __getAmmCtPriceRatio(State storage self, IDsFlashSwapCore flashSwapRouter, uint256 dsId)
@@ -239,7 +238,7 @@ library VaultLibrary {
             ratio = MathHelper.calculateInitialCtRatio(hiya * 100);
             return ratio;
         }
-    
+
         // this will be the default ratio to use
         if (marketRatio != 0) {
             ratio = marketRatio;

@@ -36,7 +36,7 @@ library PsmLibrary {
      *   This denotes maximum fee allowed in contract
      *   Here 1 ether = 1e18 so maximum 5% fee allowed
      */
-    uint256 constant internal MAX_ALLOWED_FEES = 5 ether;
+    uint256 internal constant MAX_ALLOWED_FEES = 5 ether;
 
     /// @notice inssuficient balance to perform rollover redeem(e.g having 5 CT worth of rollover to redeem but trying to redeem 10)
     error InsufficientRolloverBalance(address caller, uint256 requested, uint256 balance);
