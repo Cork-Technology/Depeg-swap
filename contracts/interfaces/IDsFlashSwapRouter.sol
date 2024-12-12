@@ -67,6 +67,9 @@ interface IDsFlashSwapUtility is IMathError {
  * @notice IDsFlashSwapCore interface for Flashswap Router contract
  */
 interface IDsFlashSwapCore is IDsFlashSwapUtility {
+    /// @notice Zero Address error, thrown when passed address is 0
+    error ZeroAddress();
+
     /// @notice thrown when Permit is not supported in Given ERC20 contract
     error PermitNotSupported();
 

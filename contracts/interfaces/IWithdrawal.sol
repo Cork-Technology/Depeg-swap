@@ -13,6 +13,9 @@ interface IWithdrawal {
 
     event WithdrawalClaimed(bytes32 indexed withdrawalId, address indexed owner);
 
+    /// @notice Zero Address error, thrown when passed address is 0
+    error ZeroAddress();
+
     error NotYetClaimable(uint256 claimableAt, uint256 blockTimestamp);
 
     error NotOwner(address owner, address msgSender);

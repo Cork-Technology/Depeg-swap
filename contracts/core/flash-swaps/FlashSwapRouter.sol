@@ -98,6 +98,9 @@ contract RouterState is
     function _authorizeUpgrade(address newImplementation) internal override onlyConfig {}
 
     function setModuleCore(address moduleCore) external onlyDefaultAdmin {
+        if(moduleCore == address(0)) {
+            revert ZeroAddress();
+        }
         _moduleCore = moduleCore;
         _grantRole(MODULE_CORE, moduleCore);
     }

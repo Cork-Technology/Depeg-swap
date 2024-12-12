@@ -51,6 +51,9 @@ interface ILiquidator {
         address liquidator
     );
 
+    /// @notice Zero Address error, thrown when passed address is 0
+    error ZeroAddress();
+
     /// @notice thrown when the internal reference id is invalid
     error InalidRefId();
 

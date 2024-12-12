@@ -26,6 +26,9 @@ contract HedgeUnitFactory {
     // Event emitted when a new HedgeUnit contract is deployed
     event HedgeUnitDeployed(Id indexed pairId, address indexed hedgeUnitAddress);
 
+    /// @notice Zero Address error, thrown when passed address is 0
+    error ZeroAddress();
+
     error HedgeUnitExists();
 
     error InvalidPairId();
@@ -42,6 +45,9 @@ contract HedgeUnitFactory {
      * @param _config Address of the config contract
      */
     constructor(address _moduleCore, address _config, address _flashSwapRouter) {
+        if(_moduleCore == address(0) || _config == address(0) || _flashSwapRouter == address(0)) {
+            revert ZeroAddress();
+        }
         moduleCore = _moduleCore;
         config = _config;
         router = _flashSwapRouter;

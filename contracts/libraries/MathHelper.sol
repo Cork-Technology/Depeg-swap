@@ -106,7 +106,7 @@ library MathHelper {
     function calculateDepositAmountWithExchangeRate(uint256 amount, uint256 exchangeRate)
         public
         pure
-        returns (uint256 _amount)
+        returns (uint256)
     {
         UD60x18 _amount = div(ud(amount), ud(exchangeRate));
         return unwrap(_amount);

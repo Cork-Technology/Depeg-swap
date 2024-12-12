@@ -59,6 +59,9 @@ contract Liquidator is ILiquidator {
     }
 
     constructor(address _config, address _hookTrampoline, address _settlementContract, address _moduleCore) {
+        if(_config == address(0) || _hookTrampoline == address(0) || _settlementContract == address(0) || _moduleCore == address(0)) {
+            revert ILiquidator.ZeroAddress();
+        }
         settlement = GPv2SettlementContract(_settlementContract);
         config = _config;
         hookTrampoline = _hookTrampoline;

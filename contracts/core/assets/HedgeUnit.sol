@@ -373,7 +373,7 @@ contract HedgeUnit is ERC20Permit, ReentrancyGuard, Ownable, Pausable, IHedgeUni
         autoUpdateDS
         returns (uint256 dsAmount, uint256 paAmount, uint256 raAmount)
     {
-        (uint256 dsAmount, uint256 paAmount, uint256 raAmount) = previewDissolve(amount);
+        (dsAmount, paAmount, raAmount) = previewDissolve(amount);
 
         Signature memory sig = MinimalSignatureHelper.split(rawHuPermitSig);
         permit(msg.sender, address(this), amount, deadline, sig.v, sig.r, sig.s);
