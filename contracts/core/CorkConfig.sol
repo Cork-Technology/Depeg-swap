@@ -280,10 +280,9 @@ contract CorkConfig is AccessControl, Pausable {
         address pa,
         address ra,
         string memory pairName,
-        uint256 mintCap,
-        uint256 dsPriceTolerance
+        uint256 mintCap
     ) external onlyManager {
-        hedgeUnitFactory.deployHedgeUnit(id, pa, ra, pairName, mintCap, dsPriceTolerance);
+        hedgeUnitFactory.deployHedgeUnit(id, pa, ra, pairName, mintCap);
     }
 
     function deRegisterHedgeUnit(Id id) external onlyManager {
@@ -292,10 +291,6 @@ contract CorkConfig is AccessControl, Pausable {
 
     function pauseHedgeUnit(address hedgeUnit) external onlyManager {
         HedgeUnit(hedgeUnit).pause();
-    }
-
-    function updateHedgeUnitDsPriceTolerance(address hedgeUnit, uint256 newDsPriceTolerance) external onlyManager {
-        HedgeUnit(hedgeUnit).updateDsPriceTolerance(newDsPriceTolerance);
     }
 
     function pauseHedgeUnitMinting(address hedgeUnit) external onlyManager {
@@ -308,6 +303,15 @@ contract CorkConfig is AccessControl, Pausable {
 
     function redeemRaWtihDsPaWithHedgeUnit(address hedgeUnit, uint256 amount, uint256 amountDS) external onlyManager {
         HedgeUnit(hedgeUnit).redeemRaWithDsPa(amount, amountDS);
+    }
+
+    function buyDsFromHedgeUnit(
+        address hedgeUnit,
+        uint256 amount,
+        uint256 amountOutMin,
+        IDsFlashSwapCore.BuyAprroxParams calldata params
+    ) external onlyManager returns (uint256 amountOut) {
+        amountOut = HedgeUnit(hedgeUnit).useFunds(amount, amountOutMin, params);
     }
 
     /**

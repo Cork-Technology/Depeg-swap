@@ -1,15 +1,15 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.24;
 
-import {Helper} from "./Helper.sol";
-import {HedgeUnit} from "../../contracts/core/assets/HedgeUnit.sol";
-import {Liquidator} from "../../contracts/core/liquidators/cow-protocol/Liquidator.sol";
-import {IHedgeUnit} from "../../contracts/interfaces/IHedgeUnit.sol";
-import {DummyWETH} from "../../contracts/dummy/DummyWETH.sol";
-import {Id} from "./../../contracts/libraries/Pair.sol";
+import {Helper} from "./../../Helper.sol";
+import {HedgeUnit} from "../../../../contracts/core/assets/HedgeUnit.sol";
+import {Liquidator} from "../../../../contracts/core/liquidators/cow-protocol/Liquidator.sol";
+import {IHedgeUnit} from "../../../../contracts/interfaces/IHedgeUnit.sol";
+import {DummyWETH} from "../../../../contracts/dummy/DummyWETH.sol";
+import {Id} from "./../../../../contracts/libraries/Pair.sol";
 import {PausableUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/PausableUpgradeable.sol";
 
-contract HedgeUnitTest_ is Helper {
+contract HedgeUnitTest is Helper {
     Liquidator public liquidator;
     HedgeUnit public hedgeUnit;
     DummyWETH public dsToken;
@@ -59,10 +59,7 @@ contract HedgeUnitTest_ is Helper {
         // Deploy the Liquidator contract
         liquidator = new Liquidator(address(corkConfig), hookTrampoline, settlementContract, address(moduleCore));
 
-        // 1 %
-        uint256 dsPriceTolerance = 1 ether;
-
-        corkConfig.deployHedgeUnit(currencyId, address(pa), address(ra), "DS/PA", INITIAL_MINT_CAP, dsPriceTolerance);
+        corkConfig.deployHedgeUnit(currencyId, address(pa), address(ra), "DS/PA", INITIAL_MINT_CAP);
         // Deploy the HedgeUnit contract
         hedgeUnit = HedgeUnit(hedgeUnitFactory.getHedgeUnitAddress(currencyId));
 

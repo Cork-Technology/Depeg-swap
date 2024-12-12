@@ -91,21 +91,17 @@ contract HedgeUnitFactory {
      * @param _mintCap Initial mint cap for the HedgeUnit tokens.
      * @return newUnit of the newly deployed HedgeUnit contract.
      */
-    function deployHedgeUnit(
-        Id _id,
-        address _pa,
-        address _ra,
-        string memory _pairName,
-        uint256 _mintCap,
-        uint256 _dsPriceTolerance
-    ) external onlyConfig returns (address newUnit) {
+    function deployHedgeUnit(Id _id, address _pa, address _ra, string memory _pairName, uint256 _mintCap)
+        external
+        onlyConfig
+        returns (address newUnit)
+    {
         if (hedgeUnitContracts[_id] != address(0)) {
             revert HedgeUnitExists();
         }
 
         // Deploy a new HedgeUnit contract
-        HedgeUnit newHedgeUnit =
-            new HedgeUnit(moduleCore, _id, _pa, _ra, _pairName, _mintCap, config, router, _dsPriceTolerance);
+        HedgeUnit newHedgeUnit = new HedgeUnit(moduleCore, _id, _pa, _ra, _pairName, _mintCap, config, router);
         newUnit = address(newHedgeUnit);
 
         // Store the address of the new contract

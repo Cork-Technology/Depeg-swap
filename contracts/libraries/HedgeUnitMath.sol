@@ -4,6 +4,7 @@ import {SD59x18, convert, intoUD60x18} from "@prb/math/src/SD59x18.sol";
 import {UD60x18, convert, ud, add, mul, pow, sub, div, unwrap, intoSD59x18, sqrt} from "@prb/math/src/UD60x18.sol";
 import "./../interfaces/IHedgeUnit.sol";
 import "./DsSwapperMathLib.sol";
+import "forge-std/console.sol";
 
 library HedgeUnitMath {
     // caller of this contract must ensure the both amount is already proportional in amount!
@@ -139,10 +140,5 @@ library HedgeUnitMath {
         UD60x18 fdivRatePlusOnePowT = div(f, ratePlusOnePowT);
 
         return unwrap(sub(convert(uint256(1)), fdivRatePlusOnePowT));
-    }
-
-    function isAboveTolerance(uint256 tolerance, uint256 dsAmount, uint256 raProvided) internal pure returns(bool){
-        UD60x18 effectiveDsPrice = SwapperMathLibrary.calculateEffectiveDsPrice(ud(dsAmount), ud(raProvided));
-        return effectiveDsPrice > ud(tolerance);
     }
 }
