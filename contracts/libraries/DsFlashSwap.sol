@@ -100,7 +100,7 @@ library DsFlashSwaplibrary {
         uint256 decayDiscount = self.decayDiscountRateInDays;
 
         self.hiyaCumulated += SwapperMathLibrary.calcHIYAaccumulated(start, end, current, ds, ra, decayDiscount);
-        self.vhiyaCumulated += SwapperMathLibrary.calcVHIYAaccumulated(start, end, current, decayDiscount, ds);
+        self.vhiyaCumulated += SwapperMathLibrary.calcVHIYAaccumulated(start, current, decayDiscount, ds);
     }
 
     function emptyReservePartialLv(ReserveState storage self, uint256 dsId, uint256 amount, address to)

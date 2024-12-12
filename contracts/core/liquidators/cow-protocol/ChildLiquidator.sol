@@ -5,8 +5,7 @@ import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/Own
 import {Liquidator, GPv2SettlementContract} from "./Liquidator.sol";
 import {ILiquidator} from "../../../interfaces/ILiquidator.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import {IDsFlashSwapCore} from "./../../../interfaces/IDsFlashSwapRouter.sol";
-import {HedgeUnit, IHedgeUnitLiquidation} from "./../../assets/HedgeUnit.sol";
+import {IHedgeUnitLiquidation} from "./../../assets/HedgeUnit.sol";
 import {IVaultLiquidation} from "./../../../interfaces/IVaultLiquidation.sol";
 import {Id} from "../../../libraries/Pair.sol";
 

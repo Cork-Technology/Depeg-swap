@@ -17,7 +17,6 @@ import {IDsFlashSwapCore} from "./../../interfaces/IDsFlashSwapRouter.sol";
 import {ModuleCore} from "./../ModuleCore.sol";
 import {ERC20Permit} from "@openzeppelin/contracts/token/ERC20/extensions/ERC20Permit.sol";
 import {Signature, MinimalSignatureHelper} from "./../../libraries/SignatureHelperLib.sol";
-import {DepegSwapLibrary} from "./../../libraries/DepegSwapLib.sol";
 
 struct DSData {
     address dsAddress;

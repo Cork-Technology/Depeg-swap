@@ -47,7 +47,7 @@ contract LiquidityMathTest is Test {
         uint256 amountPa = 1000 ether;
         uint256 amountDs = 1000 ether;
 
-        uint256 liquidityMinted = HedgeUnitMath.mint(reservePa, reserveDs, totalLiquidity, amountPa, amountDs);
+        uint256 liquidityMinted = HedgeUnitMath.mint(reservePa, totalLiquidity, amountPa, amountDs);
 
         vm.assertEq(liquidityMinted, 1000 ether);
     }
@@ -61,7 +61,7 @@ contract LiquidityMathTest is Test {
         uint256 amountDs = 900 ether;
 
         vm.expectRevert(IHedgeUnit.InvalidAmount.selector);
-        HedgeUnitMath.mint(reservePa, reserveDs, totalLiquidity, amountPa, amountDs);
+        HedgeUnitMath.mint(reservePa, totalLiquidity, amountPa, amountDs);
     }
 
     function test_addLiquiditySubsequent() external {
@@ -72,7 +72,7 @@ contract LiquidityMathTest is Test {
         uint256 amountPa = 1000 ether;
         uint256 amountDs = 900 ether;
 
-        uint256 liquidityMinted = HedgeUnitMath.mint(reservePa, reserveDs, totalLiquidity, amountPa, amountDs);
+        uint256 liquidityMinted = HedgeUnitMath.mint(reservePa, totalLiquidity, amountPa, amountDs);
 
         vm.assertApproxEqAbs(liquidityMinted, 474.3416491 ether, 0.0001 ether);
     }

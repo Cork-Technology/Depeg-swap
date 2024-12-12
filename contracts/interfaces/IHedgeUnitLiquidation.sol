@@ -1,7 +1,6 @@
 pragma solidity ^0.8.0;
 
-import "./../libraries/Pair.sol";
-import "./IDsFlashSwapRouter.sol";
+import {IDsFlashSwapCore} from "./IDsFlashSwapRouter.sol";
 
 /// @title Interface for the Hedge Unit contract for liquidation
 /// @notice This contract is responsible for providing a way for liquidation contracts to request and send back funds

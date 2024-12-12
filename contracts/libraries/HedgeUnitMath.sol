@@ -3,11 +3,11 @@ pragma solidity ^0.8.24;
 import {convert, intoUD60x18} from "@prb/math/src/SD59x18.sol";
 import {UD60x18, convert, ud, add, mul, pow, sub, div, unwrap} from "@prb/math/src/UD60x18.sol";
 import {IHedgeUnit} from "./../interfaces/IHedgeUnit.sol";
-import "./DsSwapperMathLib.sol";
+import {BuyMathBisectionSolver} from "./DsSwapperMathLib.sol";
 
 library HedgeUnitMath {
     // caller of this contract must ensure the both amount is already proportional in amount!
-    function mint(uint256 reservePa, uint256 reserveDs, uint256 totalLiquidity, uint256 amountPa, uint256 amountDs)
+    function mint(uint256 reservePa, uint256 totalLiquidity, uint256 amountPa, uint256 amountDs)
         internal
         pure
         returns (uint256 liquidityMinted)

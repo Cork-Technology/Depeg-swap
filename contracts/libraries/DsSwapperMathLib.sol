@@ -207,7 +207,6 @@ library SwapperMathLibrary {
     /// @notice VHIYA_acc =  Volume_i  - ((Discount / 86400) * (currentTime - issuanceTime))
     function calcVHIYAaccumulated(
         uint256 startTime,
-        uint256 maturityTime,
         uint256 currentTime,
         uint256 decayDiscountInDays,
         uint256 amount

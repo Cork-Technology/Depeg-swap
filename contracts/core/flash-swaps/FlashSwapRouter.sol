@@ -244,7 +244,6 @@ contract RouterState is
         Id reserveId,
         uint256 dsId,
         uint256 amount,
-        uint256 amountOutMin,
         IDsFlashSwapCore.BuyAprroxParams memory approxParams
     ) internal returns (uint256 amountOut) {
         uint256 borrowedAmount;
@@ -369,7 +368,7 @@ contract RouterState is
         DepegSwapLibrary.permitForRA(address(assetPair.ra), rawRaPermitSig, user, address(this), amount, deadline);
         IERC20(assetPair.ra).safeTransferFrom(user, address(this), amount);
 
-        amountOut = _swapRaforDs(self, assetPair, reserveId, dsId, amount, amountOutMin, params);
+        amountOut = _swapRaforDs(self, assetPair, reserveId, dsId, amount, params);
 
         // slippage protection, revert if the amount of DS tokens received is less than the minimum amount
         if (amountOut < amountOutMin) {
@@ -401,7 +400,7 @@ contract RouterState is
 
         IERC20(assetPair.ra).safeTransferFrom(msg.sender, address(this), amount);
 
-        amountOut = _swapRaforDs(self, assetPair, reserveId, dsId, amount, amountOutMin, params);
+        amountOut = _swapRaforDs(self, assetPair, reserveId, dsId, amount, params);
 
         // slippage protection, revert if the amount of DS tokens received is less than the minimum amount
         if (amountOut < amountOutMin) {
