@@ -9,7 +9,7 @@ import {DummyWETH} from "../../contracts/dummy/DummyWETH.sol";
 import {Id} from "./../../contracts/libraries/Pair.sol";
 import {PausableUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/PausableUpgradeable.sol";
 
-contract HedgeUnitTest is Helper {
+contract HedgeUnitTest_ is Helper {
     Liquidator public liquidator;
     HedgeUnit public hedgeUnit;
     DummyWETH public dsToken;
@@ -49,6 +49,8 @@ contract HedgeUnitTest is Helper {
         // 10000 for psm 10000 for LV
         ra.approve(address(moduleCore), 100_000_000 ether);
 
+        ra.transfer(user, 1000 ether);
+
         moduleCore.depositPsm(currencyId, USER_BALANCE * 2);
         moduleCore.depositLv(currencyId, USER_BALANCE * 2, 0, 0);
 
@@ -64,10 +66,13 @@ contract HedgeUnitTest is Helper {
         // Deploy the HedgeUnit contract
         hedgeUnit = HedgeUnit(hedgeUnitFactory.getHedgeUnitAddress(currencyId));
 
-        // Transfer tokens to user for testing
+        // Transfer tokens to user for test_ing
         dsToken.transfer(user, USER_BALANCE);
         pa.deposit{value: USER_BALANCE}();
         pa.transfer(user, USER_BALANCE);
+
+        // we disable the redemption fee so its easier to test
+        corkConfig.updatePsmBaseRedemptionFeePercentage(defaultCurrencyId, 0);
     }
 
     function fetchProtocolGeneralInfo() internal {
@@ -76,7 +81,7 @@ contract HedgeUnitTest is Helper {
         dsToken = DummyWETH(payable(address(ds)));
     }
 
-    function testPreviewMint() public {
+    function test_PreviewMint() public {
         // Preview minting 100 HedgeUnit tokens
         (uint256 dsAmount, uint256 paAmount) = hedgeUnit.previewMint(100 * 1e18);
 
@@ -85,14 +90,14 @@ contract HedgeUnitTest is Helper {
         assertEq(paAmount, 100 * 1e18);
     }
 
-    function testPreviewMintRevertWhenMintCapExceeded() public {
+    function test_PreviewMintRevertWhenMintCapExceeded() public {
         // Preview minting 2000 HedgeUnit tokens
         vm.expectRevert(IHedgeUnit.MintCapExceeded.selector);
         hedgeUnit.previewMint(2000 * 1e18);
     }
 
-    function testMintingTokens() public {
-        // Test minting by the user
+    function test_MintingTokens() public {
+        // Test_ minting by the user
         vm.startPrank(user);
 
         // Approve tokens for HedgeUnit contract
@@ -114,7 +119,72 @@ contract HedgeUnitTest is Helper {
         vm.stopPrank();
     }
 
-    function testMintCapExceeded() public {
+    function test_MintNotProportional() external {
+        // Test_ minting by the user
+        vm.startPrank(user);
+
+        uint256 initialAmount = 10 ether;
+        // Approve tokens for HedgeUnit contract
+        dsToken.approve(address(hedgeUnit), initialAmount);
+        pa.approve(address(hedgeUnit), initialAmount);
+
+        // Mint 10 HedgeUnit tokens
+        uint256 mintAmount = initialAmount;
+        hedgeUnit.mint(mintAmount);
+
+        // transfer pa so that the amount is not proportional
+        pa.transfer(address(hedgeUnit), initialAmount);
+
+        (uint256 dsAmount, uint256 paAmount) = hedgeUnit.previewMint(mintAmount);
+        vm.assertEq(dsAmount, initialAmount);
+        vm.assertEq(paAmount, initialAmount + 10 ether);
+
+        dsToken.approve(address(hedgeUnit), dsAmount);
+        pa.approve(address(hedgeUnit), paAmount);
+
+        uint256 dsBalanceBefore = dsToken.balanceOf(user);
+        uint256 paBalanceBefore = pa.balanceOf(user);
+
+        (dsAmount, paAmount) = hedgeUnit.mint(initialAmount);
+
+        vm.assertEq(dsToken.balanceOf(user), dsBalanceBefore - dsAmount);
+        vm.assertEq(pa.balanceOf(user), paBalanceBefore - paAmount);
+
+        vm.assertEq(dsAmount, initialAmount);
+        vm.assertEq(paAmount, initialAmount + 10 ether);
+    }
+
+    function test_RedeemRaWithDsPa() external {
+        // Test_ minting by the user
+        vm.startPrank(user);
+
+        uint256 initialAmount = 10 ether;
+        // Approve tokens for HedgeUnit contract
+        dsToken.approve(address(hedgeUnit), initialAmount);
+        pa.approve(address(hedgeUnit), initialAmount);
+
+        // Mint 10 HedgeUnit tokens
+        uint256 mintAmount = initialAmount;
+        hedgeUnit.mint(mintAmount);
+
+        vm.stopPrank();
+        vm.startPrank(DEFAULT_ADDRESS);
+
+        uint256 paBalnceBefore = pa.balanceOf(address(hedgeUnit));
+        uint256 dsBalanceBefore = dsToken.balanceOf(address(hedgeUnit));
+        uint256 raBalanceBefore = ra.balanceOf(address(hedgeUnit));
+
+        corkConfig.redeemRaWtihDsPaWithHedgeUnit(address(hedgeUnit), initialAmount, initialAmount);
+
+        vm.assertEq(pa.balanceOf(address(hedgeUnit)), paBalnceBefore - initialAmount);
+        vm.assertEq(dsToken.balanceOf(address(hedgeUnit)), dsBalanceBefore - initialAmount);
+        vm.assertEq(ra.balanceOf(address(hedgeUnit)), raBalanceBefore + initialAmount);
+
+        bool paused = hedgeUnit.paused();
+        vm.assertEq(paused, true);
+    }
+
+    function test_MintCapExceeded() public {
         vm.startPrank(user);
 
         // Approve tokens for HedgeUnit contract
@@ -129,7 +199,7 @@ contract HedgeUnitTest is Helper {
         vm.stopPrank();
     }
 
-    function testPreviewDissolve() public {
+    function test_PreviewDissolve() public {
         // Mint tokens first
         dsToken.approve(address(hedgeUnit), USER_BALANCE);
         pa.approve(address(hedgeUnit), USER_BALANCE);
@@ -144,7 +214,7 @@ contract HedgeUnitTest is Helper {
         assertEq(paAmount, 50 * 1e18);
     }
 
-    function testPreviewDissolveRevertWhenInvalidAmount() public {
+    function test_PreviewDissolveRevertWhenInvalidAmount() public {
         // Preview dissolving more than the user's balance
         vm.expectRevert(IHedgeUnit.InvalidAmount.selector);
         hedgeUnit.previewDissolve(1000 * 1e18);
@@ -158,9 +228,9 @@ contract HedgeUnitTest is Helper {
         hedgeUnit.previewDissolve(100 * 1e18 + 1);
     }
 
-    function testDissolvingTokens() public {
+    function test_DissolvingTokens() public {
         // Mint tokens first
-        testMintingTokens();
+        test_MintingTokens();
 
         vm.startPrank(user);
 
@@ -177,7 +247,48 @@ contract HedgeUnitTest is Helper {
         vm.stopPrank();
     }
 
-    function testMintingPaused() public {
+    function test_DissolveNotProportional() external {
+        vm.startPrank(user);
+
+        uint256 initialAmount = 100 ether;
+        // Approve tokens for HedgeUnit contract
+        dsToken.approve(address(hedgeUnit), initialAmount);
+        pa.approve(address(hedgeUnit), initialAmount);
+
+        // Mint 10 HedgeUnit tokens
+        uint256 mintAmount = initialAmount;
+        hedgeUnit.mint(mintAmount);
+
+        uint256 amount = 10 ether;
+        //transfer pa and ra so that the amount is not proportional
+        pa.transfer(address(hedgeUnit), amount * 10);
+        ra.transfer(address(hedgeUnit), amount);
+
+        (uint256 dsAmount, uint256 paAmount, uint256 raAmount) = hedgeUnit.previewDissolve(amount);
+        vm.assertEq(dsAmount, amount);
+        vm.assertEq(paAmount, amount + 10 ether);
+        vm.assertEq(raAmount, 1 ether);
+
+        uint256 raBalanceBefore = ra.balanceOf(user);
+        uint256 paBalanceBefore = pa.balanceOf(user);
+        uint256 dsBalanceBefore = dsToken.balanceOf(user);
+
+        (dsAmount, paAmount, raAmount) = hedgeUnit.dissolve(amount);
+
+        vm.assertEq(dsAmount, amount);
+        vm.assertEq(paAmount, amount + 10 ether);
+        vm.assertEq(raAmount, 1 ether);
+
+        uint256 raBalanceAfter = ra.balanceOf(user);
+        uint256 paBalanceAfter = pa.balanceOf(user);
+        uint256 dsBalanceAfter = dsToken.balanceOf(user);
+
+        vm.assertEq(raBalanceAfter, raBalanceBefore + raAmount);
+        vm.assertEq(paBalanceAfter, paBalanceBefore + paAmount);
+        vm.assertEq(dsBalanceAfter, dsBalanceBefore + dsAmount);
+    }
+
+    function test_MintingPaused() public {
         // Pause minting
         corkConfig.pauseHedgeUnit(address(hedgeUnit));
 
@@ -190,7 +301,7 @@ contract HedgeUnitTest is Helper {
         vm.stopPrank();
     }
 
-    function testMintCapUpdate() public {
+    function test_MintCapUpdate() public {
         // Update mint cap to a new value
         uint256 newMintCap = 2000 * 1e18;
         corkConfig.updateHedgeUnitMintCap(address(hedgeUnit), newMintCap);
@@ -199,12 +310,18 @@ contract HedgeUnitTest is Helper {
         assertEq(hedgeUnit.mintCap(), newMintCap);
     }
 
-    function testMintCapUpdateRevert() public {
+    function test_MintCapUpdateRevert() public {
         // Try to update the mint cap to the same value
         vm.expectRevert(IHedgeUnit.InvalidValue.selector);
         corkConfig.updateHedgeUnitMintCap(address(hedgeUnit), INITIAL_MINT_CAP);
     }
 
-    // TODO
-    function test_deRegister() external {}
+    function test_deRegister() external {
+        address _hedgeUnit = hedgeUnitFactory.getHedgeUnitAddress(defaultCurrencyId);
+        vm.assertTrue(_hedgeUnit != address(0));
+        corkConfig.deRegisterHedgeUnit(defaultCurrencyId);
+
+        _hedgeUnit = hedgeUnitFactory.getHedgeUnitAddress(defaultCurrencyId);
+        vm.assertTrue(_hedgeUnit == address(0));
+    }
 }

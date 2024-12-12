@@ -230,19 +230,18 @@ contract HedgeUnit is ERC20, ReentrancyGuard, Ownable, Pausable, IHedgeUnit, IHe
 
     function _transferNormalize(ERC20 token, address _to, uint256 _amount) internal {
         uint256 amount = _fixedToTokenNativeDecimals(_amount, token);
-        IERC20(pa).safeTransfer(_to, amount);
+        IERC20(token).safeTransfer(_to, amount);
     }
 
     function _transferFromNormalize(ERC20 token, address _from, uint256 _amount) internal {
         uint256 amount = _fixedToTokenNativeDecimals(_amount, token);
-        IERC20(pa).safeTransferFrom(_from, address(this), amount);
+        IERC20(token).safeTransferFrom(_from, address(this), amount);
     }
 
     function _transferDs(address _to, uint256 _amount) internal {
         IERC20(ds).safeTransfer(_to, _amount);
     }
 
-    // TODO : handle Ds renewal
     /**
      * @notice Returns the dsAmount and paAmount required to mint the specified amount of HedgeUnit tokens.
      * @return dsAmount The amount of DS tokens required to mint the specified amount of HedgeUnit tokens.
@@ -259,7 +258,7 @@ contract HedgeUnit is ERC20, ReentrancyGuard, Ownable, Pausable, IHedgeUnit, IHe
 
         (dsAmount, paAmount) = HedgeUnitMath.previewMint(amount, paReserve, _ds.balanceOf(address(this)), totalSupply());
 
-        paAmount = _fixedToTokenNativeDecimals(amount, pa);
+        paAmount = _fixedToTokenNativeDecimals(paAmount, pa);
     }
 
     /**
@@ -286,17 +285,16 @@ contract HedgeUnit is ERC20, ReentrancyGuard, Ownable, Pausable, IHedgeUnit, IHe
             uint256 paReserve = _selfPaReserve();
 
             (dsAmount, paAmount) =
-                HedgeUnitMath.previewMint(amount, ds.balanceOf(address(this)), paReserve, totalSupply());
+                HedgeUnitMath.previewMint(amount, paReserve, ds.balanceOf(address(this)), totalSupply());
 
-            paAmount = _fixedToTokenNativeDecimals(amount, pa);
+            paAmount = _fixedToTokenNativeDecimals(paAmount, pa);
         }
 
-        // normalize to token decimals
-
-        IERC20(ds).safeTransferFrom(msg.sender, address(this), dsAmount);
+        _transferFromNormalize(ds, msg.sender, dsAmount);
 
         // this calculation is based on the assumption that the DS token has 18 decimals but pa can have different decimals
-        IERC20(pa).safeTransferFrom(msg.sender, address(this), paAmount);
+
+        _transferFromNormalize(pa, msg.sender, paAmount);
         dsHistory[dsIndexMap[address(ds)]].totalDeposited += amount;
 
         _mint(msg.sender, amount);

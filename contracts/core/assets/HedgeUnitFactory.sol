@@ -121,9 +121,6 @@ contract HedgeUnitFactory {
      * @return Address of the HedgeUnit contract.
      */
     function getHedgeUnitAddress(Id _id) external view returns (address) {
-        if (hedgeUnitContracts[_id] == address(0)) {
-            revert InvalidPairId();
-        }
         return hedgeUnitContracts[_id];
     }
 
