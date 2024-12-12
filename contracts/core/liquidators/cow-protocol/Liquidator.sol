@@ -8,7 +8,7 @@ import {BalancesSnapshot} from "./../../../libraries/BalanceSnapshotLib.sol";
 import {IVaultLiquidation} from "./../../../interfaces/IVaultLiquidation.sol";
 import {Id} from "./../../../libraries/Pair.sol";
 import {CorkConfig} from "./../../CorkConfig.sol";
-import {VaultChildLiquidator} from "./ChildLiquidatorVault.sol";
+import "./ChildLiquidator.sol";
 import {Clones} from "@openzeppelin/contracts/proxy/Clones.sol";
 
 interface GPv2SettlementContract {
