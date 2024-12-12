@@ -17,6 +17,8 @@ import {CorkConfig} from "./../CorkConfig.sol";
 import {IHedgeUnitLiquidation} from "./../../interfaces/IHedgeUnitLiquidation.sol";
 import {IDsFlashSwapCore} from "./../../interfaces/IDsFlashSwapRouter.sol";
 import {ModuleCore} from "./../ModuleCore.sol";
+import "openzeppelin-contracts/contracts/token/ERC20/extensions/ERC20Permit.sol";
+import "./../../libraries/DepegSwapLib.sol";
 
 struct DSData {
     address dsAddress;
@@ -28,7 +30,7 @@ struct DSData {
  * @notice This contract allows minting and dissolving HedgeUnit tokens in exchange for two underlying assets.
  * @dev The contract uses OpenZeppelin's ERC20, ReentrancyGuard,Pausable and Ownable modules.
  */
-contract HedgeUnit is ERC20, ReentrancyGuard, Ownable, Pausable, IHedgeUnit, IHedgeUnitLiquidation {
+contract HedgeUnit is ERC20Permit, ReentrancyGuard, Ownable, Pausable, IHedgeUnit, IHedgeUnitLiquidation {
     using SafeERC20 for IERC20;
 
     uint8 internal constant TARGET_DECIMALS = 18;
@@ -69,6 +71,7 @@ contract HedgeUnit is ERC20, ReentrancyGuard, Ownable, Pausable, IHedgeUnit, IHe
         address _flashSwapRouter
     )
         ERC20(string(abi.encodePacked("Hedge Unit - ", _pairName)), string(abi.encodePacked("HU - ", _pairName)))
+        ERC20Permit(string(abi.encodePacked("Hedge Unit - ", _pairName)))
         Ownable(_config)
     {
         moduleCore = ModuleCore(_moduleCore);

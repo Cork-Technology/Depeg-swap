@@ -135,7 +135,7 @@ library SwapperMathLibrary {
     // it's fine if the actual value go higher since that means we would only overestimate on how much we actually need to repay
     int256 internal constant ONE_MINUS_T_CAP = 99e17;
 
-    // Calculate price ratio of two tokens in a uniswap v2 pair, will return ratio on 18 decimals precision
+    // Calculate price ratio of two tokens in AMM, will return ratio on 18 decimals precision
     function getPriceRatio(uint256 raReserve, uint256 ctReserve)
         public
         pure
