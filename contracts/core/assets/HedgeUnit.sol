@@ -1,5 +1,6 @@
 pragma solidity ^0.8.24;
 
+// TODO : support permit
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {Pausable} from "@openzeppelin/contracts/utils/Pausable.sol";
 import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
@@ -16,7 +17,6 @@ import {CorkConfig} from "./../CorkConfig.sol";
 import {IHedgeUnitLiquidation} from "./../../interfaces/IHedgeUnitLiquidation.sol";
 import {IDsFlashSwapCore} from "./../../interfaces/IDsFlashSwapRouter.sol";
 import {ModuleCore} from "./../ModuleCore.sol";
-import "forge-std/console.sol";
 
 struct DSData {
     address dsAddress;
@@ -87,16 +87,21 @@ contract HedgeUnit is ERC20, ReentrancyGuard, Ownable, Pausable, IHedgeUnit, IHe
 
     modifier onlyLiquidationContract() {
         if (!config.isLiquidationWhitelisted(msg.sender)) {
-            // TODO : replace with custom error
-            revert("Only liquidation contract can call this function");
+            revert OnlyLiquidator();
         }
         _;
     }
 
     modifier onlyValidToken(address token) {
         if (token != address(pa) && token != address(ra)) {
-            // TODO : replace with custom error
-            revert("Invalid token");
+            revert InvalidToken();
+        }
+        _;
+    }
+
+    modifier onlyOwnerOrLiquidator() {
+        if (msg.sender != owner() && !config.isLiquidationWhitelisted(msg.sender)) {
+            revert OnlyLiquidatorOrOwner();
         }
         _;
     }
@@ -128,8 +133,7 @@ contract HedgeUnit is ERC20, ReentrancyGuard, Ownable, Pausable, IHedgeUnit, IHe
         uint256 balance = IERC20(token).balanceOf(address(this));
 
         if (balance < amount) {
-            // TODO : replace with custom error
-            revert("Not enough funds");
+            revert InsufficientFunds();
         }
 
         IERC20(token).safeTransfer(msg.sender, amount);
@@ -146,7 +150,7 @@ contract HedgeUnit is ERC20, ReentrancyGuard, Ownable, Pausable, IHedgeUnit, IHe
     function useFunds(uint256 amount, uint256 amountOutMin, IDsFlashSwapCore.BuyAprroxParams calldata params)
         external
         autoUpdateDS
-        onlyOwner
+        onlyOwnerOrLiquidator
         returns (uint256 amountOut)
     {
         uint256 dsId = moduleCore.lastDsId(id);

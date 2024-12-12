@@ -46,7 +46,15 @@ interface IHedgeUnit {
     /// @notice Thrown when trying to overdraw HU exceeding the available liquidity
     error NotEnoughLiquidity();
 
+    error InsufficientFunds();
+
     error NoValidDSExist();
+
+    error OnlyLiquidator();
+
+    error OnlyLiquidatorOrOwner();
+
+    error InvalidToken();
 
     // Read functions
     /**

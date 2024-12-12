@@ -56,11 +56,7 @@ abstract contract ChildLiquidatorBase is OwnableUpgradeable {
 }
 
 contract HedgeUnitChildLiquidator is ChildLiquidatorBase {
-    function moveFunds() external onlyLiquidator {
-        _moveFunds();
-    }
-
-    function _moveFunds() internal returns (uint256 funds, uint256 leftover) {
+    function moveFunds() external onlyLiquidator returns (uint256 funds, uint256 leftover) {
         // move buy token balance of this contract to vault, by approving the vault to transfer the funds
         funds = IERC20(order.buyToken).balanceOf(address(this));
         SafeERC20.forceApprove(IERC20(order.buyToken), receiver, funds);
@@ -72,16 +68,6 @@ contract HedgeUnitChildLiquidator is ChildLiquidatorBase {
         SafeERC20.forceApprove(IERC20(order.sellToken), receiver, leftover);
 
         IHedgeUnitLiquidation(receiver).receiveFunds(leftover, order.sellToken);
-    }
-
-    function moveFundsAndExecuteTrade(uint256 amountOutMin, IDsFlashSwapCore.BuyAprroxParams calldata params)
-        external
-        onlyLiquidator
-    {
-        (uint256 funds,) = _moveFunds();
-
-        // we don't want to revert if the trade fails
-        try HedgeUnit(receiver).useFunds(funds, amountOutMin, params) returns (uint256 amountOut) {} catch {}
     }
 }
 

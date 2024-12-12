@@ -10,6 +10,7 @@ import {Id} from "./../../../libraries/Pair.sol";
 import {CorkConfig} from "./../../CorkConfig.sol";
 import "./ChildLiquidator.sol";
 import {Clones} from "@openzeppelin/contracts/proxy/Clones.sol";
+import {HedgeUnit} from "./../../assets/HedgeUnit.sol";
 import "./../../../interfaces/IHedgeUnitLiquidation.sol";
 
 interface GPv2SettlementContract {
@@ -169,10 +170,15 @@ contract Liquidator is ILiquidator {
         bytes32 refId,
         uint256 amountOutMin,
         IDsFlashSwapCore.BuyAprroxParams calldata params
-    ) external onlyLiquidator {
+    ) external onlyLiquidator returns (uint256 amountOut) {
         Orders memory order = orderCalls[refId];
 
-        HedgeUnitChildLiquidator(order.liquidator).moveFundsAndExecuteTrade(amountOutMin, params);
+        (uint256 funds,) = HedgeUnitChildLiquidator(order.liquidator).moveFunds();
+
+        // we don't want to revert if the trade fails
+        try HedgeUnit(order.receiver).useFunds(funds, amountOutMin, params) returns (uint256 _amountOut) {
+            amountOut = _amountOut;
+        } catch {}
 
         delete orderCalls[refId];
     }
