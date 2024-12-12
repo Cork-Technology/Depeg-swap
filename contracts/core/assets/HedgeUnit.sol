@@ -18,6 +18,7 @@ import {IHedgeUnitLiquidation} from "./../../interfaces/IHedgeUnitLiquidation.so
 import {IDsFlashSwapCore} from "./../../interfaces/IDsFlashSwapRouter.sol";
 import {ModuleCore} from "./../ModuleCore.sol";
 import "openzeppelin-contracts/contracts/token/ERC20/extensions/ERC20Permit.sol";
+import "./../../libraries/SignatureHelperLib.sol";
 import "./../../libraries/DepegSwapLib.sol";
 
 struct DSData {
@@ -236,7 +237,7 @@ contract HedgeUnit is ERC20Permit, ReentrancyGuard, Ownable, Pausable, IHedgeUni
      * @return dsAmount The amount of DS tokens required to mint the specified amount of HedgeUnit tokens.
      * @return paAmount The amount of pa tokens required to mint the specified amount of HedgeUnit tokens.
      */
-    function previewMint(uint256 amount) external view returns (uint256 dsAmount, uint256 paAmount) {
+    function previewMint(uint256 amount) public view returns (uint256 dsAmount, uint256 paAmount) {
         if (totalSupply() + amount > mintCap) {
             revert MintCapExceeded();
         }
@@ -266,6 +267,10 @@ contract HedgeUnit is ERC20Permit, ReentrancyGuard, Ownable, Pausable, IHedgeUni
         autoUpdateDS
         returns (uint256 dsAmount, uint256 paAmount)
     {
+        (dsAmount, paAmount) = __mint(amount);
+    }
+
+    function __mint(uint256 amount) internal returns (uint256 dsAmount, uint256 paAmount) {
         if (totalSupply() + amount > mintCap) {
             revert MintCapExceeded();
         }
@@ -289,6 +294,24 @@ contract HedgeUnit is ERC20Permit, ReentrancyGuard, Ownable, Pausable, IHedgeUni
         _mint(msg.sender, amount);
 
         emit Mint(msg.sender, amount);
+    }
+
+    function mint(uint256 amount, bytes memory rawDsPermitSig, uint256 deadline)
+        external
+        whenNotPaused
+        nonReentrant
+        autoUpdateDS
+        returns (uint256 dsAmount, uint256 paAmount)
+    {
+        (dsAmount, paAmount) = previewMint(amount);
+
+        Signature memory sig = MinimalSignatureHelper.split(rawDsPermitSig);
+        ds.permit(msg.sender, address(this), dsAmount, deadline, sig.v, sig.r, sig.s, "mint");
+
+        (uint256 _actualDs, uint256 _actualPa) = __mint(amount);
+
+        assert(_actualDs == dsAmount);
+        assert(_actualPa == paAmount);
     }
 
     /**
@@ -327,6 +350,10 @@ contract HedgeUnit is ERC20Permit, ReentrancyGuard, Ownable, Pausable, IHedgeUni
         autoUpdateDS
         returns (uint256 dsAmount, uint256 paAmount, uint256 raAmount)
     {
+        (dsAmount, paAmount, raAmount) = _dissolve(amount);
+    }
+
+    function _dissolve(uint256 amount) internal returns (uint256 dsAmount, uint256 paAmount, uint256 raAmount) {
         if (amount > balanceOf(msg.sender)) {
             revert InvalidAmount();
         }
@@ -340,6 +367,25 @@ contract HedgeUnit is ERC20Permit, ReentrancyGuard, Ownable, Pausable, IHedgeUni
         _burn(msg.sender, amount);
 
         emit Dissolve(msg.sender, amount, dsAmount, paAmount);
+    }
+
+    function dissolve(uint256 amount, bytes memory rawHuPermitSig, uint256 deadline)
+        external
+        whenNotPaused
+        nonReentrant
+        autoUpdateDS
+        returns (uint256 dsAmount, uint256 paAmount, uint256 raAmount)
+    {
+        (uint256 dsAmount, uint256 paAmount, uint256 raAmount) = previewDissolve(amount);
+
+        Signature memory sig = MinimalSignatureHelper.split(rawHuPermitSig);
+        permit(msg.sender, address(this), amount, deadline, sig.v, sig.r, sig.s);
+
+        (uint256 _dsAmount, uint256 _paAmount, uint256 _raAmount) = _dissolve(amount);
+
+        assert(_dsAmount == dsAmount);
+        assert(_paAmount == paAmount);
+        assert(_raAmount == raAmount);
     }
 
     /**
