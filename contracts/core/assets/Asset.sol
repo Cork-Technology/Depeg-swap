@@ -12,6 +12,7 @@ import {CustomERC20Permit} from "../../libraries/ERC/CustomERC20Permit.sol";
  * @author Cork Team
  * @notice Adds Exchange Rate functionality to Assets contracts
  */
+
 abstract contract ExchangeRate is IRates {
     uint256 internal rate;
 
@@ -77,13 +78,23 @@ abstract contract Expiry is IExpiry {
 contract Asset is ERC20Burnable, CustomERC20Permit, Ownable, Expiry, ExchangeRate {
     uint256 internal immutable DS_ID;
 
-    constructor(string memory prefix, string memory pairName, address _owner, uint256 _expiry, uint256 _rate, uint256 _dsId)
+    string public  pairName;
+
+    constructor(
+        string memory prefix,
+        string memory _pairName,
+        address _owner,
+        uint256 _expiry,
+        uint256 _rate,
+        uint256 _dsId
+    )
         ExchangeRate(_rate)
-        ERC20(string(abi.encodePacked(prefix, "-", pairName)), string(abi.encodePacked(prefix, "-", pairName)))
-        CustomERC20Permit(string(abi.encodePacked(prefix, "-", pairName)))
+        ERC20(string(abi.encodePacked(prefix, "-", _pairName)), string(abi.encodePacked(prefix, "-", _pairName)))
+        CustomERC20Permit(string(abi.encodePacked(prefix, "-", _pairName)))
         Ownable(_owner)
         Expiry(_expiry)
     {
+        pairName = _pairName;
         DS_ID = _dsId;
     }
 

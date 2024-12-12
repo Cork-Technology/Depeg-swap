@@ -22,6 +22,20 @@ interface ILiquidator {
         Id vaultId;
     }
 
+    struct CreateHedgeUnitOrderParams {
+        /// the internal reference id, used to associate which order is being liquidated in the liquidation contract
+        /// sinceit's impossible to add the order id in the appData directly,
+        /// backend must generate a random hash to be used as internalRefId when creating the order
+        /// and include
+        bytes32 internalRefId;
+        /// the actual cow protocol order id
+        bytes orderUid;
+        address sellToken;
+        uint256 sellAmount;
+        address buyToken;
+        address hedgeUnit;
+    }
+
     struct Call {
         address target;
         bytes data;
@@ -29,7 +43,8 @@ interface ILiquidator {
 
     event OrderSubmitted(
         bytes32 indexed internalRefId,
-        bytes orderUid,
+        address indexed owner,
+        bytes indexed orderUid,
         address sellToken,
         uint256 sellAmount,
         address buyToken,

@@ -135,7 +135,7 @@ library SwapperMathLibrary {
     // it's fine if the actual value go higher since that means we would only overestimate on how much we actually need to repay
     int256 internal constant ONE_MINUS_T_CAP = 99e17;
 
-    // Calculate price ratio of two tokens in a uniswap v2 pair, will return ratio on 18 decimals precision
+    // Calculate price ratio of two tokens in AMM, will return ratio on 18 decimals precision
     function getPriceRatio(uint256 raReserve, uint256 ctReserve)
         public
         pure
@@ -368,7 +368,6 @@ library SwapperMathLibrary {
     /// @notice rT = (f/pT)^1/t - 1
     function calcRt(UD60x18 pT, UD60x18 t) internal pure returns (UD60x18) {
         UD60x18 onePerT = div(convertUd(1), t);
-        // TODO : confirm with peter
         UD60x18 fConst = convertUd(1);
 
         UD60x18 fPerPt = div(fConst, pT);
@@ -383,7 +382,6 @@ library SwapperMathLibrary {
     }
 
     /// @notice pt = 1 - effectiveDsPrice
-    // TODO : confirm with peter
     function calcPt(UD60x18 effectiveDsPrice) internal pure returns (UD60x18) {
         return sub(convertUd(1), effectiveDsPrice);
     }
