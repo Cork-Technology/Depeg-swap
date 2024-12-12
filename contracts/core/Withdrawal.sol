@@ -13,7 +13,7 @@ contract Withdrawal is IWithdrawal {
 
     uint256 public constant DELAY = 3 days;
 
-    address public vault;
+    address public immutable vault;
 
     mapping(bytes32 => WithdrawalInfo) internal withdrawals;
 

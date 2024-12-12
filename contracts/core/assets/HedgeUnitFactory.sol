@@ -14,14 +14,14 @@ contract HedgeUnitFactory {
 
     uint256 internal idx;
 
+    // Addresses needed for the construction of new HedgeUnit contracts
+    address public immutable moduleCore;
+    address public immutable config;
+    address public immutable router;
+
     // Mapping to keep track of HedgeUnit contracts by a unique pair identifier
     mapping(Id => address) public hedgeUnitContracts;
     mapping(uint256 => Id) internal hedgeUnits;
-
-    // Addresses needed for the construction of new HedgeUnit contracts
-    address public moduleCore;
-    address public config;
-    address public router;
 
     // Event emitted when a new HedgeUnit contract is deployed
     event HedgeUnitDeployed(Id indexed pairId, address indexed hedgeUnitAddress);

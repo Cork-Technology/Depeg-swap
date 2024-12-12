@@ -212,7 +212,6 @@ contract RouterState is
 
         uint256 lvProfit;
         uint256 psmProfit;
-        dsReceived;
         uint256 lvReserveUsed;
         uint256 psmReserveUsed;
 

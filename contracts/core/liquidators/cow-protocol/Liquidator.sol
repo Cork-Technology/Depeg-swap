@@ -34,15 +34,15 @@ contract Liquidator is ILiquidator {
         address receiver;
     }
 
-    GPv2SettlementContract public settlement;
+    GPv2SettlementContract public immutable settlement;
+
+    address public immutable config;
+    address public immutable hookTrampoline;
+    address public immutable vaultLiquidatorBase;
+    address public immutable hedgeUnitLiquidatorBase;
+    address public immutable moduleCore;
 
     mapping(bytes32 => Orders) internal orderCalls;
-
-    address public config;
-    address public hookTrampoline;
-    address public vaultLiquidatorBase;
-    address public hedgeUnitLiquidatorBase;
-    address public moduleCore;
 
     modifier onlyTrampoline() {
         if (msg.sender != hookTrampoline) {

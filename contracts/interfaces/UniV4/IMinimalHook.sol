@@ -1,4 +1,4 @@
-pragma solidity ^0.8.0;
+pragma solidity ^0.8.24;
 
 import {IErrors} from "./IErrors.sol";
 import {MarketSnapshot} from "Cork-Hook/lib/MarketSnapshot.sol";

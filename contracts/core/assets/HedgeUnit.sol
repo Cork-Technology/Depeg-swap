@@ -32,15 +32,15 @@ contract HedgeUnit is ERC20Permit, ReentrancyGuard, Ownable, Pausable, IHedgeUni
     using SafeERC20 for IERC20;
 
     uint8 internal constant TARGET_DECIMALS = 18;
-
-    ModuleCore public moduleCore;
-    CorkConfig public config;
-    IDsFlashSwapCore public flashSwapRouter;
-    Id public id;
+    CorkConfig public immutable config;
+    IDsFlashSwapCore public immutable flashSwapRouter;
+    ModuleCore public immutable moduleCore;
 
     /// @notice The ERC20 token representing the pa asset.
-    ERC20 public pa;
-    ERC20 public ra;
+    ERC20 public immutable pa;
+    ERC20 public immutable ra;
+
+    Id public id;
 
     /// @notice The ERC20 token representing the ds asset.
     Asset public ds;

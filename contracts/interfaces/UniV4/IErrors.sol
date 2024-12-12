@@ -1,4 +1,4 @@
-pragma solidity ^0.8.0;
+pragma solidity ^0.8.24;
 
 interface IErrors {
     /// @notice trying to do swap/remove liquidity without sufficient liquidity
