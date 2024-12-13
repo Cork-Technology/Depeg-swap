@@ -480,24 +480,13 @@ library VaultLibrary {
         uint256 dsId,
         uint256 ctAmm,
         uint256 raAmm
-    ) internal returns (uint256 redeemAmount, uint256 ctAttributedToPa) {
-        uint256 reservedDs = flashSwapRouter.emptyReserveLv(self.info.toId(), dsId);
-
-        redeemAmount = reservedDs >= ctAmm ? ctAmm : reservedDs;
-        redeemAmount = PsmLibrary.lvRedeemRaWithCtDs(self, redeemAmount, dsId);
-
-        // if the reserved DS is more than the CT that's available from liquidating the AMM LP
-        // then there's no CT we can use to effectively redeem RA + PA from the PSM
-        ctAttributedToPa = reservedDs >= ctAmm ? 0 : ctAmm - reservedDs;
-
+    ) internal {
         uint256 psmPa;
         uint256 psmRa;
 
-        if (ctAttributedToPa != 0) {
-            (psmPa, psmRa) = PsmLibrary.lvRedeemRaPaWithCt(self, ctAttributedToPa, dsId);
-        }
+        (psmPa, psmRa) = PsmLibrary.lvRedeemRaPaWithCt(self, ctAmm, dsId);
 
-        psmRa += redeemAmount + raAmm;
+        psmRa += raAmm;
 
         self.vault.pool.reserve(self.vault.lv.totalIssued(), psmRa, psmPa);
     }
