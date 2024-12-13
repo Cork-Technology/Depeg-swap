@@ -367,14 +367,6 @@ library PsmLibrary {
         ds.issue(address(this), received);
     }
 
-    function _handleDsRedeem(PsmPoolArchive storage archive, uint256 amount) internal returns (uint256 accruedRa) {
-        // because the PSM treats all CT issued(including to itself) as redeemable, we need to decrease the total amount of CT issued
-        archive.ctAttributed -= amount;
-        archive.raAccrued -= amount;
-
-        return amount;
-    }
-
     function lvRedeemRaPaWithCt(State storage self, uint256 amount, uint256 dsId)
         internal
         returns (uint256 accruedPa, uint256 accruedRa)
