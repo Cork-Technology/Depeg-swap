@@ -36,23 +36,23 @@ contract Liquidator is ILiquidator {
 
     GPv2SettlementContract public immutable settlement;
 
-    address public immutable config;
-    address public immutable hookTrampoline;
-    address public immutable vaultLiquidatorBase;
-    address public immutable hedgeUnitLiquidatorBase;
-    address public immutable moduleCore;
+    address public immutable CONFIG;
+    address public immutable HOOK_TRAMPOLINE;
+    address public immutable VAULT_LIQUIDATOR_BASE;
+    address public immutable HEDGEUNIT_LIQUIDATOR_BASE;
+    address public immutable MODULE_CORE;
 
     mapping(bytes32 => Orders) internal orderCalls;
 
     modifier onlyTrampoline() {
-        if (msg.sender != hookTrampoline) {
+        if (msg.sender != HOOK_TRAMPOLINE) {
             revert ILiquidator.OnlyTrampoline();
         }
         _;
     }
 
     modifier onlyLiquidator() {
-        if (!CorkConfig(config).isTrustedLiquidationExecutor(address(this), msg.sender)) {
+        if (!CorkConfig(CONFIG).isTrustedLiquidationExecutor(address(this), msg.sender)) {
             revert ILiquidator.OnlyLiquidator();
         }
         _;
@@ -63,27 +63,27 @@ contract Liquidator is ILiquidator {
             revert ILiquidator.ZeroAddress();
         }
         settlement = GPv2SettlementContract(_settlementContract);
-        config = _config;
-        hookTrampoline = _hookTrampoline;
-        vaultLiquidatorBase = address(new VaultChildLiquidator());
-        hedgeUnitLiquidatorBase = address(new HedgeUnitChildLiquidator());
-        moduleCore = _moduleCore;
+        CONFIG = _config;
+        HOOK_TRAMPOLINE = _hookTrampoline;
+        VAULT_LIQUIDATOR_BASE = address(new VaultChildLiquidator());
+        HEDGEUNIT_LIQUIDATOR_BASE = address(new HedgeUnitChildLiquidator());
+        MODULE_CORE = _moduleCore;
     }
 
     function fetchVaultReceiver(bytes32 refId) external returns (address receiver) {
-        receiver = Clones.predictDeterministicAddress(vaultLiquidatorBase, refId, address(this));
+        receiver = Clones.predictDeterministicAddress(VAULT_LIQUIDATOR_BASE, refId, address(this));
     }
 
     function fetchHedgeUnitReceiver(bytes32 refId) external returns (address receiver) {
-        receiver = Clones.predictDeterministicAddress(hedgeUnitLiquidatorBase, refId, address(this));
+        receiver = Clones.predictDeterministicAddress(HEDGEUNIT_LIQUIDATOR_BASE, refId, address(this));
     }
 
     function _initializeVaultLiquidator(bytes32 refId, Details memory order, bytes memory orderUid)
         internal
         returns (address liquidator)
     {
-        liquidator = Clones.cloneDeterministic(vaultLiquidatorBase, refId);
-        VaultChildLiquidator(liquidator).initialize(this, order, orderUid, moduleCore, refId);
+        liquidator = Clones.cloneDeterministic(VAULT_LIQUIDATOR_BASE, refId);
+        VaultChildLiquidator(liquidator).initialize(this, order, orderUid, MODULE_CORE, refId);
     }
 
     function _initializeHedgeUnitLiquidator(
@@ -92,12 +92,12 @@ contract Liquidator is ILiquidator {
         bytes memory orderUid,
         address hedgeUnit
     ) internal returns (address liquidator) {
-        liquidator = Clones.cloneDeterministic(hedgeUnitLiquidatorBase, refId);
+        liquidator = Clones.cloneDeterministic(HEDGEUNIT_LIQUIDATOR_BASE, refId);
         HedgeUnitChildLiquidator(liquidator).initialize(this, order, orderUid, hedgeUnit, refId);
     }
 
     function _moveVaultFunds(Details memory details, Id id, address liquidator) internal {
-        IVaultLiquidation(moduleCore).requestLiquidationFunds(id, details.sellAmount);
+        IVaultLiquidation(MODULE_CORE).requestLiquidationFunds(id, details.sellAmount);
 
         SafeERC20.safeTransfer(IERC20(details.sellToken), liquidator, details.sellAmount);
     }
@@ -114,14 +114,14 @@ contract Liquidator is ILiquidator {
         address liquidator = _initializeVaultLiquidator(params.internalRefId, details, params.orderUid);
 
         // record the order details
-        orderCalls[params.internalRefId] = Orders(details, liquidator, params.vaultId, address(moduleCore));
+        orderCalls[params.internalRefId] = Orders(details, liquidator, params.vaultId, address(MODULE_CORE));
 
         _moveVaultFunds(details, params.vaultId, liquidator);
 
         // Emit an event with order details for the backend to pick up
         emit OrderSubmitted(
             params.internalRefId,
-            address(moduleCore),
+            address(MODULE_CORE),
             params.orderUid,
             params.sellToken,
             params.sellAmount,

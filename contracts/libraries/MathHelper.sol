@@ -5,7 +5,6 @@ pragma solidity ^0.8.24;
 import {BuyMathBisectionSolver, SwapperMathLibrary} from "./DsSwapperMathLib.sol";
 import {UD60x18, convert, ud, add, mul, pow, sub, div, unwrap, intoSD59x18} from "@prb/math/src/UD60x18.sol";
 import {intoUD60x18} from "@prb/math/src/SD59x18.sol";
-import "Cork-Hook/lib/MarketSnapshot.sol";
 
 /**
  * @title MathHelper Library Contract

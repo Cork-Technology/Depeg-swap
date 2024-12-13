@@ -13,7 +13,7 @@ contract Withdrawal is IWithdrawal {
 
     uint256 public constant DELAY = 3 days;
 
-    address public immutable vault;
+    address public immutable VAULT;
 
     mapping(bytes32 => WithdrawalInfo) internal withdrawals;
 
@@ -24,11 +24,11 @@ contract Withdrawal is IWithdrawal {
         if(_vault == address(0)) {
             revert ZeroAddress();
         }
-        vault = _vault;
+        VAULT = _vault;
     }
 
     modifier onlyVault() {
-        if (msg.sender != vault) {
+        if (msg.sender != VAULT) {
             revert OnlyVault();
         }
         _;

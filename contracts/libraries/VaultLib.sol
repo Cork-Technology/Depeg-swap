@@ -113,7 +113,7 @@ library VaultLibrary {
         }
 
         if (!self.vault.lpLiquidated.get(prevDsId)) {
-            _liquidatedLp(self, prevDsId, ammRouter, flashSwapRouter, deadline);
+            _liquidatedLp(self, prevDsId, ammRouter, deadline);
             _redeemCtStrategy(self, prevDsId);
             _takeRaSnapshot(self, prevDsId);
             _pauseDepositIfPaIsPresent(self);
@@ -436,7 +436,6 @@ library VaultLibrary {
         State storage self,
         uint256 dsId,
         ICorkHook ammRouter,
-        IDsFlashSwapCore flashSwapRouter,
         uint256 deadline
     ) internal {
         DepegSwap storage ds = self.ds[dsId];
@@ -462,12 +461,11 @@ library VaultLibrary {
         (uint256 raAmm, uint256 ctAmm) = __liquidateUnchecked(self.info.ra, ds.ct, ammRouter, lpBalance, deadline);
 
         // avoid stack too deep error
-        _redeemCtVault(self, flashSwapRouter, dsId, ctAmm, raAmm);
+        _redeemCtVault(self, dsId, ctAmm, raAmm);
     }
 
     function _redeemCtVault(
         State storage self,
-        IDsFlashSwapCore flashSwapRouter,
         uint256 dsId,
         uint256 ctAmm,
         uint256 raAmm

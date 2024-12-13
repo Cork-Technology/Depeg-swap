@@ -15,9 +15,9 @@ contract HedgeUnitFactory {
     uint256 internal idx;
 
     // Addresses needed for the construction of new HedgeUnit contracts
-    address public immutable moduleCore;
-    address public immutable config;
-    address public immutable router;
+    address public immutable MODULE_CORE;
+    address public immutable CONFIG;
+    address public immutable ROUTER;
 
     // Mapping to keep track of HedgeUnit contracts by a unique pair identifier
     mapping(Id => address) public hedgeUnitContracts;
@@ -35,7 +35,7 @@ contract HedgeUnitFactory {
 
     modifier onlyConfig() {
         // TODO: move to interface with custom errors
-        require(msg.sender == config, "HedgeUnitFactory: Only config contract can call this function");
+        require(msg.sender == CONFIG, "HedgeUnitFactory: Only config contract can call this function");
         _;
     }
 
@@ -48,9 +48,9 @@ contract HedgeUnitFactory {
         if(_moduleCore == address(0) || _config == address(0) || _flashSwapRouter == address(0)) {
             revert ZeroAddress();
         }
-        moduleCore = _moduleCore;
-        config = _config;
-        router = _flashSwapRouter;
+        MODULE_CORE = _moduleCore;
+        CONFIG = _config;
+        ROUTER = _flashSwapRouter;
     }
 
     /**
@@ -106,7 +106,7 @@ contract HedgeUnitFactory {
         }
 
         // Deploy a new HedgeUnit contract
-        HedgeUnit newHedgeUnit = new HedgeUnit(moduleCore, _id, _pa, _ra, _pairName, _mintCap, config, router);
+        HedgeUnit newHedgeUnit = new HedgeUnit(MODULE_CORE, _id, _pa, _ra, _pairName, _mintCap, CONFIG, ROUTER);
         newUnit = address(newHedgeUnit);
 
         // Store the address of the new contract
