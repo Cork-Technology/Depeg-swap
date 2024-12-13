@@ -471,10 +471,10 @@ library VaultLibrary {
         (uint256 raAmm, uint256 ctAmm) = __liquidateUnchecked(self, self.info.ra, ds.ct, ammRouter, lpBalance, deadline);
 
         // avoid stack too deep error
-        _pairAndRedeemCtDs(self, flashSwapRouter, dsId, ctAmm, raAmm);
+        _redeemCtVault(self, flashSwapRouter, dsId, ctAmm, raAmm);
     }
 
-    function _pairAndRedeemCtDs(
+    function _redeemCtVault(
         State storage self,
         IDsFlashSwapCore flashSwapRouter,
         uint256 dsId,
