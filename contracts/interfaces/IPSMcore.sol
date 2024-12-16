@@ -67,8 +67,9 @@ interface IPSMcore is IRepurchase {
     /// @param Id The PSM id
     /// @param dsId The DS id
     /// @param redeemer The address of the redeemer
-    /// @param amount The amount of the DS redeemed
-    /// @param received The amount of  asset received
+    /// @param paUsed The amount of the PA redeemed
+    /// @param dsUsed The amount of DS redeemed
+    /// @param raReceived The amount of  asset received
     /// @param dsExchangeRate The exchange rate of DS at the time of redeem
     /// @param feePercentage The fee percentage charged for redemption
     /// @param fee The fee charged for redemption
@@ -76,8 +77,9 @@ interface IPSMcore is IRepurchase {
         Id indexed Id,
         uint256 indexed dsId,
         address indexed redeemer,
-        uint256 amount,
-        uint256 received,
+        uint256 paUsed,
+        uint256 dsUsed,
+        uint256 raReceived,
         uint256 dsExchangeRate,
         uint256 feePercentage,
         uint256 fee
@@ -167,21 +169,20 @@ interface IPSMcore is IRepurchase {
         address redeemer,
         bytes memory rawDsPermitSig,
         uint256 deadline
-    ) external returns (uint256 received, uint256 _exchangeRate, uint256 fee);
+    ) external returns (uint256 received, uint256 _exchangeRate, uint256 fee, uint256 dsUsed);
 
     /**
      * @notice redeem RA with DS + PA
      * @param id The pair id
      * @param dsId The DS id
-     * @param amount The amount of DS + PA to redeem
+     * @param amount The amount of PA to redeem
      * @return received The amount of RA user will get
      * @return _exchangeRate The effective rate at the time of redemption
      * @return fee The fee charged for redemption
      */
     function redeemRaWithDs(Id id, uint256 dsId, uint256 amount)
         external
-        returns (uint256 received, uint256 _exchangeRate, uint256 fee);
-
+        returns (uint256 received, uint256 _exchangeRate, uint256 fee, uint256 dsUsed);
     /**
      * @notice redeem RA + PA with CT at expiry
      * @param id The pair id
