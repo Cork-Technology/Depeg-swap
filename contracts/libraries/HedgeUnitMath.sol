@@ -4,6 +4,7 @@ import {SD59x18, convert, intoUD60x18} from "@prb/math/src/SD59x18.sol";
 import {UD60x18, convert, ud, add, mul, pow, sub, div, unwrap, intoSD59x18, sqrt} from "@prb/math/src/UD60x18.sol";
 import "./../interfaces/IHedgeUnit.sol";
 import "./DsSwapperMathLib.sol";
+import "./TransferHelper.sol";
 import "forge-std/console.sol";
 
 library HedgeUnitMath {
@@ -53,17 +54,7 @@ library HedgeUnitMath {
         pure
         returns (uint256)
     {
-        // If we need to increase the decimals
-        if (decimalsBefore > decimalsAfter) {
-            // Then we shift right the amount by the number of decimals
-            amount = amount / 10 ** (decimalsBefore - decimalsAfter);
-            // If we need to decrease the number
-        } else if (decimalsBefore < decimalsAfter) {
-            // then we shift left by the difference
-            amount = amount * 10 ** (decimalsAfter - decimalsBefore);
-        }
-        // If nothing changed this is a no-op
-        return amount;
+        return TransferHelper.normalizeDecimals(amount, decimalsBefore, decimalsAfter);
     }
 
     // uni v2 style proportional add liquidity
