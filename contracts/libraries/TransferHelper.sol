@@ -30,7 +30,7 @@ library TransferHelper {
         uint8 decimals = token.decimals();
         return normalizeDecimals(amount, decimals, TARGET_DECIMALS);
     }
-    
+
     function tokenNativeDecimalsToFixed(uint256 amount, address token) public view returns (uint256) {
         return tokenNativeDecimalsToFixed(amount, IERC20Metadata(token));
     }
@@ -44,30 +44,30 @@ library TransferHelper {
         return fixedToTokenNativeDecimals(amount, IERC20Metadata(token));
     }
 
-    function transferNormalize(ERC20 token, address _to, uint256 _amount) internal {
-        uint256 amount = fixedToTokenNativeDecimals(_amount, token);
+    function transferNormalize(ERC20 token, address _to, uint256 _amount) internal returns (uint256 amount) {
+        amount = fixedToTokenNativeDecimals(_amount, token);
         SafeERC20.safeTransfer(token, _to, amount);
     }
 
-    function transferNormalize(address token, address _to, uint256 _amount) internal {
-        transferNormalize(ERC20(token), _to, _amount);
+    function transferNormalize(address token, address _to, uint256 _amount) internal returns (uint256 amount) {
+        return transferNormalize(ERC20(token), _to, _amount);
     }
 
-    function transferFromNormalize(ERC20 token, address _from, uint256 _amount) internal {
-        uint256 amount = fixedToTokenNativeDecimals(_amount, token);
+    function transferFromNormalize(ERC20 token, address _from, uint256 _amount) internal returns (uint256 amount) {
+        amount = fixedToTokenNativeDecimals(_amount, token);
         SafeERC20.safeTransferFrom(token, _from, address(this), amount);
     }
 
-    function transferFromNormalize(address token, address _from, uint256 _amount) internal {
-        transferFromNormalize(ERC20(token), _from, _amount);
+    function transferFromNormalize(address token, address _from, uint256 _amount) internal returns (uint256 amount) {
+        return transferFromNormalize(ERC20(token), _from, _amount);
     }
 
-    function burnNormalize(ERC20Burnable token, uint256 _amount) internal {
-        uint256 amount = fixedToTokenNativeDecimals(_amount, token);
+    function burnNormalize(ERC20Burnable token, uint256 _amount) internal returns (uint256 amount) {
+        amount = fixedToTokenNativeDecimals(_amount, token);
         token.burn(amount);
     }
 
-    function burnNormalize(address token, uint256 _amount) internal {
-        burnNormalize(ERC20Burnable(token), _amount);
+    function burnNormalize(address token, uint256 _amount) internal returns (uint256 amount) {
+        return burnNormalize(ERC20Burnable(token), _amount);
     }
 }
