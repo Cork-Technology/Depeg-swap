@@ -117,14 +117,31 @@ library VaultLibrary {
             return;
         }
 
-        if (!self.vault.lpLiquidated.get(prevDsId)) {
-            _liquidatedLp(self, prevDsId, ammRouter, flashSwapRouter, deadline);
-            _redeemCtStrategy(self, prevDsId);
-            _takeRaSnapshot(self, prevDsId);
-            _pauseDepositIfPaIsPresent(self);
-        }
+        _liquidateIfExpired(self, prevDsId, ammRouter, flashSwapRouter, deadline);
 
         __provideAmmLiquidityFromPool(self, flashSwapRouter, self.ds[self.globalAssetIdx].ct, ammRouter);
+    }
+
+    function _liquidateIfExpired(
+        State storage self,
+        uint256 dsId,
+        ICorkHook ammRouter,
+        IDsFlashSwapCore flashSwapRouter,
+        uint256 deadline
+    ) internal {
+        DepegSwap storage ds = self.ds[dsId];
+
+        // we don't want to revert here for easier control flow, expiry check should happen at contract level not library level
+        if (!ds.isExpired()) {
+            return;
+        }
+
+        if (!self.vault.lpLiquidated.get(dsId)) {
+            _liquidatedLp(self, dsId, ammRouter, flashSwapRouter, deadline);
+            _redeemCtStrategy(self, dsId);
+            _takeRaSnapshot(self, dsId);
+            _pauseDepositIfPaIsPresent(self);
+        }
     }
 
     function _takeRaSnapshot(State storage self, uint256 dsId) internal {
