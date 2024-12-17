@@ -24,6 +24,7 @@ import {LiquidityToken} from "Cork-Hook/LiquidityToken.sol";
 import {MarketSnapshot} from "Cork-Hook/lib/MarketSnapshot.sol";
 import {Withdrawal} from "./../core/Withdrawal.sol";
 import {IWithdrawalRouter} from "./../interfaces/IWithdrawalRouter.sol";
+import {TransferHelper} from "./TransferHelper.sol";
 
 /**
  * @title Vault Library Contract
@@ -267,7 +268,9 @@ library VaultLibrary {
             return (0, 0);
         }
 
-        PsmLibrary.unsafeIssueToLv(self, MathHelper.calculateProvideLiquidityAmount(amountRaOriginal, raAmount));
+        // we use the returned value here since the amount is already normalized
+        ctAmount =
+            PsmLibrary.unsafeIssueToLv(self, MathHelper.calculateProvideLiquidityAmount(amountRaOriginal, raAmount));
 
         (lp, dust) = __addLiquidityToAmmUnchecked(
             self, raAmount, ctAmount, self.info.redemptionAsset(), ctAddress, ammRouter, tolerance.ra, tolerance.ct
@@ -354,6 +357,9 @@ library VaultLibrary {
         MarketSnapshot memory snapshot = ammRouter.getMarketSnapshot(self.info.ra, ct);
         uint256 lpSupply = IERC20(snapshot.liquidityToken).totalSupply() - lpGenerated;
 
+        // we convert ra reserve to 18 decimals to get accurate results
+        snapshot.reserveRa = TransferHelper.tokenNativeDecimalsToFixed(snapshot.reserveRa, self.info.ra);
+
         MathHelper.DepositParams memory params = MathHelper.DepositParams({
             depositAmount: amount,
             reserveRa: snapshot.reserveRa,
@@ -391,16 +397,16 @@ library VaultLibrary {
     {
         splitted = _splitCt(self, amount);
 
-        // increase the ct balance in the vault
-        self.vault.balances.ctBalance += splitted;
-
         amountLeft = amount - splitted;
 
-        // actually mint ct & ds to vault
-        PsmLibrary.unsafeIssueToLv(self, splitted);
+        // actually mint ct & ds to vault and used the normalized value
+        uint256 ctDsReceivedNormalized = PsmLibrary.unsafeIssueToLv(self, splitted);
+
+        // increase the ct balance in the vault
+        self.vault.balances.ctBalance += ctDsReceivedNormalized;
 
         // add ds to flash swap reserve
-        _addFlashSwapReserveLv(self, flashSwapRouter, self.ds[self.globalAssetIdx], splitted);
+        _addFlashSwapReserveLv(self, flashSwapRouter, self.ds[self.globalAssetIdx], ctDsReceivedNormalized);
     }
 
     // redeem CT that's been held in the pool, must only be called after liquidating LP on new issuance
@@ -418,13 +424,6 @@ library VaultLibrary {
 
         // add the accrued PA to the withdrawal pool
         self.vault.pool.withdrawalPool.paBalance += accruedPa;
-    }
-
-    // Calculates PA amount as per price of PA with LV total supply, PA balance and given LV amount
-    // lv price = paReserve / lvTotalSupply
-    // PA amount = lvAmount * (PA reserve in contract / total supply of LV)
-    function _calculatePaPriceForLv(State storage self, uint256 lvAmt) internal view returns (uint256 paAmount) {
-        return lvAmt * self.vault.pool.withdrawalPool.paBalance / ERC20(self.vault.lv._address).totalSupply();
     }
 
     function __liquidateUnchecked(
@@ -589,7 +588,6 @@ library VaultLibrary {
         IVault.ProtocolContracts memory contracts,
         IVault.PermitParams memory permitParams
     ) external returns (IVault.RedeemEarlyResult memory result) {
-        safeBeforeExpired(self);
         if (permitParams.deadline != 0) {
             DepegSwapLibrary.permit(
                 self.vault.lv._address,
