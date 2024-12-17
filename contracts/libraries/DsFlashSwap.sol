@@ -9,6 +9,7 @@ import {PermitChecker} from "./PermitChecker.sol";
 import {ICorkHook} from "../interfaces/UniV4/IMinimalHook.sol";
 import "Cork-Hook/lib/MarketSnapshot.sol";
 import "./../interfaces/IDsFlashSwapRouter.sol";
+import {TransferHelper} from "./TransferHelper.sol";
 
 /**
  * @dev AssetPair structure for Asset Pairs
@@ -203,7 +204,13 @@ library DsFlashSwaplibrary {
 
         repaymentAmount = router.getAmountIn(address(assetPair.ra), address(assetPair.ct), true, amount);
 
-        (success, amountOut) = SwapperMathLibrary.getAmountOutSellDs(repaymentAmount, amount);
+        // this is done in 18 decimals precision
+        (success, amountOut) = SwapperMathLibrary.getAmountOutSellDs(
+            TransferHelper.tokenNativeDecimalsToFixed(repaymentAmount, assetPair.ra), amount
+        );
+
+        // and then we convert it back to the original token decimals
+        amountOut = TransferHelper.fixedToTokenNativeDecimals(amountOut, assetPair.ra);
     }
 
     function getAmountOutBuyDS(

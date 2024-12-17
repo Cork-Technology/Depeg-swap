@@ -20,6 +20,7 @@ import {ICorkHook} from "../../interfaces/UniV4/IMinimalHook.sol";
 import {AmmId, toAmmId} from "Cork-Hook/lib/State.sol";
 import {CorkSwapCallback} from "Cork-Hook/interfaces/CorkSwapCallback.sol";
 import {IMathError} from "./../../interfaces/IMathError.sol";
+import {TransferHelper} from "./../../libraries/TransferHelper.sol";
 
 /**
  * @title Router contract for Flashswap
@@ -43,6 +44,8 @@ contract RouterState is
     address public _moduleCore;
     ICorkHook public hook;
 
+    // this is here to prevent stuck funds, essentially it can happen that the reserve DS is so low but not empty,
+    // when the router tries to sell it, the trade fails, preventing user from buying DS properly
     uint256 public constant RESERVE_MINIMUM_SELL_AMOUNT = 0.001 ether;
 
     /// @notice __gap variable to prevent storage collisions
@@ -222,19 +225,25 @@ contract RouterState is
         (lvProfit, psmProfit, raLeft, dsReceived, lvReserveUsed, psmReserveUsed) =
             SwapperMathLibrary.calculateRolloverSale(assetPair.lvReserve, assetPair.psmReserve, amountRa, self.hiya);
 
-        // we know that the math is correct, but for edge case protection, we don't subtract it directly but
-        // instead set it to 0 if it's less than the used amount, again this is meant to handle precision issues
-        assetPair.psmReserve = assetPair.psmReserve < psmReserveUsed ? 0 : assetPair.psmReserve - psmReserveUsed;
-        assetPair.lvReserve = assetPair.lvReserve < lvReserveUsed ? 0 : assetPair.lvReserve - lvReserveUsed;
+        assert(psmProfit + lvProfit <= amountRa);
 
-        IERC20(assetPair.ra).safeTransfer(_moduleCore, lvProfit + psmProfit);
+        assetPair.psmReserve = assetPair.psmReserve - psmReserveUsed;
+        assetPair.lvReserve = assetPair.lvReserve - lvReserveUsed;
 
+        // we first transfer and normalized the amount, we get back the actual normalized amount
+        psmProfit = TransferHelper.transferNormalize(assetPair.ra, _moduleCore, psmProfit);
+        lvProfit = TransferHelper.transferNormalize(assetPair.ra, _moduleCore, lvProfit);
+
+        // then use the profit
         IPSMcore(_moduleCore).psmAcceptFlashSwapProfit(reserveId, psmProfit);
         IVault(_moduleCore).lvAcceptRolloverProfit(reserveId, lvProfit);
 
         IERC20(assetPair.ds).safeTransfer(msg.sender, dsReceived);
 
-        emit RolloverSold(reserveId, dsId, msg.sender, dsReceived, amountRa - raLeft);
+        {
+            uint256 raLeftNormalized = TransferHelper.fixedToTokenNativeDecimals(raLeft, assetPair.ra);
+            emit RolloverSold(reserveId, dsId, msg.sender, dsReceived, raLeftNormalized);
+        }
     }
 
     function rolloverSaleEnds(Id reserveId) external view returns (uint256 endInBlockNumber) {
@@ -250,6 +259,10 @@ contract RouterState is
         uint256 amountOutMin,
         IDsFlashSwapCore.BuyAprroxParams memory approxParams
     ) internal returns (uint256 amountOut) {
+        // we convert it first to 18 decimals, all transfers must use transferHelper library
+
+        amount = TransferHelper.tokenNativeDecimalsToFixed(amount, assetPair.ra);
+
         uint256 borrowedAmount;
 
         uint256 dsReceived;
@@ -264,7 +277,6 @@ contract RouterState is
         // calculate the amount of DS tokens attributed
         (amountOut, borrowedAmount) = assetPair.getAmountOutBuyDS(amount, hook, approxParams);
 
-        // TODO : move this to a separate function
         // calculate the amount of DS tokens that will be sold from reserve
         uint256 amountSellFromReserve =
             amountOut - MathHelper.calculatePercentageFee(self.reserveSellPressurePercentage, amountOut);
@@ -286,6 +298,10 @@ contract RouterState is
                 borrowedAmount = sellDsReserveResult.borrowedAmount;
             }
         }
+
+        // convert to native token decimals
+        borrowedAmount = TransferHelper.fixedToTokenNativeDecimals(borrowedAmount, assetPair.ra);
+        amountOut = TransferHelper.fixedToTokenNativeDecimals(amountOut, assetPair.ds);
 
         // trigger flash swaps and send the attributed DS tokens to the user
         __flashSwap(assetPair, borrowedAmount, 0, dsId, reserveId, true, amountOut, msg.sender, amount);
@@ -323,7 +339,6 @@ contract RouterState is
         result.success = success;
 
         if (success) {
-            // TODO : move this to a separate function
             uint256 lvReserve = assetPair.lvReserve;
             uint256 totalReserve = lvReserve + assetPair.psmReserve;
 
@@ -379,7 +394,7 @@ contract RouterState is
             revert InsufficientOutputAmount();
         }
 
-        self.recalculateHIYA(dsId, amount, amountOut);
+        self.recalculateHIYA(dsId, TransferHelper.tokenNativeDecimalsToFixed(amount, assetPair.ra), amountOut);
 
         emit RaSwapped(reserveId, dsId, user, amount, amountOut);
     }
@@ -411,7 +426,7 @@ contract RouterState is
             revert InsufficientOutputAmount();
         }
 
-        self.recalculateHIYA(dsId, amount, amountOut);
+        self.recalculateHIYA(dsId, TransferHelper.tokenNativeDecimalsToFixed(amount, assetPair.ra), amountOut);
 
         emit RaSwapped(reserveId, dsId, msg.sender, amount, amountOut);
     }
@@ -441,14 +456,13 @@ contract RouterState is
         assetPair.ds.transferFrom(user, address(this), amount);
 
         bool success;
-        uint256 repaymentAmount;
-        (amountOut, repaymentAmount, success) = __swapDsforRa(assetPair, reserveId, dsId, amount, amountOutMin, user);
+        (amountOut,, success) = __swapDsforRa(assetPair, reserveId, dsId, amount, amountOutMin, user);
 
         if (!success) {
             revert IMathError.InsufficientLiquidity();
         }
 
-        self.recalculateHIYA(dsId, amountOut, amount);
+        self.recalculateHIYA(dsId, TransferHelper.tokenNativeDecimalsToFixed(amountOut, assetPair.ra), amount);
 
         emit DsSwapped(reserveId, dsId, user, amount, amountOut);
     }
@@ -471,15 +485,13 @@ contract RouterState is
         assetPair.ds.transferFrom(msg.sender, address(this), amount);
 
         bool success;
-        uint256 repaymentAmount;
-        (amountOut, repaymentAmount, success) =
-            __swapDsforRa(assetPair, reserveId, dsId, amount, amountOutMin, msg.sender);
+        (amountOut,, success) = __swapDsforRa(assetPair, reserveId, dsId, amount, amountOutMin, msg.sender);
 
         if (!success) {
             revert IMathError.InsufficientLiquidity();
         }
 
-        self.recalculateHIYA(dsId, amountOut, amount);
+        self.recalculateHIYA(dsId, TransferHelper.tokenNativeDecimalsToFixed(amountOut, assetPair.ra), amount);
 
         emit DsSwapped(reserveId, dsId, msg.sender, amount, amountOut);
     }
