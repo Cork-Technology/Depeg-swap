@@ -124,9 +124,8 @@ contract DepositSameDecimalsTest is Helper {
         vm.assertApproxEqAbs(received, expectedAmount, acceptableDelta);
     }
 
-    function testFuzz_redeemCt(uint8 raDecimals, uint8 paDecimals) external {
+    function testFuzz_redeemCt(uint8 raDecimals, uint8 paDecimals, uint256 rates) external {
         (raDecimals, paDecimals) = setupDifferentDecimals(raDecimals, paDecimals);
-        rates = bound(rates, 0.9 ether, 1 ether);
 
         depositAmount = TransferHelper.normalizeDecimals(depositAmount, TARGET_DECIMALS, raDecimals);
 
@@ -139,9 +138,12 @@ contract DepositSameDecimalsTest is Helper {
 
         (received,,,) = moduleCore.redeemRaWithDs(defaultCurrencyId, 1, redeemAmount);
 
-        (uint256 accruedPa, uint256 accruedRa) =moduleCore.redeemWithCT(defaultCurrencyId, 1, 1 ether);
-    
+        (uint256 accruedPa, uint256 accruedRa) = moduleCore.redeemWithCT(defaultCurrencyId, 1, 1 ether);
+
         uint256 expectedAmount = TransferHelper.normalizeDecimals(0.5 ether, TARGET_DECIMALS, raDecimals);
+        uint256 acceptableDelta = TransferHelper.normalizeDecimals(1, TARGET_DECIMALS, raDecimals);
+
+        vm.assertApproxEqAbs(received, expectedAmount, acceptableDelta);
     }
 
     function testFuzz_repurchase() external {}
