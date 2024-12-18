@@ -647,7 +647,7 @@ library PsmLibrary {
 
         exchangeRates = _ds.exchangeRate();
 
-        // the amount here is the DS amount
+        // the amount here is the PA amount
         amount = TransferHelper.tokenNativeDecimalsToFixed(amount, self.info.pa);
 
         uint256 raDs = MathHelper.calculateEqualSwapAmount(amount, exchangeRates);

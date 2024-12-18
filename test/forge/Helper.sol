@@ -19,6 +19,18 @@ import "./../../contracts/interfaces/IDsFlashSwapRouter.sol";
 import "./../../contracts/core/Withdrawal.sol";
 import "./../../contracts/core/assets/HedgeUnitFactory.sol";
 
+contract CustomErc20 is DummyWETH {
+    uint8 internal __decimals;
+
+    constructor(uint8 _decimals) DummyWETH() {
+        __decimals = _decimals;
+    }
+
+    function decimals() public view override returns (uint8) {
+        return __decimals;
+    }
+}
+
 abstract contract Helper is SigUtils, TestHelper {
     TestModuleCore internal moduleCore;
     AssetFactory internal assetFactory;
@@ -54,6 +66,10 @@ abstract contract Helper is SigUtils, TestHelper {
 
     // 50% split percentage
     uint256 internal DEFAULT_CT_SPLIT_PERCENTAGE = 50 ether;
+
+    uint8 internal constant TARGET_DECIMALS = 18;
+
+    uint8 internal constant MAX_DECIMALS= 64;
 
     function defaultInitialArp() internal pure virtual returns (uint256) {
         return DEFAULT_INITIAL_DS_PRICE;
@@ -170,6 +186,32 @@ abstract contract Helper is SigUtils, TestHelper {
 
         initializeNewModuleCore(
             address(pa), address(ra), DEFAULT_LV_FEE, defaultInitialArp(), baseRedemptionFee, expiryInSeconds
+        );
+        issueNewDs(
+            id, DEFAULT_EXCHANGE_RATES, DEFAULT_REPURCHASE_FEE, DEFAULT_DECAY_DISCOUNT_RATE, DEFAULT_ROLLOVER_PERIOD
+        );
+    }
+
+    function initializeAndIssueNewDs(uint256 expiryInSeconds, uint8 raDecimals, uint8 paDecimals)
+        internal
+        returns (DummyWETH ra, DummyWETH pa, Id id)
+    {
+        if (block.timestamp + expiryInSeconds > block.timestamp + 100 days) {
+            revert(
+                "Expiry too far in the future, specify a default decay rate, this will cause the discount to exceed 100!"
+            );
+        }
+
+        ra = new CustomErc20(raDecimals);
+        pa = new CustomErc20(paDecimals);
+
+        Pair memory _id = PairLibrary.initalize(address(pa), address(ra), expiryInSeconds);
+        id = PairLibrary.toId(_id);
+
+        defaultCurrencyId = id;
+
+        initializeNewModuleCore(
+            address(pa), address(ra), DEFAULT_LV_FEE, defaultInitialArp(), DEFAULT_BASE_REDEMPTION_FEE, expiryInSeconds
         );
         issueNewDs(
             id, DEFAULT_EXCHANGE_RATES, DEFAULT_REPURCHASE_FEE, DEFAULT_DECAY_DISCOUNT_RATE, DEFAULT_ROLLOVER_PERIOD
