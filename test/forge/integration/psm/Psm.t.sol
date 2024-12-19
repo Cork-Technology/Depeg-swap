@@ -8,7 +8,7 @@ import "./../../../../contracts/libraries/TransferHelper.sol";
 import "./../../../../contracts/core/assets/Asset.sol";
 import "forge-std/console.sol";
 
-contract DepositSameDecimalsTest is Helper {
+contract PsmTest is Helper {
     DummyWETH internal ra;
     DummyWETH internal pa;
 
@@ -127,6 +127,42 @@ contract DepositSameDecimalsTest is Helper {
     function testFuzz_redeemCt(uint8 raDecimals, uint8 paDecimals, uint256 rates) external {
         (raDecimals, paDecimals) = setupDifferentDecimals(raDecimals, paDecimals);
 
+        rates = bound(rates, 0.9 ether, 1 ether);
+
+        corkConfig.updatePsmBaseRedemptionFeePercentage(defaultCurrencyId, 0);
+        corkConfig.updatePsmRate(defaultCurrencyId, rates);
+
+        depositAmount = TransferHelper.normalizeDecimals(depositAmount, TARGET_DECIMALS, raDecimals);
+
+        (uint256 received, uint256 exchangeRate) = moduleCore.depositPsm(defaultCurrencyId, depositAmount);
+
+        // we redeem half of the deposited amount
+        uint256 redeemAmount = 0.5 ether * 1e18 / rates;
+
+        redeemAmount = TransferHelper.normalizeDecimals(redeemAmount, TARGET_DECIMALS, paDecimals);
+
+        (received,,,) = moduleCore.redeemRaWithDs(defaultCurrencyId, 1, redeemAmount);
+        //forward to expiry
+        uint256 expiry = ds.expiry();
+        vm.warp(expiry + 1);
+
+        (uint256 accruedPa, uint256 accruedRa) = moduleCore.redeemWithCT(defaultCurrencyId, 1, 1 ether);
+
+        uint256 expectedAmount = TransferHelper.normalizeDecimals(0.5 ether, TARGET_DECIMALS, raDecimals);
+        uint256 acceptableDelta = TransferHelper.normalizeDecimals(1, TARGET_DECIMALS, raDecimals);
+
+        vm.assertApproxEqAbs(received, expectedAmount, acceptableDelta);
+    }
+
+    function testFuzz_repurchase(uint8 raDecimals, uint8 paDecimals, uint256 rates) external {
+        (raDecimals, paDecimals) = setupDifferentDecimals(raDecimals, paDecimals);
+
+        rates = bound(rates, 0.9 ether, 1 ether);
+
+        corkConfig.updatePsmBaseRedemptionFeePercentage(defaultCurrencyId, 0);
+        corkConfig.updateRepurchaseFeeRate(defaultCurrencyId, 0);
+        corkConfig.updatePsmRate(defaultCurrencyId, rates);
+
         depositAmount = TransferHelper.normalizeDecimals(depositAmount, TARGET_DECIMALS, raDecimals);
 
         (uint256 received, uint256 exchangeRate) = moduleCore.depositPsm(defaultCurrencyId, depositAmount);
@@ -138,17 +174,46 @@ contract DepositSameDecimalsTest is Helper {
 
         (received,,,) = moduleCore.redeemRaWithDs(defaultCurrencyId, 1, redeemAmount);
 
-        (uint256 accruedPa, uint256 accruedRa) = moduleCore.redeemWithCT(defaultCurrencyId, 1, 1 ether);
+        // and werepurchase half of the redeemed amount
+        uint256 repurchaseAmount = 0.25 ether * rates / 1 ether;
 
-        uint256 expectedAmount = TransferHelper.normalizeDecimals(0.5 ether, TARGET_DECIMALS, raDecimals);
-        uint256 acceptableDelta = TransferHelper.normalizeDecimals(1, TARGET_DECIMALS, raDecimals);
+        uint256 adjustedRepurchaseAmount =
+            TransferHelper.normalizeDecimals(repurchaseAmount, TARGET_DECIMALS, raDecimals);
 
-        vm.assertApproxEqAbs(received, expectedAmount, acceptableDelta);
+        (, uint256 receivedPa, uint256 receivedDs,,,) =
+            moduleCore.repurchase(defaultCurrencyId, adjustedRepurchaseAmount);
+
+        uint256 expectedAmount = TransferHelper.normalizeDecimals(0.25 ether, TARGET_DECIMALS, paDecimals);
+        uint256 acceptableDelta = TransferHelper.normalizeDecimals(1, TARGET_DECIMALS, paDecimals);
+
+        vm.assertApproxEqAbs(receivedPa, expectedAmount, acceptableDelta);
+        vm.assertApproxEqAbs(receivedDs, repurchaseAmount, acceptableDelta);
     }
 
-    function testFuzz_repurchase() external {}
+    function testFuzz_redeemCtDs(uint8 raDecimals, uint8 paDecimals) external {
+        (raDecimals, paDecimals) = setupDifferentDecimals(raDecimals, paDecimals);
 
-    function testFuzz_redeemCtDs() external {}
+        depositAmount = TransferHelper.normalizeDecimals(depositAmount, TARGET_DECIMALS, raDecimals);
+
+        (uint256 received, uint256 exchangeRate) = moduleCore.depositPsm(defaultCurrencyId, depositAmount);
+
+        uint256 expectedReceived = 1 ether;
+
+        vm.assertEq(received, expectedReceived);
+
+        (address ct, address ds) = moduleCore.swapAsset(defaultCurrencyId, 1);
+
+        // approve
+        IERC20(ct).approve(address(moduleCore), type(uint256).max);
+        IERC20(ds).approve(address(moduleCore), type(uint256).max);
+
+        
+        uint256 ra = moduleCore.redeemRaWithCtDs(defaultCurrencyId, received);
+
+        uint256 acceptableDelta = TransferHelper.normalizeDecimals(1, TARGET_DECIMALS, raDecimals);
+
+        vm.assertApproxEqAbs(ra, depositAmount, acceptableDelta);
+    }
 
     function test_exchangeRate() public {
         uint256 rate = moduleCore.exchangeRate(defaultCurrencyId);
