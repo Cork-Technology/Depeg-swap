@@ -207,7 +207,6 @@ contract PsmTest is Helper {
         IERC20(ct).approve(address(moduleCore), type(uint256).max);
         IERC20(ds).approve(address(moduleCore), type(uint256).max);
 
-        
         uint256 ra = moduleCore.redeemRaWithCtDs(defaultCurrencyId, received);
 
         uint256 acceptableDelta = TransferHelper.normalizeDecimals(1, TARGET_DECIMALS, raDecimals);

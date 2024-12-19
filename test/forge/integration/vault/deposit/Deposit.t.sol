@@ -6,10 +6,12 @@ import "./../../../../../contracts/core/assets/Asset.sol";
 import "./../../../../../contracts/interfaces/IVault.sol";
 import "./../../../../../contracts/interfaces/ICommon.sol";
 import "./../../../../../contracts/libraries/State.sol";
+import "./../../../../../contracts/libraries/TransferHelper.sol";
 
 contract DepositTest is Helper {
     uint256 amount = 1 ether;
     uint256 internal constant DEPOSIT_AMOUNT = 1_000_000 ether;
+    uint256 public constant EXPIRY = 1 days;
 
     mapping(address => uint256) public balances;
 
@@ -42,6 +44,55 @@ contract DepositTest is Helper {
         (ct, ds) = moduleCore.swapAsset(defaultCurrencyId, dsId);
     }
 
+    function setupDifferentDecimals(uint8 raDecimals, uint8 paDecimals) internal returns (uint8, uint8) {
+        vm.startPrank(DEFAULT_ADDRESS);
+
+        deployModuleCore();
+
+        uint8 lowDecimals = 6;
+        uint8 highDecimals = 32;
+
+        // bound decimals to minimum of 18 and max of 64
+        raDecimals = uint8(bound(raDecimals, lowDecimals, highDecimals));
+        paDecimals = uint8(bound(paDecimals, lowDecimals, highDecimals));
+
+        (ra, pa, defaultCurrencyId) = initializeAndIssueNewDs(EXPIRY, raDecimals, paDecimals);
+
+        vm.deal(DEFAULT_ADDRESS, type(uint256).max);
+        ra.deposit{value: type(uint256).max}();
+        ra.approve(address(moduleCore), type(uint256).max);
+
+        vm.deal(DEFAULT_ADDRESS, type(uint256).max);
+        pa.deposit{value: type(uint256).max}();
+        pa.approve(address(moduleCore), type(uint256).max);
+
+        fetchProtocolGeneralInfo();
+
+        return (raDecimals, paDecimals);
+    }
+
+    function testFuzz_deposit(uint8 raDecimals, uint8 paDecimals) external {
+        (raDecimals, paDecimals) = setupDifferentDecimals(raDecimals, paDecimals);
+
+        uint256 depositAmount = 1 ether;
+
+        uint256 adjustedDepositAmount = TransferHelper.normalizeDecimals(depositAmount, TARGET_DECIMALS, raDecimals);
+
+        uint256 received = moduleCore.depositLv(defaultCurrencyId, adjustedDepositAmount, 0, 0);
+
+        VaultBalances memory balances = moduleCore.getVaultBalances(defaultCurrencyId);
+        vm.assertEq(balances.ra.locked, 0);
+
+        // default split is 50/50
+        vm.assertEq(balances.ctBalance, 0.5 ether);
+
+        uint256 dsReserve = flashSwapRouter.getLvReserve(defaultCurrencyId, 1);
+        // ~0.5 from split, ~0.2 from AMM with some precision tolerance
+        vm.assertApproxEqAbs(dsReserve, 0.76 ether, 0.01 ether);
+
+        ff_expired();
+    }
+
     // ff to expiry and update infos
     function ff_expired() internal {
         // fast forward to expiry
@@ -61,11 +112,7 @@ contract DepositTest is Helper {
         Asset lv = Asset(moduleCore.lvAsset(id));
 
         // fast forward to expiry, since we want to test it with amm
-
         ff_expired();
-
-        // amount = bound(amount, 0.001 ether, DEPOSIT_AMOUNT);
-        // psmDepositAmount = bound(psmDepositAmount, 0.0001 ether, DEPOSIT_AMOUNT / 2);
 
         uint256 received;
 
