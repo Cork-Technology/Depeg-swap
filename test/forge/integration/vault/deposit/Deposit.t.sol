@@ -91,6 +91,86 @@ contract DepositTest is Helper {
         vm.assertApproxEqAbs(dsReserve, 0.76 ether, 0.01 ether);
 
         ff_expired();
+
+        balances = moduleCore.getVaultBalances(defaultCurrencyId);
+        vm.assertEq(balances.ra.locked, 0);
+
+        dsReserve = flashSwapRouter.getLvReserve(defaultCurrencyId, 1);
+        // the Ds reserve should stay the same but the ct splitted should be 0
+        vm.assertApproxEqAbs(dsReserve, 0.76 ether, 0.01 ether);
+
+        vm.assertEq(balances.ctBalance, 0);
+    }
+
+    function testFuzz_redeem(uint8 raDecimals, uint8 paDecimals) external {
+        (raDecimals, paDecimals) = setupDifferentDecimals(raDecimals, paDecimals);
+
+        uint256 depositAmount = 1 ether;
+
+        uint256 adjustedDepositAmount = TransferHelper.normalizeDecimals(depositAmount, TARGET_DECIMALS, raDecimals);
+
+        uint256 received = moduleCore.depositLv(defaultCurrencyId, adjustedDepositAmount, 0, 0);
+
+        VaultBalances memory balances = moduleCore.getVaultBalances(defaultCurrencyId);
+        vm.assertEq(balances.ra.locked, 0);
+
+        // default split is 50/50
+        vm.assertEq(balances.ctBalance, 0.5 ether);
+
+        uint256 dsReserve = flashSwapRouter.getLvReserve(defaultCurrencyId, 1);
+        // ~0.5 from split, ~0.2 from AMM with some precision tolerance
+        vm.assertApproxEqAbs(dsReserve, 0.76 ether, 0.01 ether);
+
+        ff_expired();
+
+        balances = moduleCore.getVaultBalances(defaultCurrencyId);
+        vm.assertEq(balances.ra.locked, 0);
+
+        dsReserve = flashSwapRouter.getLvReserve(defaultCurrencyId, 2);
+        vm.assertApproxEqAbs(dsReserve, 0.5 ether, 0.01 ether);
+
+        vm.assertEq(balances.ctBalance, 0);
+
+        IVault.RedeemEarlyParams memory redeemParams;
+        {
+            Id id = defaultCurrencyId;
+            Asset lv = Asset(moduleCore.lvAsset(id));
+            uint256 balance = lv.balanceOf(DEFAULT_ADDRESS);
+            lv.approve(address(moduleCore), balance);
+            redeemParams =
+                IVault.RedeemEarlyParams({id: id, amount: balance, amountOutMin: 0, ammDeadline: block.timestamp});
+        }
+
+        IVault.RedeemEarlyResult memory result = moduleCore.redeemEarlyLv(redeemParams);
+        vm.assertApproxEqAbs(result.ctReceivedFromAmm, 0.5 ether, 0.01 ether);
+        vm.assertApproxEqAbs(result.dsReceived, 0.5 ether, 0.01 ether);
+
+        uint256 expectedRaReceived = TransferHelper.normalizeDecimals(0.49 ether, TARGET_DECIMALS, raDecimals);
+        uint256 errorDelta = TransferHelper.normalizeDecimals(0.01 ether, TARGET_DECIMALS, raDecimals);
+
+        vm.assertApproxEqAbs(result.raReceivedFromAmm, expectedRaReceived, errorDelta);
+        vm.assertApproxEqAbs(result.raIdleReceived, 0, 0);
+        vm.assertApproxEqAbs(result.paReceived, 0, 0);
+
+        {
+            vm.warp(10 days);
+            uint256 raBefore = ra.balanceOf(DEFAULT_ADDRESS);
+            uint256 dsBefore = IERC20(ds).balanceOf(DEFAULT_ADDRESS);
+            uint256 ctBefore = IERC20(ct).balanceOf(DEFAULT_ADDRESS);
+            uint256 paBefore = pa.balanceOf(DEFAULT_ADDRESS);
+
+            withdrawalContract.claimToSelf(result.withdrawalId);
+
+            uint256 raAfter = ra.balanceOf(DEFAULT_ADDRESS);
+            uint256 dsAfter = IERC20(ds).balanceOf(DEFAULT_ADDRESS);
+            uint256 ctAfter = IERC20(ct).balanceOf(DEFAULT_ADDRESS);
+            uint256 paAfter = pa.balanceOf(DEFAULT_ADDRESS);
+
+            vm.assertApproxEqAbs(raAfter, raBefore + expectedRaReceived, errorDelta);
+            vm.assertApproxEqAbs(dsAfter, dsBefore + 0.5 ether, 0.01 ether);
+            vm.assertApproxEqAbs(ctAfter, ctBefore + 0.5 ether, 0.01 ether);
+            vm.assertApproxEqAbs(paAfter, paBefore, 0);
+        }
     }
 
     // ff to expiry and update infos
