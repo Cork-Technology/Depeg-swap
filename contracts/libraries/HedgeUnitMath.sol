@@ -56,36 +56,6 @@ library HedgeUnitMath {
         return TransferHelper.normalizeDecimals(amount, decimalsBefore, decimalsAfter);
     }
 
-    // uni v2 style proportional add liquidity
-    function inferOptimalAmount(
-        uint256 reservePa,
-        uint256 reserveDs,
-        uint256 amountPaDesired,
-        uint256 amountDsDesired,
-        uint256 amountPaMin,
-        uint256 amountDsMin
-    ) internal pure returns (uint256 amountPa, uint256 amountDs) {
-        if (reservePa == 0 && reserveDs == 0) {
-            (amountPa, amountDs) = (amountPaDesired, amountDsDesired);
-        } else {
-            uint256 amountDsOptimal = getProportionalAmount(amountPaDesired, reservePa, reserveDs);
-
-            if (amountDsOptimal <= amountDsDesired) {
-                if (amountDsOptimal < amountDsMin) {
-                    revert IHedgeUnit.InsufficientDsAmount();
-                }
-
-                (amountPa, amountDs) = (amountPaDesired, amountDsOptimal);
-            } else {
-                uint256 amountPaOptimal = getProportionalAmount(amountDsDesired, reserveDs, reservePa);
-                if (amountPaOptimal < amountPaMin || amountPaOptimal > amountPaDesired) {
-                    revert IHedgeUnit.InsufficientPaAmount();
-                }
-                (amountPa, amountDs) = (amountPaOptimal, amountDsDesired);
-            }
-        }
-    }
-
     function withdraw(
         uint256 reservePa,
         uint256 reserveDs,

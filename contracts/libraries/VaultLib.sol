@@ -412,13 +412,6 @@ library VaultLibrary {
         self.vault.pool.withdrawalPool.paBalance += accruedPa;
     }
 
-    // Calculates PA amount as per price of PA with LV total supply, PA balance and given LV amount
-    // lv price = paReserve / lvTotalSupply
-    // PA amount = lvAmount * (PA reserve in contract / total supply of LV)
-    function _calculatePaPriceForLv(State storage self, uint256 lvAmt) internal view returns (uint256 paAmount) {
-        return lvAmt * self.vault.pool.withdrawalPool.paBalance / ERC20(self.vault.lv._address).totalSupply();
-    }
-
     function __liquidateUnchecked(
         address raAddress,
         address ctAddress,
@@ -503,29 +496,6 @@ library VaultLibrary {
             __calculateTotalRaAndCtBalanceWithReserve(self, raReserve, ctReserve, lpTotal, lpBalance);
     }
 
-    // duplicate function to avoid stack too deep error
-    function __calculateCtBalanceWithRate(State storage self, ICorkHook ammRouter, uint256 dsId)
-        internal
-        view
-        returns (uint256 raPerLv, uint256 ctPerLv, uint256 raPerLp, uint256 ctPerLp)
-    {
-        address ra = self.info.ra;
-        address ct = self.ds[dsId].ct;
-
-        (uint256 raReserve, uint256 ctReserve) = ammRouter.getReserves(ra, ct);
-
-        uint256 lpTotal;
-        uint256 lpBalance;
-        {
-            LiquidityToken lp = LiquidityToken(ammRouter.getLiquidityToken(ra, ct));
-            lpBalance = lp.balanceOf(address(this));
-            lpTotal = lp.totalSupply();
-        }
-
-        (,, raPerLv, ctPerLv, raPerLp, ctPerLp) =
-            __calculateTotalRaAndCtBalanceWithReserve(self, raReserve, ctReserve, lpTotal, lpBalance);
-    }
-
     function __calculateTotalRaAndCtBalanceWithReserve(
         State storage self,
         uint256 raReserve,
@@ -547,17 +517,6 @@ library VaultLibrary {
         (raPerLv, ctPerLv, raPerLp, ctPerLp, totalRa, ammCtBalance) = MathHelper.calculateLvValueFromUniLp(
             lpSupply, lpBalance, raReserve, ctReserve, Asset(self.vault.lv._address).totalSupply()
         );
-    }
-
-    function _getRaCtReserveSorted(State storage self, ICorkHook ammRouter, uint256 dsId)
-        internal
-        view
-        returns (uint256 raReserve, uint256 ctReserve)
-    {
-        address ra = self.info.ra;
-        address ct = self.ds[dsId].ct;
-
-        (raReserve, ctReserve) = ammRouter.getReserves(ra, ct);
     }
 
     // IMPORTANT : only psm, flash swap router and early redeem LV can call this function

@@ -53,41 +53,6 @@ library MathHelper {
     }
 
     /**
-     *  @dev calculate the base withdrawal amount of ra and pa in respect of given amount
-     * @param totalLv the total amount of lv in the pool
-     * @param accruedRa the total amount of ra accrued in the pool
-     * @param accruedPa the total amount of pa accrued in the pool
-     * @param amount the amount of lv user want to withdraw
-     * @return ra the amount of ra user will receive
-     * @return pa the amount of pa user will receive
-     */
-    function calculateBaseWithdrawal(uint256 totalLv, uint256 accruedRa, uint256 accruedPa, uint256 amount)
-        external
-        pure
-        returns (uint256 ra, uint256 pa)
-    {
-        UD60x18 _ra = mul(ud(amount), div(ud(accruedRa), ud(totalLv)));
-        UD60x18 _pa = mul(ud(amount), div(ud(accruedPa), ud(totalLv)));
-
-        return (unwrap(_ra), unwrap(_pa));
-    }
-
-    /**
-     * calculate the early lv rate in respect to the amount given
-     * @param lvRaBalance the total amount of ra in the lv
-     * @param totalLv the total amount of lv in the pool
-     * @param amount the amount of lv user want to withdraw
-     */
-    function calculateEarlyLvRate(uint256 lvRaBalance, uint256 totalLv, uint256 amount)
-        external
-        pure
-        returns (uint256 received)
-    {
-        UD60x18 _received = mul(ud(amount), div(ud(lvRaBalance), ud(totalLv)));
-        return unwrap(_received);
-    }
-
-    /**
      * @dev calculate the fee in respect to the amount given
      * @param fee1e18 the fee in 1e18
      * @param amount the amount of lv user want to withdraw
@@ -109,20 +74,6 @@ library MathHelper {
     {
         UD60x18 _amount = div(ud(amount), ud(exchangeRate));
         return unwrap(_amount);
-    }
-
-    /**
-     * @dev calculcate how much ra user will receive based on an exchange rate
-     * @param amount the amount of ds user want to redeem
-     * @param exchangeRate the current exchange rate between RA:(CT+DS)
-     */
-    function calculateRedeemAmountWithExchangeRate(uint256 amount, uint256 exchangeRate)
-        external
-        pure
-        returns (uint256 _amount)
-    {
-        UD60x18 amount = mul(ud(amount), ud(exchangeRate));
-        return unwrap(amount);
     }
 
     /// @notice calculate the accrued PA & RA

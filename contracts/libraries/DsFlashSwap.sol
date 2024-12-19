@@ -137,23 +137,6 @@ library DsFlashSwaplibrary {
         (raPriceRatio, ctPriceRatio) = SwapperMathLibrary.getPriceRatio(raReserve, ctReserve);
     }
 
-    function tryGetPriceRatioAfterSellDs(
-        ReserveState storage self,
-        uint256 dsId,
-        uint256 ctSubstracted,
-        uint256 raAdded,
-        ICorkHook router
-    ) external view returns (uint256 raPriceRatio, uint256 ctPriceRatio) {
-        AssetPair storage asset = self.ds[dsId];
-
-        (uint256 raReserve, uint256 ctReserve) = router.getReserves(address(asset.ra), address(asset.ct));
-
-        raReserve += raAdded;
-        ctReserve -= ctSubstracted;
-
-        (raPriceRatio, ctPriceRatio) = SwapperMathLibrary.getPriceRatio(raReserve, ctReserve);
-    }
-
     function getReserve(ReserveState storage self, uint256 dsId, ICorkHook router)
         external
         view
