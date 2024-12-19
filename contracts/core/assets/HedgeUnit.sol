@@ -32,7 +32,6 @@ struct DSData {
 contract HedgeUnit is ERC20Permit, ReentrancyGuard, Ownable, Pausable, IHedgeUnit, IHedgeUnitLiquidation {
     using SafeERC20 for IERC20;
 
-    uint8 internal constant TARGET_DECIMALS = 18;
     CorkConfig public immutable CONFIG;
     IDsFlashSwapCore public immutable FLASHSWAP_ROUTER;
     ModuleCore public immutable MODULE_CORE;
