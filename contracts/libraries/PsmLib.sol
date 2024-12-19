@@ -511,10 +511,13 @@ library PsmLibrary {
         }
 
         amount = amount - fee;
+        amount = TransferHelper.tokenNativeDecimalsToFixed(amount, self.info.ra);
 
         // we use deposit here because technically the user deposit RA to the PSM when repurchasing
         receivedPa = MathHelper.calculateDepositAmountWithExchangeRate(amount, exchangeRates);
-        receivedDs = TransferHelper.tokenNativeDecimalsToFixed(amount, self.info.pa);
+        receivedPa = TransferHelper.fixedToTokenNativeDecimals(receivedPa, self.info.pa);
+
+        receivedDs = amount;
 
         uint256 available = self.psm.balances.paBalance;
 
@@ -647,7 +650,7 @@ library PsmLibrary {
 
         exchangeRates = _ds.exchangeRate();
 
-        // the amount here is the DS amount
+        // the amount here is the PA amount
         amount = TransferHelper.tokenNativeDecimalsToFixed(amount, self.info.pa);
 
         uint256 raDs = MathHelper.calculateEqualSwapAmount(amount, exchangeRates);
