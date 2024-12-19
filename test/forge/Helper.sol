@@ -61,7 +61,7 @@ abstract contract Helper is SigUtils, TestHelper {
     // 0% liquidity vault early fee
     uint256 internal constant DEFAULT_LV_FEE = 0 ether;
 
-    // 1% initial ds price
+    // 10% initial ds price
     uint256 internal constant DEFAULT_INITIAL_DS_PRICE = 0.1 ether;
 
     // 50% split percentage
@@ -69,7 +69,7 @@ abstract contract Helper is SigUtils, TestHelper {
 
     uint8 internal constant TARGET_DECIMALS = 18;
 
-    uint8 internal constant MAX_DECIMALS= 64;
+    uint8 internal constant MAX_DECIMALS = 64;
 
     function defaultInitialArp() internal pure virtual returns (uint256) {
         return DEFAULT_INITIAL_DS_PRICE;
@@ -190,6 +190,7 @@ abstract contract Helper is SigUtils, TestHelper {
         issueNewDs(
             id, DEFAULT_EXCHANGE_RATES, DEFAULT_REPURCHASE_FEE, DEFAULT_DECAY_DISCOUNT_RATE, DEFAULT_ROLLOVER_PERIOD
         );
+        corkConfig.updateLvStrategyCtSplitPercentage(defaultCurrencyId, DEFAULT_CT_SPLIT_PERCENTAGE);
     }
 
     function initializeAndIssueNewDs(uint256 expiryInSeconds, uint8 raDecimals, uint8 paDecimals)
@@ -216,6 +217,7 @@ abstract contract Helper is SigUtils, TestHelper {
         issueNewDs(
             id, DEFAULT_EXCHANGE_RATES, DEFAULT_REPURCHASE_FEE, DEFAULT_DECAY_DISCOUNT_RATE, DEFAULT_ROLLOVER_PERIOD
         );
+        corkConfig.updateLvStrategyCtSplitPercentage(defaultCurrencyId, DEFAULT_CT_SPLIT_PERCENTAGE);
     }
 
     function initializeAndIssueNewDs(
