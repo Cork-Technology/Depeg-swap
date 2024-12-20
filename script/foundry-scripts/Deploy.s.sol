@@ -156,7 +156,7 @@ contract DeployScript is Script {
         console.log("ModuleCore Router Implementation : ", address(moduleCoreImplementation));
 
         // deploy hook
-        poolManager = new PoolManager();
+        poolManager = new PoolManager(msg.sender);
         liquidityToken = new LiquidityToken();
 
         bytes memory creationCode = type(CorkHook).creationCode;
