@@ -417,7 +417,7 @@ library SwapperMathLibrary {
      */
     function findOptimalBorrowedAmount(OptimalBorrowParams memory params)
         external
-        pure
+        view
         returns (OptimalBorrowResult memory result)
     {
         UD60x18 amountOutUd = convertUd(params.initialAmountOut);
