@@ -259,8 +259,6 @@ contract DeployScript is Script {
         require(beforeRoleFlashSwap == true, "FlashSwapRouter not setting the deployer as DEFAULT_ADMIN_ROLE");
    
 
-
-
         require(moduleCore.owner() == admin, "ModuleCore ownership not transferred");
         // require(liquidator.owner() == admin, "Liquidator ownership not transferred");
         // require(hook.owner() == admin, "CorkHook ownership not transferred");
