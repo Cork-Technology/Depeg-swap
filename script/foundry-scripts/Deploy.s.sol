@@ -24,6 +24,27 @@ interface ICST {
     function deposit(uint256 amount) external;
 }
 
+// Deployments --> all deployments successful except Uniswap V2 contract 
+// asset Factory Implementation - done
+// asset Factory Proxy - done
+// CorkConfig contract - done
+// FlashSwapRouter implementation (logic) contract - done
+// FlashSwapRouter proxie contract - done
+// ModuleCore implementation (logic) contract - done
+// ModuleCore Proxy contract - done
+// Liquidator = done
+
+// Undeployed - Uniswap V2 router and implementation            - ask karan
+
+// upgrade, transfer Ownership
+//  assetFactory - done
+// ModuleCore - done
+// Cork Config - done 
+// flashswaprouter - done 
+// liquidator - undone 
+// hedge unit 
+// hook 
+
 contract DeployScript is Script {
     AssetFactory public assetFactory;
     CorkConfig public config;
@@ -141,16 +162,6 @@ contract DeployScript is Script {
         flashswapRouter = RouterState(address(routerProxy));
         console.log("Flashswap Router Proxy          : ", address(flashswapRouter));
 
-        // Deploy the UniswapV2Factory contract
-        // address _factory = deployCode(v2FactoryArtifact, abi.encode(msg.sender, address(flashswapRouter)));
-        // factory = IUniswapV2Factory(_factory);
-        // console.log("Univ2 Factory                   : ", _factory);
-
-        // Deploy the UniswapV2Router contract
-        // address _router = deployCode(v2RouterArtifact, abi.encode(_factory, address(ceth), address(flashswapRouter)));
-        // univ2Router = IUniswapV2Router02(_router);
-        // console.log("Univ2 Router                    : ", _router);
-
         // Deploy the ModuleCore implementation (logic) contract
         ModuleCore moduleCoreImplementation = new ModuleCore();
         console.log("ModuleCore Router Implementation : ", address(moduleCoreImplementation));
@@ -188,123 +199,72 @@ contract DeployScript is Script {
         console.log("Liquidator                      : ", address(liquidator));
         console.log("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-");
 
-        // // Deploy the HedgeUnitFactry contract
-        // hedgeUnitFactory = new HedgeUnitFactory(address(moduleCore), address(liquidator));
-        // console.log("HedgeUnit Factory               : ", address(hedgeUnitFactory));
-        // console.log("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-");
+        console.log("Checking the roles before transferring AdminRoles");
+        testAdminRoles(0x998e15be45A6A3E1C9a824c1Ef1Aaa4C988EC29F);
 
-        // Deploy the HedgeUnit contract
-
-        // hedgeUnitbsETH = HedgeUnit(
-        //     hedgeUnitFactory.deployHedgeUnit(
-        //         moduleCore.getId(bsETH, ceth, bsETH_CETH_expiry),
-        //         bsETH,
-        //         "Bear Sterns Restaked ETH - CETH",
-        //         INITIAL_MINT_CAP
-        //     )
-        // );
-        // console.log("HU bsETH                        : ", address(hedgeUnitbsETH));
-
-        // hedgeUnitlbETH = HedgeUnit(
-        //     hedgeUnitFactory.deployHedgeUnit(
-        //         moduleCore.getId(lbETH, ceth, lbETH_CETH_expiry),
-        //         lbETH,
-        //         "Lehman Brothers Restaked ETH - CETH",
-        //         INITIAL_MINT_CAP
-        //     )
-        // );
-        // console.log("HU lbETH                        : ", address(hedgeUnitlbETH));
-
-        // hedgeUnitwamuETH = HedgeUnit(
-        //     hedgeUnitFactory.deployHedgeUnit(
-        //         moduleCore.getId(wamuETH, ceth, wamuETH_CETH_expiry),
-        //         wamuETH,
-        //         "Washington Mutual restaked ETH - CETH",
-        //         INITIAL_MINT_CAP
-        //     )
-        // );
-        // console.log("HU wamuETH                      : ", address(hedgeUnitwamuETH));
-
-        // hedgeUnitmlETH = HedgeUnit(
-        //     hedgeUnitFactory.deployHedgeUnit(
-        //         moduleCore.getId(mlETH, ceth, mlETH_CETH_expiry),
-        //         mlETH,
-        //         "Merrill Lynch staked ETH - CETH",
-        //         INITIAL_MINT_CAP
-        //     )
-        // );
-        // console.log("HU mlETH                        : ", address(hedgeUnitmlETH));
-        // console.log("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-");
-
-        // Transfer Ownership to moduleCore
-        assetFactory.transferOwnership(address(moduleCore));
-        // TODO
-        // flashswapRouter.transferOwnership(address(moduleCore));
-        console.log("Transferred ownerships to Modulecore");
-
-        config.setModuleCore(address(moduleCore));
-        flashswapRouter.setModuleCore(address(moduleCore));
-        console.log("Modulecore configured in Config contract");
-        console.log("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-");
-
-        issueDSAndAddLiquidity(mlETH, ceth, 300_000 ether, 0, 0.005 ether, 1 ether, 4 days); // EarlyRedemptionFee = 0%,  DSPrice=0.2%(or 20%)  repurchaseFee = 1%
-        issueDSAndAddLiquidity(lbETH, ceth, 300_000 ether, 0, 0.0075 ether, 0.5 ether, 4 days); // EarlyRedemptionFee = 0%,  DSPrice=0.3%(or 30%)  repurchaseFee = 0.5%
-        issueDSAndAddLiquidity(bsETH, ceth, 300_000 ether, 0, 0.0175 ether, 0, 4 days); // EarlyRedemptionFee = 0%,  DSPrice=0.7%(or 70%)  repurchaseFee = 0%
-        issueDSAndAddLiquidity(wamuETH, ceth, 500_000 ether, 0, 0.0045 ether, 0.25 ether, 6 days); // EarlyRedemptionFee = 0%,  DSPrice=0.3%(or 30%)  repurchaseFee = 0.25%
-
-        // moduleCore.redeemEarlyLv(id, msg.sender, 10 ether);
-        // uint256 result = flashswapRouter.previewSwapRaforDs(id, 1, 100 ether);
-        // console.log(result);
-        console.log("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-");
-        vm.stopBroadcast();
+        console.log("Calling the Transfer Role function to tranfer admin roles");
+        setupAdminRoles(0x12f8Bf2D209Cb8CBE604ff58CB6249b1Ba03ecbB);
     }
 
-    function issueDSAndAddLiquidity(
-        address cst,
-        address ceth,
-        uint256 liquidityAmt,
-        uint256 redmptionFee,
-        uint256 dsPrice,
-        uint256 repurchaseFee,
-        uint256 expiryPeriod
-    ) public {
-        config.initializeModuleCore(cst, ceth, redmptionFee, dsPrice, base_redemption_fee, expiryPeriod);
-
-        Id id = moduleCore.getId(cst, ceth, expiryPeriod);
-        config.issueNewDs(
-            id,
-            1 ether, // exchange rate = 1:1
-            repurchaseFee,
-            6 ether, // 6% per day TODO
-            block.timestamp + 6600, // 1 block per 12 second and 22 hours rollover during TC = 6600 // TODO
-            block.timestamp + 10 seconds
-        );
-        console.log("New DS issued");
+    function setupAdminRoles(address newAdmin) internal {
+        console.log("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-");
+        console.log("Transferring the roles now");
         console.log("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-");
 
-        // TODO : doesn't work properly for now
-        // cETH.approve(address(moduleCore), depositLVAmt);
-        // moduleCore.depositLv(id, depositLVAmt, 0, 0);
-        // console.log("LV Deposited");
+        assetFactory.transferOwnership(newAdmin);
 
-        // TODO : plz fix this properly
-        // cETH.approve(address(univ2Router), liquidityAmt);
-        // IERC20(cst).approve(address(univ2Router), liquidityAmt);
-        // univ2Router.addLiquidity(
-        //     ceth,
-        //     cst,
-        //     liquidityAmt,
-        //     liquidityAmt,
-        //     liquidityAmt,
-        //     liquidityAmt,
-        //     msg.sender,
-        //     block.timestamp + 10000 minutes
-        // );
-        // console.log("Liquidity Added to AMM");
+        // transferring cork config ownership
+        bytes32 role = keccak256("MANAGER_ROLE");
+        config.grantRole(role, newAdmin);
+        bool afterRole = config.hasRole(role, newAdmin);
+        console.log("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-");
+        require(afterRole == true, "Cork Conifg Role has been transffered successfully");
+        console.log("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-");
 
-        // moduleCore.redeemEarlyLv(id, msg.sender, 10 ether);
-        // uint256 result = flashswapRouter.previewSwapRaforDs(id, 1, 100 ether);
-        // console.log(result);
-        // console.log("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-");
+        moduleCore.transferOwnership(newAdmin);
+        // liquidator.transferOwnership(newAdmin);
+        // hedgeUnitFactory.transferOwnership(newAdmin);
+        // hook.transferOwnership(newAdmin);
+
+        console.log("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-");
+        console.log("Roles have been transferred");
+        console.log("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-");
+
+        require(assetFactory.owner() == newAdmin, "AssetFactory ownership  transferred");
+      
+        flashswapRouter.grantRole(0x00,newAdmin );
+        bool newRoleFlash = flashswapRouter.hasRole(0x00, newAdmin );
+        require(newRoleFlash == true, "Flash Swap admin role successfully transeffered");
+
+
+
+
+        require(moduleCore.owner() == newAdmin, "ModuleCore ownership  transferred");
+        // require(liquidator.owner() == newAdmin, "Liquidator ownership  transferred");
+        // require(hedgeUnitFactory.owner() == newAdmin, "HedgeUnitFactory ownership  transferred");
+        // require(hook.owner() == newAdmin, "CorkHook ownership  transferred");
+
+        console.log("Admin roles set up successfully and Verified and the new admin is :::::::::::::::    ", newAdmin);
+    }
+
+    function testAdminRoles(address admin) public {
+        require(assetFactory.owner() == admin, "AssetFactory ownership not transferred");
+
+        // testing for ownership of CorkConfig
+        bool beforeRole = config.hasRole(keccak256("MANAGER_ROLE"), 0x998e15be45A6A3E1C9a824c1Ef1Aaa4C988EC29F);
+        require(beforeRole == true, "Constrictor not setting Manager Role");
+
+        // require(flashswapRouter.owner() == admin, "RouterState ownership not transferred");    
+        bool beforeRoleFlashSwap = flashswapRouter.hasRole(0x00, 0x998e15be45A6A3E1C9a824c1Ef1Aaa4C988EC29F );
+        require(beforeRoleFlashSwap == true, "FlashSwapRouter not setting the deployer as DEFAULT_ADMIN_ROLE");
+   
+
+
+
+        require(moduleCore.owner() == admin, "ModuleCore ownership not transferred");
+        // require(liquidator.owner() == admin, "Liquidator ownership not transferred");
+        // require(hook.owner() == admin, "CorkHook ownership not transferred");
+
+        console.log("All admin roles remain the same as deployer");
     }
 }
