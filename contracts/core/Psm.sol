@@ -139,7 +139,7 @@ abstract contract PsmCore is IPSMcore, ModuleState, Context {
         (received, _exchangeRate, fee) =
             state.redeemWithDs(redeemer, amount, dsId, rawDsPermitSig, deadline);
 
-        VaultLibrary.provideLiquidityWithFee(state, fee, getRouterCore(), getAmmRouter());
+        VaultLibrary.allocateFeesToVault(state, fee);
 
         emit DsRedeemed(id, dsId, redeemer, amount, received, _exchangeRate, state.psm.psmBaseRedemptionFeePercentage, fee);
     }
@@ -156,7 +156,7 @@ abstract contract PsmCore is IPSMcore, ModuleState, Context {
 
         (received, _exchangeRate, fee) = state.redeemWithDs(_msgSender(), amount, dsId, bytes(""), 0);
 
-        VaultLibrary.provideLiquidityWithFee(state, fee, getRouterCore(), getAmmRouter());
+        VaultLibrary.allocateFeesToVault(state, fee);
 
         emit DsRedeemed(id, dsId, _msgSender(), amount, received, _exchangeRate, state.psm.psmBaseRedemptionFeePercentage, fee);
     }

@@ -650,13 +650,11 @@ library VaultLibrary {
     }
 
     // IMPORTANT : only psm, flash swap router and early redeem LV can call this function
-    function provideLiquidityWithFee(
+    function allocateFeesToVault(
         State storage self,
-        uint256 amount,
-        IDsFlashSwapCore flashSwapRouter,
-        IUniswapV2Router02 ammRouter
+        uint256 amount
     ) public {
-        __provideLiquidityWithRatio(self, amount, flashSwapRouter, self.ds[self.globalAssetIdx].ct, ammRouter);
+        self.vault.balances.ra.incLocked(amount);
     }
     // taken directly from spec document, technically below is what should happen in this function
     //
@@ -713,7 +711,7 @@ library VaultLibrary {
         fee = MathHelper.calculatePercentageFee(received, feePercentage);
 
         if (fee != 0) {
-            provideLiquidityWithFee(self, fee, flashSwapRouter, ammRouter);
+            allocateFeesToVault(self, fee);
             received = received - fee;
         }
 
