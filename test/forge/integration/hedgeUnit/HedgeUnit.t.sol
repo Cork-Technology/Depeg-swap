@@ -5,16 +5,17 @@ import {Helper} from "./../../Helper.sol";
 import {HedgeUnit} from "../../../../contracts/core/assets/HedgeUnit.sol";
 import {Liquidator} from "../../../../contracts/core/liquidators/cow-protocol/Liquidator.sol";
 import {IHedgeUnit} from "../../../../contracts/interfaces/IHedgeUnit.sol";
-import {DummyWETH} from "../../../../contracts/dummy/DummyWETH.sol";
+import {DummyERCWithPermit} from "../../../../contracts/dummy/DummyERCWithPermit.sol";
 import {Id} from "./../../../../contracts/libraries/Pair.sol";
 import {PausableUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/PausableUpgradeable.sol";
+import {Asset} from "../../../../contracts/core/assets/Asset.sol";
 
 contract HedgeUnitTest is Helper {
     Liquidator public liquidator;
     HedgeUnit public hedgeUnit;
-    DummyWETH public dsToken;
-    DummyWETH internal ra;
-    DummyWETH internal pa;
+    DummyERCWithPermit public dsToken;
+    DummyERCWithPermit internal ra;
+    DummyERCWithPermit internal pa;
 
     Id public currencyId;
     uint256 public dsId;
@@ -27,6 +28,7 @@ contract HedgeUnitTest is Helper {
     uint256 public DEFAULT_DEPOSIT_AMOUNT = 1900 ether;
     uint256 constant INITIAL_MINT_CAP = 1000 * 1e18; // 1000 tokens
     uint256 constant USER_BALANCE = 500 * 1e18;
+    uint256 internal USER_PK = 1;
 
     // TODO : Add the hookTrampoline address
     address hookTrampoline = DEFAULT_ADDRESS;
@@ -37,11 +39,11 @@ contract HedgeUnitTest is Helper {
         vm.startPrank(DEFAULT_ADDRESS);
         // Setup accounts
         owner = address(this); // Owner of the contract
-        user = address(0x123);
+        user = vm.rememberKey(USER_PK);
 
         deployModuleCore();
 
-        (ra, pa, currencyId) = initializeAndIssueNewDs(block.timestamp + 1 days);
+        (ra, pa, currencyId) = initializeAndIssueNewDsWithRaAsPermit(block.timestamp + 1 days);
         vm.deal(DEFAULT_ADDRESS, 100_000_000 ether);
         ra.deposit{value: 100000 ether}();
         pa.deposit{value: 100000 ether}();
@@ -75,7 +77,7 @@ contract HedgeUnitTest is Helper {
     function fetchProtocolGeneralInfo() internal {
         dsId = moduleCore.lastDsId(currencyId);
         (ct, ds) = moduleCore.swapAsset(currencyId, dsId);
-        dsToken = DummyWETH(payable(address(ds)));
+        dsToken = DummyERCWithPermit(payable(address(ds)));
     }
 
     function test_PreviewMint() public {
@@ -104,6 +106,44 @@ contract HedgeUnitTest is Helper {
         // Mint 100 HedgeUnit tokens
         uint256 mintAmount = 100 * 1e18;
         hedgeUnit.mint(mintAmount);
+
+        // Check balances and total supply
+        assertEq(hedgeUnit.balanceOf(user), mintAmount);
+        assertEq(hedgeUnit.totalSupply(), mintAmount);
+
+        // Check token balances in the contract
+        assertEq(dsToken.balanceOf(address(hedgeUnit)), mintAmount);
+        assertEq(pa.balanceOf(address(hedgeUnit)), mintAmount);
+
+        vm.stopPrank();
+    }
+
+    function test_MintingTokensWithPermit() public {
+        // Test_ minting by the user
+        vm.startPrank(user);
+
+        // Mint 100 HedgeUnit tokens
+        uint256 mintAmount = 100 * 1e18;
+
+        // Permit token approvals to HedgeUnit contract
+        (uint256 dsAmount, uint256 paAmount) = hedgeUnit.previewMint(mintAmount);
+        bytes32 domain_separator = Asset(address(dsToken)).DOMAIN_SEPARATOR();
+        uint256 deadline = block.timestamp + 10 days;
+        bytes memory dsPermit = getCustomPermit(
+            user,
+            address(hedgeUnit),
+            dsAmount,
+            Asset(address(dsToken)).nonces(user),
+            deadline,
+            USER_PK,
+            domain_separator,
+            "mint"
+        );
+        domain_separator = Asset(address(pa)).DOMAIN_SEPARATOR();
+        bytes memory paPermit = getPermit(
+            user, address(hedgeUnit), paAmount, Asset(address(pa)).nonces(user), deadline, USER_PK, domain_separator
+        );
+        hedgeUnit.mint(user, mintAmount, dsPermit, paPermit, deadline);
 
         // Check balances and total supply
         assertEq(hedgeUnit.balanceOf(user), mintAmount);
@@ -171,7 +211,7 @@ contract HedgeUnitTest is Helper {
         uint256 dsBalanceBefore = dsToken.balanceOf(address(hedgeUnit));
         uint256 raBalanceBefore = ra.balanceOf(address(hedgeUnit));
 
-        corkConfig.redeemRaWtihDsPaWithHedgeUnit(address(hedgeUnit), initialAmount, initialAmount);
+        corkConfig.redeemRaWithDsPaWithHedgeUnit(address(hedgeUnit), initialAmount, initialAmount);
 
         vm.assertEq(pa.balanceOf(address(hedgeUnit)), paBalnceBefore - initialAmount);
         vm.assertEq(dsToken.balanceOf(address(hedgeUnit)), dsBalanceBefore - initialAmount);

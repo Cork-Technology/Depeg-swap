@@ -3,7 +3,7 @@ pragma solidity ^0.8.24;
 // TODO : support permit
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {Pausable} from "@openzeppelin/contracts/utils/Pausable.sol";
-import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import {ERC20, IERC20Permit} from "@openzeppelin/contracts/token/ERC20/extensions/ERC20Permit.sol";
 import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import {SafeERC20, IERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
@@ -21,6 +21,7 @@ import "openzeppelin-contracts/contracts/token/ERC20/extensions/ERC20Permit.sol"
 import "./../../libraries/SignatureHelperLib.sol";
 import "./../../libraries/DepegSwapLib.sol";
 import "./../../libraries/TransferHelper.sol";
+import {PermitChecker} from "../../libraries/PermitChecker.sol";
 
 struct DSData {
     address dsAddress;
@@ -258,10 +259,10 @@ contract HedgeUnit is ERC20Permit, ReentrancyGuard, Ownable, Pausable, IHedgeUni
         autoUpdateDS
         returns (uint256 dsAmount, uint256 paAmount)
     {
-        (dsAmount, paAmount) = __mint(amount);
+        (dsAmount, paAmount) = __mint(msg.sender, amount);
     }
 
-    function __mint(uint256 amount) internal returns (uint256 dsAmount, uint256 paAmount) {
+    function __mint(address minter, uint256 amount) internal returns (uint256 dsAmount, uint256 paAmount) {
         if (totalSupply() + amount > mintCap) {
             revert MintCapExceeded();
         }
@@ -275,31 +276,42 @@ contract HedgeUnit is ERC20Permit, ReentrancyGuard, Ownable, Pausable, IHedgeUni
             paAmount = TransferHelper.fixedToTokenNativeDecimals(paAmount, pa);
         }
 
-        TransferHelper.transferFromNormalize(ds, msg.sender, dsAmount);
+        TransferHelper.transferFromNormalize(ds, minter, dsAmount);
 
         // this calculation is based on the assumption that the DS token has 18 decimals but pa can have different decimals
 
-        TransferHelper.transferFromNormalize(pa, msg.sender, paAmount);
+        TransferHelper.transferFromNormalize(pa, minter, paAmount);
         dsHistory[dsIndexMap[address(ds)]].totalDeposited += amount;
 
-        _mint(msg.sender, amount);
+        _mint(minter, amount);
 
-        emit Mint(msg.sender, amount);
+        emit Mint(minter, amount);
     }
 
-    function mint(uint256 amount, bytes memory rawDsPermitSig, uint256 deadline)
-        external
-        whenNotPaused
-        nonReentrant
-        autoUpdateDS
-        returns (uint256 dsAmount, uint256 paAmount)
-    {
+    function mint(
+        address minter,
+        uint256 amount,
+        bytes memory rawDsPermitSig,
+        bytes memory rawPaPermitSig,
+        uint256 deadline
+    ) external whenNotPaused nonReentrant autoUpdateDS returns (uint256 dsAmount, uint256 paAmount) {
+        if (rawDsPermitSig.length == 0 || rawPaPermitSig.length == 0 || deadline == 0) {
+            revert InvalidSignature();
+        }
+
+        if (!PermitChecker.supportsPermit(address(pa))) {
+            revert PermitNotSupported();
+        }
+
         (dsAmount, paAmount) = previewMint(amount);
 
         Signature memory sig = MinimalSignatureHelper.split(rawDsPermitSig);
-        ds.permit(msg.sender, address(this), dsAmount, deadline, sig.v, sig.r, sig.s, "mint");
+        ds.permit(minter, address(this), dsAmount, deadline, sig.v, sig.r, sig.s, "mint");
 
-        (uint256 _actualDs, uint256 _actualPa) = __mint(amount);
+        sig = MinimalSignatureHelper.split(rawPaPermitSig);
+        IERC20Permit(address(pa)).permit(minter, address(this), paAmount, deadline, sig.v, sig.r, sig.s);
+
+        (uint256 _actualDs, uint256 _actualPa) = __mint(minter, amount);
 
         assert(_actualDs == dsAmount);
         assert(_actualPa == paAmount);
@@ -358,25 +370,6 @@ contract HedgeUnit is ERC20Permit, ReentrancyGuard, Ownable, Pausable, IHedgeUni
         _burn(msg.sender, amount);
 
         emit Dissolve(msg.sender, amount, dsAmount, paAmount);
-    }
-
-    function dissolve(uint256 amount, bytes memory rawHuPermitSig, uint256 deadline)
-        external
-        whenNotPaused
-        nonReentrant
-        autoUpdateDS
-        returns (uint256 dsAmount, uint256 paAmount, uint256 raAmount)
-    {
-        (uint256 dsAmount, uint256 paAmount, uint256 raAmount) = previewDissolve(amount);
-
-        Signature memory sig = MinimalSignatureHelper.split(rawHuPermitSig);
-        permit(msg.sender, address(this), amount, deadline, sig.v, sig.r, sig.s);
-
-        (uint256 _dsAmount, uint256 _paAmount, uint256 _raAmount) = _dissolve(amount);
-
-        assert(_dsAmount == dsAmount);
-        assert(_paAmount == paAmount);
-        assert(_raAmount == raAmount);
     }
 
     /**

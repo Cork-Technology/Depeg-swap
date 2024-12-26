@@ -119,7 +119,7 @@ contract RolloverTest is Helper {
 
         uint256 deadline = block.timestamp + 10 days;
 
-        bytes memory permit = getPermit(
+        bytes memory permit = getCustomPermit(
             DEFAULT_ADDRESS_ROLLOVER,
             address(moduleCore),
             DEFAULT_DEPOSIT_AMOUNT,

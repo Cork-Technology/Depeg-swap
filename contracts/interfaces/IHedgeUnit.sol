@@ -56,6 +56,12 @@ interface IHedgeUnit {
 
     error InvalidToken();
 
+    /// @notice Error indicating provided signature is invalid
+    error InvalidSignature();
+
+    /// @notice Error indicating the permit is not supported in PA contract
+    error PermitNotSupported();
+
     // Read functions
     /**
      * @notice Returns the current mint cap.

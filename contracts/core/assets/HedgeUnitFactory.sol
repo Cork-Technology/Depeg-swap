@@ -38,7 +38,7 @@ contract HedgeUnitFactory {
     }
 
     /**
-     * @notice Constructor sets the initial addresses for MODULE_CORE and LIQUIDATOR.
+     * @notice Constructor sets the initial addresses for moduleCore, config and flashswap router.
      * @param _moduleCore Address of the MODULE_CORE.
      * @param _config Address of the config contract
      */

@@ -188,53 +188,57 @@ contract DeployScript is Script {
         console.log("Liquidator                      : ", address(liquidator));
         console.log("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-");
 
-        // // Deploy the HedgeUnitFactry contract
-        // hedgeUnitFactory = new HedgeUnitFactory(address(moduleCore), address(liquidator));
-        // console.log("HedgeUnit Factory               : ", address(hedgeUnitFactory));
-        // console.log("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-");
+        // Deploy the HedgeUnitFactry contract
+        hedgeUnitFactory = new HedgeUnitFactory(address(moduleCore), address(config), address(flashswapRouter));
+        config.setHedgeUnitFactory(address(hedgeUnitFactory));
+        console.log("HedgeUnit Factory               : ", address(hedgeUnitFactory));
+        console.log("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-");
 
         // Deploy the HedgeUnit contract
+        hedgeUnitbsETH = HedgeUnit(
+            config.deployHedgeUnit(
+                moduleCore.getId(bsETH, ceth, bsETH_CETH_expiry),
+                bsETH,
+                ceth,
+                "Bear Sterns Restaked ETH - CETH",
+                INITIAL_MINT_CAP
+            )
+        );
+        console.log("HU bsETH                        : ", address(hedgeUnitbsETH));
 
-        // hedgeUnitbsETH = HedgeUnit(
-        //     hedgeUnitFactory.deployHedgeUnit(
-        //         moduleCore.getId(bsETH, ceth, bsETH_CETH_expiry),
-        //         bsETH,
-        //         "Bear Sterns Restaked ETH - CETH",
-        //         INITIAL_MINT_CAP
-        //     )
-        // );
-        // console.log("HU bsETH                        : ", address(hedgeUnitbsETH));
+        hedgeUnitlbETH = HedgeUnit(
+            config.deployHedgeUnit(
+                moduleCore.getId(lbETH, ceth, lbETH_CETH_expiry),
+                lbETH,
+                ceth,
+                "Lehman Brothers Restaked ETH - CETH",
+                INITIAL_MINT_CAP
+            )
+        );
+        console.log("HU lbETH                        : ", address(hedgeUnitlbETH));
 
-        // hedgeUnitlbETH = HedgeUnit(
-        //     hedgeUnitFactory.deployHedgeUnit(
-        //         moduleCore.getId(lbETH, ceth, lbETH_CETH_expiry),
-        //         lbETH,
-        //         "Lehman Brothers Restaked ETH - CETH",
-        //         INITIAL_MINT_CAP
-        //     )
-        // );
-        // console.log("HU lbETH                        : ", address(hedgeUnitlbETH));
+        hedgeUnitwamuETH = HedgeUnit(
+            config.deployHedgeUnit(
+                moduleCore.getId(wamuETH, ceth, wamuETH_CETH_expiry),
+                wamuETH,
+                ceth,
+                "Washington Mutual restaked ETH - CETH",
+                INITIAL_MINT_CAP
+            )
+        );
+        console.log("HU wamuETH                      : ", address(hedgeUnitwamuETH));
 
-        // hedgeUnitwamuETH = HedgeUnit(
-        //     hedgeUnitFactory.deployHedgeUnit(
-        //         moduleCore.getId(wamuETH, ceth, wamuETH_CETH_expiry),
-        //         wamuETH,
-        //         "Washington Mutual restaked ETH - CETH",
-        //         INITIAL_MINT_CAP
-        //     )
-        // );
-        // console.log("HU wamuETH                      : ", address(hedgeUnitwamuETH));
-
-        // hedgeUnitmlETH = HedgeUnit(
-        //     hedgeUnitFactory.deployHedgeUnit(
-        //         moduleCore.getId(mlETH, ceth, mlETH_CETH_expiry),
-        //         mlETH,
-        //         "Merrill Lynch staked ETH - CETH",
-        //         INITIAL_MINT_CAP
-        //     )
-        // );
-        // console.log("HU mlETH                        : ", address(hedgeUnitmlETH));
-        // console.log("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-");
+        hedgeUnitmlETH = HedgeUnit(
+            config.deployHedgeUnit(
+                moduleCore.getId(mlETH, ceth, mlETH_CETH_expiry),
+                mlETH,
+                ceth,
+                "Merrill Lynch staked ETH - CETH",
+                INITIAL_MINT_CAP
+            )
+        );
+        console.log("HU mlETH                        : ", address(hedgeUnitmlETH));
+        console.log("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-");
 
         // Transfer Ownership to moduleCore
         assetFactory.transferOwnership(address(moduleCore));
