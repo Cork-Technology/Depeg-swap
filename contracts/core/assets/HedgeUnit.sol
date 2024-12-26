@@ -230,6 +230,10 @@ contract HedgeUnit is ERC20Permit, ReentrancyGuard, Ownable, Pausable, IHedgeUni
      * @return paAmount The amount of pa tokens required to mint the specified amount of HedgeUnit tokens.
      */
     function previewMint(uint256 amount) public view returns (uint256 dsAmount, uint256 paAmount) {
+        if(amount == 0) {
+            revert InvalidAmount();
+        }
+
         if (totalSupply() + amount > mintCap) {
             revert MintCapExceeded();
         }
@@ -263,6 +267,10 @@ contract HedgeUnit is ERC20Permit, ReentrancyGuard, Ownable, Pausable, IHedgeUni
     }
 
     function __mint(address minter, uint256 amount) internal returns (uint256 dsAmount, uint256 paAmount) {
+        if(amount == 0) {
+            revert InvalidAmount();
+        }
+
         if (totalSupply() + amount > mintCap) {
             revert MintCapExceeded();
         }
@@ -327,7 +335,7 @@ contract HedgeUnit is ERC20Permit, ReentrancyGuard, Ownable, Pausable, IHedgeUni
         view
         returns (uint256 dsAmount, uint256 paAmount, uint256 raAmount)
     {
-        if (amount > balanceOf(msg.sender)) {
+        if (amount == 0 || amount > balanceOf(msg.sender)) {
             revert InvalidAmount();
         }
         uint256 totalLiquidity = totalSupply();
@@ -357,10 +365,6 @@ contract HedgeUnit is ERC20Permit, ReentrancyGuard, Ownable, Pausable, IHedgeUni
     }
 
     function _dissolve(uint256 amount) internal returns (uint256 dsAmount, uint256 paAmount, uint256 raAmount) {
-        if (amount > balanceOf(msg.sender)) {
-            revert InvalidAmount();
-        }
-
         (dsAmount, paAmount, raAmount) = previewDissolve(amount);
 
         TransferHelper.transferNormalize(pa, msg.sender, paAmount);
