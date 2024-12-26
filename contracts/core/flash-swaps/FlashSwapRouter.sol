@@ -204,7 +204,8 @@ contract RouterState is
         // this means that we ignore and don't do rollover sale when it's first issuance or it's not rollover time, or no hiya(means no trade, unlikely but edge case)
         if (
             dsId == DsFlashSwaplibrary.FIRST_ISSUANCE || !reserves[reserveId].rolloverSale()
-                || reserves[reserveId].hiya == 0 || reserves[reserveId].ds[dsId].lvReserve == 0
+                || reserves[reserveId].hiya == 0
+                || (reserves[reserveId].ds[dsId].lvReserve == 0 && reserves[reserveId].ds[dsId].psmReserve == 0)
         ) {
             // noop and return back the full amountRa
             return (amountRa, 0);
