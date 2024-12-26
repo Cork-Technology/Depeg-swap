@@ -24,26 +24,6 @@ interface ICST {
     function deposit(uint256 amount) external;
 }
 
-// Deployments --> all deployments successful except Uniswap V2 contract 
-// asset Factory Implementation - done
-// asset Factory Proxy - done
-// CorkConfig contract - done
-// FlashSwapRouter implementation (logic) contract - done
-// FlashSwapRouter proxie contract - done
-// ModuleCore implementation (logic) contract - done
-// ModuleCore Proxy contract - done
-// Liquidator = done
-
-// Undeployed - Uniswap V2 router and implementation            - ask karan
-
-// upgrade, transfer Ownership
-//  assetFactory - done
-// ModuleCore - done
-// Cork Config - done 
-// flashswaprouter - done 
-// liquidator - undone 
-// hedge unit 
-// hook 
 
 contract DeployScript is Script {
     AssetFactory public assetFactory;
@@ -200,10 +180,10 @@ contract DeployScript is Script {
         console.log("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-");
 
         console.log("Checking the roles before transferring AdminRoles");
-        testAdminRoles(0x998e15be45A6A3E1C9a824c1Ef1Aaa4C988EC29F);
+        testAdminRoles(0x998e15be45A6A3E1C9a824c1Ef1Aaa4C988EC29F); // new admin 
 
         console.log("Calling the Transfer Role function to tranfer admin roles");
-        setupAdminRoles(0x12f8Bf2D209Cb8CBE604ff58CB6249b1Ba03ecbB);
+        setupAdminRoles(0x12f8Bf2D209Cb8CBE604ff58CB6249b1Ba03ecbB); // deployer address
     }
 
     function setupAdminRoles(address newAdmin) internal {
@@ -218,6 +198,16 @@ contract DeployScript is Script {
         config.grantRole(role, newAdmin);
         bool afterRole = config.hasRole(role, newAdmin);
         console.log("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-");
+        require(afterRole == true, "Cork Conifg Role has been transffered successfully");
+        console.log("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-");
+
+        moduleCore.transferOwnership(newAdmin);
+        // liquidator.transferOwnership(newAdmin);
+        // hedgeUnitFactory.transferOwnership(newAdmin);
+        // hook.transferOwnership(newAdmin);
+
+        console.log("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-");
+        console.log("Roles have been transferred");
         require(afterRole == true, "Cork Conifg Role has been transffered successfully");
         console.log("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-");
 
@@ -265,4 +255,63 @@ contract DeployScript is Script {
 
         console.log("All admin roles remain the same as deployer");
     }
+
+ function issueDSAndAddLiquidity(
+        address cst,
+        address ceth,
+        uint256 liquidityAmt,
+        uint256 redmptionFee,
+        uint256 dsPrice,
+        uint256 repurchaseFee,
+        uint256 expiryPeriod
+    ) public {
+        config.initializeModuleCore(cst, ceth, redmptionFee, dsPrice, base_redemption_fee, expiryPeriod);
+
+        Id id = moduleCore.getId(cst, ceth, expiryPeriod);
+        config.issueNewDs(
+            id,
+            1 ether, // exchange rate = 1:1
+            repurchaseFee,
+            6 ether, // 6% per day TODO
+            block.timestamp + 6600, // 1 block per 12 second and 22 hours rollover during TC = 6600 // TODO
+            block.timestamp + 10 seconds
+        );
+        console.log("New DS issued");
+        console.log("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-");
+
+        require(assetFactory.owner() == newAdmin, "AssetFactory ownership  transferred");
+      
+        flashswapRouter.grantRole(0x00,newAdmin );
+        bool newRoleFlash = flashswapRouter.hasRole(0x00, newAdmin );
+        require(newRoleFlash == true, "Flash Swap admin role successfully transeffered");
+
+
+        require(moduleCore.owner() == newAdmin, "ModuleCore ownership  transferred");
+        // require(liquidator.owner() == newAdmin, "Liquidator ownership  transferred");
+        // require(hedgeUnitFactory.owner() == newAdmin, "HedgeUnitFactory ownership  transferred");
+        // require(hook.owner() == newAdmin, "CorkHook ownership  transferred");
+
+        console.log("Admin roles set up successfully and Verified and the new admin is :::::::::::::::    ", newAdmin);
+    }
+
+    function testAdminRoles(address admin) public {
+        require(assetFactory.owner() == admin, "AssetFactory ownership not transferred");
+
+        // testing for ownership of CorkConfig
+        bool beforeRole = config.hasRole(keccak256("MANAGER_ROLE"), 0x998e15be45A6A3E1C9a824c1Ef1Aaa4C988EC29F);
+        require(beforeRole == true, "Constrictor not setting Manager Role");
+
+        // require(flashswapRouter.owner() == admin, "RouterState ownership not transferred");    
+        bool beforeRoleFlashSwap = flashswapRouter.hasRole(0x00, 0x998e15be45A6A3E1C9a824c1Ef1Aaa4C988EC29F );
+        require(beforeRoleFlashSwap == true, "FlashSwapRouter not setting the deployer as DEFAULT_ADMIN_ROLE");
+   
+
+        require(moduleCore.owner() == admin, "ModuleCore ownership not transferred");
+        // require(liquidator.owner() == admin, "Liquidator ownership not transferred");
+        // require(hook.owner() == admin, "CorkHook ownership not transferred");
+
+        console.log("All admin roles remain the same as deployer");
+    }
+
+
 }
