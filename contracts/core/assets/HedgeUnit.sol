@@ -163,7 +163,7 @@ contract HedgeUnit is ERC20Permit, ReentrancyGuard, Ownable, Pausable, IHedgeUni
 
         ra.approve(address(flashSwapRouter), amount);
 
-        amountOut = flashSwapRouter.swapRaforDs(id, dsId, amount, amountOutMin, params);
+        (amountOut,) = flashSwapRouter.swapRaforDs(id, dsId, amount, amountOutMin, params);
 
         emit FundsUsed(msg.sender, dsId, amount, amountOut);
     }

@@ -19,7 +19,7 @@ contract BuyDsTest is Helper {
     uint256 public DEFAULT_DEPOSIT_AMOUNT = 2050 ether;
 
     uint256 end = block.timestamp + 10 days;
-    uint256 current = block.timestamp + 0.01 days;
+    uint256 current = block.timestamp + 1 days;
 
     uint256 public dsId;
 
@@ -53,8 +53,43 @@ contract BuyDsTest is Helper {
 
         vm.stopPrank();
         vm.prank(address(corkConfig));
+        flashSwapRouter.updateGradualSaleStatus(currencyId, true);
+        vm.startPrank(DEFAULT_ADDRESS);
+        fetchProtocolGeneralInfo();
+    }
+
+    function setupDifferentDecimals(uint8 raDecimals, uint8 paDecimals) internal returns (uint8, uint8) {
+        uint8 lowDecimals = 6;
+        uint8 highDecimals = 32;
+
+        // bound decimals to minimum of 18 and max of 64
+        raDecimals = uint8(bound(raDecimals, lowDecimals, highDecimals));
+        paDecimals = uint8(bound(paDecimals, lowDecimals, highDecimals));
+
+        (ra, pa, defaultCurrencyId) = initializeAndIssueNewDs(10 days, raDecimals, paDecimals);
+        currencyId = defaultCurrencyId;
+
+        vm.deal(DEFAULT_ADDRESS, type(uint256).max);
+        ra.deposit{value: type(uint256).max}();
+        ra.approve(address(moduleCore), type(uint256).max);
+
+        vm.deal(DEFAULT_ADDRESS, type(uint256).max);
+        pa.deposit{value: type(uint256).max}();
+        pa.approve(address(moduleCore), type(uint256).max);
+
+        fetchProtocolGeneralInfo();
+
+        vm.stopPrank();
+        vm.prank(address(corkConfig));
         flashSwapRouter.updateGradualSaleStatus(currencyId, false);
         vm.startPrank(DEFAULT_ADDRESS);
+
+        uint256 depositAmount = TransferHelper.normalizeDecimals(DEFAULT_DEPOSIT_AMOUNT, TARGET_DECIMALS, raDecimals);
+
+        moduleCore.depositPsm(currencyId, depositAmount);
+        moduleCore.depositLv(currencyId, depositAmount, 0, 0);
+
+        return (raDecimals, paDecimals);
     }
 
     function test_buyDS() public virtual {
@@ -69,12 +104,11 @@ contract BuyDsTest is Helper {
         uint256 balanceRaBefore = Asset(ds).balanceOf(DEFAULT_ADDRESS);
         vm.warp(current);
 
-        // TODO : figure out the out of whack gas consumption
         vm.pauseGasMetering();
 
         hook.updateBaseFeePercentage(address(ra), ct, 1 ether);
 
-        uint256 amountOut = flashSwapRouter.swapRaforDs(currencyId, dsId, amount, 0, defaultBuyApproxParams());
+        (uint256 amountOut,) = flashSwapRouter.swapRaforDs(currencyId, dsId, amount, 0, defaultBuyApproxParams());
         uint256 balanceRaAfter = Asset(address(ds)).balanceOf(DEFAULT_ADDRESS);
 
         vm.assertEq(balanceRaAfter - balanceRaBefore, amountOut);
@@ -95,25 +129,36 @@ contract BuyDsTest is Helper {
         flashSwapRouter.swapRaforDs(currencyId, dsId, 0.01 ether, 0, params);
     }
 
-    function testFuzz_buyDS(uint256 amount) public virtual {
-        amount = bound(amount, 1 ether, 100 ether);
+    /// forge-config: default.fuzz.show-logs = true
+    function testFuzz_buyDS(uint256 amount, uint8 raDecimals, uint8 paDecimals) public virtual {
+        (raDecimals, paDecimals) = setupDifferentDecimals(raDecimals, paDecimals);
+
+        amount = bound(amount, 0.001 ether, 100 ether);
+        amount = TransferHelper.normalizeDecimals(amount, TARGET_DECIMALS, raDecimals);
 
         ra.approve(address(flashSwapRouter), type(uint256).max);
 
+        dsId = moduleCore.lastDsId(currencyId);
+        (ct, ds) = moduleCore.swapAsset(currencyId, dsId);
+
         (uint256 raReserve, uint256 ctReserve) = hook.getReserves(address(ra), address(ct));
+
+        // 1-t = 0.1
 
         Asset(ds).approve(address(flashSwapRouter), amount);
 
-        uint256 balanceRaBefore = Asset(ds).balanceOf(DEFAULT_ADDRESS);
+        uint256 balanceDsBefore = Asset(ds).balanceOf(DEFAULT_ADDRESS);
+        console.log("balanceDsBefore        :", balanceDsBefore);
         vm.warp(current);
 
         // TODO : figure out the out of whack gas consumption
         vm.pauseGasMetering();
 
-        uint256 amountOut = flashSwapRouter.swapRaforDs(currencyId, dsId, amount, 0, defaultBuyApproxParams());
-        uint256 balanceRaAfter = Asset(address(ds)).balanceOf(DEFAULT_ADDRESS);
+        (uint256 amountOut,) = flashSwapRouter.swapRaforDs(currencyId, dsId, amount, 0, defaultBuyApproxParams());
+        uint256 balanceDsAfter = Asset(address(ds)).balanceOf(DEFAULT_ADDRESS);
+        console.log("balanceDsAfter         :", balanceDsAfter);
 
-        vm.assertEq(balanceRaAfter - balanceRaBefore, amountOut);
+        vm.assertEq(balanceDsAfter - balanceDsBefore, amountOut);
 
         ff_expired();
 
@@ -122,13 +167,22 @@ contract BuyDsTest is Helper {
         params.maxFeeIter = 100000;
         params.feeIntervalAdjustment = 1000 ether;
 
+        (raReserve, ctReserve) = hook.getReserves(address(ra), address(ct));
+        console.log("raReserve after expiry", raReserve);
+        console.log("ctReserve after expiry", ctReserve);
+
         // should work after expiry
         flashSwapRouter.swapRaforDs(currencyId, dsId, amount, 0, params);
 
         // there's no sufficient liquidity due to very low HIYA, so we disable the fee to make it work
         hook.updateBaseFeePercentage(address(ra), ct, 0 ether);
 
-        flashSwapRouter.swapRaforDs(currencyId, dsId, 0.001 ether, 0, params);
+        (raReserve, ctReserve) = hook.getReserves(address(ra), address(ct));
+        console.log("raReserve", raReserve);
+        console.log("ctReserve", ctReserve);
+
+        amount = TransferHelper.normalizeDecimals(0.001 ether, TARGET_DECIMALS, raDecimals);
+        flashSwapRouter.swapRaforDs(currencyId, dsId, amount, 0, params);
     }
 
     // ff to expiry and update infos
