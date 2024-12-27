@@ -430,7 +430,7 @@ contract RouterState is
 
         self.recalculateHIYA(dsId, TransferHelper.tokenNativeDecimalsToFixed(amount, assetPair.ra), amountOut);
 
-        emit RaSwapped(reserveId, dsId, user, amount, amountOut);
+        emit RaSwapped(reserveId, dsId, user, amount, amountOut, ctRefunded);
     }
 
     /**
@@ -465,7 +465,7 @@ contract RouterState is
 
         self.recalculateHIYA(dsId, TransferHelper.tokenNativeDecimalsToFixed(amount, assetPair.ra), amountOut);
 
-        emit RaSwapped(reserveId, dsId, msg.sender, amount, amountOut);
+        emit RaSwapped(reserveId, dsId, msg.sender, amount, amountOut, ctRefunded);
     }
 
     function isRolloverSale(Id id, uint256 dsId) external view returns (bool) {

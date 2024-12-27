@@ -117,7 +117,6 @@ interface IDsFlashSwapCore is IDsFlashSwapUtility {
      * @param amountIn the amount of DS that's swapped
      * @param amountOut the amount of RA that's received
      */
-
     event DsSwapped(
         Id indexed reserveId, uint256 indexed dsId, address indexed user, uint256 amountIn, uint256 amountOut
     );
@@ -129,9 +128,15 @@ interface IDsFlashSwapCore is IDsFlashSwapUtility {
      * @param user the user that's swapping
      * @param amountIn  the amount of RA that's swapped
      * @param amountOut the amount of DS that's received
+     * @param ctRefunded the amount of excess CT that's refunded to the user
      */
     event RaSwapped(
-        Id indexed reserveId, uint256 indexed dsId, address indexed user, uint256 amountIn, uint256 amountOut
+        Id indexed reserveId,
+        uint256 indexed dsId,
+        address indexed user,
+        uint256 amountIn,
+        uint256 amountOut,
+        uint256 ctRefunded
     );
 
     /**
@@ -238,9 +243,13 @@ interface IDsFlashSwapCore is IDsFlashSwapUtility {
      * @param params the buy approximation params(math stuff)
      * @param params the buy approximation params(math stuff)
      */
-    function swapRaforDs(Id reserveId, uint256 dsId, uint256 amount, uint256 amountOutMin, BuyAprroxParams memory params)
-        external
-        returns (uint256 amountOut, uint256 ctRefunded);
+    function swapRaforDs(
+        Id reserveId,
+        uint256 dsId,
+        uint256 amount,
+        uint256 amountOutMin,
+        BuyAprroxParams memory params
+    ) external returns (uint256 amountOut, uint256 ctRefunded);
 
     /**
      * @notice Swaps RA for DS
