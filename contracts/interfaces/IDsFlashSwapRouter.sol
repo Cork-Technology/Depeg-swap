@@ -240,7 +240,7 @@ interface IDsFlashSwapCore is IDsFlashSwapUtility {
      */
     function swapRaforDs(Id reserveId, uint256 dsId, uint256 amount, uint256 amountOutMin, BuyAprroxParams memory params)
         external
-        returns (uint256 amountOut);
+        returns (uint256 amountOut, uint256 ctRefunded);
 
     /**
      * @notice Swaps RA for DS
@@ -261,7 +261,7 @@ interface IDsFlashSwapCore is IDsFlashSwapUtility {
         bytes memory rawRaPermitSig,
         uint256 deadline,
         BuyAprroxParams memory params
-    ) external returns (uint256 amountOut);
+    ) external returns (uint256 amountOut, uint256 ctRefunded);
 
     /**
      * @notice Swaps DS for RA

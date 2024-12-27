@@ -26,21 +26,21 @@ library TransferHelper {
         return amount;
     }
 
-    function tokenNativeDecimalsToFixed(uint256 amount, IERC20Metadata token) public view returns (uint256) {
+    function tokenNativeDecimalsToFixed(uint256 amount, IERC20Metadata token) internal view returns (uint256) {
         uint8 decimals = token.decimals();
         return normalizeDecimals(amount, decimals, TARGET_DECIMALS);
     }
 
-    function tokenNativeDecimalsToFixed(uint256 amount, address token) public view returns (uint256) {
+    function tokenNativeDecimalsToFixed(uint256 amount, address token) internal view returns (uint256) {
         return tokenNativeDecimalsToFixed(amount, IERC20Metadata(token));
     }
 
-    function fixedToTokenNativeDecimals(uint256 amount, IERC20Metadata token) public view returns (uint256) {
+    function fixedToTokenNativeDecimals(uint256 amount, IERC20Metadata token) internal view returns (uint256) {
         uint8 decimals = token.decimals();
         return normalizeDecimals(amount, TARGET_DECIMALS, decimals);
     }
 
-    function fixedToTokenNativeDecimals(uint256 amount, address token) public view returns (uint256) {
+    function fixedToTokenNativeDecimals(uint256 amount, address token) internal view returns (uint256) {
         return fixedToTokenNativeDecimals(amount, IERC20Metadata(token));
     }
 
