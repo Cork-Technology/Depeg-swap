@@ -54,6 +54,8 @@ interface IHedgeUnit {
 
     error OnlyLiquidatorOrOwner();
 
+    error OnlyHedgeUnitRouterAllowed();
+
     error InvalidToken();
 
     /// @notice Error indicating provided signature is invalid
@@ -88,11 +90,12 @@ interface IHedgeUnit {
     function mint(uint256 amount) external returns (uint256 dsAmount, uint256 paAmount);
 
     /**
-     * @notice Returns the dsAmount and paAmount received for dissolving the specified amount of HedgeUnit tokens.
+     * @notice Returns the dsAmount, paAmount and raAmount received for dissolving the specified amount of HedgeUnit tokens.
      * @return dsAmount The amount of DS tokens received for dissolving the specified amount of HedgeUnit tokens.
      * @return paAmount The amount of PA tokens received for dissolving the specified amount of HedgeUnit tokens.
+     * @return raAmount The amount of RA tokens received for dissolving the specified amount of HedgeUnit tokens.
      */
-    function previewDissolve(uint256 amount)
+    function previewDissolve(address dissolver, uint256 amount)
         external
         view
         returns (uint256 dsAmount, uint256 paAmount, uint256 raAmount);

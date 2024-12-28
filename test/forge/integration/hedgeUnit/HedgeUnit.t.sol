@@ -237,6 +237,8 @@ contract HedgeUnitTest is Helper {
     }
 
     function test_PreviewDissolve() public {
+        vm.startPrank(user);
+
         // Mint tokens first
         dsToken.approve(address(hedgeUnit), USER_BALANCE);
         pa.approve(address(hedgeUnit), USER_BALANCE);
@@ -244,17 +246,19 @@ contract HedgeUnitTest is Helper {
         hedgeUnit.mint(mintAmount);
 
         // Preview dissolving 50 tokens
-        (uint256 dsAmount, uint256 paAmount,) = hedgeUnit.previewDissolve(50 * 1e18);
+        (uint256 dsAmount, uint256 paAmount,) = hedgeUnit.previewDissolve(user, 50 * 1e18);
 
         // Check that the DS and PA amounts are correct
         assertEq(dsAmount, 50 * 1e18);
         assertEq(paAmount, 50 * 1e18);
+        vm.stopPrank();
     }
 
     function test_PreviewDissolveRevertWhenInvalidAmount() public {
+        vm.startPrank(user);
         // Preview dissolving more than the user's balance
         vm.expectRevert(IHedgeUnit.InvalidAmount.selector);
-        hedgeUnit.previewDissolve(1000 * 1e18);
+        hedgeUnit.previewDissolve(user, 1000 * 1e18);
 
         dsToken.approve(address(hedgeUnit), USER_BALANCE);
         pa.approve(address(hedgeUnit), USER_BALANCE);
@@ -262,7 +266,8 @@ contract HedgeUnitTest is Helper {
         hedgeUnit.mint(mintAmount);
 
         vm.expectRevert(IHedgeUnit.InvalidAmount.selector);
-        hedgeUnit.previewDissolve(100 * 1e18 + 1);
+        hedgeUnit.previewDissolve(user, 100 * 1e18 + 1);
+        vm.stopPrank();
     }
 
     function test_DissolvingTokens() public {
@@ -301,7 +306,7 @@ contract HedgeUnitTest is Helper {
         pa.transfer(address(hedgeUnit), amount * 10);
         ra.transfer(address(hedgeUnit), amount);
 
-        (uint256 dsAmount, uint256 paAmount, uint256 raAmount) = hedgeUnit.previewDissolve(amount);
+        (uint256 dsAmount, uint256 paAmount, uint256 raAmount) = hedgeUnit.previewDissolve(user, amount);
         vm.assertEq(dsAmount, amount);
         vm.assertEq(paAmount, amount + 10 ether);
         vm.assertEq(raAmount, 1 ether);

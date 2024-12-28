@@ -23,6 +23,7 @@ contract HedgeUnitFactory {
     address public moduleCore;
     address public config;
     address public router;
+    address public hedgeUnitRouter;
 
     // Event emitted when a new HedgeUnit contract is deployed
     event HedgeUnitDeployed(Id indexed pairId, address indexed hedgeUnitAddress);
@@ -42,10 +43,11 @@ contract HedgeUnitFactory {
      * @param _moduleCore Address of the MODULE_CORE.
      * @param _config Address of the config contract
      */
-    constructor(address _moduleCore, address _config, address _flashSwapRouter) {
+    constructor(address _moduleCore, address _config, address _flashSwapRouter, address _hedgeUnitRouter) {
         moduleCore = _moduleCore;
         config = _config;
         router = _flashSwapRouter;
+        hedgeUnitRouter = _hedgeUnitRouter;
     }
 
     /**
@@ -101,7 +103,7 @@ contract HedgeUnitFactory {
         }
 
         // Deploy a new HedgeUnit contract
-        HedgeUnit newHedgeUnit = new HedgeUnit(moduleCore, _id, _pa, _ra, _pairName, _mintCap, config, router);
+        HedgeUnit newHedgeUnit = new HedgeUnit(moduleCore, _id, _pa, _ra, _pairName, _mintCap, config, router, hedgeUnitRouter);
         newUnit = address(newHedgeUnit);
 
         // Store the address of the new contract

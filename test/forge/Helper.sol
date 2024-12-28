@@ -19,6 +19,7 @@ import {TestHelper} from "Cork-Hook/../test/Helper.sol";
 import "./../../contracts/interfaces/IDsFlashSwapRouter.sol";
 import "./../../contracts/core/Withdrawal.sol";
 import "./../../contracts/core/assets/HedgeUnitFactory.sol";
+import {HedgeUnitRouter} from "../../contracts/core/assets/HedgeUnitRouter.sol";
 
 contract CustomErc20 is DummyWETH {
     uint8 internal __decimals;
@@ -42,6 +43,7 @@ abstract contract Helper is SigUtils, TestHelper {
     DummyWETH internal weth = new DummyWETH();
     Withdrawal internal withdrawalContract;
     HedgeUnitFactory internal hedgeUnitFactory;
+    HedgeUnitRouter internal hedgeUnitRouter;
 
     Id defaultCurrencyId;
 
@@ -333,7 +335,8 @@ abstract contract Helper is SigUtils, TestHelper {
     }
 
     function initializeHedgeUnitFactory() internal {
-        hedgeUnitFactory = new HedgeUnitFactory(address(moduleCore), address(corkConfig), address(flashSwapRouter));
+        hedgeUnitRouter = new HedgeUnitRouter();
+        hedgeUnitFactory = new HedgeUnitFactory(address(moduleCore), address(corkConfig), address(flashSwapRouter), address(hedgeUnitRouter));
         corkConfig.setHedgeUnitFactory(address(hedgeUnitFactory));
     }
 
