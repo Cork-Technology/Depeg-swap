@@ -12,12 +12,16 @@ interface IHedgeUnitRouter {
 
     event HedgeUnitSet(address hedgeUnit);
 
+    event HedgeUnitRemoved(address hedgeUnit);
+
     // This error occurs when user passes invalid input to the function.
     error InvalidInput();
 
     error CallerNotFactory();
 
     error HedgeUnitExists();
+
+    error HedgeUnitNotExists();
 
     error NotDefaultAdmin();
 

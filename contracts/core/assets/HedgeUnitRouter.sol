@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.24;
 
-import {HedgeUnit} from "./HedgeUnit.sol";
 import {ReentrancyGuardTransient} from "@openzeppelin/contracts/utils/ReentrancyGuardTransient.sol";
 import {AccessControl} from "@openzeppelin/contracts/access/AccessControl.sol";
+import {HedgeUnit} from "./HedgeUnit.sol";
 import {IHedgeUnitRouter} from "../../interfaces/IHedgeUnitRouter.sol";
 
 /**
@@ -48,6 +48,23 @@ contract HedgeUnitRouter is IHedgeUnitRouter, AccessControl, ReentrancyGuardTran
         }
         isHedgeUnit[hedgeUnitAdd] = true;
         emit HedgeUnitSet(hedgeUnitAdd);
+    }
+
+    /**
+     * @dev Removes HedgeUnit contract address
+     * @dev Note : this only removes hedge unit from this router, so hedge unit contract will still work even after if it gets removed from here
+     * @dev Note : Generally this will be used on emergency situations only
+     * @param hedgeUnitAdd old Hedge Unit contract address
+     */
+    function removeHedgeUnit(address hedgeUnitAdd) external onlyDefaultAdmin {
+        if (hedgeUnitAdd == address(0)) {
+            revert InvalidInput();
+        }
+        if (!isHedgeUnit[hedgeUnitAdd]) {
+            revert HedgeUnitNotExists();
+        }
+        isHedgeUnit[hedgeUnitAdd] = false;
+        emit HedgeUnitRemoved(hedgeUnitAdd);
     }
 
     // This function is used to preview batch mint for multiple HedgeUnits in single transaction.
