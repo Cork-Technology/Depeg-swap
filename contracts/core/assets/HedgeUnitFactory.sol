@@ -2,8 +2,8 @@
 pragma solidity ^0.8.24;
 
 import {HedgeUnit} from "./HedgeUnit.sol";
-import {AccessControl} from "@openzeppelin/contracts/access/AccessControl.sol";
 import {Id, Pair, PairLibrary} from "../../libraries/Pair.sol";
+import {IHedgeUnitRouter} from "../../interfaces/IHedgeUnitRouter.sol";
 
 /**
  * @title HedgeUnitFactory
@@ -110,6 +110,7 @@ contract HedgeUnitFactory {
         hedgeUnitContracts[_id] = newUnit;
         hedgeUnits[idx++] = _id;
 
+        IHedgeUnitRouter(hedgeUnitRouter).addHedgeUnit(newUnit);
         emit HedgeUnitDeployed(_id, newUnit);
     }
 
