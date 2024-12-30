@@ -61,6 +61,14 @@ struct Balances {
 }
 
 /**
+ * @dev Balances structure for managing balances in PSM Core
+ */
+struct VaultBalances {
+    RedemptionAssetManager ra;
+    uint256 ctBalance;
+}
+
+/**
  * @dev VaultPool structure for providing pools in Vault(Liquidity Pool)
  */
 struct VaultPool {
@@ -79,11 +87,6 @@ struct VaultWithdrawalPool {
     uint256 paExchangeRate;
     uint256 raBalance;
     uint256 paBalance;
-    // FIXME : this is only temporary, for now
-    // we trate PA the same as RA, thus we also separate PA
-    // the difference is the PA here isn't being used as anything
-    // and for now will just sit there until rationed again at next expiry.
-    uint256 stagnatedPaBalance;
 }
 
 /**
@@ -97,7 +100,7 @@ struct VaultAmmLiquidityPool {
  * @dev VaultState structure for VaultCore
  */
 struct VaultState {
-    Balances balances;
+    VaultBalances balances;
     VaultConfig config;
     LvAsset lv;
     BitMaps.BitMap lpLiquidated;
@@ -111,6 +114,8 @@ struct VaultState {
     /// e.g 40% means that 40% of the RA that user deposit will be splitted into CT and DS
     /// the CT will be held in the vault while the DS is held in the vault reserve to be selled in the router
     uint256 ctHeldPercetage;
+    /// @notice dsId => totalRA. will be updated on every new issuance, so dsId 1 would be update at new issuance of dsId 2
+    mapping(uint256 => uint256) totalRaSnapshot;
 }
 
 /**

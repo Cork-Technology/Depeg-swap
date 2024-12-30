@@ -212,7 +212,7 @@ library DsFlashSwaplibrary {
         uint256 amount,
         ICorkHook router,
         IDsFlashSwapCore.BuyAprroxParams memory params
-    ) external view returns (uint256 amountOut, uint256 borrowedAmount, uint256 repaymentAmount) {
+    ) external view returns (uint256 amountOut, uint256 borrowedAmount) {
         (uint256 raReserve, uint256 ctReserve) = getReservesSorted(assetPair, router);
 
         MarketSnapshot memory market = router.getMarketSnapshot(address(assetPair.ra), address(assetPair.ct));
@@ -242,7 +242,6 @@ library DsFlashSwaplibrary {
 
         amountOut = result.amountOut;
         borrowedAmount = result.borrowedAmount;
-        repaymentAmount = result.repaymentAmount;
     }
 
     struct InitialTradeCaclParams {

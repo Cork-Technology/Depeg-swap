@@ -62,12 +62,15 @@ abstract contract VaultCore is ModuleState, Context, IVault, IVaultLiquidation {
 
         emit LvRedeemEarly(
             redeemParams.id,
-            redeemer,
-            redeemer,
+            _msgSender(),
+            _msgSender(),
             redeemParams.amount,
             result.ctReceivedFromAmm,
             result.ctReceivedFromVault,
             result.dsReceived,
+            result.paReceived,
+            result.raReceivedFromAmm,
+            result.raIdleReceived,
             result.fee,
             result.feePercentage,
             bytes32("")
@@ -102,6 +105,9 @@ abstract contract VaultCore is ModuleState, Context, IVault, IVaultLiquidation {
             result.ctReceivedFromAmm,
             result.ctReceivedFromVault,
             result.dsReceived,
+            result.paReceived,
+            result.raReceivedFromAmm,
+            result.raIdleReceived,
             result.fee,
             result.feePercentage,
             bytes32("")
@@ -187,5 +193,13 @@ abstract contract VaultCore is ModuleState, Context, IVault, IVaultLiquidation {
 
     function lvAsset(Id id) external view override returns (address lv) {
         lv = states[id].vault.lv._address;
+    }
+
+    function totalRaAt(Id id, uint256 dsId) external view override returns (uint256) {
+        return states[id].vault.totalRaSnapshot[dsId];
+    }
+
+    function receiveLeftoverFunds(Id id, uint256 amount) external {
+        states[id].receiveLeftoverFunds(amount, _msgSender());
     }
 }

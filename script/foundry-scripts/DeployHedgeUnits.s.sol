@@ -58,74 +58,73 @@ contract DeployHedgeUnitsScript is Script {
         console.log("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-");
 
         // Deploy the Liquidator contract
-        liquidator = new Liquidator(corkConfig, hookTrampoline, settlementContract, address(moduleCore));
-        console.log("Liquidator                      : ", address(liquidator));
-        console.log("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-");
+        // liquidator = new Liquidator(corkConfig, hookTrampoline, settlementContract, address(moduleCore));
+        // console.log("Liquidator                      : ", address(liquidator));
+        // console.log("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-");
 
-        // Deploy the HedgeUnitFactry contract
-        hedgeUnitFactory = new HedgeUnitFactory(address(moduleCore), address(liquidator));
-        hedgeUnitFactory.updateLiquidatorRole(sender, true);
-        console.log("HedgeUnit Factory               : ", address(hedgeUnitFactory));
-        console.log("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-");
+        // // Deploy the HedgeUnitFactry contract
+        // hedgeUnitFactory = new HedgeUnitFactory(address(moduleCore), address(liquidator));
+        // console.log("HedgeUnit Factory               : ", address(hedgeUnitFactory));
+        // console.log("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-");
 
         // Deploy the HedgeUnit contract
-        hedgeUnitwamuETH = HedgeUnit(
-            hedgeUnitFactory.deployHedgeUnit(
-                moduleCore.getId(wamuETH, ceth, wamuETHExpiry),
-                wamuETH,
-                "Washington Mutual restaked ETH - CETH",
-                INITIAL_MINT_CAP
-            )
-        );
-        console.log("HU wamuETH                      : ", address(hedgeUnitwamuETH));
+        // hedgeUnitwamuETH = HedgeUnit(
+        //     hedgeUnitFactory.deployHedgeUnit(
+        //         moduleCore.getId(wamuETH, ceth, wamuETHExpiry),
+        //         wamuETH,
+        //         "Washington Mutual restaked ETH - CETH",
+        //         INITIAL_MINT_CAP
+        //     )
+        // );
+        // console.log("HU wamuETH                      : ", address(hedgeUnitwamuETH));
 
-        hedgeUnitbsETH = HedgeUnit(
-            hedgeUnitFactory.deployHedgeUnit(
-                moduleCore.getId(bsETH, wamuETH, bsETHExpiry),
-                bsETH,
-                "Bear Sterns Restaked ETH - Washington Mutual restaked ETH",
-                INITIAL_MINT_CAP
-            )
-        );
-        console.log("HU bsETH                        : ", address(hedgeUnitbsETH));
+        // hedgeUnitbsETH = HedgeUnit(
+        //     hedgeUnitFactory.deployHedgeUnit(
+        //         moduleCore.getId(bsETH, wamuETH, bsETHExpiry),
+        //         bsETH,
+        //         "Bear Sterns Restaked ETH - Washington Mutual restaked ETH",
+        //         INITIAL_MINT_CAP
+        //     )
+        // );
+        // console.log("HU bsETH                        : ", address(hedgeUnitbsETH));
 
-        hedgeUnitmlETH = HedgeUnit(
-            hedgeUnitFactory.deployHedgeUnit(
-                moduleCore.getId(mlETH, bsETH, mlETHExpiry),
-                mlETH,
-                "Merrill Lynch staked ETH - Bear Sterns Restaked ETH",
-                INITIAL_MINT_CAP
-            )
-        );
-        console.log("HU mlETH                        : ", address(hedgeUnitmlETH));
+        // hedgeUnitmlETH = HedgeUnit(
+        //     hedgeUnitFactory.deployHedgeUnit(
+        //         moduleCore.getId(mlETH, bsETH, mlETHExpiry),
+        //         mlETH,
+        //         "Merrill Lynch staked ETH - Bear Sterns Restaked ETH",
+        //         INITIAL_MINT_CAP
+        //     )
+        // );
+        // console.log("HU mlETH                        : ", address(hedgeUnitmlETH));
 
-        hedgeUnitfedUSD = HedgeUnit(
-            hedgeUnitFactory.deployHedgeUnit(
-                moduleCore.getId(fedUSD, cUSD, fedUSDExpiry), fedUSD, "Fed Up USD - CUSD", INITIAL_MINT_CAP
-            )
-        );
-        console.log("HU fedUSD                      : ", address(hedgeUnitfedUSD));
+        // hedgeUnitfedUSD = HedgeUnit(
+        //     hedgeUnitFactory.deployHedgeUnit(
+        //         moduleCore.getId(fedUSD, cUSD, fedUSDExpiry), fedUSD, "Fed Up USD - CUSD", INITIAL_MINT_CAP
+        //     )
+        // );
+        // console.log("HU fedUSD                      : ", address(hedgeUnitfedUSD));
 
-        hedgeUnitsvbUSD = HedgeUnit(
-            hedgeUnitFactory.deployHedgeUnit(
-                moduleCore.getId(svbUSD, fedUSD, svbUSDExpiry),
-                svbUSD,
-                "Sillycoin Valley Bank USD - Fed Up USD",
-                INITIAL_MINT_CAP
-            )
-        );
-        console.log("HU svbUSD                      : ", address(hedgeUnitsvbUSD));
+        // hedgeUnitsvbUSD = HedgeUnit(
+        //     hedgeUnitFactory.deployHedgeUnit(
+        //         moduleCore.getId(svbUSD, fedUSD, svbUSDExpiry),
+        //         svbUSD,
+        //         "Sillycoin Valley Bank USD - Fed Up USD",
+        //         INITIAL_MINT_CAP
+        //     )
+        // );
+        // console.log("HU svbUSD                      : ", address(hedgeUnitsvbUSD));
 
-        hedgeUnitomgUSD = HedgeUnit(
-            hedgeUnitFactory.deployHedgeUnit(
-                moduleCore.getId(omgUSD, svbUSD, omgUSDExpiry),
-                omgUSD,
-                "Own My Gold USD - Sillycoin Valley Bank USD",
-                INITIAL_MINT_CAP
-            )
-        );
-        console.log("HU omgUSD                      : ", address(hedgeUnitomgUSD));
-        console.log("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-");
+        // hedgeUnitomgUSD = HedgeUnit(
+        //     hedgeUnitFactory.deployHedgeUnit(
+        //         moduleCore.getId(omgUSD, svbUSD, omgUSDExpiry),
+        //         omgUSD,
+        //         "Own My Gold USD - Sillycoin Valley Bank USD",
+        //         INITIAL_MINT_CAP
+        //     )
+        // );
+        // console.log("HU omgUSD                      : ", address(hedgeUnitomgUSD));
+        // console.log("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-");
         vm.stopBroadcast();
     }
 }

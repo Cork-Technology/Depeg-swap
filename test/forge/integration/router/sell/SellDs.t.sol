@@ -16,7 +16,8 @@ contract SellDsTest is Helper {
     address ds;
     Id public currencyId;
 
-    uint256 public DEFAULT_DEPOSIT_AMOUNT = 2050 ether;
+    // we double the amount(should be 2050) since we're splitting CT when user deposit RA to the test default(50%)
+    uint256 public DEFAULT_DEPOSIT_AMOUNT = 4100 ether;
 
     uint256 end = block.timestamp + 10 days;
     uint256 current = block.timestamp + 1 days;

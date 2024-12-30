@@ -11,6 +11,7 @@ import {ModuleCore} from "../../contracts/core/ModuleCore.sol";
 import {Liquidator} from "../../contracts/core/liquidators/cow-protocol/Liquidator.sol";
 import {HedgeUnit} from "../../contracts/core/assets/HedgeUnit.sol";
 import {HedgeUnitFactory} from "../../contracts/core/assets/HedgeUnitFactory.sol";
+import {HedgeUnitRouter} from "../../contracts/core/assets/HedgeUnitRouter.sol";
 import {CETH} from "../../contracts/tokens/CETH.sol";
 import {CUSD} from "../../contracts/tokens/CUSD.sol";
 import {CST} from "../../contracts/tokens/CST.sol";
@@ -31,6 +32,13 @@ contract DeployScript is Script {
     CorkHook public hook;
     LiquidityToken public liquidityToken;
     Liquidator public liquidator;
+    HedgeUnitFactory public hedgeUnitFactory;
+    HedgeUnitRouter public hedgeUnitRouter;
+
+    HedgeUnit public hedgeUnitbsETH;
+    HedgeUnit public hedgeUnitlbETH;
+    HedgeUnit public hedgeUnitwamuETH;
+    HedgeUnit public hedgeUnitmlETH;
 
     bool public isProd = vm.envBool("PRODUCTION");
     uint256 public base_redemption_fee = vm.envUint("PSM_BASE_REDEMPTION_FEE_PERCENTAGE");
@@ -197,6 +205,49 @@ contract DeployScript is Script {
         // Deploy the Liquidator contract
         liquidator = new Liquidator(address(config), sender, settlementContract, address(moduleCore));
         console.log("Liquidator                      : ", address(liquidator));
+        console.log("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-");
+
+        // Deploy the HedgeUnitFactry contract
+        hedgeUnitRouter = new HedgeUnitRouter();
+        hedgeUnitFactory = new HedgeUnitFactory(address(moduleCore), address(config), address(flashswapRouter), address(hedgeUnitRouter));
+        hedgeUnitRouter.grantRole(hedgeUnitRouter.HEDGE_UNIT_FACTORY_ROLE(), address(hedgeUnitFactory));
+        config.setHedgeUnitFactory(address(hedgeUnitFactory));
+        console.log("HedgeUnit Factory               : ", address(hedgeUnitFactory));
+        console.log("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-");
+
+        // Deploy the HedgeUnit contract
+        hedgeUnitwamuETH = HedgeUnit(
+            config.deployHedgeUnit(
+                moduleCore.getId(wamuETH, ceth, wamuETHExpiry),
+                wamuETH,
+                ceth,
+                "Washington Mutual restaked ETH - CETH",
+                INITIAL_MINT_CAP
+            )
+        );
+        console.log("HU wamuETH                      : ", address(hedgeUnitwamuETH));
+
+        hedgeUnitbsETH = HedgeUnit(
+            config.deployHedgeUnit(
+                moduleCore.getId(bsETH, wamuETH, bsETHExpiry),
+                bsETH,
+                wamuETH,
+                "Bear Sterns Restaked ETH - wamuETH",
+                INITIAL_MINT_CAP
+            )
+        );
+        console.log("HU bsETH                        : ", address(hedgeUnitbsETH));
+
+        hedgeUnitmlETH = HedgeUnit(
+            config.deployHedgeUnit(
+                moduleCore.getId(mlETH, ceth, mlETHExpiry),
+                mlETH,
+                bsETH,
+                "Merrill Lynch staked ETH - bsETH",
+                INITIAL_MINT_CAP
+            )
+        );
+        console.log("HU mlETH                        : ", address(hedgeUnitmlETH));
         console.log("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-");
 
         // Transfer Ownership to moduleCore

@@ -43,6 +43,8 @@ contract RouterState is
     address public _moduleCore;
     ICorkHook public hook;
 
+    uint256 public constant RESERVE_MINIMUM_SELL_AMOUNT = 0.001 ether;
+
     /// @notice __gap variable to prevent storage collisions
     uint256[49] __gap;
 
@@ -271,7 +273,7 @@ contract RouterState is
         }
 
         // calculate the amount of DS tokens attributed
-        (amountOut, borrowedAmount,) = assetPair.getAmountOutBuyDS(amount, hook, approxParams);
+        (amountOut, borrowedAmount) = assetPair.getAmountOutBuyDS(amount, hook, approxParams);
 
         // TODO : move this to a separate function
         // calculate the amount of DS tokens that will be sold from reserve
@@ -285,9 +287,8 @@ contract RouterState is
             // sell all tokens if the sell amount is higher than the available reserve
             amountSellFromReserve = totalReserve < amountSellFromReserve ? totalReserve : amountSellFromReserve;
         }
-
         // sell the DS tokens from the reserve if there's any
-        if (amountSellFromReserve != 0 && !self.gradualSaleDisabled) {
+        if (amountSellFromReserve > RESERVE_MINIMUM_SELL_AMOUNT && !self.gradualSaleDisabled) {
             SellResult memory sellDsReserveResult =
                 _sellDsReserve(assetPair, SellDsParams(reserveId, dsId, amountSellFromReserve, amount, approxParams));
 
@@ -354,7 +355,7 @@ contract RouterState is
             IPSMcore(_moduleCore).psmAcceptFlashSwapProfit(params.reserveId, profitRa - vaultProfit);
 
             // recalculate the amount of DS tokens attributed, since we sold some from the reserve
-            (result.amountOut, result.borrowedAmount,) =
+            (result.amountOut, result.borrowedAmount) =
                 assetPair.getAmountOutBuyDS(params.amount, hook, params.approxParams);
         }
     }

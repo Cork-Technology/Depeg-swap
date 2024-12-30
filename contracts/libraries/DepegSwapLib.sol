@@ -6,7 +6,7 @@ import {Asset} from "../core/assets/Asset.sol";
 import {Signature, MinimalSignatureHelper} from "./SignatureHelperLib.sol";
 
 /**
- * @dev DepegSwap structure for DS(DepegSwap)   
+ * @dev DepegSwap structure for DS(DepegSwap)
  */
 struct DepegSwap {
     bool expiredEventEmitted;
@@ -18,7 +18,7 @@ struct DepegSwap {
 /**
  * @title DepegSwapLibrary Contract
  * @author Cork Team
- * @notice DepegSwapLibrary library which implements DepegSwap(DS) related features 
+ * @notice DepegSwapLibrary library which implements DepegSwap(DS) related features
  */
 library DepegSwapLibrary {
     using MinimalSignatureHelper for Signature;
@@ -89,6 +89,6 @@ library DepegSwapLibrary {
 
     function updateExchangeRate(DepegSwap storage self, uint256 rate) internal {
         Asset(self._address).updateRate(rate);
-        Asset(self.ct).updateRate(rate); 
+        Asset(self.ct).updateRate(rate);
     }
 }
