@@ -5,7 +5,6 @@ import {UD60x18, convert, ud, add, mul, pow, sub, div, unwrap, intoSD59x18, sqrt
 import "./../interfaces/IHedgeUnit.sol";
 import "./DsSwapperMathLib.sol";
 import "./TransferHelper.sol";
-import "forge-std/console.sol";
 
 library HedgeUnitMath {
     // caller of this contract must ensure the both amount is already proportional in amount!
