@@ -26,7 +26,7 @@ contract HedgeUnitFactory {
     address public hedgeUnitRouter;
 
     // Event emitted when a new HedgeUnit contract is deployed
-    event HedgeUnitDeployed(Id indexed pairId, address indexed hedgeUnitAddress);
+    event HedgeUnitDeployed(Id indexed pairId, address pa, address ra, address indexed hedgeUnitAddress);
 
     error HedgeUnitExists();
 
@@ -111,7 +111,7 @@ contract HedgeUnitFactory {
         hedgeUnits[idx++] = _id;
 
         IHedgeUnitRouter(hedgeUnitRouter).addHedgeUnit(newUnit);
-        emit HedgeUnitDeployed(_id, newUnit);
+        emit HedgeUnitDeployed(_id, _pa, _ra, newUnit);
     }
 
     /**
