@@ -6,13 +6,16 @@ import {ModuleCore} from "../../contracts/core/ModuleCore.sol";
 import {Liquidator} from "../../contracts/core/liquidators/cow-protocol/Liquidator.sol";
 import {HedgeUnit} from "../../contracts/core/assets/HedgeUnit.sol";
 import {HedgeUnitFactory} from "../../contracts/core/assets/HedgeUnitFactory.sol";
+import {HedgeUnitRouter} from "../../contracts/core/assets/HedgeUnitRouter.sol";
+import {CorkConfig} from "../../contracts/core/CorkConfig.sol";
 
 contract DeployHedgeUnitsScript is Script {
     ModuleCore public moduleCore;
     Liquidator public liquidator;
+    CorkConfig public config;
     HedgeUnitFactory public hedgeUnitFactory;
-    // TODO : insert this
-    address corkConfig = address(0);
+    HedgeUnitRouter public hedgeUnitRouter;
+    address flashSwapRouter;
 
     HedgeUnit public hedgeUnitbsETH;
     HedgeUnit public hedgeUnitwamuETH;
@@ -25,14 +28,14 @@ contract DeployHedgeUnitsScript is Script {
     uint256 public pk = vm.envUint("PRIVATE_KEY");
     address sender = vm.addr(pk);
 
-    address ceth = 0xD4B903723EbAf1Bf0a2D8373fd5764e050114Dcd;
-    address cUSD = 0x8cdd2A328F36601A559c321F0eA224Cc55d9EBAa;
-    address bsETH = 0x71710AcACeD2b5Fb608a1371137CC1becFf391E0;
-    address wamuETH = 0x212542457f2F50Ab04e74187cE46b79A8B330567;
-    address mlETH = 0xc63b0e46FDA3be5c14719257A3EC235499Ca4D33;
-    address svbUSD = 0x80bA1d3DF59c62f3C469477C625F4F1D9a1532E6;
-    address fedUSD = 0x618134155a3aB48003EC137FF1984f79BaB20028;
-    address omgUSD = 0xD8CEF48A9dc21FFe2ef09A7BD247e28e11b5B754;
+    address ceth = 0x0000000237805496906796B1e767640a804576DF;
+    address cUSD = 0x1111111A3Ae9c9b133Ea86BdDa837E7E796450EA;
+    address wamuETH = 0x22222228802B45325E0b8D0152C633449Ab06913;
+    address bsETH = 0x33333335a697843FDd47D599680Ccb91837F59aF;
+    address mlETH = 0x44444447386435500C5a06B167269f42FA4ae8d4;
+    address svbUSD = 0x5555555eBBf30a4b084078319Da2348fD7B9e470;
+    address fedUSD = 0x666666685C211074C1b0cFed7e43E1e7D8749E43;
+    address omgUSD = 0x7777777707136263F82775e7ED0Fc99Bbe6f5eB0;
 
     uint256 wamuETHExpiry = 3.5 days;
     uint256 bsETHExpiry = 3.5 days;
@@ -52,79 +55,54 @@ contract DeployHedgeUnitsScript is Script {
 
     function run() public {
         vm.startBroadcast(pk);
-        moduleCore = ModuleCore(0x0e5212A25DDbf4CBEa390199b62C249aBf3637fF);
+        moduleCore = ModuleCore(0xF6a5b7319DfBc84EB94872478be98462aA9Aab99);
+        liquidator = Liquidator(0x9700a0ca88BC835E992d819e59029965DBBfb1d6);
+        config = CorkConfig(0x190305d34e061F7739CbfaD9fC8e5Ece94C86467);
+        flashSwapRouter = 0x8547ac5A696bEB301D5239CdE9F3894B106476C9;
 
-        console.log("Module Core                     : ", address(moduleCore));
+        // Deploy the HedgeUnitFactry contract
+        hedgeUnitRouter = new HedgeUnitRouter();
+        hedgeUnitFactory =
+            new HedgeUnitFactory(address(moduleCore), address(config), flashSwapRouter, address(hedgeUnitRouter));
+        hedgeUnitRouter.grantRole(hedgeUnitRouter.HEDGE_UNIT_FACTORY_ROLE(), address(hedgeUnitFactory));
+        config.setHedgeUnitFactory(address(hedgeUnitFactory));
+        console.log("HedgeUnit Factory               : ", address(hedgeUnitFactory));
         console.log("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-");
 
-        // Deploy the Liquidator contract
-        // liquidator = new Liquidator(corkConfig, hookTrampoline, settlementContract, address(moduleCore));
-        // console.log("Liquidator                      : ", address(liquidator));
-        // console.log("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-");
-
-        // // Deploy the HedgeUnitFactry contract
-        // hedgeUnitFactory = new HedgeUnitFactory(address(moduleCore), address(liquidator));
-        // console.log("HedgeUnit Factory               : ", address(hedgeUnitFactory));
-        // console.log("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-");
-
         // Deploy the HedgeUnit contract
-        // hedgeUnitwamuETH = HedgeUnit(
-        //     hedgeUnitFactory.deployHedgeUnit(
-        //         moduleCore.getId(wamuETH, ceth, wamuETHExpiry),
-        //         wamuETH,
-        //         "Washington Mutual restaked ETH - CETH",
-        //         INITIAL_MINT_CAP
-        //     )
-        // );
-        // console.log("HU wamuETH                      : ", address(hedgeUnitwamuETH));
+        hedgeUnitwamuETH = HedgeUnit(
+            config.deployHedgeUnit(
+                moduleCore.getId(wamuETH, ceth, wamuETHExpiry),
+                wamuETH,
+                ceth,
+                "Washington Mutual restaked ETH - CETH",
+                INITIAL_MINT_CAP
+            )
+        );
+        console.log("HU wamuETH                      : ", address(hedgeUnitwamuETH));
 
-        // hedgeUnitbsETH = HedgeUnit(
-        //     hedgeUnitFactory.deployHedgeUnit(
-        //         moduleCore.getId(bsETH, wamuETH, bsETHExpiry),
-        //         bsETH,
-        //         "Bear Sterns Restaked ETH - Washington Mutual restaked ETH",
-        //         INITIAL_MINT_CAP
-        //     )
-        // );
-        // console.log("HU bsETH                        : ", address(hedgeUnitbsETH));
+        hedgeUnitbsETH = HedgeUnit(
+            config.deployHedgeUnit(
+                moduleCore.getId(bsETH, wamuETH, bsETHExpiry),
+                bsETH,
+                wamuETH,
+                "Bear Sterns Restaked ETH - wamuETH",
+                INITIAL_MINT_CAP
+            )
+        );
+        console.log("HU bsETH                        : ", address(hedgeUnitbsETH));
 
-        // hedgeUnitmlETH = HedgeUnit(
-        //     hedgeUnitFactory.deployHedgeUnit(
-        //         moduleCore.getId(mlETH, bsETH, mlETHExpiry),
-        //         mlETH,
-        //         "Merrill Lynch staked ETH - Bear Sterns Restaked ETH",
-        //         INITIAL_MINT_CAP
-        //     )
-        // );
-        // console.log("HU mlETH                        : ", address(hedgeUnitmlETH));
-
-        // hedgeUnitfedUSD = HedgeUnit(
-        //     hedgeUnitFactory.deployHedgeUnit(
-        //         moduleCore.getId(fedUSD, cUSD, fedUSDExpiry), fedUSD, "Fed Up USD - CUSD", INITIAL_MINT_CAP
-        //     )
-        // );
-        // console.log("HU fedUSD                      : ", address(hedgeUnitfedUSD));
-
-        // hedgeUnitsvbUSD = HedgeUnit(
-        //     hedgeUnitFactory.deployHedgeUnit(
-        //         moduleCore.getId(svbUSD, fedUSD, svbUSDExpiry),
-        //         svbUSD,
-        //         "Sillycoin Valley Bank USD - Fed Up USD",
-        //         INITIAL_MINT_CAP
-        //     )
-        // );
-        // console.log("HU svbUSD                      : ", address(hedgeUnitsvbUSD));
-
-        // hedgeUnitomgUSD = HedgeUnit(
-        //     hedgeUnitFactory.deployHedgeUnit(
-        //         moduleCore.getId(omgUSD, svbUSD, omgUSDExpiry),
-        //         omgUSD,
-        //         "Own My Gold USD - Sillycoin Valley Bank USD",
-        //         INITIAL_MINT_CAP
-        //     )
-        // );
-        // console.log("HU omgUSD                      : ", address(hedgeUnitomgUSD));
-        // console.log("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-");
+        hedgeUnitmlETH = HedgeUnit(
+            config.deployHedgeUnit(
+                moduleCore.getId(mlETH, ceth, mlETHExpiry),
+                mlETH,
+                bsETH,
+                "Merrill Lynch staked ETH - bsETH",
+                INITIAL_MINT_CAP
+            )
+        );
+        console.log("HU mlETH                        : ", address(hedgeUnitmlETH));
+        console.log("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-");
         vm.stopBroadcast();
     }
 }

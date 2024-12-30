@@ -28,7 +28,7 @@ contract CorkConfig is AccessControl, Pausable {
     CorkHook public hook;
     HedgeUnitFactory public hedgeUnitFactory;
 
-    uint256 public constant WHITELIST_TIME_DELAY = 0 days;
+    uint256 public constant WHITELIST_TIME_DELAY = 7 days;
 
     /// @notice liquidation address => timestamp when liquidation is allowed
     mapping(address => uint256) liquidationWhitelist;
