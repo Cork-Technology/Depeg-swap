@@ -5,7 +5,9 @@ import {Helper} from "./../../Helper.sol";
 import {HedgeUnit} from "../../../../contracts/core/assets/HedgeUnit.sol";
 import {Liquidator} from "../../../../contracts/core/liquidators/cow-protocol/Liquidator.sol";
 import {DummyERCWithPermit} from "../../../../contracts/dummy/DummyERCWithPermit.sol";
-import {Id} from "./../../../../contracts/libraries/Pair.sol";
+import {Id} from "../../../../contracts/libraries/Pair.sol";
+import {IHedgeUnitRouter} from "../../../../contracts/interfaces/IHedgeUnitRouter.sol";
+import {Asset} from "../../../../contracts/core/assets/Asset.sol";
 
 contract HedgeUnitRouterTest is Helper {
     Liquidator public liquidator;
@@ -77,6 +79,23 @@ contract HedgeUnitRouterTest is Helper {
         dsToken = DummyERCWithPermit(payable(address(ds)));
     }
 
+    function test_PreviewMint() public {
+        address[] memory hedgeUnits = new address[](1);
+        uint256[] memory amounts = new uint256[](1);
+        hedgeUnits[0] = address(hedgeUnit);
+        amounts[0] = 100 * 1e18;
+
+        uint256[] memory dsAmounts = new uint256[](1);
+        uint256[] memory paAmounts = new uint256[](1);
+
+        // Preview minting 100 HedgeUnit tokens
+        (dsAmounts, paAmounts) = hedgeUnitRouter.previewBatchMint(hedgeUnits, amounts);
+
+        // Check that the DS and PA amounts are correct
+        assertEq(dsAmounts[0], 100 * 1e18);
+        assertEq(paAmounts[0], 100 * 1e18);
+    }
+
     function mintTokens() public {
         // Test_ minting by the user
         vm.startPrank(user);
@@ -88,6 +107,56 @@ contract HedgeUnitRouterTest is Helper {
         // Mint 100 HedgeUnit tokens
         uint256 mintAmount = 100 * 1e18;
         hedgeUnit.mint(mintAmount);
+
+        // Check balances and total supply
+        assertEq(hedgeUnit.balanceOf(user), mintAmount);
+        assertEq(hedgeUnit.totalSupply(), mintAmount);
+
+        // Check token balances in the contract
+        assertEq(dsToken.balanceOf(address(hedgeUnit)), mintAmount);
+        assertEq(pa.balanceOf(address(hedgeUnit)), mintAmount);
+
+        vm.stopPrank();
+    }
+
+    function test_BatchMint() public {
+        // Test_ minting by the user
+        vm.startPrank(user);
+
+        // Mint 100 HedgeUnit tokens
+        uint256 mintAmount = 100 * 1e18;
+
+        // Permit token approvals to HedgeUnit contract
+        (uint256 dsAmount, uint256 paAmount) = hedgeUnit.previewMint(mintAmount);
+        bytes32 domain_separator = Asset(address(dsToken)).DOMAIN_SEPARATOR();
+        uint256 deadline = block.timestamp + 10 days;
+        bytes memory dsPermit = getCustomPermit(
+            user,
+            address(hedgeUnit),
+            dsAmount,
+            Asset(address(dsToken)).nonces(user),
+            deadline,
+            USER_PK,
+            domain_separator,
+            "mint"
+        );
+        domain_separator = Asset(address(pa)).DOMAIN_SEPARATOR();
+        bytes memory paPermit = getPermit(
+            user, address(hedgeUnit), paAmount, Asset(address(pa)).nonces(user), deadline, USER_PK, domain_separator
+        );
+        IHedgeUnitRouter.BatchMintParams memory param = IHedgeUnitRouter.BatchMintParams({
+            hedgeUnits: new address[](1),
+            amounts: new uint256[](1),
+            minter: user,
+            rawDsPermitSigs: new bytes[](1),
+            rawPaPermitSigs: new bytes[](1),
+            deadline: deadline
+        });
+        param.hedgeUnits[0] = address(hedgeUnit);
+        param.amounts[0] = mintAmount;
+        param.rawDsPermitSigs[0] = dsPermit;
+        param.rawPaPermitSigs[0] = paPermit;
+        hedgeUnitRouter.batchMint(param);
 
         // Check balances and total supply
         assertEq(hedgeUnit.balanceOf(user), mintAmount);
