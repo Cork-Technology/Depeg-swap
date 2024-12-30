@@ -54,7 +54,7 @@ contract FlashSwapTest is Helper {
 
         ra.approve(address(flashSwapRouter), type(uint256).max);
 
-        uint256 amountOut = flashSwapRouter.swapRaforDs(currencyId, dsId, 1 ether, 0, defaultBuyApproxParams());
+        (uint256 amountOut,) = flashSwapRouter.swapRaforDs(currencyId, dsId, 1 ether, 0, defaultBuyApproxParams());
 
         IPSMcore(moduleCore).updatePsmAutoSellStatus(currencyId, true);
 
@@ -64,7 +64,7 @@ contract FlashSwapTest is Helper {
 
         // should work, even though there's insfuicient liquidity to sell the LV reserves
         uint256 lvReserveBefore = flashSwapRouter.getLvReserve(currencyId, dsId);
-        amountOut = flashSwapRouter.swapRaforDs(currencyId, dsId, 100 ether, 0, defaultBuyApproxParams());
+        (amountOut,) = flashSwapRouter.swapRaforDs(currencyId, dsId, 100 ether, 0, defaultBuyApproxParams());
         uint256 lvReserveAfter = flashSwapRouter.getLvReserve(currencyId, dsId);
 
         vm.assertEq(lvReserveBefore, lvReserveAfter);
@@ -81,7 +81,7 @@ contract FlashSwapTest is Helper {
 
         // now if buy, it should sell from reserves
         lvReserveBefore = flashSwapRouter.getLvReserve(currencyId, dsId);
-        amountOut = flashSwapRouter.swapRaforDs(currencyId, dsId, 10 ether, 0, defaultBuyApproxParams());
+        (amountOut,) = flashSwapRouter.swapRaforDs(currencyId, dsId, 10 ether, 0, defaultBuyApproxParams());
         lvReserveAfter = flashSwapRouter.getLvReserve(currencyId, dsId);
 
         vm.assertTrue(lvReserveAfter < lvReserveBefore);

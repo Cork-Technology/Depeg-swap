@@ -8,6 +8,7 @@ import {SD59x18, convert, sd, add, mul, pow, sub, div, abs, unwrap, intoUD60x18}
 import {UD60x18, convert as convertUd, ud, add, mul, pow, sub, div, unwrap} from "@prb/math/src/UD60x18.sol";
 import {IMathError} from "./../interfaces/IMathError.sol";
 import {MarketSnapshot, MarketSnapshotLib} from "Cork-Hook/lib/MarketSnapshot.sol";
+import {TransferHelper} from "./TransferHelper.sol";
 import "./LogExpMath.sol";
 
 library BuyMathBisectionSolver {
@@ -433,7 +434,7 @@ library SwapperMathLibrary {
 
         UD60x18 repaymentAmountUd = lowerBound == convertUd(0)
             ? convertUd(0)
-            : convertUd(params.market.getAmountIn(convertUd(lowerBound), false));
+            : convertUd(params.market.getAmountInNoConvert(convertUd(lowerBound), false));
 
         // we skip bounds check if the max lower bound is bigger than the initial borrowed amount
         // since it's guranteed to have enough liquidity if we never borrow
@@ -451,9 +452,19 @@ library SwapperMathLibrary {
             }
 
             UD60x18 midpoint = div(add(lowerBound, upperBound), convertUd(2));
-            repaymentAmountUd = convertUd(params.market.getAmountIn(convertUd(midpoint), false));
+            repaymentAmountUd = convertUd(params.market.getAmountInNoConvert(convertUd(midpoint), false));
 
             amountOutUd = add(midpoint, suppliedAmountUd);
+
+            // we re-adjust precision here, to mitigate problems that arise when the RA decimals is less than 18(e.g USDT)
+            // the problem occurs when it doesn't have enough precision to represent the actual amount of CT we received
+            // from PSM.
+            // example would be, we're supposed to pay 3.23 CT to the AMM, but the RA only has enough decimals
+            // to represent 3.2. so we deposit 3.2 RA, then we get 3.2 CT. this is less than 3.23 CT we're supposed to pay
+            // to circumvent this, we basically "round" the amountOut here on the fly to be accurate to the RA decimals.
+            // this will incur a slight gas costs, but it's necessary to ensure the math is correct
+            amountOutUd = convertUd(TransferHelper.fixedToTokenNativeDecimals(convertUd(amountOutUd), params.market.ra));
+            amountOutUd = convertUd(TransferHelper.tokenNativeDecimalsToFixed(convertUd(amountOutUd), params.market.ra));
 
             if (repaymentAmountUd > amountOutUd) {
                 upperBound = midpoint;

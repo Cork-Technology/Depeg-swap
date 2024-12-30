@@ -7,8 +7,9 @@ import {SwapperMathLibrary} from "./DsSwapperMathLib.sol";
 import {MinimalUniswapV2Library} from "./uni-v2/UniswapV2Library.sol";
 import {PermitChecker} from "./PermitChecker.sol";
 import {ICorkHook} from "../interfaces/UniV4/IMinimalHook.sol";
-import "Cork-Hook/lib/MarketSnapshot.sol";
+import {MarketSnapshot, MarketSnapshotLib} from "Cork-Hook/lib/MarketSnapshot.sol";
 import "./../interfaces/IDsFlashSwapRouter.sol";
+import {TransferHelper} from "./TransferHelper.sol";
 
 /**
  * @dev AssetPair structure for Asset Pairs
@@ -137,6 +138,9 @@ library DsFlashSwaplibrary {
 
         (uint256 raReserve, uint256 ctReserve) = router.getReserves(address(asset.ra), address(asset.ct));
 
+        raReserve = TransferHelper.tokenNativeDecimalsToFixed(raReserve, asset.ra);
+        ctReserve = TransferHelper.tokenNativeDecimalsToFixed(ctReserve, asset.ct);
+
         (raPriceRatio, ctPriceRatio) = SwapperMathLibrary.getPriceRatio(raReserve, ctReserve);
     }
 
@@ -204,7 +208,13 @@ library DsFlashSwaplibrary {
 
         repaymentAmount = router.getAmountIn(address(assetPair.ra), address(assetPair.ct), true, amount);
 
-        (success, amountOut) = SwapperMathLibrary.getAmountOutSellDs(repaymentAmount, amount);
+        // this is done in 18 decimals precision
+        (success, amountOut) = SwapperMathLibrary.getAmountOutSellDs(
+            TransferHelper.tokenNativeDecimalsToFixed(repaymentAmount, assetPair.ra), amount
+        );
+
+        // and then we convert it back to the original token decimals
+        amountOut = TransferHelper.fixedToTokenNativeDecimals(amountOut, assetPair.ra);
     }
 
     function getAmountOutBuyDS(
@@ -213,15 +223,21 @@ library DsFlashSwaplibrary {
         ICorkHook router,
         IDsFlashSwapCore.BuyAprroxParams memory params
     ) external view returns (uint256 amountOut, uint256 borrowedAmount) {
-        (uint256 raReserve, uint256 ctReserve) = getReservesSorted(assetPair, router);
-
         MarketSnapshot memory market = router.getMarketSnapshot(address(assetPair.ra), address(assetPair.ct));
+
+        market.reserveRa = TransferHelper.tokenNativeDecimalsToFixed(market.reserveRa, assetPair.ra);
+        amount = TransferHelper.tokenNativeDecimalsToFixed(amount, assetPair.ra);
 
         uint256 issuedAt = assetPair.ds.issuedAt();
         uint256 end = assetPair.ds.expiry();
 
-        amountOut = _calculateInitialBuyOut(InitialTradeCaclParams(raReserve, ctReserve, issuedAt, end, amount, params));
+        // this expect 18 decimals both sides
+        amountOut = _calculateInitialBuyOut(
+            InitialTradeCaclParams(market.reserveRa, market.reserveCt, issuedAt, end, amount, params)
+        );
 
+        // amountOut = TransferHelper.fixedToTokenNativeDecimals(amountOut, assetPair.ra);
+        // market.reserveRa = TransferHelper.fixedToTokenNativeDecimals(market.reserveRa, assetPair.ra);
         // we subtract some percentage of it to account for dust imprecisions
         amountOut -= SwapperMathLibrary.calculatePercentage(amountOut, params.precisionBufferPercentage);
 
@@ -239,6 +255,9 @@ library DsFlashSwaplibrary {
 
         SwapperMathLibrary.OptimalBorrowResult memory result =
             SwapperMathLibrary.findOptimalBorrowedAmount(optimalParams);
+
+        // result.amountOut = TransferHelper.fixedToTokenNativeDecimals(result.amountOut, assetPair.ra);
+        result.borrowedAmount = TransferHelper.fixedToTokenNativeDecimals(result.borrowedAmount, assetPair.ra);
 
         amountOut = result.amountOut;
         borrowedAmount = result.borrowedAmount;
