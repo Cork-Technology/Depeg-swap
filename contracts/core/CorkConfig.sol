@@ -170,7 +170,8 @@ contract CorkConfig is AccessControl, Pausable {
     }
 
     /**
-     * @dev Issues new assets
+     * @dev Issues new assets, will auto assign amm fees from the previous issuance
+     * for first issuance, separate transaction must be made to set the fees in the AMM
      */
     function issueNewDs(
         Id id,
@@ -189,6 +190,37 @@ contract CorkConfig is AccessControl, Pausable {
             rolloverPeriodInblocks,
             ammLiquidationDeadline
         );
+
+        _autoAssignFees(id);
+    }
+
+    function _autoAssignFees(Id id) internal {
+        uint256 currentDsId = moduleCore.lastDsId(id);
+        uint256 prevDsId = currentDsId - 1;
+
+        // first issuance, no AMM fees to assign
+        if (prevDsId == 0) {
+            return;
+        }
+
+        // get previous issuance's assets
+        (address ra,) = moduleCore.underlyingAsset(id);
+        (address ct,) = moduleCore.swapAsset(id, prevDsId);
+
+        // get fees from previous issuance, we won't revert here since the fees can be assigned manually
+        // if for some reason the previous issuance AMM is not created for some reason(no LV deposits)
+        uint256 prevBaseFee;
+        
+        try hook.getFee(ra, ct) {} catch {
+            return;
+        }
+
+        // assign fees to current issuance
+        (ct,) = moduleCore.swapAsset(id, currentDsId);
+
+        // we don't revert here since an edge case would occur where the Lv token circulation is 0 but the issuance continues
+        // and in that case the AMM would not have been created yet. This is a rare edge case and the fees can be assigned manually in such cases
+        try hook.updateBaseFeePercentage(ra, ct, prevBaseFee) {} catch {}
     }
 
     /**

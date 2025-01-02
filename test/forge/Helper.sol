@@ -270,6 +270,10 @@ abstract contract Helper is SigUtils, TestHelper {
 
     function deployConfig() internal {
         corkConfig = new CorkConfig();
+        corkConfig.setHook(address(hook));
+
+        // transfer hook onwer to corkConfig
+        hook.transferOwnership(address(corkConfig));
     }
 
     function setupConfig() internal {
