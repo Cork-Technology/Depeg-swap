@@ -349,7 +349,11 @@ abstract contract Helper is SigUtils, TestHelper {
     }
 
     function forceUnpause(Id id) internal {
-        corkConfig.updatePoolsStatus(id, false, false, false, false, false);
+        corkConfig.updatePsmDepositsStatus(id, false);
+        corkConfig.updatePsmWithdrawalsStatus(id, false);
+        corkConfig.updatePsmRepurchasesStatus(id, false);
+        corkConfig.updateLvDepositsStatus(id, false);
+        corkConfig.updateLvWithdrawalsStatus(id, false);
     }
 
     function forceUnpause() internal {

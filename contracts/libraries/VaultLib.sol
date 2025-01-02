@@ -701,6 +701,11 @@ library VaultLibrary {
 
         // send PA to user
         SafeERC20.safeTransfer(IERC20(pair.pa), address(contracts.withdrawalContract), result.paReceived);
+
+        // TODO : This commented code will be removed
+        // if (fee != 0) {
+        //     allocateFeesToVault(self, fee);
+        // }
     }
 
     function vaultLp(State storage self, ICorkHook ammRotuer) internal view returns (uint256) {
@@ -748,5 +753,13 @@ library VaultLibrary {
         // transfer PA to the vault
         SafeERC20.safeTransferFrom(IERC20(self.info.pa), from, address(this), amount);
         self.vault.pool.withdrawalPool.paBalance += amount;
+    }
+
+    function updateLvDepositsStatus(State storage self, bool isLVDepositPaused) external {
+        self.vault.config.isDepositPaused = isLVDepositPaused;
+    }
+
+    function updateLvWithdrawalsStatus(State storage self, bool isLVWithdrawalPaused) external {
+        self.vault.config.isWithdrawalPaused = isLVWithdrawalPaused;
     }
 }

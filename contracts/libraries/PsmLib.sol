@@ -33,6 +33,12 @@ library PsmLibrary {
     using BitMaps for BitMaps.BitMap;
     using SafeERC20 for IERC20;
 
+    /**
+     *   This denotes maximum fee allowed in contract
+     *   Here 1 ether = 1e18 so maximum 5% fee allowed
+     */
+    uint256 constant internal MAX_ALLOWED_FEES = 5 ether;
+
     /// @notice inssuficient balance to perform rollover redeem(e.g having 5 CT worth of rollover to redeem but trying to redeem 10)
     error InsufficientRolloverBalance(address caller, uint256 requested, uint256 balance);
 
@@ -460,25 +466,22 @@ library PsmLibrary {
     }
 
     function updateRepurchaseFeePercentage(State storage self, uint256 newFees) external {
-        if (newFees > 5 ether) {
+        if (newFees > MAX_ALLOWED_FEES) {
             revert ICommon.InvalidFees();
         }
         self.psm.repurchaseFeePercentage = newFees;
     }
 
-    function updatePoolsStatus(
-        State storage self,
-        bool isPSMDepositPaused,
-        bool isPSMWithdrawalPaused,
-        bool isPSMRepurchasePaused,
-        bool isLVDepositPaused,
-        bool isLVWithdrawalPaused
-    ) external {
+    function updatePsmDepositsStatus(State storage self, bool isPSMDepositPaused) external {
         self.psm.isDepositPaused = isPSMDepositPaused;
+    }
+
+    function updatePsmWithdrawalsStatus(State storage self, bool isPSMWithdrawalPaused) external {
         self.psm.isWithdrawalPaused = isPSMWithdrawalPaused;
+    }
+
+    function updatePsmRepurchasesStatus(State storage self, bool isPSMRepurchasePaused) external {
         self.psm.isRepurchasePaused = isPSMRepurchasePaused;
-        self.vault.config.isDepositPaused = isLVDepositPaused;
-        self.vault.config.isWithdrawalPaused = isLVWithdrawalPaused;
     }
 
     function previewRepurchase(State storage self, uint256 amount)
@@ -747,7 +750,7 @@ library PsmLibrary {
     }
 
     function updatePSMBaseRedemptionFeePercentage(State storage self, uint256 newFees) external {
-        if (newFees > 5 ether) {
+        if (newFees > MAX_ALLOWED_FEES) {
             revert ICommon.InvalidFees();
         }
         self.psm.psmBaseRedemptionFeePercentage = newFees;

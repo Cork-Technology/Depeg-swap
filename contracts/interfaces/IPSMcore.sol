@@ -111,20 +111,28 @@ interface IPSMcore is IRepurchase {
         Id indexed Id, uint256 indexed dsId, address indexed redeemer, uint256 raAmount, uint256 swapAmount
     );
 
-    /// @notice Emitted when a Admin updates status of Deposit/Withdraw in the PSM / LV
+    /// @notice Emitted when a Admin updates status of Deposit in the PSM 
     /// @param Id The PSM id
     /// @param isPSMDepositPaused The new value saying if Deposit allowed in PSM or not
-    /// @param isPSMWithdrawalPaused The new value saying if Withdrawal allowed in PSM or not
-    /// @param isPSMRepurchasePaused The new value saying if Repurcahse allowed in PSM or not
-    /// @param isLVDepositPaused The new value saying if Deposit allowed in LV or not
-    /// @param isLVWithdrawalPaused The new value saying if Withdrawal allowed in LV or not
-    event PoolsStatusUpdated(
+    event PsmDepositsStatusUpdated(
         Id indexed Id,
-        bool isPSMDepositPaused,
-        bool isPSMWithdrawalPaused,
-        bool isPSMRepurchasePaused,
-        bool isLVDepositPaused,
-        bool isLVWithdrawalPaused
+        bool isPSMDepositPaused
+    );
+
+    /// @notice Emitted when a Admin updates status of Withdrawal in the PSM
+    /// @param Id The PSM id
+    /// @param isPSMWithdrawalPaused The new value saying if Withdrawal allowed in PSM or not
+    event PsmWithdrawalsStatusUpdated(
+        Id indexed Id,
+        bool isPSMWithdrawalPaused
+    );
+
+    /// @notice Emitted when a Admin updates status of Repurchase in the PSM
+    /// @param Id The PSM id
+    /// @param isPSMRepurchasePaused The new value saying if Repurchase allowed in PSM or not
+    event PsmRepurchasesStatusUpdated(
+        Id indexed Id,
+        bool isPSMRepurchasePaused
     );
 
     /// @notice Emitted when a Admin updates fee rates for early redemption

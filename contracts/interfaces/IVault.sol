@@ -68,6 +68,22 @@ interface IVault is ICommon {
         bytes32 withdrawalId
     );
 
+    /// @notice Emitted when a Admin updates status of Deposit in the LV 
+    /// @param Id The LV id
+    /// @param isLVDepositPaused The new value saying if Deposit allowed in LV or not
+    event LvDepositsStatusUpdated(
+        Id indexed Id,
+        bool isLVDepositPaused
+    );
+
+    /// @notice Emitted when a Admin updates status of Withdrawal in the LV
+    /// @param Id The LV id
+    /// @param isLVWithdrawalPaused The new value saying if Withdrawal allowed in LV or not
+    event LvWithdrawalsStatusUpdated(
+        Id indexed Id,
+        bool isLVWithdrawalPaused
+    );
+
     /// @notice Emitted when a early redemption fee is updated for a given Vault
     /// @param Id The State id
     /// @param newEarlyRedemptionFee The new early redemption rate
