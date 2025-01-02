@@ -27,6 +27,9 @@ contract CorkConfig is AccessControl, Pausable {
     IDsFlashSwapCore public flashSwapRouter;
     CorkHook public hook;
     HedgeUnitFactory public hedgeUnitFactory;
+    // Cork Protocol's treasury address. Other Protocol component should fetch this address directly from the config contract
+    // instead of storing it themselves, since it'll be hard to update the treasury address in all the components if it changes vs updating it in the config contract once
+    address public treasury;
 
     uint256 public constant WHITELIST_TIME_DELAY = 7 days;
 
@@ -54,6 +57,10 @@ contract CorkConfig is AccessControl, Pausable {
     /// @notice Emitted when a hedgeUnitFactory variable set
     /// @param hedgeUnitFactory Address of hedgeUnitFactory contract
     event HedgeUnitFactorySet(address hedgeUnitFactory);
+
+    /// @notice Emitted when a treasury is set
+    /// @param treasury Address of treasury contract/address
+    event TreasurySet(address treasury);
 
     modifier onlyManager() {
         if (!hasRole(MANAGER_ROLE, msg.sender)) {
@@ -141,6 +148,16 @@ contract CorkConfig is AccessControl, Pausable {
 
         hedgeUnitFactory = HedgeUnitFactory(_hedgeUnitFactory);
         emit HedgeUnitFactorySet(_hedgeUnitFactory);
+    }
+
+    function setTreasury(address _treasury) external onlyManager {
+        if (_treasury == address(0)) {
+            revert InvalidAddress();
+        }
+     
+        treasury = _treasury;
+     
+        emit TreasurySet(_treasury);
     }
 
     function updateAmmBaseFeePercentage(address ra, address ct, uint256 newBaseFeePercentage) external onlyManager {
