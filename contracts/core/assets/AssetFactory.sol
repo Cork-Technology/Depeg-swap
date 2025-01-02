@@ -195,5 +195,5 @@ contract AssetFactory is IAssetFactory, OwnableUpgradeable, UUPSUpgradeable {
         emit LvAssetDeployed(_ra, _pa, lv);
     }
 
-    function _authorizeUpgrade(address newImplementation) internal override onlyOwner notDelegated {}
+    function _authorizeUpgrade(address newImplementation) internal override onlyOwner {}
 }

@@ -134,7 +134,8 @@ contract RolloverTest is Helper {
 
     function test_claimAutoSellProfit() external {
         uint256 prevDsId = dsId;
-        uint256 amountOutMin = flashSwapRouter.previewSwapRaforDs(currencyId, dsId, 1 ether);
+        // Allowed 99% accuracy because previewSwapRaforDs dont take redemption fees into account
+        uint256 amountOutMin = flashSwapRouter.previewSwapRaforDs(currencyId, dsId, 1 ether)*99/100;
 
         ra.approve(address(flashSwapRouter), 2 ether);
 
@@ -162,8 +163,9 @@ contract RolloverTest is Helper {
 
         // we autosell
         vm.assertEq(dsReceived, 0);
-
-        amountOutMin = flashSwapRouter.previewSwapRaforDs(currencyId, dsId, 1 ether);
+        
+        // Allowed 99% accuracy because previewSwapRaforDs dont take redemption fees into account
+        amountOutMin = flashSwapRouter.previewSwapRaforDs(currencyId, dsId, 1 ether)*99/100;
         amountOut = flashSwapRouter.swapRaforDs(currencyId, dsId, 1 ether, amountOutMin);
 
         uint256 rolloverProfit = moduleCore.getPsmPoolArchiveRolloverProfit(currencyId, dsId);
@@ -201,7 +203,8 @@ contract RolloverTest is Helper {
         // transfer some CT + DS to user, let that user claim rollover profit
 
         uint256 prevDsId = dsId;
-        uint256 amountOutMin = flashSwapRouter.previewSwapRaforDs(currencyId, dsId, 1 ether);
+        // Allowed 99% accuracy because previewSwapRaforDs dont take redemption fees into account
+        uint256 amountOutMin = flashSwapRouter.previewSwapRaforDs(currencyId, dsId, 1 ether)*99/100;
 
         ra.approve(address(flashSwapRouter), 2 ether);
 
@@ -230,7 +233,8 @@ contract RolloverTest is Helper {
         // we autosell
         vm.assertEq(dsReceived, 0);
 
-        amountOutMin = flashSwapRouter.previewSwapRaforDs(currencyId, dsId, 1 ether);
+        // Allowed 99% accuracy because previewSwapRaforDs dont take redemption fees into account
+        amountOutMin = flashSwapRouter.previewSwapRaforDs(currencyId, dsId, 1 ether)*99/100;
         amountOut = flashSwapRouter.swapRaforDs(currencyId, dsId, 1 ether, amountOutMin);
 
         uint256 rolloverProfit = moduleCore.getPsmPoolArchiveRolloverProfit(currencyId, dsId);
@@ -251,7 +255,9 @@ contract RolloverTest is Helper {
 
     function test_rolloverSaleWorks() external {
         uint256 prevDsId = dsId;
-        uint256 amountOutMin = flashSwapRouter.previewSwapRaforDs(currencyId, dsId, 0.1009 ether);
+
+        // Allowed 99% accuracy because previewSwapRaforDs dont take redemption fees into account
+        uint256 amountOutMin = flashSwapRouter.previewSwapRaforDs(currencyId, dsId, 1 ether)*99/100;
 
         ra.approve(address(flashSwapRouter), 100 ether);
 
@@ -283,19 +289,21 @@ contract RolloverTest is Helper {
 
         vm.assertEq(true, flashSwapRouter.isRolloverSale(currencyId, dsId));
 
-        amountOutMin = flashSwapRouter.previewSwapRaforDs(currencyId, dsId, hpa);
+        // Allowed 99% accuracy because previewSwapRaforDs dont take redemption fees into account
+        amountOutMin = flashSwapRouter.previewSwapRaforDs(currencyId, dsId, hpa)*99/100;
         amountOut = flashSwapRouter.swapRaforDs(currencyId, dsId, hpa, amountOutMin);
 
         vm.assertEq(amountOut, 1 ether);
 
-        amountOut = flashSwapRouter.swapRaforDs(currencyId, dsId, hpa * 10, amountOutMin);
+        amountOut = flashSwapRouter.swapRaforDs(currencyId, dsId, hpa * 10, 0);
 
         vm.assertEq(amountOut, 10 ether);
     }
 
     function test_RevertOutIsLessThanMin() external {
         uint256 prevDsId = dsId;
-        uint256 amountOutMin = flashSwapRouter.previewSwapRaforDs(currencyId, dsId, 1 ether);
+        // Allowed 99% accuracy because previewSwapRaforDs dont take redemption fees into account
+        uint256 amountOutMin = flashSwapRouter.previewSwapRaforDs(currencyId, dsId, 1 ether)*99/100;
 
         ra.approve(address(flashSwapRouter), 100 ether);
 
