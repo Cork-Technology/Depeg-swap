@@ -210,8 +210,11 @@ contract CorkConfig is AccessControl, Pausable {
         // get fees from previous issuance, we won't revert here since the fees can be assigned manually
         // if for some reason the previous issuance AMM is not created for some reason(no LV deposits)
         uint256 prevBaseFee;
-        
-        try hook.getFee(ra, ct) {} catch {
+
+        try hook.getFee(ra, ct) returns (uint256 baseFee, uint256) {
+            prevBaseFee = baseFee;
+        }
+        catch {
             return;
         }
 
