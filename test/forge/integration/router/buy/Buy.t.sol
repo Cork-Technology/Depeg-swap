@@ -52,6 +52,6 @@ contract BasicFlashSwapTest is Helper {
     function test_buyDS() public virtual {
         ra.approve(address(flashSwapRouter), type(uint256).max);
 
-        uint256 amountOut = flashSwapRouter.swapRaforDs(currencyId, dsId, 1 ether, 0, DEFAULT_ADDRESS, bytes(""), 0);
+        uint256 amountOut = flashSwapRouter.swapRaforDs(currencyId, dsId, 1 ether, 0);
     }
 }

@@ -117,30 +117,63 @@ contract CorkConfig is AccessControl, Pausable {
     }
 
     /**
-     * @notice Updates pausing status of PSM and LV pools
-     * @param id id of PSM
-     * @param isPSMDepositPaused new value of isPSMDepositPaused
-     * @param isPSMWithdrawalPaused new value of isPSMWithdrawalPaused
-     * @param isPSMRepurchasePaused new value of isPSMRepurchasePaused
-     * @param isLVDepositPaused new value of isLVDepositPaused
-     * @param isLVWithdrawalPaused new value of isLVWithdrawalPaused
+     * @notice update pausing status of PSM Deposits
+     * @param id id of the pair
+     * @param isPSMDepositPaused set to true if you want to pause PSM deposits
      */
-    function updatePoolsStatus(
+    function updatePsmDepositsStatus(
         Id id,
-        bool isPSMDepositPaused,
-        bool isPSMWithdrawalPaused,
-        bool isPSMRepurchasePaused,
-        bool isLVDepositPaused,
+        bool isPSMDepositPaused
+    ) external onlyManager {
+        moduleCore.updatePsmDepositsStatus(id, isPSMDepositPaused);
+    }
+
+    /**
+     * @notice update pausing status of PSM Withdrawals
+     * @param id id of the pair
+     * @param isPSMWithdrawalPaused set to true if you want to pause PSM withdrawals
+     */
+    function updatePsmWithdrawalsStatus(
+        Id id,
+        bool isPSMWithdrawalPaused
+    ) external onlyManager {
+        moduleCore.updatePsmWithdrawalsStatus(id, isPSMWithdrawalPaused);
+    }
+
+    /**
+     * @notice update pausing status of PSM Repurchases
+     * @param id id of the pair
+     * @param isPSMRepurchasePaused set to true if you want to pause PSM repurchases
+     */
+    function updatePsmRepurchasesStatus(
+        Id id,
+        bool isPSMRepurchasePaused
+    ) external onlyManager {
+        moduleCore.updatePsmRepurchasesStatus(id, isPSMRepurchasePaused);
+    }
+
+    /**
+     * @notice update pausing status of LV deposits
+     * @param id id of the pair
+     * @param isLVDepositPaused set to true if you want to pause LV deposits
+     */
+    function updateLvDepositsStatus(
+        Id id,
+        bool isLVDepositPaused
+    ) external onlyManager {
+        moduleCore.updateLvDepositsStatus(id, isLVDepositPaused);
+    }
+
+    /**
+     * @notice update pausing status of LV withdrawals
+     * @param id id of the pair
+     * @param isLVWithdrawalPaused set to true if you want to pause LV withdrawals
+     */
+    function updateLvWithdrawalsStatus(
+        Id id,
         bool isLVWithdrawalPaused
     ) external onlyManager {
-        moduleCore.updatePoolsStatus(
-            id,
-            isPSMDepositPaused,
-            isPSMWithdrawalPaused,
-            isPSMRepurchasePaused,
-            isLVDepositPaused,
-            isLVWithdrawalPaused
-        );
+        moduleCore.updateLvWithdrawalsStatus(id, isLVWithdrawalPaused);
     }
 
     /**

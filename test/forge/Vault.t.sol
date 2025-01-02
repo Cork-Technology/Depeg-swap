@@ -59,7 +59,7 @@ contract VaultRedeemTest is Helper {
 
         //now we buy a lot of DS to accrue value to LV holders
         ra.approve(address(flashSwapRouter), type(uint256).max);
-        flashSwapRouter.swapRaforDs(currencyId, dsId, 10_000_000 ether, 0, DEFAULT_ADDRESS, bytes(""), 0);
+        flashSwapRouter.swapRaforDs(currencyId, dsId, 10_000_000 ether, 0);
 
         // now we try redeem early
         IERC20(lv).approve(address(moduleCore), 0.9 ether);
@@ -67,17 +67,12 @@ contract VaultRedeemTest is Helper {
 
         IVault.RedeemEarlyParams memory redeemParams = IVault.RedeemEarlyParams({
             id: currencyId,
-            receiver: DEFAULT_ADDRESS,
             amount: 0.9 ether,
             amountOutMin: 0,
             ammDeadline: block.timestamp
         });
-        IVault.PermitParams memory permitParams = IVault.PermitParams({
-            rawLvPermitSig: bytes(""),
-            deadline: 0
-        });
         (uint256 received, uint256 fee, uint256 feePercentage, uint256 paAmount) =
-            moduleCore.redeemEarlyLv(redeemParams, DEFAULT_ADDRESS, permitParams);
+            moduleCore.redeemEarlyLv(redeemParams);
 
         vm.assertTrue(received > 0.9 ether, "should accrue value");
 
@@ -94,12 +89,11 @@ contract VaultRedeemTest is Helper {
         IERC20(lv).approve(address(moduleCore), 1 ether);
         redeemParams = IVault.RedeemEarlyParams({
             id: currencyId,
-            receiver: DEFAULT_ADDRESS,
             amount: lvReceived,
             amountOutMin: 0,
             ammDeadline: block.timestamp
         });
-        (received, fee, feePercentage, paAmount) = moduleCore.redeemEarlyLv(redeemParams, user2, permitParams);
+        (received, fee, feePercentage, paAmount) = moduleCore.redeemEarlyLv(redeemParams);
 
         // user shouldn't accrue any value, so they will receive their original deposits back
         // not exactly 1 ether cause of uni v2 minimum liquidity

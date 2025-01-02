@@ -22,7 +22,6 @@ interface IVault {
 
     struct RedeemEarlyParams {
         Id id;
-        address receiver;
         uint256 amount;
         uint256 amountOutMin;
         uint256 ammDeadline;
@@ -36,17 +35,32 @@ interface IVault {
 
     /// @notice Emitted when a user redeems Lv before expiry
     /// @param Id The Module id that is used to reference both psm and lv of a given pair
-    /// @param receiver The address of the receiver
+    /// @param redeemer The address of the redeemer
     /// @param amount The amount of the asset redeemed
     /// @param fee The total fee charged for early redemption
     /// @param feePercentage The fee percentage for early redemption, denominated in 1e18 (e.g 100e18 = 100%)
     event LvRedeemEarly(
         Id indexed Id,
         address indexed redeemer,
-        address indexed receiver,
         uint256 amount,
         uint256 fee,
         uint256 feePercentage
+    );
+
+    /// @notice Emitted when a Admin updates status of Deposit in the LV 
+    /// @param Id The LV id
+    /// @param isLVDepositPaused The new value saying if Deposit allowed in LV or not
+    event LvDepositsStatusUpdated(
+        Id indexed Id,
+        bool isLVDepositPaused
+    );
+
+    /// @notice Emitted when a Admin updates status of Withdrawal in the LV
+    /// @param Id The LV id
+    /// @param isLVWithdrawalPaused The new value saying if Withdrawal allowed in LV or not
+    event LvWithdrawalsStatusUpdated(
+        Id indexed Id,
+        bool isLVWithdrawalPaused
     );
 
     /// @notice Emitted when a early redemption fee is updated for a given Vault
@@ -95,6 +109,13 @@ interface IVault {
         external
         returns (uint256 received, uint256 fee, uint256 feePercentage, uint256 paAmount);
 
+    /**
+     * @notice Redeem lv before expiry
+     * @param redeemParams The object with details like id, reciever, amount, amountOutMin, ammDeadline
+     */
+    function redeemEarlyLv(RedeemEarlyParams memory redeemParams)
+        external
+        returns (uint256 received, uint256 fee, uint256 feePercentage, uint256 paAmount);
 
     /**
      * @notice preview redeem lv before expiry
