@@ -12,6 +12,7 @@ import {ModuleCore} from "../../contracts/core/ModuleCore.sol";
 import {Liquidator} from "../../contracts/core/liquidators/cow-protocol/Liquidator.sol";
 import {HedgeUnit} from "../../contracts/core/assets/HedgeUnit.sol";
 import {HedgeUnitFactory} from "../../contracts/core/assets/HedgeUnitFactory.sol";
+import {HedgeUnitRouter} from "../../contracts/core/assets/HedgeUnitRouter.sol";
 import {CETH} from "../../contracts/tokens/CETH.sol";
 import {CST} from "../../contracts/tokens/CST.sol";
 import {Id} from "../../contracts/libraries/Pair.sol";
@@ -34,6 +35,7 @@ contract DeployScript is Script {
     LiquidityToken public liquidityToken;
     Liquidator public liquidator;
     HedgeUnitFactory public hedgeUnitFactory;
+    HedgeUnitRouter public hedgeUnitRouter;
 
     HedgeUnit public hedgeUnitbsETH;
     HedgeUnit public hedgeUnitlbETH;
@@ -189,7 +191,9 @@ contract DeployScript is Script {
         console.log("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-");
 
         // Deploy the HedgeUnitFactry contract
-        hedgeUnitFactory = new HedgeUnitFactory(address(moduleCore), address(config), address(flashswapRouter));
+        hedgeUnitRouter = new HedgeUnitRouter();
+        hedgeUnitFactory = new HedgeUnitFactory(address(moduleCore), address(config), address(flashswapRouter), address(hedgeUnitRouter));
+        hedgeUnitRouter.grantRole(hedgeUnitRouter.HEDGE_UNIT_FACTORY_ROLE(), address(hedgeUnitFactory));
         config.setHedgeUnitFactory(address(hedgeUnitFactory));
         console.log("HedgeUnit Factory               : ", address(hedgeUnitFactory));
         console.log("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-");

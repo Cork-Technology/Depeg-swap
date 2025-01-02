@@ -4,7 +4,7 @@ pragma solidity ^0.8.24;
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {Pausable} from "@openzeppelin/contracts/utils/Pausable.sol";
 import {ERC20, IERC20Permit} from "@openzeppelin/contracts/token/ERC20/extensions/ERC20Permit.sol";
-import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
+import {ReentrancyGuardTransient} from "@openzeppelin/contracts/utils/ReentrancyGuardTransient.sol";
 import {SafeERC20, IERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import {IHedgeUnit} from "../../interfaces/IHedgeUnit.sol";
@@ -31,9 +31,9 @@ struct DSData {
 /**
  * @title HedgeUnit
  * @notice This contract allows minting and dissolving HedgeUnit tokens in exchange for two underlying assets.
- * @dev The contract uses OpenZeppelin's ERC20, ReentrancyGuard,Pausable and Ownable modules.
+ * @dev The contract uses OpenZeppelin's ERC20, ReentrancyGuardTransient,Pausable and Ownable modules.
  */
-contract HedgeUnit is ERC20Permit, ReentrancyGuard, Ownable, Pausable, IHedgeUnit, IHedgeUnitLiquidation {
+contract HedgeUnit is ERC20Permit, ReentrancyGuardTransient, Ownable, Pausable, IHedgeUnit, IHedgeUnitLiquidation {
     using SafeERC20 for IERC20;
 
     uint8 internal constant TARGET_DECIMALS = 18;
@@ -41,6 +41,7 @@ contract HedgeUnit is ERC20Permit, ReentrancyGuard, Ownable, Pausable, IHedgeUni
     ModuleCore public moduleCore;
     CorkConfig public config;
     IDsFlashSwapCore public flashSwapRouter;
+    address public hedgeUnitRouter;
     Id public id;
 
     /// @notice The ERC20 token representing the pa asset.
@@ -71,7 +72,8 @@ contract HedgeUnit is ERC20Permit, ReentrancyGuard, Ownable, Pausable, IHedgeUni
         string memory _pairName,
         uint256 _mintCap,
         address _config,
-        address _flashSwapRouter
+        address _flashSwapRouter,
+        address _hedgeUnitRouter
     )
         ERC20(string(abi.encodePacked("Hedge Unit - ", _pairName)), string(abi.encodePacked("HU - ", _pairName)))
         ERC20Permit(string(abi.encodePacked("Hedge Unit - ", _pairName)))
@@ -84,6 +86,7 @@ contract HedgeUnit is ERC20Permit, ReentrancyGuard, Ownable, Pausable, IHedgeUni
         mintCap = _mintCap;
         flashSwapRouter = IDsFlashSwapCore(_flashSwapRouter);
         config = CorkConfig(_config);
+        hedgeUnitRouter = _hedgeUnitRouter;
     }
 
     modifier autoUpdateDS() {
@@ -108,6 +111,13 @@ contract HedgeUnit is ERC20Permit, ReentrancyGuard, Ownable, Pausable, IHedgeUni
     modifier onlyOwnerOrLiquidator() {
         if (msg.sender != owner() && !config.isLiquidationWhitelisted(msg.sender)) {
             revert OnlyLiquidatorOrOwner();
+        }
+        _;
+    }
+
+    modifier onlyHedgeUnitRouter() {
+        if (msg.sender != hedgeUnitRouter) {
+            revert OnlyHedgeUnitRouterAllowed();
         }
         _;
     }
@@ -230,6 +240,10 @@ contract HedgeUnit is ERC20Permit, ReentrancyGuard, Ownable, Pausable, IHedgeUni
      * @return paAmount The amount of pa tokens required to mint the specified amount of HedgeUnit tokens.
      */
     function previewMint(uint256 amount) public view returns (uint256 dsAmount, uint256 paAmount) {
+        if(amount == 0) {
+            revert InvalidAmount();
+        }
+
         if (totalSupply() + amount > mintCap) {
             revert MintCapExceeded();
         }
@@ -263,6 +277,10 @@ contract HedgeUnit is ERC20Permit, ReentrancyGuard, Ownable, Pausable, IHedgeUni
     }
 
     function __mint(address minter, uint256 amount) internal returns (uint256 dsAmount, uint256 paAmount) {
+        if(amount == 0) {
+            revert InvalidAmount();
+        }
+
         if (totalSupply() + amount > mintCap) {
             revert MintCapExceeded();
         }
@@ -318,16 +336,17 @@ contract HedgeUnit is ERC20Permit, ReentrancyGuard, Ownable, Pausable, IHedgeUni
     }
 
     /**
-     * @notice Returns the dsAmount and paAmount received for dissolving the specified amount of HedgeUnit tokens.
+     * @notice Returns the dsAmount, paAmount and raAmount received for dissolving the specified amount of HedgeUnit tokens.
      * @return dsAmount The amount of DS tokens received for dissolving the specified amount of HedgeUnit tokens.
-     * @return paAmount The amount of pa tokens received for dissolving the specified amount of HedgeUnit tokens.
+     * @return paAmount The amount of PA tokens received for dissolving the specified amount of HedgeUnit tokens.
+     * @return raAmount The amount of RA tokens received for dissolving the specified amount of HedgeUnit tokens.
      */
-    function previewDissolve(uint256 amount)
+    function previewDissolve(address dissolver, uint256 amount)
         public
         view
         returns (uint256 dsAmount, uint256 paAmount, uint256 raAmount)
     {
-        if (amount > balanceOf(msg.sender)) {
+        if (amount == 0 || amount > balanceOf(dissolver)) {
             revert InvalidAmount();
         }
         uint256 totalLiquidity = totalSupply();
@@ -343,6 +362,7 @@ contract HedgeUnit is ERC20Permit, ReentrancyGuard, Ownable, Pausable, IHedgeUni
      * @param amount The amount of HedgeUnit tokens to dissolve.
      * @return dsAmount The amount of DS tokens returned.
      * @return paAmount The amount of pa tokens returned.
+     * @return raAmount The amount of ra tokens returned.
      * @custom:reverts EnforcedPause if minting is currently paused.
      * @custom:reverts InvalidAmount if the user has insufficient HedgeUnit balance.
      */
@@ -353,23 +373,40 @@ contract HedgeUnit is ERC20Permit, ReentrancyGuard, Ownable, Pausable, IHedgeUni
         autoUpdateDS
         returns (uint256 dsAmount, uint256 paAmount, uint256 raAmount)
     {
-        (dsAmount, paAmount, raAmount) = _dissolve(amount);
+        (dsAmount, paAmount, raAmount) = _dissolve(msg.sender, amount);
     }
 
-    function _dissolve(uint256 amount) internal returns (uint256 dsAmount, uint256 paAmount, uint256 raAmount) {
-        if (amount > balanceOf(msg.sender)) {
-            revert InvalidAmount();
-        }
+    /**
+     * @notice Dissolves HedgeUnit tokens and returns the equivalent amount of DS and pa tokens.
+     * @param dissolver The address of dissolver(user)
+     * @param amount The amount of HedgeUnit tokens to dissolve.
+     * @return dsAmount The amount of DS tokens returned.
+     * @return paAmount The amount of pa tokens returned.
+     * @return raAmount The amount of ra tokens returned.
+     * @custom:reverts EnforcedPause if minting is currently paused.
+     * @custom:reverts InvalidAmount if the user has insufficient HedgeUnit balance.
+     */
+    function dissolve(address dissolver, uint256 amount)
+        external
+        whenNotPaused
+        nonReentrant
+        autoUpdateDS
+        onlyHedgeUnitRouter
+        returns (uint256 dsAmount, uint256 paAmount, uint256 raAmount)
+    {
+        (dsAmount, paAmount, raAmount) = _dissolve(dissolver, amount);
+    }
 
-        (dsAmount, paAmount, raAmount) = previewDissolve(amount);
+    function _dissolve(address dissolver, uint256 amount) internal returns (uint256 dsAmount, uint256 paAmount, uint256 raAmount) {
+        (dsAmount, paAmount, raAmount) = previewDissolve(dissolver, amount);
 
-        TransferHelper.transferNormalize(pa, msg.sender, paAmount);
-        _transferDs(msg.sender, dsAmount);
-        TransferHelper.transferNormalize(ra, msg.sender, raAmount);
+        TransferHelper.transferNormalize(pa, dissolver, paAmount);
+        _transferDs(dissolver, dsAmount);
+        TransferHelper.transferNormalize(ra, dissolver, raAmount);
 
-        _burn(msg.sender, amount);
+        _burn(dissolver, amount);
 
-        emit Dissolve(msg.sender, amount, dsAmount, paAmount);
+        emit Dissolve(dissolver, amount, dsAmount, paAmount);
     }
 
     /**
