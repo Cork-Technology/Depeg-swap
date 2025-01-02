@@ -100,7 +100,7 @@ abstract contract VaultCore is ModuleState, Context, IVault {
      */
     function provideLiquidityWithFlashSwapFee(Id id, uint256 amount) external onlyFlashSwapRouter {
         State storage state = states[id];
-        state.provideLiquidityWithFee(amount, getRouterCore(), getAmmRouter());
+        state.allocateFeesToVault(amount);
     }
 
     /**
@@ -113,6 +113,6 @@ abstract contract VaultCore is ModuleState, Context, IVault {
 
     function lvAcceptRolloverProfit(Id id, uint256 amount) external onlyFlashSwapRouter {
         State storage state = states[id];
-        state.provideLiquidityWithFee(amount, getRouterCore(), getAmmRouter());
+        state.allocateFeesToVault(amount);
     }
 }

@@ -422,7 +422,7 @@ library VaultLibrary {
         ra += PsmLibrary.lvRedeemRaWithCtDs(self, redeemAmount, dsId);
 
         // we subtract redeem amount since we already liquidate it from the router
-        uint256 ctSellAmount = reservedDs - redeemAmount >= ammCtBalance ? 0 : ammCtBalance - redeemAmount;
+        uint256 ctSellAmount = reservedDs >= ammCtBalance ? 0 : ammCtBalance - reservedDs;
 
         DepegSwap storage ds = self.ds[dsId];
         address[] memory path = new address[](2);
@@ -648,13 +648,11 @@ library VaultLibrary {
     }
 
     // IMPORTANT : only psm, flash swap router and early redeem LV can call this function
-    function provideLiquidityWithFee(
+    function allocateFeesToVault(
         State storage self,
-        uint256 amount,
-        IDsFlashSwapCore flashSwapRouter,
-        IUniswapV2Router02 ammRouter
+        uint256 amount
     ) public {
-        __provideLiquidityWithRatio(self, amount, flashSwapRouter, self.ds[self.globalAssetIdx].ct, ammRouter);
+        self.vault.balances.ra.incLocked(amount);
     }
     // taken directly from spec document, technically below is what should happen in this function
     //
@@ -728,7 +726,7 @@ library VaultLibrary {
         fee = MathHelper.calculatePercentageFee(received, feePercentage);
 
         if (fee != 0) {
-            provideLiquidityWithFee(self, fee, routers.flashSwapRouter, routers.ammRouter);
+            allocateFeesToVault(self, fee);
             received = received - fee;
         }
 
