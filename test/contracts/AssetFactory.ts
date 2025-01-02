@@ -42,9 +42,15 @@ describe("Asset Factory", function () {
     ) as Address;
     assetFactory = await loadFixture(deployFactory);
 
-    await assetFactory.write.initialize({
-      account: defaultSigner.account,
-    });
+    const initializeData = "0x8129fc1c";
+    const assetFactoryProxy = await hre.viem.deployContract("ERC1967Proxy", [
+      assetFactory.address,
+      initializeData,
+    ]);
+    assetFactory = await hre.viem.getContractAt(
+      "AssetFactory",
+      assetFactoryProxy.address
+    );
   });
 
   it("should deploy AssetFactory", async function () {
@@ -171,6 +177,7 @@ describe("Asset Factory", function () {
         defaultSigner.account.address,
         BigInt(helper.expiry(100000)),
         parseEther("1"),
+        BigInt(1)
       ]);
 
       const events = await assetFactory.getEvents.AssetDeployed({
@@ -198,6 +205,7 @@ describe("Asset Factory", function () {
           defaultSigner.account.address,
           BigInt(helper.expiry(100000)),
           parseEther("1"),
+          BigInt(1)
         ]);
       }
 
@@ -218,6 +226,7 @@ describe("Asset Factory", function () {
             defaultSigner.account.address,
             BigInt(helper.expiry(100000)),
             parseEther("1"),
+            BigInt(1)
           ],
           {
             account: secondSigner.account,
@@ -237,6 +246,7 @@ describe("Asset Factory", function () {
           defaultSigner.account.address,
           BigInt(helper.expiry(100000)),
           parseEther("1"),
+          BigInt(1)
         ])
       ).to.be.rejectedWith(
         `NotExist("${await getCheckSummedAdrress(
@@ -266,6 +276,7 @@ describe("Asset Factory", function () {
           defaultSigner.account.address,
           BigInt(helper.expiry(100000)),
           parseEther("1"),
+          BigInt(1)
         ]);
         const event = await assetFactory.getEvents
           .AssetDeployed({
@@ -321,6 +332,7 @@ describe("Asset Factory", function () {
           defaultSigner.account.address,
           BigInt(helper.expiry(100000)),
           parseEther("1"),
+          BigInt(1)
         ]);
         const event = await assetFactory.getEvents
           .AssetDeployed({
@@ -378,6 +390,7 @@ describe("Asset Factory", function () {
           defaultSigner.account.address,
           BigInt(helper.expiry(100000)),
           parseEther("1"),
+          BigInt(1)
         ]);
       }
 

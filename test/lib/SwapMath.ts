@@ -33,7 +33,6 @@ describe("SwapMath", function () {
     const raProvided = parseEther("1");
 
     const [raBorrowed, dsReturned] = await swapMath.read.getAmountOutBuyDs([
-      parseEther("1"),
       raReserve,
       ctReserve,
       raProvided,

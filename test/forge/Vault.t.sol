@@ -65,8 +65,14 @@ contract VaultRedeemTest is Helper {
         IERC20(lv).approve(address(moduleCore), 0.9 ether);
         uint256 balanceBefore = IERC20(ra).balanceOf(DEFAULT_ADDRESS);
 
-        (uint256 received, uint256 fee, uint256 feePercentage) =
-            moduleCore.redeemEarlyLv(currencyId, DEFAULT_ADDRESS, 0.9 ether, 0, block.timestamp);
+        IVault.RedeemEarlyParams memory redeemParams = IVault.RedeemEarlyParams({
+            id: currencyId,
+            amount: 0.9 ether,
+            amountOutMin: 0,
+            ammDeadline: block.timestamp
+        });
+        (uint256 received, uint256 fee, uint256 feePercentage, uint256 paAmount) =
+            moduleCore.redeemEarlyLv(redeemParams);
 
         vm.assertTrue(received > 0.9 ether, "should accrue value");
 
@@ -77,11 +83,17 @@ contract VaultRedeemTest is Helper {
         ra.approve(address(moduleCore), type(uint256).max);
         uint256 lvReceived = moduleCore.depositLv(currencyId, 1 ether, 0, 0);
 
-        (received, fee, feePercentage) = moduleCore.previewRedeemEarlyLv(currencyId, lvReceived);
+        (received, fee, feePercentage, paAmount) = moduleCore.previewRedeemEarlyLv(currencyId, lvReceived);
 
         // redeem early
         IERC20(lv).approve(address(moduleCore), 1 ether);
-        (received, fee, feePercentage) = moduleCore.redeemEarlyLv(currencyId, DEFAULT_ADDRESS, lvReceived, 0, block.timestamp);
+        redeemParams = IVault.RedeemEarlyParams({
+            id: currencyId,
+            amount: lvReceived,
+            amountOutMin: 0,
+            ammDeadline: block.timestamp
+        });
+        (received, fee, feePercentage, paAmount) = moduleCore.redeemEarlyLv(redeemParams);
 
         // user shouldn't accrue any value, so they will receive their original deposits back
         // not exactly 1 ether cause of uni v2 minimum liquidity

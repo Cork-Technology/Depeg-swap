@@ -7,14 +7,14 @@ import {PsmLibrary} from "../libraries/PsmLib.sol";
 import {IUniswapV2Factory} from "../interfaces/uniswap-v2/factory.sol";
 import {RouterState} from "./flash-swaps/FlashSwapRouter.sol";
 import {IUniswapV2Router02} from "../interfaces/uniswap-v2/RouterV2.sol";
-import {NoReentrant} from "../libraries/MutexLock.sol";
+import {ReentrancyGuardTransient} from "@openzeppelin/contracts/utils/ReentrancyGuardTransient.sol";
 
 /**
  * @title ModuleState Abstract Contract
  * @author Cork Team
  * @notice Abstract ModuleState contract for providing base for Modulecore contract
  */
-abstract contract ModuleState is ICommon {
+abstract contract ModuleState is ICommon, ReentrancyGuardTransient {
     using PsmLibrary for State;
 
     mapping(Id => State) internal states;
@@ -51,6 +51,13 @@ abstract contract ModuleState is ICommon {
         address _ammRouter,
         address _config
     ) internal {
+        if (
+            _swapAssetFactory == address(0) || _ammFactory == address(0) || _dsFlashSwapRouter == address(0)
+                || _ammRouter == address(0) || _config == address(0)
+        ) {
+            revert ZeroAddress();
+        }
+
         SWAP_ASSET_FACTORY = _swapAssetFactory;
         AMM_FACTORY = _ammFactory;
         DS_FLASHSWAP_ROUTER = _dsFlashSwapRouter;
@@ -117,13 +124,5 @@ abstract contract ModuleState is ICommon {
             revert LVWithdrawalPaused();
         }
         _;
-    }
-
-    /// @notice This will revert if the contract is locked
-    modifier nonReentrant() {
-        if (NoReentrant.acquired()) revert StateLocked();
-        NoReentrant.acquire();
-        _;
-        NoReentrant.release();
     }
 }

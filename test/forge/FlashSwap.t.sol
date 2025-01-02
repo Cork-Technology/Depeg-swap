@@ -80,18 +80,18 @@ contract FlashSwapTest is Helper {
         // we fetch the hpa after expiry so that it's calculated
         uint256 hpa = flashSwapRouter.getHpa(currencyId);
 
-        IPSMcore(moduleCore).updatePsmAutoSellStatus(currencyId, DEFAULT_ADDRESS, true);
+        IPSMcore(moduleCore).updatePsmAutoSellStatus(currencyId, true);
 
         amountOutMin = flashSwapRouter.previewSwapRaforDs(currencyId, dsId, 0.1 ether);
 
         // should fail, not enough liquidity
         vm.expectRevert();
-        uint256 amountOutSell = flashSwapRouter.previewSwapDsforRa(currencyId, dsId, 1000 ether);
+        uint256 amountOutSell = flashSwapRouter.previewSwapDsforRa(currencyId, dsId, 1000000 ether);
 
         // should work, even though there's insfuicient liquidity to sell the LV reserves
         uint256 lvReserveBefore = flashSwapRouter.getLvReserve(currencyId, dsId);
-        amountOutMin = flashSwapRouter.previewSwapRaforDs(currencyId, dsId, 100 ether);
-        amountOut = flashSwapRouter.swapRaforDs(currencyId, dsId, 100 ether, amountOutMin);
+        amountOutMin = flashSwapRouter.previewSwapRaforDs(currencyId, dsId, 100000 ether);
+        amountOut = flashSwapRouter.swapRaforDs(currencyId, dsId, 100000 ether, amountOutMin);
         uint256 lvReserveAfter = flashSwapRouter.getLvReserve(currencyId, dsId);
 
         vm.assertEq(lvReserveBefore, lvReserveAfter);

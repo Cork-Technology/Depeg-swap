@@ -29,6 +29,10 @@ contract AssetFactory is IAssetFactory, OwnableUpgradeable, UUPSUpgradeable {
     /// @notice __gap variable to prevent storage collisions
     uint256[49] __gap;
 
+    constructor() {
+        _disableInitializers();
+    }
+
     /**
      * @notice for safety checks in psm core, also act as kind of like a registry
      * @param asset the address of Asset contract
@@ -143,7 +147,7 @@ contract AssetFactory is IAssetFactory, OwnableUpgradeable, UUPSUpgradeable {
      * @return ct new CT contract address
      * @return ds new DS contract address
      */
-    function deploySwapAssets(address _ra, address _pa, address _owner, uint256 expiry, uint256 psmExchangeRate)
+    function deploySwapAssets(address _ra, address _pa, address _owner, uint256 expiry, uint256 psmExchangeRate , uint256 dsId)
         external
         override
         onlyOwner
@@ -159,8 +163,8 @@ contract AssetFactory is IAssetFactory, OwnableUpgradeable, UUPSUpgradeable {
 
         string memory pairname = string(abi.encodePacked(Asset(_ra).name(), "-", Asset(_pa).name()));
 
-        ct = address(new Asset(CT_PREFIX, pairname, _owner, expiry, psmExchangeRate));
-        ds = address(new Asset(DS_PREFIX, pairname, _owner, expiry, psmExchangeRate));
+        ct = address(new Asset(CT_PREFIX, pairname, _owner, expiry, psmExchangeRate , dsId));
+        ds = address(new Asset(DS_PREFIX, pairname, _owner, expiry, psmExchangeRate , dsId));
 
         swapAssets[Pair(_pa, _ra).toId()].push(Pair(ct, ds));
 
@@ -179,7 +183,7 @@ contract AssetFactory is IAssetFactory, OwnableUpgradeable, UUPSUpgradeable {
      */
     function deployLv(address _ra, address _pa, address _owner) external override onlyOwner returns (address lv) {
         lv = address(
-            new Asset(LV_PREFIX, string(abi.encodePacked(Asset(_ra).name(), "-", Asset(_pa).name())), _owner, 0, 0)
+            new Asset(LV_PREFIX, string(abi.encodePacked(Asset(_ra).name(), "-", Asset(_pa).name())), _owner, 0, 0, 0)
         );
 
         // signal that a pair actually exists. Only after this it's possible to deploy a swap asset for this pair

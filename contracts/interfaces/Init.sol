@@ -53,20 +53,52 @@ interface Initialize {
     function updateEarlyRedemptionFeeRate(Id id, uint256 newEarlyRedemptionFeeRate) external;
 
     /**
-     * @notice update pausing status of PSM and LV pools
+     * @notice update pausing status of PSM Deposits
      * @param id id of the pair
      * @param isPSMDepositPaused set to true if you want to pause PSM deposits
+     */
+    function updatePsmDepositsStatus(
+        Id id,
+        bool isPSMDepositPaused
+    ) external;
+
+    /**
+     * @notice update pausing status of PSM Withdrawals
+     * @param id id of the pair
      * @param isPSMWithdrawalPaused set to true if you want to pause PSM withdrawals
+     */
+    function updatePsmWithdrawalsStatus(
+        Id id,
+        bool isPSMWithdrawalPaused
+    ) external;
+
+    /**
+     * @notice update pausing status of PSM Repurchases
+     * @param id id of the pair
      * @param isPSMRepurchasePaused set to true if you want to pause PSM repurchases
+     */
+    function updatePsmRepurchasesStatus(
+        Id id,
+        bool isPSMRepurchasePaused
+    ) external;
+
+    /**
+     * @notice update pausing status of LV deposits
+     * @param id id of the pair
      * @param isLVDepositPaused set to true if you want to pause LV deposits
+     */
+    function updateLvDepositsStatus(
+        Id id,
+        bool isLVDepositPaused
+    ) external;
+
+    /**
+     * @notice update pausing status of LV withdrawals
+     * @param id id of the pair
      * @param isLVWithdrawalPaused set to true if you want to pause LV withdrawals
      */
-    function updatePoolsStatus(
+    function updateLvWithdrawalsStatus(
         Id id,
-        bool isPSMDepositPaused,
-        bool isPSMWithdrawalPaused,
-        bool isPSMRepurchasePaused,
-        bool isLVDepositPaused,
         bool isLVWithdrawalPaused
     ) external;
 
@@ -74,5 +106,12 @@ interface Initialize {
      * @notice update PSM base redemption fee percentage
      * @param newPsmBaseRedemptionFeePercentage new value of base redemption fees, make sure it has 18 decimals(e.g 1% = 1e18)
      */
-    function updatePsmBaseRedemptionFeePercentage(Id id,uint256 newPsmBaseRedemptionFeePercentage) external;
+    function updatePsmBaseRedemptionFeePercentage(Id id, uint256 newPsmBaseRedemptionFeePercentage) external;
+
+    /**
+     * @notice get next expiry time from id
+     * @param id id of the pair
+     * @return expiry next expiry time in seconds
+     */
+    function expiry(Id id) external view returns (uint256 expiry);
 }
