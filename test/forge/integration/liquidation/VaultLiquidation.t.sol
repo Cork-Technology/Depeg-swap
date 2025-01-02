@@ -93,7 +93,8 @@ contract VaultLiquidationTest is Helper {
 
         uint256 tradeFundsAvailable = moduleCore.tradeExecutionFundsAvailable(currencyId);
 
-        vm.assertEq(tradeFundsAvailable, 0);
+        // It will be 1% of the total amount because redemption fees are 1%
+        vm.assertEq(tradeFundsAvailable, 1000 ether / 100);
 
         bytes32 randomRefId = keccak256("ref");
         // irrelevant, since we're testing the logic ourself
@@ -123,7 +124,8 @@ contract VaultLiquidationTest is Helper {
 
         tradeFundsAvailable = moduleCore.tradeExecutionFundsAvailable(currencyId);
 
-        vm.assertEq(tradeFundsAvailable, amountToSell);
+        // It will also include redemption fees, so amountToSell + 1000 ether / 100
+        vm.assertEq(tradeFundsAvailable, amountToSell + 1000 ether / 100);
     }
 
     function test_liquidationPartial() external {
@@ -144,7 +146,8 @@ contract VaultLiquidationTest is Helper {
 
         uint256 tradeFundsAvailable = moduleCore.tradeExecutionFundsAvailable(currencyId);
 
-        vm.assertEq(tradeFundsAvailable, 0);
+        // It will be 1% of the total amount because redemption fees are 1%
+        vm.assertEq(tradeFundsAvailable, 1000 ether / 100);
 
         bytes32 randomRefId = keccak256("ref");
         // irrelevant, since we're testing the logic ourself
@@ -176,7 +179,8 @@ contract VaultLiquidationTest is Helper {
 
         tradeFundsAvailable = moduleCore.tradeExecutionFundsAvailable(currencyId);
 
-        vm.assertEq(tradeFundsAvailable, amountFilled);
+        // It will also include redemption fees, so amountFilled + 1000 ether / 100
+        vm.assertEq(tradeFundsAvailable, amountFilled + 1000 ether / 100);
 
         uint256 leftoverAfter = moduleCore.liquidationFundsAvailable(currencyId);
 
@@ -198,7 +202,8 @@ contract VaultLiquidationTest is Helper {
 
         uint256 tradeFundsAvailable = moduleCore.tradeExecutionFundsAvailable(currencyId);
 
-        vm.assertEq(tradeFundsAvailable, 0);
+        // It will be 1% of the total amount because redemption fees are 1%
+        vm.assertEq(tradeFundsAvailable, 1000 ether / 100);
 
         bytes32 randomRefId = keccak256("ref");
         // irrelevant, since we're testing the logic ourself
