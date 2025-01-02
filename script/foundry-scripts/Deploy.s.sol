@@ -20,6 +20,7 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import {PoolManager} from "v4-core/PoolManager.sol";
 import {HookMiner} from "./Utils/HookMiner.sol";
 import {PoolKey, Currency, CorkHook, LiquidityToken, Hooks} from "Cork-Hook/CorkHook.sol";
+import {Withdrawal} from "../../contracts/core/Withdrawal.sol";
 
 contract DeployScript is Script {
     IUniswapV2Router02 public univ2Router;
@@ -34,6 +35,7 @@ contract DeployScript is Script {
     Liquidator public liquidator;
     HedgeUnitFactory public hedgeUnitFactory;
     HedgeUnitRouter public hedgeUnitRouter;
+    Withdrawal public withdrawal;
 
     HedgeUnit public hedgeUnitbsETH;
     HedgeUnit public hedgeUnitlbETH;
@@ -215,6 +217,29 @@ contract DeployScript is Script {
         hedgeUnitRouter.grantRole(hedgeUnitRouter.HEDGE_UNIT_FACTORY_ROLE(), address(hedgeUnitFactory));
         config.setHedgeUnitFactory(address(hedgeUnitFactory));
         console.log("HedgeUnit Factory               : ", address(hedgeUnitFactory));
+
+        withdrawal = new Withdrawal(address(moduleCore));
+        console.log("Withdrawal                      : ", address(withdrawal));
+        console.log("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-");
+
+        // Transfer Ownership to moduleCore
+        assetFactory.transferOwnership(address(moduleCore));
+        // hook.transferOwnership(address(config));
+        console.log("Transferred ownerships to Modulecore");
+
+        config.setModuleCore(address(moduleCore));
+        flashswapRouter.setModuleCore(address(moduleCore));
+        console.log("Modulecore configured in Config contract");
+
+        config.setHook(address(hook));
+        flashswapRouter.setHook(address(hook));
+        console.log("Hook configured in FlashswapRouter contract");
+
+        config.setWithdrawalContract(address(withdrawal));
+        console.log("Withdrawal contract configured in Config contract");
+
+        univ2Router = IUniswapV2Router02(uniswapV2RouterSepolia);
+        console.log("Univ2 Router                    : ", uniswapV2RouterSepolia);
         console.log("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-");
 
         // Deploy the HedgeUnit contract
@@ -250,23 +275,6 @@ contract DeployScript is Script {
             )
         );
         console.log("HU mlETH                        : ", address(hedgeUnitmlETH));
-        console.log("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-");
-
-        // Transfer Ownership to moduleCore
-        assetFactory.transferOwnership(address(moduleCore));
-        // hook.transferOwnership(address(config));
-        console.log("Transferred ownerships to Modulecore");
-
-        config.setModuleCore(address(moduleCore));
-        flashswapRouter.setModuleCore(address(moduleCore));
-        console.log("Modulecore configured in Config contract");
-
-        config.setHook(address(hook));
-        flashswapRouter.setHook(address(hook));
-        console.log("Hook configured in FlashswapRouter contract");
-
-        univ2Router = IUniswapV2Router02(uniswapV2RouterSepolia);
-        console.log("Univ2 Router                    : ", uniswapV2RouterSepolia);
         console.log("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-");
 
         // EarlyRedemptionFee = 0.2%,  DSPrice=1.285%  repurchaseFee = 0.75%
