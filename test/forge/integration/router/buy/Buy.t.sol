@@ -106,7 +106,7 @@ contract BuyDsTest is Helper {
 
         vm.pauseGasMetering();
 
-        hook.updateBaseFeePercentage(address(ra), ct, 1 ether);
+        corkConfig.updateAmmBaseFeePercentage(address(ra), ct, 1 ether);
 
         (uint256 amountOut,) = flashSwapRouter.swapRaforDs(currencyId, dsId, amount, 0, defaultBuyApproxParams());
         uint256 balanceRaAfter = Asset(address(ds)).balanceOf(DEFAULT_ADDRESS);
@@ -124,12 +124,11 @@ contract BuyDsTest is Helper {
         flashSwapRouter.swapRaforDs(currencyId, dsId, amount, 0, params);
 
         // there's no sufficient liquidity due to very low HIYA, so we disable the fee to make it work
-        hook.updateBaseFeePercentage(address(ra), ct, 0 ether);
+        corkConfig.updateAmmBaseFeePercentage(address(ra), ct, 0 ether);
 
         flashSwapRouter.swapRaforDs(currencyId, dsId, 0.01 ether, 0, params);
     }
 
-    /// forge-config: default.fuzz.show-logs = true
     function testFuzz_buyDS(uint256 amount, uint8 raDecimals, uint8 paDecimals) public virtual {
         (raDecimals, paDecimals) = setupDifferentDecimals(raDecimals, paDecimals);
 
@@ -175,7 +174,7 @@ contract BuyDsTest is Helper {
         flashSwapRouter.swapRaforDs(currencyId, dsId, amount, 0, params);
 
         // there's no sufficient liquidity due to very low HIYA, so we disable the fee to make it work
-        hook.updateBaseFeePercentage(address(ra), ct, 0 ether);
+        corkConfig.updateAmmBaseFeePercentage(address(ra), ct, 0 ether);
 
         (raReserve, ctReserve) = hook.getReserves(address(ra), address(ct));
         console.log("raReserve", raReserve);
