@@ -72,6 +72,8 @@ abstract contract Helper is SigUtils, TestHelper {
 
     uint8 internal constant MAX_DECIMALS = 64;
 
+    address internal constant CORK_PROTOCOL_TREASURY = address(789);
+
     function defaultInitialArp() internal pure virtual returns (uint256) {
         return DEFAULT_INITIAL_DS_PRICE;
     }
@@ -279,6 +281,7 @@ abstract contract Helper is SigUtils, TestHelper {
     function setupConfig() internal {
         corkConfig.setModuleCore(address(moduleCore));
         corkConfig.setFlashSwapCore(address(flashSwapRouter));
+        corkConfig.setTreasury(CORK_PROTOCOL_TREASURY);
     }
 
     function deployFlashSwapRouter() internal {
