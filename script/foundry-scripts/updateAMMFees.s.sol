@@ -14,9 +14,10 @@ struct Assets {
     address peggedAsset;
     uint256 expiryInterval;
     uint256 repruchaseFee;
+    uint256 ammHookFees;
 }
 
-contract ZeroScript is Script {
+contract AMMFeesScript is Script {
     ModuleCore public moduleCore;
     RouterState public routerState;
     CorkConfig public config;
@@ -24,15 +25,15 @@ contract ZeroScript is Script {
     bool public isProd = vm.envBool("PRODUCTION");
     uint256 public base_redemption_fee = vm.envUint("PSM_BASE_REDEMPTION_FEE_PERCENTAGE");
     uint256 public pk = vm.envUint("PRIVATE_KEY");
-    address deployer = 0x036febB27d1da9BFF69600De3C9E5b6cd6A7d275;
-    address ceth = 0x11649B3aEc3D4Cd35D0727D786c234329B756fd9;
-    address cusd = 0x4c82BdeDD41bf0284fd6BCa1b6A317fEF6A6d237;
-    address bsETHAdd = 0x2019e2E0D0DE78b65ce698056EAE468192b40daC;
-    address wamuETHAdd = 0x81EcEa063eB1E477365bd6c0AE7E1d1f3d84442E;
-    address mlETHAdd = 0xD1813fD95E557d273E8009db91C6BC412F56eE56;
-    address svbUSDAdd = 0xeD273d746bC1CefA9467ea5e81e9cd22eaC27397;
-    address fedUSDAdd = 0xEBdc16512a8c79c39EB27cc27e387039AF573f82;
-    address omgUSDAdd = 0x42B025047A12c403803805195230C257D2170Bb1;
+    address deployer = 0xBa66992bE4816Cc3877dA86fA982A93a6948dde9;
+    address ceth = 0xbcD4B73511328Fd44416ce7189eb64F063DA5F41;
+    address cusd = 0xA69b095360F2DD024Ff0571bA12D9CA6823D2C0b;
+    address bsETHAdd = 0xaF4acbB6e9E7C13D8787a60C199462Bc3095Cad7;
+    address wamuETHAdd = 0xC9eF4a21d0261544b10CC5fC9096c3597daaA29d;
+    address mlETHAdd = 0x2B56646D79375102b5aaaf3c228EE90DE2913d5E;
+    address svbUSDAdd = 0xBF578784a7aFaffE5b63C60Ed051E55871B7E114;
+    address fedUSDAdd = 0xa4A181100F7ef4448d0d34Fd0B6Dc17ecE5C1442;
+    address omgUSDAdd = 0x34f49a5b81B61E91257460E0C6c168Ccee86a4b1;
 
     uint256 wamuETHExpiry = 3.5 days;
     uint256 bsETHExpiry = 3.5 days;
@@ -41,25 +42,26 @@ contract ZeroScript is Script {
     uint256 fedUSDExpiry = 3.5 days;
     uint256 omgUSDExpiry = 0.5 days;
 
-    Assets mlETH = Assets(bsETHAdd, mlETHAdd, mlETHExpiry, 0.75 ether);
-    Assets bsETH = Assets(wamuETHAdd, bsETHAdd, bsETHExpiry, 0.75 ether);
-    Assets wamuETH = Assets(ceth, wamuETHAdd, wamuETHExpiry, 0.75 ether);
-    Assets svbUSD = Assets(fedUSDAdd, svbUSDAdd, svbUSDExpiry, 0.75 ether);
-    Assets fedUSD = Assets(cusd, fedUSDAdd, fedUSDExpiry, 0.75 ether);
-    Assets omgUSD = Assets(svbUSDAdd, omgUSDAdd, omgUSDExpiry, 0.75 ether);
+    Assets mlETH = Assets(bsETHAdd, mlETHAdd, mlETHExpiry, 0.75 ether, 0.3 ether);
+    Assets bsETH = Assets(wamuETHAdd, bsETHAdd, bsETHExpiry, 0.75 ether, 0.3 ether);
+    Assets wamuETH = Assets(ceth, wamuETHAdd, wamuETHExpiry, 0.75 ether, 0.15 ether);
+    Assets svbUSD = Assets(fedUSDAdd, svbUSDAdd, svbUSDExpiry, 0.75 ether, 0.3 ether);
+    Assets fedUSD = Assets(cusd, fedUSDAdd, fedUSDExpiry, 0.75 ether, 0.15 ether);
+    Assets omgUSD = Assets(svbUSDAdd, omgUSDAdd, omgUSDExpiry, 0.75 ether, 0.3 ether);
 
     function setUp() public {}
 
     function run() public {
         vm.startBroadcast(pk);
 
-        moduleCore = ModuleCore(0x3390573A8Cd1aB9CFaE5e1720e4e7867Ed074a38);
-        routerState = RouterState(0x96EE05bA5F2F2D3b4a44f174e5Df3bba1B9C0D17);
-        config = CorkConfig(0xCA98b865821850dea56ab65F3f6C90E78D550015);
+        moduleCore = ModuleCore(0xc5f00EE3e3499e1b211d1224d059B8149cD2972D);
+        routerState = RouterState(0xC89c5b91d6389FDDa8A0Ee29dc2eFC7330Ee42A1);
+        config = CorkConfig(0x7DD402c84fd951Dbef2Ef4459F67dFe8a4128f21);
+
         console.log("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-");
 
-        // Assets[6] memory assets = [mlETH, bsETH, wamuETH, svbUSD, fedUSD, omgUSD];
-        Assets[1] memory assets = [wamuETH];
+        Assets[6] memory assets = [mlETH, bsETH, wamuETH, svbUSD, fedUSD, omgUSD];
+        // Assets[1] memory assets = [wamuETH];
 
         for (uint256 i = 0; i < assets.length; i++) {
             updateFees(assets[i]);
@@ -71,9 +73,13 @@ contract ZeroScript is Script {
 
     function updateFees(Assets memory asset) public {
         Id id = moduleCore.getId(asset.peggedAsset, asset.redemptionAsset, asset.expiryInterval);
-        (address ctToken,) = moduleCore.swapAsset(id, 1);
-        config.updateAmmBaseFeePercentage(asset.redemptionAsset, ctToken, 0);
-        console.log("Fees zero now");
+        uint256 dsId = moduleCore.lastDsId(id);
+        (address ctToken,) = moduleCore.swapAsset(id, dsId);
+        console.log("RA token: ", asset.redemptionAsset);
+        console.log("CT token: ", ctToken);
+        console.log("dsId: ", dsId);
+        config.updateAmmBaseFeePercentage(asset.redemptionAsset, ctToken, asset.ammHookFees);
+        console.log("Fees updated");
         console.log("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-");
     }
 }
