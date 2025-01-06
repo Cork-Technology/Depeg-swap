@@ -197,7 +197,6 @@ abstract contract Helper is SigUtils, TestHelper {
 
     function deployConfig() internal {
         corkConfig = new CorkConfig(DEFAULT_ADDRESS, DEFAULT_ADDRESS);
-        corkConfig.grantRole(corkConfig.MANAGER_ROLE(), DEFAULT_ADDRESS);
     }
 
     function setupConfig() internal {
