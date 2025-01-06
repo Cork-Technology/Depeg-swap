@@ -46,6 +46,7 @@ contract DeployScript is Script {
     uint256 public base_redemption_fee = vm.envUint("PSM_BASE_REDEMPTION_FEE_PERCENTAGE");
     address public ceth = vm.envAddress("WETH");
     uint256 public pk = vm.envUint("PRIVATE_KEY");
+    address public deployer = vm.addr(pk);
 
     address internal constant CREATE_2_PROXY = 0x4e59b44847b379578588920cA78FbF26c0B4956C;
 
@@ -158,7 +159,7 @@ contract DeployScript is Script {
         console.log("ModuleCore Router Implementation : ", address(moduleCoreImplementation));
 
         // deploy hook
-        poolManager = new PoolManager();
+        poolManager = new PoolManager(deployer);
         liquidityToken = new LiquidityToken();
 
         bytes memory creationCode = type(CorkHook).creationCode;
