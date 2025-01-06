@@ -218,6 +218,11 @@ contract RouterState is
         uint256 lvReserveUsed;
         uint256 psmReserveUsed;
 
+        // If there's no reserve, we will proceed without using rollover
+        if (assetPair.lvReserve == 0 && assetPair.psmReserve == 0) {
+            return (amountRa, 0);
+        }
+
         (lvProfit, psmProfit, raLeft, dsReceived, lvReserveUsed, psmReserveUsed) =
             SwapperMathLibrary.calculateRolloverSale(assetPair.lvReserve, assetPair.psmReserve, amountRa, self.hiya);
 
