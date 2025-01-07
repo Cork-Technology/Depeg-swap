@@ -2,7 +2,7 @@ pragma solidity ^0.8.24;
 
 import "./../../contracts/core/flash-swaps/FlashSwapRouter.sol";
 import {Helper} from "./Helper.sol";
-import {DummyWETH} from "./../../contracts/dummy/DummyWETH.sol";
+import {DummyERCWithPermit} from "./../../contracts/dummy/DummyERCWithPermit.sol";
 import "./../../contracts/core/assets/Asset.sol";
 import {Id, Pair, PairLibrary} from "./../../contracts/libraries/Pair.sol";
 import "./../../contracts/interfaces/IPSMcore.sol";
@@ -10,8 +10,8 @@ import "./../../contracts/interfaces/IDsFlashSwapRouter.sol";
 import "forge-std/console.sol";
 
 contract FlashSwapTest is Helper {
-    DummyWETH internal ra;
-    DummyWETH internal pa;
+    DummyERCWithPermit internal ra;
+    DummyERCWithPermit internal pa;
     Id public currencyId;
 
     uint256 public DEFAULT_DEPOSIT_AMOUNT = 2050 ether;
@@ -30,7 +30,7 @@ contract FlashSwapTest is Helper {
 
         deployModuleCore();
 
-        (ra, pa, currencyId) = initializeAndIssueNewDs(block.timestamp + 1 days);
+        (ra, pa, currencyId) = initializeAndIssueNewDsWithRaAsPermit(block.timestamp + 1 days);
         vm.deal(DEFAULT_ADDRESS, 100_000_000_000 ether);
         ra.deposit{value: 1_000_000_000 ether}();
         pa.deposit{value: 1_000_000_000 ether}();
@@ -85,5 +85,59 @@ contract FlashSwapTest is Helper {
         lvReserveAfter = flashSwapRouter.getLvReserve(currencyId, dsId);
 
         vm.assertTrue(lvReserveAfter < lvReserveBefore);
+    }
+
+    function test_swapRaForDsShouldHandlePermitCorrectly() public virtual{
+        uint256 user1Key =
+            vm.deriveKey(
+                "test test test test test test test test test test test junk",
+                0
+            );
+        // Create address from the private key
+        address user1 = vm.addr(user1Key);
+        address user2 = makeAddr("user2");
+
+        // Give user1 some RA tokens to test with
+        vm.deal(user1, 10 ether);
+        vm.startPrank(user1);
+        ra.deposit{value: 10 ether}();
+        vm.stopPrank();
+
+        bytes memory rawRaPermitSig = getPermit(
+            user1,
+            address(flashSwapRouter),
+            10 ether,
+            ra.nonces(user1),
+            block.timestamp + 100000,
+            user1Key,
+            ra.DOMAIN_SEPARATOR()
+        );
+
+        Asset dsAsset = Asset(ds);
+
+        // Before swap
+        uint256 user1RaBalance = ra.balanceOf(user1);
+        uint256 user1DsBalance = dsAsset.balanceOf(user1);
+        uint256 user2RaBalance = ra.balanceOf(user2);
+        uint256 user2DsBalance = dsAsset.balanceOf(user2);
+
+        // Execute the swap
+        vm.prank(user2);
+        uint256 amountOut = flashSwapRouter.swapRaforDs(
+            currencyId,
+            dsId,
+            10 ether,
+            0,
+            user1,
+            rawRaPermitSig,
+            block.timestamp + 100000,
+            defaultBuyApproxParams()
+        );
+
+        // After swap
+        vm.assertEq(ra.balanceOf(user1), user1RaBalance - 10 ether);
+        vm.assertEq(dsAsset.balanceOf(user1), user1DsBalance + amountOut);
+        vm.assertEq(ra.balanceOf(user2), user2RaBalance);
+        vm.assertEq(dsAsset.balanceOf(user2), user2DsBalance);      
     }
 }

@@ -10,6 +10,7 @@ import {IUniswapV2Router02} from "./../../contracts/interfaces/uniswap-v2/Router
 import {Id, Pair, PairLibrary} from "./../../contracts/libraries/Pair.sol";
 import {CorkConfig} from "./../../contracts/core/CorkConfig.sol";
 import {RouterState} from "./../../contracts/core/flash-swaps/FlashSwapRouter.sol";
+import {DummyERCWithPermit} from "./../../contracts/dummy/DummyERCWithPermit.sol";
 import {DummyWETH} from "./../../contracts/dummy/DummyWETH.sol";
 import {TestModuleCore} from "./TestModuleCore.sol";
 import {TestFlashSwapRouter} from "./TestFlashSwapRouter.sol";
@@ -123,6 +124,34 @@ abstract contract Helper is SigUtils, TestHelper {
             DEFAULT_DECAY_DISCOUNT_RATE,
             block.number + DEFAULT_ROLLOVER_PERIOD
         );
+    }
+
+    function initializeAndIssueNewDsWithRaAsPermit(uint256 expiryInSeconds)
+        internal
+        returns (DummyERCWithPermit ra, DummyERCWithPermit pa, Id id)
+    {
+        if (block.timestamp + expiryInSeconds > block.timestamp + 100 days) {
+            revert(
+                "Expiry too far in the future, specify a default decay rate, this will cause the discount to exceed 100!"
+            );
+        }
+
+        ra = new DummyERCWithPermit("RA", "RA");
+        pa = new DummyERCWithPermit("PA", "PA");
+
+        Pair memory _id = PairLibrary.initalize(address(pa), address(ra), expiryInSeconds);
+        id = PairLibrary.toId(_id);
+
+        defaultCurrencyId = id;
+
+        initializeNewModuleCore(
+            address(pa), address(ra), DEFAULT_LV_FEE, defaultInitialArp(), DEFAULT_BASE_REDEMPTION_FEE, expiryInSeconds
+        );
+        issueNewDs(
+            id, defaultExchangeRate(), DEFAULT_REPURCHASE_FEE, DEFAULT_DECAY_DISCOUNT_RATE, DEFAULT_ROLLOVER_PERIOD
+        );
+
+        corkConfig.updateLvStrategyCtSplitPercentage(defaultCurrencyId, DEFAULT_CT_SPLIT_PERCENTAGE);
     }
 
     function initializeAndIssueNewDs(uint256 expiryInSeconds) internal returns (DummyWETH ra, DummyWETH pa, Id id) {

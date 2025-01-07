@@ -197,7 +197,7 @@ contract RouterState is
     }
 
     /// will return that can't be filled from the reserve, this happens when the total reserve is less than the amount requested
-    function _swapRaForDsViaRollover(Id reserveId, uint256 dsId, uint256 amountRa)
+    function _swapRaForDsViaRollover(Id reserveId, uint256 dsId, address user, uint256 amountRa)
         internal
         returns (uint256 raLeft, uint256 dsReceived)
     {
@@ -231,9 +231,9 @@ contract RouterState is
         IPSMcore(_moduleCore).psmAcceptFlashSwapProfit(reserveId, psmProfit);
         IVault(_moduleCore).lvAcceptRolloverProfit(reserveId, lvProfit);
 
-        IERC20(assetPair.ds).safeTransfer(msg.sender, dsReceived);
+        IERC20(assetPair.ds).safeTransfer(user, dsReceived);
 
-        emit RolloverSold(reserveId, dsId, msg.sender, dsReceived, amountRa - raLeft);
+        emit RolloverSold(reserveId, dsId, user, dsReceived, amountRa - raLeft);
     }
 
     function rolloverSaleEnds(Id reserveId) external view returns (uint256 endInBlockNumber) {
@@ -246,13 +246,14 @@ contract RouterState is
         Id reserveId,
         uint256 dsId,
         uint256 amount,
+        address user,
         IDsFlashSwapCore.BuyAprroxParams memory approxParams
     ) internal returns (uint256 amountOut) {
         uint256 borrowedAmount;
 
         uint256 dsReceived;
         // try to swap the RA for DS via rollover, this will noop if the condition for rollover is not met
-        (amount, dsReceived) = _swapRaForDsViaRollover(reserveId, dsId, amount);
+        (amount, dsReceived) = _swapRaForDsViaRollover(reserveId, dsId, user, amount);
 
         // short circuit if all the swap is filled using rollover
         if (amount == 0) {
@@ -286,7 +287,7 @@ contract RouterState is
         }
 
         // trigger flash swaps and send the attributed DS tokens to the user
-        __flashSwap(assetPair, borrowedAmount, 0, dsId, reserveId, true, amountOut, msg.sender, amount);
+        __flashSwap(assetPair, borrowedAmount, 0, dsId, reserveId, true, amountOut, user, amount);
 
         // add the amount of DS tokens from the rollover, if any
         amountOut += dsReceived;
@@ -370,7 +371,7 @@ contract RouterState is
         DepegSwapLibrary.permitForRA(address(assetPair.ra), rawRaPermitSig, user, address(this), amount, deadline);
         IERC20(assetPair.ra).safeTransferFrom(user, address(this), amount);
 
-        amountOut = _swapRaforDs(self, assetPair, reserveId, dsId, amount, params);
+        amountOut = _swapRaforDs(self, assetPair, reserveId, dsId, amount, user, params);
 
         // slippage protection, revert if the amount of DS tokens received is less than the minimum amount
         if (amountOut < amountOutMin) {
@@ -402,7 +403,7 @@ contract RouterState is
 
         IERC20(assetPair.ra).safeTransferFrom(msg.sender, address(this), amount);
 
-        amountOut = _swapRaforDs(self, assetPair, reserveId, dsId, amount, params);
+        amountOut = _swapRaforDs(self, assetPair, reserveId, dsId, amount, msg.sender, params);
 
         // slippage protection, revert if the amount of DS tokens received is less than the minimum amount
         if (amountOut < amountOutMin) {
