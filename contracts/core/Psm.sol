@@ -142,8 +142,6 @@ abstract contract PsmCore is IPSMcore, ModuleState, Context {
 
         (received, _exchangeRate, fee, dsUsed) = state.redeemWithDs(_msgSender(), amount, dsId, bytes(""), 0);
 
-        VaultLibrary.allocateFeesToVault(state, fee);
-
         emit DsRedeemed(
             id,
             dsId,

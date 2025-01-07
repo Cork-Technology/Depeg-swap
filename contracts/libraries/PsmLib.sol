@@ -37,7 +37,7 @@ library PsmLibrary {
      *   This denotes maximum fee allowed in contract
      *   Here 1 ether = 1e18 so maximum 5% fee allowed
      */
-    uint256 constant internal MAX_ALLOWED_FEES = 5 ether;
+    uint256 internal constant MAX_ALLOWED_FEES = 5 ether;
 
     /// @notice inssuficient balance to perform rollover redeem(e.g having 5 CT worth of rollover to redeem but trying to redeem 10)
     error InsufficientRolloverBalance(address caller, uint256 requested, uint256 balance);
@@ -576,9 +576,25 @@ library PsmLibrary {
         IERC20(ds._address).safeTransfer(buyer, receivedDs);
 
         if (fee != 0) {
+            uint256 attributedToTreasury;
+
+            (fee, attributedToTreasury) = _splitFee(self.psm.repurchaseFeeTreasurySplitPercentage, fee);
+
             // Provide liquidity with fee(if any)
             VaultLibrary.allocateFeesToVault(self, fee);
+
+            // send the remaining fee to the treasury
+            // TODO
         }
+    }
+
+    function _splitFee(uint256 basePercentage, uint256 fee)
+        internal
+        pure
+        returns (uint256 remaining, uint256 splitted)
+    {
+        splitted = MathHelper.calculatePercentageFee(basePercentage, fee);
+        remaining = fee - splitted;
     }
 
     function _redeemDs(Balances storage self, uint256 pa, uint256 ds) internal {
@@ -601,6 +617,8 @@ library PsmLibrary {
         self.psm.balances.ra.unlockTo(owner, raReceived);
         // we decrease the locked value, as we're going to use this to provide liquidity to the LV
         self.psm.balances.ra.decLocked(fee);
+
+        VaultLibrary.allocateFeesToVault(self, fee);
     }
 
     function valueLocked(State storage self) external view returns (uint256) {

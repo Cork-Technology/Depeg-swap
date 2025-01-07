@@ -10,6 +10,7 @@ import {Pair} from "../libraries/Pair.sol";
 import {ModuleCore} from "./ModuleCore.sol";
 import {IVault} from "./../interfaces/IVault.sol";
 import {CorkHook} from "Cork-Hook/CorkHook.sol";
+import {MarketSnapshot}from"Cork-Hook/lib/MarketSnapshot.sol";
 import {HedgeUnitFactory} from "./assets/HedgeUnitFactory.sol";
 import {HedgeUnit} from "./assets/HedgeUnit.sol";
 
@@ -213,6 +214,7 @@ contract CorkConfig is AccessControl, Pausable {
         );
 
         _autoAssignFees(id);
+        _autoAssignTreasurySplitPercentage(id);
     }
 
     function _autoAssignFees(Id id) internal {
@@ -247,7 +249,7 @@ contract CorkConfig is AccessControl, Pausable {
         try hook.updateBaseFeePercentage(ra, ct, prevBaseFee) {} catch {}
     }
 
-    function _autoAssignSplitPercentage(Id id) internal {
+    function _autoAssignTreasurySplitPercentage(Id id) internal {
         uint256 currentDsId = moduleCore.lastDsId(id);
         uint256 prevDsId = currentDsId - 1;
 
@@ -264,19 +266,18 @@ contract CorkConfig is AccessControl, Pausable {
         // if for some reason the previous issuance AMM is not created for some reason(no LV deposits)
         uint256 prevCtSplit;
 
-        try hook.getMarketSnapshot(ra, ct); returns (uint256 split) {
-            prevCtSplit = split;
+        try hook.getMarketSnapshot(ra, ct) returns (MarketSnapshot memory snapshot) {
+            prevCtSplit= snapshot.treasuryFeePercentage;
         }
         catch {
             return;
         }
 
-        // assign fees to current issuance
         (ct,) = moduleCore.swapAsset(id, currentDsId);
 
         // we don't revert here since an edge case would occur where the Lv token circulation is 0 but the issuance continues
         // and in that case the AMM would not have been created yet. This is a rare edge case and the fees can be assigned manually in such cases
-        try hook.updateSplitPercentage(ra, ct, prevCtSplit) {} catch {}
+        try hook.updateTreasurySplitPercentage(ra, ct, prevCtSplit) {} catch {}
     }
 
     /**

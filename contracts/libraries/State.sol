@@ -27,6 +27,7 @@ struct State {
 struct PsmState {
     Balances balances;
     uint256 repurchaseFeePercentage;
+    uint256 repurchaseFeeTreasurySplitPercentage;
     BitMaps.BitMap liquiditySeparated;
     /// @dev dsId => PsmPoolArchive
     mapping(uint256 => PsmPoolArchive) poolArchive;
@@ -35,6 +36,7 @@ struct PsmState {
     bool isWithdrawalPaused;
     bool isRepurchasePaused;
     uint256 psmBaseRedemptionFeePercentage;
+    uint256 psmBaseFeeTreasurySplitPercentage;
 }
 
 /**
