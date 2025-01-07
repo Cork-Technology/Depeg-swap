@@ -183,6 +183,10 @@ contract CorkConfig is AccessControl, Pausable {
         moduleCore.updatePsmRepurchaseFeeTreasurySplitPercentage(id, percentage);
     }
 
+    function updatePsmRepurchaseFeePercentage(Id id, uint256 percentage) external onlyManager {
+        moduleCore.updatePsmRepurchaseFeePercentage(id, percentage);
+    }
+
     function setWithdrawalContract(address _withdrawalContract) external onlyManager {
         moduleCore.setWithdrawalContract(_withdrawalContract);
     }

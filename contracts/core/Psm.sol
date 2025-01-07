@@ -331,12 +331,18 @@ abstract contract PsmCore is IPSMcore, ModuleState, Context {
     function updatePsmBaseRedemptionFeeTreasurySplitPercentage(Id id, uint256 percentage) external {
         onlyConfig();
         State storage state = states[id];
-        state.psm.psmBaseRedemptionFeePercentage = percentage;
+        state.psm.psmBaseFeeTreasurySplitPercentage = percentage;
     }
 
     function updatePsmRepurchaseFeeTreasurySplitPercentage(Id id, uint256 percentage) external {
         onlyConfig();
         State storage state = states[id];
-        state.psm.psmBaseFeeTreasurySplitPercentage = percentage;
+        state.psm.repurchaseFeeTreasurySplitPercentage = percentage;
+    }
+
+    function updatePsmRepurchaseFeePercentage(Id id, uint256 percentage) external {
+        onlyConfig();
+        State storage state = states[id];
+        state.psm.repurchaseFeePercentage = percentage;
     }
 }
