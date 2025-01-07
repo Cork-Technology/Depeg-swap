@@ -12,6 +12,7 @@ import {ICorkHook} from "./../interfaces/UniV4/IMinimalHook.sol";
 import {ILiquidatorRegistry} from "./../interfaces/ILiquidatorRegistry.sol";
 import {ReentrancyGuardTransient} from "@openzeppelin/contracts/utils/ReentrancyGuardTransient.sol";
 import {Withdrawal} from "./Withdrawal.sol";
+import {CorkConfig} from "./CorkConfig.sol";
 
 /**
  * @title ModuleState Abstract Contract

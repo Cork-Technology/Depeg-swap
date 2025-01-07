@@ -48,8 +48,8 @@ library VaultLibrary {
         uint256 ct;
     }
 
-    function initialize(VaultState storage self, address lv, uint256 fee, address ra, uint256 initialArp) external {
-        self.config = VaultConfigLibrary.initialize(fee);
+    function initialize(VaultState storage self, address lv, address ra, uint256 initialArp) external {
+        self.config = VaultConfigLibrary.initialize();
 
         self.lv = LvAssetLibrary.initialize(lv);
         self.balances.ra = RedemptionAssetManagerLibrary.initialize(ra);
@@ -614,10 +614,6 @@ library VaultLibrary {
                 "redeemEarlyLv"
             );
         }
-        result.feePercentage = self.vault.config.fee;
-        result.fee = MathHelper.calculatePercentageFee(result.feePercentage, redeemParams.amount);
-
-        redeemParams.amount -= result.fee;
 
         result.id = redeemParams.id;
         result.receiver = owner;
@@ -669,7 +665,7 @@ library VaultLibrary {
         }
 
         // burn lv amount + fee
-        ERC20Burnable(self.vault.lv._address).burnFrom(owner, redeemParams.amount + result.fee);
+        ERC20Burnable(self.vault.lv._address).burnFrom(owner, redeemParams.amount);
 
         // fetch ds from flash swap router
         contracts.flashSwapRouter.emptyReservePartialLv(redeemParams.id, dsId, result.dsReceived);
@@ -701,11 +697,6 @@ library VaultLibrary {
 
         // send PA to user
         SafeERC20.safeTransfer(IERC20(pair.pa), address(contracts.withdrawalContract), result.paReceived);
-
-        // TODO : This commented code will be removed
-        // if (fee != 0) {
-        //     allocateFeesToVault(self, fee);
-        // }
     }
 
     function vaultLp(State storage self, ICorkHook ammRotuer) internal view returns (uint256) {

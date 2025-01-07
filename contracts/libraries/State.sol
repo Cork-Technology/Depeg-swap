@@ -124,8 +124,6 @@ struct VaultState {
  * @dev VaultConfig structure for VaultConfig Contract
  */
 struct VaultConfig {
-    // 1 % = 1e18
-    uint256 fee;
     bool isDepositPaused;
     bool isWithdrawalPaused;
 }

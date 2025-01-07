@@ -16,17 +16,7 @@ library VaultConfigLibrary {
      */
     uint256 internal constant MAX_ALLOWED_FEES = 5 ether;
 
-    function initialize(uint256 fee) internal pure returns (VaultConfig memory) {
-        if (fee > MAX_ALLOWED_FEES) {
-            revert ICommon.InvalidFees();
-        }
-        return VaultConfig({fee: fee, isDepositPaused: false, isWithdrawalPaused: false});
-    }
-
-    function updateFee(VaultConfig storage self, uint256 fee) internal {
-        if (fee > MAX_ALLOWED_FEES) {
-            revert ICommon.InvalidFees();
-        }
-        self.fee = fee;
+    function initialize() internal pure returns (VaultConfig memory) {
+        return VaultConfig({ isDepositPaused: false, isWithdrawalPaused: false});
     }
 }

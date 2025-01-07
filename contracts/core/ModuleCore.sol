@@ -77,7 +77,6 @@ contract ModuleCore is OwnableUpgradeable, UUPSUpgradeable, PsmCore, Initialize,
     function initializeModuleCore(
         address pa,
         address ra,
-        uint256 lvFee,
         uint256 initialArp,
         uint256 psmBaseRedemptionFeePercentage,
         uint256 expiryInterval
@@ -98,7 +97,7 @@ contract ModuleCore is OwnableUpgradeable, UUPSUpgradeable, PsmCore, Initialize,
         address lv = assetsFactory.deployLv(ra, pa, address(this), expiryInterval);
 
         PsmLibrary.initialize(state, key, psmBaseRedemptionFeePercentage);
-        VaultLibrary.initialize(state.vault, lv, lvFee, ra, initialArp);
+        VaultLibrary.initialize(state.vault, lv, ra, initialArp);
         emit InitializedModuleCore(id, pa, ra, lv, expiryInterval);
     }
 
@@ -162,15 +161,6 @@ contract ModuleCore is OwnableUpgradeable, UUPSUpgradeable, PsmCore, Initialize,
         PsmLibrary.updateRepurchaseFeePercentage(state, newRepurchaseFeePercentage);
 
         emit RepurchaseFeeRateUpdated(id, newRepurchaseFeePercentage);
-    }
-
-    function updateEarlyRedemptionFeeRate(Id id, uint256 newEarlyRedemptionFeeRate) external {
-        onlyConfig();
-
-        State storage state = states[id];
-        VaultConfigLibrary.updateFee(state.vault.config, newEarlyRedemptionFeeRate);
-
-        emit EarlyRedemptionFeeRateUpdated(id, newEarlyRedemptionFeeRate);
     }
 
     /**

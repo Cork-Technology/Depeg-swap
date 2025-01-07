@@ -10,7 +10,7 @@ import {Pair} from "../libraries/Pair.sol";
 import {ModuleCore} from "./ModuleCore.sol";
 import {IVault} from "./../interfaces/IVault.sol";
 import {CorkHook} from "Cork-Hook/CorkHook.sol";
-import {MarketSnapshot}from"Cork-Hook/lib/MarketSnapshot.sol";
+import {MarketSnapshot} from "Cork-Hook/lib/MarketSnapshot.sol";
 import {HedgeUnitFactory} from "./assets/HedgeUnitFactory.sol";
 import {HedgeUnit} from "./assets/HedgeUnit.sol";
 

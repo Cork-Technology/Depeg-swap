@@ -61,9 +61,6 @@ abstract contract Helper is SigUtils, TestHelper {
     // 10 block rollover period
     uint256 internal constant DEFAULT_ROLLOVER_PERIOD = 100000;
 
-    // 0% liquidity vault early fee
-    uint256 internal constant DEFAULT_LV_FEE = 0 ether;
-
     // 10% initial ds price
     uint256 internal constant DEFAULT_INITIAL_DS_PRICE = 0.1 ether;
 
@@ -117,22 +114,20 @@ abstract contract Helper is SigUtils, TestHelper {
     function initializeNewModuleCore(
         address pa,
         address ra,
-        uint256 lvFee,
         uint256 initialDsPrice,
         uint256 baseRedemptionFee,
         uint256 expiryInSeconds
     ) internal {
-        corkConfig.initializeModuleCore(pa, ra, lvFee, initialDsPrice, baseRedemptionFee, expiryInSeconds);
+        corkConfig.initializeModuleCore(pa, ra, initialDsPrice, baseRedemptionFee, expiryInSeconds);
     }
 
     function initializeNewModuleCore(
         address pa,
         address ra,
-        uint256 lvFee,
         uint256 initialDsPrice,
         uint256 expiryInSeconds
     ) internal {
-        corkConfig.initializeModuleCore(pa, ra, lvFee, initialDsPrice, DEFAULT_BASE_REDEMPTION_FEE, expiryInSeconds);
+        corkConfig.initializeModuleCore(pa, ra, initialDsPrice, DEFAULT_BASE_REDEMPTION_FEE, expiryInSeconds);
     }
 
     function issueNewDs(
@@ -178,7 +173,7 @@ abstract contract Helper is SigUtils, TestHelper {
         defaultCurrencyId = id;
 
         initializeNewModuleCore(
-            address(pa), address(ra), DEFAULT_LV_FEE, defaultInitialArp(), DEFAULT_BASE_REDEMPTION_FEE, expiryInSeconds
+            address(pa), address(ra),  defaultInitialArp(), DEFAULT_BASE_REDEMPTION_FEE, expiryInSeconds
         );
         issueNewDs(
             id, defaultExchangeRate(), DEFAULT_REPURCHASE_FEE, DEFAULT_DECAY_DISCOUNT_RATE, DEFAULT_ROLLOVER_PERIOD
@@ -206,7 +201,7 @@ abstract contract Helper is SigUtils, TestHelper {
         defaultCurrencyId = id;
 
         initializeNewModuleCore(
-            address(pa), address(ra), DEFAULT_LV_FEE, defaultInitialArp(), DEFAULT_BASE_REDEMPTION_FEE, expiryInSeconds
+            address(pa), address(ra),  defaultInitialArp(), DEFAULT_BASE_REDEMPTION_FEE, expiryInSeconds
         );
         issueNewDs(
             id, defaultExchangeRate(), DEFAULT_REPURCHASE_FEE, DEFAULT_DECAY_DISCOUNT_RATE, DEFAULT_ROLLOVER_PERIOD
@@ -234,7 +229,7 @@ abstract contract Helper is SigUtils, TestHelper {
         defaultCurrencyId = id;
 
         initializeNewModuleCore(
-            address(pa), address(ra), DEFAULT_LV_FEE, defaultInitialArp(), baseRedemptionFee, expiryInSeconds
+            address(pa), address(ra),  defaultInitialArp(), baseRedemptionFee, expiryInSeconds
         );
         issueNewDs(
             id, DEFAULT_EXCHANGE_RATES, DEFAULT_REPURCHASE_FEE, DEFAULT_DECAY_DISCOUNT_RATE, DEFAULT_ROLLOVER_PERIOD
@@ -261,7 +256,7 @@ abstract contract Helper is SigUtils, TestHelper {
         defaultCurrencyId = id;
 
         initializeNewModuleCore(
-            address(pa), address(ra), DEFAULT_LV_FEE, defaultInitialArp(), DEFAULT_BASE_REDEMPTION_FEE, expiryInSeconds
+            address(pa), address(ra),  defaultInitialArp(), DEFAULT_BASE_REDEMPTION_FEE, expiryInSeconds
         );
         issueNewDs(
             id, DEFAULT_EXCHANGE_RATES, DEFAULT_REPURCHASE_FEE, DEFAULT_DECAY_DISCOUNT_RATE, DEFAULT_ROLLOVER_PERIOD
@@ -275,7 +270,6 @@ abstract contract Helper is SigUtils, TestHelper {
         uint256 repurchaseFeePercentage,
         uint256 decayDiscountRateInDays,
         uint256 rolloverPeriodInblocks,
-        uint256 lvFee,
         uint256 initialDsPrice
     ) internal returns (DummyWETH ra, DummyWETH pa, Id id) {
         ra = new DummyWETH();
@@ -284,7 +278,7 @@ abstract contract Helper is SigUtils, TestHelper {
         Pair memory _id = PairLibrary.initalize(address(pa), address(ra), expiryInSeconds);
         id = PairLibrary.toId(_id);
 
-        initializeNewModuleCore(address(pa), address(ra), lvFee, initialDsPrice, expiryInSeconds);
+        initializeNewModuleCore(address(pa), address(ra), initialDsPrice, expiryInSeconds);
         issueNewDs(id, exchangeRates, repurchaseFeePercentage, decayDiscountRateInDays, rolloverPeriodInblocks);
     }
 

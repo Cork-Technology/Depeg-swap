@@ -41,8 +41,6 @@ interface IVault is ICommon {
         uint256 ctReceivedFromAmm;
         uint256 ctReceivedFromVault;
         uint256 dsReceived;
-        uint256 fee;
-        uint256 feePercentage;
         bytes32 withdrawalId;
     }
 
@@ -63,8 +61,6 @@ interface IVault is ICommon {
         uint256 paReceived,
         uint256 raReceivedFromAmm,
         uint256 raIdleReceived,
-        uint256 fee,
-        uint256 feePercentage,
         bytes32 withdrawalId
     );
 
@@ -83,11 +79,6 @@ interface IVault is ICommon {
         Id indexed Id,
         bool isLVWithdrawalPaused
     );
-
-    /// @notice Emitted when a early redemption fee is updated for a given Vault
-    /// @param Id The State id
-    /// @param newEarlyRedemptionFee The new early redemption rate
-    event EarlyRedemptionFeeUpdated(Id indexed Id, uint256 indexed newEarlyRedemptionFee);
 
     /// @notice Emitted when the protocol receive sales profit from the router
     /// @param router The address of the router
@@ -134,12 +125,6 @@ interface IVault is ICommon {
      * @param redeemParams The object with details like id, reciever, amount, amountOutMin, ammDeadline
      */
     function redeemEarlyLv(RedeemEarlyParams memory redeemParams) external returns (RedeemEarlyResult memory result);
-
-    /**
-     * Returns the early redemption fee percentage
-     * @param id The Module id that is used to reference both psm and lv of a given pair
-     */
-    function earlyRedemptionFee(Id id) external view returns (uint256);
 
     /**
      * This will accure value for LV holders by providing liquidity to the AMM using the RA received from selling DS when a users buys DS
