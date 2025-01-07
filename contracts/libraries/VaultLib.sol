@@ -588,10 +588,7 @@ library VaultLibrary {
     }
 
     // IMPORTANT : only psm, flash swap router and early redeem LV can call this function
-    function allocateFeesToVault(
-        State storage self,
-        uint256 amount
-    ) public {
+    function allocateFeesToVault(State storage self, uint256 amount) public {
         self.vault.balances.ra.incLocked(amount);
     }
 

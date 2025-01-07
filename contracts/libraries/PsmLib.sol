@@ -538,7 +538,8 @@ library PsmLibrary {
         address buyer,
         uint256 amount,
         IDsFlashSwapCore flashSwapRouter,
-        ICorkHook ammRouter
+        ICorkHook ammRouter,
+        address treasury
     )
         external
         returns (
@@ -556,8 +557,10 @@ library PsmLibrary {
 
         // decrease PSM balance
         // we also include the fee here to separate the accumulated fee from the repurchase
-        self.psm.balances.paBalance -= (receivedPa);
-        self.psm.balances.dsBalance -= (receivedDs);
+        {
+            self.psm.balances.paBalance -= (receivedPa);
+            self.psm.balances.dsBalance -= (receivedDs);
+        }
 
         // transfer user RA to the PSM/LV
         self.psm.balances.ra.lockFrom(amount, buyer);
@@ -568,24 +571,35 @@ library PsmLibrary {
         }
 
         // transfer user attrubuted DS + PA
+
         // PA
-        (, address pa) = self.info.underlyingAsset();
-        IERC20(pa).safeTransfer(buyer, receivedPa);
+        {
+            (, address pa) = self.info.underlyingAsset();
+            IERC20(pa).safeTransfer(buyer, receivedPa);
+        }
 
         // DS
         IERC20(ds._address).safeTransfer(buyer, receivedDs);
 
         if (fee != 0) {
-            uint256 attributedToTreasury;
+            fee = _attributeFeeToTreasury(self, fee, treasury);
 
-            (fee, attributedToTreasury) = _splitFee(self.psm.repurchaseFeeTreasurySplitPercentage, fee);
-
-            // Provide liquidity with fee(if any)
+            // Provide liquidity with the remaining fee(if any)
             VaultLibrary.allocateFeesToVault(self, fee);
-
-            // send the remaining fee to the treasury
-            // TODO
         }
+    }
+
+    // TODO :
+    // - test repurchase treasury split
+    // - test redeem DS treasury split
+    function _attributeFeeToTreasury(State storage self, uint256 fee, address treasury)
+        internal
+        returns (uint256 remaining)
+    {
+        uint256 attributedToTreasury;
+
+        (remaining, attributedToTreasury) = _splitFee(self.psm.repurchaseFeeTreasurySplitPercentage, fee);
+        self.psm.balances.ra.unlockToUnchecked(attributedToTreasury, treasury);
     }
 
     function _splitFee(uint256 basePercentage, uint256 fee)
@@ -609,7 +623,8 @@ library PsmLibrary {
         uint256 raReceived,
         uint256 paProvided,
         uint256 dsProvided,
-        uint256 fee
+        uint256 fee,
+        address treasury
     ) internal {
         IERC20(ds._address).safeTransferFrom(owner, address(this), dsProvided);
         IERC20(self.info.peggedAsset().asErc20()).safeTransferFrom(owner, address(this), paProvided);
@@ -618,7 +633,11 @@ library PsmLibrary {
         // we decrease the locked value, as we're going to use this to provide liquidity to the LV
         self.psm.balances.ra.decLocked(fee);
 
+        uint256 attributedToTreasury;
+        (fee, attributedToTreasury) = _splitFee(self.psm.psmBaseFeeTreasurySplitPercentage, fee);
+
         VaultLibrary.allocateFeesToVault(self, fee);
+        self.psm.balances.ra.unlockToUnchecked(attributedToTreasury, treasury);
     }
 
     function valueLocked(State storage self) external view returns (uint256) {
@@ -642,7 +661,8 @@ library PsmLibrary {
         uint256 amount,
         uint256 dsId,
         bytes memory rawDsPermitSig,
-        uint256 deadline
+        uint256 deadline,
+        address treasury
     ) external returns (uint256 received, uint256 _exchangeRate, uint256 fee, uint256 dsProvided) {
         DepegSwap storage ds = self.ds[dsId];
         Guard.safeBeforeExpired(ds);
@@ -656,7 +676,7 @@ library PsmLibrary {
         }
 
         _redeemDs(self.psm.balances, amount, dsProvided);
-        _afterRedeemWithDs(self, ds, owner, received, amount, dsProvided, fee);
+        _afterRedeemWithDs(self, ds, owner, received, amount, dsProvided, fee, treasury);
     }
 
     /// @notice simulate a ds redeem.

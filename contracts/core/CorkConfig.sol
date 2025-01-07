@@ -155,19 +155,33 @@ contract CorkConfig is AccessControl, Pausable {
         if (_treasury == address(0)) {
             revert InvalidAddress();
         }
-     
+
         treasury = _treasury;
-     
+
         emit TreasurySet(_treasury);
     }
 
-    // TODO : auto fetch ct and ra from moduleCore
-    function updateAmmBaseFeePercentage(address ra, address ct, uint256 newBaseFeePercentage) external onlyManager {
-        hook.updateBaseFeePercentage(ra, ct, newBaseFeePercentage);
+    function updateAmmBaseFeePercentage(Id id, uint256 newBaseFeePercentage) external onlyManager {
+        (address ra,) = moduleCore.underlyingAsset(id);
+        (address ct,) = moduleCore.swapAsset(id, moduleCore.lastDsId(id));
 
+        hook.updateBaseFeePercentage(ra, ct, newBaseFeePercentage);
     }
 
-    // TODO : auto set amm treasury split percentage
+    function updateAmmTreasurySplitPercentage(Id id, uint256 newTreasurySplitPercentage) external onlyManager {
+        (address ra,) = moduleCore.underlyingAsset(id);
+        (address ct,) = moduleCore.swapAsset(id, moduleCore.lastDsId(id));
+
+        hook.updateTreasurySplitPercentage(ra, ct, newTreasurySplitPercentage);
+    }
+
+    function updatePsmBaseRedemptionFeeTreasurySplitPercentage(Id id, uint256 percentage) external onlyManager {
+        moduleCore.updatePsmBaseRedemptionFeeTreasurySplitPercentage(id, percentage);
+    }
+
+    function updatePsmRepurchaseFeeTreasurySplitPercentage(Id id, uint256 percentage) external onlyManager {
+        moduleCore.updatePsmRepurchaseFeeTreasurySplitPercentage(id, percentage);
+    }
 
     function setWithdrawalContract(address _withdrawalContract) external onlyManager {
         moduleCore.setWithdrawalContract(_withdrawalContract);
@@ -177,18 +191,16 @@ contract CorkConfig is AccessControl, Pausable {
      * @dev Initialize Module Core
      * @param pa Address of PA
      * @param ra Address of RA
-     * @param lvFee fees for LV
      * @param initialDsPrice initial price of DS
      */
     function initializeModuleCore(
         address pa,
         address ra,
-        uint256 lvFee,
         uint256 initialDsPrice,
         uint256 _psmBaseRedemptionFeePercentage,
         uint256 expiryInterval
     ) external onlyManager {
-        moduleCore.initializeModuleCore(pa, ra, lvFee, initialDsPrice, _psmBaseRedemptionFeePercentage, expiryInterval);
+        moduleCore.initializeModuleCore(pa, ra, initialDsPrice, _psmBaseRedemptionFeePercentage, expiryInterval);
     }
 
     /**
@@ -236,8 +248,7 @@ contract CorkConfig is AccessControl, Pausable {
 
         try hook.getFee(ra, ct) returns (uint256 baseFee, uint256) {
             prevBaseFee = baseFee;
-        }
-        catch {
+        } catch {
             return;
         }
 
@@ -267,9 +278,8 @@ contract CorkConfig is AccessControl, Pausable {
         uint256 prevCtSplit;
 
         try hook.getMarketSnapshot(ra, ct) returns (MarketSnapshot memory snapshot) {
-            prevCtSplit= snapshot.treasuryFeePercentage;
-        }
-        catch {
+            prevCtSplit = snapshot.treasuryFeePercentage;
+        } catch {
             return;
         }
 
@@ -290,23 +300,11 @@ contract CorkConfig is AccessControl, Pausable {
     }
 
     /**
-     * @notice Updates earlyFeeRedemption rates
-     * @param id id of PSM
-     * @param newEarlyRedemptionFeeRate new value of earlyRedemptin fees, make sure it has 18 decimals(e.g 1% = 1e18)
-     */
-    function updateEarlyRedemptionFeeRate(Id id, uint256 newEarlyRedemptionFeeRate) external onlyManager {
-        moduleCore.updateEarlyRedemptionFeeRate(id, newEarlyRedemptionFeeRate);
-    }
-
-    /**
      * @notice update pausing status of PSM Deposits
      * @param id id of the pair
      * @param isPSMDepositPaused set to true if you want to pause PSM deposits
      */
-    function updatePsmDepositsStatus(
-        Id id,
-        bool isPSMDepositPaused
-    ) external onlyManager {
+    function updatePsmDepositsStatus(Id id, bool isPSMDepositPaused) external onlyManager {
         moduleCore.updatePsmDepositsStatus(id, isPSMDepositPaused);
     }
 
@@ -315,10 +313,7 @@ contract CorkConfig is AccessControl, Pausable {
      * @param id id of the pair
      * @param isPSMWithdrawalPaused set to true if you want to pause PSM withdrawals
      */
-    function updatePsmWithdrawalsStatus(
-        Id id,
-        bool isPSMWithdrawalPaused
-    ) external onlyManager {
+    function updatePsmWithdrawalsStatus(Id id, bool isPSMWithdrawalPaused) external onlyManager {
         moduleCore.updatePsmWithdrawalsStatus(id, isPSMWithdrawalPaused);
     }
 
@@ -327,10 +322,7 @@ contract CorkConfig is AccessControl, Pausable {
      * @param id id of the pair
      * @param isPSMRepurchasePaused set to true if you want to pause PSM repurchases
      */
-    function updatePsmRepurchasesStatus(
-        Id id,
-        bool isPSMRepurchasePaused
-    ) external onlyManager {
+    function updatePsmRepurchasesStatus(Id id, bool isPSMRepurchasePaused) external onlyManager {
         moduleCore.updatePsmRepurchasesStatus(id, isPSMRepurchasePaused);
     }
 
@@ -339,10 +331,7 @@ contract CorkConfig is AccessControl, Pausable {
      * @param id id of the pair
      * @param isLVDepositPaused set to true if you want to pause LV deposits
      */
-    function updateLvDepositsStatus(
-        Id id,
-        bool isLVDepositPaused
-    ) external onlyManager {
+    function updateLvDepositsStatus(Id id, bool isLVDepositPaused) external onlyManager {
         moduleCore.updateLvDepositsStatus(id, isLVDepositPaused);
     }
 
@@ -351,10 +340,7 @@ contract CorkConfig is AccessControl, Pausable {
      * @param id id of the pair
      * @param isLVWithdrawalPaused set to true if you want to pause LV withdrawals
      */
-    function updateLvWithdrawalsStatus(
-        Id id,
-        bool isLVWithdrawalPaused
-    ) external onlyManager {
+    function updateLvWithdrawalsStatus(Id id, bool isLVWithdrawalPaused) external onlyManager {
         moduleCore.updateLvWithdrawalsStatus(id, isLVWithdrawalPaused);
     }
 

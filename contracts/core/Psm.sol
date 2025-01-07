@@ -61,7 +61,7 @@ abstract contract PsmCore is IPSMcore, ModuleState, Context {
         State storage state = states[id];
 
         (dsId, receivedPa, receivedDs, feePercentage, fee, exchangeRates) =
-            state.repurchase(_msgSender(), amount, getRouterCore(), getAmmRouter());
+            state.repurchase(_msgSender(), amount, getRouterCore(), getAmmRouter(), getTreasuryAddress());
 
         emit Repurchased(id, _msgSender(), dsId, amount, receivedPa, receivedDs, feePercentage, fee, exchangeRates);
     }
@@ -120,9 +120,8 @@ abstract contract PsmCore is IPSMcore, ModuleState, Context {
         }
         State storage state = states[id];
 
-        (received, _exchangeRate, fee, dsUsed) = state.redeemWithDs(redeemer, amount, dsId, rawDsPermitSig, deadline);
-
-        VaultLibrary.allocateFeesToVault(state, fee);
+        (received, _exchangeRate, fee, dsUsed) =
+            state.redeemWithDs(redeemer, amount, dsId, rawDsPermitSig, deadline, getTreasuryAddress());
 
         emit DsRedeemed(
             id, dsId, redeemer, amount, dsUsed, received, _exchangeRate, state.psm.psmBaseRedemptionFeePercentage, fee
@@ -140,7 +139,8 @@ abstract contract PsmCore is IPSMcore, ModuleState, Context {
 
         State storage state = states[id];
 
-        (received, _exchangeRate, fee, dsUsed) = state.redeemWithDs(_msgSender(), amount, dsId, bytes(""), 0);
+        (received, _exchangeRate, fee, dsUsed) =
+            state.redeemWithDs(_msgSender(), amount, dsId, bytes(""), 0, getTreasuryAddress());
 
         emit DsRedeemed(
             id,
@@ -326,5 +326,17 @@ abstract contract PsmCore is IPSMcore, ModuleState, Context {
     function psmAutoSellStatus(Id id) external view returns (bool) {
         State storage state = states[id];
         state.autoSellStatus(_msgSender());
+    }
+
+    function updatePsmBaseRedemptionFeeTreasurySplitPercentage(Id id, uint256 percentage) external {
+        onlyConfig();
+        State storage state = states[id];
+        state.psm.psmBaseRedemptionFeePercentage = percentage;
+    }
+
+    function updatePsmRepurchaseFeeTreasurySplitPercentage(Id id, uint256 percentage) external {
+        onlyConfig();
+        State storage state = states[id];
+        state.psm.psmBaseFeeTreasurySplitPercentage = percentage;
     }
 }
