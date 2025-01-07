@@ -582,10 +582,10 @@ library PsmLibrary {
         IERC20(ds._address).safeTransfer(buyer, receivedDs);
 
         if (fee != 0) {
-            fee = _attributeFeeToTreasury(self, fee, treasury);
+            uint256 remainingFee = _attributeFeeToTreasury(self, fee, treasury);
 
             // Provide liquidity with the remaining fee(if any)
-            VaultLibrary.allocateFeesToVault(self, fee);
+            VaultLibrary.allocateFeesToVault(self, remainingFee);
         }
     }
 
