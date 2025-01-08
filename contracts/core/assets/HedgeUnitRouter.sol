@@ -144,7 +144,7 @@ contract HedgeUnitRouter is IHedgeUnitRouter, AccessControl, ReentrancyGuardTran
     function batchDissolve(address[] calldata hedgeUnits, uint256[] calldata amounts)
         external
         nonReentrant
-        returns (uint256[] memory dsAmounts, uint256[] memory paAmounts, uint256[] memory raAmounts)
+        returns (address[] memory dsAdds, address[] memory paAdds, address[] memory raAdds, uint256[] memory dsAmounts, uint256[] memory paAmounts, uint256[] memory raAmounts)
     {
         if (hedgeUnits.length != amounts.length) {
             revert InvalidInput();
@@ -153,6 +153,9 @@ contract HedgeUnitRouter is IHedgeUnitRouter, AccessControl, ReentrancyGuardTran
         dsAmounts = new uint256[](hedgeUnits.length);
         paAmounts = new uint256[](hedgeUnits.length);
         raAmounts = new uint256[](hedgeUnits.length);
+        dsAdds = new address[](hedgeUnits.length);
+        paAdds = new address[](hedgeUnits.length);
+        raAdds = new address[](hedgeUnits.length);            
 
         // If large number of HedgeUnits are passed, this function will revert due to gas limit.
         // So we will keep the limit to 10 HedgeUnits(or even less if needed) from frontend.
@@ -160,7 +163,7 @@ contract HedgeUnitRouter is IHedgeUnitRouter, AccessControl, ReentrancyGuardTran
             if (!isHedgeUnit[hedgeUnits[i]]) {
                 revert InvalidInput();
             }
-            (dsAmounts[i], paAmounts[i], raAmounts[i]) = HedgeUnit(hedgeUnits[i]).dissolve(msg.sender, amounts[i]);
+            (dsAdds[i], paAdds[i], raAdds[i], dsAmounts[i], paAmounts[i], raAmounts[i]) = HedgeUnit(hedgeUnits[i]).dissolve(msg.sender, amounts[i]);
         }
     }
 }

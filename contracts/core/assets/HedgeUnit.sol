@@ -115,9 +115,9 @@ contract HedgeUnit is ERC20Permit, ReentrancyGuardTransient, Ownable, Pausable, 
         _;
     }
 
-    modifier onlyHedgeUnitRouter() {
-        if (msg.sender != hedgeUnitRouter) {
-            revert OnlyHedgeUnitRouterAllowed();
+    modifier onlyValidDissolver(address dissolver) {
+        if (msg.sender != dissolver && msg.sender != hedgeUnitRouter) {
+            revert OnlyDissolverOrHURouterAllowed();
         }
         _;
     }
@@ -362,27 +362,11 @@ contract HedgeUnit is ERC20Permit, ReentrancyGuardTransient, Ownable, Pausable, 
 
     /**
      * @notice Dissolves HedgeUnit tokens and returns the equivalent amount of DS and pa tokens.
-     * @param amount The amount of HedgeUnit tokens to dissolve.
-     * @return dsAmount The amount of DS tokens returned.
-     * @return paAmount The amount of pa tokens returned.
-     * @return raAmount The amount of ra tokens returned.
-     * @custom:reverts EnforcedPause if minting is currently paused.
-     * @custom:reverts InvalidAmount if the user has insufficient HedgeUnit balance.
-     */
-    function dissolve(uint256 amount)
-        external
-        whenNotPaused
-        nonReentrant
-        autoUpdateDS
-        returns (uint256 dsAmount, uint256 paAmount, uint256 raAmount)
-    {
-        (dsAmount, paAmount, raAmount) = _dissolve(msg.sender, amount);
-    }
-
-    /**
-     * @notice Dissolves HedgeUnit tokens and returns the equivalent amount of DS and pa tokens.
      * @param dissolver The address of dissolver(user)
      * @param amount The amount of HedgeUnit tokens to dissolve.
+     * @return dsAdd The address of DS tokens returned.
+     * @return paAdd The address of pa tokens returned.
+     * @return raAdd The address of ra tokens returned.
      * @return dsAmount The amount of DS tokens returned.
      * @return paAmount The amount of pa tokens returned.
      * @return raAmount The amount of ra tokens returned.
@@ -394,10 +378,13 @@ contract HedgeUnit is ERC20Permit, ReentrancyGuardTransient, Ownable, Pausable, 
         whenNotPaused
         nonReentrant
         autoUpdateDS
-        onlyHedgeUnitRouter
-        returns (uint256 dsAmount, uint256 paAmount, uint256 raAmount)
+        onlyValidDissolver(dissolver)
+        returns (address dsAdd, address paAdd, address raAdd, uint256 dsAmount, uint256 paAmount, uint256 raAmount)
     {
         (dsAmount, paAmount, raAmount) = _dissolve(dissolver, amount);
+        dsAdd = address(ds);
+        paAdd = address(pa);
+        raAdd = address(ra);
     }
 
     function _dissolve(address dissolver, uint256 amount)
