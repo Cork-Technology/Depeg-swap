@@ -14,7 +14,7 @@ import {HedgeUnit} from "./assets/HedgeUnit.sol";
 /**
  * @title Config Contract
  * @author Cork Team
- * @notice Config contract for managing configurations of Cork protocol
+ * @notice Config contract for managing pairs and configurations of Cork protocol
  */
 contract CorkConfig is AccessControl, Pausable {
     bytes32 public constant MANAGER_ROLE = keccak256("MANAGER_ROLE");
@@ -26,6 +26,9 @@ contract CorkConfig is AccessControl, Pausable {
     IDsFlashSwapCore public flashSwapRouter;
     CorkHook public hook;
     HedgeUnitFactory public hedgeUnitFactory;
+
+    /// @notice set to true when initializeModuleCore is allowed to call by anyone in permissionless way
+    bool public isInitPermissionless;
 
     uint256 public constant WHITELIST_TIME_DELAY = 7 days;
 
@@ -64,8 +67,9 @@ contract CorkConfig is AccessControl, Pausable {
         _;
     }
 
+    /// @notice Checks if the caller is either the initializer of the market or initialization is allowed permissionlessly
     modifier onlyInitializer() {
-        if (!hasRole(MARKET_INITIALIZER_ROLE, msg.sender)) {
+        if (!hasRole(MARKET_INITIALIZER_ROLE, msg.sender) && !isInitPermissionless) {
             revert CallerNotInitializer();
         }
         _;
@@ -100,6 +104,10 @@ contract CorkConfig is AccessControl, Pausable {
 
     function grantRole(bytes32 role, address account) public override onlyManager {
         _grantRole(role, account);
+    }
+
+    function updateMarketInitAllowance(bool _isInitPermissionless) external onlyManager {
+        isInitPermissionless = _isInitPermissionless;
     }
 
     function isTrustedLiquidationExecutor(address liquidationContract, address user) external view returns (bool) {
