@@ -163,19 +163,22 @@ contract HedgeUnit is ERC20Permit, ReentrancyGuardTransient, Ownable, Pausable, 
         emit FundsReceived(msg.sender, token, amount);
     }
 
-    function useFunds(uint256 amount, uint256 amountOutMin, IDsFlashSwapCore.BuyAprroxParams calldata params)
-        external
-        autoUpdateDS
-        onlyOwnerOrLiquidator
-        returns (uint256 amountOut)
-    {
+    function useFunds(
+        uint256 amount,
+        uint256 amountOutMin,
+        IDsFlashSwapCore.BuyAprroxParams calldata params,
+        IDsFlashSwapCore.OffchainGuess calldata offchainGuess
+    ) external autoUpdateDS onlyOwnerOrLiquidator returns (uint256 amountOut) {
         uint256 dsId = moduleCore.lastDsId(id);
 
         ra.approve(address(flashSwapRouter), amount);
 
-        (amountOut,) = flashSwapRouter.swapRaforDs(id, dsId, amount, amountOutMin, params);
+        IDsFlashSwapCore.SwapRaForDsReturn memory result =
+            flashSwapRouter.swapRaforDs(id, dsId, amount, amountOutMin, params, offchainGuess);
 
-        emit FundsUsed(msg.sender, dsId, amount, amountOut);
+        amountOut = result.amountOut;
+        
+        emit FundsUsed(msg.sender, dsId, amount, result.amountOut);
     }
 
     function redeemRaWithDsPa(uint256 amount, uint256 amountDs) external autoUpdateDS onlyOwner {
@@ -240,7 +243,7 @@ contract HedgeUnit is ERC20Permit, ReentrancyGuardTransient, Ownable, Pausable, 
      * @return paAmount The amount of pa tokens required to mint the specified amount of HedgeUnit tokens.
      */
     function previewMint(uint256 amount) public view returns (uint256 dsAmount, uint256 paAmount) {
-        if(amount == 0) {
+        if (amount == 0) {
             revert InvalidAmount();
         }
 
@@ -277,7 +280,7 @@ contract HedgeUnit is ERC20Permit, ReentrancyGuardTransient, Ownable, Pausable, 
     }
 
     function __mint(address minter, uint256 amount) internal returns (uint256 dsAmount, uint256 paAmount) {
-        if(amount == 0) {
+        if (amount == 0) {
             revert InvalidAmount();
         }
 
@@ -397,7 +400,10 @@ contract HedgeUnit is ERC20Permit, ReentrancyGuardTransient, Ownable, Pausable, 
         (dsAmount, paAmount, raAmount) = _dissolve(dissolver, amount);
     }
 
-    function _dissolve(address dissolver, uint256 amount) internal returns (uint256 dsAmount, uint256 paAmount, uint256 raAmount) {
+    function _dissolve(address dissolver, uint256 amount)
+        internal
+        returns (uint256 dsAmount, uint256 paAmount, uint256 raAmount)
+    {
         (dsAmount, paAmount, raAmount) = previewDissolve(dissolver, amount);
 
         TransferHelper.transferNormalize(pa, dissolver, paAmount);

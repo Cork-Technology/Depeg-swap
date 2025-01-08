@@ -169,14 +169,16 @@ contract Liquidator is ILiquidator {
     function finishHedgeUnitOrderAndExecuteTrade(
         bytes32 refId,
         uint256 amountOutMin,
-        IDsFlashSwapCore.BuyAprroxParams calldata params
+        IDsFlashSwapCore.BuyAprroxParams calldata params,
+        IDsFlashSwapCore.OffchainGuess calldata offchainGuess
     ) external onlyLiquidator returns (uint256 amountOut) {
         Orders memory order = orderCalls[refId];
 
         (uint256 funds,) = HedgeUnitChildLiquidator(order.liquidator).moveFunds();
 
         // we don't want to revert if the trade fails
-        try HedgeUnit(order.receiver).useFunds(funds, amountOutMin, params) returns (uint256 _amountOut) {
+        try HedgeUnit(order.receiver).useFunds(funds, amountOutMin, params, offchainGuess) returns (uint256 _amountOut)
+        {
             amountOut = _amountOut;
         } catch {}
 

@@ -419,9 +419,10 @@ contract CorkConfig is AccessControl, Pausable {
         address hedgeUnit,
         uint256 amount,
         uint256 amountOutMin,
-        IDsFlashSwapCore.BuyAprroxParams calldata params
+        IDsFlashSwapCore.BuyAprroxParams calldata params,
+        IDsFlashSwapCore.OffchainGuess calldata offchainGuess
     ) external onlyManager returns (uint256 amountOut) {
-        amountOut = HedgeUnit(hedgeUnit).useFunds(amount, amountOutMin, params);
+        amountOut = HedgeUnit(hedgeUnit).useFunds(amount, amountOutMin, params, offchainGuess);
     }
 
     /**
