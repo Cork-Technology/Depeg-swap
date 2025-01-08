@@ -75,9 +75,8 @@ abstract contract Helper is SigUtils, TestHelper {
 
     address private overridenAddress;
 
-
     function overridePrank(address _as) public {
-        (,address currentCaller,) = vm.readCallers();
+        (, address currentCaller,) = vm.readCallers();
         overridenAddress = currentCaller;
         vm.startPrank(_as);
     }
@@ -111,6 +110,12 @@ abstract contract Helper is SigUtils, TestHelper {
         return IDsFlashSwapCore.BuyAprroxParams(256, 256, 1e16, 1e9, 1e9, 0.01 ether);
     }
 
+    function defaultOffchainGuessParams() internal pure returns (IDsFlashSwapCore.OffchainGuess memory params) {
+        // we return 0 since in most cases, we want to actually test the on-chain calculation logic
+        params.initialBorrowAmount = 0;
+        params.afterSoldBorrowAmount = 0;
+    }
+
     function initializeNewModuleCore(
         address pa,
         address ra,
@@ -121,12 +126,9 @@ abstract contract Helper is SigUtils, TestHelper {
         corkConfig.initializeModuleCore(pa, ra, initialDsPrice, baseRedemptionFee, expiryInSeconds);
     }
 
-    function initializeNewModuleCore(
-        address pa,
-        address ra,
-        uint256 initialDsPrice,
-        uint256 expiryInSeconds
-    ) internal {
+    function initializeNewModuleCore(address pa, address ra, uint256 initialDsPrice, uint256 expiryInSeconds)
+        internal
+    {
         corkConfig.initializeModuleCore(pa, ra, initialDsPrice, DEFAULT_BASE_REDEMPTION_FEE, expiryInSeconds);
     }
 
@@ -173,7 +175,7 @@ abstract contract Helper is SigUtils, TestHelper {
         defaultCurrencyId = id;
 
         initializeNewModuleCore(
-            address(pa), address(ra),  defaultInitialArp(), DEFAULT_BASE_REDEMPTION_FEE, expiryInSeconds
+            address(pa), address(ra), defaultInitialArp(), DEFAULT_BASE_REDEMPTION_FEE, expiryInSeconds
         );
         issueNewDs(
             id, defaultExchangeRate(), DEFAULT_REPURCHASE_FEE, DEFAULT_DECAY_DISCOUNT_RATE, DEFAULT_ROLLOVER_PERIOD
@@ -201,7 +203,7 @@ abstract contract Helper is SigUtils, TestHelper {
         defaultCurrencyId = id;
 
         initializeNewModuleCore(
-            address(pa), address(ra),  defaultInitialArp(), DEFAULT_BASE_REDEMPTION_FEE, expiryInSeconds
+            address(pa), address(ra), defaultInitialArp(), DEFAULT_BASE_REDEMPTION_FEE, expiryInSeconds
         );
         issueNewDs(
             id, defaultExchangeRate(), DEFAULT_REPURCHASE_FEE, DEFAULT_DECAY_DISCOUNT_RATE, DEFAULT_ROLLOVER_PERIOD
@@ -228,9 +230,7 @@ abstract contract Helper is SigUtils, TestHelper {
 
         defaultCurrencyId = id;
 
-        initializeNewModuleCore(
-            address(pa), address(ra),  defaultInitialArp(), baseRedemptionFee, expiryInSeconds
-        );
+        initializeNewModuleCore(address(pa), address(ra), defaultInitialArp(), baseRedemptionFee, expiryInSeconds);
         issueNewDs(
             id, DEFAULT_EXCHANGE_RATES, DEFAULT_REPURCHASE_FEE, DEFAULT_DECAY_DISCOUNT_RATE, DEFAULT_ROLLOVER_PERIOD
         );
@@ -256,7 +256,7 @@ abstract contract Helper is SigUtils, TestHelper {
         defaultCurrencyId = id;
 
         initializeNewModuleCore(
-            address(pa), address(ra),  defaultInitialArp(), DEFAULT_BASE_REDEMPTION_FEE, expiryInSeconds
+            address(pa), address(ra), defaultInitialArp(), DEFAULT_BASE_REDEMPTION_FEE, expiryInSeconds
         );
         issueNewDs(
             id, DEFAULT_EXCHANGE_RATES, DEFAULT_REPURCHASE_FEE, DEFAULT_DECAY_DISCOUNT_RATE, DEFAULT_ROLLOVER_PERIOD
@@ -360,7 +360,9 @@ abstract contract Helper is SigUtils, TestHelper {
 
     function initializeHedgeUnitFactory() internal {
         hedgeUnitRouter = new HedgeUnitRouter();
-        hedgeUnitFactory = new HedgeUnitFactory(address(moduleCore), address(corkConfig), address(flashSwapRouter), address(hedgeUnitRouter));
+        hedgeUnitFactory = new HedgeUnitFactory(
+            address(moduleCore), address(corkConfig), address(flashSwapRouter), address(hedgeUnitRouter)
+        );
         hedgeUnitRouter.grantRole(hedgeUnitRouter.HEDGE_UNIT_FACTORY_ROLE(), address(hedgeUnitFactory));
         corkConfig.setHedgeUnitFactory(address(hedgeUnitFactory));
     }
@@ -378,12 +380,12 @@ abstract contract Helper is SigUtils, TestHelper {
     }
 
     function __workaround() internal {
-        PrankWorkAround _contract= new PrankWorkAround();
+        PrankWorkAround _contract = new PrankWorkAround();
         _contract.prankApply();
     }
 }
 
-contract PrankWorkAround{
+contract PrankWorkAround {
     constructor() {
         // This is a workaround to apply the prank to the contract
         // since uniswap does whacky things with the contract creation
