@@ -235,8 +235,6 @@ library DsFlashSwaplibrary {
             InitialTradeCaclParams(market.reserveRa, market.reserveCt, issuedAt, end, amount, params)
         );
 
-        // amountOut = TransferHelper.fixedToTokenNativeDecimals(amountOut, assetPair.ra);
-        // market.reserveRa = TransferHelper.fixedToTokenNativeDecimals(market.reserveRa, assetPair.ra);
         // we subtract some percentage of it to account for dust imprecisions
         amountOut -= SwapperMathLibrary.calculatePercentage(amountOut, params.precisionBufferPercentage);
 
