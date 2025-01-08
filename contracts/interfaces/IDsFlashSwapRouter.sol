@@ -106,8 +106,8 @@ interface IDsFlashSwapCore is IDsFlashSwapUtility {
         uint256 precisionBufferPercentage;
     }
 
-    /// @notice offchain guess for CT AMM borrowing used in swapping RA for DS.
-    /// if empty, the router will try and calculate the optimal amount of CT to borrow
+    /// @notice offchain guess for RA AMM borrowing used in swapping RA for DS.
+    /// if empty, the router will try and calculate the optimal amount of RA to borrow
     /// using this will greatly reduce the gas cost.
     /// will be the default way to swap RA for DS
     struct OffchainGuess {
