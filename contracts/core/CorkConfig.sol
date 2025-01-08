@@ -18,6 +18,7 @@ import {HedgeUnit} from "./assets/HedgeUnit.sol";
  */
 contract CorkConfig is AccessControl, Pausable {
     bytes32 public constant MANAGER_ROLE = keccak256("MANAGER_ROLE");
+    bytes32 public constant MARKET_INITIALIZER_ROLE = keccak256("MARKET_INITIALIZER_ROLE");
     bytes32 public constant RATE_UPDATERS_ROLE = keccak256("RATE_UPDATERS_ROLE");
     bytes32 public constant BASE_LIQUIDATOR_ROLE = keccak256("BASE_LIQUIDATOR_ROLE");
 
@@ -33,6 +34,9 @@ contract CorkConfig is AccessControl, Pausable {
 
     /// @notice thrown when caller is not manager/Admin of Cork Protocol
     error CallerNotManager();
+
+    /// @notice thrown when caller is not Market Initializer of Cork Protocol
+    error CallerNotInitializer();
 
     /// @notice thrown when passed Invalid/Zero Address
     error InvalidAddress();
@@ -60,6 +64,13 @@ contract CorkConfig is AccessControl, Pausable {
         _;
     }
 
+    modifier onlyInitializer() {
+        if (!hasRole(MARKET_INITIALIZER_ROLE, msg.sender)) {
+            revert CallerNotInitializer();
+        }
+        _;
+    }
+
     modifier onlyUpdaterOrManager() {
         if (!hasRole(RATE_UPDATERS_ROLE, msg.sender) && !hasRole(MANAGER_ROLE, msg.sender)) {
             revert CallerNotManager();
@@ -71,6 +82,7 @@ contract CorkConfig is AccessControl, Pausable {
         if(adminAdd == address(0) || managerAdd == address(0)) {
             revert InvalidAddress();
         }
+        _setRoleAdmin(MARKET_INITIALIZER_ROLE, MANAGER_ROLE);
         _setRoleAdmin(RATE_UPDATERS_ROLE, MANAGER_ROLE);
         _setRoleAdmin(BASE_LIQUIDATOR_ROLE, MANAGER_ROLE); 
         _grantRole(DEFAULT_ADMIN_ROLE, adminAdd);
@@ -79,6 +91,11 @@ contract CorkConfig is AccessControl, Pausable {
 
     function _computLiquidatorRoleHash(address account) public view returns (bytes32) {
         return keccak256(abi.encodePacked(BASE_LIQUIDATOR_ROLE, account));
+    }
+
+    // This will be only used in case of emergency to change the manager of the different roles if any of the manager is compromised
+    function setRoleAdmin(bytes32 role, bytes32 newAdminRole) external onlyRole(getRoleAdmin(role)) {
+        _setRoleAdmin(role, newAdminRole);
     }
 
     function grantRole(bytes32 role, address account) public override onlyManager {
@@ -169,7 +186,7 @@ contract CorkConfig is AccessControl, Pausable {
         uint256 initialDsPrice,
         uint256 _psmBaseRedemptionFeePercentage,
         uint256 expiryInterval
-    ) external onlyManager {
+    ) external onlyInitializer {
         moduleCore.initializeModuleCore(pa, ra, lvFee, initialDsPrice, _psmBaseRedemptionFeePercentage, expiryInterval);
     }
 
