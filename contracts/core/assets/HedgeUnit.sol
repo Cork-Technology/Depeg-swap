@@ -179,18 +179,18 @@ contract HedgeUnit is ERC20Permit, ReentrancyGuardTransient, Ownable, Pausable, 
         emit FundsUsed(msg.sender, dsId, amount, amountOut);
     }
 
-    function redeemRaWithDsPa(uint256 amount, uint256 amountDs) external autoUpdateDS onlyOwner {
+    function redeemRaWithDsPa(uint256 amountPa, uint256 amountDs) external autoUpdateDS onlyOwner {
         uint256 dsId = moduleCore.lastDsId(id);
 
         ds.approve(address(moduleCore), amountDs);
-        pa.approve(address(moduleCore), amount);
+        pa.approve(address(moduleCore), amountPa);
 
-        moduleCore.redeemRaWithDs(id, dsId, amount);
+        moduleCore.redeemRaWithDs(id, dsId, amountPa);
 
         // auto pause
         _pause();
 
-        emit RaRedeemed(msg.sender, dsId, amount);
+        emit RaRedeemed(msg.sender, dsId, amountPa);
     }
 
     function fundsAvailable(address token) external view onlyValidToken(token) returns (uint256) {
