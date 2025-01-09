@@ -291,11 +291,7 @@ contract CorkConfig is AccessControl, Pausable {
         HedgeUnit(hedgeUnit).pause();
     }
 
-    function pauseHedgeUnitMinting(address hedgeUnit) external onlyManager {
-        HedgeUnit(hedgeUnit).pause();
-    }
-
-    function resumeHedgeUnitMinting(address hedgeUnit) external onlyManager {
+    function resumeHedgeUnit(address hedgeUnit) external onlyManager {
         HedgeUnit(hedgeUnit).unpause();
     }
 
