@@ -55,50 +55,35 @@ interface Initialize {
      * @param id id of the pair
      * @param isPSMDepositPaused set to true if you want to pause PSM deposits
      */
-    function updatePsmDepositsStatus(
-        Id id,
-        bool isPSMDepositPaused
-    ) external;
+    function updatePsmDepositsStatus(Id id, bool isPSMDepositPaused) external;
 
     /**
      * @notice update pausing status of PSM Withdrawals
      * @param id id of the pair
      * @param isPSMWithdrawalPaused set to true if you want to pause PSM withdrawals
      */
-    function updatePsmWithdrawalsStatus(
-        Id id,
-        bool isPSMWithdrawalPaused
-    ) external;
+    function updatePsmWithdrawalsStatus(Id id, bool isPSMWithdrawalPaused) external;
 
     /**
      * @notice update pausing status of PSM Repurchases
      * @param id id of the pair
      * @param isPSMRepurchasePaused set to true if you want to pause PSM repurchases
      */
-    function updatePsmRepurchasesStatus(
-        Id id,
-        bool isPSMRepurchasePaused
-    ) external;
+    function updatePsmRepurchasesStatus(Id id, bool isPSMRepurchasePaused) external;
 
     /**
      * @notice update pausing status of LV deposits
      * @param id id of the pair
      * @param isLVDepositPaused set to true if you want to pause LV deposits
      */
-    function updateLvDepositsStatus(
-        Id id,
-        bool isLVDepositPaused
-    ) external;
+    function updateLvDepositsStatus(Id id, bool isLVDepositPaused) external;
 
     /**
      * @notice update pausing status of LV withdrawals
      * @param id id of the pair
      * @param isLVWithdrawalPaused set to true if you want to pause LV withdrawals
      */
-    function updateLvWithdrawalsStatus(
-        Id id,
-        bool isLVWithdrawalPaused
-    ) external;
+    function updateLvWithdrawalsStatus(Id id, bool isLVWithdrawalPaused) external;
 
     /**
      * @notice update PSM base redemption fee percentage
@@ -112,4 +97,31 @@ interface Initialize {
      * @return expiry next expiry time in seconds
      */
     function expiry(Id id) external view returns (uint256 expiry);
+
+    /**
+     * @notice Get the last DS id issued for a given module, the returned DS doesn't guarantee to be active
+     * @param id The current module id
+     * @return dsId The current effective DS id
+     *
+     */
+    function lastDsId(Id id) external view returns (uint256 dsId);
+
+    /**
+     * @notice returns the address of the underlying RA and PA token
+     * @param id the id of PSM
+     * @return ra address of the underlying RA token
+     * @return pa address of the underlying PA token
+     */
+    function underlyingAsset(Id id) external view returns (address ra, address pa);
+
+    /**
+     * @notice returns the address of CT and DS associated with a certain DS id
+     * @param id the id of PSM
+     * @param dsId the DS id
+     * @return ct address of the CT token
+     * @return ds address of the DS token
+     */
+    function swapAsset(Id id, uint256 dsId) external view returns (address ct, address ds);
+
+    function getId(address pa, address ra, uint256 expiryInterva) external pure returns (Id id);
 }
