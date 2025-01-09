@@ -12,6 +12,7 @@ import {ICorkHook} from "./../interfaces/UniV4/IMinimalHook.sol";
 import {ILiquidatorRegistry} from "./../interfaces/ILiquidatorRegistry.sol";
 import {ReentrancyGuardTransient} from "@openzeppelin/contracts/utils/ReentrancyGuardTransient.sol";
 import {Withdrawal} from "./Withdrawal.sol";
+import {CorkConfig} from "./CorkConfig.sol";
 
 /**
  * @title ModuleState Abstract Contract
@@ -66,7 +67,7 @@ abstract contract ModuleState is ICommon, ReentrancyGuardTransient {
         AMM_HOOK = _ammHook;
     }
 
-    function _setWithdrawalContract(address _withdrawalContract) internal{
+    function _setWithdrawalContract(address _withdrawalContract) internal {
         WITHDRAWAL_CONTRACT = _withdrawalContract;
     }
 
@@ -80,6 +81,10 @@ abstract contract ModuleState is ICommon, ReentrancyGuardTransient {
 
     function getWithdrawalContract() internal view returns (Withdrawal) {
         return Withdrawal(WITHDRAWAL_CONTRACT);
+    }
+
+    function getTreasuryAddress() internal view returns (address) {
+        return CorkConfig(CONFIG).treasury();
     }
 
     function onlyInitialized(Id id) internal {
