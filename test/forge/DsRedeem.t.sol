@@ -16,7 +16,7 @@ contract DsPaRedeemTest is Helper {
     Id public currencyId;
 
     uint256 public DEFAULT_DEPOSIT_AMOUNT = 10000 ether;
-    uint256 redemptionFeePercentage = 10 ether;
+    uint256 redemptionFeePercentage = 1 ether;
     uint256 treasurySplit = 10 ether;
 
     uint256 public dsId;
