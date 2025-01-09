@@ -16,6 +16,8 @@ import {
 import {LvAsset} from "./../libraries/LvAssetLib.sol";
 import {BitMaps} from "@openzeppelin/contracts/utils/structs/BitMaps.sol";
 
+/// @title StateView Contract, used for providing getter functions for ModuleCore contract
+/// intended usage is to run a local fork of blockchain and replace the bytecode of ModuleCore contract with this contract
 contract StateView is ModuleState {
     using BitMaps for BitMaps.BitMap;
 
