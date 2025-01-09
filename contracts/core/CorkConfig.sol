@@ -156,17 +156,17 @@ contract CorkConfig is AccessControl, Pausable {
      * @param pa Address of PA
      * @param ra Address of RA
      * @param lvFee fees for LV
-     * @param initialDsPrice initial price of DS
+     * @param initialArp initial ARP value
      */
     function initializeModuleCore(
         address pa,
         address ra,
         uint256 lvFee,
-        uint256 initialDsPrice,
+        uint256 initialArp,
         uint256 _psmBaseRedemptionFeePercentage,
         uint256 expiryInterval
     ) external onlyManager {
-        moduleCore.initializeModuleCore(pa, ra, lvFee, initialDsPrice, _psmBaseRedemptionFeePercentage, expiryInterval);
+        moduleCore.initializeModuleCore(pa, ra, lvFee, initialArp, _psmBaseRedemptionFeePercentage, expiryInterval);
     }
 
     /**
