@@ -343,7 +343,7 @@ abstract contract Helper is SigUtils, TestHelper {
 
     function initializeHedgeUnitFactory() internal {
         hedgeUnitRouter = new HedgeUnitRouter();
-        hedgeUnitFactory = new HedgeUnitFactory(address(moduleCore), address(corkConfig), address(flashSwapRouter), address(hedgeUnitRouter));
+        hedgeUnitFactory = new HedgeUnitFactory(address(moduleCore), address(corkConfig), address(flashSwapRouter));
         hedgeUnitRouter.grantRole(hedgeUnitRouter.HEDGE_UNIT_FACTORY_ROLE(), address(hedgeUnitFactory));
         corkConfig.setHedgeUnitFactory(address(hedgeUnitFactory));
     }
