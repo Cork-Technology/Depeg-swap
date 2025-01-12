@@ -13,17 +13,13 @@ interface Initialize {
      * @notice initialize a new pool, this will initialize PSM and Liquidity Vault and deploy new LV token
      * @param pa address of PA token(e.g stETH)
      * @param ra address of RA token(e.g WETH)
-     * @param lvFee fees for Liquidity Vault early withdrawal, make sure it has 18 decimals(e.g 1% = 1e18)
      * @param initialArp initial assets ARP. the initial ds price will be derived from this value. must be in 18 decimals(e.g 1% = 1e18)
-     * @param psmBaseRedemptionFeePercentage base redemption fee for PSM, make sure it has 18 decimals(e.g 1% = 1e18)
      * @param expiryInterval expiry interval for DS, this will be used to calculate the next expiry time for DS(block.timestamp + expiryInterval)
      */
     function initializeModuleCore(
         address pa,
         address ra,
-        uint256 lvFee,
         uint256 initialArp,
-        uint256 psmBaseRedemptionFeePercentage,
         uint256 expiryInterval
     ) external;
 
@@ -51,13 +47,6 @@ interface Initialize {
      * @param newRepurchaseFeePercentage new value of repurchase fees, make sure it has 18 decimals(e.g 1% = 1e18)
      */
     function updateRepurchaseFeeRate(Id id, uint256 newRepurchaseFeePercentage) external;
-
-    /**
-     * @notice update liquidity vault early redemption fee rate for a pair
-     * @param id id of the pair
-     * @param newEarlyRedemptionFeeRate new value of earlyRedemptin fees, make sure it has 18 decimals(e.g 1% = 1e18)
-     */
-    function updateEarlyRedemptionFeeRate(Id id, uint256 newEarlyRedemptionFeeRate) external;
 
     /**
      * @notice update pausing status of PSM Deposits

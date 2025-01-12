@@ -46,7 +46,7 @@ contract DeployScript is Script {
     uint256 public base_redemption_fee = vm.envUint("PSM_BASE_REDEMPTION_FEE_PERCENTAGE");
     address public ceth = vm.envAddress("WETH");
     uint256 public pk = vm.envUint("PRIVATE_KEY");
-    address public user = vm.addr(pk);
+    address public deployer = vm.addr(pk);
 
     address internal constant CREATE_2_PROXY = 0x4e59b44847b379578588920cA78FbF26c0B4956C;
 
@@ -159,7 +159,7 @@ contract DeployScript is Script {
         console.log("ModuleCore Router Implementation : ", address(moduleCoreImplementation));
 
         // deploy hook
-        poolManager = new PoolManager(user);
+        poolManager = new PoolManager(deployer);
         liquidityToken = new LiquidityToken();
 
         bytes memory creationCode = type(CorkHook).creationCode;
@@ -277,9 +277,10 @@ contract DeployScript is Script {
         uint256 repurchaseFee,
         uint256 expiryPeriod
     ) public {
-        config.initializeModuleCore(cst, ceth, redmptionFee, dsPrice, base_redemption_fee, expiryPeriod);
+        config.initializeModuleCore(cst, ceth, dsPrice, expiryPeriod);
 
         Id id = moduleCore.getId(cst, ceth, expiryPeriod);
+        config.updatePsmBaseRedemptionFeePercentage(id, redmptionFee);
         config.issueNewDs(
             id,
             1 ether, // exchange rate = 1:1
