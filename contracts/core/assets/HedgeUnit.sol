@@ -33,7 +33,15 @@ struct DSData {
  * @notice This contract allows minting and dissolving HedgeUnit tokens in exchange for two underlying assets.
  * @dev The contract uses OpenZeppelin's ERC20, ReentrancyGuardTransient,Pausable and Ownable modules.
  */
-contract HedgeUnit is ERC20Permit, ReentrancyGuardTransient, Ownable, Pausable, IHedgeUnit, IHedgeUnitLiquidation {
+contract HedgeUnit is
+    ERC20Permit,
+    ReentrancyGuardTransient,
+    Ownable,
+    Pausable,
+    IHedgeUnit,
+    IHedgeUnitLiquidation,
+    ERC20Burnable
+{
     using SafeERC20 for IERC20;
 
     uint8 internal constant TARGET_DECIMALS = 18;
