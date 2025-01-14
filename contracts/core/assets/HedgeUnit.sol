@@ -308,6 +308,7 @@ contract HedgeUnit is
         emit Mint(minter, amount);
     }
 
+    // if pa do not support permit, then user can still use this function with only ds permit and manual approval on the PA side
     function mint(
         address minter,
         uint256 amount,
