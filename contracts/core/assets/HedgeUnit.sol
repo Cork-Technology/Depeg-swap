@@ -49,7 +49,6 @@ contract HedgeUnit is
     ModuleCore public moduleCore;
     CorkConfig public config;
     IDsFlashSwapCore public flashSwapRouter;
-    address public hedgeUnitRouter;
     Id public id;
 
     /// @notice The ERC20 token representing the pa asset.
@@ -80,8 +79,7 @@ contract HedgeUnit is
         string memory _pairName,
         uint256 _mintCap,
         address _config,
-        address _flashSwapRouter,
-        address _hedgeUnitRouter
+        address _flashSwapRouter
     )
         ERC20(string(abi.encodePacked("Hedge Unit - ", _pairName)), string(abi.encodePacked("HU - ", _pairName)))
         ERC20Permit(string(abi.encodePacked("Hedge Unit - ", _pairName)))
@@ -94,7 +92,6 @@ contract HedgeUnit is
         mintCap = _mintCap;
         flashSwapRouter = IDsFlashSwapCore(_flashSwapRouter);
         config = CorkConfig(_config);
-        hedgeUnitRouter = _hedgeUnitRouter;
     }
 
     modifier autoUpdateDS() {
@@ -119,13 +116,6 @@ contract HedgeUnit is
     modifier onlyOwnerOrLiquidator() {
         if (msg.sender != owner() && !config.isLiquidationWhitelisted(msg.sender)) {
             revert OnlyLiquidatorOrOwner();
-        }
-        _;
-    }
-
-    modifier onlyValidDissolver(address dissolver) {
-        if (msg.sender != dissolver && msg.sender != hedgeUnitRouter) {
-            revert OnlyDissolverOrHURouterAllowed();
         }
         _;
     }
