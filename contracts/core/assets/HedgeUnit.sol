@@ -56,7 +56,7 @@ contract HedgeUnit is
     ERC20 public ra;
 
     /// @notice The ERC20 token representing the ds asset.
-    Asset public ds;
+    Asset internal ds;
 
     /// @notice Maximum supply cap for minting HedgeUnit tokens.
     uint256 public mintCap;
@@ -129,6 +129,10 @@ contract HedgeUnit is
         }
 
         return Asset(dsAdd);
+    }
+
+    function latestDs() external view returns (address) {
+        return address(_fetchLatestDS());
     }
 
     function getReserves() external view returns (uint256 dsReserves, uint256 paReserves, uint256 raReserves) {
@@ -238,7 +242,7 @@ contract HedgeUnit is
      * @return paAmount The amount of pa tokens required to mint the specified amount of HedgeUnit tokens.
      */
     function previewMint(uint256 amount) public view returns (uint256 dsAmount, uint256 paAmount) {
-        if(amount == 0) {
+        if (amount == 0) {
             revert InvalidAmount();
         }
 
@@ -275,7 +279,7 @@ contract HedgeUnit is
     }
 
     function __mint(address minter, uint256 amount) internal returns (uint256 dsAmount, uint256 paAmount) {
-        if(amount == 0) {
+        if (amount == 0) {
             revert InvalidAmount();
         }
 
