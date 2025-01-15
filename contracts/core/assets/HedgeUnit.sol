@@ -346,7 +346,7 @@ contract HedgeUnit is
      * @return paAmount The amount of PA tokens received for dissolving the specified amount of HedgeUnit tokens.
      * @return raAmount The amount of RA tokens received for dissolving the specified amount of HedgeUnit tokens.
      */
-    function previewDissolve(address dissolver, uint256 amount)
+    function previewBurn(address dissolver, uint256 amount)
         public
         view
         returns (uint256 dsAmount, uint256 paAmount, uint256 raAmount)
@@ -364,41 +364,39 @@ contract HedgeUnit is
 
     /**
      * @notice Dissolves HedgeUnit tokens and returns the equivalent amount of DS and pa tokens.
-     * @param dissolver The address of dissolver(user)
      * @param amount The amount of HedgeUnit tokens to dissolve.
-     * @return dsAdd The address of DS tokens returned.
-     * @return paAdd The address of pa tokens returned.
-     * @return raAdd The address of ra tokens returned.
-     * @return dsAmount The amount of DS tokens returned.
-     * @return paAmount The amount of pa tokens returned.
-     * @return raAmount The amount of ra tokens returned.
      * @custom:reverts EnforcedPause if minting is currently paused.
      * @custom:reverts InvalidAmount if the user has insufficient HedgeUnit balance.
      */
-    function dissolve(address dissolver, uint256 amount)
-        external
-        whenNotPaused
-        nonReentrant
-        autoUpdateDS
-        onlyValidDissolver(dissolver)
-        returns (address dsAdd, address paAdd, address raAdd, uint256 dsAmount, uint256 paAmount, uint256 raAmount)
-    {
-        (dsAmount, paAmount, raAmount) = _dissolve(dissolver, amount);
-        dsAdd = address(ds);
-        paAdd = address(pa);
-        raAdd = address(ra);
+    function burnFrom(address account, uint256 amount) public override whenNotPaused nonReentrant autoUpdateDS {
+        _dissolve(account, amount);
     }
 
-    function _dissolve(address dissolver, uint256 amount) internal returns (uint256 dsAmount, uint256 paAmount, uint256 raAmount) {
-        (dsAmount, paAmount, raAmount) = previewDissolve(dissolver, amount);
+    function burn(uint256 amount) public override whenNotPaused nonReentrant autoUpdateDS {
+        _dissolve(msg.sender, amount);
+    }
+
+    function _dissolve(address dissolver, uint256 amount)
+        internal
+        returns (uint256 dsAmount, uint256 paAmount, uint256 raAmount)
+    {
+        (dsAmount, paAmount, raAmount) = previewBurn(dissolver, amount);
+
+        _burnFrom(dissolver, amount);
 
         TransferHelper.transferNormalize(pa, dissolver, paAmount);
         _transferDs(dissolver, dsAmount);
         TransferHelper.transferNormalize(ra, dissolver, raAmount);
 
-        _burn(dissolver, amount);
-
         emit Dissolve(dissolver, amount, dsAmount, paAmount);
+    }
+
+    function _burnFrom(address account, uint256 value) internal {
+        if (account != msg.sender) {
+            _spendAllowance(account, msg.sender, value);
+        }
+        
+        _burn(account, value);
     }
 
     /**
