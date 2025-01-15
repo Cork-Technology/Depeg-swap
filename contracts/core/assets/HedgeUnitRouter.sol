@@ -5,17 +5,17 @@ import {ReentrancyGuardTransient} from "@openzeppelin/contracts/utils/Reentrancy
 import {AccessControl} from "@openzeppelin/contracts/access/AccessControl.sol";
 import {HedgeUnit} from "./HedgeUnit.sol";
 import {IHedgeUnitRouter} from "../../interfaces/IHedgeUnitRouter.sol";
+import {MinimalSignatureHelper, Signature} from "./../../libraries/SignatureHelperLib.sol";
 
 /**
  * @title HedgeUnitRouter
  * @notice This contract is used to execute batch mint and batch dissolve functions for multiple HedgeUnit contracts.
  */
 contract HedgeUnitRouter is IHedgeUnitRouter, AccessControl, ReentrancyGuardTransient {
+    string public constant DS_PERMIT_BATCH_MINT_FUNCTION_TYPEHASH = "DS_PERMIT_BATCH_MINT_FUNCTION_TYPEHASH";
+
     // this role will be assigned through grantRole function
     bytes32 public constant HEDGE_UNIT_FACTORY_ROLE = keccak256("HEDGE_UNIT_FACTORY_ROLE");
-
-    // Mapping to keep track of legitimate HedgeUnit contracts
-    mapping(address => bool) public isHedgeUnit;
 
     modifier onlyDefaultAdmin() {
         if (!hasRole(DEFAULT_ADMIN_ROLE, msg.sender)) {
@@ -35,38 +35,6 @@ contract HedgeUnitRouter is IHedgeUnitRouter, AccessControl, ReentrancyGuardTran
         _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
     }
 
-    /**
-     * @dev Adds new HedgeUnit contract address
-     * @param hedgeUnitAdd new Hedge Unit contract address
-     */
-    function addHedgeUnit(address hedgeUnitAdd) external onlyHedgeUnitFactory {
-        if (hedgeUnitAdd == address(0)) {
-            revert InvalidInput();
-        }
-        if (isHedgeUnit[hedgeUnitAdd]) {
-            revert HedgeUnitExists();
-        }
-        isHedgeUnit[hedgeUnitAdd] = true;
-        emit HedgeUnitSet(hedgeUnitAdd);
-    }
-
-    /**
-     * @dev Removes HedgeUnit contract address
-     * @dev Note : this only removes hedge unit from this router, so hedge unit contract will still work even after if it gets removed from here
-     * @dev Note : Generally this will be used on emergency situations only
-     * @param hedgeUnitAdd old Hedge Unit contract address
-     */
-    function removeHedgeUnit(address hedgeUnitAdd) external onlyDefaultAdmin {
-        if (hedgeUnitAdd == address(0)) {
-            revert InvalidInput();
-        }
-        if (!isHedgeUnit[hedgeUnitAdd]) {
-            revert HedgeUnitNotExists();
-        }
-        isHedgeUnit[hedgeUnitAdd] = false;
-        emit HedgeUnitRemoved(hedgeUnitAdd);
-    }
-
     // This function is used to preview batch mint for multiple HedgeUnits in single transaction.
     function previewBatchMint(address[] calldata hedgeUnits, uint256[] calldata amounts)
         external
@@ -83,9 +51,6 @@ contract HedgeUnitRouter is IHedgeUnitRouter, AccessControl, ReentrancyGuardTran
         // If large number of HedgeUnits are passed, this function will revert due to gas limit.
         // So we will keep the limit to 10 HedgeUnits(or even less if needed) from frontend.
         for (uint256 i = 0; i < hedgeUnits.length; i++) {
-            if (!isHedgeUnit[hedgeUnits[i]]) {
-                revert InvalidInput();
-            }
             (dsAmounts[i], paAmounts[i]) = HedgeUnit(hedgeUnits[i]).previewMint(amounts[i]);
         }
     }
@@ -106,9 +71,13 @@ contract HedgeUnitRouter is IHedgeUnitRouter, AccessControl, ReentrancyGuardTran
         // If large number of HedgeUnits are passed, this function will revert due to gas limit.
         // So we will keep the limit to 10 HedgeUnits(or even less if needed) from frontend.
         for (uint256 i = 0; i < params.hedgeUnits.length; i++) {
-            if (!isHedgeUnit[params.hedgeUnits[i]]) {
-                revert InvalidInput();
+            bytes memory dsPermit = params.rawDsPermitSigs[i];
+            bytes memory paPermit = params.rawPaPermitSigs[i];
+
+            if (dsPermit.length != 0) {
+                Signature memory signature = MinimalSignatureHelper.split(dsPermit);
             }
+
             (dsAmounts[i], paAmounts[i]) = HedgeUnit(params.hedgeUnits[i]).mint(
                 params.minter, params.amounts[i], params.rawDsPermitSigs[i], params.rawPaPermitSigs[i], params.deadline
             );
@@ -132,11 +101,7 @@ contract HedgeUnitRouter is IHedgeUnitRouter, AccessControl, ReentrancyGuardTran
         // If large number of HedgeUnits are passed, this function will revert due to gas limit.
         // So we will keep the limit to 10 HedgeUnits(or even less if needed) from frontend.
         for (uint256 i = 0; i < hedgeUnits.length; i++) {
-            if (!isHedgeUnit[hedgeUnits[i]]) {
-                revert InvalidInput();
-            }
-            (dsAmounts[i], paAmounts[i], raAmounts[i]) =
-                HedgeUnit(hedgeUnits[i]).previewDissolve(msg.sender, amounts[i]);
+            (dsAmounts[i], paAmounts[i], raAmounts[i]) = HedgeUnit(hedgeUnits[i]).previewBurn(msg.sender, amounts[i]);
         }
     }
 
