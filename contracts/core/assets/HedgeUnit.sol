@@ -42,6 +42,8 @@ contract HedgeUnit is
     IHedgeUnitLiquidation,
     ERC20Burnable
 {
+    string public constant DS_PERMIT_MINT_TYPEHASH = "mint(uint256 amount)";
+
     using SafeERC20 for IERC20;
 
     uint8 internal constant TARGET_DECIMALS = 18;
@@ -327,7 +329,7 @@ contract HedgeUnit is
         (dsAmount, paAmount) = previewMint(amount);
 
         Signature memory sig = MinimalSignatureHelper.split(rawDsPermitSig);
-        ds.permit(minter, address(this), dsAmount, deadline, sig.v, sig.r, sig.s, "mint");
+        ds.permit(minter, address(this), dsAmount, deadline, sig.v, sig.r, sig.s, DS_PERMIT_MINT_TYPEHASH);
 
         if (rawPaPermitSig.length != 0) {
             sig = MinimalSignatureHelper.split(rawPaPermitSig);
@@ -395,7 +397,7 @@ contract HedgeUnit is
         if (account != msg.sender) {
             _spendAllowance(account, msg.sender, value);
         }
-        
+
         _burn(account, value);
     }
 
