@@ -205,6 +205,8 @@ contract HedgeUnitRouterTest is Helper {
         hedgeUnits[0] = address(hedgeUnit);
         amounts[0] = dissolveAmount;
 
+        hedgeUnit.approve(address(hedgeUnitRouter), dissolveAmount);
+
         // Dissolve 50 tokens
         hedgeUnitRouter.batchDissolve(hedgeUnits, amounts);
 
