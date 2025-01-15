@@ -129,6 +129,7 @@ contract HedgeUnitTest is Helper {
         (uint256 dsAmount, uint256 paAmount) = hedgeUnit.previewMint(mintAmount);
         bytes32 domain_separator = Asset(address(dsToken)).DOMAIN_SEPARATOR();
         uint256 deadline = block.timestamp + 10 days;
+
         bytes memory dsPermit = getCustomPermit(
             user,
             address(hedgeUnit),
@@ -137,12 +138,15 @@ contract HedgeUnitTest is Helper {
             deadline,
             USER_PK,
             domain_separator,
-            "mint"
+            hedgeUnit.DS_PERMIT_MINT_TYPEHASH()
         );
+
         domain_separator = Asset(address(pa)).DOMAIN_SEPARATOR();
+
         bytes memory paPermit = getPermit(
             user, address(hedgeUnit), paAmount, Asset(address(pa)).nonces(user), deadline, USER_PK, domain_separator
         );
+
         hedgeUnit.mint(user, mintAmount, dsPermit, paPermit, deadline);
 
         // Check balances and total supply
