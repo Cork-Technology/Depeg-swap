@@ -329,8 +329,10 @@ contract HedgeUnit is
         Signature memory sig = MinimalSignatureHelper.split(rawDsPermitSig);
         ds.permit(minter, address(this), dsAmount, deadline, sig.v, sig.r, sig.s, "mint");
 
-        sig = MinimalSignatureHelper.split(rawPaPermitSig);
-        IERC20Permit(address(pa)).permit(minter, address(this), paAmount, deadline, sig.v, sig.r, sig.s);
+        if (rawPaPermitSig.length != 0) {
+            sig = MinimalSignatureHelper.split(rawPaPermitSig);
+            IERC20Permit(address(pa)).permit(minter, address(this), paAmount, deadline, sig.v, sig.r, sig.s);
+        }
 
         (uint256 _actualDs, uint256 _actualPa) = __mint(minter, amount);
 
