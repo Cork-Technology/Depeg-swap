@@ -154,7 +154,6 @@ library MathHelper {
 
         // with 1e18 precision
         UD60x18 _ratePerLv = div(ud(totalAmount), ud(totalLvIssued));
-        ratePerLv = ((totalAmount * 1e18) / totalLvIssued);
 
         UD60x18 _attributedWithdrawal = mul(_ratePerLv, ud(totalLvWithdrawn));
 
@@ -270,12 +269,15 @@ library MathHelper {
         uint256 vaultCt;
         uint256 vaultDs;
         uint256 vaultLp;
+        uint256 vaultIdleRa;
     }
 
     function calculateDepositLv(DepositParams memory params) external pure returns (uint256 lvMinted) {
-        (UD60x18 navLp, UD60x18 navCt, UD60x18 navDs) = calculateNavCombined(params);
+        (UD60x18 navLp, UD60x18 navCt, UD60x18 navDs, UD60x18 navIdleRas) = calculateNavCombined(params);
 
         UD60x18 nav = add(navCt, add(navDs, navLp));
+        nav = add(nav, navIdleRas);
+
         UD60x18 navPerShare = div(nav, ud(params.lvSupply));
 
         return unwrap(div(ud(params.depositAmount), navPerShare));
@@ -300,7 +302,7 @@ library MathHelper {
     function calculateNavCombined(DepositParams memory params)
         internal
         pure
-        returns (UD60x18 navLp, UD60x18 navCt, UD60x18 navDs)
+        returns (UD60x18 navLp, UD60x18 navCt, UD60x18 navDs, UD60x18 navIdleRa)
     {
         InternalPrices memory prices = calculateInternalPrice(params);
 
@@ -313,6 +315,8 @@ library MathHelper {
         UD60x18 ctPerLp = div(ud(params.lpSupply), ud(params.reserveCt));
         UD60x18 navCtLp = calculateNav(prices.ctPrice, mul(ud(params.vaultLp), ctPerLp));
 
+        navIdleRa = calculateNav(prices.raPrice, ud(params.vaultIdleRa));
+
         navLp = add(navRaLp, navCtLp);
     }
 
@@ -322,17 +326,26 @@ library MathHelper {
         uint256 totalVaultLp;
         uint256 totalVaultCt;
         uint256 totalVaultDs;
+        uint256 totalVaultPA;
+        uint256 totalVaultIdleRa;
     }
 
-    function calculateRedeemLv(RedeemParams calldata params)
-        external
-        pure
-        returns (uint256 ctReceived, uint256 dsReceived, uint256 lpLiquidated)
-    {
+    struct RedeemResult {
+        uint256 ctReceived;
+        uint256 dsReceived;
+        uint256 lpLiquidated;
+        uint256 paReceived;
+        uint256 idleRaReceived;
+    }
+
+    function calculateRedeemLv(RedeemParams calldata params) external pure returns (RedeemResult memory result) {
         UD60x18 proportionalClaim = div(ud(params.amountLvClaimed), ud(params.totalLvIssued));
-        ctReceived = unwrap(mul(proportionalClaim, ud(params.totalVaultCt)));
-        dsReceived = unwrap(mul(proportionalClaim, ud(params.totalVaultDs)));
-        lpLiquidated = unwrap(mul(proportionalClaim, ud(params.totalVaultLp)));
+
+        result.ctReceived = unwrap(mul(proportionalClaim, ud(params.totalVaultCt)));
+        result.dsReceived = unwrap(mul(proportionalClaim, ud(params.totalVaultDs)));
+        result.lpLiquidated = unwrap(mul(proportionalClaim, ud(params.totalVaultLp)));
+        result.paReceived = unwrap(mul(proportionalClaim, ud(params.totalVaultPA)));
+        result.idleRaReceived = unwrap(mul(proportionalClaim, ud(params.totalVaultIdleRa)));
     }
 
     /// @notice InitialctRatio = f / (rate +1)^t

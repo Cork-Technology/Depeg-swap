@@ -12,6 +12,7 @@ import {ModuleCore} from "../../contracts/core/ModuleCore.sol";
 import {Liquidator} from "../../contracts/core/liquidators/cow-protocol/Liquidator.sol";
 import {HedgeUnit} from "../../contracts/core/assets/HedgeUnit.sol";
 import {HedgeUnitFactory} from "../../contracts/core/assets/HedgeUnitFactory.sol";
+import {HedgeUnitRouter} from "../../contracts/core/assets/HedgeUnitRouter.sol";
 import {CETH} from "../../contracts/tokens/CETH.sol";
 import {CST} from "../../contracts/tokens/CST.sol";
 import {Id} from "../../contracts/libraries/Pair.sol";
@@ -34,6 +35,7 @@ contract DeployScript is Script {
     LiquidityToken public liquidityToken;
     Liquidator public liquidator;
     HedgeUnitFactory public hedgeUnitFactory;
+    HedgeUnitRouter public hedgeUnitRouter;
 
     HedgeUnit public hedgeUnitbsETH;
     HedgeUnit public hedgeUnitlbETH;
@@ -189,17 +191,19 @@ contract DeployScript is Script {
         console.log("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-");
 
         // Deploy the HedgeUnitFactry contract
-        hedgeUnitFactory = new HedgeUnitFactory(address(moduleCore), address(liquidator));
-        hedgeUnitFactory.updateLiquidatorRole(msg.sender, true);
+        hedgeUnitRouter = new HedgeUnitRouter();
+        hedgeUnitFactory = new HedgeUnitFactory(address(moduleCore), address(config), address(flashswapRouter), address(hedgeUnitRouter));
+        hedgeUnitRouter.grantRole(hedgeUnitRouter.HEDGE_UNIT_FACTORY_ROLE(), address(hedgeUnitFactory));
+        config.setHedgeUnitFactory(address(hedgeUnitFactory));
         console.log("HedgeUnit Factory               : ", address(hedgeUnitFactory));
         console.log("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-");
 
         // Deploy the HedgeUnit contract
-
         hedgeUnitbsETH = HedgeUnit(
-            hedgeUnitFactory.deployHedgeUnit(
+            config.deployHedgeUnit(
                 moduleCore.getId(bsETH, ceth, bsETH_CETH_expiry),
                 bsETH,
+                ceth,
                 "Bear Sterns Restaked ETH - CETH",
                 INITIAL_MINT_CAP
             )
@@ -207,9 +211,10 @@ contract DeployScript is Script {
         console.log("HU bsETH                        : ", address(hedgeUnitbsETH));
 
         hedgeUnitlbETH = HedgeUnit(
-            hedgeUnitFactory.deployHedgeUnit(
+            config.deployHedgeUnit(
                 moduleCore.getId(lbETH, ceth, lbETH_CETH_expiry),
                 lbETH,
+                ceth,
                 "Lehman Brothers Restaked ETH - CETH",
                 INITIAL_MINT_CAP
             )
@@ -217,9 +222,10 @@ contract DeployScript is Script {
         console.log("HU lbETH                        : ", address(hedgeUnitlbETH));
 
         hedgeUnitwamuETH = HedgeUnit(
-            hedgeUnitFactory.deployHedgeUnit(
+            config.deployHedgeUnit(
                 moduleCore.getId(wamuETH, ceth, wamuETH_CETH_expiry),
                 wamuETH,
+                ceth,
                 "Washington Mutual restaked ETH - CETH",
                 INITIAL_MINT_CAP
             )
@@ -227,9 +233,10 @@ contract DeployScript is Script {
         console.log("HU wamuETH                      : ", address(hedgeUnitwamuETH));
 
         hedgeUnitmlETH = HedgeUnit(
-            hedgeUnitFactory.deployHedgeUnit(
+            config.deployHedgeUnit(
                 moduleCore.getId(mlETH, ceth, mlETH_CETH_expiry),
                 mlETH,
+                ceth,
                 "Merrill Lynch staked ETH - CETH",
                 INITIAL_MINT_CAP
             )

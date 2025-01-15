@@ -6,7 +6,7 @@ import {Asset} from "../core/assets/Asset.sol";
 import {Signature, MinimalSignatureHelper} from "./SignatureHelperLib.sol";
 
 /**
- * @dev DepegSwap structure for DS(DepegSwap)   
+ * @dev DepegSwap structure for DS(DepegSwap)
  */
 struct DepegSwap {
     bool expiredEventEmitted;
@@ -18,13 +18,16 @@ struct DepegSwap {
 /**
  * @title DepegSwapLibrary Contract
  * @author Cork Team
- * @notice DepegSwapLibrary library which implements DepegSwap(DS) related features 
+ * @notice DepegSwapLibrary library which implements DepegSwap(DS) related features
  */
 library DepegSwapLibrary {
     using MinimalSignatureHelper for Signature;
 
     /// @notice the exchange rate of DS can only go down at maximum 10% at a time
     uint256 internal constant MAX_RATE_DELTA_PERCENTAGE = 10e18;
+
+    /// @notice Zero Address error, thrown when passed address is 0
+    error ZeroAddress();
 
     function isExpired(DepegSwap storage self) internal view returns (bool) {
         return Asset(self._address).isExpired();
@@ -39,6 +42,9 @@ library DepegSwapLibrary {
     }
 
     function initialize(address _address, address ct) internal pure returns (DepegSwap memory) {
+        if(_address == address(0) || ct == address(0)) {
+            revert ZeroAddress();
+        }
         return DepegSwap({expiredEventEmitted: false, _address: _address, ct: ct, ctRedeemed: 0});
     }
 
@@ -89,6 +95,6 @@ library DepegSwapLibrary {
 
     function updateExchangeRate(DepegSwap storage self, uint256 rate) internal {
         Asset(self._address).updateRate(rate);
-        Asset(self.ct).updateRate(rate); 
+        Asset(self.ct).updateRate(rate);
     }
 }

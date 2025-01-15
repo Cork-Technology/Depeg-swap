@@ -19,8 +19,8 @@ abstract contract PsmCore is IPSMcore, ModuleState, Context {
     using PsmLibrary for State;
     using PairLibrary for Pair;
 
-    function updateRate(Id id, uint256 newRate) external  {
-        onlyConfig()    ;
+    function updateRate(Id id, uint256 newRate) external {
+        onlyConfig();
         State storage state = states[id];
         uint256 previousRate = state.exchangeRate();
 
@@ -111,7 +111,7 @@ abstract contract PsmCore is IPSMcore, ModuleState, Context {
         address redeemer,
         bytes memory rawDsPermitSig,
         uint256 deadline
-    ) external override nonReentrant returns (uint256 received, uint256 _exchangeRate, uint256 fee) {
+    ) external override nonReentrant returns (uint256 received, uint256 _exchangeRate, uint256 fee, uint256 dsUsed) {
         onlyInitialized(id);
         PSMWithdrawalNotPaused(id);
 
@@ -120,12 +120,12 @@ abstract contract PsmCore is IPSMcore, ModuleState, Context {
         }
         State storage state = states[id];
 
-        (received, _exchangeRate, fee) = state.redeemWithDs(redeemer, amount, dsId, rawDsPermitSig, deadline);
+        (received, _exchangeRate, fee, dsUsed) = state.redeemWithDs(redeemer, amount, dsId, rawDsPermitSig, deadline);
 
-        VaultLibrary.provideLiquidityWithFee(state, fee, getRouterCore(), getAmmRouter());
+        VaultLibrary.allocateFeesToVault(state, fee);
 
         emit DsRedeemed(
-            id, dsId, redeemer, amount, received, _exchangeRate, state.psm.psmBaseRedemptionFeePercentage, fee
+            id, dsId, redeemer, amount, dsUsed, received, _exchangeRate, state.psm.psmBaseRedemptionFeePercentage, fee
         );
     }
 
@@ -133,19 +133,27 @@ abstract contract PsmCore is IPSMcore, ModuleState, Context {
         external
         override
         nonReentrant
-        returns (uint256 received, uint256 _exchangeRate, uint256 fee)
+        returns (uint256 received, uint256 _exchangeRate, uint256 fee, uint256 dsUsed)
     {
         onlyInitialized(id);
         PSMWithdrawalNotPaused(id);
 
         State storage state = states[id];
 
-        (received, _exchangeRate, fee) = state.redeemWithDs(_msgSender(), amount, dsId, bytes(""), 0);
+        (received, _exchangeRate, fee, dsUsed) = state.redeemWithDs(_msgSender(), amount, dsId, bytes(""), 0);
 
-        VaultLibrary.provideLiquidityWithFee(state, fee, getRouterCore(), getAmmRouter());
+        VaultLibrary.allocateFeesToVault(state, fee);
 
         emit DsRedeemed(
-            id, dsId, _msgSender(), amount, received, _exchangeRate, state.psm.psmBaseRedemptionFeePercentage, fee
+            id,
+            dsId,
+            _msgSender(),
+            amount,
+            dsUsed,
+            received,
+            _exchangeRate,
+            state.psm.psmBaseRedemptionFeePercentage,
+            fee
         );
     }
 

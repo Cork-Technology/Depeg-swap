@@ -8,7 +8,8 @@ import {SD59x18, convert, sd, add, mul, pow, sub, div, abs, unwrap, intoUD60x18}
 import {UD60x18, convert as convertUd, ud, add, mul, pow, sub, div, unwrap} from "@prb/math/src/UD60x18.sol";
 import {IMathError} from "./../interfaces/IMathError.sol";
 import {MarketSnapshot, MarketSnapshotLib} from "Cork-Hook/lib/MarketSnapshot.sol";
-import "forge-std/console.sol";
+import {TransferHelper} from "./TransferHelper.sol";
+import "./LogExpMath.sol";
 
 library BuyMathBisectionSolver {
     /// @notice returns the the normalized time to maturity from 1-0
@@ -48,12 +49,20 @@ library BuyMathBisectionSolver {
             }
         }
 
-        SD59x18 xPow = pow(x, _1MinusT);
-        SD59x18 yPow = pow(y, _1MinusT);
-        SD59x18 xMinSplusEPow = pow(xMinSplusE, _1MinusT);
-        SD59x18 yPlusSPow = pow(yPlusS, _1MinusT);
+        SD59x18 xPow = _pow(x, _1MinusT);
+        SD59x18 yPow = _pow(y, _1MinusT);
+        SD59x18 xMinSplusEPow = _pow(xMinSplusE, _1MinusT);
+        SD59x18 yPlusSPow = _pow(yPlusS, _1MinusT);
 
         return sub(sub(add(xPow, yPow), xMinSplusEPow), yPlusSPow);
+    }
+
+    // more gas efficient than PRB
+    function _pow(SD59x18 x, SD59x18 y) public pure returns (SD59x18) {
+        uint256 _x = uint256(unwrap(x));
+        uint256 _y = uint256(unwrap(y));
+
+        return sd(int256(LogExpMath.pow(_x, _y)));
     }
 
     function findRoot(SD59x18 x, SD59x18 y, SD59x18 e, SD59x18 _1MinusT, SD59x18 epsilon, uint256 maxIter)
@@ -65,7 +74,7 @@ library BuyMathBisectionSolver {
         SD59x18 b;
 
         {
-            SD59x18 delta = sd(1e12);
+            SD59x18 delta = sd(1e6);
             b = sub(add(x, e), delta);
         }
 
@@ -127,7 +136,7 @@ library SwapperMathLibrary {
     // it's fine if the actual value go higher since that means we would only overestimate on how much we actually need to repay
     int256 internal constant ONE_MINUS_T_CAP = 99e17;
 
-    // Calculate price ratio of two tokens in a uniswap v2 pair, will return ratio on 18 decimals precision
+    // Calculate price ratio of two tokens in AMM, will return ratio on 18 decimals precision
     function getPriceRatio(uint256 raReserve, uint256 ctReserve)
         public
         pure
@@ -263,16 +272,40 @@ library SwapperMathLibrary {
         dsReceived = div(raProvided, hpa);
 
         // returns the RA if, the total reserve cannot cover the DS that user will receive. this Ra left must subject to the AMM rates
-        raLeft = totalDsReserve >= dsReceived ? convertUd(0) : mul(sub(dsReceived, totalDsReserve), hpa);
+        if (totalDsReserve >= dsReceived) {
+            raLeft = convertUd(0); // No shortfall
+        } else {
+            // Calculate the RA needed for the shortfall in DS
+            UD60x18 dsShortfall = sub(dsReceived, totalDsReserve);
+            raLeft = mul(dsShortfall, hpa);
+
+            // Adjust the DS received to match the total reserve
+            dsReceived = totalDsReserve;
+        }
 
         // recalculate the DS user will receive, after the RA left is deducted
         raProvided = sub(raProvided, raLeft);
-        dsReceived = div(raProvided, hpa);
 
         // proportionally calculate how much DS should be taken from LV and PSM
         // e.g if LV has 60% of the total reserve, then 60% of the DS should be taken from LV
         lvReserveUsed = div(mul(lvDsReserve, dsReceived), totalDsReserve);
         psmReserveUsed = sub(dsReceived, lvReserveUsed);
+
+        assert(unwrap(dsReceived) == unwrap(psmReserveUsed + lvReserveUsed));
+
+        if (psmReserveUsed > psmDsReserve) {
+            UD60x18 diff = sub(psmReserveUsed, psmDsReserve);
+            psmReserveUsed = sub(psmReserveUsed, diff);
+            lvReserveUsed = add(lvReserveUsed, diff);
+        }
+
+        if (lvReserveUsed > lvDsReserve) {
+            UD60x18 diff = sub(lvReserveUsed, lvDsReserve);
+            lvReserveUsed = sub(lvReserveUsed, diff);
+            psmReserveUsed = add(psmReserveUsed, diff);
+        }
+
+        assert(totalDsReserve >= lvReserveUsed + psmReserveUsed);
 
         // calculate the RA profit of LV and PSM
         lvProfit = mul(lvReserveUsed, hpa);
@@ -336,7 +369,6 @@ library SwapperMathLibrary {
     /// @notice rT = (f/pT)^1/t - 1
     function calcRt(UD60x18 pT, UD60x18 t) internal pure returns (UD60x18) {
         UD60x18 onePerT = div(convertUd(1), t);
-        // TODO : confirm with peter
         UD60x18 fConst = convertUd(1);
 
         UD60x18 fPerPt = div(fConst, pT);
@@ -351,7 +383,6 @@ library SwapperMathLibrary {
     }
 
     /// @notice pt = 1 - effectiveDsPrice
-    // TODO : confirm with peter
     function calcPt(UD60x18 effectiveDsPrice) internal pure returns (UD60x18) {
         return sub(convertUd(1), effectiveDsPrice);
     }
@@ -387,7 +418,7 @@ library SwapperMathLibrary {
      */
     function findOptimalBorrowedAmount(OptimalBorrowParams memory params)
         external
-        pure
+        view
         returns (OptimalBorrowResult memory result)
     {
         UD60x18 amountOutUd = convertUd(params.initialAmountOut);
@@ -400,9 +431,10 @@ library SwapperMathLibrary {
             lowerBound =
                 maxLowerBound > initialBorrowedAmountUd ? convertUd(0) : sub(initialBorrowedAmountUd, maxLowerBound);
         }
+
         UD60x18 repaymentAmountUd = lowerBound == convertUd(0)
             ? convertUd(0)
-            : convertUd(params.market.getAmountIn(convertUd(lowerBound), false));
+            : convertUd(params.market.getAmountInNoConvert(convertUd(lowerBound), false));
 
         // we skip bounds check if the max lower bound is bigger than the initial borrowed amount
         // since it's guranteed to have enough liquidity if we never borrow
@@ -420,9 +452,19 @@ library SwapperMathLibrary {
             }
 
             UD60x18 midpoint = div(add(lowerBound, upperBound), convertUd(2));
-            repaymentAmountUd = convertUd(params.market.getAmountIn(convertUd(midpoint), false));
+            repaymentAmountUd = convertUd(params.market.getAmountInNoConvert(convertUd(midpoint), false));
 
             amountOutUd = add(midpoint, suppliedAmountUd);
+
+            // we re-adjust precision here, to mitigate problems that arise when the RA decimals is less than 18(e.g USDT)
+            // the problem occurs when it doesn't have enough precision to represent the actual amount of CT we received
+            // from PSM.
+            // example would be, we're supposed to pay 3.23 CT to the AMM, but the RA only has enough decimals
+            // to represent 3.2. so we deposit 3.2 RA, then we get 3.2 CT. this is less than 3.23 CT we're supposed to pay
+            // to circumvent this, we basically "round" the amountOut here on the fly to be accurate to the RA decimals.
+            // this will incur a slight gas costs, but it's necessary to ensure the math is correct
+            amountOutUd = convertUd(TransferHelper.fixedToTokenNativeDecimals(convertUd(amountOutUd), params.market.ra));
+            amountOutUd = convertUd(TransferHelper.tokenNativeDecimalsToFixed(convertUd(amountOutUd), params.market.ra));
 
             if (repaymentAmountUd > amountOutUd) {
                 upperBound = midpoint;

@@ -337,7 +337,7 @@ export type IssueNewSwapAssetsArg = {
 };
 
 export async function mintRa(ra: Address, to: Address, amount: bigint) {
-  const raContract = await hre.viem.getContractAt("DummyERCWithMetadata", ra);
+  const raContract = await hre.viem.getContractAt("DummyERCWithPermit", ra);
   await raContract.write.mint([to, amount]);
 }
 
@@ -395,7 +395,7 @@ export async function deployBackedAssets() {
   const { defaultSigner } = getSigners(signers);
 
   const pa = await hre.viem.deployContract(
-    "DummyERCWithMetadata",
+    "DummyERCWithPermit",
     [DUMMY_PA_NAME, DUMMY_PA_TOKEN],
     {
       client: {
@@ -405,7 +405,7 @@ export async function deployBackedAssets() {
   );
 
   const ra = await hre.viem.deployContract(
-    "DummyERCWithMetadata",
+    "DummyERCWithPermit",
     [DUMMY_RA_NAME, DUMMY_RA_TOKEN],
     {
       client: {

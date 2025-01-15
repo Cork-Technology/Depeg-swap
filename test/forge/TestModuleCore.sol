@@ -9,6 +9,7 @@ import {
     VaultAmmLiquidityPool,
     Balances,
     VaultConfig,
+    VaultBalances,
     VaultWithdrawalPool
 } from "../../contracts/libraries/State.sol";
 import {BitMaps} from "@openzeppelin/contracts/utils/structs/BitMaps.sol";
@@ -82,7 +83,7 @@ contract TestModuleCore is ModuleCore {
     //--------------------------------------------------------------------------------
 
     // ------------------------------ VAULT GETTERS ------------------------------
-    function getVaultBalances(Id id) external view returns (Balances memory) {
+    function getVaultBalances(Id id) external view returns (VaultBalances memory) {
         return states[id].vault.balances;
     }
 

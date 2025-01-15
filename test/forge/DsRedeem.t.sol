@@ -8,7 +8,7 @@ import {Id, Pair, PairLibrary} from "./../../contracts/libraries/Pair.sol";
 import "./../../contracts/interfaces/IPSMcore.sol";
 import "forge-std/console.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "./../../contracts/libraries/MathHelper.sol";
+import {MathHelper} from "./../../contracts/libraries/MathHelper.sol";
 
 contract VaultRedeemTest is Helper {
     DummyWETH internal ra;
@@ -56,7 +56,7 @@ contract VaultRedeemTest is Helper {
 
         uint256 received;
         uint256 fee;
-        (received,, fee) = moduleCore.redeemRaWithDs(currencyId, dsId, redeemAmount);
+        (received,, fee,) = moduleCore.redeemRaWithDs(currencyId, dsId, redeemAmount);
         vm.assertEq(received, redeemAmount - expectedFee);
         vm.assertEq(fee, expectedFee);
     }
