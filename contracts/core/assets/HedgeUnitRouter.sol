@@ -6,6 +6,8 @@ import {AccessControl} from "@openzeppelin/contracts/access/AccessControl.sol";
 import {HedgeUnit} from "./HedgeUnit.sol";
 import {IHedgeUnitRouter} from "../../interfaces/IHedgeUnitRouter.sol";
 import {MinimalSignatureHelper, Signature} from "./../../libraries/SignatureHelperLib.sol";
+import {ERC20Permit} from "@openzeppelin/contracts/token/ERC20/extensions/ERC20Permit.sol";
+import {CustomERC20Permit} from "./../../libraries/ERC/CustomERC20Permit.sol";
 
 /**
  * @title HedgeUnitRouter
@@ -71,11 +73,40 @@ contract HedgeUnitRouter is IHedgeUnitRouter, AccessControl, ReentrancyGuardTran
         // If large number of HedgeUnits are passed, this function will revert due to gas limit.
         // So we will keep the limit to 10 HedgeUnits(or even less if needed) from frontend.
         for (uint256 i = 0; i < params.hedgeUnits.length; i++) {
+            HedgeUnit hedgeUnit = HedgeUnit(params.hedgeUnits[i]);
+
             bytes memory dsPermit = params.rawDsPermitSigs[i];
             bytes memory paPermit = params.rawPaPermitSigs[i];
 
             if (dsPermit.length != 0) {
                 Signature memory signature = MinimalSignatureHelper.split(dsPermit);
+                CustomERC20Permit ds = CustomERC20Permit(hedgeUnit.latestDs());
+                
+                ds.permit(
+                    params.minter,
+                    params.minter,
+                    params.amounts[i],
+                    params.deadline,
+                    signature.v,
+                    signature.r,
+                    signature.s,
+                    DS_PERMIT_BATCH_MINT_FUNCTION_TYPEHASH
+                );
+            }
+
+            if (paPermit.length != 0) {
+                Signature memory signature = MinimalSignatureHelper.split(paPermit);
+
+                ERC20Permit pa = ERC20Permit(address(hedgeUnit.pa()));
+                pa.permit(
+                    params.minter,
+                    params.minter,
+                    params.amounts[i],
+                    params.deadline,
+                    signature.v,
+                    signature.r,
+                    signature.s
+                );
             }
 
             (dsAmounts[i], paAmounts[i]) = HedgeUnit(params.hedgeUnits[i]).mint(
