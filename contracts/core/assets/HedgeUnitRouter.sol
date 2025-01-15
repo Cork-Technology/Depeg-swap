@@ -14,8 +14,6 @@ import {CustomERC20Permit} from "./../../libraries/ERC/CustomERC20Permit.sol";
  * @notice This contract is used to execute batch mint and batch dissolve functions for multiple HedgeUnit contracts.
  */
 contract HedgeUnitRouter is IHedgeUnitRouter, AccessControl, ReentrancyGuardTransient {
-    string public constant DS_PERMIT_BATCH_MINT_FUNCTION_TYPEHASH = "DS_PERMIT_BATCH_MINT_FUNCTION_TYPEHASH";
-
     // this role will be assigned through grantRole function
     bytes32 public constant HEDGE_UNIT_FACTORY_ROLE = keccak256("HEDGE_UNIT_FACTORY_ROLE");
 
@@ -78,39 +76,10 @@ contract HedgeUnitRouter is IHedgeUnitRouter, AccessControl, ReentrancyGuardTran
             bytes memory dsPermit = params.rawDsPermitSigs[i];
             bytes memory paPermit = params.rawPaPermitSigs[i];
 
-            if (dsPermit.length != 0) {
-                Signature memory signature = MinimalSignatureHelper.split(dsPermit);
-                CustomERC20Permit ds = CustomERC20Permit(hedgeUnit.latestDs());
-                
-                ds.permit(
-                    params.minter,
-                    params.minter,
-                    params.amounts[i],
-                    params.deadline,
-                    signature.v,
-                    signature.r,
-                    signature.s,
-                    DS_PERMIT_BATCH_MINT_FUNCTION_TYPEHASH
-                );
-            }
-
-            if (paPermit.length != 0) {
-                Signature memory signature = MinimalSignatureHelper.split(paPermit);
-
-                ERC20Permit pa = ERC20Permit(address(hedgeUnit.pa()));
-                pa.permit(
-                    params.minter,
-                    params.minter,
-                    params.amounts[i],
-                    params.deadline,
-                    signature.v,
-                    signature.r,
-                    signature.s
-                );
-            }
+            (uint256 dsAmount, uint256 paAmount) = hedgeUnit.previewMint(params.amounts[i]);
 
             (dsAmounts[i], paAmounts[i]) = HedgeUnit(params.hedgeUnits[i]).mint(
-                params.minter, params.amounts[i], params.rawDsPermitSigs[i], params.rawPaPermitSigs[i], params.deadline
+                msg.sender, params.amounts[i], params.rawDsPermitSigs[i], params.rawPaPermitSigs[i], params.deadline
             );
         }
     }
