@@ -193,7 +193,7 @@ contract DeployScript is Script {
 
         // Deploy the HedgeUnitFactry contract
         hedgeUnitRouter = new HedgeUnitRouter();
-        hedgeUnitFactory = new HedgeUnitFactory(address(moduleCore), address(config), address(flashswapRouter), address(hedgeUnitRouter));
+        hedgeUnitFactory = new HedgeUnitFactory(address(moduleCore), address(config), address(flashswapRouter));
         hedgeUnitRouter.grantRole(hedgeUnitRouter.HEDGE_UNIT_FACTORY_ROLE(), address(hedgeUnitFactory));
         config.setHedgeUnitFactory(address(hedgeUnitFactory));
         console.log("HedgeUnit Factory               : ", address(hedgeUnitFactory));
@@ -277,9 +277,10 @@ contract DeployScript is Script {
         uint256 repurchaseFee,
         uint256 expiryPeriod
     ) public {
-        config.initializeModuleCore(cst, ceth, dsPrice, base_redemption_fee, expiryPeriod);
+        config.initializeModuleCore(cst, ceth, dsPrice, expiryPeriod);
 
         Id id = moduleCore.getId(cst, ceth, expiryPeriod);
+        config.updatePsmBaseRedemptionFeePercentage(id, redmptionFee);
         config.issueNewDs(
             id,
             1 ether, // exchange rate = 1:1

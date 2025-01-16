@@ -14,14 +14,12 @@ interface Initialize {
      * @param pa address of PA token(e.g stETH)
      * @param ra address of RA token(e.g WETH)
      * @param initialArp initial assets ARP. the initial ds price will be derived from this value. must be in 18 decimals(e.g 1% = 1e18)
-     * @param psmBaseRedemptionFeePercentage base redemption fee for PSM, make sure it has 18 decimals(e.g 1% = 1e18)
      * @param expiryInterval expiry interval for DS, this will be used to calculate the next expiry time for DS(block.timestamp + expiryInterval)
      */
     function initializeModuleCore(
         address pa,
         address ra,
         uint256 initialArp,
-        uint256 psmBaseRedemptionFeePercentage,
         uint256 expiryInterval
     ) external;
 

@@ -201,10 +201,9 @@ contract CorkConfig is AccessControl, Pausable {
         address pa,
         address ra,
         uint256 initialDsPrice,
-        uint256 _psmBaseRedemptionFeePercentage,
         uint256 expiryInterval
     ) external onlyManager {
-        moduleCore.initializeModuleCore(pa, ra, initialDsPrice, _psmBaseRedemptionFeePercentage, expiryInterval);
+        moduleCore.initializeModuleCore(pa, ra, initialDsPrice, expiryInterval);
     }
 
     /**

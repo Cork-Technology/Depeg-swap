@@ -49,10 +49,9 @@ library PsmLibrary {
         status = self.info.isInitialized();
     }
 
-    function initialize(State storage self, Pair memory key, uint256 psmBaseRedemptionFee) external {
+    function initialize(State storage self, Pair memory key) external {
         self.info = key;
         self.psm.balances.ra = RedemptionAssetManagerLibrary.initialize(key.redemptionAsset());
-        self.psm.psmBaseRedemptionFeePercentage = psmBaseRedemptionFee;
     }
 
     function updateAutoSell(State storage self, address user, bool status) external {

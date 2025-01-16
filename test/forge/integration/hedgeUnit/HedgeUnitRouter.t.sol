@@ -82,6 +82,7 @@ contract HedgeUnitRouterTest is Helper {
     function test_PreviewMint() public {
         address[] memory hedgeUnits = new address[](1);
         uint256[] memory amounts = new uint256[](1);
+        
         hedgeUnits[0] = address(hedgeUnit);
         amounts[0] = 100 * 1e18;
 
@@ -130,6 +131,7 @@ contract HedgeUnitRouterTest is Helper {
         (uint256 dsAmount, uint256 paAmount) = hedgeUnit.previewMint(mintAmount);
         bytes32 domain_separator = Asset(address(dsToken)).DOMAIN_SEPARATOR();
         uint256 deadline = block.timestamp + 10 days;
+
         bytes memory dsPermit = getCustomPermit(
             user,
             address(hedgeUnit),
@@ -138,20 +140,29 @@ contract HedgeUnitRouterTest is Helper {
             deadline,
             USER_PK,
             domain_separator,
-            "mint"
+            hedgeUnit.DS_PERMIT_MINT_TYPEHASH()
         );
+
         domain_separator = Asset(address(pa)).DOMAIN_SEPARATOR();
+
         bytes memory paPermit = getPermit(
-            user, address(hedgeUnit), paAmount, Asset(address(pa)).nonces(user), deadline, USER_PK, domain_separator
+            user,
+            address(hedgeUnit),
+            paAmount,
+            Asset(address(pa)).nonces(user),
+            deadline,
+            USER_PK,
+            domain_separator
         );
+
         IHedgeUnitRouter.BatchMintParams memory param = IHedgeUnitRouter.BatchMintParams({
             hedgeUnits: new address[](1),
             amounts: new uint256[](1),
-            minter: user,
             rawDsPermitSigs: new bytes[](1),
             rawPaPermitSigs: new bytes[](1),
             deadline: deadline
         });
+
         param.hedgeUnits[0] = address(hedgeUnit);
         param.amounts[0] = mintAmount;
         param.rawDsPermitSigs[0] = dsPermit;
@@ -173,11 +184,13 @@ contract HedgeUnitRouterTest is Helper {
         // Mint tokens first
         dsToken.approve(address(hedgeUnit), USER_BALANCE);
         pa.approve(address(hedgeUnit), USER_BALANCE);
+        
         uint256 mintAmount = 100 * 1e18;
         hedgeUnit.mint(mintAmount);
 
         address[] memory hedgeUnits = new address[](1);
         uint256[] memory amounts = new uint256[](1);
+        
         hedgeUnits[0] = address(hedgeUnit);
         amounts[0] = 50 * 1e18;
 
@@ -202,8 +215,11 @@ contract HedgeUnitRouterTest is Helper {
 
         address[] memory hedgeUnits = new address[](1);
         uint256[] memory amounts = new uint256[](1);
+        
         hedgeUnits[0] = address(hedgeUnit);
         amounts[0] = dissolveAmount;
+
+        hedgeUnit.approve(address(hedgeUnitRouter), dissolveAmount);
 
         // Dissolve 50 tokens
         hedgeUnitRouter.batchDissolve(hedgeUnits, amounts);
