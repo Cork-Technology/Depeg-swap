@@ -7,7 +7,7 @@ interface IWithdrawal {
 
     function claimToSelf(bytes32 withdrawalId) external;
 
-    function claimRouted(bytes32 withdrawalId, address router) external;
+    function claimRouted(bytes32 withdrawalId, address router, bytes calldata routerData) external;
 
     event WithdrawalRequested(bytes32 indexed withdrawalId, address indexed owner, uint256 claimableAt);
 
