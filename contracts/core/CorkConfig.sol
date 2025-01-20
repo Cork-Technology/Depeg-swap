@@ -21,6 +21,7 @@ import {HedgeUnit} from "./assets/HedgeUnit.sol";
  */
 contract CorkConfig is AccessControl, Pausable {
     bytes32 public constant MANAGER_ROLE = keccak256("MANAGER_ROLE");
+    bytes32 public constant MARKET_INITIALIZER_ROLE = keccak256("MARKET_INITIALIZER_ROLE");
     bytes32 public constant RATE_UPDATERS_ROLE = keccak256("RATE_UPDATERS_ROLE");
     bytes32 public constant BASE_LIQUIDATOR_ROLE = keccak256("BASE_LIQUIDATOR_ROLE");
 
@@ -77,14 +78,26 @@ contract CorkConfig is AccessControl, Pausable {
         _;
     }
 
-    constructor() {
-        _grantRole(MANAGER_ROLE, msg.sender);
+    constructor(address adminAdd, address managerAdd) {
+        if(adminAdd == address(0) || managerAdd == address(0)) {
+            revert InvalidAddress();
+        }
+        _setRoleAdmin(MARKET_INITIALIZER_ROLE, MANAGER_ROLE);
+        _setRoleAdmin(RATE_UPDATERS_ROLE, MANAGER_ROLE);
+        _setRoleAdmin(BASE_LIQUIDATOR_ROLE, MANAGER_ROLE); 
+        _grantRole(DEFAULT_ADMIN_ROLE, adminAdd);
+        _grantRole(MANAGER_ROLE, managerAdd);       
     }
 
     function _computLiquidatorRoleHash(address account) public view returns (bytes32) {
         return keccak256(abi.encodePacked(BASE_LIQUIDATOR_ROLE, account));
     }
 
+    // This will be only used in case of emergency to change the manager of the different roles if any of the manager is compromised
+    function setRoleAdmin(bytes32 role, bytes32 newAdminRole) external onlyRole(getRoleAdmin(role)) {
+        _setRoleAdmin(role, newAdminRole);
+    }
+    
     function grantRole(bytes32 role, address account) public override onlyManager {
         _grantRole(role, account);
     }
@@ -418,9 +431,10 @@ contract CorkConfig is AccessControl, Pausable {
         address hedgeUnit,
         uint256 amount,
         uint256 amountOutMin,
-        IDsFlashSwapCore.BuyAprroxParams calldata params
+        IDsFlashSwapCore.BuyAprroxParams calldata params,
+        IDsFlashSwapCore.OffchainGuess calldata offchainGuess
     ) external onlyManager returns (uint256 amountOut) {
-        amountOut = HedgeUnit(hedgeUnit).useFunds(amount, amountOutMin, params);
+        amountOut = HedgeUnit(hedgeUnit).useFunds(amount, amountOutMin, params, offchainGuess);
     }
 
     /**

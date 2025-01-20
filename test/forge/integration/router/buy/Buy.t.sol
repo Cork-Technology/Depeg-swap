@@ -23,12 +23,23 @@ contract BuyDsTest is Helper {
 
     uint256 public dsId;
 
+    uint256 stateId;
+
     function defaultInitialArp() internal pure virtual override returns (uint256) {
         return 5 ether;
     }
 
     function defaultExchangeRate() internal pure virtual override returns (uint256) {
         return 1.1 ether;
+    }
+
+    function snapshotRouterState() internal {
+        stateId = vm.snapshotState();
+    }
+
+    function revertRouterState() internal {
+        vm.revertToStateAndDelete(stateId);
+        stateId = 0;
     }
 
     function setUp() public virtual {
@@ -108,7 +119,11 @@ contract BuyDsTest is Helper {
 
         corkConfig.updateAmmBaseFeePercentage(defaultCurrencyId, 1 ether);
 
-        (uint256 amountOut,) = flashSwapRouter.swapRaforDs(currencyId, dsId, amount, 0, defaultBuyApproxParams());
+        IDsFlashSwapCore.SwapRaForDsReturn memory result = flashSwapRouter.swapRaforDs(
+            currencyId, dsId, amount, 0, defaultBuyApproxParams(), defaultOffchainGuessParams()
+        );
+        uint256 amountOut = result.amountOut;
+
         uint256 balanceRaAfter = Asset(address(ds)).balanceOf(DEFAULT_ADDRESS);
 
         vm.assertEq(balanceRaAfter - balanceRaBefore, amountOut);
@@ -121,15 +136,15 @@ contract BuyDsTest is Helper {
         params.feeIntervalAdjustment = 1 ether;
 
         // should work after expiry
-        flashSwapRouter.swapRaforDs(currencyId, dsId, amount, 0, params);
+        flashSwapRouter.swapRaforDs(currencyId, dsId, amount, 0, params, defaultOffchainGuessParams());
 
         // there's no sufficient liquidity due to very low HIYA, so we disable the fee to make it work
         corkConfig.updateAmmBaseFeePercentage(defaultCurrencyId, 0 ether);
 
-        flashSwapRouter.swapRaforDs(currencyId, dsId, 0.01 ether, 0, params);
+        flashSwapRouter.swapRaforDs(currencyId, dsId, 0.01 ether, 0, params, defaultOffchainGuessParams());
     }
 
-    function testFuzz_buyDS(uint256 amount, uint8 raDecimals, uint8 paDecimals) public virtual {
+    function testFuzz_buyDS(uint256 amount, uint8 raDecimals, uint8 paDecimals) public {
         (raDecimals, paDecimals) = setupDifferentDecimals(raDecimals, paDecimals);
 
         amount = bound(amount, 0.001 ether, 100 ether);
@@ -147,15 +162,17 @@ contract BuyDsTest is Helper {
         Asset(ds).approve(address(flashSwapRouter), amount);
 
         uint256 balanceDsBefore = Asset(ds).balanceOf(DEFAULT_ADDRESS);
-        console.log("balanceDsBefore        :", balanceDsBefore);
         vm.warp(current);
 
         // TODO : figure out the out of whack gas consumption
         vm.pauseGasMetering();
 
-        (uint256 amountOut,) = flashSwapRouter.swapRaforDs(currencyId, dsId, amount, 0, defaultBuyApproxParams());
+        IDsFlashSwapCore.SwapRaForDsReturn memory result = flashSwapRouter.swapRaforDs(
+            currencyId, dsId, amount, 0, defaultBuyApproxParams(), defaultOffchainGuessParams()
+        );
+        uint256 amountOut = result.amountOut;
+
         uint256 balanceDsAfter = Asset(address(ds)).balanceOf(DEFAULT_ADDRESS);
-        console.log("balanceDsAfter         :", balanceDsAfter);
 
         vm.assertEq(balanceDsAfter - balanceDsBefore, amountOut);
 
@@ -167,21 +184,99 @@ contract BuyDsTest is Helper {
         params.feeIntervalAdjustment = 1000 ether;
 
         (raReserve, ctReserve) = hook.getReserves(address(ra), address(ct));
-        console.log("raReserve after expiry", raReserve);
-        console.log("ctReserve after expiry", ctReserve);
 
         // should work after expiry
-        flashSwapRouter.swapRaforDs(currencyId, dsId, amount, 0, params);
+        flashSwapRouter.swapRaforDs(currencyId, dsId, amount, 0, params, defaultOffchainGuessParams());
 
         // there's no sufficient liquidity due to very low HIYA, so we disable the fee to make it work
         corkConfig.updateAmmBaseFeePercentage(defaultCurrencyId, 0 ether);
 
         (raReserve, ctReserve) = hook.getReserves(address(ra), address(ct));
-        console.log("raReserve", raReserve);
-        console.log("ctReserve", ctReserve);
 
         amount = TransferHelper.normalizeDecimals(0.001 ether, TARGET_DECIMALS, raDecimals);
-        flashSwapRouter.swapRaforDs(currencyId, dsId, amount, 0, params);
+        flashSwapRouter.swapRaforDs(currencyId, dsId, amount, 0, params, defaultOffchainGuessParams());
+    }
+
+    /// forge-config: default.fuzz.show-logs = true
+    function testFuzz_buyDsOffchainGuess(uint256 amount, uint8 raDecimals, uint8 paDecimals) public {
+        (raDecimals, paDecimals) = setupDifferentDecimals(raDecimals, paDecimals);
+
+        amount = bound(amount, 0.001 ether, 100 ether);
+        amount = TransferHelper.normalizeDecimals(amount, TARGET_DECIMALS, raDecimals);
+
+        ra.approve(address(flashSwapRouter), type(uint256).max);
+
+        dsId = moduleCore.lastDsId(currencyId);
+        (ct, ds) = moduleCore.swapAsset(currencyId, dsId);
+
+        (uint256 raReserve, uint256 ctReserve) = hook.getReserves(address(ra), address(ct));
+
+        // 1-t = 0.1
+
+        Asset(ds).approve(address(flashSwapRouter), amount);
+
+        uint256 balanceDsBefore = Asset(ds).balanceOf(DEFAULT_ADDRESS);
+        vm.warp(current);
+
+        // TODO : figure out the out of whack gas consumption
+        vm.pauseGasMetering();
+
+        snapshotRouterState();
+
+        IDsFlashSwapCore.SwapRaForDsReturn memory result = flashSwapRouter.swapRaforDs(
+            currencyId, dsId, amount, 0, defaultBuyApproxParams(), defaultOffchainGuessParams()
+        );
+
+        IDsFlashSwapCore.OffchainGuess memory offchainGuess;
+        offchainGuess.initialBorrowAmount = result.initialBorrow;
+        offchainGuess.afterSoldBorrowAmount = result.afterSoldBorrow;
+
+        revertRouterState();
+
+        // should pass
+        result = flashSwapRouter.swapRaforDs(currencyId, dsId, amount, 0, defaultBuyApproxParams(), offchainGuess);
+        uint256 amountOut = result.amountOut;
+
+        uint256 balanceDsAfter = Asset(address(ds)).balanceOf(DEFAULT_ADDRESS);
+
+        vm.assertEq(balanceDsAfter - balanceDsBefore, amountOut);
+
+        ff_expired();
+
+        // should work even if the resulting lowerbound is very large(won't be gas efficient)
+        IDsFlashSwapCore.BuyAprroxParams memory params = defaultBuyApproxParams();
+        params.maxFeeIter = 100000;
+        params.feeIntervalAdjustment = 1000 ether;
+
+        (raReserve, ctReserve) = hook.getReserves(address(ra), address(ct));
+
+        // should work after expiry
+        snapshotRouterState();
+
+        result = flashSwapRouter.swapRaforDs(currencyId, dsId, amount, 0, params, defaultOffchainGuessParams());
+
+        offchainGuess.initialBorrowAmount = result.initialBorrow;
+        offchainGuess.afterSoldBorrowAmount = result.afterSoldBorrow;
+
+        revertRouterState();
+        result = flashSwapRouter.swapRaforDs(currencyId, dsId, amount, 0, params, offchainGuess);
+
+        // there's no sufficient liquidity due to very low HIYA, so we disable the fee to make it work
+        corkConfig.updateAmmBaseFeePercentage(defaultCurrencyId, 0 ether);
+
+        (raReserve, ctReserve) = hook.getReserves(address(ra), address(ct));
+
+        amount = TransferHelper.normalizeDecimals(0.001 ether, TARGET_DECIMALS, raDecimals);
+
+        snapshotRouterState();
+        result = flashSwapRouter.swapRaforDs(currencyId, dsId, amount, 0, params, defaultOffchainGuessParams());
+
+        offchainGuess.initialBorrowAmount = result.initialBorrow;
+        offchainGuess.afterSoldBorrowAmount = result.afterSoldBorrow;
+
+        revertRouterState();
+
+        flashSwapRouter.swapRaforDs(currencyId, dsId, amount, 0, params, offchainGuess);
     }
 
     // ff to expiry and update infos
