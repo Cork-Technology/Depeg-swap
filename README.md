@@ -26,12 +26,30 @@ To build & compile all contracts simply run :
 yarn build
 ```
 
+# Setup Kontrol
+
+To install kontrol use below commands : 
+
+```bash 
+bash <(curl https://kframework.org/install): install kup package manager.
+kup install kontrol: install Kontrol.
+kup list kontrol: list available Kontrol versions.
+```
+
 # Tests
 
 To run test, use this command :
 
 ```bash
 yarn test
+```
+
+To run Formal verification proofs, use below commands :
+
+```bash
+export FOUNDRY_PROFILE=kontrol-properties
+kontrol build
+kontrol prove
 ```
 
 # Deployments

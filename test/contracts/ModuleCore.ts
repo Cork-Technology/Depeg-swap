@@ -490,36 +490,102 @@ describe("Module Core", function () {
     });
   });
 
-  describe("updatePoolsStatus", function () {
-    it("updatePoolsStatus should work correctly", async function () {
-      await corkConfig.write.updatePoolsStatus([
-        fixture.Id,
-        true,
-        true,
-        true,
-        true,
-        true,
-      ]);
-      const events = await moduleCore.getEvents.PoolsStatusUpdated({
+  describe("updatePsmDepositsStatus", function () {
+    it("updatePsmDepositsStatus should work correctly", async function () {
+      await corkConfig.write.updatePsmDepositsStatus([fixture.Id, true]);
+      const events = await moduleCore.getEvents.PsmDepositsStatusUpdated({
         Id: fixture.Id,
       });
       expect(events.length).to.equal(1);
       expect(events[0].args.Id).to.equal(fixture.Id);
       expect(events[0].args.isPSMDepositPaused).to.equal(true);
+    });
+
+    it("updatePsmDepositsStatus should revert when not called by Config contract", async function () {
+      await expect(
+        moduleCore.write.updatePsmDepositsStatus([fixture.Id, true], {
+          account: secondSigner.account,
+        })
+      ).to.be.rejectedWith("OnlyConfigAllowed()");
+    });
+  });
+
+  describe("updatePsmWithdrawalsStatus", function () {
+    it("updatePsmWithdrawalsStatus should work correctly", async function () {
+      await corkConfig.write.updatePsmWithdrawalsStatus([fixture.Id, true]);
+      const events = await moduleCore.getEvents.PsmWithdrawalsStatusUpdated({
+        Id: fixture.Id,
+      });
+      expect(events.length).to.equal(1);
+      expect(events[0].args.Id).to.equal(fixture.Id);
       expect(events[0].args.isPSMWithdrawalPaused).to.equal(true);
+    });
+
+    it("updatePsmWithdrawalsStatus should revert when not called by Config contract", async function () {
+      await expect(
+        moduleCore.write.updatePsmWithdrawalsStatus([fixture.Id, true], {
+          account: secondSigner.account,
+        })
+      ).to.be.rejectedWith("OnlyConfigAllowed()");
+    });
+  });
+
+  describe("updatePsmRepurchasesStatus", function () {
+    it("updatePsmRepurchasesStatus should work correctly", async function () {
+      await corkConfig.write.updatePsmRepurchasesStatus([fixture.Id, true]);
+      const events = await moduleCore.getEvents.PsmRepurchasesStatusUpdated({
+        Id: fixture.Id,
+      });
+      expect(events.length).to.equal(1);
+      expect(events[0].args.Id).to.equal(fixture.Id);
       expect(events[0].args.isPSMRepurchasePaused).to.equal(true);
+    });
+
+    it("updatePsmRepurchasesStatus should revert when not called by Config contract", async function () {
+      await expect(
+        moduleCore.write.updatePsmRepurchasesStatus([fixture.Id, true], {
+          account: secondSigner.account,
+        })
+      ).to.be.rejectedWith("OnlyConfigAllowed()");
+    });
+  });
+
+  describe("updateLvDepositsStatus", function () {
+    it("updateLvDepositsStatus should work correctly", async function () {
+      await corkConfig.write.updateLvDepositsStatus([fixture.Id, true]);
+      const events = await moduleCore.getEvents.LvDepositsStatusUpdated({
+        Id: fixture.Id,
+      });
+      expect(events.length).to.equal(1);
+      expect(events[0].args.Id).to.equal(fixture.Id);
       expect(events[0].args.isLVDepositPaused).to.equal(true);
+    });
+
+    it("updateLvDepositsStatus should revert when not called by Config contract", async function () {
+      await expect(
+        moduleCore.write.updateLvDepositsStatus([fixture.Id, true], {
+          account: secondSigner.account,
+        })
+      ).to.be.rejectedWith("OnlyConfigAllowed()");
+    });
+  });
+
+  describe("updateLvWithdrawalsStatus", function () {
+    it("updateLvWithdrawalsStatus should work correctly", async function () {
+      await corkConfig.write.updateLvWithdrawalsStatus([fixture.Id, true]);
+      const events = await moduleCore.getEvents.LvWithdrawalsStatusUpdated({
+        Id: fixture.Id,
+      });
+      expect(events.length).to.equal(1);
+      expect(events[0].args.Id).to.equal(fixture.Id);
       expect(events[0].args.isLVWithdrawalPaused).to.equal(true);
     });
 
-    it("updatePoolsStatus should revert when not called by Config contract", async function () {
+    it("updateLvWithdrawalsStatus should revert when not called by Config contract", async function () {
       await expect(
-        moduleCore.write.updatePoolsStatus(
-          [fixture.Id, true, true, true, true, true],
-          {
-            account: secondSigner.account,
-          }
-        )
+        moduleCore.write.updateLvWithdrawalsStatus([fixture.Id, true], {
+          account: secondSigner.account,
+        })
       ).to.be.rejectedWith("OnlyConfigAllowed()");
     });
   });

@@ -48,8 +48,8 @@ library VaultLibrary {
         uint256 ct;
     }
 
-    function initialize(VaultState storage self, address lv, uint256 fee, address ra, uint256 initialArp) external {
-        self.config = VaultConfigLibrary.initialize(fee);
+    function initialize(VaultState storage self, address lv, address ra, uint256 initialArp) external {
+        self.config = VaultConfigLibrary.initialize();
 
         self.lv = LvAssetLibrary.initialize(lv);
         self.balances.ra = RedemptionAssetManagerLibrary.initialize(ra);
@@ -227,7 +227,7 @@ library VaultLibrary {
     {
         Id id = self.info.toId();
         uint256 hpa = flashSwapRouter.getCurrentEffectiveHIYA(id);
-        bool isRollover = flashSwapRouter.isRolloverSale(id, dsId);
+        bool isRollover = flashSwapRouter.isRolloverSale(id);
 
         uint256 marketRatio;
 
@@ -588,13 +588,8 @@ library VaultLibrary {
     }
 
     // IMPORTANT : only psm, flash swap router and early redeem LV can call this function
-    function provideLiquidityWithFee(
-        State storage self,
-        uint256 amount,
-        IDsFlashSwapCore flashSwapRouter,
-        ICorkHook ammRouter
-    ) public {
-        __provideLiquidityWithRatio(self, amount, flashSwapRouter, self.ds[self.globalAssetIdx].ct, ammRouter);
+    function allocateFeesToVault(State storage self, uint256 amount) public {
+        self.vault.balances.ra.incLocked(amount);
     }
 
     // this will give user their respective balance in mixed form of CT, DS, RA, PA
@@ -616,10 +611,6 @@ library VaultLibrary {
                 "redeemEarlyLv"
             );
         }
-        result.feePercentage = self.vault.config.fee;
-        result.fee = MathHelper.calculatePercentageFee(result.feePercentage, redeemParams.amount);
-
-        redeemParams.amount -= result.fee;
 
         result.id = redeemParams.id;
         result.receiver = owner;
@@ -671,7 +662,7 @@ library VaultLibrary {
         }
 
         // burn lv amount + fee
-        ERC20Burnable(self.vault.lv._address).burnFrom(owner, redeemParams.amount + result.fee);
+        ERC20Burnable(self.vault.lv._address).burnFrom(owner, redeemParams.amount);
 
         // fetch ds from flash swap router
         contracts.flashSwapRouter.emptyReservePartialLv(redeemParams.id, dsId, result.dsReceived);
@@ -750,5 +741,13 @@ library VaultLibrary {
         // transfer PA to the vault
         SafeERC20.safeTransferFrom(IERC20(self.info.pa), from, address(this), amount);
         self.vault.pool.withdrawalPool.paBalance += amount;
+    }
+
+    function updateLvDepositsStatus(State storage self, bool isLVDepositPaused) external {
+        self.vault.config.isDepositPaused = isLVDepositPaused;
+    }
+
+    function updateLvWithdrawalsStatus(State storage self, bool isLVWithdrawalPaused) external {
+        self.vault.config.isWithdrawalPaused = isLVWithdrawalPaused;
     }
 }

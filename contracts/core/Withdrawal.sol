@@ -87,7 +87,7 @@ contract Withdrawal is IWithdrawal {
         emit WithdrawalClaimed(withdrawalId, msg.sender);
     }
 
-    function claimRouted(bytes32 withdrawalId, address router)
+    function claimRouted(bytes32 withdrawalId, address router, bytes calldata routerData)
         external
         onlyOwner(withdrawalId)
         onlyWhenClaimable(withdrawalId)
@@ -99,7 +99,7 @@ contract Withdrawal is IWithdrawal {
             IERC20(withdrawal.tokens[i].token).transfer(router, withdrawal.tokens[i].amount);
         }
 
-        IWithdrawalRouter(router).route(address(this), withdrawals[withdrawalId].tokens);
+        IWithdrawalRouter(router).route(address(this), withdrawals[withdrawalId].tokens, routerData);
 
         delete withdrawals[withdrawalId];
 

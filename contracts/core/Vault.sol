@@ -72,8 +72,6 @@ abstract contract VaultCore is ModuleState, Context, IVault, IVaultLiquidation {
             result.paReceived,
             result.raReceivedFromAmm,
             result.raIdleReceived,
-            result.fee,
-            result.feePercentage,
             result.withdrawalId
         );
     }
@@ -110,19 +108,8 @@ abstract contract VaultCore is ModuleState, Context, IVault, IVaultLiquidation {
             result.paReceived,
             result.raReceivedFromAmm,
             result.raIdleReceived,
-            result.fee,
-            result.feePercentage,
             result.withdrawalId
         );
-    }
-
-    /**
-     * Returns the early redemption fee percentage
-     * @param id The Module id that is used to reference both psm and lv of a given pair
-     */
-    function earlyRedemptionFee(Id id) external view override returns (uint256) {
-        State storage state = states[id];
-        return state.vault.config.fee;
     }
 
     /**
@@ -135,7 +122,7 @@ abstract contract VaultCore is ModuleState, Context, IVault, IVaultLiquidation {
         onlyFlashSwapRouter();
 
         State storage state = states[id];
-        state.provideLiquidityWithFee(amount, getRouterCore(), getAmmRouter());
+        state.allocateFeesToVault(amount);
         emit ProfitReceived(msg.sender, amount);
     }
 
@@ -151,7 +138,7 @@ abstract contract VaultCore is ModuleState, Context, IVault, IVaultLiquidation {
         onlyFlashSwapRouter();
 
         State storage state = states[id];
-        state.provideLiquidityWithFee(amount, getRouterCore(), getAmmRouter());
+        state.allocateFeesToVault(amount);
     }
 
     function updateCtHeldPercentage(Id id, uint256 ctHeldPercentage) external {

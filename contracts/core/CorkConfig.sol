@@ -10,6 +10,7 @@ import {Pair} from "../libraries/Pair.sol";
 import {ModuleCore} from "./ModuleCore.sol";
 import {IVault} from "./../interfaces/IVault.sol";
 import {CorkHook} from "Cork-Hook/CorkHook.sol";
+import {MarketSnapshot} from "Cork-Hook/lib/MarketSnapshot.sol";
 import {HedgeUnitFactory} from "./assets/HedgeUnitFactory.sol";
 import {HedgeUnit} from "./assets/HedgeUnit.sol";
 
@@ -20,6 +21,7 @@ import {HedgeUnit} from "./assets/HedgeUnit.sol";
  */
 contract CorkConfig is AccessControl, Pausable {
     bytes32 public constant MANAGER_ROLE = keccak256("MANAGER_ROLE");
+    bytes32 public constant MARKET_INITIALIZER_ROLE = keccak256("MARKET_INITIALIZER_ROLE");
     bytes32 public constant RATE_UPDATERS_ROLE = keccak256("RATE_UPDATERS_ROLE");
     bytes32 public constant BASE_LIQUIDATOR_ROLE = keccak256("BASE_LIQUIDATOR_ROLE");
 
@@ -27,6 +29,9 @@ contract CorkConfig is AccessControl, Pausable {
     IDsFlashSwapCore public flashSwapRouter;
     CorkHook public hook;
     HedgeUnitFactory public hedgeUnitFactory;
+    // Cork Protocol's treasury address. Other Protocol component should fetch this address directly from the config contract
+    // instead of storing it themselves, since it'll be hard to update the treasury address in all the components if it changes vs updating it in the config contract once
+    address public treasury;
 
     uint256 public constant WHITELIST_TIME_DELAY = 7 days;
 
@@ -55,6 +60,10 @@ contract CorkConfig is AccessControl, Pausable {
     /// @param hedgeUnitFactory Address of hedgeUnitFactory contract
     event HedgeUnitFactorySet(address hedgeUnitFactory);
 
+    /// @notice Emitted when a treasury is set
+    /// @param treasury Address of treasury contract/address
+    event TreasurySet(address treasury);
+
     modifier onlyManager() {
         if (!hasRole(MANAGER_ROLE, msg.sender)) {
             revert CallerNotManager();
@@ -69,14 +78,26 @@ contract CorkConfig is AccessControl, Pausable {
         _;
     }
 
-    constructor() {
-        _grantRole(MANAGER_ROLE, msg.sender);
+    constructor(address adminAdd, address managerAdd) {
+        if(adminAdd == address(0) || managerAdd == address(0)) {
+            revert InvalidAddress();
+        }
+        _setRoleAdmin(MARKET_INITIALIZER_ROLE, MANAGER_ROLE);
+        _setRoleAdmin(RATE_UPDATERS_ROLE, MANAGER_ROLE);
+        _setRoleAdmin(BASE_LIQUIDATOR_ROLE, MANAGER_ROLE); 
+        _grantRole(DEFAULT_ADMIN_ROLE, adminAdd);
+        _grantRole(MANAGER_ROLE, managerAdd);       
     }
 
     function _computLiquidatorRoleHash(address account) public view returns (bytes32) {
         return keccak256(abi.encodePacked(BASE_LIQUIDATOR_ROLE, account));
     }
 
+    // This will be only used in case of emergency to change the manager of the different roles if any of the manager is compromised
+    function setRoleAdmin(bytes32 role, bytes32 newAdminRole) external onlyRole(getRoleAdmin(role)) {
+        _setRoleAdmin(role, newAdminRole);
+    }
+    
     function grantRole(bytes32 role, address account) public override onlyManager {
         _grantRole(role, account);
     }
@@ -143,8 +164,40 @@ contract CorkConfig is AccessControl, Pausable {
         emit HedgeUnitFactorySet(_hedgeUnitFactory);
     }
 
-    function updateAmmBaseFeePercentage(address ra, address ct, uint256 newBaseFeePercentage) external onlyManager {
+    function setTreasury(address _treasury) external onlyManager {
+        if (_treasury == address(0)) {
+            revert InvalidAddress();
+        }
+
+        treasury = _treasury;
+
+        emit TreasurySet(_treasury);
+    }
+
+    function updateAmmBaseFeePercentage(Id id, uint256 newBaseFeePercentage) external onlyManager {
+        (address ra,) = moduleCore.underlyingAsset(id);
+        (address ct,) = moduleCore.swapAsset(id, moduleCore.lastDsId(id));
+
         hook.updateBaseFeePercentage(ra, ct, newBaseFeePercentage);
+    }
+
+    function updateAmmTreasurySplitPercentage(Id id, uint256 newTreasurySplitPercentage) external onlyManager {
+        (address ra,) = moduleCore.underlyingAsset(id);
+        (address ct,) = moduleCore.swapAsset(id, moduleCore.lastDsId(id));
+
+        hook.updateTreasurySplitPercentage(ra, ct, newTreasurySplitPercentage);
+    }
+
+    function updatePsmBaseRedemptionFeeTreasurySplitPercentage(Id id, uint256 percentage) external onlyManager {
+        moduleCore.updatePsmBaseRedemptionFeeTreasurySplitPercentage(id, percentage);
+    }
+
+    function updatePsmRepurchaseFeeTreasurySplitPercentage(Id id, uint256 percentage) external onlyManager {
+        moduleCore.updatePsmRepurchaseFeeTreasurySplitPercentage(id, percentage);
+    }
+
+    function updatePsmRepurchaseFeePercentage(Id id, uint256 percentage) external onlyManager {
+        moduleCore.updatePsmRepurchaseFeePercentage(id, percentage);
     }
 
     function setWithdrawalContract(address _withdrawalContract) external onlyManager {
@@ -155,22 +208,20 @@ contract CorkConfig is AccessControl, Pausable {
      * @dev Initialize Module Core
      * @param pa Address of PA
      * @param ra Address of RA
-     * @param lvFee fees for LV
-     * @param initialArp initial ARP value
+     * @param initialDsPrice initial price of DS
      */
     function initializeModuleCore(
         address pa,
         address ra,
-        uint256 lvFee,
-        uint256 initialArp,
-        uint256 _psmBaseRedemptionFeePercentage,
+        uint256 initialDsPrice,
         uint256 expiryInterval
     ) external onlyManager {
-        moduleCore.initializeModuleCore(pa, ra, lvFee, initialArp, _psmBaseRedemptionFeePercentage, expiryInterval);
+        moduleCore.initializeModuleCore(pa, ra, initialDsPrice, expiryInterval);
     }
 
     /**
-     * @dev Issues new assets
+     * @dev Issues new assets, will auto assign amm fees from the previous issuance
+     * for first issuance, separate transaction must be made to set the fees in the AMM
      */
     function issueNewDs(
         Id id,
@@ -189,6 +240,70 @@ contract CorkConfig is AccessControl, Pausable {
             rolloverPeriodInblocks,
             ammLiquidationDeadline
         );
+
+        _autoAssignFees(id);
+        _autoAssignTreasurySplitPercentage(id);
+    }
+
+    function _autoAssignFees(Id id) internal {
+        uint256 currentDsId = moduleCore.lastDsId(id);
+        uint256 prevDsId = currentDsId - 1;
+
+        // first issuance, no AMM fees to assign
+        if (prevDsId == 0) {
+            return;
+        }
+
+        // get previous issuance's assets
+        (address ra,) = moduleCore.underlyingAsset(id);
+        (address ct,) = moduleCore.swapAsset(id, prevDsId);
+
+        // get fees from previous issuance, we won't revert here since the fees can be assigned manually
+        // if for some reason the previous issuance AMM is not created for some reason(no LV deposits)
+        uint256 prevBaseFee;
+
+        try hook.getFee(ra, ct) returns (uint256 baseFee, uint256) {
+            prevBaseFee = baseFee;
+        } catch {
+            return;
+        }
+
+        // assign fees to current issuance
+        (ct,) = moduleCore.swapAsset(id, currentDsId);
+
+        // we don't revert here since an edge case would occur where the Lv token circulation is 0 but the issuance continues
+        // and in that case the AMM would not have been created yet. This is a rare edge case and the fees can be assigned manually in such cases
+        try hook.updateBaseFeePercentage(ra, ct, prevBaseFee) {} catch {}
+    }
+
+    function _autoAssignTreasurySplitPercentage(Id id) internal {
+        uint256 currentDsId = moduleCore.lastDsId(id);
+        uint256 prevDsId = currentDsId - 1;
+
+        // first issuance, no AMM fees to assign
+        if (prevDsId == 0) {
+            return;
+        }
+
+        // get previous issuance's assets
+        (address ra,) = moduleCore.underlyingAsset(id);
+        (address ct,) = moduleCore.swapAsset(id, prevDsId);
+
+        // get fees from previous issuance, we won't revert here since the fees can be assigned manually
+        // if for some reason the previous issuance AMM is not created for some reason(no LV deposits)
+        uint256 prevCtSplit;
+
+        try hook.getMarketSnapshot(ra, ct) returns (MarketSnapshot memory snapshot) {
+            prevCtSplit = snapshot.treasuryFeePercentage;
+        } catch {
+            return;
+        }
+
+        (ct,) = moduleCore.swapAsset(id, currentDsId);
+
+        // we don't revert here since an edge case would occur where the Lv token circulation is 0 but the issuance continues
+        // and in that case the AMM would not have been created yet. This is a rare edge case and the fees can be assigned manually in such cases
+        try hook.updateTreasurySplitPercentage(ra, ct, prevCtSplit) {} catch {}
     }
 
     /**
@@ -201,39 +316,48 @@ contract CorkConfig is AccessControl, Pausable {
     }
 
     /**
-     * @notice Updates earlyFeeRedemption rates
-     * @param id id of PSM
-     * @param newEarlyRedemptionFeeRate new value of earlyRedemptin fees, make sure it has 18 decimals(e.g 1% = 1e18)
+     * @notice update pausing status of PSM Deposits
+     * @param id id of the pair
+     * @param isPSMDepositPaused set to true if you want to pause PSM deposits
      */
-    function updateEarlyRedemptionFeeRate(Id id, uint256 newEarlyRedemptionFeeRate) external onlyManager {
-        moduleCore.updateEarlyRedemptionFeeRate(id, newEarlyRedemptionFeeRate);
+    function updatePsmDepositsStatus(Id id, bool isPSMDepositPaused) external onlyManager {
+        moduleCore.updatePsmDepositsStatus(id, isPSMDepositPaused);
     }
 
     /**
-     * @notice Updates pausing status of PSM and LV pools
-     * @param id id of PSM
-     * @param isPSMDepositPaused new value of isPSMDepositPaused
-     * @param isPSMWithdrawalPaused new value of isPSMWithdrawalPaused
-     * @param isPSMRepurchasePaused new value of isPSMRepurchasePaused
-     * @param isLVDepositPaused new value of isLVDepositPaused
-     * @param isLVWithdrawalPaused new value of isLVWithdrawalPaused
+     * @notice update pausing status of PSM Withdrawals
+     * @param id id of the pair
+     * @param isPSMWithdrawalPaused set to true if you want to pause PSM withdrawals
      */
-    function updatePoolsStatus(
-        Id id,
-        bool isPSMDepositPaused,
-        bool isPSMWithdrawalPaused,
-        bool isPSMRepurchasePaused,
-        bool isLVDepositPaused,
-        bool isLVWithdrawalPaused
-    ) external onlyManager {
-        moduleCore.updatePoolsStatus(
-            id,
-            isPSMDepositPaused,
-            isPSMWithdrawalPaused,
-            isPSMRepurchasePaused,
-            isLVDepositPaused,
-            isLVWithdrawalPaused
-        );
+    function updatePsmWithdrawalsStatus(Id id, bool isPSMWithdrawalPaused) external onlyManager {
+        moduleCore.updatePsmWithdrawalsStatus(id, isPSMWithdrawalPaused);
+    }
+
+    /**
+     * @notice update pausing status of PSM Repurchases
+     * @param id id of the pair
+     * @param isPSMRepurchasePaused set to true if you want to pause PSM repurchases
+     */
+    function updatePsmRepurchasesStatus(Id id, bool isPSMRepurchasePaused) external onlyManager {
+        moduleCore.updatePsmRepurchasesStatus(id, isPSMRepurchasePaused);
+    }
+
+    /**
+     * @notice update pausing status of LV deposits
+     * @param id id of the pair
+     * @param isLVDepositPaused set to true if you want to pause LV deposits
+     */
+    function updateLvDepositsStatus(Id id, bool isLVDepositPaused) external onlyManager {
+        moduleCore.updateLvDepositsStatus(id, isLVDepositPaused);
+    }
+
+    /**
+     * @notice update pausing status of LV withdrawals
+     * @param id id of the pair
+     * @param isLVWithdrawalPaused set to true if you want to pause LV withdrawals
+     */
+    function updateLvWithdrawalsStatus(Id id, bool isLVWithdrawalPaused) external onlyManager {
+        moduleCore.updateLvWithdrawalsStatus(id, isLVWithdrawalPaused);
     }
 
     /**
@@ -303,9 +427,10 @@ contract CorkConfig is AccessControl, Pausable {
         address hedgeUnit,
         uint256 amount,
         uint256 amountOutMin,
-        IDsFlashSwapCore.BuyAprroxParams calldata params
+        IDsFlashSwapCore.BuyAprroxParams calldata params,
+        IDsFlashSwapCore.OffchainGuess calldata offchainGuess
     ) external onlyManager returns (uint256 amountOut) {
-        amountOut = HedgeUnit(hedgeUnit).useFunds(amount, amountOutMin, params);
+        amountOut = HedgeUnit(hedgeUnit).useFunds(amount, amountOutMin, params, offchainGuess);
     }
 
     /**

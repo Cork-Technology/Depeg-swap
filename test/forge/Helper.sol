@@ -61,9 +61,6 @@ abstract contract Helper is SigUtils, TestHelper {
     // 10 block rollover period
     uint256 internal constant DEFAULT_ROLLOVER_PERIOD = 100000;
 
-    // 0% liquidity vault early fee
-    uint256 internal constant DEFAULT_LV_FEE = 0 ether;
-
     // 10% initial ds price
     uint256 internal constant DEFAULT_INITIAL_DS_PRICE = 0.1 ether;
 
@@ -73,6 +70,23 @@ abstract contract Helper is SigUtils, TestHelper {
     uint8 internal constant TARGET_DECIMALS = 18;
 
     uint8 internal constant MAX_DECIMALS = 64;
+
+    address internal constant CORK_PROTOCOL_TREASURY = address(789);
+
+    address private overridenAddress;
+
+    function overridePrank(address _as) public {
+        (, address currentCaller,) = vm.readCallers();
+        overridenAddress = currentCaller;
+        vm.startPrank(_as);
+    }
+
+    function revertPrank() public {
+        vm.stopPrank();
+        vm.startPrank(overridenAddress);
+
+        overridenAddress = address(0);
+    }
 
     function defaultInitialArp() internal pure virtual returns (uint256) {
         return DEFAULT_INITIAL_DS_PRICE;
@@ -96,25 +110,28 @@ abstract contract Helper is SigUtils, TestHelper {
         return IDsFlashSwapCore.BuyAprroxParams(256, 256, 1e16, 1e9, 1e9, 0.01 ether);
     }
 
-    function initializeNewModuleCore(
-        address pa,
-        address ra,
-        uint256 lvFee,
-        uint256 initialDsPrice,
-        uint256 baseRedemptionFee,
-        uint256 expiryInSeconds
-    ) internal {
-        corkConfig.initializeModuleCore(pa, ra, lvFee, initialDsPrice, baseRedemptionFee, expiryInSeconds);
+    function defaultOffchainGuessParams() internal pure returns (IDsFlashSwapCore.OffchainGuess memory params) {
+        // we return 0 since in most cases, we want to actually test the on-chain calculation logic
+        params.initialBorrowAmount = 0;
+        params.afterSoldBorrowAmount = 0;
     }
 
     function initializeNewModuleCore(
         address pa,
         address ra,
-        uint256 lvFee,
         uint256 initialDsPrice,
+        uint256 baseRedemptionFee,
         uint256 expiryInSeconds
     ) internal {
-        corkConfig.initializeModuleCore(pa, ra, lvFee, initialDsPrice, DEFAULT_BASE_REDEMPTION_FEE, expiryInSeconds);
+        corkConfig.initializeModuleCore(pa, ra, initialDsPrice, expiryInSeconds);
+        corkConfig.updatePsmBaseRedemptionFeePercentage(defaultCurrencyId, baseRedemptionFee);
+    }
+
+    function initializeNewModuleCore(address pa, address ra, uint256 initialDsPrice, uint256 expiryInSeconds)
+        internal
+    {
+        corkConfig.initializeModuleCore(pa, ra, initialDsPrice, expiryInSeconds);
+        corkConfig.updatePsmBaseRedemptionFeePercentage(defaultCurrencyId, DEFAULT_BASE_REDEMPTION_FEE);
     }
 
     function issueNewDs(
@@ -160,7 +177,7 @@ abstract contract Helper is SigUtils, TestHelper {
         defaultCurrencyId = id;
 
         initializeNewModuleCore(
-            address(pa), address(ra), DEFAULT_LV_FEE, defaultInitialArp(), DEFAULT_BASE_REDEMPTION_FEE, expiryInSeconds
+            address(pa), address(ra), defaultInitialArp(), DEFAULT_BASE_REDEMPTION_FEE, expiryInSeconds
         );
         issueNewDs(
             id, defaultExchangeRate(), DEFAULT_REPURCHASE_FEE, DEFAULT_DECAY_DISCOUNT_RATE, DEFAULT_ROLLOVER_PERIOD
@@ -188,7 +205,7 @@ abstract contract Helper is SigUtils, TestHelper {
         defaultCurrencyId = id;
 
         initializeNewModuleCore(
-            address(pa), address(ra), DEFAULT_LV_FEE, defaultInitialArp(), DEFAULT_BASE_REDEMPTION_FEE, expiryInSeconds
+            address(pa), address(ra), defaultInitialArp(), DEFAULT_BASE_REDEMPTION_FEE, expiryInSeconds
         );
         issueNewDs(
             id, defaultExchangeRate(), DEFAULT_REPURCHASE_FEE, DEFAULT_DECAY_DISCOUNT_RATE, DEFAULT_ROLLOVER_PERIOD
@@ -215,9 +232,7 @@ abstract contract Helper is SigUtils, TestHelper {
 
         defaultCurrencyId = id;
 
-        initializeNewModuleCore(
-            address(pa), address(ra), DEFAULT_LV_FEE, defaultInitialArp(), baseRedemptionFee, expiryInSeconds
-        );
+        initializeNewModuleCore(address(pa), address(ra), defaultInitialArp(), baseRedemptionFee, expiryInSeconds);
         issueNewDs(
             id, DEFAULT_EXCHANGE_RATES, DEFAULT_REPURCHASE_FEE, DEFAULT_DECAY_DISCOUNT_RATE, DEFAULT_ROLLOVER_PERIOD
         );
@@ -243,7 +258,7 @@ abstract contract Helper is SigUtils, TestHelper {
         defaultCurrencyId = id;
 
         initializeNewModuleCore(
-            address(pa), address(ra), DEFAULT_LV_FEE, defaultInitialArp(), DEFAULT_BASE_REDEMPTION_FEE, expiryInSeconds
+            address(pa), address(ra), defaultInitialArp(), DEFAULT_BASE_REDEMPTION_FEE, expiryInSeconds
         );
         issueNewDs(
             id, DEFAULT_EXCHANGE_RATES, DEFAULT_REPURCHASE_FEE, DEFAULT_DECAY_DISCOUNT_RATE, DEFAULT_ROLLOVER_PERIOD
@@ -257,7 +272,6 @@ abstract contract Helper is SigUtils, TestHelper {
         uint256 repurchaseFeePercentage,
         uint256 decayDiscountRateInDays,
         uint256 rolloverPeriodInblocks,
-        uint256 lvFee,
         uint256 initialDsPrice
     ) internal returns (DummyWETH ra, DummyWETH pa, Id id) {
         ra = new DummyWETH();
@@ -266,17 +280,24 @@ abstract contract Helper is SigUtils, TestHelper {
         Pair memory _id = PairLibrary.initalize(address(pa), address(ra), expiryInSeconds);
         id = PairLibrary.toId(_id);
 
-        initializeNewModuleCore(address(pa), address(ra), lvFee, initialDsPrice, expiryInSeconds);
+        initializeNewModuleCore(address(pa), address(ra), initialDsPrice, expiryInSeconds);
         issueNewDs(id, exchangeRates, repurchaseFeePercentage, decayDiscountRateInDays, rolloverPeriodInblocks);
     }
 
     function deployConfig() internal {
-        corkConfig = new CorkConfig();
+        corkConfig = new CorkConfig(DEFAULT_ADDRESS, DEFAULT_ADDRESS);
+        corkConfig.setHook(address(hook));
+
+        // transfer hook onwer to corkConfig
+        overridePrank(DEFAULT_HOOK_OWNER);
+        hook.transferOwnership(address(corkConfig));
+        revertPrank();
     }
 
     function setupConfig() internal {
         corkConfig.setModuleCore(address(moduleCore));
         corkConfig.setFlashSwapCore(address(flashSwapRouter));
+        corkConfig.setTreasury(CORK_PROTOCOL_TREASURY);
     }
 
     function deployFlashSwapRouter() internal {
@@ -310,7 +331,12 @@ abstract contract Helper is SigUtils, TestHelper {
     }
 
     function deployModuleCore() internal {
+        __workaround();
+
+        // workaround for uni v4
+        overridePrank(address(this));
         setupTest();
+        revertPrank();
 
         deployConfig();
         deployFlashSwapRouter();
@@ -336,16 +362,37 @@ abstract contract Helper is SigUtils, TestHelper {
 
     function initializeHedgeUnitFactory() internal {
         hedgeUnitRouter = new HedgeUnitRouter();
-        hedgeUnitFactory = new HedgeUnitFactory(address(moduleCore), address(corkConfig), address(flashSwapRouter), address(hedgeUnitRouter));
+        hedgeUnitFactory = new HedgeUnitFactory(address(moduleCore), address(corkConfig), address(flashSwapRouter));
         hedgeUnitRouter.grantRole(hedgeUnitRouter.HEDGE_UNIT_FACTORY_ROLE(), address(hedgeUnitFactory));
         corkConfig.setHedgeUnitFactory(address(hedgeUnitFactory));
     }
 
     function forceUnpause(Id id) internal {
-        corkConfig.updatePoolsStatus(id, false, false, false, false, false);
+        corkConfig.updatePsmDepositsStatus(id, false);
+        corkConfig.updatePsmWithdrawalsStatus(id, false);
+        corkConfig.updatePsmRepurchasesStatus(id, false);
+        corkConfig.updateLvDepositsStatus(id, false);
+        corkConfig.updateLvWithdrawalsStatus(id, false);
     }
 
     function forceUnpause() internal {
         forceUnpause(defaultCurrencyId);
+    }
+
+    function __workaround() internal {
+        PrankWorkAround _contract = new PrankWorkAround();
+        _contract.prankApply();
+    }
+}
+
+contract PrankWorkAround {
+    constructor() {
+        // This is a workaround to apply the prank to the contract
+        // since uniswap does whacky things with the contract creation
+    }
+
+    function prankApply() public {
+        // This is a workaround to apply the prank to the contract
+        // since uniswap does whacky things with the contract creation
     }
 }

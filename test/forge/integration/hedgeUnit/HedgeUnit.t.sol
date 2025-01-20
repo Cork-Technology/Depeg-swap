@@ -129,6 +129,7 @@ contract HedgeUnitTest is Helper {
         (uint256 dsAmount, uint256 paAmount) = hedgeUnit.previewMint(mintAmount);
         bytes32 domain_separator = Asset(address(dsToken)).DOMAIN_SEPARATOR();
         uint256 deadline = block.timestamp + 10 days;
+
         bytes memory dsPermit = getCustomPermit(
             user,
             address(hedgeUnit),
@@ -137,12 +138,15 @@ contract HedgeUnitTest is Helper {
             deadline,
             USER_PK,
             domain_separator,
-            "mint"
+            hedgeUnit.DS_PERMIT_MINT_TYPEHASH()
         );
+
         domain_separator = Asset(address(pa)).DOMAIN_SEPARATOR();
+
         bytes memory paPermit = getPermit(
             user, address(hedgeUnit), paAmount, Asset(address(pa)).nonces(user), deadline, USER_PK, domain_separator
         );
+
         hedgeUnit.mint(user, mintAmount, dsPermit, paPermit, deadline);
 
         // Check balances and total supply
@@ -246,7 +250,7 @@ contract HedgeUnitTest is Helper {
         hedgeUnit.mint(mintAmount);
 
         // Preview dissolving 50 tokens
-        (uint256 dsAmount, uint256 paAmount,) = hedgeUnit.previewDissolve(user, 50 * 1e18);
+        (uint256 dsAmount, uint256 paAmount,) = hedgeUnit.previewBurn(user, 50 * 1e18);
 
         // Check that the DS and PA amounts are correct
         assertEq(dsAmount, 50 * 1e18);
@@ -258,7 +262,7 @@ contract HedgeUnitTest is Helper {
         vm.startPrank(user);
         // Preview dissolving more than the user's balance
         vm.expectRevert(IHedgeUnit.InvalidAmount.selector);
-        hedgeUnit.previewDissolve(user, 1000 * 1e18);
+        hedgeUnit.previewBurn(user, 1000 * 1e18);
 
         dsToken.approve(address(hedgeUnit), USER_BALANCE);
         pa.approve(address(hedgeUnit), USER_BALANCE);
@@ -266,7 +270,7 @@ contract HedgeUnitTest is Helper {
         hedgeUnit.mint(mintAmount);
 
         vm.expectRevert(IHedgeUnit.InvalidAmount.selector);
-        hedgeUnit.previewDissolve(user, 100 * 1e18 + 1);
+        hedgeUnit.previewBurn(user, 100 * 1e18 + 1);
         vm.stopPrank();
     }
 
@@ -279,7 +283,7 @@ contract HedgeUnitTest is Helper {
         uint256 dissolveAmount = 50 * 1e18;
 
         // Dissolve 50 tokens
-        hedgeUnit.dissolve(dissolveAmount);
+        hedgeUnit.burn(dissolveAmount);
 
         // Check that the user's HedgeUnit balance and contract's DS/PA balance decreased
         assertEq(hedgeUnit.balanceOf(user), 50 * 1e18); // 100 - 50 = 50 tokens left
@@ -306,7 +310,7 @@ contract HedgeUnitTest is Helper {
         pa.transfer(address(hedgeUnit), amount * 10);
         ra.transfer(address(hedgeUnit), amount);
 
-        (uint256 dsAmount, uint256 paAmount, uint256 raAmount) = hedgeUnit.previewDissolve(user, amount);
+        (uint256 dsAmount, uint256 paAmount, uint256 raAmount) = hedgeUnit.previewBurn(user, amount);
         vm.assertEq(dsAmount, amount);
         vm.assertEq(paAmount, amount + 10 ether);
         vm.assertEq(raAmount, 1 ether);
@@ -315,11 +319,7 @@ contract HedgeUnitTest is Helper {
         uint256 paBalanceBefore = pa.balanceOf(user);
         uint256 dsBalanceBefore = dsToken.balanceOf(user);
 
-        (dsAmount, paAmount, raAmount) = hedgeUnit.dissolve(amount);
-
-        vm.assertEq(dsAmount, amount);
-        vm.assertEq(paAmount, amount + 10 ether);
-        vm.assertEq(raAmount, 1 ether);
+        hedgeUnit.burn(amount);
 
         uint256 raBalanceAfter = ra.balanceOf(user);
         uint256 paBalanceAfter = pa.balanceOf(user);

@@ -47,7 +47,7 @@ contract DeployScript is Script {
     address public ceth = vm.envAddress("WETH");
     address public cusd = vm.envAddress("CUSD");
     uint256 public pk = vm.envUint("PRIVATE_KEY");
-    address sender = vm.addr(pk);
+    address public deployer = vm.addr(pk);
 
     address internal constant CREATE_2_PROXY = 0x4e59b44847b379578588920cA78FbF26c0B4956C;
 
@@ -85,26 +85,26 @@ contract DeployScript is Script {
         if (!isProd && ceth == address(0)) {
             // Deploy the WETH contract
             cETH = new CETH("Cork Competition ETH", "cETH");
-            cETH.mint(sender, 100_000_000_000_000 ether);
+            cETH.mint(deployer, 100_000_000_000_000 ether);
             ceth = address(cETH);
             console.log("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-");
             console.log("CETH                            : ", address(cETH));
 
-            CST wamuETHCST = new CST("Washington Mutual restaked ETH", "wamuETH", ceth, sender, 480 hours, 3 ether);
+            CST wamuETHCST = new CST("Washington Mutual restaked ETH", "wamuETH", ceth, deployer, 480 hours, 3 ether);
             wamuETH = address(wamuETHCST);
             cETH.addMinter(wamuETH);
             cETH.approve(wamuETH, 1_000_000 ether);
             wamuETHCST.deposit(1_000_000 ether);
             console.log("wamuETH                         : ", address(wamuETH));
 
-            CST bsETHCST = new CST("Bear Sterns Restaked ETH", "bsETH", ceth, sender, 480 hours, 10 ether);
+            CST bsETHCST = new CST("Bear Sterns Restaked ETH", "bsETH", ceth, deployer, 480 hours, 10 ether);
             bsETH = address(bsETHCST);
             cETH.addMinter(bsETH);
             cETH.approve(bsETH, 1_000_000 ether);
             bsETHCST.deposit(1_000_000 ether);
             console.log("bsETH                           : ", address(bsETH));
 
-            CST mlETHCST = new CST("Merrill Lynch staked ETH", "mlETH", ceth, sender, 480 hours, 10 ether);
+            CST mlETHCST = new CST("Merrill Lynch staked ETH", "mlETH", ceth, deployer, 480 hours, 10 ether);
             mlETH = address(mlETHCST);
             cETH.addMinter(mlETH);
             cETH.approve(mlETH, 1_000_000 ether);
@@ -112,26 +112,26 @@ contract DeployScript is Script {
             console.log("mlETH                           : ", address(mlETH));
 
             cUSD = new CUSD("Cork Competition USD", "cUSD");
-            cUSD.mint(sender, 100_000_000_000_000 ether);
+            cUSD.mint(deployer, 100_000_000_000_000 ether);
             cusd = address(cUSD);
             console.log("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-");
             console.log("CUSD                            : ", address(cUSD));
 
-            CST svbUSDCST = new CST("Sillycoin Valley Bank USD", "svbUSD", cusd, sender, 480 hours, 8 ether);
+            CST svbUSDCST = new CST("Sillycoin Valley Bank USD", "svbUSD", cusd, deployer, 480 hours, 8 ether);
             svbUSD = address(svbUSDCST);
             cUSD.addMinter(svbUSD);
             cUSD.approve(svbUSD, 10_000_000_000 ether);
             svbUSDCST.deposit(10_000_000_000 ether);
             console.log("svbUSD                          : ", address(svbUSD));
 
-            CST fedUSDCST = new CST("Fed Up USD", "fedUSD", cusd, sender, 480 hours, 5 ether);
+            CST fedUSDCST = new CST("Fed Up USD", "fedUSD", cusd, deployer, 480 hours, 5 ether);
             fedUSD = address(fedUSDCST);
             cUSD.addMinter(fedUSD);
             cUSD.approve(fedUSD, 10_000_000_000 ether);
             fedUSDCST.deposit(10_000_000_000 ether);
             console.log("fedUSD                          : ", address(fedUSD));
 
-            CST omgUSDCST = new CST("Own My Gold USD", "omgUSD", cusd, sender, 480 hours, 0);
+            CST omgUSDCST = new CST("Own My Gold USD", "omgUSD", cusd, deployer, 480 hours, 0);
             omgUSD = address(omgUSDCST);
             cUSD.addMinter(omgUSD);
             cUSD.approve(omgUSD, 10_000_000_000 ether);
@@ -157,7 +157,7 @@ contract DeployScript is Script {
         console.log("Asset Factory                   : ", address(assetFactory));
 
         // Deploy the CorkConfig contract
-        config = new CorkConfig();
+        config = new CorkConfig(deployer, deployer);
         console.log("Cork Config                     : ", address(config));
 
         // Deploy the FlashSwapRouter implementation (logic) contract
@@ -175,7 +175,7 @@ contract DeployScript is Script {
         console.log("ModuleCore Router Implementation: ", address(moduleCoreImplementation));
 
         // deploy hook
-        poolManager = new PoolManager();
+        poolManager = new PoolManager(deployer);
         console.log("Pool Manager                    : ", address(poolManager));
         liquidityToken = new LiquidityToken();
         console.log("Liquidity Token                 : ", address(liquidityToken));
@@ -205,15 +205,14 @@ contract DeployScript is Script {
         console.log("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-");
 
         // Deploy the Liquidator contract
-        liquidator = new Liquidator(address(config), sender, settlementContract, address(moduleCore));
+        liquidator = new Liquidator(address(config), deployer, settlementContract, address(moduleCore));
         console.log("Liquidator                      : ", address(liquidator));
         console.log("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-");
 
         // Deploy the HedgeUnitFactry contract
         hedgeUnitRouter = new HedgeUnitRouter();
         console.log("HedgeUnit Router                : ", address(hedgeUnitRouter));
-
-        hedgeUnitFactory = new HedgeUnitFactory(address(moduleCore), address(config), address(flashswapRouter), address(hedgeUnitRouter));
+        hedgeUnitFactory = new HedgeUnitFactory(address(moduleCore), address(config), address(flashswapRouter));
         hedgeUnitRouter.grantRole(hedgeUnitRouter.HEDGE_UNIT_FACTORY_ROLE(), address(hedgeUnitFactory));
         config.setHedgeUnitFactory(address(hedgeUnitFactory));
         console.log("HedgeUnit Factory               : ", address(hedgeUnitFactory));
@@ -317,8 +316,11 @@ contract DeployScript is Script {
         uint256 depositLVAmt,
         uint256 ammBaseFeePercentage
     ) public {
-        config.initializeModuleCore(paToken, raToken, redmptionFee, dsPrice, base_redemption_fee, expiryPeriod);
+        // config.initializeModuleCore(paToken, raToken, redmptionFee, dsPrice, base_redemption_fee, expiryPeriod);
+        config.initializeModuleCore(paToken, raToken, dsPrice, expiryPeriod);
         Id id = moduleCore.getId(paToken, raToken, expiryPeriod);
+
+        config.updatePsmBaseRedemptionFeePercentage(id, redmptionFee);
         config.issueNewDs(
             id,
             1 ether, // exchange rate = 1:1
@@ -336,14 +338,14 @@ contract DeployScript is Script {
         // (address ra, address ct) = sortTokens(raToken, ctToken);
         // PoolKey memory key = PoolKey(Currency.wrap(address(ra)), Currency.wrap(address(ct)), 0, 1, hook);
         // poolManager.initialize(key, SQRT_PRICE_1_1);
-        config.updateAmmBaseFeePercentage(raToken, ctToken, ammBaseFeePercentage);
+        config.updateAmmBaseFeePercentage(id, ammBaseFeePercentage);
         console.log("Initialised V4 RA-CT pool");
 
         CETH(raToken).approve(address(moduleCore), depositLVAmt);
         moduleCore.depositLv(id, depositLVAmt, 0, 0);
         console.log("LV Deposited");
 
-        // moduleCore.redeemEarlyLv(id, sender, 10 ether);
+        // moduleCore.redeemEarlyLv(id, deployer, 10 ether);
         // uint256 result = flashswapRouter.previewSwapRaforDs(id, 1, 100 ether);
         // console.log(result);
         console.log("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-");
@@ -359,7 +361,7 @@ contract DeployScript is Script {
             liquidityAmt,
             liquidityAmt,
             liquidityAmt,
-            sender,
+            deployer,
             block.timestamp + 10000 minutes
         );
         console.log("Liquidity Added to AMM");

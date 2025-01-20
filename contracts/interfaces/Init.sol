@@ -13,17 +13,13 @@ interface Initialize {
      * @notice initialize a new pool, this will initialize PSM and Liquidity Vault and deploy new LV token
      * @param pa address of PA token(e.g stETH)
      * @param ra address of RA token(e.g WETH)
-     * @param lvFee fees for Liquidity Vault early withdrawal, make sure it has 18 decimals(e.g 1% = 1e18)
      * @param initialArp initial assets ARP. the initial ds price will be derived from this value. must be in 18 decimals(e.g 1% = 1e18)
-     * @param psmBaseRedemptionFeePercentage base redemption fee for PSM, make sure it has 18 decimals(e.g 1% = 1e18)
      * @param expiryInterval expiry interval for DS, this will be used to calculate the next expiry time for DS(block.timestamp + expiryInterval)
      */
     function initializeModuleCore(
         address pa,
         address ra,
-        uint256 lvFee,
         uint256 initialArp,
-        uint256 psmBaseRedemptionFeePercentage,
         uint256 expiryInterval
     ) external;
 
@@ -53,29 +49,39 @@ interface Initialize {
     function updateRepurchaseFeeRate(Id id, uint256 newRepurchaseFeePercentage) external;
 
     /**
-     * @notice update liquidity vault early redemption fee rate for a pair
-     * @param id id of the pair
-     * @param newEarlyRedemptionFeeRate new value of earlyRedemptin fees, make sure it has 18 decimals(e.g 1% = 1e18)
-     */
-    function updateEarlyRedemptionFeeRate(Id id, uint256 newEarlyRedemptionFeeRate) external;
-
-    /**
-     * @notice update pausing status of PSM and LV pools
+     * @notice update pausing status of PSM Deposits
      * @param id id of the pair
      * @param isPSMDepositPaused set to true if you want to pause PSM deposits
+     */
+    function updatePsmDepositsStatus(Id id, bool isPSMDepositPaused) external;
+
+    /**
+     * @notice update pausing status of PSM Withdrawals
+     * @param id id of the pair
      * @param isPSMWithdrawalPaused set to true if you want to pause PSM withdrawals
+     */
+    function updatePsmWithdrawalsStatus(Id id, bool isPSMWithdrawalPaused) external;
+
+    /**
+     * @notice update pausing status of PSM Repurchases
+     * @param id id of the pair
      * @param isPSMRepurchasePaused set to true if you want to pause PSM repurchases
+     */
+    function updatePsmRepurchasesStatus(Id id, bool isPSMRepurchasePaused) external;
+
+    /**
+     * @notice update pausing status of LV deposits
+     * @param id id of the pair
      * @param isLVDepositPaused set to true if you want to pause LV deposits
+     */
+    function updateLvDepositsStatus(Id id, bool isLVDepositPaused) external;
+
+    /**
+     * @notice update pausing status of LV withdrawals
+     * @param id id of the pair
      * @param isLVWithdrawalPaused set to true if you want to pause LV withdrawals
      */
-    function updatePoolsStatus(
-        Id id,
-        bool isPSMDepositPaused,
-        bool isPSMWithdrawalPaused,
-        bool isPSMRepurchasePaused,
-        bool isLVDepositPaused,
-        bool isLVWithdrawalPaused
-    ) external;
+    function updateLvWithdrawalsStatus(Id id, bool isLVWithdrawalPaused) external;
 
     /**
      * @notice update PSM base redemption fee percentage
@@ -89,4 +95,31 @@ interface Initialize {
      * @return expiry next expiry time in seconds
      */
     function expiry(Id id) external view returns (uint256 expiry);
+
+    /**
+     * @notice Get the last DS id issued for a given module, the returned DS doesn't guarantee to be active
+     * @param id The current module id
+     * @return dsId The current effective DS id
+     *
+     */
+    function lastDsId(Id id) external view returns (uint256 dsId);
+
+    /**
+     * @notice returns the address of the underlying RA and PA token
+     * @param id the id of PSM
+     * @return ra address of the underlying RA token
+     * @return pa address of the underlying PA token
+     */
+    function underlyingAsset(Id id) external view returns (address ra, address pa);
+
+    /**
+     * @notice returns the address of CT and DS associated with a certain DS id
+     * @param id the id of PSM
+     * @param dsId the DS id
+     * @return ct address of the CT token
+     * @return ds address of the DS token
+     */
+    function swapAsset(Id id, uint256 dsId) external view returns (address ct, address ds);
+
+    function getId(address pa, address ra, uint256 expiryInterva) external pure returns (Id id);
 }

@@ -74,15 +74,6 @@ describe("LvCore", function () {
     });
   }
 
-  async function pauseAllPools() {
-    await corkConfig.write.updatePoolsStatus(
-      [Id, true, true, true, true, true],
-      {
-        account: defaultSigner.account,
-      }
-    );
-  }
-
   describe("depositLv", function () {
     it("depositLv should work correctly", async function () {
       await issueNewSwapAssets(helper.expiry(1000000));
@@ -113,7 +104,7 @@ describe("LvCore", function () {
     });
 
     it("Revert depositLv when deposits paused", async function () {
-      await pauseAllPools();
+      await corkConfig.write.updateLvDepositsStatus([Id, true]);
       await expect(
         moduleCore.write.depositLv([Id, depositAmount, 0n, 0n])
       ).to.be.rejectedWith("LVDepositPaused()");
@@ -140,7 +131,7 @@ describe("LvCore", function () {
     });
 
     it("Revert previewLvDeposit when deposits paused", async function () {
-      await pauseAllPools();
+      await corkConfig.write.updateLvDepositsStatus([Id, true]);
       await expect(
         moduleCore.read.previewLvDeposit([Id, depositAmount])
       ).to.be.rejectedWith("LVDepositPaused()");
@@ -279,7 +270,7 @@ describe("LvCore", function () {
       // don't actually matter right now
       const preview = 0n;
 
-      await pauseAllPools();
+      await corkConfig.write.updateLvWithdrawalsStatus([Id, true]);
       await expect(
         moduleCore.write.redeemEarlyLv(
           [
@@ -417,7 +408,7 @@ describe("LvCore", function () {
     });
 
     it("Revert previewRedeemEarlyLv when withdrawals paused", async function () {
-      await pauseAllPools();
+      await corkConfig.write.updateLvWithdrawalsStatus([Id, true]);
       await expect(
         moduleCore.read.previewRedeemEarlyLv([Id, depositAmount])
       ).to.be.rejectedWith("LVWithdrawalPaused()");

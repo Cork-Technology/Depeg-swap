@@ -9,11 +9,12 @@ contract DeployUniV4Script is Script {
     LiquidityToken public liquidityToken;
 
     uint256 public pk = vm.envUint("PRIVATE_KEY");
+    address public deployer = vm.addr(pk);
 
     function run() public {
         vm.startBroadcast(pk);
         // deploy hook
-        poolManager = new PoolManager();
+        poolManager = new PoolManager(deployer);
         console.log("Pool Manager                    : ", address(poolManager));
         liquidityToken = new LiquidityToken();
         console.log("Liquidity Token                 : ", address(liquidityToken));

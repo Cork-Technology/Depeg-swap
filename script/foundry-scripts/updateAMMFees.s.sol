@@ -78,7 +78,7 @@ contract AMMFeesScript is Script {
         console.log("RA token: ", asset.redemptionAsset);
         console.log("CT token: ", ctToken);
         console.log("dsId: ", dsId);
-        config.updateAmmBaseFeePercentage(asset.redemptionAsset, ctToken, asset.ammHookFees);
+        config.updateAmmBaseFeePercentage(id, asset.ammHookFees);
         console.log("Fees updated");
         console.log("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-");
     }

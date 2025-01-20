@@ -80,7 +80,9 @@ contract SwapRAForDSScript is Script {
         CETH(asset.redemptionAsset).approve(address(routerState), swapAmt);
         IDsFlashSwapCore.BuyAprroxParams memory params =
             IDsFlashSwapCore.BuyAprroxParams(108, 108, 1 ether, 1 gwei, 1 gwei, 0.01 ether);
-        routerState.swapRaforDs(reserveId, dsId, swapAmt, 0, params);
+        
+        // Add correct default offchain guess params 
+        // routerState.swapRaforDs(reserveId, dsId, swapAmt, 0, params, defaultOffchainGuessParams());
         console.log("Swap RA for DS");
 
 

@@ -54,7 +54,7 @@ interface ICommon {
 
     /// @notice thrown when trying to update rate with invalid rate
     error InvalidRate();
-    
+
     /// @notice Revert when Signature is valid or signature deadline is incorrect
     error InvalidSignature();
 
@@ -79,31 +79,4 @@ interface ICommon {
     event Issued(
         Id indexed Id, uint256 indexed dsId, uint256 indexed expiry, address ds, address ct, bytes32 raCtUniPairId
     );
-
-    /**
-     * @notice Get the last DS id issued for a given module, the returned DS doesn't guarantee to be active
-     * @param id The current module id
-     * @return dsId The current effective DS id
-     *
-     */
-    function lastDsId(Id id) external view returns (uint256 dsId);
-
-    /**
-     * @notice returns the address of the underlying RA and PA token
-     * @param id the id of PSM
-     * @return ra address of the underlying RA token
-     * @return pa address of the underlying PA token
-     */
-    function underlyingAsset(Id id) external view returns (address ra, address pa);
-
-    /**
-     * @notice returns the address of CT and DS associated with a certain DS id
-     * @param id the id of PSM
-     * @param dsId the DS id
-     * @return ct address of the CT token
-     * @return ds address of the DS token
-     */
-    function swapAsset(Id id, uint256 dsId) external view returns (address ct, address ds);
-
-    function getId(address pa, address ra, uint256 expiryInterva) external pure returns (Id id);
 }

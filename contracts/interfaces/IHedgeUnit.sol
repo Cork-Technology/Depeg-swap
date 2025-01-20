@@ -54,7 +54,7 @@ interface IHedgeUnit {
 
     error OnlyLiquidatorOrOwner();
 
-    error OnlyHedgeUnitRouterAllowed();
+    error OnlyDissolverOrHURouterAllowed();
 
     error InvalidToken();
 
@@ -95,19 +95,10 @@ interface IHedgeUnit {
      * @return paAmount The amount of PA tokens received for dissolving the specified amount of HedgeUnit tokens.
      * @return raAmount The amount of RA tokens received for dissolving the specified amount of HedgeUnit tokens.
      */
-    function previewDissolve(address dissolver, uint256 amount)
+    function previewBurn(address dissolver, uint256 amount)
         external
         view
         returns (uint256 dsAmount, uint256 paAmount, uint256 raAmount);
-
-    /**
-     * @notice Dissolves HedgeUnit tokens and returns the equivalent amount of DS and PA tokens.
-     * @param amount The amount of HedgeUnit tokens to dissolve.
-     * @return dsAmount The amount of DS tokens returned.
-     * @return paAmount The amount of PA tokens returned.
-     * @custom:reverts InvalidAmount if the user has insufficient HedgeUnit balance.
-     */
-    function dissolve(uint256 amount) external returns (uint256 dsAmount, uint256 paAmount, uint256 raAmount);
 
     /**
      * @notice Updates the mint cap.

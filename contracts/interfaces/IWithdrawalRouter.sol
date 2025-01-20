@@ -6,5 +6,5 @@ interface IWithdrawalRouter {
         uint256 amount;
     }
 
-    function route(address receiver, Tokens[] calldata tokens) external;
+    function route(address receiver, Tokens[] calldata tokens, bytes calldata routerData) external;
 }
