@@ -149,7 +149,11 @@ contract RolloverTest is Helper {
         uint256 expiry = Asset(ds).expiry();
         vm.warp(expiry - 100);
 
-        (uint256 amountOut,) = flashSwapRouter.swapRaforDs(currencyId, dsId, 1 ether, 0, defaultBuyApproxParams());
+        IDsFlashSwapCore.SwapRaForDsReturn memory result = flashSwapRouter.swapRaforDs(
+            currencyId, dsId, 1 ether, 0, defaultBuyApproxParams(), defaultOffchainGuessParams()
+        );
+        uint256 amountOut = result.amountOut;
+
         uint256 HiyaCummulated = flashSwapRouter.getHiyaCumulated(currencyId);
         uint256 vHiyaCummulated = flashSwapRouter.getVhiyaCumulated(currencyId);
 
@@ -172,7 +176,10 @@ contract RolloverTest is Helper {
         // we autosell
         vm.assertEq(dsReceived, 0);
 
-        (amountOut,) = flashSwapRouter.swapRaforDs(currencyId, dsId, 1 ether, 0, defaultBuyApproxParams());
+        result = flashSwapRouter.swapRaforDs(
+            currencyId, dsId, 1 ether, 0, defaultBuyApproxParams(), defaultOffchainGuessParams()
+        );
+        amountOut = result.amountOut;
 
         uint256 rolloverProfit = moduleCore.getPsmPoolArchiveRolloverProfit(currencyId, dsId);
         vm.assertNotEq(rolloverProfit, 0);
@@ -216,7 +223,11 @@ contract RolloverTest is Helper {
         uint256 expiry = Asset(ds).expiry();
         vm.warp(expiry - 100);
 
-        (uint256 amountOut,) = flashSwapRouter.swapRaforDs(currencyId, dsId, 1 ether, 0, defaultBuyApproxParams());
+        IDsFlashSwapCore.SwapRaForDsReturn memory result = flashSwapRouter.swapRaforDs(
+            currencyId, dsId, 1 ether, 0, defaultBuyApproxParams(), defaultOffchainGuessParams()
+        );
+        uint256 amountOut = result.amountOut;
+
         uint256 HiyaCummulated = flashSwapRouter.getHiyaCumulated(currencyId);
         uint256 vHiyaCummulated = flashSwapRouter.getVhiyaCumulated(currencyId);
 
@@ -239,7 +250,8 @@ contract RolloverTest is Helper {
         // we autosell
         vm.assertEq(dsReceived, 0);
 
-        (amountOut,) = flashSwapRouter.swapRaforDs(currencyId, dsId, 1 ether, 0, defaultBuyApproxParams());
+        result = flashSwapRouter.swapRaforDs(currencyId, dsId, 1 ether, 0, defaultBuyApproxParams(), defaultOffchainGuessParams());
+        amountOut = result.amountOut;
 
         uint256 rolloverProfit = moduleCore.getPsmPoolArchiveRolloverProfit(currencyId, dsId);
         vm.assertNotEq(rolloverProfit, 0);
@@ -266,7 +278,10 @@ contract RolloverTest is Helper {
         uint256 expiry = Asset(ds).expiry();
         vm.warp(expiry - 100);
 
-        (uint256 amountOut,) = flashSwapRouter.swapRaforDs(currencyId, dsId, 1 ether, 0, defaultBuyApproxParams());
+        IDsFlashSwapCore.SwapRaForDsReturn memory result = flashSwapRouter.swapRaforDs(
+            currencyId, dsId, 1 ether, 0, defaultBuyApproxParams(), defaultOffchainGuessParams()
+        );
+        uint256 amountOut = result.amountOut;
 
         uint256 HiyaCummulated = flashSwapRouter.getHiyaCumulated(currencyId);
         uint256 vHiyaCummulated = flashSwapRouter.getVhiyaCumulated(currencyId);
@@ -290,7 +305,7 @@ contract RolloverTest is Helper {
         // we autosell
         vm.assertEq(dsReceived, 0);
 
-        vm.assertEq(true, flashSwapRouter.isRolloverSale(currencyId, dsId));
+        vm.assertEq(true, flashSwapRouter.isRolloverSale(currencyId));
 
         // based on the Hiya = 0.017895624717812529 (~1% ARP) and t = 1
         uint256 expectedHPA = 0.017895624717812529 ether;
@@ -298,11 +313,17 @@ contract RolloverTest is Helper {
         // we disable graduale sale to get an accurate representation
         disableDsGradualSale();
 
-        (amountOut,) = flashSwapRouter.swapRaforDs(currencyId, dsId, expectedHPA, 0, defaultBuyApproxParams());
+        result = flashSwapRouter.swapRaforDs(
+            currencyId, dsId, expectedHPA, 0, defaultBuyApproxParams(), defaultOffchainGuessParams()
+        );
+        amountOut = result.amountOut;
 
         vm.assertApproxEqAbs(amountOut, 1 ether, 0.018 ether);
 
-        (amountOut,) = flashSwapRouter.swapRaforDs(currencyId, dsId, expectedHPA * 10, 0, defaultBuyApproxParams());
+        result = flashSwapRouter.swapRaforDs(
+            currencyId, dsId, expectedHPA * 10, 0, defaultBuyApproxParams(), defaultOffchainGuessParams()
+        );
+        amountOut = result.amountOut;
 
         vm.assertApproxEqAbs(amountOut, 10 ether, 0.18 ether);
     }
@@ -316,7 +337,11 @@ contract RolloverTest is Helper {
         uint256 expiry = Asset(ds).expiry();
         vm.warp(expiry - 100);
 
-        (uint256 amountOut,) = flashSwapRouter.swapRaforDs(currencyId, dsId, 1 ether, 0, defaultBuyApproxParams());
+        IDsFlashSwapCore.SwapRaForDsReturn memory result = flashSwapRouter.swapRaforDs(
+            currencyId, dsId, 1 ether, 0, defaultBuyApproxParams(), defaultOffchainGuessParams()
+        );
+        uint256 amountOut = result.amountOut;
+
         uint256 HiyaCummulated = flashSwapRouter.getHiyaCumulated(currencyId);
         uint256 vHiyaCummulated = flashSwapRouter.getVhiyaCumulated(currencyId);
 
@@ -339,9 +364,11 @@ contract RolloverTest is Helper {
         // we autosell
         vm.assertEq(dsReceived, 0);
 
-        vm.assertEq(true, flashSwapRouter.isRolloverSale(currencyId, dsId));
+        vm.assertEq(true, flashSwapRouter.isRolloverSale(currencyId));
 
         vm.expectRevert();
-        (amountOut,) = flashSwapRouter.swapRaforDs(currencyId, dsId, Hiya, 1000000 ether, defaultBuyApproxParams());
+        flashSwapRouter.swapRaforDs(
+            currencyId, dsId, Hiya, 1000000 ether, defaultBuyApproxParams(), defaultOffchainGuessParams()
+        );
     }
 }
