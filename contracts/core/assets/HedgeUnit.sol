@@ -374,14 +374,14 @@ contract HedgeUnit is
      * @custom:reverts InvalidAmount if the user has insufficient HedgeUnit balance.
      */
     function burnFrom(address account, uint256 amount) public override whenNotPaused nonReentrant autoUpdateDS {
-        _dissolve(account, amount);
+        _burnHU(account, amount);
     }
 
     function burn(uint256 amount) public override whenNotPaused nonReentrant autoUpdateDS {
-        _dissolve(msg.sender, amount);
+        _burnHU(msg.sender, amount);
     }
 
-    function _dissolve(address dissolver, uint256 amount)
+    function _burnHU(address dissolver, uint256 amount)
         internal
         returns (uint256 dsAmount, uint256 paAmount, uint256 raAmount)
     {
