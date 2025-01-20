@@ -53,6 +53,8 @@ contract VaultLiquidationTest is Helper {
 
         // save initial data
         fetchProtocolGeneralInfo();
+
+        corkConfig.updateAmmTreasurySplitPercentage(defaultCurrencyId, 0);
     }
 
     function setPreSignature(bytes calldata orderUid, bool signed) external {
