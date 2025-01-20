@@ -33,7 +33,17 @@ struct DSData {
  * @notice This contract allows minting and dissolving HedgeUnit tokens in exchange for two underlying assets.
  * @dev The contract uses OpenZeppelin's ERC20, ReentrancyGuardTransient,Pausable and Ownable modules.
  */
-contract HedgeUnit is ERC20Permit, ReentrancyGuardTransient, Ownable, Pausable, IHedgeUnit, IHedgeUnitLiquidation {
+contract HedgeUnit is
+    ERC20Permit,
+    ReentrancyGuardTransient,
+    Ownable,
+    Pausable,
+    IHedgeUnit,
+    IHedgeUnitLiquidation,
+    ERC20Burnable
+{
+    string public constant DS_PERMIT_MINT_TYPEHASH = "mint(uint256 amount)";
+
     using SafeERC20 for IERC20;
 
     uint8 internal constant TARGET_DECIMALS = 18;
@@ -41,7 +51,6 @@ contract HedgeUnit is ERC20Permit, ReentrancyGuardTransient, Ownable, Pausable, 
     ModuleCore public moduleCore;
     CorkConfig public config;
     IDsFlashSwapCore public flashSwapRouter;
-    address public hedgeUnitRouter;
     Id public id;
 
     /// @notice The ERC20 token representing the pa asset.
@@ -49,7 +58,7 @@ contract HedgeUnit is ERC20Permit, ReentrancyGuardTransient, Ownable, Pausable, 
     ERC20 public ra;
 
     /// @notice The ERC20 token representing the ds asset.
-    Asset public ds;
+    Asset internal ds;
 
     /// @notice Maximum supply cap for minting HedgeUnit tokens.
     uint256 public mintCap;
@@ -72,8 +81,7 @@ contract HedgeUnit is ERC20Permit, ReentrancyGuardTransient, Ownable, Pausable, 
         string memory _pairName,
         uint256 _mintCap,
         address _config,
-        address _flashSwapRouter,
-        address _hedgeUnitRouter
+        address _flashSwapRouter
     )
         ERC20(string(abi.encodePacked("Hedge Unit - ", _pairName)), string(abi.encodePacked("HU - ", _pairName)))
         ERC20Permit(string(abi.encodePacked("Hedge Unit - ", _pairName)))
@@ -86,7 +94,6 @@ contract HedgeUnit is ERC20Permit, ReentrancyGuardTransient, Ownable, Pausable, 
         mintCap = _mintCap;
         flashSwapRouter = IDsFlashSwapCore(_flashSwapRouter);
         config = CorkConfig(_config);
-        hedgeUnitRouter = _hedgeUnitRouter;
     }
 
     modifier autoUpdateDS() {
@@ -115,13 +122,6 @@ contract HedgeUnit is ERC20Permit, ReentrancyGuardTransient, Ownable, Pausable, 
         _;
     }
 
-    modifier onlyValidDissolver(address dissolver) {
-        if (msg.sender != dissolver && msg.sender != hedgeUnitRouter) {
-            revert OnlyDissolverOrHURouterAllowed();
-        }
-        _;
-    }
-
     function _fetchLatestDS() internal view returns (Asset) {
         uint256 dsId = moduleCore.lastDsId(id);
         (, address dsAdd) = moduleCore.swapAsset(id, dsId);
@@ -131,6 +131,10 @@ contract HedgeUnit is ERC20Permit, ReentrancyGuardTransient, Ownable, Pausable, 
         }
 
         return Asset(dsAdd);
+    }
+
+    function latestDs() external view returns (address) {
+        return address(_fetchLatestDS());
     }
 
     function getReserves() external view returns (uint256 dsReserves, uint256 paReserves, uint256 raReserves) {
@@ -309,6 +313,7 @@ contract HedgeUnit is ERC20Permit, ReentrancyGuardTransient, Ownable, Pausable, 
         emit Mint(minter, amount);
     }
 
+    // if pa do not support permit, then user can still use this function with only ds permit and manual approval on the PA side
     function mint(
         address minter,
         uint256 amount,
@@ -327,10 +332,12 @@ contract HedgeUnit is ERC20Permit, ReentrancyGuardTransient, Ownable, Pausable, 
         (dsAmount, paAmount) = previewMint(amount);
 
         Signature memory sig = MinimalSignatureHelper.split(rawDsPermitSig);
-        ds.permit(minter, address(this), dsAmount, deadline, sig.v, sig.r, sig.s, "mint");
+        ds.permit(minter, address(this), dsAmount, deadline, sig.v, sig.r, sig.s, DS_PERMIT_MINT_TYPEHASH);
 
-        sig = MinimalSignatureHelper.split(rawPaPermitSig);
-        IERC20Permit(address(pa)).permit(minter, address(this), paAmount, deadline, sig.v, sig.r, sig.s);
+        if (rawPaPermitSig.length != 0) {
+            sig = MinimalSignatureHelper.split(rawPaPermitSig);
+            IERC20Permit(address(pa)).permit(minter, address(this), paAmount, deadline, sig.v, sig.r, sig.s);
+        }
 
         (uint256 _actualDs, uint256 _actualPa) = __mint(minter, amount);
 
@@ -344,7 +351,7 @@ contract HedgeUnit is ERC20Permit, ReentrancyGuardTransient, Ownable, Pausable, 
      * @return paAmount The amount of PA tokens received for dissolving the specified amount of HedgeUnit tokens.
      * @return raAmount The amount of RA tokens received for dissolving the specified amount of HedgeUnit tokens.
      */
-    function previewDissolve(address dissolver, uint256 amount)
+    function previewBurn(address dissolver, uint256 amount)
         public
         view
         returns (uint256 dsAmount, uint256 paAmount, uint256 raAmount)
@@ -362,44 +369,39 @@ contract HedgeUnit is ERC20Permit, ReentrancyGuardTransient, Ownable, Pausable, 
 
     /**
      * @notice Dissolves HedgeUnit tokens and returns the equivalent amount of DS and pa tokens.
-     * @param dissolver The address of dissolver(user)
      * @param amount The amount of HedgeUnit tokens to dissolve.
-     * @return dsAdd The address of DS tokens returned.
-     * @return paAdd The address of pa tokens returned.
-     * @return raAdd The address of ra tokens returned.
-     * @return dsAmount The amount of DS tokens returned.
-     * @return paAmount The amount of pa tokens returned.
-     * @return raAmount The amount of ra tokens returned.
      * @custom:reverts EnforcedPause if minting is currently paused.
      * @custom:reverts InvalidAmount if the user has insufficient HedgeUnit balance.
      */
-    function dissolve(address dissolver, uint256 amount)
-        external
-        whenNotPaused
-        nonReentrant
-        autoUpdateDS
-        onlyValidDissolver(dissolver)
-        returns (address dsAdd, address paAdd, address raAdd, uint256 dsAmount, uint256 paAmount, uint256 raAmount)
-    {
-        (dsAmount, paAmount, raAmount) = _dissolve(dissolver, amount);
-        dsAdd = address(ds);
-        paAdd = address(pa);
-        raAdd = address(ra);
+    function burnFrom(address account, uint256 amount) public override whenNotPaused nonReentrant autoUpdateDS {
+        _burnHU(account, amount);
     }
 
-    function _dissolve(address dissolver, uint256 amount)
+    function burn(uint256 amount) public override whenNotPaused nonReentrant autoUpdateDS {
+        _burnHU(msg.sender, amount);
+    }
+
+    function _burnHU(address dissolver, uint256 amount)
         internal
         returns (uint256 dsAmount, uint256 paAmount, uint256 raAmount)
     {
-        (dsAmount, paAmount, raAmount) = previewDissolve(dissolver, amount);
+        (dsAmount, paAmount, raAmount) = previewBurn(dissolver, amount);
+
+        _burnFrom(dissolver, amount);
 
         TransferHelper.transferNormalize(pa, dissolver, paAmount);
         _transferDs(dissolver, dsAmount);
         TransferHelper.transferNormalize(ra, dissolver, raAmount);
 
-        _burn(dissolver, amount);
-
         emit Dissolve(dissolver, amount, dsAmount, paAmount);
+    }
+
+    function _burnFrom(address account, uint256 value) internal {
+        if (account != msg.sender) {
+            _spendAllowance(account, msg.sender, value);
+        }
+
+        _burn(account, value);
     }
 
     /**
