@@ -195,10 +195,10 @@ describe("PSM core", function () {
         erc20contractAddress: ds!,
         psmAddress: fixture.moduleCore.address,
         signer: defaultSigner,
-        functionName: "redeemRaWithDs",
+        functionName: "redeemRaWithDsPa",
       });
 
-      await fixture.moduleCore.write.redeemRaWithDs([
+      await fixture.moduleCore.write.redeemRaWithDsPa([
         fixture.Id,
         dsId!,
         redeemAmount,
@@ -249,7 +249,7 @@ describe("PSM core", function () {
         parseEther("10"),
       ]);
 
-      await fixture.moduleCore.write.redeemRaWithDs([
+      await fixture.moduleCore.write.redeemRaWithDsPa([
         fixture.Id,
         dsId!,
         parseEther("10"),
@@ -290,7 +290,7 @@ describe("PSM core", function () {
         erc20contractAddress: ct!,
         psmAddress: fixture.moduleCore.address,
         signer: defaultSigner,
-        functionName: "redeemWithCT",
+        functionName: "redeemWithExpiredCt",
       });
 
       const [_, raReceivedPreview] =
@@ -302,7 +302,7 @@ describe("PSM core", function () {
 
       expect(raReceivedPreview).to.equal(redeemAmount);
 
-      await fixture.moduleCore.write.redeemWithCT([
+      await fixture.moduleCore.write.redeemWithExpiredCt([
         fixture.Id,
         dsId!,
         redeemAmount,
@@ -351,7 +351,7 @@ describe("PSM core", function () {
 
       expect(raReceivedPreview).to.equal(redeemAmount);
 
-      await fixture.moduleCore.write.redeemWithCT([
+      await fixture.moduleCore.write.redeemWithExpiredCt([
         fixture.Id,
         dsId!,
         redeemAmount,
@@ -425,10 +425,10 @@ describe("PSM core", function () {
         erc20contractAddress: ds!,
         psmAddress: fixture.moduleCore.address,
         signer: defaultSigner,
-        functionName: "redeemRaWithDs",
+        functionName: "redeemRaWithDsPa",
       });
 
-      await fixture.moduleCore.write.redeemRaWithDs([
+      await fixture.moduleCore.write.redeemRaWithDsPa([
         fixture.Id,
         dsId!,
         expectedAMount,
@@ -519,7 +519,7 @@ describe("PSM core", function () {
         erc20contractAddress: ds!,
         psmAddress: fixture.moduleCore.address,
         signer: defaultSigner,
-        functionName: "redeemRaWithCtDs",
+        functionName: "returnRaWithCtDs",
       });
       const msgPermit2 = await helper.permit({
         amount: parseEther("1"),
@@ -527,10 +527,10 @@ describe("PSM core", function () {
         erc20contractAddress: ct!,
         psmAddress: fixture.moduleCore.address,
         signer: defaultSigner,
-        functionName: "redeemRaWithCtDs",
+        functionName: "returnRaWithCtDs",
       });
 
-      await fixture.moduleCore.write.redeemRaWithCtDs([
+      await fixture.moduleCore.write.returnRaWithCtDs([
         fixture.Id,
         parseEther("1"),
         defaultSigner.account.address,
@@ -607,7 +607,7 @@ describe("PSM core", function () {
         parseEther("2"),
       ]);
 
-      await fixture.moduleCore.write.redeemRaWithCtDs([
+      await fixture.moduleCore.write.returnRaWithCtDs([
         fixture.Id,
         parseEther("1"),
       ]);
@@ -697,10 +697,10 @@ describe("PSM core", function () {
         erc20contractAddress: ds!,
         psmAddress: fixture.moduleCore.address,
         signer: defaultSigner,
-        functionName: "redeemRaWithDs",
+        functionName: "redeemRaWithDsPa",
       });
 
-      await fixture.moduleCore.write.redeemRaWithDs([
+      await fixture.moduleCore.write.redeemRaWithDsPa([
         fixture.Id,
         dsId!,
         parseEther("10"),
@@ -780,10 +780,10 @@ describe("PSM core", function () {
         erc20contractAddress: ds!,
         psmAddress: fixture.moduleCore.address,
         signer: defaultSigner,
-        functionName: "redeemRaWithDs",
+        functionName: "redeemRaWithDsPa",
       });
 
-      await fixture.moduleCore.write.redeemRaWithDs([
+      await fixture.moduleCore.write.redeemRaWithDsPa([
         fixture.Id,
         dsId!,
         parseEther("5"),
@@ -842,10 +842,10 @@ describe("PSM core", function () {
         erc20contractAddress: ds!,
         psmAddress: fixture.moduleCore.address,
         signer: defaultSigner,
-        functionName: "redeemRaWithDs",
+        functionName: "redeemRaWithDsPa",
       });
 
-      await fixture.moduleCore.write.redeemRaWithDs([
+      await fixture.moduleCore.write.redeemRaWithDsPa([
         fixture.Id,
         dsId!,
         parseEther("50"),
@@ -882,10 +882,10 @@ describe("PSM core", function () {
         erc20contractAddress: ct!,
         psmAddress: fixture.moduleCore.address,
         signer: defaultSigner,
-        functionName: "redeemWithCT",
+        functionName: "redeemWithExpiredCt",
       });
 
-      await fixture.moduleCore.write.redeemWithCT([
+      await fixture.moduleCore.write.redeemWithExpiredCt([
         fixture.Id,
         dsId!,
         parseEther("1"),
@@ -1027,12 +1027,12 @@ describe("PSM core", function () {
         erc20contractAddress: ct!,
         psmAddress: fixture.moduleCore.address,
         signer: defaultSigner,
-        functionName: "redeemWithCT",
+        functionName: "redeemWithExpiredCt",
       });
 
       await time.increaseTo(newExpiry);
 
-      await fixture.moduleCore.write.redeemWithCT([
+      await fixture.moduleCore.write.redeemWithExpiredCt([
         fixture.Id,
         dsId!,
         parseEther("100"),
@@ -1128,10 +1128,10 @@ describe("PSM core", function () {
         erc20contractAddress: ds!,
         psmAddress: fixture.moduleCore.address,
         signer: defaultSigner,
-        functionName: "redeemRaWithDs",
+        functionName: "redeemRaWithDsPa",
       });
 
-      await fixture.moduleCore.write.redeemRaWithDs([
+      await fixture.moduleCore.write.redeemRaWithDsPa([
         fixture.Id,
         dsId!,
         parseEther("5"),
@@ -1239,7 +1239,7 @@ describe("PSM core", function () {
         fixture.moduleCore.address,
         parseEther("10"),
       ]);
-      await fixture.moduleCore.write.redeemRaWithDs([
+      await fixture.moduleCore.write.redeemRaWithDsPa([
         fixture.Id,
         dsId!,
         parseEther("9.987"),
