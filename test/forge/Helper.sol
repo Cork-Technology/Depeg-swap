@@ -123,13 +123,15 @@ abstract contract Helper is SigUtils, TestHelper {
         uint256 baseRedemptionFee,
         uint256 expiryInSeconds
     ) internal {
-        corkConfig.initializeModuleCore(pa, ra, initialDsPrice, baseRedemptionFee, expiryInSeconds);
+        corkConfig.initializeModuleCore(pa, ra, initialDsPrice, expiryInSeconds);
+        corkConfig.updatePsmBaseRedemptionFeePercentage(defaultCurrencyId, baseRedemptionFee);
     }
 
     function initializeNewModuleCore(address pa, address ra, uint256 initialDsPrice, uint256 expiryInSeconds)
         internal
     {
-        corkConfig.initializeModuleCore(pa, ra, initialDsPrice, DEFAULT_BASE_REDEMPTION_FEE, expiryInSeconds);
+        corkConfig.initializeModuleCore(pa, ra, initialDsPrice, expiryInSeconds);
+        corkConfig.updatePsmBaseRedemptionFeePercentage(defaultCurrencyId, DEFAULT_BASE_REDEMPTION_FEE);
     }
 
     function issueNewDs(
