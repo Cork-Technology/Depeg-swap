@@ -85,7 +85,7 @@ contract VaultLiquidationTest is Helper {
 
         // we redeem 1000 RA first first
         Asset(ds).approve(address(moduleCore), 1000 ether);
-        moduleCore.redeemRaWithDs(currencyId, dsId, 1000 ether);
+        moduleCore.redeemRaWithDsPa(currencyId, dsId, 1000 ether);
 
         ff_expired();
 
@@ -138,7 +138,7 @@ contract VaultLiquidationTest is Helper {
 
         // we redeem 1000 RA first first
         Asset(ds).approve(address(moduleCore), 1000 ether);
-        moduleCore.redeemRaWithDs(currencyId, dsId, 1000 ether);
+        moduleCore.redeemRaWithDsPa(currencyId, dsId, 1000 ether);
 
         ff_expired();
 
@@ -194,7 +194,7 @@ contract VaultLiquidationTest is Helper {
 
         // we redeem 1000 RA first first
         Asset(ds).approve(address(moduleCore), 1000 ether);
-        moduleCore.redeemRaWithDs(currencyId, dsId, 1000 ether);
+        moduleCore.redeemRaWithDsPa(currencyId, dsId, 1000 ether);
 
         ff_expired();
 

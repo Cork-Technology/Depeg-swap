@@ -79,7 +79,7 @@ contract VaultLiquidityFundsTest is Helper {
     function test_requestAfterExpiries() external {
         // we redeem 1000 RA first first
         Asset(ds).approve(address(moduleCore), 1000 ether);
-        moduleCore.redeemRaWithDs(currencyId, dsId, 1000 ether);
+        moduleCore.redeemRaWithDsPa(currencyId, dsId, 1000 ether);
 
         ff_expired();
 

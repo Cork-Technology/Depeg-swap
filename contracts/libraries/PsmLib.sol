@@ -100,7 +100,7 @@ library PsmLibrary {
         self.psm.poolArchive[dsId].rolloverClaims[to] += amount;
     }
 
-    function rolloverCt(
+    function rolloverExpiredCt(
         State storage self,
         address owner,
         uint256 amount,
@@ -111,7 +111,7 @@ library PsmLibrary {
     ) external returns (uint256 ctReceived, uint256 dsReceived, uint256 paReceived) {
         if (rawCtPermitSig.length > 0 && ctDeadline != 0) {
             DepegSwapLibrary.permit(
-                self.ds[dsId].ct, rawCtPermitSig, owner, address(this), amount, ctDeadline, "rolloverCt"
+                self.ds[dsId].ct, rawCtPermitSig, owner, address(this), amount, ctDeadline, "rolloverExpiredCt"
             );
         }
 
@@ -420,7 +420,7 @@ library PsmLibrary {
         ERC20Burnable(ds._address).burnFrom(owner, amount);
     }
 
-    function redeemRaWithCtDs(
+    function returnRaWithCtDs(
         State storage self,
         address owner,
         uint256 amount,
@@ -435,9 +435,9 @@ library PsmLibrary {
 
         if (dsDeadline != 0 && ctDeadline != 0) {
             DepegSwapLibrary.permit(
-                ds._address, rawDsPermitSig, owner, address(this), amount, dsDeadline, "redeemRaWithCtDs"
+                ds._address, rawDsPermitSig, owner, address(this), amount, dsDeadline, "returnRaWithCtDs"
             );
-            DepegSwapLibrary.permit(ds.ct, rawCtPermitSig, owner, address(this), amount, ctDeadline, "redeemRaWithCtDs");
+            DepegSwapLibrary.permit(ds.ct, rawCtPermitSig, owner, address(this), amount, ctDeadline, "returnRaWithCtDs");
         }
 
         ra = _redeemRaWithCtDs(self, ds, owner, amount);
@@ -670,7 +670,7 @@ library PsmLibrary {
 
         if (deadline != 0 && rawDsPermitSig.length != 0) {
             DepegSwapLibrary.permit(
-                ds._address, rawDsPermitSig, owner, address(this), dsProvided, deadline, "redeemRaWithDs"
+                ds._address, rawDsPermitSig, owner, address(this), dsProvided, deadline, "redeemRaWithDsPa"
             );
         }
 
@@ -761,7 +761,7 @@ library PsmLibrary {
     /// we depends on the frontend to make approval to the PA contract before calling this function.
     /// for the CT, we use the permit function to approve the transfer.
     /// the parameter passed here MUST be the same as the one used to generate the ct permit signature.
-    function redeemWithCt(
+    function redeemWithExpiredCt(
         State storage self,
         address owner,
         uint256 amount,
@@ -772,7 +772,7 @@ library PsmLibrary {
         DepegSwap storage ds = self.ds[dsId];
         Guard.safeAfterExpired(ds);
         if (deadline != 0) {
-            DepegSwapLibrary.permit(ds.ct, rawCtPermitSig, owner, address(this), amount, deadline, "redeemWithCT");
+            DepegSwapLibrary.permit(ds.ct, rawCtPermitSig, owner, address(this), amount, deadline, "redeemWithExpiredCt");
         }
         _separateLiquidity(self, dsId);
 

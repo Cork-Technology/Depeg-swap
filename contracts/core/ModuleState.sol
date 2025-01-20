@@ -87,49 +87,49 @@ abstract contract ModuleState is ICommon, ReentrancyGuardTransient {
         return CorkConfig(CONFIG).treasury();
     }
 
-    function onlyInitialized(Id id) internal {
+    function onlyInitialized(Id id) internal view{
         if (!states[id].isInitialized()) {
             revert Uninitialized();
         }
     }
 
-    function PSMDepositNotPaused(Id id) internal {
+    function PSMDepositNotPaused(Id id) internal view {
         if (states[id].psm.isDepositPaused) {
             revert PSMDepositPaused();
         }
     }
 
-    function onlyFlashSwapRouter() internal {
+    function onlyFlashSwapRouter() internal view {
         if (msg.sender != DS_FLASHSWAP_ROUTER) {
             revert OnlyFlashSwapRouterAllowed();
         }
     }
 
-    function PSMWithdrawalNotPaused(Id id) internal {
+    function PSMWithdrawalNotPaused(Id id) internal view {
         if (states[id].psm.isWithdrawalPaused) {
             revert PSMWithdrawalPaused();
         }
     }
 
-    function PSMRepurchaseNotPaused(Id id) internal {
+    function PSMRepurchaseNotPaused(Id id) internal view {
         if (states[id].psm.isRepurchasePaused) {
             revert PSMRepurchasePaused();
         }
     }
 
-    function LVDepositNotPaused(Id id) internal {
+    function LVDepositNotPaused(Id id) internal view {
         if (states[id].vault.config.isDepositPaused) {
             revert LVDepositPaused();
         }
     }
 
-    function LVWithdrawalNotPaused(Id id) internal {
+    function LVWithdrawalNotPaused(Id id) internal view {
         if (states[id].vault.config.isWithdrawalPaused) {
             revert LVWithdrawalPaused();
         }
     }
 
-    function onlyWhiteListedLiquidationContract() internal {
+    function onlyWhiteListedLiquidationContract() internal view {
         if (!ILiquidatorRegistry(CONFIG).isLiquidationWhitelisted(msg.sender)) {
             revert OnlyWhiteListed();
         }

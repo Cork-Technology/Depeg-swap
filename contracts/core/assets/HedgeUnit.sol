@@ -191,7 +191,7 @@ contract HedgeUnit is
         ds.approve(address(moduleCore), amountDs);
         pa.approve(address(moduleCore), amount);
 
-        moduleCore.redeemRaWithDs(id, dsId, amount);
+        moduleCore.redeemRaWithDsPa(id, dsId, amount);
 
         // auto pause
         _pause();
