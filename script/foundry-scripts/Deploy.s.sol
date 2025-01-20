@@ -131,7 +131,7 @@ contract DeployScript is Script {
         console.log("Asset Factory                   : ", address(assetFactory));
 
         // Deploy the CorkConfig contract
-        config = new CorkConfig(sender, sender);
+        config = new CorkConfig(deployer, deployer);
         console.log("Cork Config                     : ", address(config));
 
         // Deploy the FlashSwapRouter implementation (logic) contract
