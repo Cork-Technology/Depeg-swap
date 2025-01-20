@@ -279,7 +279,7 @@ contract HedgeUnitTest is Helper {
         uint256 dissolveAmount = 50 * 1e18;
 
         // Dissolve 50 tokens
-        hedgeUnit.dissolve(dissolveAmount);
+        hedgeUnit.dissolve(user, dissolveAmount);
 
         // Check that the user's HedgeUnit balance and contract's DS/PA balance decreased
         assertEq(hedgeUnit.balanceOf(user), 50 * 1e18); // 100 - 50 = 50 tokens left
@@ -315,7 +315,7 @@ contract HedgeUnitTest is Helper {
         uint256 paBalanceBefore = pa.balanceOf(user);
         uint256 dsBalanceBefore = dsToken.balanceOf(user);
 
-        (dsAmount, paAmount, raAmount) = hedgeUnit.dissolve(amount);
+        (,,,dsAmount, paAmount, raAmount) = hedgeUnit.dissolve(user, amount);
 
         vm.assertEq(dsAmount, amount);
         vm.assertEq(paAmount, amount + 10 ether);

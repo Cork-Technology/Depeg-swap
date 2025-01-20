@@ -44,6 +44,7 @@ contract RouterState is
 
     address public _moduleCore;
     ICorkHook public hook;
+    mapping(Id => ReserveState) internal reserves;
 
     // this is here to prevent stuck funds, essentially it can happen that the reserve DS is so low but not empty,
     // when the router tries to sell it, the trade fails, preventing user from buying DS properly
@@ -83,6 +84,15 @@ contract RouterState is
         _disableInitializers();
     }
 
+    function initialize(address config) external initializer {
+        __AccessControl_init();
+        __UUPSUpgradeable_init();
+        _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
+        _grantRole(CONFIG, config);
+    }
+
+    function _authorizeUpgrade(address newImplementation) internal override onlyConfig {}
+
     function updateDiscountRateInDdays(Id id, uint256 discountRateInDays) external override onlyConfig {
         reserves[id].decayDiscountRateInDays = discountRateInDays;
     }
@@ -98,17 +108,6 @@ contract RouterState is
     function getCurrentEffectiveHIYA(Id id) external view returns (uint256 hpa) {
         hpa = reserves[id].getEffectiveHIYA();
     }
-
-    function initialize(address config) external initializer {
-        __AccessControl_init();
-        __UUPSUpgradeable_init();
-        _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
-        _grantRole(CONFIG, config);
-    }
-
-    mapping(Id => ReserveState) internal reserves;
-
-    function _authorizeUpgrade(address newImplementation) internal override onlyConfig {}
 
     function setModuleCore(address moduleCore) external onlyDefaultAdmin {
         _moduleCore = moduleCore;
