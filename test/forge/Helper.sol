@@ -110,6 +110,12 @@ abstract contract Helper is SigUtils, TestHelper {
         return IDsFlashSwapCore.BuyAprroxParams(256, 256, 1e16, 1e9, 1e9, 0.01 ether);
     }
 
+    function defaultOffchainGuessParams() internal pure returns (IDsFlashSwapCore.OffchainGuess memory params) {
+        // we return 0 since in most cases, we want to actually test the on-chain calculation logic
+        params.initialBorrowAmount = 0;
+        params.afterSoldBorrowAmount = 0;
+    }
+
     function initializeNewModuleCore(
         address pa,
         address ra,
@@ -279,7 +285,7 @@ abstract contract Helper is SigUtils, TestHelper {
     }
 
     function deployConfig() internal {
-        corkConfig = new CorkConfig();
+        corkConfig = new CorkConfig(DEFAULT_ADDRESS, DEFAULT_ADDRESS);
         corkConfig.setHook(address(hook));
 
         // transfer hook onwer to corkConfig

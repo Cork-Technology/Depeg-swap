@@ -227,7 +227,7 @@ library VaultLibrary {
     {
         Id id = self.info.toId();
         uint256 hpa = flashSwapRouter.getCurrentEffectiveHIYA(id);
-        bool isRollover = flashSwapRouter.isRolloverSale(id, dsId);
+        bool isRollover = flashSwapRouter.isRolloverSale(id);
 
         uint256 marketRatio;
 
