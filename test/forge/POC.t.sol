@@ -10,13 +10,13 @@ import "forge-std/console.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "./../../contracts/libraries/MathHelper.sol";
 
-contract VaultRedeemTest is Helper {
+contract POCTest is Helper {
     DummyWETH internal ra;
     DummyWETH internal pa;
     Id public currencyId;
 
     uint256 public DEFAULT_DEPOSIT_AMOUNT = 10000 ether;
-    uint256 redemptionFeePercentage = 10 ether;
+    uint256 redemptionFeePercentage = 5 ether;
 
     uint256 public dsId;
 
