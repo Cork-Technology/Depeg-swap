@@ -103,7 +103,6 @@ contract ModuleCore is OwnableUpgradeable, UUPSUpgradeable, PsmCore, Initialize,
     function issueNewDs(
         Id id,
         uint256 exchangeRates,
-        uint256 repurchaseFeePercentage,
         uint256 decayDiscountRateInDays,
         // won't have effect on first issuance
         uint256 rolloverPeriodInblocks,
@@ -111,10 +110,6 @@ contract ModuleCore is OwnableUpgradeable, UUPSUpgradeable, PsmCore, Initialize,
     ) external override {
         onlyConfig();
         onlyInitialized(id);
-
-        if (repurchaseFeePercentage > PsmLibrary.MAX_ALLOWED_FEES) {
-            revert InvalidFees();
-        }
 
         State storage state = states[id];
 
@@ -125,7 +120,7 @@ contract ModuleCore is OwnableUpgradeable, UUPSUpgradeable, PsmCore, Initialize,
         );
 
         // avoid stack to deep error
-        _initOnNewIssuance(id, repurchaseFeePercentage, ct, ds, info.expiryInterval);
+        _initOnNewIssuance(id, ct, ds, info.expiryInterval);
         // avoid stack to deep error
         getRouterCore().setDecayDiscountAndRolloverPeriodOnNewIssuance(
             id, decayDiscountRateInDays, rolloverPeriodInblocks
@@ -135,7 +130,7 @@ contract ModuleCore is OwnableUpgradeable, UUPSUpgradeable, PsmCore, Initialize,
         );
     }
 
-    function _initOnNewIssuance(Id id, uint256 repurchaseFeePercentage, address ct, address ds, uint256 _expiryInterval)
+    function _initOnNewIssuance(Id id, address ct, address ds, uint256 _expiryInterval)
         internal
     {
         State storage state = states[id];
@@ -144,7 +139,7 @@ contract ModuleCore is OwnableUpgradeable, UUPSUpgradeable, PsmCore, Initialize,
         uint256 prevIdx = state.globalAssetIdx++;
         uint256 idx = state.globalAssetIdx;
 
-        PsmLibrary.onNewIssuance(state, ct, ds, idx, prevIdx, repurchaseFeePercentage);
+        PsmLibrary.onNewIssuance(state, ct, ds, idx, prevIdx);
 
         // TODO : must handle changes in flash swap router later
         getRouterCore().onNewIssuance(id, idx, ds, ra, ct);

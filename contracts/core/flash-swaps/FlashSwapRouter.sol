@@ -92,10 +92,14 @@ contract RouterState is
 
     function updateDiscountRateInDdays(Id id, uint256 discountRateInDays) external override onlyConfig {
         reserves[id].decayDiscountRateInDays = discountRateInDays;
+
+        emit DiscountRateUpdated(id, discountRateInDays);
     }
 
     function updateGradualSaleStatus(Id id, bool status) external override onlyConfig {
         reserves[id].gradualSaleDisabled = status;
+
+        emit GradualSaleStatusUpdated(id, status);
     }
 
     function getCurrentCumulativeHIYA(Id id) external view returns (uint256 hpaCummulative) {
@@ -116,6 +120,8 @@ contract RouterState is
 
     function updateReserveSellPressurePercentage(Id id, uint256 newPercentage) external override onlyConfig {
         reserves[id].updateReserveSellPressurePercentage(newPercentage);
+        
+        emit ReserveSellPressurePercentageUpdated(id, newPercentage);
     }
 
     function setHook(address _hook) external onlyDefaultAdmin {

@@ -293,8 +293,7 @@ library PsmLibrary {
         address ct,
         address ds,
         uint256 idx,
-        uint256 prevIdx,
-        uint256 repurchaseFeePercent
+        uint256 prevIdx
     ) internal {
         if (prevIdx != 0) {
             DepegSwap storage _prevDs = self.ds[prevIdx];
@@ -305,7 +304,6 @@ library PsmLibrary {
         // essentially burn unpurchased ds as we're going in with a new issuance
         self.psm.balances.dsBalance = 0;
 
-        self.psm.repurchaseFeePercentage = repurchaseFeePercent;
         self.ds[idx] = DepegSwapLibrary.initialize(ds, ct);
     }
 
@@ -630,8 +628,12 @@ library PsmLibrary {
         self.psm.balances.ra.unlockToUnchecked(attributedToTreasury, treasury);
     }
 
-    function valueLocked(State storage self) external view returns (uint256) {
-        return self.psm.balances.ra.locked;
+    function valueLocked(State storage self, bool ra) external view returns (uint256) {
+        if (ra) {
+            return self.psm.balances.ra.locked;
+        } else {
+            return self.psm.balances.paBalance;
+        }
     }
 
     function exchangeRate(State storage self) external view returns (uint256 rates) {

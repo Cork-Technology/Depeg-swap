@@ -240,10 +240,11 @@ interface IPSMcore is IRepurchase {
     function returnRaWithCtDs(Id id, uint256 amount) external returns (uint256 ra);
 
     /**
-     * @notice returns amount of value locked in LV
+     * @notice returns amount of value locked in PSM
      * @param id The PSM id
+     * @param ra true if you want to get value locked in RA, false if you want to get value locked in PA
      */
-    function valueLocked(Id id) external view returns (uint256);
+    function valueLocked(Id id, bool ra) external view returns (uint256);
 
     /**
      * @notice returns base redemption fees (1e18 = 1%)

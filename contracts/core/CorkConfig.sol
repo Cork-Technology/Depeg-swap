@@ -224,7 +224,6 @@ contract CorkConfig is AccessControl, Pausable {
     function issueNewDs(
         Id id,
         uint256 exchangeRates,
-        uint256 repurchaseFeePercentage,
         uint256 decayDiscountRateInDays,
         // won't have effect on first issuance
         uint256 rolloverPeriodInblocks,
@@ -233,7 +232,6 @@ contract CorkConfig is AccessControl, Pausable {
         moduleCore.issueNewDs(
             id,
             exchangeRates,
-            repurchaseFeePercentage,
             decayDiscountRateInDays,
             rolloverPeriodInblocks,
             ammLiquidationDeadline
