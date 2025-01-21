@@ -294,8 +294,7 @@ library PsmLibrary {
         address ct,
         address ds,
         uint256 idx,
-        uint256 prevIdx,
-        uint256 repurchaseFeePercent
+        uint256 prevIdx
     ) internal {
         if (prevIdx != 0) {
             DepegSwap storage _prevDs = self.ds[prevIdx];
@@ -306,7 +305,6 @@ library PsmLibrary {
         // essentially burn unpurchased ds as we're going in with a new issuance
         self.psm.balances.dsBalance = 0;
 
-        self.psm.repurchaseFeePercentage = repurchaseFeePercent;
         self.ds[idx] = DepegSwapLibrary.initialize(ds, ct);
     }
 
