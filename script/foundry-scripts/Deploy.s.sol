@@ -72,7 +72,7 @@ contract DeployScript is Script {
     uint256 fedUSDExpiry = 3.5 days;
     uint256 omgUSDExpiry = 0.5 days;
 
-    uint256 constant INITIAL_MINT_CAP = 1000 * 1e18; // 1000 tokens
+    uint256 constant INITIAL_MINT_CAP = 10000 * 1e18; // 10000 tokens
 
     CETH cETH = CETH(ceth);
     CUSD cUSD = CUSD(cusd);
@@ -197,9 +197,8 @@ contract DeployScript is Script {
             address(assetFactory),
             address(hook),
             address(flashswapRouter),
-            address(config),
-            0.2 ether
-        ); // 0.2 base redemptionfee
+            address(config)
+        );
         ERC1967Proxy moduleCoreProxy = new ERC1967Proxy(address(moduleCoreImplementation), data);
         moduleCore = ModuleCore(address(moduleCoreProxy));
 
@@ -214,6 +213,7 @@ contract DeployScript is Script {
         // Deploy the HedgeUnitFactry contract
         hedgeUnitRouter = new HedgeUnitRouter();
         console.log("HedgeUnit Router                : ", address(hedgeUnitRouter));
+
         hedgeUnitFactory = new HedgeUnitFactory(address(moduleCore), address(config), address(flashswapRouter));
         hedgeUnitRouter.grantRole(hedgeUnitRouter.HEDGE_UNIT_FACTORY_ROLE(), address(hedgeUnitFactory));
         config.setHedgeUnitFactory(address(hedgeUnitFactory));
@@ -244,71 +244,48 @@ contract DeployScript is Script {
         console.log("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-");
 
         // Deploy the HedgeUnit contract
+        // All have mint cap of 10000 tokens
         hedgeUnitWamuETH = HedgeUnit(
             config.deployHedgeUnit(
-                moduleCore.getId(wamuETH, ceth, wamuETHExpiry),
-                wamuETH,
-                ceth,
-                "wamuETH - CETH",
-                INITIAL_MINT_CAP
+                moduleCore.getId(wamuETH, ceth, wamuETHExpiry), wamuETH, ceth, "wamuETH - CETH", INITIAL_MINT_CAP
             )
         );
         console.log("HU wamuETH                      : ", address(hedgeUnitWamuETH));
 
         hedgeUnitBsETH = HedgeUnit(
             config.deployHedgeUnit(
-                moduleCore.getId(bsETH, wamuETH, bsETHExpiry),
-                bsETH,
-                wamuETH,
-                "bsETH - wamuETH",
-                INITIAL_MINT_CAP
+                moduleCore.getId(bsETH, wamuETH, bsETHExpiry), bsETH, wamuETH, "bsETH - wamuETH", INITIAL_MINT_CAP
             )
         );
         console.log("HU bsETH                        : ", address(hedgeUnitBsETH));
 
         hedgeUnitMlETH = HedgeUnit(
             config.deployHedgeUnit(
-                moduleCore.getId(mlETH, bsETH, mlETHExpiry),
-                mlETH,
-                bsETH,
-                "mlETH - bsETH",
-                INITIAL_MINT_CAP
+                moduleCore.getId(mlETH, bsETH, mlETHExpiry), mlETH, bsETH, "mlETH - bsETH", INITIAL_MINT_CAP
             )
         );
         console.log("HU mlETH                        : ", address(hedgeUnitMlETH));
 
         hedgeUnitSvbUSD = HedgeUnit(
             config.deployHedgeUnit(
-                moduleCore.getId(svbUSD, fedUSD, svbUSDExpiry),
-                svbUSD,
-                fedUSD,
-                "svbUSD - fedUSD",
-                INITIAL_MINT_CAP
+                moduleCore.getId(svbUSD, fedUSD, svbUSDExpiry), svbUSD, fedUSD, "svbUSD - fedUSD", INITIAL_MINT_CAP
             )
         );
-        console.log("HU svbUSD                        : ", address(hedgeUnitSvbUSD));
+        console.log("HU svbUSD                       : ", address(hedgeUnitSvbUSD));
 
         hedgeUnitFedUSD = HedgeUnit(
             config.deployHedgeUnit(
-                moduleCore.getId(fedUSD, cusd, fedUSDExpiry),
-                fedUSD,
-                cusd,
-                "fedUSD - cUSD",
-                INITIAL_MINT_CAP
+                moduleCore.getId(fedUSD, cusd, fedUSDExpiry), fedUSD, cusd, "fedUSD - cUSD", INITIAL_MINT_CAP
             )
         );
-        console.log("HU fedUSD                        : ", address(hedgeUnitFedUSD));
+        console.log("HU fedUSD                       : ", address(hedgeUnitFedUSD));
 
         hedgeUnitOmgUSD = HedgeUnit(
             config.deployHedgeUnit(
-                moduleCore.getId(omgUSD, svbUSD, omgUSDExpiry),
-                omgUSD,
-                svbUSD,
-                "omgUSD - svbUSD",
-                INITIAL_MINT_CAP
+                moduleCore.getId(omgUSD, svbUSD, omgUSDExpiry), omgUSD, svbUSD, "omgUSD - svbUSD", INITIAL_MINT_CAP
             )
         );
-        console.log("HU omgUSD                        : ", address(hedgeUnitOmgUSD));
+        console.log("HU omgUSD                       : ", address(hedgeUnitOmgUSD));
         console.log("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-");
 
         // EarlyRedemptionFee = 0.2%,  DSPrice=1.285%  repurchaseFee = 0.75%
@@ -331,12 +308,12 @@ contract DeployScript is Script {
         );
 
         // Add liquidity for given pairs to AMM
-        AddAMMLiquidity(wamuETH, ceth, 200_000 ether);
-        AddAMMLiquidity(bsETH, ceth, 200_000 ether);
-        AddAMMLiquidity(mlETH, ceth, 200_000 ether);
-        AddAMMLiquidity(svbUSD, cusd, 500_000_000 ether);
-        AddAMMLiquidity(fedUSD, cusd, 500_000_000 ether);
-        AddAMMLiquidity(omgUSD, cusd, 500_000_000 ether);
+        // AddAMMLiquidity(wamuETH, ceth, 200_000 ether);
+        // AddAMMLiquidity(bsETH, ceth, 200_000 ether);
+        // AddAMMLiquidity(mlETH, ceth, 200_000 ether);
+        // AddAMMLiquidity(svbUSD, cusd, 500_000_000 ether);
+        // AddAMMLiquidity(fedUSD, cusd, 500_000_000 ether);
+        // AddAMMLiquidity(omgUSD, cusd, 500_000_000 ether);
         console.log("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-");
         vm.stopBroadcast();
     }
@@ -351,11 +328,9 @@ contract DeployScript is Script {
         uint256 depositLVAmt,
         uint256 ammBaseFeePercentage
     ) public {
-        // config.initializeModuleCore(paToken, raToken, redmptionFee, dsPrice, base_redemption_fee, expiryPeriod);
         config.initializeModuleCore(paToken, raToken, dsPrice, expiryPeriod);
         Id id = moduleCore.getId(paToken, raToken, expiryPeriod);
 
-        config.updatePsmBaseRedemptionFeePercentage(id, redmptionFee);
         config.issueNewDs(
             id,
             1 ether, // exchange rate = 1:1
@@ -365,21 +340,11 @@ contract DeployScript is Script {
         );
         console.log("New DS issued");
 
-        //Uniswap V4 constant
-        // uint160 SQRT_PRICE_1_1 = 79228162514264337593543950336;
+        config.updatePsmBaseRedemptionFeePercentage(id, redmptionFee);
+        config.updatePsmRepurchaseFeePercentage(id, repurchaseFee);
         config.updateRepurchaseFeeRate(id, repurchaseFee);
-
-        // TODO : doesn't work properly for now
-        // cETH.approve(address(moduleCore), depositLVAmt);
-        // moduleCore.depositLv(id, depositLVAmt, 0, 0);
-        // console.log("LV Deposited");
-
-        (address ctToken,) = moduleCore.swapAsset(id, 1);
-        // (address ra, address ct) = sortTokens(raToken, ctToken);
-        // PoolKey memory key = PoolKey(Currency.wrap(address(ra)), Currency.wrap(address(ct)), 0, 1, hook);
-        // poolManager.initialize(key, SQRT_PRICE_1_1);
         config.updateAmmBaseFeePercentage(id, ammBaseFeePercentage);
-        console.log("Initialised V4 RA-CT pool");
+        console.log("Updated fees");
 
         CETH(raToken).approve(address(moduleCore), depositLVAmt);
         moduleCore.depositLv(id, depositLVAmt, 0, 0);
