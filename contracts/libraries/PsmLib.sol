@@ -637,8 +637,12 @@ library PsmLibrary {
         self.psm.balances.ra.unlockToUnchecked(attributedToTreasury, treasury);
     }
 
-    function valueLocked(State storage self) external view returns (uint256) {
-        return self.psm.balances.ra.locked;
+    function valueLocked(State storage self, bool ra) external view returns (uint256) {
+        if (ra) {
+            return self.psm.balances.ra.locked;
+        } else {
+            return self.psm.balances.paBalance;
+        }
     }
 
     function exchangeRate(State storage self) external view returns (uint256 rates) {
