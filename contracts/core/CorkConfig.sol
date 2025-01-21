@@ -3,10 +3,8 @@ pragma solidity ^0.8.24;
 
 import {AccessControl} from "@openzeppelin/contracts/access/AccessControl.sol";
 import {Pausable} from "@openzeppelin/contracts/utils/Pausable.sol";
-import {Initialize} from "../interfaces/Init.sol";
 import {Id} from "../libraries/Pair.sol";
 import {IDsFlashSwapCore} from "../interfaces/IDsFlashSwapRouter.sol";
-import {Pair} from "../libraries/Pair.sol";
 import {ModuleCore} from "./ModuleCore.sol";
 import {IVault} from "./../interfaces/IVault.sol";
 import {CorkHook} from "Cork-Hook/CorkHook.sol";
@@ -36,7 +34,7 @@ contract CorkConfig is AccessControl, Pausable {
     uint256 public constant WHITELIST_TIME_DELAY = 7 days;
 
     /// @notice liquidation address => timestamp when liquidation is allowed
-    mapping(address => uint256) liquidationWhitelist;
+    mapping(address => uint256) internal liquidationWhitelist;
 
     /// @notice thrown when caller is not manager/Admin of Cork Protocol
     error CallerNotManager();

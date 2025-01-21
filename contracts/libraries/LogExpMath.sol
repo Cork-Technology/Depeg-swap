@@ -12,7 +12,7 @@
 // COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
 // OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-pragma solidity ^0.8.0;
+pragma solidity ^0.8.24;
 
 /* solhint-disable */
 
@@ -289,8 +289,7 @@ library LogExpMath {
 
             // Finally, we compute exp(y * ln(x)) to arrive at x^y
             require(
-                MIN_NATURAL_EXPONENT <= logx_times_y && logx_times_y <= MAX_NATURAL_EXPONENT,
-                "product out of bounds"
+                MIN_NATURAL_EXPONENT <= logx_times_y && logx_times_y <= MAX_NATURAL_EXPONENT, "product out of bounds"
             );
 
             return uint256(exp(logx_times_y));

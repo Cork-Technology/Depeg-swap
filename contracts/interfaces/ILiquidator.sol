@@ -1,6 +1,6 @@
 pragma solidity ^0.8.24;
 
-import "./../libraries/Pair.sol";
+import {Id} from "./../libraries/Pair.sol";
 
 /**
  * @title ILiquidator Interface
@@ -50,6 +50,9 @@ interface ILiquidator {
         address buyToken,
         address liquidator
     );
+
+    /// @notice Zero Address error, thrown when passed address is 0
+    error ZeroAddress();
 
     /// @notice thrown when the internal reference id is invalid
     error InalidRefId();

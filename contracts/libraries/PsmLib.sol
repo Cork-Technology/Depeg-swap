@@ -14,7 +14,6 @@ import {IRepurchase} from "../interfaces/IRepurchase.sol";
 import {ICommon} from "../interfaces/ICommon.sol";
 import {IDsFlashSwapCore} from "../interfaces/IDsFlashSwapRouter.sol";
 import {VaultLibrary} from "./VaultLib.sol";
-import {IUniswapV2Router02} from "../interfaces/uniswap-v2/RouterV2.sol";
 import {SafeERC20, IERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {ICorkHook} from "./../interfaces/UniV4/IMinimalHook.sol";
 import {TransferHelper} from "./TransferHelper.sol";
@@ -376,14 +375,6 @@ library PsmLibrary {
         received = TransferHelper.tokenNativeDecimalsToFixed(amount, self.info.ra);
 
         ds.issue(address(this), received);
-    }
-
-    function _handleDsRedeem(PsmPoolArchive storage archive, uint256 amount) internal returns (uint256 accruedRa) {
-        // because the PSM treats all CT issued(including to itself) as redeemable, we need to decrease the total amount of CT issued
-        archive.ctAttributed -= amount;
-        archive.raAccrued -= amount;
-
-        return amount;
     }
 
     function lvRedeemRaPaWithCt(State storage self, uint256 amount, uint256 dsId)

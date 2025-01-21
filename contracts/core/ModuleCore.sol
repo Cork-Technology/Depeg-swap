@@ -8,7 +8,6 @@ import {VaultLibrary, VaultConfigLibrary} from "../libraries/VaultLib.sol";
 import {Id, Pair, PairLibrary} from "../libraries/Pair.sol";
 import {IAssetFactory} from "../interfaces/IAssetFactory.sol";
 import {State} from "../libraries/State.sol";
-import {ModuleState} from "./ModuleState.sol";
 import {PsmCore} from "./Psm.sol";
 import {VaultCore} from "./Vault.sol";
 import {Initialize} from "../interfaces/Init.sol";

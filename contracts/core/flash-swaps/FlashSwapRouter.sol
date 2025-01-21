@@ -8,9 +8,6 @@ import {Id} from "../../libraries/Pair.sol";
 import {IDsFlashSwapCore, IDsFlashSwapUtility} from "../../interfaces/IDsFlashSwapRouter.sol";
 import {AccessControlUpgradeable} from "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
 import {UUPSUpgradeable} from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
-import {IUniswapV2Callee} from "../../interfaces/uniswap-v2/callee.sol";
-import {IUniswapV2Pair} from "../../interfaces/uniswap-v2/pair.sol";
-import {MinimalUniswapV2Library} from "../../libraries/uni-v2/UniswapV2Library.sol";
 import {IPSMcore} from "../../interfaces/IPSMcore.sol";
 import {IVault} from "../../interfaces/IVault.sol";
 import {Asset} from "../assets/Asset.sol";
@@ -110,6 +107,9 @@ contract RouterState is
     }
 
     function setModuleCore(address moduleCore) external onlyDefaultAdmin {
+        if(moduleCore == address(0)) {
+            revert ZeroAddress();
+        }
         _moduleCore = moduleCore;
         _grantRole(MODULE_CORE, moduleCore);
     }
@@ -206,7 +206,7 @@ contract RouterState is
     }
 
     /// will return that can't be filled from the reserve, this happens when the total reserve is less than the amount requested
-    function _swapRaForDsViaRollover(Id reserveId, uint256 dsId, uint256 amountRa, uint256 amountOutMin)
+    function _swapRaForDsViaRollover(Id reserveId, uint256 dsId, uint256 amountRa)
         internal
         returns (uint256 raLeft, uint256 dsReceived)
     {
@@ -227,7 +227,6 @@ contract RouterState is
 
         uint256 lvProfit;
         uint256 psmProfit;
-        dsReceived;
         uint256 lvReserveUsed;
         uint256 psmReserveUsed;
 
@@ -276,7 +275,7 @@ contract RouterState is
 
         uint256 dsReceived;
         // try to swap the RA for DS via rollover, this will noop if the condition for rollover is not met
-        (amount, dsReceived) = _swapRaForDsViaRollover(reserveId, dsId, amount, amountOutMin);
+        (amount, dsReceived) = _swapRaForDsViaRollover(reserveId, dsId, amount);
 
         // short circuit if all the swap is filled using rollover
         if (amount == 0) {

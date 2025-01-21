@@ -111,29 +111,20 @@ interface IPSMcore is IRepurchase {
         Id indexed Id, uint256 indexed dsId, address indexed redeemer, uint256 raAmount, uint256 swapAmount
     );
 
-    /// @notice Emitted when a Admin updates status of Deposit in the PSM 
+    /// @notice Emitted when a Admin updates status of Deposit in the PSM
     /// @param Id The PSM id
     /// @param isPSMDepositPaused The new value saying if Deposit allowed in PSM or not
-    event PsmDepositsStatusUpdated(
-        Id indexed Id,
-        bool isPSMDepositPaused
-    );
+    event PsmDepositsStatusUpdated(Id indexed Id, bool isPSMDepositPaused);
 
     /// @notice Emitted when a Admin updates status of Withdrawal in the PSM
     /// @param Id The PSM id
     /// @param isPSMWithdrawalPaused The new value saying if Withdrawal allowed in PSM or not
-    event PsmWithdrawalsStatusUpdated(
-        Id indexed Id,
-        bool isPSMWithdrawalPaused
-    );
+    event PsmWithdrawalsStatusUpdated(Id indexed Id, bool isPSMWithdrawalPaused);
 
     /// @notice Emitted when a Admin updates status of Repurchase in the PSM
     /// @param Id The PSM id
     /// @param isPSMRepurchasePaused The new value saying if Repurchase allowed in PSM or not
-    event PsmRepurchasesStatusUpdated(
-        Id indexed Id,
-        bool isPSMRepurchasePaused
-    );
+    event PsmRepurchasesStatusUpdated(Id indexed Id, bool isPSMRepurchasePaused);
 
     /// @notice Emitted when a Admin updates fee rates for early redemption
     /// @param Id The PSM id

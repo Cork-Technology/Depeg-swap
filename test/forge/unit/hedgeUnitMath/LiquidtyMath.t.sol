@@ -47,7 +47,7 @@ contract LiquidityMathTest is Test {
         uint256 amountPa = 1000 ether;
         uint256 amountDs = 1000 ether;
 
-        uint256 liquidityMinted = HedgeUnitMath.mint(reservePa, reserveDs, totalLiquidity, amountPa, amountDs);
+        uint256 liquidityMinted = HedgeUnitMath.mint(reservePa, totalLiquidity, amountPa, amountDs);
 
         vm.assertEq(liquidityMinted, 1000 ether);
     }
@@ -61,7 +61,7 @@ contract LiquidityMathTest is Test {
         uint256 amountDs = 900 ether;
 
         vm.expectRevert(IHedgeUnit.InvalidAmount.selector);
-        HedgeUnitMath.mint(reservePa, reserveDs, totalLiquidity, amountPa, amountDs);
+        HedgeUnitMath.mint(reservePa, totalLiquidity, amountPa, amountDs);
     }
 
     function test_addLiquiditySubsequent() external {
@@ -72,7 +72,7 @@ contract LiquidityMathTest is Test {
         uint256 amountPa = 1000 ether;
         uint256 amountDs = 900 ether;
 
-        uint256 liquidityMinted = HedgeUnitMath.mint(reservePa, reserveDs, totalLiquidity, amountPa, amountDs);
+        uint256 liquidityMinted = HedgeUnitMath.mint(reservePa, totalLiquidity, amountPa, amountDs);
 
         vm.assertApproxEqAbs(liquidityMinted, 474.3416491 ether, 0.0001 ether);
     }
@@ -135,43 +135,5 @@ contract LiquidityMathTest is Test {
         uint256 amountDs = HedgeUnitMath.getProportionalAmount(amountPa, reservePa, reserveDs);
 
         vm.assertEq(amountDs, amountPa * 2);
-    }
-
-    function test_dustInferOptimalAmount() external {
-        uint256 amount0Desired = 1 ether;
-
-        uint256 amount1Desired = 5 ether;
-
-        uint256 reservePa = 1000 ether;
-        uint256 reserveDs = 2000 ether;
-
-        (uint256 amountPa, uint256 amountDs) =
-            HedgeUnitMath.inferOptimalAmount(reservePa, reserveDs, amount0Desired, amount1Desired, 0, 0);
-
-        // we only use 2 ether
-        vm.assertEq(amountDs, 2 ether);
-
-        amount1Desired = 0.5 ether;
-
-        (amountPa, amountDs) =
-            HedgeUnitMath.inferOptimalAmount(reservePa, reserveDs, amount0Desired, amount1Desired, 0, 0);
-
-        // we only use 0.25 ether
-        vm.assertEq(amountPa, 0.25 ether);
-        vm.assertEq(amountDs, amount1Desired);
-    }
-
-    function test_spotDsPrice() external {
-        // 0.7
-        uint256 start = 0;
-        uint256 current = 3 days;
-        uint256 end = 10 days;
-
-        // 2% arp
-        uint256 arp = 2 ether;
-
-        uint256 price = HedgeUnitMath.calculateSpotDsPrice(arp, start, current, end);
-
-        vm.assertApproxEqAbs(price, 0.01376620621 ether, 0.0001 ether);
     }
 }
