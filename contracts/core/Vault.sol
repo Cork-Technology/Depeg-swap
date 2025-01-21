@@ -135,7 +135,7 @@ abstract contract VaultCore is ModuleState, Context, IVault, IVaultLiquidation {
         onlyFlashSwapRouter();
 
         State storage state = states[id];
-        state.provideLiquidityWithFee(amount, getRouterCore(), getAmmRouter());
+        state.allocateFeesToVault(amount);
         emit ProfitReceived(msg.sender, amount);
     }
 
@@ -151,7 +151,7 @@ abstract contract VaultCore is ModuleState, Context, IVault, IVaultLiquidation {
         onlyFlashSwapRouter();
 
         State storage state = states[id];
-        state.provideLiquidityWithFee(amount, getRouterCore(), getAmmRouter());
+        state.allocateFeesToVault(amount);
     }
 
     function updateCtHeldPercentage(Id id, uint256 ctHeldPercentage) external {

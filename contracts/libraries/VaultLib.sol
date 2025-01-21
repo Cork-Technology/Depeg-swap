@@ -543,13 +543,11 @@ library VaultLibrary {
     }
 
     // IMPORTANT : only psm, flash swap router and early redeem LV can call this function
-    function provideLiquidityWithFee(
+    function allocateFeesToVault(
         State storage self,
-        uint256 amount,
-        IDsFlashSwapCore flashSwapRouter,
-        ICorkHook ammRouter
+        uint256 amount
     ) public {
-        __provideLiquidityWithRatio(self, amount, flashSwapRouter, self.ds[self.globalAssetIdx].ct, ammRouter);
+        self.vault.balances.ra.incLocked(amount);
     }
 
     // this will give user their respective balance in mixed form of CT, DS, RA, PA

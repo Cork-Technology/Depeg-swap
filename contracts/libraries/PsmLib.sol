@@ -554,7 +554,7 @@ library PsmLibrary {
 
         if (fee != 0) {
             // Provide liquidity with fee(if any)
-            VaultLibrary.__provideLiquidityWithRatio(self, fee, flashSwapRouter, ds.ct, ammRouter);
+            VaultLibrary.allocateFeesToVault(self, fee);
         }
     }
 
