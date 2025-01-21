@@ -339,4 +339,10 @@ interface IDsFlashSwapCore is IDsFlashSwapUtility {
     function isRolloverSale(Id id) external view returns (bool);
 
     function updateReserveSellPressurePercentage(Id id, uint256 newPercentage) external;
+
+    event DiscountRateUpdated(Id indexed id, uint256 discountRateInDays);
+
+    event GradualSaleStatusUpdated(Id indexed id, bool disabled);
+
+    event ReserveSellPressurePercentageUpdated(Id indexed id, uint256 newPercentage);
 }
