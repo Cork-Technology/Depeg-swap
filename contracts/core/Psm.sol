@@ -203,12 +203,12 @@ abstract contract PsmCore is IPSMcore, ModuleState, Context {
     }
 
     /**
-     * @notice returns amount of value locked in LV
+     * @notice returns amount of value locked in the PSM
      * @param id The PSM id
      */
-    function valueLocked(Id id) external view override returns (uint256) {
+    function valueLocked(Id id, bool ra) external view override returns (uint256) {
         State storage state = states[id];
-        return state.valueLocked();
+        return state.valueLocked(ra);
     }
 
     /**
