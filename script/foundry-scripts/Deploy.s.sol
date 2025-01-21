@@ -37,10 +37,12 @@ contract DeployScript is Script {
     HedgeUnitRouter public hedgeUnitRouter;
     Withdrawal public withdrawal;
 
-    HedgeUnit public hedgeUnitbsETH;
-    HedgeUnit public hedgeUnitlbETH;
-    HedgeUnit public hedgeUnitwamuETH;
-    HedgeUnit public hedgeUnitmlETH;
+    HedgeUnit public hedgeUnitBsETH;
+    HedgeUnit public hedgeUnitWamuETH;
+    HedgeUnit public hedgeUnitMlETH;
+    HedgeUnit public hedgeUnitSvbUSD;
+    HedgeUnit public hedgeUnitFedUSD;
+    HedgeUnit public hedgeUnitOmgUSD;
 
     bool public isProd = vm.envBool("PRODUCTION");
     uint256 public base_redemption_fee = vm.envUint("PSM_BASE_REDEMPTION_FEE_PERCENTAGE");
@@ -51,12 +53,12 @@ contract DeployScript is Script {
 
     address internal constant CREATE_2_PROXY = 0x4e59b44847b379578588920cA78FbF26c0B4956C;
 
-    address wamuETH = 0xC9eF4a21d0261544b10CC5fC9096c3597daaA29d;
-    address bsETH = 0xaF4acbB6e9E7C13D8787a60C199462Bc3095Cad7;
-    address mlETH = 0x2B56646D79375102b5aaaf3c228EE90DE2913d5E;
-    address svbUSD = 0xBF578784a7aFaffE5b63C60Ed051E55871B7E114;
-    address fedUSD = 0xa4A181100F7ef4448d0d34Fd0B6Dc17ecE5C1442;
-    address omgUSD = 0x34f49a5b81B61E91257460E0C6c168Ccee86a4b1;
+    address wamuETH = 0x22222228802B45325E0b8D0152C633449Ab06913;
+    address bsETH = 0x33333335a697843FDd47D599680Ccb91837F59aF;
+    address mlETH = 0x44444447386435500C5a06B167269f42FA4ae8d4;
+    address svbUSD = 0x5555555eBBf30a4b084078319Da2348fD7B9e470;
+    address fedUSD = 0x666666685C211074C1b0cFed7e43E1e7D8749E43;
+    address omgUSD = 0x7777777707136263F82775e7ED0Fc99Bbe6f5eB0;
 
     // constants because they are external contracts
     address settlementContract = 0x9008D19f58AAbD9eD0D60971565AA8510560ab41;
@@ -242,38 +244,71 @@ contract DeployScript is Script {
         console.log("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-");
 
         // Deploy the HedgeUnit contract
-        hedgeUnitwamuETH = HedgeUnit(
+        hedgeUnitWamuETH = HedgeUnit(
             config.deployHedgeUnit(
                 moduleCore.getId(wamuETH, ceth, wamuETHExpiry),
                 wamuETH,
                 ceth,
-                "Washington Mutual restaked ETH - CETH",
+                "wamuETH - CETH",
                 INITIAL_MINT_CAP
             )
         );
-        console.log("HU wamuETH                      : ", address(hedgeUnitwamuETH));
+        console.log("HU wamuETH                      : ", address(hedgeUnitWamuETH));
 
-        hedgeUnitbsETH = HedgeUnit(
+        hedgeUnitBsETH = HedgeUnit(
             config.deployHedgeUnit(
                 moduleCore.getId(bsETH, wamuETH, bsETHExpiry),
                 bsETH,
                 wamuETH,
-                "Bear Sterns Restaked ETH - wamuETH",
+                "bsETH - wamuETH",
                 INITIAL_MINT_CAP
             )
         );
-        console.log("HU bsETH                        : ", address(hedgeUnitbsETH));
+        console.log("HU bsETH                        : ", address(hedgeUnitBsETH));
 
-        hedgeUnitmlETH = HedgeUnit(
+        hedgeUnitMlETH = HedgeUnit(
             config.deployHedgeUnit(
-                moduleCore.getId(mlETH, ceth, mlETHExpiry),
+                moduleCore.getId(mlETH, bsETH, mlETHExpiry),
                 mlETH,
                 bsETH,
-                "Merrill Lynch staked ETH - bsETH",
+                "mlETH - bsETH",
                 INITIAL_MINT_CAP
             )
         );
-        console.log("HU mlETH                        : ", address(hedgeUnitmlETH));
+        console.log("HU mlETH                        : ", address(hedgeUnitMlETH));
+
+        hedgeUnitSvbUSD = HedgeUnit(
+            config.deployHedgeUnit(
+                moduleCore.getId(svbUSD, fedUSD, svbUSDExpiry),
+                svbUSD,
+                fedUSD,
+                "svbUSD - fedUSD",
+                INITIAL_MINT_CAP
+            )
+        );
+        console.log("HU svbUSD                        : ", address(hedgeUnitSvbUSD));
+
+        hedgeUnitFedUSD = HedgeUnit(
+            config.deployHedgeUnit(
+                moduleCore.getId(fedUSD, cusd, fedUSDExpiry),
+                fedUSD,
+                cusd,
+                "fedUSD - cUSD",
+                INITIAL_MINT_CAP
+            )
+        );
+        console.log("HU fedUSD                        : ", address(hedgeUnitFedUSD));
+
+        hedgeUnitOmgUSD = HedgeUnit(
+            config.deployHedgeUnit(
+                moduleCore.getId(omgUSD, svbUSD, omgUSDExpiry),
+                omgUSD,
+                svbUSD,
+                "omgUSD - svbUSD",
+                INITIAL_MINT_CAP
+            )
+        );
+        console.log("HU omgUSD                        : ", address(hedgeUnitOmgUSD));
         console.log("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-");
 
         // EarlyRedemptionFee = 0.2%,  DSPrice=1.285%  repurchaseFee = 0.75%
