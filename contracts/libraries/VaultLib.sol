@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.24;
 
-import {State, VaultState, VaultConfig, VaultWithdrawalPool, VaultAmmLiquidityPool} from "./State.sol";
+import {State, VaultState, VaultConfig} from "./State.sol";
 import {VaultConfigLibrary} from "./VaultConfig.sol";
 import {Pair, PairLibrary, Id} from "./Pair.sol";
 import {LvAsset, LvAssetLibrary} from "./LvAssetLib.sol";
@@ -11,9 +11,7 @@ import {MathHelper} from "./MathHelper.sol";
 import {Guard} from "./Guard.sol";
 import {BitMaps} from "@openzeppelin/contracts/utils/structs/BitMaps.sol";
 import {VaultPool, VaultPoolLibrary} from "./VaultPoolLib.sol";
-import {MinimalUniswapV2Library} from "./uni-v2/UniswapV2Library.sol";
 import {IDsFlashSwapCore} from "../interfaces/IDsFlashSwapRouter.sol";
-import {IUniswapV2Pair} from "../interfaces/uniswap-v2/pair.sol";
 import {DepegSwap, DepegSwapLibrary} from "./DepegSwapLib.sol";
 import {Asset, ERC20, ERC20Burnable} from "../core/assets/Asset.sol";
 import {ICommon} from "../interfaces/ICommon.sol";
@@ -22,7 +20,6 @@ import {IVault} from "../interfaces/IVault.sol";
 import {ICorkHook} from "./../interfaces/UniV4/IMinimalHook.sol";
 import {LiquidityToken} from "Cork-Hook/LiquidityToken.sol";
 import {MarketSnapshot} from "Cork-Hook/lib/MarketSnapshot.sol";
-import {Withdrawal} from "./../core/Withdrawal.sol";
 import {IWithdrawalRouter} from "./../interfaces/IWithdrawalRouter.sol";
 import {TransferHelper} from "./TransferHelper.sol";
 
@@ -57,7 +54,6 @@ library VaultLibrary {
     }
 
     function __addLiquidityToAmmUnchecked(
-        State storage self,
         uint256 raAmount,
         uint256 ctAmount,
         address raAddress,
@@ -137,7 +133,7 @@ library VaultLibrary {
         }
 
         if (!self.vault.lpLiquidated.get(dsId)) {
-            _liquidatedLp(self, dsId, ammRouter, flashSwapRouter, deadline);
+            _liquidatedLp(self, dsId, ammRouter, deadline);
             _redeemCtStrategy(self, dsId);
             _takeRaSnapshot(self, dsId);
             _pauseDepositIfPaIsPresent(self);
@@ -290,7 +286,7 @@ library VaultLibrary {
             PsmLibrary.unsafeIssueToLv(self, MathHelper.calculateProvideLiquidityAmount(amountRaOriginal, raAmount));
 
         (lp, dust) = __addLiquidityToAmmUnchecked(
-            self, raAmount, ctAmount, self.info.redemptionAsset(), ctAddress, ammRouter, tolerance.ra, tolerance.ct
+            raAmount, ctAmount, self.info.redemptionAsset(), ctAddress, ammRouter, tolerance.ra, tolerance.ct
         );
         _addFlashSwapReserveLv(self, flashSwapRouter, self.ds[dsId], ctAmount);
     }
@@ -444,7 +440,6 @@ library VaultLibrary {
     }
 
     function __liquidateUnchecked(
-        State storage self,
         address raAddress,
         address ctAddress,
         ICorkHook ammRouter,
@@ -461,7 +456,6 @@ library VaultLibrary {
         State storage self,
         uint256 dsId,
         ICorkHook ammRouter,
-        IDsFlashSwapCore flashSwapRouter,
         uint256 deadline
     ) internal {
         DepegSwap storage ds = self.ds[dsId];
@@ -484,15 +478,14 @@ library VaultLibrary {
         // 4. End state: Only RA + redeemed PA remains
         self.vault.lpLiquidated.set(dsId);
 
-        (uint256 raAmm, uint256 ctAmm) = __liquidateUnchecked(self, self.info.ra, ds.ct, ammRouter, lpBalance, deadline);
+        (uint256 raAmm, uint256 ctAmm) = __liquidateUnchecked(self.info.ra, ds.ct, ammRouter, lpBalance, deadline);
 
         // avoid stack too deep error
-        _redeemCtVault(self, flashSwapRouter, dsId, ctAmm, raAmm);
+        _redeemCtVault(self, dsId, ctAmm, raAmm);
     }
 
     function _redeemCtVault(
         State storage self,
-        IDsFlashSwapCore flashSwapRouter,
         uint256 dsId,
         uint256 ctAmm,
         uint256 raAmm
@@ -530,29 +523,6 @@ library VaultLibrary {
             __calculateTotalRaAndCtBalanceWithReserve(self, raReserve, ctReserve, lpTotal, lpBalance);
     }
 
-    // duplicate function to avoid stack too deep error
-    function __calculateCtBalanceWithRate(State storage self, ICorkHook ammRouter, uint256 dsId)
-        internal
-        view
-        returns (uint256 raPerLv, uint256 ctPerLv, uint256 raPerLp, uint256 ctPerLp)
-    {
-        address ra = self.info.ra;
-        address ct = self.ds[dsId].ct;
-
-        (uint256 raReserve, uint256 ctReserve) = ammRouter.getReserves(ra, ct);
-
-        uint256 lpTotal;
-        uint256 lpBalance;
-        {
-            LiquidityToken lp = LiquidityToken(ammRouter.getLiquidityToken(ra, ct));
-            lpBalance = lp.balanceOf(address(this));
-            lpTotal = lp.totalSupply();
-        }
-
-        (,, raPerLv, ctPerLv, raPerLp, ctPerLp) =
-            __calculateTotalRaAndCtBalanceWithReserve(self, raReserve, ctReserve, lpTotal, lpBalance);
-    }
-
     function __calculateTotalRaAndCtBalanceWithReserve(
         State storage self,
         uint256 raReserve,
@@ -574,17 +544,6 @@ library VaultLibrary {
         (raPerLv, ctPerLv, raPerLp, ctPerLp, totalRa, ammCtBalance) = MathHelper.calculateLvValueFromUniLp(
             lpSupply, lpBalance, raReserve, ctReserve, Asset(self.vault.lv._address).totalSupply()
         );
-    }
-
-    function _getRaCtReserveSorted(State storage self, ICorkHook ammRouter, uint256 dsId)
-        internal
-        view
-        returns (uint256 raReserve, uint256 ctReserve)
-    {
-        address ra = self.info.ra;
-        address ct = self.ds[dsId].ct;
-
-        (raReserve, ctReserve) = ammRouter.getReserves(ra, ct);
     }
 
     // IMPORTANT : only psm, flash swap router and early redeem LV can call this function
@@ -650,7 +609,7 @@ library VaultLibrary {
 
         {
             (uint256 raFromAmm, uint256 ctFromAmm) = __liquidateUnchecked(
-                self, pair.ra, ds.ct, contracts.ammRouter, redeemAmount.lpLiquidated, redeemParams.ammDeadline
+                pair.ra, ds.ct, contracts.ammRouter, redeemAmount.lpLiquidated, redeemParams.ammDeadline
             );
 
             result.raReceivedFromAmm = raFromAmm;

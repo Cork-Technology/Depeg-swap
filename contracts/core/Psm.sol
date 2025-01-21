@@ -8,7 +8,6 @@ import {IPSMcore} from "../interfaces/IPSMcore.sol";
 import {State} from "../libraries/State.sol";
 import {ModuleState} from "./ModuleState.sol";
 import {Context} from "@openzeppelin/contracts/utils/Context.sol";
-import {ICorkHook} from "./../interfaces/UniV4/IMinimalHook.sol";
 
 /**
  * @title PsmCore Abstract Contract
@@ -203,12 +202,12 @@ abstract contract PsmCore is IPSMcore, ModuleState, Context {
     }
 
     /**
-     * @notice returns amount of value locked in LV
+     * @notice returns amount of value locked in the PSM
      * @param id The PSM id
      */
-    function valueLocked(Id id) external view override returns (uint256) {
+    function valueLocked(Id id, bool ra) external view override returns (uint256) {
         State storage state = states[id];
-        return state.valueLocked();
+        return state.valueLocked(ra);
     }
 
     /**
@@ -342,6 +341,11 @@ abstract contract PsmCore is IPSMcore, ModuleState, Context {
 
     function updatePsmRepurchaseFeePercentage(Id id, uint256 percentage) external {
         onlyConfig();
+
+        if (percentage > PsmLibrary.MAX_ALLOWED_FEES) {
+            revert InvalidFees();
+        }
+
         State storage state = states[id];
         state.psm.repurchaseFeePercentage = percentage;
     }

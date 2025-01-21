@@ -14,7 +14,6 @@ import {IRepurchase} from "../interfaces/IRepurchase.sol";
 import {ICommon} from "../interfaces/ICommon.sol";
 import {IDsFlashSwapCore} from "../interfaces/IDsFlashSwapRouter.sol";
 import {VaultLibrary} from "./VaultLib.sol";
-import {IUniswapV2Router02} from "../interfaces/uniswap-v2/RouterV2.sol";
 import {SafeERC20, IERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {ICorkHook} from "./../interfaces/UniV4/IMinimalHook.sol";
 import {TransferHelper} from "./TransferHelper.sol";
@@ -294,8 +293,7 @@ library PsmLibrary {
         address ct,
         address ds,
         uint256 idx,
-        uint256 prevIdx,
-        uint256 repurchaseFeePercent
+        uint256 prevIdx
     ) internal {
         if (prevIdx != 0) {
             DepegSwap storage _prevDs = self.ds[prevIdx];
@@ -306,7 +304,6 @@ library PsmLibrary {
         // essentially burn unpurchased ds as we're going in with a new issuance
         self.psm.balances.dsBalance = 0;
 
-        self.psm.repurchaseFeePercentage = repurchaseFeePercent;
         self.ds[idx] = DepegSwapLibrary.initialize(ds, ct);
     }
 
@@ -376,14 +373,6 @@ library PsmLibrary {
         received = TransferHelper.tokenNativeDecimalsToFixed(amount, self.info.ra);
 
         ds.issue(address(this), received);
-    }
-
-    function _handleDsRedeem(PsmPoolArchive storage archive, uint256 amount) internal returns (uint256 accruedRa) {
-        // because the PSM treats all CT issued(including to itself) as redeemable, we need to decrease the total amount of CT issued
-        archive.ctAttributed -= amount;
-        archive.raAccrued -= amount;
-
-        return amount;
     }
 
     function lvRedeemRaPaWithCt(State storage self, uint256 amount, uint256 dsId)
@@ -639,8 +628,12 @@ library PsmLibrary {
         self.psm.balances.ra.unlockToUnchecked(attributedToTreasury, treasury);
     }
 
-    function valueLocked(State storage self) external view returns (uint256) {
-        return self.psm.balances.ra.locked;
+    function valueLocked(State storage self, bool ra) external view returns (uint256) {
+        if (ra) {
+            return self.psm.balances.ra.locked;
+        } else {
+            return self.psm.balances.paBalance;
+        }
     }
 
     function exchangeRate(State storage self) external view returns (uint256 rates) {

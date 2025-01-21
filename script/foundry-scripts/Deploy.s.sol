@@ -359,7 +359,6 @@ contract DeployScript is Script {
         config.issueNewDs(
             id,
             1 ether, // exchange rate = 1:1
-            repurchaseFee,
             6 ether, // 6% per day TODO
             block.timestamp + 6600, // 1 block per 12 second and 22 hours rollover during TC = 6600 // TODO
             block.timestamp + 10 minutes
@@ -368,6 +367,12 @@ contract DeployScript is Script {
 
         //Uniswap V4 constant
         // uint160 SQRT_PRICE_1_1 = 79228162514264337593543950336;
+        config.updateRepurchaseFeeRate(id, repurchaseFee);
+
+        // TODO : doesn't work properly for now
+        // cETH.approve(address(moduleCore), depositLVAmt);
+        // moduleCore.depositLv(id, depositLVAmt, 0, 0);
+        // console.log("LV Deposited");
 
         (address ctToken,) = moduleCore.swapAsset(id, 1);
         // (address ra, address ct) = sortTokens(raToken, ctToken);

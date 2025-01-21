@@ -1,6 +1,6 @@
 pragma solidity ^0.8.24;
 
-import "./../libraries/Pair.sol";
+import {Id} from "./../libraries/Pair.sol";
 
 /// @title Interface for the VaultLiquidation contract
 /// @notice This contract is responsible for providing a way for liquidation contracts to request and send back funds

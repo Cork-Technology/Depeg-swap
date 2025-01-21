@@ -2,8 +2,7 @@
 pragma solidity ^0.8.24;
 
 import {Id} from "../libraries/Pair.sol";
-import {IUniswapV2Pair} from "./uniswap-v2/pair.sol";
-import "./IMathError.sol";
+import {IMathError} from "./IMathError.sol";
 
 /**
  * @title IDsFlashSwapUtility Interface
@@ -68,6 +67,9 @@ interface IDsFlashSwapUtility is IMathError {
  * @notice IDsFlashSwapCore interface for Flashswap Router contract
  */
 interface IDsFlashSwapCore is IDsFlashSwapUtility {
+    /// @notice Zero Address error, thrown when passed address is 0
+    error ZeroAddress();
+
     /// @notice thrown when Permit is not supported in Given ERC20 contract
     error PermitNotSupported();
 
@@ -339,4 +341,10 @@ interface IDsFlashSwapCore is IDsFlashSwapUtility {
     function isRolloverSale(Id id) external view returns (bool);
 
     function updateReserveSellPressurePercentage(Id id, uint256 newPercentage) external;
+
+    event DiscountRateUpdated(Id indexed id, uint256 discountRateInDays);
+
+    event GradualSaleStatusUpdated(Id indexed id, bool disabled);
+
+    event ReserveSellPressurePercentageUpdated(Id indexed id, uint256 newPercentage);
 }

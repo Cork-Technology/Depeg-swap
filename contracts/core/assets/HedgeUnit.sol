@@ -4,13 +4,12 @@ pragma solidity ^0.8.24;
 // TODO : support permit
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {Pausable} from "@openzeppelin/contracts/utils/Pausable.sol";
+import {ERC20Burnable} from "@openzeppelin/contracts/token/ERC20/extensions/ERC20Burnable.sol";
 import {ERC20, IERC20Permit} from "@openzeppelin/contracts/token/ERC20/extensions/ERC20Permit.sol";
 import {ReentrancyGuardTransient} from "@openzeppelin/contracts/utils/ReentrancyGuardTransient.sol";
 import {SafeERC20, IERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import {IHedgeUnit} from "../../interfaces/IHedgeUnit.sol";
-import {ICommon} from "../../interfaces/ICommon.sol";
-import {ILiquidator} from "../../interfaces/ILiquidator.sol";
 import {Id} from "../../libraries/Pair.sol";
 import {Asset} from "./Asset.sol";
 import {HedgeUnitMath} from "./../../libraries/HedgeUnitMath.sol";
@@ -18,10 +17,9 @@ import {CorkConfig} from "./../CorkConfig.sol";
 import {IHedgeUnitLiquidation} from "./../../interfaces/IHedgeUnitLiquidation.sol";
 import {IDsFlashSwapCore} from "./../../interfaces/IDsFlashSwapRouter.sol";
 import {ModuleCore} from "./../ModuleCore.sol";
-import "openzeppelin-contracts/contracts/token/ERC20/extensions/ERC20Permit.sol";
-import "./../../libraries/SignatureHelperLib.sol";
-import "./../../libraries/DepegSwapLib.sol";
-import "./../../libraries/TransferHelper.sol";
+import {ERC20Permit} from "@openzeppelin/contracts/token/ERC20/extensions/ERC20Permit.sol";
+import {Signature, MinimalSignatureHelper} from "./../../libraries/SignatureHelperLib.sol";
+import {TransferHelper} from "./../../libraries/TransferHelper.sol";
 import {PermitChecker} from "../../libraries/PermitChecker.sol";
 
 struct DSData {
@@ -47,16 +45,15 @@ contract HedgeUnit is
 
     using SafeERC20 for IERC20;
 
-    uint8 internal constant TARGET_DECIMALS = 18;
-
-    ModuleCore public moduleCore;
-    CorkConfig public config;
-    IDsFlashSwapCore public flashSwapRouter;
-    Id public id;
+    CorkConfig public immutable CONFIG;
+    IDsFlashSwapCore public immutable FLASHSWAP_ROUTER;
+    ModuleCore public immutable MODULE_CORE;
 
     /// @notice The ERC20 token representing the pa asset.
-    ERC20 public pa;
-    ERC20 public ra;
+    ERC20 public immutable pa;
+    ERC20 public immutable ra;
+
+    Id public id;
 
     /// @notice The ERC20 token representing the ds asset.
     Asset internal ds;
@@ -88,13 +85,13 @@ contract HedgeUnit is
         ERC20Permit(string(abi.encodePacked("Hedge Unit - ", _pairName)))
         Ownable(_config)
     {
-        moduleCore = ModuleCore(_moduleCore);
+        MODULE_CORE = ModuleCore(_moduleCore);
         id = _id;
         pa = ERC20(_pa);
         ra = ERC20(_ra);
         mintCap = _mintCap;
-        flashSwapRouter = IDsFlashSwapCore(_flashSwapRouter);
-        config = CorkConfig(_config);
+        FLASHSWAP_ROUTER = IDsFlashSwapCore(_flashSwapRouter);
+        CONFIG = CorkConfig(_config);
     }
 
     modifier autoUpdateDS() {
@@ -103,7 +100,7 @@ contract HedgeUnit is
     }
 
     modifier onlyLiquidationContract() {
-        if (!config.isLiquidationWhitelisted(msg.sender)) {
+        if (!CONFIG.isLiquidationWhitelisted(msg.sender)) {
             revert OnlyLiquidator();
         }
         _;
@@ -117,15 +114,15 @@ contract HedgeUnit is
     }
 
     modifier onlyOwnerOrLiquidator() {
-        if (msg.sender != owner() && !config.isLiquidationWhitelisted(msg.sender)) {
+        if (msg.sender != owner() && !CONFIG.isLiquidationWhitelisted(msg.sender)) {
             revert OnlyLiquidatorOrOwner();
         }
         _;
     }
 
     function _fetchLatestDS() internal view returns (Asset) {
-        uint256 dsId = moduleCore.lastDsId(id);
-        (, address dsAdd) = moduleCore.swapAsset(id, dsId);
+        uint256 dsId = MODULE_CORE.lastDsId(id);
+        (, address dsAdd) = MODULE_CORE.swapAsset(id, dsId);
 
         if (dsAdd == address(0) || Asset(dsAdd).isExpired()) {
             revert NoValidDSExist();
@@ -174,12 +171,11 @@ contract HedgeUnit is
         IDsFlashSwapCore.BuyAprroxParams calldata params,
         IDsFlashSwapCore.OffchainGuess calldata offchainGuess
     ) external autoUpdateDS onlyOwnerOrLiquidator returns (uint256 amountOut) {
-        uint256 dsId = moduleCore.lastDsId(id);
-
-        ra.approve(address(flashSwapRouter), amount);
+        uint256 dsId = MODULE_CORE.lastDsId(id);
+        ra.approve(address(FLASHSWAP_ROUTER), amount);
 
         IDsFlashSwapCore.SwapRaForDsReturn memory result =
-            flashSwapRouter.swapRaforDs(id, dsId, amount, amountOutMin, params, offchainGuess);
+            FLASHSWAP_ROUTER.swapRaforDs(id, dsId, amount, amountOutMin, params, offchainGuess);
 
         amountOut = result.amountOut;
         
@@ -187,12 +183,12 @@ contract HedgeUnit is
     }
 
     function redeemRaWithDsPa(uint256 amountPa, uint256 amountDs) external autoUpdateDS onlyOwner {
-        uint256 dsId = moduleCore.lastDsId(id);
+        uint256 dsId = MODULE_CORE.lastDsId(id);
 
-        ds.approve(address(moduleCore), amountDs);
-        pa.approve(address(moduleCore), amountPa);
+        ds.approve(address(MODULE_CORE), amountDs);
+        pa.approve(address(MODULE_CORE), amountPa);
 
-        moduleCore.redeemRaWithDsPa(id, dsId, amountPa);
+        MODULE_CORE.redeemRaWithDsPa(id, dsId, amountPa);
 
         // auto pause
         _pause();

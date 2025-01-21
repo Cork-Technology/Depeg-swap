@@ -1,7 +1,7 @@
 pragma solidity ^0.8.24;
 
-import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "./../interfaces/IWithdrawalRouter.sol";
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {IWithdrawalRouter} from "./../interfaces/IWithdrawalRouter.sol";
 import {IWithdrawal} from "./../interfaces/IWithdrawal.sol";
 
 contract Withdrawal is IWithdrawal {
@@ -13,7 +13,7 @@ contract Withdrawal is IWithdrawal {
 
     uint256 public constant DELAY = 3 days;
 
-    address public vault;
+    address public immutable VAULT;
 
     mapping(bytes32 => WithdrawalInfo) internal withdrawals;
 
@@ -21,11 +21,14 @@ contract Withdrawal is IWithdrawal {
     mapping(address => uint256) public nonces;
 
     constructor(address _vault) {
-        vault = _vault;
+        if(_vault == address(0)) {
+            revert ZeroAddress();
+        }
+        VAULT = _vault;
     }
 
     modifier onlyVault() {
-        if (msg.sender != vault) {
+        if (msg.sender != VAULT) {
             revert OnlyVault();
         }
         _;

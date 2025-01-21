@@ -111,29 +111,20 @@ interface IPSMcore is IRepurchase {
         Id indexed Id, uint256 indexed dsId, address indexed redeemer, uint256 raAmount, uint256 swapAmount
     );
 
-    /// @notice Emitted when a Admin updates status of Deposit in the PSM 
+    /// @notice Emitted when a Admin updates status of Deposit in the PSM
     /// @param Id The PSM id
     /// @param isPSMDepositPaused The new value saying if Deposit allowed in PSM or not
-    event PsmDepositsStatusUpdated(
-        Id indexed Id,
-        bool isPSMDepositPaused
-    );
+    event PsmDepositsStatusUpdated(Id indexed Id, bool isPSMDepositPaused);
 
     /// @notice Emitted when a Admin updates status of Withdrawal in the PSM
     /// @param Id The PSM id
     /// @param isPSMWithdrawalPaused The new value saying if Withdrawal allowed in PSM or not
-    event PsmWithdrawalsStatusUpdated(
-        Id indexed Id,
-        bool isPSMWithdrawalPaused
-    );
+    event PsmWithdrawalsStatusUpdated(Id indexed Id, bool isPSMWithdrawalPaused);
 
     /// @notice Emitted when a Admin updates status of Repurchase in the PSM
     /// @param Id The PSM id
     /// @param isPSMRepurchasePaused The new value saying if Repurchase allowed in PSM or not
-    event PsmRepurchasesStatusUpdated(
-        Id indexed Id,
-        bool isPSMRepurchasePaused
-    );
+    event PsmRepurchasesStatusUpdated(Id indexed Id, bool isPSMRepurchasePaused);
 
     /// @notice Emitted when a Admin updates fee rates for early redemption
     /// @param Id The PSM id
@@ -249,10 +240,11 @@ interface IPSMcore is IRepurchase {
     function returnRaWithCtDs(Id id, uint256 amount) external returns (uint256 ra);
 
     /**
-     * @notice returns amount of value locked in LV
+     * @notice returns amount of value locked in PSM
      * @param id The PSM id
+     * @param ra true if you want to get value locked in RA, false if you want to get value locked in PA
      */
-    function valueLocked(Id id) external view returns (uint256);
+    function valueLocked(Id id, bool ra) external view returns (uint256);
 
     /**
      * @notice returns base redemption fees (1e18 = 1%)

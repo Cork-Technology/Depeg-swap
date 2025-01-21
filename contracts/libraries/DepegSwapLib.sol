@@ -25,7 +25,6 @@ library DepegSwapLibrary {
 
     /// @notice the exchange rate of DS can only go down at maximum 10% at a time
     uint256 internal constant MAX_RATE_DELTA_PERCENTAGE = 10e18;
-
     /// @notice Zero Address error, thrown when passed address is 0
     error ZeroAddress();
 
@@ -82,11 +81,6 @@ library DepegSwapLibrary {
     function issue(DepegSwap memory self, address to, uint256 amount) internal {
         Asset(self._address).mint(to, amount);
         Asset(self.ct).mint(to, amount);
-    }
-
-    function burnBothforSelf(DepegSwap storage self, uint256 amount) internal {
-        Asset(self._address).burn(amount);
-        Asset(self.ct).burn(amount);
     }
 
     function burnCtSelf(DepegSwap storage self, uint256 amount) internal {

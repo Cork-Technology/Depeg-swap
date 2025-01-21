@@ -1,15 +1,12 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.24;
 
-import {SignedMath} from "@openzeppelin/contracts/utils/math/SignedMath.sol";
-import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
-import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 import {SD59x18, convert, sd, add, mul, pow, sub, div, abs, unwrap, intoUD60x18} from "@prb/math/src/SD59x18.sol";
 import {UD60x18, convert as convertUd, ud, add, mul, pow, sub, div, unwrap} from "@prb/math/src/UD60x18.sol";
 import {IMathError} from "./../interfaces/IMathError.sol";
 import {MarketSnapshot, MarketSnapshotLib} from "Cork-Hook/lib/MarketSnapshot.sol";
 import {TransferHelper} from "./TransferHelper.sol";
-import "./LogExpMath.sol";
+import {LogExpMath} from "./LogExpMath.sol";
 
 library BuyMathBisectionSolver {
     /// @notice returns the the normalized time to maturity from 1-0
@@ -211,7 +208,6 @@ library SwapperMathLibrary {
     /// @notice VHIYA_acc =  Volume_i  - ((Discount / 86400) * (currentTime - issuanceTime))
     function calcVHIYAaccumulated(
         uint256 startTime,
-        uint256 maturityTime,
         uint256 currentTime,
         uint256 decayDiscountInDays,
         uint256 amount

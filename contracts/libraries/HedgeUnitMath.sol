@@ -1,14 +1,14 @@
 pragma solidity ^0.8.24;
 
-import {SD59x18, convert, intoUD60x18} from "@prb/math/src/SD59x18.sol";
-import {UD60x18, convert, ud, add, mul, pow, sub, div, unwrap, intoSD59x18, sqrt} from "@prb/math/src/UD60x18.sol";
-import "./../interfaces/IHedgeUnit.sol";
-import "./DsSwapperMathLib.sol";
-import "./TransferHelper.sol";
+import {convert, intoUD60x18} from "@prb/math/src/SD59x18.sol";
+import {UD60x18, convert, ud, add, mul, pow, sub, div, unwrap} from "@prb/math/src/UD60x18.sol";
+import {IHedgeUnit} from "./../interfaces/IHedgeUnit.sol";
+import {BuyMathBisectionSolver} from "./DsSwapperMathLib.sol";
+import {TransferHelper} from "./TransferHelper.sol";
 
 library HedgeUnitMath {
     // caller of this contract must ensure the both amount is already proportional in amount!
-    function mint(uint256 reservePa, uint256 reserveDs, uint256 totalLiquidity, uint256 amountPa, uint256 amountDs)
+    function mint(uint256 reservePa, uint256 totalLiquidity, uint256 amountPa, uint256 amountDs)
         internal
         pure
         returns (uint256 liquidityMinted)
@@ -54,36 +54,6 @@ library HedgeUnitMath {
         returns (uint256)
     {
         return TransferHelper.normalizeDecimals(amount, decimalsBefore, decimalsAfter);
-    }
-
-    // uni v2 style proportional add liquidity
-    function inferOptimalAmount(
-        uint256 reservePa,
-        uint256 reserveDs,
-        uint256 amountPaDesired,
-        uint256 amountDsDesired,
-        uint256 amountPaMin,
-        uint256 amountDsMin
-    ) internal pure returns (uint256 amountPa, uint256 amountDs) {
-        if (reservePa == 0 && reserveDs == 0) {
-            (amountPa, amountDs) = (amountPaDesired, amountDsDesired);
-        } else {
-            uint256 amountDsOptimal = getProportionalAmount(amountPaDesired, reservePa, reserveDs);
-
-            if (amountDsOptimal <= amountDsDesired) {
-                if (amountDsOptimal < amountDsMin) {
-                    revert IHedgeUnit.InsufficientDsAmount();
-                }
-
-                (amountPa, amountDs) = (amountPaDesired, amountDsOptimal);
-            } else {
-                uint256 amountPaOptimal = getProportionalAmount(amountDsDesired, reserveDs, reservePa);
-                if (amountPaOptimal < amountPaMin || amountPaOptimal > amountPaDesired) {
-                    revert IHedgeUnit.InsufficientPaAmount();
-                }
-                (amountPa, amountDs) = (amountPaOptimal, amountDsDesired);
-            }
-        }
     }
 
     function withdraw(
