@@ -3,7 +3,7 @@ pragma solidity ^0.8.24;
 
 import {Id} from "../libraries/Pair.sol";
 import {State} from "../libraries/State.sol";
-import {ICommon} from "../interfaces/ICommon.sol";
+import {IErrors} from "./../interfaces/IErrors.sol";
 import {PsmLibrary} from "../libraries/PsmLib.sol";
 import {RouterState} from "./flash-swaps/FlashSwapRouter.sol";
 import {ICorkHook} from "./../interfaces/UniV4/IMinimalHook.sol";
@@ -17,7 +17,7 @@ import {CorkConfig} from "./CorkConfig.sol";
  * @author Cork Team
  * @notice Abstract ModuleState contract for providing base for Modulecore contract
  */
-abstract contract ModuleState is ICommon, ReentrancyGuardTransient {
+abstract contract ModuleState is IErrors, ReentrancyGuardTransient {
     using PsmLibrary for State;
 
     mapping(Id => State) internal states;
@@ -85,9 +85,9 @@ abstract contract ModuleState is ICommon, ReentrancyGuardTransient {
         return CorkConfig(CONFIG).treasury();
     }
 
-    function onlyInitialized(Id id) internal view{
+    function onlyInitialized(Id id) internal view {
         if (!states[id].isInitialized()) {
-            revert Uninitialized();
+            revert NotInitialized();
         }
     }
 

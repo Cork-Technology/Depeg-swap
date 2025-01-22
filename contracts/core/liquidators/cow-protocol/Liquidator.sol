@@ -4,6 +4,7 @@ pragma solidity ^0.8.24;
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {ILiquidator} from "../../../interfaces/ILiquidator.sol";
+import {IErrors} from "../../../interfaces/IErrors.sol";
 import {IVaultLiquidation} from "./../../../interfaces/IVaultLiquidation.sol";
 import {Id} from "./../../../libraries/Pair.sol";
 import {CorkConfig} from "./../../CorkConfig.sol";
@@ -46,21 +47,21 @@ contract Liquidator is ILiquidator {
 
     modifier onlyTrampoline() {
         if (msg.sender != HOOK_TRAMPOLINE) {
-            revert ILiquidator.OnlyTrampoline();
+            revert IErrors.OnlyTrampoline();
         }
         _;
     }
 
     modifier onlyLiquidator() {
         if (!CorkConfig(CONFIG).isTrustedLiquidationExecutor(address(this), msg.sender)) {
-            revert ILiquidator.OnlyLiquidator();
+            revert IErrors.OnlyLiquidator();
         }
         _;
     }
 
     constructor(address _config, address _hookTrampoline, address _settlementContract, address _moduleCore) {
         if(_config == address(0) || _hookTrampoline == address(0) || _settlementContract == address(0) || _moduleCore == address(0)) {
-            revert ILiquidator.ZeroAddress();
+            revert IErrors.ZeroAddress();
         }
         SETTLEMENT = IGPv2SettlementContract(_settlementContract);
         CONFIG = _config;

@@ -3,7 +3,7 @@ pragma solidity ^0.8.24;
 
 import {SD59x18, convert, sd, add, mul, pow, sub, div, abs, unwrap, intoUD60x18} from "@prb/math/src/SD59x18.sol";
 import {UD60x18, convert as convertUd, ud, add, mul, pow, sub, div, unwrap} from "@prb/math/src/UD60x18.sol";
-import {IMathError} from "./../interfaces/IMathError.sol";
+import {IErrors} from "./../interfaces/IErrors.sol";
 import {MarketSnapshot, MarketSnapshotLib} from "Cork-Hook/lib/MarketSnapshot.sol";
 import {TransferHelper} from "./TransferHelper.sol";
 import {LogExpMath} from "./LogExpMath.sol";
@@ -42,7 +42,7 @@ library BuyMathBisectionSolver {
             SD59x18 zero = convert(0);
 
             if (xMinSplusE < zero && yPlusS < zero) {
-                revert IMathError.InvalidS();
+                revert IErrors.InvalidS();
             }
         }
 
@@ -91,7 +91,7 @@ library BuyMathBisectionSolver {
                     }
                 }
 
-                revert IMathError.NoSignChange();
+                revert IErrors.NoSignChange();
             }
         }
 
@@ -116,7 +116,7 @@ library BuyMathBisectionSolver {
             }
         }
 
-        revert IMathError.NoConverge();
+        revert IErrors.NoConverge();
     }
 }
 
@@ -140,7 +140,7 @@ library SwapperMathLibrary {
         returns (uint256 raPriceRatio, uint256 ctPriceRatio)
     {
         if (raReserve <= 0 || ctReserve <= 0) {
-            revert IMathError.ZeroReserve();
+            revert IErrors.ZeroReserve();
         }
 
         raPriceRatio = unwrap(div(ud(ctReserve), ud(raReserve)));
@@ -158,7 +158,7 @@ library SwapperMathLibrary {
         uint256 maxIter
     ) external pure returns (uint256 s) {
         if (e > x && x < y) {
-            revert IMathError.InsufficientLiquidity();
+            revert IErrors.InsufficientLiquidityForSwap();
         }
 
         SD59x18 oneMinusT = BuyMathBisectionSolver.computeOneMinusT(
@@ -435,7 +435,7 @@ library SwapperMathLibrary {
         // we skip bounds check if the max lower bound is bigger than the initial borrowed amount
         // since it's guranteed to have enough liquidity if we never borrow
         if (repaymentAmountUd > amountOutUd && lowerBound != convertUd(0)) {
-            revert IMathError.NoLowerBound();
+            revert IErrors.NoLowerBound();
         }
 
         UD60x18 upperBound = initialBorrowedAmountUd;
@@ -475,7 +475,7 @@ library SwapperMathLibrary {
 
         // this means that there's no suitable borrowed amount that satisfies the fee constraints
         if (result.borrowedAmount == 0) {
-            revert IMathError.NoConverge();
+            revert IErrors.NoConverge();
         }
     }
 }

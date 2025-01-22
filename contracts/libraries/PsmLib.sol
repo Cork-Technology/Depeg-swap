@@ -11,7 +11,7 @@ import {State, BitMaps, Balances, PsmPoolArchive} from "./State.sol";
 import {Guard} from "./Guard.sol";
 import {MathHelper} from "./MathHelper.sol";
 import {IRepurchase} from "../interfaces/IRepurchase.sol";
-import {ICommon} from "../interfaces/ICommon.sol";
+import {IErrors} from "../interfaces/IErrors.sol";
 import {IDsFlashSwapCore} from "../interfaces/IDsFlashSwapRouter.sol";
 import {VaultLibrary} from "./VaultLib.sol";
 import {SafeERC20, IERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
@@ -67,7 +67,7 @@ library PsmLibrary {
     function _ensureRateIsInDeltaRange(uint256 currentRate, uint256 newRate) internal {
         // rate must never go higher than the current rate
         if (newRate > currentRate) {
-            revert ICommon.InvalidRate();
+            revert IErrors.InvalidRate();
         }
 
         uint256 delta = MathHelper.calculatePercentageFee(DepegSwapLibrary.MAX_RATE_DELTA_PERCENTAGE, currentRate);
@@ -75,7 +75,7 @@ library PsmLibrary {
 
         // rate must never go down below delta
         if (newRate < delta) {
-            revert ICommon.InvalidRate();
+            revert IErrors.InvalidRate();
         }
     }
 
@@ -337,7 +337,7 @@ library PsmLibrary {
         returns (uint256 dsId, uint256 received, uint256 _exchangeRate)
     {
         if (amount == 0) {
-            revert ICommon.ZeroDeposit();
+            revert IErrors.ZeroDeposit();
         }
 
         dsId = self.globalAssetIdx;
@@ -454,7 +454,7 @@ library PsmLibrary {
 
     function updateRepurchaseFeePercentage(State storage self, uint256 newFees) external {
         if (newFees > MAX_ALLOWED_FEES) {
-            revert ICommon.InvalidFees();
+            revert IErrors.InvalidFees();
         }
         self.psm.repurchaseFeePercentage = newFees;
     }
@@ -512,11 +512,11 @@ library PsmLibrary {
         uint256 available = self.psm.balances.paBalance;
 
         if (receivedPa > self.psm.balances.paBalance) {
-            revert IRepurchase.InsufficientLiquidity(available, receivedPa);
+            revert IErrors.InsufficientLiquidity(available, receivedPa);
         }
 
         if (receivedDs > self.psm.balances.dsBalance) {
-            revert IRepurchase.InsufficientLiquidity(amount, self.psm.balances.dsBalance);
+            revert IErrors.InsufficientLiquidity(amount, self.psm.balances.dsBalance);
         }
     }
 
@@ -778,7 +778,7 @@ library PsmLibrary {
 
     function updatePSMBaseRedemptionFeePercentage(State storage self, uint256 newFees) external {
         if (newFees > MAX_ALLOWED_FEES) {
-            revert ICommon.InvalidFees();
+            revert IErrors.InvalidFees();
         }
         self.psm.psmBaseRedemptionFeePercentage = newFees;
     }

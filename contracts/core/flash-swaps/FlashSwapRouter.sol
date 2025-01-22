@@ -16,7 +16,7 @@ import {SafeERC20, IERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeE
 import {ICorkHook} from "../../interfaces/UniV4/IMinimalHook.sol";
 import {AmmId, toAmmId} from "Cork-Hook/lib/State.sol";
 import {CorkSwapCallback} from "Cork-Hook/interfaces/CorkSwapCallback.sol";
-import {IMathError} from "./../../interfaces/IMathError.sol";
+import {IErrors} from "./../../interfaces/IErrors.sol";
 import {TransferHelper} from "./../../libraries/TransferHelper.sol";
 import {ReturnDataSlotLib} from "./../../libraries/ReturnDataSlotLib.sol";
 
@@ -470,7 +470,7 @@ contract RouterState is
 
         // slippage protection, revert if the amount of DS tokens received is less than the minimum amount
         if (result.amountOut < amountOutMin) {
-            revert InsufficientOutputAmount();
+            revert InsufficientOutputAmountForSwap();
         }
 
         result.ctRefunded = ReturnDataSlotLib.get(ReturnDataSlotLib.REFUNDED_SLOT);
@@ -500,7 +500,7 @@ contract RouterState is
 
         // slippage protection, revert if the amount of DS tokens received is less than the minimum amount
         if (result.amountOut < amountOutMin) {
-            revert InsufficientOutputAmount();
+            revert InsufficientOutputAmountForSwap();
         }
 
         result.ctRefunded = ReturnDataSlotLib.get(ReturnDataSlotLib.REFUNDED_SLOT);
@@ -537,7 +537,7 @@ contract RouterState is
         (, bool success) = __swapDsforRa(assetPair, reserveId, dsId, amount, amountOutMin, user);
 
         if (!success) {
-            revert IMathError.InsufficientLiquidity();
+            revert IErrors.InsufficientLiquidityForSwap();
         }
 
         amountOut = ReturnDataSlotLib.get(ReturnDataSlotLib.RETURN_SLOT);
@@ -568,7 +568,7 @@ contract RouterState is
         (, bool success) = __swapDsforRa(assetPair, reserveId, dsId, amount, amountOutMin, msg.sender);
 
         if (!success) {
-            revert IMathError.InsufficientLiquidity();
+            revert IErrors.InsufficientLiquidityForSwap();
         }
 
         amountOut = ReturnDataSlotLib.get(ReturnDataSlotLib.RETURN_SLOT);
@@ -593,7 +593,7 @@ contract RouterState is
         }
 
         if (amountOut < amountOutMin) {
-            revert InsufficientOutputAmount();
+            revert InsufficientOutputAmountForSwap();
         }
 
         __flashSwap(assetPair, 0, amount, dsId, reserveId, false, caller, amount);
@@ -691,7 +691,7 @@ contract RouterState is
 
             // not enough liquidity
             if (actualRepaymentAmount > received) {
-                revert IMathError.InsufficientLiquidity();
+                revert IErrors.InsufficientLiquidityForSwap();
             } else {
                 refunded = received - actualRepaymentAmount;
                 repaymentAmount = actualRepaymentAmount;
@@ -735,7 +735,7 @@ contract RouterState is
         Asset ra = assetPair.ra;
 
         if (actualRepaymentAmount > received) {
-            revert IMathError.InsufficientLiquidity();
+            revert IErrors.InsufficientLiquidityForSwap();
         }
 
         received = received - actualRepaymentAmount;

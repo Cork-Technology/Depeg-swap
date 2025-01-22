@@ -14,7 +14,7 @@ import {VaultPool, VaultPoolLibrary} from "./VaultPoolLib.sol";
 import {IDsFlashSwapCore} from "../interfaces/IDsFlashSwapRouter.sol";
 import {DepegSwap, DepegSwapLibrary} from "./DepegSwapLib.sol";
 import {Asset, ERC20Burnable} from "../core/assets/Asset.sol";
-import {ICommon} from "../interfaces/ICommon.sol";
+import {IErrors} from "../interfaces/IErrors.sol";
 import {SafeERC20, IERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {IVault} from "../interfaces/IVault.sol";
 import {ICorkHook} from "./../interfaces/UniV4/IMinimalHook.sol";
@@ -324,7 +324,7 @@ library VaultLibrary {
         uint256 ctTolerance
     ) external returns (uint256 received) {
         if (amount == 0) {
-            revert ICommon.ZeroDeposit();
+            revert IErrors.ZeroDeposit();
         }
         safeBeforeExpired(self);
 
@@ -393,7 +393,7 @@ library VaultLibrary {
     function updateCtHeldPercentage(State storage self, uint256 ctHeldPercentage) external {
         // must be between 0% and 100%
         if (ctHeldPercentage >= 100 ether) {
-            revert IVault.InvalidParams();
+            revert IErrors.InvalidParams();
         }
 
         self.vault.ctHeldPercetage = ctHeldPercentage;
@@ -617,7 +617,7 @@ library VaultLibrary {
         }
 
         if (result.raReceivedFromAmm < redeemParams.amountOutMin) {
-            revert IVault.InsufficientOutputAmount(redeemParams.amountOutMin, result.raReceivedFromAmm);
+            revert IErrors.InsufficientOutputAmount(redeemParams.amountOutMin, result.raReceivedFromAmm);
         }
 
         // burn lv amount + fee
@@ -666,7 +666,7 @@ library VaultLibrary {
 
     function requestLiquidationFunds(State storage self, uint256 amount, address to) internal {
         if (amount > self.vault.pool.withdrawalPool.paBalance) {
-            revert IVault.InsufficientFunds();
+            revert IErrors.InsufficientFunds();
         }
 
         self.vault.pool.withdrawalPool.paBalance -= amount;

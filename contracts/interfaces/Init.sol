@@ -16,12 +16,7 @@ interface Initialize {
      * @param initialArp initial assets ARP. the initial ds price will be derived from this value. must be in 18 decimals(e.g 1% = 1e18)
      * @param expiryInterval expiry interval for DS, this will be used to calculate the next expiry time for DS(block.timestamp + expiryInterval)
      */
-    function initializeModuleCore(
-        address pa,
-        address ra,
-        uint256 initialArp,
-        uint256 expiryInterval
-    ) external;
+    function initializeModuleCore(address pa, address ra, uint256 initialArp, uint256 expiryInterval) external;
 
     /**
      * @notice issue a new DS, can only be done after the previous DS has expired(if any). will deploy CT, DS and initialize new AMM and increment ds Id
@@ -120,4 +115,23 @@ interface Initialize {
     function swapAsset(Id id, uint256 dsId) external view returns (address ct, address ds);
 
     function getId(address pa, address ra, uint256 expiryInterva) external pure returns (Id id);
+
+    /// @notice Emitted when a new LV and PSM is initialized with a given pair
+    /// @param id The PSM id
+    /// @param pa The address of the pegged asset
+    /// @param ra The address of the redemption asset
+    /// @param lv The address of the LV
+    /// @param expiry The expiry interval of the DS
+    event InitializedModuleCore(Id indexed id, address indexed pa, address indexed ra, address lv, uint256 expiry);
+
+    /// @notice Emitted when a new DS is issued for a given PSM
+    /// @param id The PSM id
+    /// @param dsId The DS id
+    /// @param expiry The expiry of the DS
+    /// @param ds The address of the DS token
+    /// @param ct The address of the CT token
+    /// @param raCtUniPairId The id of the uniswap-v4 pair between RA and CT
+    event Issued(
+        Id indexed id, uint256 indexed dsId, uint256 indexed expiry, address ds, address ct, bytes32 raCtUniPairId
+    );
 }

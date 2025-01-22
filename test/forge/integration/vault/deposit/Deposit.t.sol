@@ -4,7 +4,7 @@ import "./../../../Helper.sol";
 import "./../../../../../contracts/dummy/DummyWETH.sol";
 import "./../../../../../contracts/core/assets/Asset.sol";
 import "./../../../../../contracts/interfaces/IVault.sol";
-import "./../../../../../contracts/interfaces/ICommon.sol";
+import "./../../../../../contracts/interfaces/IErrors.sol";
 import "./../../../../../contracts/libraries/State.sol";
 import "./../../../../../contracts/libraries/TransferHelper.sol";
 
@@ -228,7 +228,7 @@ contract DepositTest is Helper {
             IVault.RedeemEarlyParams({id: id, amount: received, amountOutMin: 0, ammDeadline: block.timestamp});
 
         // should fail since we have PA deposited in PSM
-        vm.expectRevert(ICommon.LVDepositPaused.selector);
+        vm.expectRevert(IErrors.LVDepositPaused.selector);
         received = moduleCore.depositLv(id, 1 ether, 0, 0);
 
         forceUnpause();
