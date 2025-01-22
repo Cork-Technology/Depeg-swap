@@ -180,7 +180,7 @@ contract HedgeUnitRouterTest is Helper {
         vm.stopPrank();
     }
 
-    function test_PreviewBatchDissolve() public {
+    function test_PreviewBatchBurn() public {
         // Mint tokens first
         dsToken.approve(address(hedgeUnit), USER_BALANCE);
         pa.approve(address(hedgeUnit), USER_BALANCE);
@@ -198,7 +198,7 @@ contract HedgeUnitRouterTest is Helper {
         uint256[] memory paAmounts = new uint256[](1);
 
         // Preview dissolving 50 tokens
-        (dsAmounts, paAmounts,) = hedgeUnitRouter.previewBatchDissolve(hedgeUnits, amounts);
+        (dsAmounts, paAmounts,) = hedgeUnitRouter.previewBatchBurn(hedgeUnits, amounts);
 
         // Check that the DS and PA amounts are correct
         assertEq(dsAmounts[0], 50 * 1e18);
@@ -211,18 +211,18 @@ contract HedgeUnitRouterTest is Helper {
 
         vm.startPrank(user);
 
-        uint256 dissolveAmount = 50 * 1e18;
+        uint256 burnAmount = 50 * 1e18;
 
         address[] memory hedgeUnits = new address[](1);
         uint256[] memory amounts = new uint256[](1);
         
         hedgeUnits[0] = address(hedgeUnit);
-        amounts[0] = dissolveAmount;
+        amounts[0] = burnAmount;
 
-        hedgeUnit.approve(address(hedgeUnitRouter), dissolveAmount);
+        hedgeUnit.approve(address(hedgeUnitRouter), burnAmount);
 
-        // Dissolve 50 tokens
-        hedgeUnitRouter.batchDissolve(hedgeUnits, amounts);
+        // Burn 50 tokens
+        hedgeUnitRouter.batchBurn(hedgeUnits, amounts);
 
         // Check that the user's HedgeUnit balance and contract's DS/PA balance decreased
         assertEq(hedgeUnit.balanceOf(user), 50 * 1e18); // 100 - 50 = 50 tokens left

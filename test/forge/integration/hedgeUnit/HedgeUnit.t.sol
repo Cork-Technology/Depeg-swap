@@ -240,7 +240,7 @@ contract HedgeUnitTest is Helper {
         vm.stopPrank();
     }
 
-    function test_PreviewDissolve() public {
+    function test_PreviewBurn() public {
         vm.startPrank(user);
 
         // Mint tokens first
@@ -258,7 +258,7 @@ contract HedgeUnitTest is Helper {
         vm.stopPrank();
     }
 
-    function test_PreviewDissolveRevertWhenInvalidAmount() public {
+    function test_PreviewBurnRevertWhenInvalidAmount() public {
         vm.startPrank(user);
         // Preview dissolving more than the user's balance
         vm.expectRevert(IErrors.InvalidAmount.selector);
@@ -280,10 +280,10 @@ contract HedgeUnitTest is Helper {
 
         vm.startPrank(user);
 
-        uint256 dissolveAmount = 50 * 1e18;
+        uint256 burnAmount = 50 * 1e18;
 
-        // Dissolve 50 tokens
-        hedgeUnit.burn(dissolveAmount);
+        // burn 50 tokens
+        hedgeUnit.burn(burnAmount);
 
         // Check that the user's HedgeUnit balance and contract's DS/PA balance decreased
         assertEq(hedgeUnit.balanceOf(user), 50 * 1e18); // 100 - 50 = 50 tokens left
@@ -293,7 +293,7 @@ contract HedgeUnitTest is Helper {
         vm.stopPrank();
     }
 
-    function test_DissolveNotProportional() external {
+    function test_BurnNotProportional() external {
         vm.startPrank(user);
 
         uint256 initialAmount = 100 ether;

@@ -12,13 +12,13 @@ interface IHedgeUnit is IErrors {
     event Mint(address indexed minter, uint256 amount);
 
     /**
-     * @notice Emitted when a user dissolves HedgeUnit tokens.
+     * @notice Emitted when a user burns HedgeUnit tokens.
      * @param dissolver The address of the user dissolving the tokens.
-     * @param amount The amount of HedgeUnit tokens dissolved.
+     * @param amount The amount of HedgeUnit tokens burned.
      * @param dsAmount The amount of DS tokens received.
      * @param paAmount The amount of PA tokens received.
      */
-    event Dissolve(address indexed dissolver, uint256 amount, uint256 dsAmount, uint256 paAmount);
+    event Burn(address indexed dissolver, uint256 amount, uint256 dsAmount, uint256 paAmount);
 
     /**
      * @notice Emitted when the mint cap is updated.

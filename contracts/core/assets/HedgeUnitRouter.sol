@@ -9,7 +9,7 @@ import {MinimalSignatureHelper, Signature} from "./../../libraries/SignatureHelp
 
 /**
  * @title HedgeUnitRouter
- * @notice This contract is used to execute batch mint and batch dissolve functions for multiple HedgeUnit contracts.
+ * @notice This contract is used to execute batch mint and batch burn functions for multiple HedgeUnit contracts.
  */
 contract HedgeUnitRouter is IHedgeUnitRouter, AccessControl, ReentrancyGuardTransient {
     modifier onlyDefaultAdmin() {
@@ -67,8 +67,8 @@ contract HedgeUnitRouter is IHedgeUnitRouter, AccessControl, ReentrancyGuardTran
         }
     }
 
-    // This function is used to preview batch dissolve for multiple HedgeUnits in single transaction.
-    function previewBatchDissolve(address[] calldata hedgeUnits, uint256[] calldata amounts)
+    // This function is used to preview batch burn for multiple HedgeUnits in single transaction.
+    function previewBatchBurn(address[] calldata hedgeUnits, uint256[] calldata amounts)
         external
         view
         returns (uint256[] memory dsAmounts, uint256[] memory paAmounts, uint256[] memory raAmounts)
@@ -89,8 +89,8 @@ contract HedgeUnitRouter is IHedgeUnitRouter, AccessControl, ReentrancyGuardTran
         }
     }
 
-    // This function is used to dissolve multiple HedgeUnits in single transaction.
-    function batchDissolve(address[] calldata hedgeUnits, uint256[] calldata amounts)
+    // This function is used to burn multiple HedgeUnits in single transaction.
+    function batchBurn(address[] calldata hedgeUnits, uint256[] calldata amounts)
         external
         nonReentrant
         returns (
@@ -102,11 +102,11 @@ contract HedgeUnitRouter is IHedgeUnitRouter, AccessControl, ReentrancyGuardTran
             uint256[] memory raAmounts
         )
     {
-        (paAdds, dsAdds, raAdds, dsAmounts, paAmounts, raAmounts) = _batchDissolve(hedgeUnits, amounts);
+        (paAdds, dsAdds, raAdds, dsAmounts, paAmounts, raAmounts) = _batchBurn(hedgeUnits, amounts);
     }
 
-    // This function is used to dissolve multiple HedgeUnits in single transaction with permits
-    function batchDissolve(
+    // This function is used to burn multiple HedgeUnits in single transaction with permits
+    function batchBurn(
         address[] calldata hedgeUnits,
         uint256[] calldata amounts,
         IHedgeUnitRouter.BatchBurnPermitParams[] calldata permits
@@ -134,10 +134,10 @@ contract HedgeUnitRouter is IHedgeUnitRouter, AccessControl, ReentrancyGuardTran
             );
         }
 
-        (paAdds, dsAdds, raAdds, dsAmounts, paAmounts, raAmounts) = _batchDissolve(hedgeUnits, amounts);
+        (paAdds, dsAdds, raAdds, dsAmounts, paAmounts, raAmounts) = _batchBurn(hedgeUnits, amounts);
     }
 
-    function _batchDissolve(address[] calldata hedgeUnits, uint256[] calldata amounts)
+    function _batchBurn(address[] calldata hedgeUnits, uint256[] calldata amounts)
         internal
         returns (
             address[] memory dsAdds,

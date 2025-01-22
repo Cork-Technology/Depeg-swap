@@ -363,8 +363,8 @@ contract HedgeUnit is
     }
 
     /**
-     * @notice Dissolves HedgeUnit tokens and returns the equivalent amount of DS and pa tokens.
-     * @param amount The amount of HedgeUnit tokens to dissolve.
+     * @notice Burns HedgeUnit tokens and returns the equivalent amount of DS and pa tokens.
+     * @param amount The amount of HedgeUnit tokens to burn.
      * @custom:reverts EnforcedPause if minting is currently paused.
      * @custom:reverts InvalidAmount if the user has insufficient HedgeUnit balance.
      */
@@ -388,7 +388,7 @@ contract HedgeUnit is
         _transferDs(dissolver, dsAmount);
         TransferHelper.transferNormalize(RA, dissolver, raAmount);
 
-        emit Dissolve(dissolver, amount, dsAmount, paAmount);
+        emit Burn(dissolver, amount, dsAmount, paAmount);
     }
 
     function _burnFrom(address account, uint256 value) internal {
