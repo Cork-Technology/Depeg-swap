@@ -276,6 +276,9 @@ library SwapperMathLibrary {
 
             // Adjust the DS received to match the total reserve
             dsReceived = totalDsReserve;
+
+            // Recalculate raLeft to account for the dust
+            raLeft = sub(raProvided, mul(dsReceived, hpa));
         }
 
         // recalculate the DS user will receive, after the RA left is deducted
