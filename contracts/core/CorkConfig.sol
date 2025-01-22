@@ -77,18 +77,18 @@ contract CorkConfig is AccessControl, Pausable {
     }
 
     constructor(address adminAdd, address managerAdd) {
-        if(adminAdd == address(0) || managerAdd == address(0)) {
+        if (adminAdd == address(0) || managerAdd == address(0)) {
             revert InvalidAddress();
         }
         _setRoleAdmin(MARKET_INITIALIZER_ROLE, MANAGER_ROLE);
         _setRoleAdmin(MANAGER_ROLE, DEFAULT_ADMIN_ROLE);
         _setRoleAdmin(RATE_UPDATERS_ROLE, MANAGER_ROLE);
-        _setRoleAdmin(BASE_LIQUIDATOR_ROLE, MANAGER_ROLE); 
+        _setRoleAdmin(BASE_LIQUIDATOR_ROLE, MANAGER_ROLE);
         _grantRole(DEFAULT_ADMIN_ROLE, adminAdd);
-        _grantRole(MANAGER_ROLE, managerAdd);       
+        _grantRole(MANAGER_ROLE, managerAdd);
     }
 
-    function _computLiquidatorRoleHash(address account) public view returns (bytes32) {
+    function _computeLiquidatorRoleHash(address account) public view returns (bytes32) {
         return keccak256(abi.encodePacked(BASE_LIQUIDATOR_ROLE, account));
     }
 
@@ -107,15 +107,15 @@ contract CorkConfig is AccessControl, Pausable {
     }
 
     function isTrustedLiquidationExecutor(address liquidationContract, address user) external view returns (bool) {
-        return hasRole(_computLiquidatorRoleHash(liquidationContract), user);
+        return hasRole(_computeLiquidatorRoleHash(liquidationContract), user);
     }
 
     function grantLiquidatorRole(address liquidationContract, address account) external onlyManager {
-        _grantRole(_computLiquidatorRoleHash(liquidationContract), account);
+        _grantRole(_computeLiquidatorRoleHash(liquidationContract), account);
     }
 
     function revokeLiquidatorRole(address liquidationContract, address account) external onlyManager {
-        _revokeRole(_computLiquidatorRoleHash(liquidationContract), account);
+        _revokeRole(_computeLiquidatorRoleHash(liquidationContract), account);
     }
 
     function isLiquidationWhitelisted(address liquidationAddress) external view returns (bool) {
@@ -214,12 +214,10 @@ contract CorkConfig is AccessControl, Pausable {
      * @param ra Address of RA
      * @param initialArp initial price of DS
      */
-    function initializeModuleCore(
-        address pa,
-        address ra,
-        uint256 initialArp,
-        uint256 expiryInterval
-    ) external onlyManager {
+    function initializeModuleCore(address pa, address ra, uint256 initialArp, uint256 expiryInterval)
+        external
+        onlyManager
+    {
         moduleCore.initializeModuleCore(pa, ra, initialArp, expiryInterval);
     }
 
@@ -236,11 +234,7 @@ contract CorkConfig is AccessControl, Pausable {
         uint256 ammLiquidationDeadline
     ) external whenNotPaused onlyManager {
         moduleCore.issueNewDs(
-            id,
-            exchangeRates,
-            decayDiscountRateInDays,
-            rolloverPeriodInblocks,
-            ammLiquidationDeadline
+            id, exchangeRates, decayDiscountRateInDays, rolloverPeriodInblocks, ammLiquidationDeadline
         );
 
         _autoAssignFees(id);
