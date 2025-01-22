@@ -170,7 +170,7 @@ contract HedgeUnit is
         IDsFlashSwapCore.OffchainGuess calldata offchainGuess
     ) external autoUpdateDS onlyOwnerOrLiquidator returns (uint256 amountOut) {
         uint256 dsId = MODULE_CORE.lastDsId(id);
-        RA.approve(address(FLASHSWAP_ROUTER), amount);
+        IERC20(RA).safeIncreaseAllowance(address(FLASHSWAP_ROUTER), amount);
 
         IDsFlashSwapCore.SwapRaForDsReturn memory result =
             FLASHSWAP_ROUTER.swapRaforDs(id, dsId, amount, amountOutMin, params, offchainGuess);

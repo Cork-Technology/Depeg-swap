@@ -295,6 +295,7 @@ abstract contract PsmCore is IPSMcore, ModuleState, Context {
         PSMDepositNotPaused(id);
 
         State storage state = states[id];
+        // slither-disable-next-line uninitialized-local
         bytes memory signaturePlaceHolder;
         (ctReceived, dsReceived, paReceived) =
             state.rolloverExpiredCt(_msgSender(), amount, dsId, getRouterCore(), signaturePlaceHolder, 0);
@@ -323,7 +324,7 @@ abstract contract PsmCore is IPSMcore, ModuleState, Context {
 
     function psmAutoSellStatus(Id id) external view returns (bool) {
         State storage state = states[id];
-        state.autoSellStatus(_msgSender());
+        return state.autoSellStatus(_msgSender());
     }
 
     function updatePsmBaseRedemptionFeeTreasurySplitPercentage(Id id, uint256 percentage) external {

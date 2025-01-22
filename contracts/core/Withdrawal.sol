@@ -1,10 +1,12 @@
 pragma solidity ^0.8.24;
 
-import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {SafeERC20, IERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {IWithdrawalRouter} from "./../interfaces/IWithdrawalRouter.sol";
 import {IWithdrawal} from "./../interfaces/IWithdrawal.sol";
 
 contract Withdrawal is IWithdrawal {
+    using SafeERC20 for IERC20;
+
     struct WithdrawalInfo {
         uint256 claimableAt;
         address owner;
@@ -84,7 +86,7 @@ contract Withdrawal is IWithdrawal {
 
         uint256 length = withdrawal.tokens.length;
         for (uint256 i = 0; i < length; ++i) {
-            IERC20(withdrawal.tokens[i].token).transfer(withdrawal.owner, withdrawal.tokens[i].amount);
+            IERC20(withdrawal.tokens[i].token).safeTransfer(withdrawal.owner, withdrawal.tokens[i].amount);
         }
 
         delete withdrawals[withdrawalId];
@@ -103,7 +105,7 @@ contract Withdrawal is IWithdrawal {
 
         //  transfer funds to router
         for (uint256 i = 0; i < length; ++i) {
-            IERC20(withdrawal.tokens[i].token).transfer(router, withdrawal.tokens[i].amount);
+            IERC20(withdrawal.tokens[i].token).safeTransfer(router, withdrawal.tokens[i].amount);
         }
 
         IWithdrawalRouter(router).route(address(this), withdrawals[withdrawalId].tokens, routerData);

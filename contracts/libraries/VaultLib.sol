@@ -224,6 +224,7 @@ library VaultLibrary {
         uint256 hpa = flashSwapRouter.getCurrentEffectiveHIYA(id);
         bool isRollover = flashSwapRouter.isRolloverSale(id);
 
+        // slither-disable-next-line uninitialized-local
         uint256 marketRatio;
 
         try flashSwapRouter.getCurrentPriceRatio(id, dsId) returns (uint256, uint256 _marketRatio) {

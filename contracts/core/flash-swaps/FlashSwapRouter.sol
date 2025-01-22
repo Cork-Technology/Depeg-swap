@@ -83,6 +83,7 @@ contract RouterState is
     }
 
     /// @notice __gap variable to prevent storage collisions
+    // slither-disable-next-line unused-state
     uint256[49] private __gap;
 
     modifier onlyDefaultAdmin() {
@@ -313,7 +314,6 @@ contract RouterState is
         IDsFlashSwapCore.BuyAprroxParams memory approxParams,
         IDsFlashSwapCore.OffchainGuess memory offchainGuess
     ) internal returns (uint256 initialBorrowedAmount, uint256 finalBorrowedAmount) {
-        finalBorrowedAmount;
 
         uint256 dsReceived;
         // try to swap the RA for DS via rollover, this will noop if the condition for rollover is not met
@@ -683,8 +683,10 @@ contract RouterState is
         IPSMcore psm = IPSMcore(_moduleCore);
         (uint256 received,) = psm.depositPsm(reserveId, deposited);
 
+        // slither-disable-next-line uninitialized-local
         uint256 repaymentAmount;
         {
+            // slither-disable-next-line uninitialized-local
             uint256 refunded;
 
             // not enough liquidity

@@ -36,6 +36,7 @@ contract AssetFactory is IAssetFactory, OwnableUpgradeable, UUPSUpgradeable {
     mapping(address => uint256) internal deployed;
 
     /// @notice __gap variable to prevent storage collisions
+    // slither-disable-next-line unused-state
     uint256[49] private __gap;
 
     constructor() {
