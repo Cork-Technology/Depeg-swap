@@ -2,7 +2,7 @@ pragma solidity ^0.8.24;
 
 import {convert, intoUD60x18} from "@prb/math/src/SD59x18.sol";
 import {UD60x18, convert, ud, add, mul, pow, sub, div, unwrap} from "@prb/math/src/UD60x18.sol";
-import {IHedgeUnit} from "./../interfaces/IHedgeUnit.sol";
+import {IErrors} from "./../interfaces/IErrors.sol";
 import {BuyMathBisectionSolver} from "./DsSwapperMathLib.sol";
 import {TransferHelper} from "./TransferHelper.sol";
 
@@ -17,7 +17,7 @@ library HedgeUnitMath {
         // we mint 1:1 if total liquidity is 0, also enforce that the amount must be the same
         if (totalLiquidity == 0) {
             if (amountPa != amountDs) {
-                revert IHedgeUnit.InvalidAmount();
+                revert IErrors.InvalidAmount();
             }
 
             liquidityMinted = amountPa;
@@ -64,11 +64,11 @@ library HedgeUnitMath {
         uint256 liquidityAmount
     ) internal pure returns (uint256 amountPa, uint256 amountDs, uint256 amountRa) {
         if (liquidityAmount <= 0) {
-            revert IHedgeUnit.InvalidAmount();
+            revert IErrors.InvalidAmount();
         }
 
         if (totalLiquidity <= 0) {
-            revert IHedgeUnit.NotEnoughLiquidity();
+            revert IErrors.NotEnoughLiquidity();
         }
 
         // Calculate the proportion of reserves to return based on the liquidity removed

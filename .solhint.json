@@ -2,6 +2,13 @@
   "extends": "solhint:recommended",
   "rules": {
     "func-visibility": ["error", { "ignoreConstructors": true }],
-    "max-line-length": [160]
+    "interface-starts-with-i": "warn",
+    "duplicated-imports": "warn",
+    "func-param-name-mixedcase": "warn",
+    "modifier-name-mixedcase": "warn",
+    "gas-calldata-parameters": "warn",
+    "gas-increment-by-one": "warn",
+    "gas-length-in-loops": "warn",
+    "gas-struct-packing": "warn"
   }
 }

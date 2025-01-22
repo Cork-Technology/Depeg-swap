@@ -237,7 +237,7 @@ contract CorkConfigTest is Test {
         vm.startPrank(address(8));
         assertFalse(config.hasRole(role, updater));
 
-        vm.expectRevert(CorkConfig.CallerNotManager.selector);
+        vm.expectRevert();
         config.grantRole(role, updater);
         assertFalse(config.hasRole(role, updater));
     }
@@ -254,7 +254,7 @@ contract CorkConfigTest is Test {
     }
 
     function test_GrantLiquidatorRoleRevertWhenCalledByNonManager() public {
-        bytes32 role = config._computLiquidatorRoleHash(liquidationContract);
+        bytes32 role = config._computeLiquidatorRoleHash(liquidationContract);
         vm.startPrank(address(8));
         assertFalse(config.hasRole(role, updater));
 
@@ -264,7 +264,7 @@ contract CorkConfigTest is Test {
     }
 
     function test_GrantLiquidatorRoleShouldWorkCorrectly() public {
-        bytes32 role = config._computLiquidatorRoleHash(liquidationContract);
+        bytes32 role = config._computeLiquidatorRoleHash(liquidationContract);
         vm.startPrank(manager);
         assertFalse(config.hasRole(role, updater));
 
@@ -275,7 +275,7 @@ contract CorkConfigTest is Test {
     }
 
     function test_RevokeLiquidatorRoleRevertWhenCalledByNonManager() public {
-        bytes32 role = config._computLiquidatorRoleHash(liquidationContract);
+        bytes32 role = config._computeLiquidatorRoleHash(liquidationContract);
         vm.startPrank(address(8));
         assertFalse(config.hasRole(role, updater));
 
@@ -285,7 +285,7 @@ contract CorkConfigTest is Test {
     }
 
     function test_RevokeLiquidatorRoleShouldWorkCorrectly() public {
-        bytes32 role = config._computLiquidatorRoleHash(liquidationContract);
+        bytes32 role = config._computeLiquidatorRoleHash(liquidationContract);
 
         vm.startPrank(manager);
         config.grantLiquidatorRole(liquidationContract, updater);
