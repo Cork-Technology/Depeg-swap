@@ -59,10 +59,10 @@ contract Withdrawal is IWithdrawal {
         returns (bytes32 withdrawalId)
     {
         uint256 claimableAt = block.timestamp + DELAY;
-        uint256 nonce = nonces[owner]++;
         WithdrawalInfo memory withdrawal = WithdrawalInfo(claimableAt, owner, tokens);
 
-        withdrawalId = keccak256(abi.encode(withdrawal, nonce));
+        // solhint-disable-next-line gas-increment-by-one
+        withdrawalId = keccak256(abi.encode(withdrawal, nonces[owner]++));
 
         // copy withdrawal item 1-1 to memory
         WithdrawalInfo storage withdrawalStorageRef = withdrawals[withdrawalId];
@@ -71,7 +71,8 @@ contract Withdrawal is IWithdrawal {
         withdrawalStorageRef.owner = owner;
 
         // copy tokens data via a loop since direct memory copy isn't supported
-        for (uint256 i = 0; i < tokens.length; i++) {
+        uint256 length = tokens.length;
+        for (uint256 i = 0; i < length; ++i) {
             withdrawalStorageRef.tokens.push(tokens[i]);
         }
 
@@ -81,7 +82,8 @@ contract Withdrawal is IWithdrawal {
     function claimToSelf(bytes32 withdrawalId) external onlyOwner(withdrawalId) onlyWhenClaimable(withdrawalId) {
         WithdrawalInfo storage withdrawal = withdrawals[withdrawalId];
 
-        for (uint256 i = 0; i < withdrawal.tokens.length; i++) {
+        uint256 length = withdrawal.tokens.length;
+        for (uint256 i = 0; i < length; ++i) {
             IERC20(withdrawal.tokens[i].token).transfer(withdrawal.owner, withdrawal.tokens[i].amount);
         }
 
@@ -97,8 +99,10 @@ contract Withdrawal is IWithdrawal {
     {
         WithdrawalInfo storage withdrawal = withdrawals[withdrawalId];
 
+        uint256 length = withdrawal.tokens.length;
+
         //  transfer funds to router
-        for (uint256 i = 0; i < withdrawal.tokens.length; i++) {
+        for (uint256 i = 0; i < length; ++i) {
             IERC20(withdrawal.tokens[i].token).transfer(router, withdrawal.tokens[i].amount);
         }
 

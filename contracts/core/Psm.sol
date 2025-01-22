@@ -2,7 +2,6 @@
 pragma solidity ^0.8.24;
 
 import {PsmLibrary} from "../libraries/PsmLib.sol";
-import {VaultLibrary} from "../libraries/VaultLib.sol";
 import {Id, Pair, PairLibrary} from "../libraries/Pair.sol";
 import {IPSMcore} from "../interfaces/IPSMcore.sol";
 import {State} from "../libraries/State.sol";
@@ -60,7 +59,7 @@ abstract contract PsmCore is IPSMcore, ModuleState, Context {
         State storage state = states[id];
 
         (dsId, receivedPa, receivedDs, feePercentage, fee, exchangeRates) =
-            state.repurchase(_msgSender(), amount, getRouterCore(), getAmmRouter(), getTreasuryAddress());
+            state.repurchase(_msgSender(), amount, getTreasuryAddress());
 
         emit Repurchased(id, _msgSender(), dsId, amount, receivedPa, receivedDs, feePercentage, fee, exchangeRates);
     }
@@ -108,7 +107,7 @@ abstract contract PsmCore is IPSMcore, ModuleState, Context {
         uint256 dsId,
         uint256 amount,
         address redeemer,
-        bytes memory rawDsPermitSig,
+        bytes calldata rawDsPermitSig,
         uint256 deadline
     ) external override nonReentrant returns (uint256 received, uint256 _exchangeRate, uint256 fee, uint256 dsUsed) {
         onlyInitialized(id);
@@ -169,7 +168,7 @@ abstract contract PsmCore is IPSMcore, ModuleState, Context {
         uint256 dsId,
         uint256 amount,
         address redeemer,
-        bytes memory rawCtPermitSig,
+        bytes calldata rawCtPermitSig,
         uint256 deadline
     ) external override nonReentrant returns (uint256 accruedPa, uint256 accruedRa) {
         onlyInitialized(id);
@@ -223,9 +222,9 @@ abstract contract PsmCore is IPSMcore, ModuleState, Context {
         Id id,
         uint256 amount,
         address redeemer,
-        bytes memory rawDsPermitSig,
+        bytes calldata rawDsPermitSig,
         uint256 dsDeadline,
-        bytes memory rawCtPermitSig,
+        bytes calldata rawCtPermitSig,
         uint256 ctDeadline
     ) external override nonReentrant returns (uint256 ra) {
         PSMWithdrawalNotPaused(id);
@@ -275,7 +274,7 @@ abstract contract PsmCore is IPSMcore, ModuleState, Context {
         address owner,
         uint256 amount,
         uint256 dsId,
-        bytes memory rawCtPermitSig,
+        bytes calldata rawCtPermitSig,
         uint256 ctDeadline
     ) external returns (uint256 ctReceived, uint256 dsReceived, uint256 paReceived) {
         PSMDepositNotPaused(id);

@@ -47,8 +47,43 @@ contract RouterState is
     // when the router tries to sell it, the trade fails, preventing user from buying DS properly
     uint256 public constant RESERVE_MINIMUM_SELL_AMOUNT = 0.001 ether;
 
+    struct CalculateAndSellDsParams {
+        Id reserveId;
+        uint256 dsId;
+        uint256 amount;
+        IDsFlashSwapCore.BuyAprroxParams approxParams;
+        IDsFlashSwapCore.OffchainGuess offchainGuess;
+        uint256 initialBorrowedAmount;
+        uint256 initialAmountOut;
+    }
+
+    struct SellDsParams {
+        Id reserveId;
+        uint256 dsId;
+        uint256 amountSellFromReserve;
+        uint256 amount;
+        BuyAprroxParams approxParams;
+    }
+
+    struct SellResult {
+        uint256 amountOut;
+        uint256 borrowedAmount;
+        bool success;
+    }
+
+    struct CallbackData {
+        bool buyDs;
+        address caller;
+        // CT or RA amount borrowed
+        uint256 borrowed;
+        // DS or RA amount provided
+        uint256 provided;
+        Id reserveId;
+        uint256 dsId;
+    }
+
     /// @notice __gap variable to prevent storage collisions
-    uint256[49] __gap;
+    uint256[49] private __gap;
 
     modifier onlyDefaultAdmin() {
         if (!hasRole(DEFAULT_ADMIN_ROLE, msg.sender)) {
@@ -88,6 +123,7 @@ contract RouterState is
         _grantRole(CONFIG, config);
     }
 
+    // solhint-disable-next-line no-empty-blocks
     function _authorizeUpgrade(address newImplementation) internal override onlyConfig {}
 
     function updateDiscountRateInDdays(Id id, uint256 discountRateInDays) external override onlyConfig {
@@ -111,7 +147,7 @@ contract RouterState is
     }
 
     function setModuleCore(address moduleCore) external onlyDefaultAdmin {
-        if(moduleCore == address(0)) {
+        if (moduleCore == address(0)) {
             revert ZeroAddress();
         }
         _moduleCore = moduleCore;
@@ -120,7 +156,7 @@ contract RouterState is
 
     function updateReserveSellPressurePercentage(Id id, uint256 newPercentage) external override onlyConfig {
         reserves[id].updateReserveSellPressurePercentage(newPercentage);
-        
+
         emit ReserveSellPressurePercentageUpdated(id, newPercentage);
     }
 
@@ -325,16 +361,6 @@ contract RouterState is
         __flashSwap(assetPair, finalBorrowedAmount, 0, dsId, reserveId, true, msg.sender, amount);
     }
 
-    struct CalculateAndSellDsParams {
-        Id reserveId;
-        uint256 dsId;
-        uint256 amount;
-        IDsFlashSwapCore.BuyAprroxParams approxParams;
-        IDsFlashSwapCore.OffchainGuess offchainGuess;
-        uint256 initialBorrowedAmount;
-        uint256 initialAmountOut;
-    }
-
     function calculateAndSellDsReserve(
         ReserveState storage self,
         AssetPair storage assetPair,
@@ -381,20 +407,6 @@ contract RouterState is
         amount = totalReserve < amountSellFromReserve ? totalReserve : amountSellFromReserve;
     }
 
-    struct SellDsParams {
-        Id reserveId;
-        uint256 dsId;
-        uint256 amountSellFromReserve;
-        uint256 amount;
-        BuyAprroxParams approxParams;
-    }
-
-    struct SellResult {
-        uint256 amountOut;
-        uint256 borrowedAmount;
-        bool success;
-    }
-
     function _sellDsReserve(AssetPair storage assetPair, SellDsParams memory params) internal returns (bool success) {
         uint256 profitRa;
 
@@ -433,10 +445,10 @@ contract RouterState is
         uint256 amount,
         uint256 amountOutMin,
         address user,
-        bytes memory rawRaPermitSig,
+        bytes calldata rawRaPermitSig,
         uint256 deadline,
-        BuyAprroxParams memory params,
-        OffchainGuess memory offchainGuess
+        BuyAprroxParams calldata params,
+        OffchainGuess calldata offchainGuess
     ) external autoClearReturnData returns (SwapRaForDsReturn memory result) {
         if (rawRaPermitSig.length == 0 || deadline == 0) {
             revert InvalidSignature();
@@ -473,8 +485,8 @@ contract RouterState is
         uint256 dsId,
         uint256 amount,
         uint256 amountOutMin,
-        BuyAprroxParams memory params,
-        OffchainGuess memory offchainGuess
+        BuyAprroxParams calldata params,
+        OffchainGuess calldata offchainGuess
     ) external autoClearReturnData returns (SwapRaForDsReturn memory result) {
         ReserveState storage self = reserves[reserveId];
         AssetPair storage assetPair = self.ds[dsId];
@@ -508,7 +520,7 @@ contract RouterState is
         uint256 amount,
         uint256 amountOutMin,
         address user,
-        bytes memory rawDsPermitSig,
+        bytes calldata rawDsPermitSig,
         uint256 deadline
     ) external autoClearReturnData returns (uint256 amountOut) {
         if (rawDsPermitSig.length == 0 || deadline == 0) {
@@ -585,17 +597,6 @@ contract RouterState is
         }
 
         __flashSwap(assetPair, 0, amount, dsId, reserveId, false, caller, amount);
-    }
-
-    struct CallbackData {
-        bool buyDs;
-        address caller;
-        // CT or RA amount borrowed
-        uint256 borrowed;
-        // DS or RA amount provided
-        uint256 provided;
-        Id reserveId;
-        uint256 dsId;
     }
 
     function __flashSwap(

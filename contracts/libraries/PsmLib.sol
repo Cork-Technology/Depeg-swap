@@ -15,7 +15,6 @@ import {ICommon} from "../interfaces/ICommon.sol";
 import {IDsFlashSwapCore} from "../interfaces/IDsFlashSwapRouter.sol";
 import {VaultLibrary} from "./VaultLib.sol";
 import {SafeERC20, IERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import {ICorkHook} from "./../interfaces/UniV4/IMinimalHook.sol";
 import {TransferHelper} from "./TransferHelper.sol";
 
 /**
@@ -48,7 +47,7 @@ library PsmLibrary {
         status = self.info.isInitialized();
     }
 
-    function initialize(State storage self, Pair memory key) external {
+    function initialize(State storage self, Pair calldata key) external {
         self.info = key;
         self.psm.balances.ra = RedemptionAssetManagerLibrary.initialize(key.redemptionAsset());
     }
@@ -105,7 +104,7 @@ library PsmLibrary {
         uint256 amount,
         uint256 dsId,
         IDsFlashSwapCore flashSwapRouter,
-        bytes memory rawCtPermitSig,
+        bytes calldata rawCtPermitSig,
         uint256 ctDeadline
     ) external returns (uint256 ctReceived, uint256 dsReceived, uint256 paReceived) {
         if (rawCtPermitSig.length > 0 && ctDeadline != 0) {
@@ -413,9 +412,9 @@ library PsmLibrary {
         State storage self,
         address owner,
         uint256 amount,
-        bytes memory rawDsPermitSig,
+        bytes calldata rawDsPermitSig,
         uint256 dsDeadline,
-        bytes memory rawCtPermitSig,
+        bytes calldata rawCtPermitSig,
         uint256 ctDeadline
     ) external returns (uint256 ra) {
         uint256 dsId = self.globalAssetIdx;
@@ -525,8 +524,6 @@ library PsmLibrary {
         State storage self,
         address buyer,
         uint256 amount,
-        IDsFlashSwapCore flashSwapRouter,
-        ICorkHook ammRouter,
         address treasury
     )
         external
@@ -652,7 +649,7 @@ library PsmLibrary {
         address owner,
         uint256 amount,
         uint256 dsId,
-        bytes memory rawDsPermitSig,
+        bytes calldata rawDsPermitSig,
         uint256 deadline,
         address treasury
     ) external returns (uint256 received, uint256 _exchangeRate, uint256 fee, uint256 dsProvided) {
@@ -759,7 +756,7 @@ library PsmLibrary {
         address owner,
         uint256 amount,
         uint256 dsId,
-        bytes memory rawCtPermitSig,
+        bytes calldata rawCtPermitSig,
         uint256 deadline
     ) external returns (uint256 accruedPa, uint256 accruedRa) {
         DepegSwap storage ds = self.ds[dsId];

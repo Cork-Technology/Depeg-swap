@@ -221,7 +221,7 @@ library MathHelper {
         uint256 vaultIdleRa;
     }
 
-    function calculateDepositLv(DepositParams memory params) external pure returns (uint256 lvMinted) {
+    function calculateDepositLv(DepositParams calldata params) external pure returns (uint256 lvMinted) {
         (UD60x18 navLp, UD60x18 navCt, UD60x18 navDs, UD60x18 navIdleRas) = calculateNavCombined(params);
 
         UD60x18 nav = add(navCt, add(navDs, navLp));

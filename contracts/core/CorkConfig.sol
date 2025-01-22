@@ -269,6 +269,7 @@ contract CorkConfig is AccessControl, Pausable {
 
         // we don't revert here since an edge case would occur where the Lv token circulation is 0 but the issuance continues
         // and in that case the AMM would not have been created yet. This is a rare edge case and the fees can be assigned manually in such cases
+        // solhint-disable-next-line no-empty-blocks
         try hook.updateBaseFeePercentage(ra, ct, prevBaseFee) {} catch {}
     }
 
@@ -299,6 +300,7 @@ contract CorkConfig is AccessControl, Pausable {
 
         // we don't revert here since an edge case would occur where the Lv token circulation is 0 but the issuance continues
         // and in that case the AMM would not have been created yet. This is a rare edge case and the fees can be assigned manually in such cases
+        // solhint-disable-next-line no-empty-blocks
         try hook.updateTreasurySplitPercentage(ra, ct, prevCtSplit) {} catch {}
     }
 
@@ -395,7 +397,7 @@ contract CorkConfig is AccessControl, Pausable {
         HedgeUnit(hedgeUnit).updateMintCap(newMintCap);
     }
 
-    function deployHedgeUnit(Id id, address pa, address ra, string memory pairName, uint256 mintCap)
+    function deployHedgeUnit(Id id, address pa, address ra, string calldata pairName, uint256 mintCap)
         external
         onlyManager
         returns (address)

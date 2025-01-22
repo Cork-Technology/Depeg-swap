@@ -57,6 +57,7 @@ library DsFlashSwaplibrary {
         if (dsId != FIRST_ISSUANCE) {
             try SwapperMathLibrary.calculateHIYA(self.hiyaCumulated, self.vhiyaCumulated) returns (uint256 hiya) {
                 self.hiya = hiya;
+            // solhint-disable-next-line no-empty-blocks
             } catch {}
 
             self.hiyaCumulated = 0;
@@ -196,7 +197,7 @@ library DsFlashSwaplibrary {
     }
 
     function getAmountOutBuyDS(
-        AssetPair storage assetPair,
+        AssetPair calldata assetPair,
         uint256 amount,
         ICorkHook router,
         IDsFlashSwapCore.BuyAprroxParams memory params

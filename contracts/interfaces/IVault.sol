@@ -50,7 +50,7 @@ interface IVault is ICommon {
     event LvDeposited(Id indexed id, address indexed depositor, uint256 amount);
 
     event LvRedeemEarly(
-        Id indexed Id,
+        Id indexed id,
         address indexed redeemer,
         address indexed receiver,
         uint256 lvBurned,
@@ -64,18 +64,18 @@ interface IVault is ICommon {
     );
 
     /// @notice Emitted when a Admin updates status of Deposit in the LV 
-    /// @param Id The LV id
+    /// @param id The LV id
     /// @param isLVDepositPaused The new value saying if Deposit allowed in LV or not
     event LvDepositsStatusUpdated(
-        Id indexed Id,
+        Id indexed id,
         bool isLVDepositPaused
     );
 
     /// @notice Emitted when a Admin updates status of Withdrawal in the LV
-    /// @param Id The LV id
+    /// @param id The LV id
     /// @param isLVWithdrawalPaused The new value saying if Withdrawal allowed in LV or not
     event LvWithdrawalsStatusUpdated(
-        Id indexed Id,
+        Id indexed id,
         bool isLVWithdrawalPaused
     );
 

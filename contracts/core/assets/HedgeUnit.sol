@@ -7,7 +7,6 @@ import {ERC20Burnable} from "@openzeppelin/contracts/token/ERC20/extensions/ERC2
 import {ERC20, IERC20Permit} from "@openzeppelin/contracts/token/ERC20/extensions/ERC20Permit.sol";
 import {ReentrancyGuardTransient} from "@openzeppelin/contracts/utils/ReentrancyGuardTransient.sol";
 import {SafeERC20, IERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import {IHedgeUnit} from "../../interfaces/IHedgeUnit.sol";
 import {Id} from "../../libraries/Pair.sol";
 import {Asset} from "./Asset.sol";
@@ -48,9 +47,9 @@ contract HedgeUnit is
     IDsFlashSwapCore public immutable FLASHSWAP_ROUTER;
     ModuleCore public immutable MODULE_CORE;
 
-    /// @notice The ERC20 token representing the pa asset.
-    ERC20 public immutable pa;
-    ERC20 public immutable ra;
+    /// @notice The ERC20 token representing the PA asset.
+    ERC20 public immutable PA;
+    ERC20 public immutable RA;
 
     Id public id;
 
@@ -86,8 +85,8 @@ contract HedgeUnit is
     {
         MODULE_CORE = ModuleCore(_moduleCore);
         id = _id;
-        pa = ERC20(_pa);
-        ra = ERC20(_ra);
+        PA = ERC20(_pa);
+        RA = ERC20(_ra);
         mintCap = _mintCap;
         FLASHSWAP_ROUTER = IDsFlashSwapCore(_flashSwapRouter);
         CONFIG = CorkConfig(_config);
@@ -106,7 +105,7 @@ contract HedgeUnit is
     }
 
     modifier onlyValidToken(address token) {
-        if (token != address(pa) && token != address(ra)) {
+        if (token != address(PA) && token != address(RA)) {
             revert InvalidToken();
         }
         _;
@@ -138,8 +137,8 @@ contract HedgeUnit is
         Asset _ds = _fetchLatestDS();
 
         dsReserves = _ds.balanceOf(address(this));
-        paReserves = pa.balanceOf(address(this));
-        raReserves = ra.balanceOf(address(this));
+        paReserves = PA.balanceOf(address(this));
+        raReserves = RA.balanceOf(address(this));
     }
 
     function requestLiquidationFunds(uint256 amount, address token)
@@ -171,7 +170,7 @@ contract HedgeUnit is
         IDsFlashSwapCore.OffchainGuess calldata offchainGuess
     ) external autoUpdateDS onlyOwnerOrLiquidator returns (uint256 amountOut) {
         uint256 dsId = MODULE_CORE.lastDsId(id);
-        ra.approve(address(FLASHSWAP_ROUTER), amount);
+        RA.approve(address(FLASHSWAP_ROUTER), amount);
 
         IDsFlashSwapCore.SwapRaForDsReturn memory result =
             FLASHSWAP_ROUTER.swapRaforDs(id, dsId, amount, amountOutMin, params, offchainGuess);
@@ -185,7 +184,7 @@ contract HedgeUnit is
         uint256 dsId = MODULE_CORE.lastDsId(id);
 
         ds.approve(address(MODULE_CORE), amountDs);
-        pa.approve(address(MODULE_CORE), amount);
+        PA.approve(address(MODULE_CORE), amount);
 
         MODULE_CORE.redeemRaWithDsPa(id, dsId, amount);
 
@@ -226,11 +225,11 @@ contract HedgeUnit is
     }
 
     function _selfPaReserve() internal view returns (uint256) {
-        return TransferHelper.tokenNativeDecimalsToFixed(pa.balanceOf(address(this)), pa);
+        return TransferHelper.tokenNativeDecimalsToFixed(PA.balanceOf(address(this)), PA);
     }
 
     function _selfRaReserve() internal view returns (uint256) {
-        return TransferHelper.tokenNativeDecimalsToFixed(ra.balanceOf(address(this)), ra);
+        return TransferHelper.tokenNativeDecimalsToFixed(RA.balanceOf(address(this)), RA);
     }
 
     function _transferDs(address _to, uint256 _amount) internal {
@@ -257,7 +256,7 @@ contract HedgeUnit is
 
         (dsAmount, paAmount) = HedgeUnitMath.previewMint(amount, paReserve, _ds.balanceOf(address(this)), totalSupply());
 
-        paAmount = TransferHelper.fixedToTokenNativeDecimals(paAmount, pa);
+        paAmount = TransferHelper.fixedToTokenNativeDecimals(paAmount, PA);
     }
 
     /**
@@ -294,14 +293,14 @@ contract HedgeUnit is
             (dsAmount, paAmount) =
                 HedgeUnitMath.previewMint(amount, paReserve, ds.balanceOf(address(this)), totalSupply());
 
-            paAmount = TransferHelper.fixedToTokenNativeDecimals(paAmount, pa);
+            paAmount = TransferHelper.fixedToTokenNativeDecimals(paAmount, PA);
         }
 
         TransferHelper.transferFromNormalize(ds, minter, dsAmount);
 
         // this calculation is based on the assumption that the DS token has 18 decimals but pa can have different decimals
 
-        TransferHelper.transferFromNormalize(pa, minter, paAmount);
+        TransferHelper.transferFromNormalize(PA, minter, paAmount);
         dsHistory[dsIndexMap[address(ds)]].totalDeposited += amount;
 
         _mint(minter, amount);
@@ -313,15 +312,15 @@ contract HedgeUnit is
     function mint(
         address minter,
         uint256 amount,
-        bytes memory rawDsPermitSig,
-        bytes memory rawPaPermitSig,
+        bytes calldata rawDsPermitSig,
+        bytes calldata rawPaPermitSig,
         uint256 deadline
     ) external whenNotPaused nonReentrant autoUpdateDS returns (uint256 dsAmount, uint256 paAmount) {
         if (rawDsPermitSig.length == 0 || rawPaPermitSig.length == 0 || deadline == 0) {
             revert InvalidSignature();
         }
 
-        if (!PermitChecker.supportsPermit(address(pa))) {
+        if (!PermitChecker.supportsPermit(address(PA))) {
             revert PermitNotSupported();
         }
 
@@ -332,7 +331,7 @@ contract HedgeUnit is
 
         if (rawPaPermitSig.length != 0) {
             sig = MinimalSignatureHelper.split(rawPaPermitSig);
-            IERC20Permit(address(pa)).permit(minter, address(this), paAmount, deadline, sig.v, sig.r, sig.s);
+            IERC20Permit(address(PA)).permit(minter, address(this), paAmount, deadline, sig.v, sig.r, sig.s);
         }
 
         (uint256 _actualDs, uint256 _actualPa) = __mint(minter, amount);
@@ -385,9 +384,9 @@ contract HedgeUnit is
 
         _burnFrom(dissolver, amount);
 
-        TransferHelper.transferNormalize(pa, dissolver, paAmount);
+        TransferHelper.transferNormalize(PA, dissolver, paAmount);
         _transferDs(dissolver, dsAmount);
-        TransferHelper.transferNormalize(ra, dissolver, raAmount);
+        TransferHelper.transferNormalize(RA, dissolver, raAmount);
 
         emit Dissolve(dissolver, amount, dsAmount, paAmount);
     }

@@ -70,13 +70,13 @@ interface ICommon {
     event InitializedModuleCore(Id indexed id, address indexed pa, address indexed ra, address lv, uint256 expiry);
 
     /// @notice Emitted when a new DS is issued for a given PSM
-    /// @param Id The PSM id
+    /// @param id The PSM id
     /// @param dsId The DS id
     /// @param expiry The expiry of the DS
     /// @param ds The address of the DS token
     /// @param ct The address of the CT token
     /// @param raCtUniPairId The id of the uniswap-v4 pair between RA and CT
     event Issued(
-        Id indexed Id, uint256 indexed dsId, uint256 indexed expiry, address ds, address ct, bytes32 raCtUniPairId
+        Id indexed id, uint256 indexed dsId, uint256 indexed expiry, address ds, address ct, bytes32 raCtUniPairId
     );
 }

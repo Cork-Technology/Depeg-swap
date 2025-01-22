@@ -13,7 +13,7 @@ import {HedgeUnit} from "./../../assets/HedgeUnit.sol";
 import {IHedgeUnitLiquidation} from "./../../../interfaces/IHedgeUnitLiquidation.sol";
 import {IDsFlashSwapCore} from "./../../../interfaces/IDsFlashSwapRouter.sol";
 
-interface GPv2SettlementContract {
+interface IGPv2SettlementContract {
     function setPreSignature(bytes calldata orderUid, bool signed) external;
 }
 
@@ -34,7 +34,7 @@ contract Liquidator is ILiquidator {
         address receiver;
     }
 
-    GPv2SettlementContract public immutable settlement;
+    IGPv2SettlementContract public immutable SETTLEMENT;
 
     address public immutable CONFIG;
     address public immutable HOOK_TRAMPOLINE;
@@ -62,7 +62,7 @@ contract Liquidator is ILiquidator {
         if(_config == address(0) || _hookTrampoline == address(0) || _settlementContract == address(0) || _moduleCore == address(0)) {
             revert ILiquidator.ZeroAddress();
         }
-        settlement = GPv2SettlementContract(_settlementContract);
+        SETTLEMENT = IGPv2SettlementContract(_settlementContract);
         CONFIG = _config;
         HOOK_TRAMPOLINE = _hookTrampoline;
         VAULT_LIQUIDATOR_BASE = address(new VaultChildLiquidator());
@@ -108,7 +108,7 @@ contract Liquidator is ILiquidator {
         SafeERC20.safeTransfer(IERC20(details.sellToken), liquidator, details.sellAmount);
     }
 
-    function createOrderVault(ILiquidator.CreateVaultOrderParams memory params) external onlyLiquidator {
+    function createOrderVault(ILiquidator.CreateVaultOrderParams calldata params) external onlyLiquidator {
         Details memory details = Details(params.sellToken, params.sellAmount, params.buyToken);
 
         address liquidator = _initializeVaultLiquidator(params.internalRefId, details, params.orderUid);
@@ -130,7 +130,7 @@ contract Liquidator is ILiquidator {
         );
     }
 
-    function createOrderHedgeUnit(ILiquidator.CreateHedgeUnitOrderParams memory params) external onlyLiquidator {
+    function createOrderHedgeUnit(ILiquidator.CreateHedgeUnitOrderParams calldata params) external onlyLiquidator {
         Details memory details = Details(params.sellToken, params.sellAmount, params.buyToken);
 
         address liquidator =
@@ -183,6 +183,7 @@ contract Liquidator is ILiquidator {
         try HedgeUnit(order.receiver).useFunds(funds, amountOutMin, params, offchainGuess) returns (uint256 _amountOut)
         {
             amountOut = _amountOut;
+        // solhint-disable-next-line no-empty-blocks
         } catch {}
 
         delete orderCalls[refId];

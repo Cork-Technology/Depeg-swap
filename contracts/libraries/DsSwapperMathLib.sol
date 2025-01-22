@@ -32,7 +32,7 @@ library BuyMathBisectionSolver {
     }
 
     /// @notice f(s) = x^1-t + y^t - (x - s + e)^1-t - (y + s)^1-t
-    function f(SD59x18 x, SD59x18 y, SD59x18 e, SD59x18 s, SD59x18 _1MinusT) public pure returns (SD59x18) {
+    function f(SD59x18 x, SD59x18 y, SD59x18 e, SD59x18 s, SD59x18 oneMinusT) public pure returns (SD59x18) {
         SD59x18 xMinSplusE = sub(x, s);
         xMinSplusE = add(xMinSplusE, e);
 
@@ -46,10 +46,10 @@ library BuyMathBisectionSolver {
             }
         }
 
-        SD59x18 xPow = _pow(x, _1MinusT);
-        SD59x18 yPow = _pow(y, _1MinusT);
-        SD59x18 xMinSplusEPow = _pow(xMinSplusE, _1MinusT);
-        SD59x18 yPlusSPow = _pow(yPlusS, _1MinusT);
+        SD59x18 xPow = _pow(x, oneMinusT);
+        SD59x18 yPow = _pow(y, oneMinusT);
+        SD59x18 xMinSplusEPow = _pow(xMinSplusE, oneMinusT);
+        SD59x18 yPlusSPow = _pow(yPlusS, oneMinusT);
 
         return sub(sub(add(xPow, yPow), xMinSplusEPow), yPlusSPow);
     }
@@ -62,7 +62,7 @@ library BuyMathBisectionSolver {
         return sd(int256(LogExpMath.pow(_x, _y)));
     }
 
-    function findRoot(SD59x18 x, SD59x18 y, SD59x18 e, SD59x18 _1MinusT, SD59x18 epsilon, uint256 maxIter)
+    function findRoot(SD59x18 x, SD59x18 y, SD59x18 e, SD59x18 oneMinusT, SD59x18 epsilon, uint256 maxIter)
         public
         pure
         returns (SD59x18)
@@ -75,16 +75,16 @@ library BuyMathBisectionSolver {
             b = sub(add(x, e), delta);
         }
 
-        SD59x18 fA = f(x, y, e, a, _1MinusT);
-        SD59x18 fB = f(x, y, e, b, _1MinusT);
+        SD59x18 fA = f(x, y, e, a, oneMinusT);
+        SD59x18 fB = f(x, y, e, b, oneMinusT);
         {
             if (mul(fA, fB) >= sd(0)) {
                 uint256 maxAdjustments = 1000;
 
                 SD59x18 adjustment = mul(convert(-1e4), b);
-                for (uint256 i = 0; i < maxAdjustments; i++) {
+                for (uint256 i = 0; i < maxAdjustments; ++i) {
                     b = sub(b, adjustment);
-                    fB = f(x, y, e, b, _1MinusT);
+                    fB = f(x, y, e, b, oneMinusT);
 
                     if (mul(fA, fB) < sd(0)) {
                         break;
@@ -95,9 +95,9 @@ library BuyMathBisectionSolver {
             }
         }
 
-        for (uint256 i = 0; i < maxIter; i++) {
+        for (uint256 i = 0; i < maxIter; ++i) {
             SD59x18 c = div(add(a, b), convert(2));
-            SD59x18 fC = f(x, y, e, c, _1MinusT);
+            SD59x18 fC = f(x, y, e, c, oneMinusT);
 
             if (abs(fC) < epsilon) {
                 return c;
@@ -412,7 +412,7 @@ library SwapperMathLibrary {
      * lower bound = the initial borrowed amount - (feeIntervalAdjustment * maxIter). if this doesn't satisfy the condition we revert as there's no sane lower bounds
      * upper = the initial borrowed amount.
      */
-    function findOptimalBorrowedAmount(OptimalBorrowParams memory params)
+    function findOptimalBorrowedAmount(OptimalBorrowParams calldata params)
         external
         view
         returns (OptimalBorrowResult memory result)
@@ -441,7 +441,7 @@ library SwapperMathLibrary {
         UD60x18 upperBound = initialBorrowedAmountUd;
         UD60x18 epsilon = convertUd(params.feeEpsilon);
 
-        for (uint256 i = 0; i < params.maxIter; i++) {
+        for (uint256 i = 0; i < params.maxIter; ++i) {
             // we break if we have reached the desired range
             if (sub(upperBound, lowerBound) <= epsilon) {
                 break;
