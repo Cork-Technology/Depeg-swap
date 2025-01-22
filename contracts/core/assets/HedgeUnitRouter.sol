@@ -14,19 +14,9 @@ import {CustomERC20Permit} from "./../../libraries/ERC/CustomERC20Permit.sol";
  * @notice This contract is used to execute batch mint and batch dissolve functions for multiple HedgeUnit contracts.
  */
 contract HedgeUnitRouter is IHedgeUnitRouter, AccessControl, ReentrancyGuardTransient {
-    // this role will be assigned through grantRole function
-    bytes32 public constant HEDGE_UNIT_FACTORY_ROLE = keccak256("HEDGE_UNIT_FACTORY_ROLE");
-
     modifier onlyDefaultAdmin() {
         if (!hasRole(DEFAULT_ADMIN_ROLE, msg.sender)) {
             revert NotDefaultAdmin();
-        }
-        _;
-    }
-
-    modifier onlyHedgeUnitFactory() {
-        if (!hasRole(HEDGE_UNIT_FACTORY_ROLE, msg.sender)) {
-            revert CallerNotFactory();
         }
         _;
     }
