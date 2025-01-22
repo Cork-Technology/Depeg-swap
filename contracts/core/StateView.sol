@@ -1,12 +1,9 @@
 pragma solidity ^0.8.24;
 
 import {ModuleState} from "./ModuleState.sol";
-import {Id, Pair, PairLibrary} from "./../libraries/Pair.sol";
+import {Id, Pair} from "./../libraries/Pair.sol";
 import {DepegSwap} from "./../libraries/DepegSwapLib.sol";
 import {
-    State,
-    PsmPoolArchive,
-    VaultState,
     VaultAmmLiquidityPool,
     Balances,
     VaultConfig,

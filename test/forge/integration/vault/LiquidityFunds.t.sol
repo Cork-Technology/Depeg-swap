@@ -7,8 +7,8 @@ import "./../../../../contracts/core/assets/Asset.sol";
 import {Id, Pair, PairLibrary} from "./../../../../contracts/libraries/Pair.sol";
 import "./../../../../contracts/interfaces/IPSMcore.sol";
 import "forge-std/console.sol";
-import "./../../../../contracts/interfaces/IVault.sol";
-import "./../../../../contracts/interfaces/ICommon.sol";
+import "./../../../../contracts/interfaces/IErrors.sol";
+import "./../../../../contracts/interfaces/IErrors.sol";
 
 contract VaultLiquidityFundsTest is Helper {
     DummyWETH internal ra;
@@ -72,7 +72,7 @@ contract VaultLiquidityFundsTest is Helper {
 
         vm.assertEq(fundsAvailable, 0);
 
-        vm.expectRevert(IVault.InsufficientFunds.selector);
+        vm.expectRevert(IErrors.InsufficientFunds.selector);
         moduleCore.requestLiquidationFunds(currencyId, 1 ether);
     }
 
@@ -96,7 +96,7 @@ contract VaultLiquidityFundsTest is Helper {
     function test_revertNotWhiteListed() external {
         vm.stopPrank();
 
-        vm.expectRevert(ICommon.OnlyWhiteListed.selector);
+        vm.expectRevert(IErrors.OnlyWhiteListed.selector);
         moduleCore.requestLiquidationFunds(currencyId, 1 ether);
     }
 

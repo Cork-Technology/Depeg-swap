@@ -1,6 +1,8 @@
 pragma solidity ^0.8.24;
 
-interface IHedgeUnit {
+import {IErrors} from "./IErrors.sol";
+
+interface IHedgeUnit is IErrors {
     // Events
     /**
      * @notice Emitted when a user mints new HedgeUnit tokens.
@@ -25,44 +27,6 @@ interface IHedgeUnit {
     event MintCapUpdated(uint256 newMintCap);
 
     event RaRedeemed(address indexed redeemer, uint256 dsId, uint256 amount);
-
-    // Errors
-
-    /// @notice Error indicating an invalid amount was provided.
-    error InvalidAmount();
-
-    /// @notice Error indicating the mint cap has been exceeded.
-    error MintCapExceeded();
-
-    /// @notice Error indicating an invalid value was provided.
-    error InvalidValue();
-
-    /// @notice Thrown when the DS given when minting HU isn't proportional
-    error InsufficientDsAmount();
-
-    /// @notice Thrown when the PA given when minting HU isn't proportional
-    error InsufficientPaAmount();
-
-    /// @notice Thrown when trying to overdraw HU exceeding the available liquidity
-    error NotEnoughLiquidity();
-
-    error InsufficientFunds();
-
-    error NoValidDSExist();
-
-    error OnlyLiquidator();
-
-    error OnlyLiquidatorOrOwner();
-
-    error OnlyDissolverOrHURouterAllowed();
-
-    error InvalidToken();
-
-    /// @notice Error indicating provided signature is invalid
-    error InvalidSignature();
-
-    /// @notice Error indicating the permit is not supported in PA contract
-    error PermitNotSupported();
 
     // Read functions
     /**

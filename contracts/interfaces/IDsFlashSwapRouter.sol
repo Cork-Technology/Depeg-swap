@@ -2,14 +2,14 @@
 pragma solidity ^0.8.24;
 
 import {Id} from "../libraries/Pair.sol";
-import {IMathError} from "./IMathError.sol";
+import {IErrors} from "./IErrors.sol";
 
 /**
  * @title IDsFlashSwapUtility Interface
  * @author Cork Team
  * @notice Utility Interface for flashswap
  */
-interface IDsFlashSwapUtility is IMathError {
+interface IDsFlashSwapUtility is IErrors {
     /**
      * @notice returns the current price ratio of the pair
      * @param id the id of the pair
@@ -67,27 +67,6 @@ interface IDsFlashSwapUtility is IMathError {
  * @notice IDsFlashSwapCore interface for Flashswap Router contract
  */
 interface IDsFlashSwapCore is IDsFlashSwapUtility {
-    /// @notice Zero Address error, thrown when passed address is 0
-    error ZeroAddress();
-
-    /// @notice thrown when Permit is not supported in Given ERC20 contract
-    error PermitNotSupported();
-
-    /// @notice thrown when the caller is not the module core
-    error NotModuleCore();
-
-    /// @notice thrown when the caller is not Config contract
-    error NotConfig();
-
-    /// @notice thrown when the swap somehow got into rollover period, but the rollover period is not active
-    error RolloverNotActive();
-
-    error NotDefaultAdmin();
-
-    error ApproxExhausted();
-
-    error InvalidParams();
-
     struct BuyAprroxParams {
         /// @dev the maximum amount of iterations to find the optimal amount of DS to swap, 256 is a good number
         uint256 maxApproxIter;
@@ -129,9 +108,6 @@ interface IDsFlashSwapCore is IDsFlashSwapUtility {
         /// @dev the final amount of RA that's borrowed after selling DS reserve
         uint256 afterSoldBorrow;
     }
-
-    /// @notice Revert when Signature is valid or signature deadline is incorrect
-    error InvalidSignature();
 
     /**
      * @notice Emitted when DS is swapped for RA

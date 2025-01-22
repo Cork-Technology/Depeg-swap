@@ -1,7 +1,7 @@
 pragma solidity ^0.8.24;
 
 import "./../../../../contracts/libraries/HedgeUnitMath.sol";
-import "./../../../../contracts/interfaces/IHedgeUnit.sol";
+import "./../../../../contracts/interfaces/IErrors.sol";
 import "forge-std/Test.sol";
 import "forge-std/console.sol";
 
@@ -60,7 +60,7 @@ contract LiquidityMathTest is Test {
         uint256 amountPa = 1000 ether;
         uint256 amountDs = 900 ether;
 
-        vm.expectRevert(IHedgeUnit.InvalidAmount.selector);
+        vm.expectRevert(IErrors.InvalidAmount.selector);
         HedgeUnitMath.mint(reservePa, totalLiquidity, amountPa, amountDs);
     }
 

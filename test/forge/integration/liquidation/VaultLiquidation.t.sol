@@ -8,7 +8,8 @@ import {Id, Pair, PairLibrary} from "./../../../../contracts/libraries/Pair.sol"
 import "./../../../../contracts/interfaces/IPSMcore.sol";
 import "forge-std/console.sol";
 import "./../../../../contracts/interfaces/IVault.sol";
-import "./../../../../contracts/interfaces/ICommon.sol";
+import "./../../../../contracts/interfaces/IErrors.sol";
+import "./../../../../contracts/interfaces/ILiquidator.sol";
 import "./../../../../contracts/core/liquidators/cow-protocol/Liquidator.sol";
 
 contract VaultLiquidationTest is Helper {
@@ -222,10 +223,10 @@ contract VaultLiquidationTest is Helper {
         vm.stopPrank();
         vm.startPrank(address(8));
 
-        vm.expectRevert(ILiquidator.OnlyLiquidator.selector);
+        vm.expectRevert(IErrors.OnlyLiquidator.selector);
         liquidator.createOrderVault(params);
 
-        vm.expectRevert(ILiquidator.OnlyLiquidator.selector);
+        vm.expectRevert(IErrors.OnlyLiquidator.selector);
         liquidator.finishVaultOrder(randomRefId);
     }
 }
