@@ -237,7 +237,7 @@ contract CorkConfigTest is Test {
         vm.startPrank(address(8));
         assertFalse(config.hasRole(role, updater));
 
-        vm.expectRevert(CorkConfig.CallerNotManager.selector);
+        vm.expectRevert();
         config.grantRole(role, updater);
         assertFalse(config.hasRole(role, updater));
     }

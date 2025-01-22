@@ -81,6 +81,7 @@ contract CorkConfig is AccessControl, Pausable {
             revert InvalidAddress();
         }
         _setRoleAdmin(MARKET_INITIALIZER_ROLE, MANAGER_ROLE);
+        _setRoleAdmin(MANAGER_ROLE, DEFAULT_ADMIN_ROLE);
         _setRoleAdmin(RATE_UPDATERS_ROLE, MANAGER_ROLE);
         _setRoleAdmin(BASE_LIQUIDATOR_ROLE, MANAGER_ROLE); 
         _grantRole(DEFAULT_ADMIN_ROLE, adminAdd);
@@ -96,8 +97,13 @@ contract CorkConfig is AccessControl, Pausable {
         _setRoleAdmin(role, newAdminRole);
     }
     
-    function grantRole(bytes32 role, address account) public override onlyManager {
+    function grantRole(bytes32 role, address account) public override onlyRole(getRoleAdmin(role)) {
         _grantRole(role, account);
+    }
+
+    function transferAdmin(address newAdmin) external onlyRole(DEFAULT_ADMIN_ROLE) {
+        _revokeRole(DEFAULT_ADMIN_ROLE, msg.sender);
+        _grantRole(DEFAULT_ADMIN_ROLE, newAdmin);
     }
 
     function isTrustedLiquidationExecutor(address liquidationContract, address user) external view returns (bool) {
