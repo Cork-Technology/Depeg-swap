@@ -36,10 +36,11 @@ abstract contract ModuleState is IErrors, ReentrancyGuardTransient {
     /**
      * @dev checks if caller is config contract or not
      */
-    function onlyConfig() internal {
+    modifier onlyConfig() {
         if (msg.sender != CONFIG) {
             revert OnlyConfigAllowed();
         }
+        _;
     }
 
     function factory() external view returns (address) {
@@ -97,10 +98,11 @@ abstract contract ModuleState is IErrors, ReentrancyGuardTransient {
         }
     }
 
-    function onlyFlashSwapRouter() internal view {
+    modifier onlyFlashSwapRouter() {
         if (msg.sender != DS_FLASHSWAP_ROUTER) {
             revert OnlyFlashSwapRouterAllowed();
         }
+        _;
     }
 
     function PSMWithdrawalNotPaused(Id id) internal view {

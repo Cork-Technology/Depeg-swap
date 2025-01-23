@@ -180,13 +180,13 @@ contract HedgeUnit is
         emit FundsUsed(msg.sender, dsId, amount, result.amountOut);
     }
 
-    function redeemRaWithDsPa(uint256 amount, uint256 amountDs) external autoUpdateDS onlyOwner {
+    function redeemRaWithDs(uint256 amount, uint256 amountDs) external autoUpdateDS onlyOwner {
         uint256 dsId = MODULE_CORE.lastDsId(id);
 
         ds.approve(address(MODULE_CORE), amountDs);
         PA.approve(address(MODULE_CORE), amount);
 
-        MODULE_CORE.redeemRaWithDsPa(id, dsId, amount);
+        MODULE_CORE.redeemRaWithDs(id, dsId, amount);
 
         // auto pause
         _pause();

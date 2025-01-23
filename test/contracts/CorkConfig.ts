@@ -354,7 +354,7 @@ describe("CorkConfig", function () {
       ).to.be.rejectedWith("PSMDepositPaused()");
 
       await expect(
-        fixture.moduleCore.write.redeemRaWithDsPa([
+        fixture.moduleCore.write.redeemRaWithDs([
           fixture.Id,
           dsId!,
           depositAmount,
@@ -378,7 +378,7 @@ describe("CorkConfig", function () {
       ).to.be.rejectedWith("PSMRepurchasePaused()");
 
       await expect(
-        fixture.moduleCore.write.redeemWithExpiredCt([
+        fixture.moduleCore.write.redeemWithCT([
           fixture.Id,
           dsId!,
           depositAmount,
@@ -394,7 +394,7 @@ describe("CorkConfig", function () {
       ).to.be.rejectedWith("PSMWithdrawalPaused()");
 
       await expect(
-        fixture.moduleCore.write.returnRaWithCtDs([fixture.Id, parseEther("2")])
+        fixture.moduleCore.write.redeemRaWithCtDs([fixture.Id, parseEther("2")])
       ).to.be.rejectedWith("PSMWithdrawalPaused()");
 
       await expect(

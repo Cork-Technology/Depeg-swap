@@ -381,8 +381,8 @@ contract CorkConfig is AccessControl, Pausable {
      * @notice Updates base redemption fee percentage
      * @param newPsmBaseRedemptionFeePercentage new value of fees, make sure it has 18 decimals(e.g 1% = 1e18)
      */
-    function updatePsmBaseRedemptionFeePercentage(Id id, uint256 newPsmBaseRedemptionFeePercentage) external onlyManager {
-        moduleCore.updatePsmBaseRedemptionFeePercentage(id, newPsmBaseRedemptionFeePercentage);
+    function updatePsmBaseRedemptionFeePercentage(Id id,uint256 newPsmBaseRedemptionFeePercentage) external onlyManager {
+        moduleCore.updatePsmBaseRedemptionFeePercentage(id,newPsmBaseRedemptionFeePercentage);
     }
 
     function updateFlashSwapRouterDiscountInDays(Id id, uint256 newDiscountInDays) external onlyManager {
@@ -437,8 +437,8 @@ contract CorkConfig is AccessControl, Pausable {
         HedgeUnit(hedgeUnit).unpause();
     }
 
-    function redeemRaWithDsPaWithHedgeUnit(address hedgeUnit, uint256 amount, uint256 amountDS) external onlyManager {
-        HedgeUnit(hedgeUnit).redeemRaWithDsPa(amount, amountDS);
+    function redeemRaWithDsWithHedgeUnit(address hedgeUnit, uint256 amount, uint256 amountDS) external onlyManager {
+        HedgeUnit(hedgeUnit).redeemRaWithDs(amount, amountDS);
     }
 
     function buyDsFromHedgeUnit(

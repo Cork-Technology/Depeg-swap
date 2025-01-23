@@ -42,7 +42,7 @@ abstract contract VaultCore is ModuleState, Context, IVault, IVaultLiquidation {
      * @param redeemer The address of the redeemer
      * @param permitParams The object with details for permit like rawLvPermitSig(Raw signature for LV approval permit) and deadline for signature
      */
-    function redeemEarlyLv(RedeemEarlyParams calldata redeemParams, address redeemer, PermitParams calldata permitParams)
+    function redeemEarlyLv(RedeemEarlyParams memory redeemParams, address redeemer, PermitParams memory permitParams)
         external
         override
         nonReentrant
@@ -80,7 +80,7 @@ abstract contract VaultCore is ModuleState, Context, IVault, IVaultLiquidation {
      * @notice Redeem lv before expiry
      * @param redeemParams The object with details like id, reciever, amount, amountOutMin, ammDeadline
      */
-    function redeemEarlyLv(RedeemEarlyParams calldata redeemParams)
+    function redeemEarlyLv(RedeemEarlyParams memory redeemParams)
         external
         override
         nonReentrant
@@ -118,9 +118,7 @@ abstract contract VaultCore is ModuleState, Context, IVault, IVaultLiquidation {
      * @param amount the amount of RA received from selling DS
      * @dev assumes that `amount` is already transferred to the vault
      */
-    function provideLiquidityWithFlashSwapFee(Id id, uint256 amount) external {
-        onlyFlashSwapRouter();
-
+    function provideLiquidityWithFlashSwapFee(Id id, uint256 amount) external onlyFlashSwapRouter {
         State storage state = states[id];
         state.allocateFeesToVault(amount);
         emit ProfitReceived(msg.sender, amount);
@@ -134,16 +132,12 @@ abstract contract VaultCore is ModuleState, Context, IVault, IVaultLiquidation {
         return states[id].vaultLp(getAmmRouter());
     }
 
-    function lvAcceptRolloverProfit(Id id, uint256 amount) external {
-        onlyFlashSwapRouter();
-
+    function lvAcceptRolloverProfit(Id id, uint256 amount) external onlyFlashSwapRouter {
         State storage state = states[id];
         state.allocateFeesToVault(amount);
     }
 
-    function updateCtHeldPercentage(Id id, uint256 ctHeldPercentage) external {
-        onlyConfig();
-
+    function updateCtHeldPercentage(Id id, uint256 ctHeldPercentage) external onlyConfig {
         states[id].updateCtHeldPercentage(ctHeldPercentage);
     }
 
@@ -163,9 +157,7 @@ abstract contract VaultCore is ModuleState, Context, IVault, IVaultLiquidation {
         emit TradeExecutionResultFundsReceived(id, msg.sender, amount);
     }
 
-    function useTradeExecutionResultFunds(Id id) external override {
-        onlyConfig();
-
+    function useTradeExecutionResultFunds(Id id) external override onlyConfig {
         State storage state = states[id];
         uint256 used = state.useTradeExecutionResultFunds(getRouterCore(), getAmmRouter());
 

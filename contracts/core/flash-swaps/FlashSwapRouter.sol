@@ -730,7 +730,7 @@ contract RouterState is
 
         IPSMcore psm = IPSMcore(_moduleCore);
 
-        uint256 received = psm.returnRaWithCtDs(reserveId, ctAmount);
+        uint256 received = psm.redeemRaWithCtDs(reserveId, ctAmount);
 
         Asset ra = assetPair.ra;
 

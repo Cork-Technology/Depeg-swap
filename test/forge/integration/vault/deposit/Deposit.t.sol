@@ -209,7 +209,7 @@ contract DepositTest is Helper {
             IERC20(ds).approve(address(moduleCore), psmDepositAmount);
 
             // redeem RA back so that we have PA in PSM
-            moduleCore.redeemRaWithDsPa(id, dsId, psmDepositAmount);
+            moduleCore.redeemRaWithDs(id, dsId, psmDepositAmount);
 
             vm.assertEq(balanceAfter, balanceBefore + received);
 

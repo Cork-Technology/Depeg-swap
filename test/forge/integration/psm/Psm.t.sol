@@ -116,7 +116,7 @@ contract PsmTest is Helper {
 
         redeemAmount = TransferHelper.normalizeDecimals(redeemAmount, TARGET_DECIMALS, paDecimals);
 
-        (received,,,) = moduleCore.redeemRaWithDsPa(defaultCurrencyId, 1, redeemAmount);
+        (received,,,) = moduleCore.redeemRaWithDs(defaultCurrencyId, 1, redeemAmount);
 
         uint256 expectedAmount = TransferHelper.normalizeDecimals(1 ether, TARGET_DECIMALS, raDecimals);
         uint256 acceptableDelta = TransferHelper.normalizeDecimals(1, TARGET_DECIMALS, raDecimals);
@@ -141,12 +141,12 @@ contract PsmTest is Helper {
 
         redeemAmount = TransferHelper.normalizeDecimals(redeemAmount, TARGET_DECIMALS, paDecimals);
 
-        (received,,,) = moduleCore.redeemRaWithDsPa(defaultCurrencyId, 1, redeemAmount);
+        (received,,,) = moduleCore.redeemRaWithDs(defaultCurrencyId, 1, redeemAmount);
         //forward to expiry
         uint256 expiry = ds.expiry();
         vm.warp(expiry + 1);
 
-        (uint256 accruedPa, uint256 accruedRa) = moduleCore.redeemWithExpiredCt(defaultCurrencyId, 1, 1 ether);
+        (uint256 accruedPa, uint256 accruedRa) = moduleCore.redeemWithCT(defaultCurrencyId, 1, 1 ether);
 
         uint256 expectedAmount = TransferHelper.normalizeDecimals(0.5 ether, TARGET_DECIMALS, raDecimals);
         uint256 acceptableDelta = TransferHelper.normalizeDecimals(1, TARGET_DECIMALS, raDecimals);
@@ -172,7 +172,7 @@ contract PsmTest is Helper {
 
         redeemAmount = TransferHelper.normalizeDecimals(redeemAmount, TARGET_DECIMALS, paDecimals);
 
-        (received,,,) = moduleCore.redeemRaWithDsPa(defaultCurrencyId, 1, redeemAmount);
+        (received,,,) = moduleCore.redeemRaWithDs(defaultCurrencyId, 1, redeemAmount);
 
         // and werepurchase half of the redeemed amount
         uint256 repurchaseAmount = 0.25 ether * rates / 1 ether;
@@ -207,7 +207,7 @@ contract PsmTest is Helper {
         IERC20(ct).approve(address(moduleCore), type(uint256).max);
         IERC20(ds).approve(address(moduleCore), type(uint256).max);
 
-        uint256 ra = moduleCore.returnRaWithCtDs(defaultCurrencyId, received);
+        uint256 ra = moduleCore.redeemRaWithCtDs(defaultCurrencyId, received);
 
         uint256 acceptableDelta = TransferHelper.normalizeDecimals(1, TARGET_DECIMALS, raDecimals);
 
