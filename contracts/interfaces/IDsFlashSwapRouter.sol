@@ -79,6 +79,9 @@ interface IDsFlashSwapCore is IDsFlashSwapUtility {
     /// @notice thrown when the caller is not Config contract
     error NotConfig();
 
+    /// @notice thrown when the caller is not authorised to call the function 
+    error UnauthorizedCaller();
+
     /// @notice thrown when the swap somehow got into rollover period, but the rollover period is not active
     error RolloverNotActive();
 
@@ -310,4 +313,12 @@ interface IDsFlashSwapCore is IDsFlashSwapUtility {
     function isRolloverSale(Id id) external view returns (bool);
 
     function updateReserveSellPressurePercentage(Id id, uint256 newPercentage) external;
+
+    /**
+     * @notice Sets the approval status for a delegate to act on behalf of the caller
+     * @param delegate The address of the delegate to be approved or disapproved
+     * @param approved A boolean value indicating whether the delegate is approved (true) or disapproved (false)
+     */
+    function setApproval(address delegate, bool approved) external;
+   
 }

@@ -39,6 +39,8 @@ contract RouterState is
 
     address public _moduleCore;
     ICorkHook public hook;
+    mapping(address => mapping(address => bool)) public approvals;
+
 
     uint256 public constant RESERVE_MINIMUM_SELL_AMOUNT = 0.001 ether;
 
@@ -68,6 +70,10 @@ contract RouterState is
 
     constructor() {
         _disableInitializers();
+    }
+
+    function setApproval(address delegate, bool approved) external {
+        approvals[msg.sender][delegate] = approved;
     }
 
     function updateDiscountRateInDdays(Id id, uint256 discountRateInDays) external override onlyConfig {
@@ -430,6 +436,15 @@ contract RouterState is
         if (rawDsPermitSig.length == 0 || deadline == 0) {
             revert InvalidSignature();
         }
+
+        if (msg.sender != user) {
+            revert UnauthorizedCaller();
+        }
+
+        if (msg.sender != user && !approvals[user][msg.sender]) {
+            revert UnauthorizedCaller();
+        }
+
         ReserveState storage self = reserves[reserveId];
         AssetPair storage assetPair = self.ds[dsId];
 
