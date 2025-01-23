@@ -64,7 +64,6 @@ contract DeployHedgeUnitsScript is Script {
         hedgeUnitRouter = new HedgeUnitRouter();
         hedgeUnitFactory =
             new HedgeUnitFactory(address(moduleCore), address(config), flashSwapRouter);
-        hedgeUnitRouter.grantRole(hedgeUnitRouter.HEDGE_UNIT_FACTORY_ROLE(), address(hedgeUnitFactory));
         config.setHedgeUnitFactory(address(hedgeUnitFactory));
         console.log("HedgeUnit Factory               : ", address(hedgeUnitFactory));
         console.log("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-");
