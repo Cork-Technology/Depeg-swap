@@ -78,27 +78,4 @@ library HedgeUnitMath {
 
         amountRa = unwrap(div(mul(ud(liquidityAmount), ud(reserveRa)), ud(totalLiquidity)));
     }
-
-    /// @notice ds price = 1-(f / (rate +1)^t)
-    /// where f is always 1
-    function calculateSpotDsPrice(uint256 arp, uint256 start, uint256 current, uint256 end)
-        internal
-        pure
-        returns (uint256)
-    {
-        // normalize arp from 0-100 to 0-1
-        UD60x18 _arp = ud(arp / 100);
-
-        UD60x18 f = convert(uint256(1));
-
-        UD60x18 t = intoUD60x18(
-            BuyMathBisectionSolver.computeT(convert(int256(start)), convert(int256(end)), convert(int256(current)))
-        );
-        UD60x18 ratePlusOne = add(convert(uint256(1)), _arp);
-        UD60x18 ratePlusOnePowT = pow(ratePlusOne, t);
-
-        UD60x18 fdivRatePlusOnePowT = div(f, ratePlusOnePowT);
-
-        return unwrap(sub(convert(uint256(1)), fdivRatePlusOnePowT));
-    }
 }
