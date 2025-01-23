@@ -366,6 +366,12 @@ contract RouterState is
         if (rawRaPermitSig.length == 0 || deadline == 0) {
             revert InvalidSignature();
         }
+
+        if (msg.sender != user && !approvals[user][msg.sender]) {
+            revert UnauthorizedCaller();
+        }
+
+
         ReserveState storage self = reserves[reserveId];
         AssetPair storage assetPair = self.ds[dsId];
 
@@ -435,10 +441,6 @@ contract RouterState is
     ) external returns (uint256 amountOut) {
         if (rawDsPermitSig.length == 0 || deadline == 0) {
             revert InvalidSignature();
-        }
-
-        if (msg.sender != user) {
-            revert UnauthorizedCaller();
         }
 
         if (msg.sender != user && !approvals[user][msg.sender]) {
