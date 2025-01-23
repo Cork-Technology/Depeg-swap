@@ -27,10 +27,9 @@ abstract contract VaultCore is ModuleState, Context, IVault, IVaultLiquidation {
     function depositLv(Id id, uint256 amount, uint256 raTolerance, uint256 ctTolerance)
         external
         override
+        LVDepositNotPaused(id)
         returns (uint256 received)
     {
-        LVDepositNotPaused(id);
-
         State storage state = states[id];
         received = state.deposit(_msgSender(), amount, getRouterCore(), getAmmRouter(), raTolerance, ctTolerance);
         emit LvDeposited(id, _msgSender(), received);
@@ -46,10 +45,9 @@ abstract contract VaultCore is ModuleState, Context, IVault, IVaultLiquidation {
         external
         override
         nonReentrant
+        LVWithdrawalNotPaused(redeemParams.id)
         returns (IVault.RedeemEarlyResult memory result)
     {
-        LVWithdrawalNotPaused(redeemParams.id);
-
         if (permitParams.rawLvPermitSig.length == 0 || permitParams.deadline == 0) {
             revert InvalidSignature();
         }
@@ -84,10 +82,9 @@ abstract contract VaultCore is ModuleState, Context, IVault, IVaultLiquidation {
         external
         override
         nonReentrant
+        LVWithdrawalNotPaused(redeemParams.id)
         returns (IVault.RedeemEarlyResult memory result)
     {
-        LVWithdrawalNotPaused(redeemParams.id);
-
         ProtocolContracts memory routers = ProtocolContracts({
             flashSwapRouter: getRouterCore(),
             ammRouter: getAmmRouter(),

@@ -111,7 +111,7 @@ abstract contract PsmCore is IPSMcore, ModuleState, Context {
         address redeemer,
         bytes memory rawDsPermitSig,
         uint256 deadline
-    ) 
+    )
         external
         override
         nonReentrant
@@ -125,8 +125,7 @@ abstract contract PsmCore is IPSMcore, ModuleState, Context {
         }
         State storage state = states[id];
 
-        (received, _exchangeRate, fee, dsUsed) =
-            state.redeemWithDs(redeemer, amount, dsId, rawDsPermitSig, deadline, getTreasuryAddress());
+        (received, _exchangeRate, fee, dsUsed) = state.redeemWithDs(redeemer, amount, dsId, rawDsPermitSig, deadline, getTreasuryAddress());
 
         emit DsRedeemed(id, dsId, redeemer, amount, dsUsed, received, _exchangeRate, state.psm.psmBaseRedemptionFeePercentage, fee);
     }
@@ -146,7 +145,6 @@ abstract contract PsmCore is IPSMcore, ModuleState, Context {
 
         emit DsRedeemed(id, dsId, _msgSender(), amount, dsUsed, received, _exchangeRate, state.psm.psmBaseRedemptionFeePercentage, fee);
     }
-
     /**
      * This determines the rate of how much the user will receive for the amount of asset they want to deposit.
      * for example, if the rate is 1.5, then the user will need to deposit 1.5 token to get 1 CT and DS.
@@ -157,14 +155,14 @@ abstract contract PsmCore is IPSMcore, ModuleState, Context {
         rates = state.exchangeRate();
     }
 
-    function redeemWithCT(
+    function redeemWithCt(
         Id id,
         uint256 dsId,
         uint256 amount,
         address redeemer,
         bytes memory rawCtPermitSig,
         uint256 deadline
-    ) 
+    )
         external
         override
         nonReentrant
@@ -175,15 +173,15 @@ abstract contract PsmCore is IPSMcore, ModuleState, Context {
 
         if (rawCtPermitSig.length == 0 || deadline == 0) {
             revert InvalidSignature();
-        }
+        }    
         State storage state = states[id];
 
-        (accruedPa, accruedRa) = state.redeemWithCT(redeemer, amount, dsId, rawCtPermitSig, deadline);
+        (accruedPa, accruedRa) = state.redeemWithCt(redeemer, amount, dsId, rawCtPermitSig, deadline);
 
         emit CtRedeemed(id, dsId, redeemer, amount, accruedPa, accruedRa);
     }
 
-    function redeemWithCT(Id id, uint256 dsId, uint256 amount)
+    function redeemWithCt(Id id, uint256 dsId, uint256 amount)
         external
         override
         nonReentrant
@@ -194,7 +192,7 @@ abstract contract PsmCore is IPSMcore, ModuleState, Context {
 
         State storage state = states[id];
 
-        (accruedPa, accruedRa) = state.redeemWithCT(_msgSender(), amount, dsId, bytes(""), 0);
+        (accruedPa, accruedRa) = state.redeemWithCt(_msgSender(), amount, dsId, bytes(""), 0);
 
         emit CtRedeemed(id, dsId, _msgSender(), amount, accruedPa, accruedRa);
     }
@@ -243,10 +241,7 @@ abstract contract PsmCore is IPSMcore, ModuleState, Context {
      * @param amount amount user wants to redeem
      * @return ra amount of RA user received
      */
-    function redeemRaWithCtDs(
-        Id id,
-        uint256 amount
-    ) 
+    function redeemRaWithCtDs(Id id, uint256 amount) 
         external
         override
         nonReentrant
@@ -281,16 +276,20 @@ abstract contract PsmCore is IPSMcore, ModuleState, Context {
         uint256 dsId,
         bytes memory rawCtPermitSig,
         uint256 ctDeadline
-    ) external returns (uint256 ctReceived, uint256 dsReceived, uint256 paReceived) {
+    ) 
+        external
+        returns (uint256 ctReceived, uint256 dsReceived, uint256 paReceived)
+    {
         PSMDepositNotPaused(id);
-
         if (rawCtPermitSig.length == 0 || ctDeadline == 0) {
             revert InvalidSignature();
         }
         State storage state = states[id];
         (ctReceived, dsReceived, paReceived) =
             state.rolloverCt(owner, amount, dsId, getRouterCore(), rawCtPermitSig, ctDeadline);
-        emit RolledOver(id, state.globalAssetIdx, owner, dsId, amount, dsReceived, ctReceived, paReceived);
+        emit RolledOver(
+            id, state.globalAssetIdx, owner, dsId, amount, dsReceived, ctReceived, paReceived
+        );
     }
 
     function rolloverCt(Id id, uint256 amount, uint256 dsId)
@@ -303,7 +302,9 @@ abstract contract PsmCore is IPSMcore, ModuleState, Context {
         bytes memory signaturePlaceHolder;
         (ctReceived, dsReceived, paReceived) =
             state.rolloverCt(_msgSender(), amount, dsId, getRouterCore(), signaturePlaceHolder, 0);
-        emit RolledOver(id, state.globalAssetIdx, _msgSender(), dsId, amount, dsReceived, ctReceived, paReceived);
+        emit RolledOver(
+            id, state.globalAssetIdx, _msgSender(), dsId, amount, dsReceived, ctReceived, paReceived
+        );
     }
 
     function claimAutoSellProfit(Id id, uint256 dsId, uint256 amount)
@@ -345,7 +346,6 @@ abstract contract PsmCore is IPSMcore, ModuleState, Context {
         if (percentage > PsmLibrary.MAX_ALLOWED_FEES) {
             revert InvalidFees();
         }
-
         State storage state = states[id];
         state.psm.repurchaseFeePercentage = percentage;
     }

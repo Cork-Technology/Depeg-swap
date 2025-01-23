@@ -290,7 +290,7 @@ describe("PSM core", function () {
         erc20contractAddress: ct!,
         psmAddress: fixture.moduleCore.address,
         signer: defaultSigner,
-        functionName: "redeemWithCT",
+        functionName: "redeemWithCt",
       });
 
       const [_, raReceivedPreview] =
@@ -302,7 +302,7 @@ describe("PSM core", function () {
 
       expect(raReceivedPreview).to.equal(redeemAmount);
 
-      await fixture.moduleCore.write.redeemWithCT([
+      await fixture.moduleCore.write.redeemWithCt([
         fixture.Id,
         dsId!,
         redeemAmount,
@@ -351,7 +351,7 @@ describe("PSM core", function () {
 
       expect(raReceivedPreview).to.equal(redeemAmount);
 
-      await fixture.moduleCore.write.redeemWithCT([
+      await fixture.moduleCore.write.redeemWithCt([
         fixture.Id,
         dsId!,
         redeemAmount,
@@ -882,10 +882,10 @@ describe("PSM core", function () {
         erc20contractAddress: ct!,
         psmAddress: fixture.moduleCore.address,
         signer: defaultSigner,
-        functionName: "redeemWithCT",
+        functionName: "redeemWithCt",
       });
 
-      await fixture.moduleCore.write.redeemWithCT([
+      await fixture.moduleCore.write.redeemWithCt([
         fixture.Id,
         dsId!,
         parseEther("1"),
@@ -1027,12 +1027,12 @@ describe("PSM core", function () {
         erc20contractAddress: ct!,
         psmAddress: fixture.moduleCore.address,
         signer: defaultSigner,
-        functionName: "redeemWithCT",
+        functionName: "redeemWithCt",
       });
 
       await time.increaseTo(newExpiry);
 
-      await fixture.moduleCore.write.redeemWithCT([
+      await fixture.moduleCore.write.redeemWithCt([
         fixture.Id,
         dsId!,
         parseEther("100"),

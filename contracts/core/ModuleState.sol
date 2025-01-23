@@ -117,16 +117,18 @@ abstract contract ModuleState is IErrors, ReentrancyGuardTransient {
         }
     }
 
-    function LVDepositNotPaused(Id id) internal view {
+    modifier LVDepositNotPaused(Id id) {
         if (states[id].vault.config.isDepositPaused) {
             revert LVDepositPaused();
         }
+        _;
     }
 
-    function LVWithdrawalNotPaused(Id id) internal view {
+    modifier LVWithdrawalNotPaused(Id id) {
         if (states[id].vault.config.isWithdrawalPaused) {
             revert LVWithdrawalPaused();
         }
+        _;
     }
 
     function onlyWhiteListedLiquidationContract() internal view {

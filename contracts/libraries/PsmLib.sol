@@ -751,7 +751,7 @@ library PsmLibrary {
     /// we depends on the frontend to make approval to the PA contract before calling this function.
     /// for the CT, we use the permit function to approve the transfer.
     /// the parameter passed here MUST be the same as the one used to generate the ct permit signature.
-    function redeemWithCT(
+    function redeemWithCt(
         State storage self,
         address owner,
         uint256 amount,
@@ -762,7 +762,7 @@ library PsmLibrary {
         DepegSwap storage ds = self.ds[dsId];
         Guard.safeAfterExpired(ds);
         if (deadline != 0) {
-            DepegSwapLibrary.permit(ds.ct, rawCtPermitSig, owner, address(this), amount, deadline, "redeemWithCT");
+            DepegSwapLibrary.permit(ds.ct, rawCtPermitSig, owner, address(this), amount, deadline, "redeemWithCt");
         }
         _separateLiquidity(self, dsId);
 

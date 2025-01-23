@@ -22,7 +22,6 @@ import {AmmId, toAmmId} from "Cork-Hook/lib/State.sol";
  */
 contract ModuleCore is OwnableUpgradeable, UUPSUpgradeable, PsmCore, Initialize, VaultCore {
     /// @notice __gap variable to prevent storage collisions
-    // slither-disable-next-line unused-state
     uint256[49] __gap;
 
     using PsmLibrary for State;
@@ -53,7 +52,6 @@ contract ModuleCore is OwnableUpgradeable, UUPSUpgradeable, PsmCore, Initialize,
     }
 
     /// @notice Authorization function for UUPS proxy upgrades
-    // solhint-disable-next-line no-empty-blocks
     function _authorizeUpgrade(address newImplementation) internal override onlyOwner {}
 
     function _msgSender() internal view override(ContextUpgradeable, Context) returns (address) {
@@ -264,7 +262,10 @@ contract ModuleCore is OwnableUpgradeable, UUPSUpgradeable, PsmCore, Initialize,
      * @notice update value of PSMBaseRedemption fees
      * @param newPsmBaseRedemptionFeePercentage new value of fees
      */
-    function updatePsmBaseRedemptionFeePercentage(Id id, uint256 newPsmBaseRedemptionFeePercentage) external onlyConfig {
+    function updatePsmBaseRedemptionFeePercentage(Id id, uint256 newPsmBaseRedemptionFeePercentage) 
+        external
+        onlyConfig
+    {
         if (newPsmBaseRedemptionFeePercentage > PsmLibrary.MAX_ALLOWED_FEES) {
             revert InvalidFees();
         }

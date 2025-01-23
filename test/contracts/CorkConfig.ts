@@ -378,7 +378,7 @@ describe("CorkConfig", function () {
       ).to.be.rejectedWith("PSMRepurchasePaused()");
 
       await expect(
-        fixture.moduleCore.write.redeemWithCT([
+        fixture.moduleCore.write.redeemWithCt([
           fixture.Id,
           dsId!,
           depositAmount,

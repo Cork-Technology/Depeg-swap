@@ -120,8 +120,7 @@ contract CorkConfig is AccessControl, Pausable {
     }
 
     function isLiquidationWhitelisted(address liquidationAddress) external view returns (bool) {
-        return
-            liquidationWhitelist[liquidationAddress] <= block.timestamp && liquidationWhitelist[liquidationAddress] != 0;
+        return liquidationWhitelist[liquidationAddress] <= block.timestamp && liquidationWhitelist[liquidationAddress] != 0;
     }
 
     function blacklist(address liquidationAddress) external onlyManager {
@@ -164,7 +163,6 @@ contract CorkConfig is AccessControl, Pausable {
         if (_hedgeUnitFactory == address(0)) {
             revert InvalidAddress();
         }
-
         hedgeUnitFactory = HedgeUnitFactory(_hedgeUnitFactory);
         emit HedgeUnitFactorySet(_hedgeUnitFactory);
     }
@@ -173,23 +171,19 @@ contract CorkConfig is AccessControl, Pausable {
         if (_treasury == address(0)) {
             revert InvalidAddress();
         }
-
         treasury = _treasury;
-
         emit TreasurySet(_treasury);
     }
 
     function updateAmmBaseFeePercentage(Id id, uint256 newBaseFeePercentage) external onlyManager {
         (address ra,) = moduleCore.underlyingAsset(id);
         (address ct,) = moduleCore.swapAsset(id, moduleCore.lastDsId(id));
-
         hook.updateBaseFeePercentage(ra, ct, newBaseFeePercentage);
     }
 
     function updateAmmTreasurySplitPercentage(Id id, uint256 newTreasurySplitPercentage) external onlyManager {
         (address ra,) = moduleCore.underlyingAsset(id);
         (address ct,) = moduleCore.swapAsset(id, moduleCore.lastDsId(id));
-
         hook.updateTreasurySplitPercentage(ra, ct, newTreasurySplitPercentage);
     }
 
