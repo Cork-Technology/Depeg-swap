@@ -238,6 +238,9 @@ contract DeployScript is Script {
         config.setWithdrawalContract(address(withdrawal));
         console.log("Withdrawal contract configured in Config contract");
 
+        config.setTreasury(sender);
+        console.log("Set treasury in Config contract");
+
         univ2Router = IUniswapV2Router02(uniswapV2RouterSepolia);
         console.log("Univ2 Router                    : ", uniswapV2RouterSepolia);
         console.log("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-");
