@@ -262,7 +262,7 @@ contract ModuleCore is OwnableUpgradeable, UUPSUpgradeable, PsmCore, Initialize,
      * @notice update value of PSMBaseRedemption fees
      * @param newPsmBaseRedemptionFeePercentage new value of fees
      */
-    function updatePsmBaseRedemptionFeePercentage(Id id, uint256 newPsmBaseRedemptionFeePercentage) 
+    function updatePsmBaseRedemptionFeePercentage(Id id, uint256 newPsmBaseRedemptionFeePercentage)
         external
         onlyConfig
     {

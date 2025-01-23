@@ -191,7 +191,7 @@ interface IPSMcore is IRepurchase {
      * @param rawCtPermitSig The raw signature for CT approval permit
      * @param deadline The deadline for CT approval permit signature
      */
-    function redeemWithCt(
+    function redeemWithCT(
         Id id,
         uint256 dsId,
         uint256 amount,
@@ -206,7 +206,7 @@ interface IPSMcore is IRepurchase {
      * @param dsId The DS id
      * @param amount The amount of CT to redeem
      */
-    function redeemWithCt(Id id, uint256 dsId, uint256 amount)
+    function redeemWithCT(Id id, uint256 dsId, uint256 amount)
         external
         returns (uint256 accruedPa, uint256 accruedRa);
 

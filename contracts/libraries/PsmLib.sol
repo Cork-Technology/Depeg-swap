@@ -104,13 +104,11 @@ library PsmLibrary {
         uint256 amount,
         uint256 dsId,
         IDsFlashSwapCore flashSwapRouter,
-        bytes calldata rawCtPermitSig,
+        bytes memory rawCtPermitSig,
         uint256 ctDeadline
     ) external returns (uint256 ctReceived, uint256 dsReceived, uint256 paReceived) {
         if (rawCtPermitSig.length > 0 && ctDeadline != 0) {
-            DepegSwapLibrary.permit(
-                self.ds[dsId].ct, rawCtPermitSig, owner, address(this), amount, ctDeadline, "rolloverCt"
-            );
+            DepegSwapLibrary.permit(self.ds[dsId].ct, rawCtPermitSig, owner, address(this), amount, ctDeadline, "rolloverCt");
         }
 
         (ctReceived, dsReceived, paReceived) = _rolloverCt(self, owner, amount, dsId, flashSwapRouter);
@@ -207,8 +205,7 @@ library PsmLibrary {
         prevArchive = self.psm.poolArchive[prevDsId];
 
         // caclulate accrued RA and PA proportional to CT amount
-        (accruedPa, accruedRa) =
-            _calcRedeemAmount(self, amount, totalCtIssued, prevArchive.raAccrued, prevArchive.paAccrued);
+        (accruedPa, accruedRa) = _calcRedeemAmount(self, amount, totalCtIssued, prevArchive.raAccrued, prevArchive.paAccrued);
         // accounting stuff(decrementing reserve etc)
         _beforeCtRedeem(self, prevDs, prevDsId, amount, accruedPa, accruedRa);
 
@@ -243,7 +240,6 @@ library PsmLibrary {
             TransferHelper.tokenNativeDecimalsToFixed(prevArchive.rolloverProfit, self.info.ra),
             prevArchive.attributedToRolloverProfit
         );
-
         rolloverProfit = TransferHelper.fixedToTokenNativeDecimals(rolloverProfit, self.info.ra);
 
         // reset their claim
@@ -412,9 +408,9 @@ library PsmLibrary {
         State storage self,
         address owner,
         uint256 amount,
-        bytes calldata rawDsPermitSig,
+        bytes memory rawDsPermitSig,
         uint256 dsDeadline,
-        bytes calldata rawCtPermitSig,
+        bytes memory rawCtPermitSig,
         uint256 ctDeadline
     ) external returns (uint256 ra) {
         uint256 dsId = self.globalAssetIdx;
@@ -422,9 +418,7 @@ library PsmLibrary {
         Guard.safeBeforeExpired(ds);
 
         if (dsDeadline != 0 && ctDeadline != 0) {
-            DepegSwapLibrary.permit(
-                ds._address, rawDsPermitSig, owner, address(this), amount, dsDeadline, "redeemRaWithCtDs"
-            );
+            DepegSwapLibrary.permit(ds._address, rawDsPermitSig, owner, address(this), amount, dsDeadline, "redeemRaWithCtDs");
             DepegSwapLibrary.permit(ds.ct, rawCtPermitSig, owner, address(this), amount, ctDeadline, "redeemRaWithCtDs");
         }
 
@@ -494,7 +488,6 @@ library PsmLibrary {
         // the fee is taken directly from RA before it's even converted to DS
         {
             Asset dsToken = Asset(ds._address);
-
             (fee, feePercentage) = MathHelper.calculateRepurchaseFee(
                 dsToken.issuedAt(), dsToken.expiry(), block.timestamp, amount, self.psm.repurchaseFeePercentage
             );
@@ -542,10 +535,8 @@ library PsmLibrary {
 
         // decrease PSM balance
         // we also include the fee here to separate the accumulated fee from the repurchase
-        {
-            self.psm.balances.paBalance -= (receivedPa);
-            self.psm.balances.dsBalance -= (receivedDs);
-        }
+        self.psm.balances.paBalance -= (receivedPa);
+        self.psm.balances.dsBalance -= (receivedDs);
 
         // transfer user RA to the PSM/LV
         self.psm.balances.ra.lockFrom(amount, buyer);
@@ -556,19 +547,15 @@ library PsmLibrary {
         }
 
         // transfer user attrubuted DS + PA
-
         // PA
-        {
-            (, address pa) = self.info.underlyingAsset();
-            IERC20(pa).safeTransfer(buyer, receivedPa);
-        }
+        (, address pa) = self.info.underlyingAsset();
+        IERC20(pa).safeTransfer(buyer, receivedPa);
 
         // DS
         IERC20(ds._address).safeTransfer(buyer, receivedDs);
 
         if (fee != 0) {
             uint256 remainingFee = _attributeFeeToTreasury(self, fee, treasury);
-
             // Provide liquidity with the remaining fee(if any)
             VaultLibrary.allocateFeesToVault(self, remainingFee);
         }
@@ -649,7 +636,7 @@ library PsmLibrary {
         address owner,
         uint256 amount,
         uint256 dsId,
-        bytes calldata rawDsPermitSig,
+        bytes memory rawDsPermitSig,
         uint256 deadline,
         address treasury
     ) external returns (uint256 received, uint256 _exchangeRate, uint256 fee, uint256 dsProvided) {
@@ -659,9 +646,7 @@ library PsmLibrary {
         (received, dsProvided, fee, _exchangeRate) = previewRedeemWithDs(self, dsId, amount);
 
         if (deadline != 0 && rawDsPermitSig.length != 0) {
-            DepegSwapLibrary.permit(
-                ds._address, rawDsPermitSig, owner, address(this), dsProvided, deadline, "redeemRaWithDs"
-            );
+            DepegSwapLibrary.permit(ds._address, rawDsPermitSig, owner, address(this), dsProvided, deadline, "redeemRaWithDs");
         }
 
         _redeemDs(self.psm.balances, amount, dsProvided);
@@ -679,10 +664,8 @@ library PsmLibrary {
         Guard.safeBeforeExpired(_ds);
 
         exchangeRates = _ds.exchangeRate();
-
         // the amount here is the PA amount
         amount = TransferHelper.tokenNativeDecimalsToFixed(amount, self.info.pa);
-
         uint256 raDs = MathHelper.calculateEqualSwapAmount(amount, exchangeRates);
 
         ds = raDs;
@@ -701,13 +684,11 @@ library PsmLibrary {
         expiry = Asset(ds._address).expiry();
     }
 
-    function _calcRedeemAmount(
-        State storage self,
-        uint256 amount,
-        uint256 totalCtIssued,
-        uint256 availableRa,
-        uint256 availablePa
-    ) internal view returns (uint256 accruedPa, uint256 accruedRa) {
+    function _calcRedeemAmount(State storage self, uint256 amount, uint256 totalCtIssued, uint256 availableRa, uint256 availablePa)
+        internal
+        view
+        returns (uint256 accruedPa, uint256 accruedRa)
+    {
         availablePa = TransferHelper.tokenNativeDecimalsToFixed(availablePa, self.info.pa);
         availableRa = TransferHelper.tokenNativeDecimalsToFixed(availableRa, self.info.ra);
 
@@ -756,13 +737,13 @@ library PsmLibrary {
         address owner,
         uint256 amount,
         uint256 dsId,
-        bytes calldata rawCtPermitSig,
+        bytes memory rawCtPermitSig,
         uint256 deadline
     ) external returns (uint256 accruedPa, uint256 accruedRa) {
         DepegSwap storage ds = self.ds[dsId];
         Guard.safeAfterExpired(ds);
         if (deadline != 0) {
-            DepegSwapLibrary.permit(ds.ct, rawCtPermitSig, owner, address(this), amount, deadline, "redeemWithCt");
+            DepegSwapLibrary.permit(ds.ct, rawCtPermitSig, owner, address(this), amount, deadline, "redeemWithCT");
         }
         _separateLiquidity(self, dsId);
 

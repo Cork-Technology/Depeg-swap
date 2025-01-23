@@ -146,7 +146,7 @@ contract PsmTest is Helper {
         uint256 expiry = ds.expiry();
         vm.warp(expiry + 1);
 
-        (uint256 accruedPa, uint256 accruedRa) = moduleCore.redeemWithCt(defaultCurrencyId, 1, 1 ether);
+        (uint256 accruedPa, uint256 accruedRa) = moduleCore.redeemWithCT(defaultCurrencyId, 1, 1 ether);
 
         uint256 expectedAmount = TransferHelper.normalizeDecimals(0.5 ether, TARGET_DECIMALS, raDecimals);
         uint256 acceptableDelta = TransferHelper.normalizeDecimals(1, TARGET_DECIMALS, raDecimals);

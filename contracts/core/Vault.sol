@@ -1,4 +1,3 @@
-// SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.24;
 
 import {VaultLibrary} from "../libraries/VaultLib.sol";
@@ -58,20 +57,7 @@ abstract contract VaultCore is ModuleState, Context, IVault, IVaultLiquidation {
         });
 
         result = states[redeemParams.id].redeemEarly(redeemer, redeemParams, routers, permitParams);
-
-        emit LvRedeemEarly(
-            redeemParams.id,
-            _msgSender(),
-            _msgSender(),
-            redeemParams.amount,
-            result.ctReceivedFromAmm,
-            result.ctReceivedFromVault,
-            result.dsReceived,
-            result.paReceived,
-            result.raReceivedFromAmm,
-            result.raIdleReceived,
-            result.withdrawalId
-        );
+        emit LvRedeemEarly(redeemParams.id, _msgSender(), _msgSender(), redeemParams.amount, result.ctReceivedFromAmm, result.ctReceivedFromVault, result.dsReceived, result.paReceived, result.raReceivedFromAmm, result.raIdleReceived, result.withdrawalId);
     }
 
     /**
@@ -93,20 +79,7 @@ abstract contract VaultCore is ModuleState, Context, IVault, IVaultLiquidation {
         PermitParams memory permitParams = PermitParams({rawLvPermitSig: bytes(""), deadline: 0});
 
         result = states[redeemParams.id].redeemEarly(_msgSender(), redeemParams, routers, permitParams);
-
-        emit LvRedeemEarly(
-            redeemParams.id,
-            _msgSender(),
-            _msgSender(),
-            redeemParams.amount,
-            result.ctReceivedFromAmm,
-            result.ctReceivedFromVault,
-            result.dsReceived,
-            result.paReceived,
-            result.raReceivedFromAmm,
-            result.raIdleReceived,
-            result.withdrawalId
-        );
+        emit LvRedeemEarly(redeemParams.id, _msgSender(), _msgSender(), redeemParams.amount, result.ctReceivedFromAmm, result.ctReceivedFromVault, result.dsReceived, result.paReceived, result.raReceivedFromAmm, result.raIdleReceived, result.withdrawalId);
     }
 
     /**
@@ -140,24 +113,20 @@ abstract contract VaultCore is ModuleState, Context, IVault, IVaultLiquidation {
 
     function requestLiquidationFunds(Id id, uint256 amount) external override {
         onlyWhiteListedLiquidationContract();
-
         State storage state = states[id];
         state.requestLiquidationFunds(amount, msg.sender);
-
         emit LiquidationFundsRequested(id, msg.sender, amount);
     }
 
     function receiveTradeExecuctionResultFunds(Id id, uint256 amount) external override {
         State storage state = states[id];
         state.receiveTradeExecuctionResultFunds(amount, msg.sender);
-
         emit TradeExecutionResultFundsReceived(id, msg.sender, amount);
     }
 
     function useTradeExecutionResultFunds(Id id) external override onlyConfig {
         State storage state = states[id];
         uint256 used = state.useTradeExecutionResultFunds(getRouterCore(), getAmmRouter());
-
         emit TradeExecutionResultFundsUsed(id, msg.sender, used);
     }
 
