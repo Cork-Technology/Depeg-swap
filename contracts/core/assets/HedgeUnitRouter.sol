@@ -2,7 +2,6 @@
 pragma solidity ^0.8.24;
 
 import {ReentrancyGuardTransient} from "@openzeppelin/contracts/utils/ReentrancyGuardTransient.sol";
-import {AccessControl} from "@openzeppelin/contracts/access/AccessControl.sol";
 import {HedgeUnit} from "./HedgeUnit.sol";
 import {IHedgeUnitRouter} from "../../interfaces/IHedgeUnitRouter.sol";
 import {MinimalSignatureHelper, Signature} from "./../../libraries/SignatureHelperLib.sol";
@@ -11,18 +10,7 @@ import {MinimalSignatureHelper, Signature} from "./../../libraries/SignatureHelp
  * @title HedgeUnitRouter
  * @notice This contract is used to execute batch mint and batch burn functions for multiple HedgeUnit contracts.
  */
-contract HedgeUnitRouter is IHedgeUnitRouter, AccessControl, ReentrancyGuardTransient {
-    modifier onlyDefaultAdmin() {
-        if (!hasRole(DEFAULT_ADMIN_ROLE, msg.sender)) {
-            revert NotDefaultAdmin();
-        }
-        _;
-    }
-
-    constructor() {
-        _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
-    }
-
+contract HedgeUnitRouter is IHedgeUnitRouter, ReentrancyGuardTransient {
     // This function is used to preview batch mint for multiple HedgeUnits in single transaction.
     function previewBatchMint(address[] calldata hedgeUnits, uint256[] calldata amounts)
         external

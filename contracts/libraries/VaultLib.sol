@@ -500,29 +500,6 @@ library VaultLibrary {
         self.vault.pool.reserve(self.vault.lv.totalIssued(), psmRa, psmPa);
     }
 
-    // duplicate function to avoid stack too deep error
-    function __calculateTotalRaAndCtBalance(State storage self, ICorkHook ammRouter, uint256 dsId)
-        internal
-        view
-        returns (uint256 totalRa, uint256 ammCtBalance)
-    {
-        address ra = self.info.ra;
-        address ct = self.ds[dsId].ct;
-
-        (uint256 raReserve, uint256 ctReserve) = ammRouter.getReserves(ra, ct);
-
-        uint256 lpTotal;
-        uint256 lpBalance;
-        {
-            LiquidityToken lp = LiquidityToken(ammRouter.getLiquidityToken(ra, ct));
-            lpBalance = lp.balanceOf(address(this));
-            lpTotal = lp.totalSupply();
-        }
-
-        (,,,, totalRa, ammCtBalance) =
-            __calculateTotalRaAndCtBalanceWithReserve(self, raReserve, ctReserve, lpTotal, lpBalance);
-    }
-
     function __calculateTotalRaAndCtBalanceWithReserve(
         State storage self,
         uint256 raReserve,
