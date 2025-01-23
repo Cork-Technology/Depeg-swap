@@ -8,7 +8,7 @@ contract Funder is AccessControl {
 
     IERC20 public cETH;
     IERC20 public cUSD;
-    mapping(address => bool) isFunded;
+    mapping(address => bool) public isFunded;
 
     error CallerNotManager();
     error InvalidUser();
@@ -30,9 +30,10 @@ contract Funder is AccessControl {
         public
         onlyManager
     {
+        uint256 length = users.length;
         cETH.transferFrom(msg.sender, address(this), cEthAmt * users.length);
         cUSD.transferFrom(msg.sender, address(this), cUsdAmt * users.length);
-        for (uint256 i; i < users.length; i++) {
+        for (uint256 i; i < length; ++i) {
             if (!isFunded[users[i]]) {
                 if (cETH.balanceOf(users[i]) > 0 || cUSD.balanceOf(users[i]) > 0) {
                     revert InvalidUser();
@@ -49,9 +50,10 @@ contract Funder is AccessControl {
         public
         onlyManager
     {
+        uint256 length = users.length;
         cETH.transferFrom(msg.sender, address(this), cEthAmt * users.length);
         cUSD.transferFrom(msg.sender, address(this), cUsdAmt * users.length);
-        for (uint256 i; i < users.length; i++) {
+        for (uint256 i; i < length; ++i) {
             if (cETH.balanceOf(users[i]) > 0 || cUSD.balanceOf(users[i]) > 0) {
                 revert InvalidUser();
             }

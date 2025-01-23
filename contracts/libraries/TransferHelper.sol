@@ -6,7 +6,7 @@ import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol
 import {ERC20Burnable} from "@openzeppelin/contracts/token/ERC20/extensions/ERC20Burnable.sol";
 
 library TransferHelper {
-    uint8 constant TARGET_DECIMALS = 18;
+    uint8 constant internal TARGET_DECIMALS = 18;
 
     function normalizeDecimals(uint256 amount, uint8 decimalsBefore, uint8 decimalsAfter)
         internal

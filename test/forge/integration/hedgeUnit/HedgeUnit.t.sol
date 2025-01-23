@@ -4,7 +4,7 @@ pragma solidity ^0.8.24;
 import {Helper} from "./../../Helper.sol";
 import {HedgeUnit} from "../../../../contracts/core/assets/HedgeUnit.sol";
 import {Liquidator} from "../../../../contracts/core/liquidators/cow-protocol/Liquidator.sol";
-import {IHedgeUnit} from "../../../../contracts/interfaces/IHedgeUnit.sol";
+import {IErrors} from "../../../../contracts/interfaces/IErrors.sol";
 import {DummyERCWithPermit} from "../../../../contracts/dummy/DummyERCWithPermit.sol";
 import {Id} from "./../../../../contracts/libraries/Pair.sol";
 import {PausableUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/PausableUpgradeable.sol";
@@ -91,7 +91,7 @@ contract HedgeUnitTest is Helper {
 
     function test_PreviewMintRevertWhenMintCapExceeded() public {
         // Preview minting 2000 HedgeUnit tokens
-        vm.expectRevert(IHedgeUnit.MintCapExceeded.selector);
+        vm.expectRevert(IErrors.MintCapExceeded.selector);
         hedgeUnit.previewMint(2000 * 1e18);
     }
 
@@ -234,13 +234,13 @@ contract HedgeUnitTest is Helper {
 
         // Try minting more than the mint cap
         uint256 mintAmount = 2000 * 1e18; // Exceed the mint cap
-        vm.expectRevert(IHedgeUnit.MintCapExceeded.selector);
+        vm.expectRevert(IErrors.MintCapExceeded.selector);
         hedgeUnit.mint(mintAmount);
 
         vm.stopPrank();
     }
 
-    function test_PreviewDissolve() public {
+    function test_PreviewBurn() public {
         vm.startPrank(user);
 
         // Mint tokens first
@@ -258,10 +258,10 @@ contract HedgeUnitTest is Helper {
         vm.stopPrank();
     }
 
-    function test_PreviewDissolveRevertWhenInvalidAmount() public {
+    function test_PreviewBurnRevertWhenInvalidAmount() public {
         vm.startPrank(user);
         // Preview dissolving more than the user's balance
-        vm.expectRevert(IHedgeUnit.InvalidAmount.selector);
+        vm.expectRevert(IErrors.InvalidAmount.selector);
         hedgeUnit.previewBurn(user, 1000 * 1e18);
 
         dsToken.approve(address(hedgeUnit), USER_BALANCE);
@@ -269,7 +269,7 @@ contract HedgeUnitTest is Helper {
         uint256 mintAmount = 100 * 1e18;
         hedgeUnit.mint(mintAmount);
 
-        vm.expectRevert(IHedgeUnit.InvalidAmount.selector);
+        vm.expectRevert(IErrors.InvalidAmount.selector);
         hedgeUnit.previewBurn(user, 100 * 1e18 + 1);
         vm.stopPrank();
     }
@@ -280,10 +280,10 @@ contract HedgeUnitTest is Helper {
 
         vm.startPrank(user);
 
-        uint256 dissolveAmount = 50 * 1e18;
+        uint256 burnAmount = 50 * 1e18;
 
-        // Dissolve 50 tokens
-        hedgeUnit.burn(dissolveAmount);
+        // burn 50 tokens
+        hedgeUnit.burn(burnAmount);
 
         // Check that the user's HedgeUnit balance and contract's DS/PA balance decreased
         assertEq(hedgeUnit.balanceOf(user), 50 * 1e18); // 100 - 50 = 50 tokens left
@@ -293,7 +293,7 @@ contract HedgeUnitTest is Helper {
         vm.stopPrank();
     }
 
-    function test_DissolveNotProportional() external {
+    function test_BurnNotProportional() external {
         vm.startPrank(user);
 
         uint256 initialAmount = 100 ether;
@@ -354,7 +354,7 @@ contract HedgeUnitTest is Helper {
 
     function test_MintCapUpdateRevert() public {
         // Try to update the mint cap to the same value
-        vm.expectRevert(IHedgeUnit.InvalidValue.selector);
+        vm.expectRevert(IErrors.InvalidValue.selector);
         corkConfig.updateHedgeUnitMintCap(address(hedgeUnit), INITIAL_MINT_CAP);
     }
 

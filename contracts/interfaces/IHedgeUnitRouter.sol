@@ -1,6 +1,8 @@
 pragma solidity ^0.8.24;
 
-interface IHedgeUnitRouter {
+import {IErrors} from "./IErrors.sol";
+
+interface IHedgeUnitRouter is IErrors {
     struct BatchMintParams {
         uint256 deadline;
         address[] hedgeUnits;
@@ -20,15 +22,4 @@ interface IHedgeUnitRouter {
     event HedgeUnitSet(address hedgeUnit);
 
     event HedgeUnitRemoved(address hedgeUnit);
-
-    // This error occurs when user passes invalid input to the function.
-    error InvalidInput();
-
-    error CallerNotFactory();
-
-    error HedgeUnitExists();
-
-    error HedgeUnitNotExists();
-
-    error NotDefaultAdmin();
 }

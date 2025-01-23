@@ -77,17 +77,18 @@ contract CorkConfig is AccessControl, Pausable {
     }
 
     constructor(address adminAdd, address managerAdd) {
-        if(adminAdd == address(0) || managerAdd == address(0)) {
+        if (adminAdd == address(0) || managerAdd == address(0)) {
             revert InvalidAddress();
         }
         _setRoleAdmin(MARKET_INITIALIZER_ROLE, MANAGER_ROLE);
+        _setRoleAdmin(MANAGER_ROLE, DEFAULT_ADMIN_ROLE);
         _setRoleAdmin(RATE_UPDATERS_ROLE, MANAGER_ROLE);
-        _setRoleAdmin(BASE_LIQUIDATOR_ROLE, MANAGER_ROLE); 
+        _setRoleAdmin(BASE_LIQUIDATOR_ROLE, MANAGER_ROLE);
         _grantRole(DEFAULT_ADMIN_ROLE, adminAdd);
-        _grantRole(MANAGER_ROLE, managerAdd);       
+        _grantRole(MANAGER_ROLE, managerAdd);
     }
 
-    function _computLiquidatorRoleHash(address account) public view returns (bytes32) {
+    function _computeLiquidatorRoleHash(address account) public view returns (bytes32) {
         return keccak256(abi.encodePacked(BASE_LIQUIDATOR_ROLE, account));
     }
 
@@ -96,20 +97,25 @@ contract CorkConfig is AccessControl, Pausable {
         _setRoleAdmin(role, newAdminRole);
     }
     
-    function grantRole(bytes32 role, address account) public override onlyManager {
+    function grantRole(bytes32 role, address account) public override onlyRole(getRoleAdmin(role)) {
         _grantRole(role, account);
     }
 
+    function transferAdmin(address newAdmin) external onlyRole(DEFAULT_ADMIN_ROLE) {
+        _revokeRole(DEFAULT_ADMIN_ROLE, msg.sender);
+        _grantRole(DEFAULT_ADMIN_ROLE, newAdmin);
+    }
+
     function isTrustedLiquidationExecutor(address liquidationContract, address user) external view returns (bool) {
-        return hasRole(_computLiquidatorRoleHash(liquidationContract), user);
+        return hasRole(_computeLiquidatorRoleHash(liquidationContract), user);
     }
 
     function grantLiquidatorRole(address liquidationContract, address account) external onlyManager {
-        _grantRole(_computLiquidatorRoleHash(liquidationContract), account);
+        _grantRole(_computeLiquidatorRoleHash(liquidationContract), account);
     }
 
     function revokeLiquidatorRole(address liquidationContract, address account) external onlyManager {
-        _revokeRole(_computLiquidatorRoleHash(liquidationContract), account);
+        _revokeRole(_computeLiquidatorRoleHash(liquidationContract), account);
     }
 
     function isLiquidationWhitelisted(address liquidationAddress) external view returns (bool) {
@@ -206,15 +212,13 @@ contract CorkConfig is AccessControl, Pausable {
      * @dev Initialize Module Core
      * @param pa Address of PA
      * @param ra Address of RA
-     * @param initialDsPrice initial price of DS
+     * @param initialArp initial price of DS
      */
-    function initializeModuleCore(
-        address pa,
-        address ra,
-        uint256 initialDsPrice,
-        uint256 expiryInterval
-    ) external onlyManager {
-        moduleCore.initializeModuleCore(pa, ra, initialDsPrice, expiryInterval);
+    function initializeModuleCore(address pa, address ra, uint256 initialArp, uint256 expiryInterval)
+        external
+        onlyManager
+    {
+        moduleCore.initializeModuleCore(pa, ra, initialArp, expiryInterval);
     }
 
     /**
@@ -230,11 +234,7 @@ contract CorkConfig is AccessControl, Pausable {
         uint256 ammLiquidationDeadline
     ) external whenNotPaused onlyManager {
         moduleCore.issueNewDs(
-            id,
-            exchangeRates,
-            decayDiscountRateInDays,
-            rolloverPeriodInblocks,
-            ammLiquidationDeadline
+            id, exchangeRates, decayDiscountRateInDays, rolloverPeriodInblocks, ammLiquidationDeadline
         );
 
         _autoAssignFees(id);
@@ -256,6 +256,7 @@ contract CorkConfig is AccessControl, Pausable {
 
         // get fees from previous issuance, we won't revert here since the fees can be assigned manually
         // if for some reason the previous issuance AMM is not created for some reason(no LV deposits)
+        // slither-disable-next-line uninitialized-local
         uint256 prevBaseFee;
 
         try hook.getFee(ra, ct) returns (uint256 baseFee, uint256) {
@@ -269,6 +270,7 @@ contract CorkConfig is AccessControl, Pausable {
 
         // we don't revert here since an edge case would occur where the Lv token circulation is 0 but the issuance continues
         // and in that case the AMM would not have been created yet. This is a rare edge case and the fees can be assigned manually in such cases
+        // solhint-disable-next-line no-empty-blocks
         try hook.updateBaseFeePercentage(ra, ct, prevBaseFee) {} catch {}
     }
 
@@ -287,6 +289,7 @@ contract CorkConfig is AccessControl, Pausable {
 
         // get fees from previous issuance, we won't revert here since the fees can be assigned manually
         // if for some reason the previous issuance AMM is not created for some reason(no LV deposits)
+        // slither-disable-next-line uninitialized-local
         uint256 prevCtSplit;
 
         try hook.getMarketSnapshot(ra, ct) returns (MarketSnapshot memory snapshot) {
@@ -299,6 +302,7 @@ contract CorkConfig is AccessControl, Pausable {
 
         // we don't revert here since an edge case would occur where the Lv token circulation is 0 but the issuance continues
         // and in that case the AMM would not have been created yet. This is a rare edge case and the fees can be assigned manually in such cases
+        // solhint-disable-next-line no-empty-blocks
         try hook.updateTreasurySplitPercentage(ra, ct, prevCtSplit) {} catch {}
     }
 
@@ -395,7 +399,7 @@ contract CorkConfig is AccessControl, Pausable {
         HedgeUnit(hedgeUnit).updateMintCap(newMintCap);
     }
 
-    function deployHedgeUnit(Id id, address pa, address ra, string memory pairName, uint256 mintCap)
+    function deployHedgeUnit(Id id, address pa, address ra, string calldata pairName, uint256 mintCap)
         external
         onlyManager
         returns (address)

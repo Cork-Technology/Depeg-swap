@@ -13,8 +13,8 @@ import {BitMaps} from "@openzeppelin/contracts/utils/structs/BitMaps.sol";
 import {VaultPool, VaultPoolLibrary} from "./VaultPoolLib.sol";
 import {IDsFlashSwapCore} from "../interfaces/IDsFlashSwapRouter.sol";
 import {DepegSwap, DepegSwapLibrary} from "./DepegSwapLib.sol";
-import {Asset, ERC20, ERC20Burnable} from "../core/assets/Asset.sol";
-import {ICommon} from "../interfaces/ICommon.sol";
+import {Asset, ERC20Burnable} from "../core/assets/Asset.sol";
+import {IErrors} from "../interfaces/IErrors.sol";
 import {SafeERC20, IERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {IVault} from "../interfaces/IVault.sol";
 import {ICorkHook} from "./../interfaces/UniV4/IMinimalHook.sol";
@@ -113,7 +113,7 @@ library VaultLibrary {
             return;
         }
 
-        _liquidateIfExpired(self, prevDsId, ammRouter, flashSwapRouter, deadline);
+        _liquidateIfExpired(self, prevDsId, ammRouter, deadline);
 
         __provideAmmLiquidityFromPool(self, flashSwapRouter, self.ds[self.globalAssetIdx].ct, ammRouter);
     }
@@ -122,7 +122,6 @@ library VaultLibrary {
         State storage self,
         uint256 dsId,
         ICorkHook ammRouter,
-        IDsFlashSwapCore flashSwapRouter,
         uint256 deadline
     ) internal {
         DepegSwap storage ds = self.ds[dsId];
@@ -225,6 +224,7 @@ library VaultLibrary {
         uint256 hpa = flashSwapRouter.getCurrentEffectiveHIYA(id);
         bool isRollover = flashSwapRouter.isRolloverSale(id);
 
+        // slither-disable-next-line uninitialized-local
         uint256 marketRatio;
 
         try flashSwapRouter.getCurrentPriceRatio(id, dsId) returns (uint256, uint256 _marketRatio) {
@@ -324,7 +324,7 @@ library VaultLibrary {
         uint256 ctTolerance
     ) external returns (uint256 received) {
         if (amount == 0) {
-            revert ICommon.ZeroDeposit();
+            revert IErrors.ZeroDeposit();
         }
         safeBeforeExpired(self);
 
@@ -393,7 +393,7 @@ library VaultLibrary {
     function updateCtHeldPercentage(State storage self, uint256 ctHeldPercentage) external {
         // must be between 0% and 100%
         if (ctHeldPercentage >= 100 ether) {
-            revert IVault.InvalidParams();
+            revert IErrors.InvalidParams();
         }
 
         self.vault.ctHeldPercetage = ctHeldPercentage;
@@ -500,29 +500,6 @@ library VaultLibrary {
         self.vault.pool.reserve(self.vault.lv.totalIssued(), psmRa, psmPa);
     }
 
-    // duplicate function to avoid stack too deep error
-    function __calculateTotalRaAndCtBalance(State storage self, ICorkHook ammRouter, uint256 dsId)
-        internal
-        view
-        returns (uint256 totalRa, uint256 ammCtBalance)
-    {
-        address ra = self.info.ra;
-        address ct = self.ds[dsId].ct;
-
-        (uint256 raReserve, uint256 ctReserve) = ammRouter.getReserves(ra, ct);
-
-        uint256 lpTotal;
-        uint256 lpBalance;
-        {
-            LiquidityToken lp = LiquidityToken(ammRouter.getLiquidityToken(ra, ct));
-            lpBalance = lp.balanceOf(address(this));
-            lpTotal = lp.totalSupply();
-        }
-
-        (,,,, totalRa, ammCtBalance) =
-            __calculateTotalRaAndCtBalanceWithReserve(self, raReserve, ctReserve, lpTotal, lpBalance);
-    }
-
     function __calculateTotalRaAndCtBalanceWithReserve(
         State storage self,
         uint256 raReserve,
@@ -555,9 +532,9 @@ library VaultLibrary {
     function redeemEarly(
         State storage self,
         address owner,
-        IVault.RedeemEarlyParams memory redeemParams,
+        IVault.RedeemEarlyParams calldata redeemParams,
         IVault.ProtocolContracts memory contracts,
-        IVault.PermitParams memory permitParams
+        IVault.PermitParams calldata permitParams
     ) external returns (IVault.RedeemEarlyResult memory result) {
         if (permitParams.deadline != 0) {
             DepegSwapLibrary.permit(
@@ -617,7 +594,7 @@ library VaultLibrary {
         }
 
         if (result.raReceivedFromAmm < redeemParams.amountOutMin) {
-            revert IVault.InsufficientOutputAmount(redeemParams.amountOutMin, result.raReceivedFromAmm);
+            revert IErrors.InsufficientOutputAmount(redeemParams.amountOutMin, result.raReceivedFromAmm);
         }
 
         // burn lv amount + fee
@@ -666,7 +643,7 @@ library VaultLibrary {
 
     function requestLiquidationFunds(State storage self, uint256 amount, address to) internal {
         if (amount > self.vault.pool.withdrawalPool.paBalance) {
-            revert IVault.InsufficientFunds();
+            revert IErrors.InsufficientFunds();
         }
 
         self.vault.pool.withdrawalPool.paBalance -= amount;

@@ -8,6 +8,7 @@ import {ICorkHook} from "../interfaces/UniV4/IMinimalHook.sol";
 import {MarketSnapshot, MarketSnapshotLib} from "Cork-Hook/lib/MarketSnapshot.sol";
 import {IDsFlashSwapCore} from "./../interfaces/IDsFlashSwapRouter.sol";
 import {TransferHelper} from "./TransferHelper.sol";
+import {IErrors} from "./../interfaces/IErrors.sol";
 
 /**
  * @dev AssetPair structure for Asset Pairs
@@ -57,6 +58,7 @@ library DsFlashSwaplibrary {
         if (dsId != FIRST_ISSUANCE) {
             try SwapperMathLibrary.calculateHIYA(self.hiyaCumulated, self.vhiyaCumulated) returns (uint256 hiya) {
                 self.hiya = hiya;
+                // solhint-disable-next-line no-empty-blocks
             } catch {}
 
             self.hiyaCumulated = 0;
@@ -71,7 +73,7 @@ library DsFlashSwaplibrary {
     function updateReserveSellPressurePercentage(ReserveState storage self, uint256 newPercentage) external {
         // must be between 0.01 and 100
         if (newPercentage < 1e16 || newPercentage > 1e20) {
-            revert IDsFlashSwapCore.InvalidParams();
+            revert IErrors.InvalidParams();
         }
 
         self.reserveSellPressurePercentage = newPercentage;
@@ -196,7 +198,7 @@ library DsFlashSwaplibrary {
     }
 
     function getAmountOutBuyDS(
-        AssetPair storage assetPair,
+        AssetPair calldata assetPair,
         uint256 amount,
         ICorkHook router,
         IDsFlashSwapCore.BuyAprroxParams memory params

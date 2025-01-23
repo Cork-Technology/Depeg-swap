@@ -5,14 +5,14 @@ import {Id} from "../libraries/Pair.sol";
 import {IDsFlashSwapCore} from "../interfaces/IDsFlashSwapRouter.sol";
 import {ICorkHook} from "./../interfaces/UniV4/IMinimalHook.sol";
 import {IWithdrawal} from "./IWithdrawal.sol";
-import {ICommon} from "./ICommon.sol";
+import {IErrors} from "./IErrors.sol";
 
 /**
  * @title IVault Interface
  * @author Cork Team
  * @notice IVault interface for VaultCore contract
  */
-interface IVault is ICommon {
+interface IVault is IErrors {
     struct ProtocolContracts {
         IDsFlashSwapCore flashSwapRouter;
         ICorkHook ammRouter;
@@ -50,7 +50,7 @@ interface IVault is ICommon {
     event LvDeposited(Id indexed id, address indexed depositor, uint256 amount);
 
     event LvRedeemEarly(
-        Id indexed Id,
+        Id indexed id,
         address indexed redeemer,
         address indexed receiver,
         uint256 lvBurned,
@@ -64,18 +64,18 @@ interface IVault is ICommon {
     );
 
     /// @notice Emitted when a Admin updates status of Deposit in the LV 
-    /// @param Id The LV id
+    /// @param id The LV id
     /// @param isLVDepositPaused The new value saying if Deposit allowed in LV or not
     event LvDepositsStatusUpdated(
-        Id indexed Id,
+        Id indexed id,
         bool isLVDepositPaused
     );
 
     /// @notice Emitted when a Admin updates status of Withdrawal in the LV
-    /// @param Id The LV id
+    /// @param id The LV id
     /// @param isLVWithdrawalPaused The new value saying if Withdrawal allowed in LV or not
     event LvWithdrawalsStatusUpdated(
-        Id indexed Id,
+        Id indexed id,
         bool isLVWithdrawalPaused
     );
 
@@ -83,22 +83,6 @@ interface IVault is ICommon {
     /// @param router The address of the router
     /// @param amount The amount of RA tokens transferred.
     event ProfitReceived(address indexed router, uint256 amount);
-
-    /// @notice caller is not authorized to perform the action, e.g transfering
-    /// redemption rights to another address while not having the rights
-    error Unauthorized(address caller);
-
-    /// @notice invalid parameters, e.g passing 0 as amount
-    error InvalidParams();
-
-    /// @notice inssuficient balance to perform expiry redeem(e.g requesting 5 LV to redeem but trying to redeem 10)
-    error InsufficientBalance(address caller, uint256 requested, uint256 balance);
-
-    /// @notice insufficient output amount, e.g trying to redeem 100 LV whcih you expect 100 RA but only received 50 RA
-    error InsufficientOutputAmount(uint256 amountOutMin, uint256 received);
-
-    /// @notice vault does not have sufficient funds to do something
-    error InsufficientFunds();
 
     /**
      * @notice Deposit a wrapped asset into a given vault
