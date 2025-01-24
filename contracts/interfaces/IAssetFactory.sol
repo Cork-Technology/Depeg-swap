@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.24;
+
 import "./IErrors.sol";
 
 /**
@@ -7,7 +8,7 @@ import "./IErrors.sol";
  * @author Cork Team
  * @notice Interface for AssetsFactory contract
  */
-interface IAssetFactory is IErrors {  
+interface IAssetFactory is IErrors {
     /// @notice emitted when a new CT + DS assets is deployed
     /// @param ra Address of RA(Redemption Asset) contract
     /// @param ct Address of CT(Cover Token) contract

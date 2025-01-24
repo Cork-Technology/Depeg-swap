@@ -84,7 +84,7 @@ contract RolloverScript is Script {
             DEFAULT_EXCHANGE_RATE,
             DEFAULT_DECAY_DISCOUNT_RATE,
             DEFAULT_ROLLOVER_PERIOD,
-            block.timestamp + 10 seconds 
+            block.timestamp + 10 seconds
         );
         config.updateRepurchaseFeeRate(id, asset.repruchaseFee);
 

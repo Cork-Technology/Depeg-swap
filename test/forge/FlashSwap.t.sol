@@ -90,7 +90,9 @@ contract FlashSwapTest is Helper {
 
         // now if buy, it should sell from reserves
         lvReserveBefore = flashSwapRouter.getLvReserve(currencyId, dsId);
-        result = flashSwapRouter.swapRaforDs(currencyId, dsId, 10 ether, 0, defaultBuyApproxParams(), defaultOffchainGuessParams());
+        result = flashSwapRouter.swapRaforDs(
+            currencyId, dsId, 10 ether, 0, defaultBuyApproxParams(), defaultOffchainGuessParams()
+        );
         amountOut = result.amountOut;
 
         lvReserveAfter = flashSwapRouter.getLvReserve(currencyId, dsId);

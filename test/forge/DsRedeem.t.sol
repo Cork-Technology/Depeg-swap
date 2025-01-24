@@ -58,7 +58,7 @@ contract DsPaRedeemTest is Helper {
     }
 
     function testFuzz_redeemRepurchases(uint256 redeemAmount) external {
-        redeemAmount =  bound(redeemAmount, 0.1 ether, DEFAULT_DEPOSIT_AMOUNT);
+        redeemAmount = bound(redeemAmount, 0.1 ether, DEFAULT_DEPOSIT_AMOUNT);
 
         uint256 expectedFee = MathHelper.calculatePercentageFee(moduleCore.baseRedemptionFee(currencyId), redeemAmount);
         uint256 expectedTreasuryBalance = MathHelper.calculatePercentageFee(treasurySplit, expectedFee);

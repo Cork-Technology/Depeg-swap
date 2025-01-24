@@ -67,7 +67,6 @@ interface IRepurchase is IErrors {
             uint256 exchangeRates
         );
 
-
     /**
      * @notice return the amount of available PA and DS to purchase.
      * @param id the id of PSM

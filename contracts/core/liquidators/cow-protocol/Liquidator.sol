@@ -60,7 +60,10 @@ contract Liquidator is ILiquidator {
     }
 
     constructor(address _config, address _hookTrampoline, address _settlementContract, address _moduleCore) {
-        if(_config == address(0) || _hookTrampoline == address(0) || _settlementContract == address(0) || _moduleCore == address(0)) {
+        if (
+            _config == address(0) || _hookTrampoline == address(0) || _settlementContract == address(0)
+                || _moduleCore == address(0)
+        ) {
             revert IErrors.ZeroAddress();
         }
         SETTLEMENT = IGPv2SettlementContract(_settlementContract);
@@ -184,7 +187,7 @@ contract Liquidator is ILiquidator {
         try HedgeUnit(order.receiver).useFunds(funds, amountOutMin, params, offchainGuess) returns (uint256 _amountOut)
         {
             amountOut = _amountOut;
-        // solhint-disable-next-line no-empty-blocks
+            // solhint-disable-next-line no-empty-blocks
         } catch {}
 
         delete orderCalls[refId];

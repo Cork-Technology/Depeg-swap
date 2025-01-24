@@ -287,13 +287,7 @@ library PsmLibrary {
     }
 
     /// @notice issue a new pair of DS, will fail if the previous DS isn't yet expired
-    function onNewIssuance(
-        State storage self,
-        address ct,
-        address ds,
-        uint256 idx,
-        uint256 prevIdx
-    ) internal {
+    function onNewIssuance(State storage self, address ct, address ds, uint256 idx, uint256 prevIdx) internal {
         if (prevIdx != 0) {
             DepegSwap storage _prevDs = self.ds[prevIdx];
             Guard.safeAfterExpired(_prevDs);
@@ -520,12 +514,7 @@ library PsmLibrary {
         }
     }
 
-    function repurchase(
-        State storage self,
-        address buyer,
-        uint256 amount,
-        address treasury
-    )
+    function repurchase(State storage self, address buyer, uint256 amount, address treasury)
         external
         returns (
             uint256 dsId,
@@ -762,7 +751,9 @@ library PsmLibrary {
         DepegSwap storage ds = self.ds[dsId];
         Guard.safeAfterExpired(ds);
         if (deadline != 0) {
-            DepegSwapLibrary.permit(ds.ct, rawCtPermitSig, owner, address(this), amount, deadline, "redeemWithExpiredCt");
+            DepegSwapLibrary.permit(
+                ds.ct, rawCtPermitSig, owner, address(this), amount, deadline, "redeemWithExpiredCt"
+            );
         }
         _separateLiquidity(self, dsId);
 

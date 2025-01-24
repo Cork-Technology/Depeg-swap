@@ -176,7 +176,7 @@ contract HedgeUnit is
             FLASHSWAP_ROUTER.swapRaforDs(id, dsId, amount, amountOutMin, params, offchainGuess);
 
         amountOut = result.amountOut;
-        
+
         emit FundsUsed(msg.sender, dsId, amount, result.amountOut);
     }
 

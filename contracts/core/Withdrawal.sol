@@ -23,7 +23,7 @@ contract Withdrawal is IWithdrawal {
     mapping(address => uint256) public nonces;
 
     constructor(address _vault) {
-        if(_vault == address(0)) {
+        if (_vault == address(0)) {
             revert ZeroAddress();
         }
         VAULT = _vault;

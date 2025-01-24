@@ -96,7 +96,7 @@ contract CorkConfig is AccessControl, Pausable {
     function setRoleAdmin(bytes32 role, bytes32 newAdminRole) external onlyRole(getRoleAdmin(role)) {
         _setRoleAdmin(role, newAdminRole);
     }
-    
+
     function grantRole(bytes32 role, address account) public override onlyRole(getRoleAdmin(role)) {
         _grantRole(role, account);
     }

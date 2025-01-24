@@ -25,7 +25,7 @@ contract HedgeUnitFactory is IHedgeUnitFactory {
     mapping(uint256 => Id) internal hedgeUnits;
 
     modifier onlyConfig() {
-        if(msg.sender != CONFIG){
+        if (msg.sender != CONFIG) {
             revert NotConfig();
         }
         _;
@@ -37,7 +37,7 @@ contract HedgeUnitFactory is IHedgeUnitFactory {
      * @param _config Address of the config contract
      */
     constructor(address _moduleCore, address _config, address _flashSwapRouter) {
-        if(_moduleCore == address(0) || _config == address(0) || _flashSwapRouter == address(0)) {
+        if (_moduleCore == address(0) || _config == address(0) || _flashSwapRouter == address(0)) {
             revert ZeroAddress();
         }
         MODULE_CORE = _moduleCore;

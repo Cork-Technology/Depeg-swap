@@ -38,7 +38,7 @@ abstract contract ChildLiquidatorBase is OwnableUpgradeable {
         address _receiver,
         bytes32 _refId
     ) external initializer {
-        if(address(_liquidator) == address(0) || _receiver == address(0)) {
+        if (address(_liquidator) == address(0) || _receiver == address(0)) {
             revert ZeroAddress();
         }
         __Ownable_init(address(_liquidator));

@@ -6,8 +6,8 @@ import "./../../contracts/core/flash-swaps/FlashSwapRouter.sol";
 contract TestFlashSwapRouter is RouterState {
     constructor() RouterState() {}
 
-    // ------------------------------------------------------------ Getters ------------------------------ 
-    function getAssetPair(Id id,uint256 dsId) external view returns (AssetPair memory) {
+    // ------------------------------------------------------------ Getters ------------------------------
+    function getAssetPair(Id id, uint256 dsId) external view returns (AssetPair memory) {
         return reserves[id].ds[dsId];
     }
 
@@ -34,5 +34,4 @@ contract TestFlashSwapRouter is RouterState {
     function getHiya(Id id) external view returns (uint256) {
         return reserves[id].hiya;
     }
-
 }

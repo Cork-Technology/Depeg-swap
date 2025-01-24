@@ -8,6 +8,7 @@ contract DeployFunderScript is Script {
 
     address public ceth = vm.envAddress("WETH");
     uint256 public pk = vm.envUint("PRIVATE_KEY");
+
     function setUp() public {}
 
     function run() public {

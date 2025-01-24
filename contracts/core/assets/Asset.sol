@@ -78,7 +78,7 @@ abstract contract Expiry is IExpiry {
 contract Asset is ERC20Burnable, CustomERC20Permit, Ownable, Expiry, ExchangeRate {
     uint256 internal immutable DS_ID;
 
-    string public  pairName;
+    string public pairName;
 
     constructor(
         string memory prefix,

@@ -42,12 +42,11 @@ abstract contract VaultCore is ModuleState, Context, IVault, IVaultLiquidation {
      * @param redeemer The address of the redeemer
      * @param permitParams The object with details for permit like rawLvPermitSig(Raw signature for LV approval permit) and deadline for signature
      */
-    function redeemEarlyLv(RedeemEarlyParams calldata redeemParams, address redeemer, PermitParams calldata permitParams)
-        external
-        override
-        nonReentrant
-        returns (IVault.RedeemEarlyResult memory result)
-    {
+    function redeemEarlyLv(
+        RedeemEarlyParams calldata redeemParams,
+        address redeemer,
+        PermitParams calldata permitParams
+    ) external override nonReentrant returns (IVault.RedeemEarlyResult memory result) {
         LVWithdrawalNotPaused(redeemParams.id);
 
         if (permitParams.rawLvPermitSig.length == 0 || permitParams.deadline == 0) {

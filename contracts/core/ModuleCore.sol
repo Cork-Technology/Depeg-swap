@@ -75,12 +75,10 @@ contract ModuleCore is OwnableUpgradeable, UUPSUpgradeable, PsmCore, Initialize,
         return PairLibrary.initalize(pa, ra, expiryInterva).toId();
     }
 
-    function initializeModuleCore(
-        address pa,
-        address ra,
-        uint256 initialArp,
-        uint256 expiryInterval
-    ) external override {
+    function initializeModuleCore(address pa, address ra, uint256 initialArp, uint256 expiryInterval)
+        external
+        override
+    {
         onlyConfig();
 
         Pair memory key = PairLibrary.initalize(pa, ra, expiryInterval);
@@ -98,7 +96,7 @@ contract ModuleCore is OwnableUpgradeable, UUPSUpgradeable, PsmCore, Initialize,
 
         PsmLibrary.initialize(state, key);
         VaultLibrary.initialize(state.vault, lv, ra, initialArp);
-        
+
         emit InitializedModuleCore(id, pa, ra, lv, expiryInterval);
     }
 
@@ -132,9 +130,7 @@ contract ModuleCore is OwnableUpgradeable, UUPSUpgradeable, PsmCore, Initialize,
         );
     }
 
-    function _initOnNewIssuance(Id id, address ct, address ds, uint256 _expiryInterval)
-        internal
-    {
+    function _initOnNewIssuance(Id id, address ct, address ds, uint256 _expiryInterval) internal {
         State storage state = states[id];
 
         address ra = state.info.ra;

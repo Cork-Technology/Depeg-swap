@@ -314,7 +314,6 @@ contract RouterState is
         IDsFlashSwapCore.BuyAprroxParams memory approxParams,
         IDsFlashSwapCore.OffchainGuess memory offchainGuess
     ) internal returns (uint256 initialBorrowedAmount, uint256 finalBorrowedAmount) {
-
         uint256 dsReceived;
         // try to swap the RA for DS via rollover, this will noop if the condition for rollover is not met
         (amount, dsReceived) = _swapRaForDsViaRollover(reserveId, dsId, amount);
