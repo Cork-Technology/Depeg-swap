@@ -55,4 +55,8 @@ interface ILiquidator is IErrors {
     function createOrderVault(ILiquidator.CreateVaultOrderParams memory params) external;
 
     function finishVaultOrder(bytes32 refId) external;
+
+    function fetchVaultReceiver(bytes32 refId) external returns (address receiver);
+
+    function fetchHedgeUnitReceiver(bytes32 refId) external returns (address receiver);
 }
