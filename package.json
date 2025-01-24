@@ -5,6 +5,7 @@
   "author": "ziankork <zian@cork.technology>",
   "license": "MIT",
   "scripts": {
+    "prepare": "husky || true",
     "test": "npx hardhat test",
     "test:all": "npx hardhat clean && forge clean && forge test -vvv && npx hardhat test",
     "build": "npx hardhat compile",
