@@ -40,7 +40,7 @@ library VaultLibrary {
     using SafeERC20 for IERC20;
 
     // for avoiding stack too deep errors
-    struct Tolerance {        uint256 ra;
+    struct Tolerance {         uint256 ra;
         uint256 ct;
     }
 
