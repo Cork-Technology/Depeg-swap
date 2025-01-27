@@ -2,8 +2,8 @@ pragma solidity ^0.8.24;
 
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
-import {Liquidator, GPv2SettlementContract} from "./Liquidator.sol";
-import {ILiquidator} from "../../../interfaces/ILiquidator.sol";
+import {Liquidator, IGPv2SettlementContract} from "./Liquidator.sol";
+import {IErrors} from "../../../interfaces/IErrors.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {IHedgeUnitLiquidation} from "./../../assets/HedgeUnit.sol";
 import {IVaultLiquidation} from "./../../../interfaces/IVaultLiquidation.sol";
@@ -18,6 +18,7 @@ abstract contract ChildLiquidatorBase is OwnableUpgradeable {
     bytes32 public refId;
 
     error NotImplemented();
+    error ZeroAddress();
 
     constructor() {
         _disableInitializers();
@@ -25,18 +26,21 @@ abstract contract ChildLiquidatorBase is OwnableUpgradeable {
 
     modifier onlyLiquidator() {
         if (msg.sender != owner()) {
-            revert ILiquidator.OnlyLiquidator();
+            revert IErrors.OnlyLiquidator();
         }
         _;
     }
 
     function initialize(
         Liquidator _liquidator,
-        Liquidator.Details memory _order,
-        bytes memory _orderUid,
+        Liquidator.Details calldata _order,
+        bytes calldata _orderUid,
         address _receiver,
         bytes32 _refId
     ) external initializer {
+        if(address(_liquidator) == address(0) || _receiver == address(0)) {
+            revert ZeroAddress();
+        }
         __Ownable_init(address(_liquidator));
         order = _order;
         orderUid = _orderUid;
@@ -47,7 +51,7 @@ abstract contract ChildLiquidatorBase is OwnableUpgradeable {
     }
 
     function _approveSettlement() internal {
-        GPv2SettlementContract settlement = Liquidator(address(owner())).settlement();
+        IGPv2SettlementContract settlement = Liquidator(address(owner())).SETTLEMENT();
 
         settlement.setPreSignature(orderUid, true);
 

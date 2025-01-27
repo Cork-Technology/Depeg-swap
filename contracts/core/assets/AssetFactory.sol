@@ -36,7 +36,8 @@ contract AssetFactory is IAssetFactory, OwnableUpgradeable, UUPSUpgradeable {
     mapping(address => uint256) internal deployed;
 
     /// @notice __gap variable to prevent storage collisions
-    uint256[49] __gap;
+    // slither-disable-next-line unused-state
+    uint256[49] private __gap;
 
     constructor() {
         _disableInitializers();
@@ -219,6 +220,8 @@ contract AssetFactory is IAssetFactory, OwnableUpgradeable, UUPSUpgradeable {
 
         // signal that a pair actually exists. Only after this it's possible to deploy a swap asset for this pair
         Pair memory pair = Pair(_pa, _ra, _expiryInterval);
+
+        // solhint-disable-next-line gas-increment-by-one
         pairs[idx++] = pair;
 
         lvs[pair.toId()] = lv;
@@ -226,5 +229,6 @@ contract AssetFactory is IAssetFactory, OwnableUpgradeable, UUPSUpgradeable {
         emit LvAssetDeployed(_ra, _pa, lv);
     }
 
+    // solhint-disable-next-line no-empty-blocks
     function _authorizeUpgrade(address newImplementation) internal override onlyOwner {}
 }

@@ -1,10 +1,12 @@
 pragma solidity ^0.8.24;
 
-import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {SafeERC20, IERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {IWithdrawalRouter} from "./../interfaces/IWithdrawalRouter.sol";
 import {IWithdrawal} from "./../interfaces/IWithdrawal.sol";
 
 contract Withdrawal is IWithdrawal {
+    using SafeERC20 for IERC20;
+
     struct WithdrawalInfo {
         uint256 claimableAt;
         address owner;
@@ -21,7 +23,7 @@ contract Withdrawal is IWithdrawal {
     mapping(address => uint256) public nonces;
 
     constructor(address _vault) {
-        if(_vault == address(0)) {
+        if (_vault == address(0)) {
             revert ZeroAddress();
         }
         VAULT = _vault;
@@ -59,10 +61,10 @@ contract Withdrawal is IWithdrawal {
         returns (bytes32 withdrawalId)
     {
         uint256 claimableAt = block.timestamp + DELAY;
-        uint256 nonce = nonces[owner]++;
         WithdrawalInfo memory withdrawal = WithdrawalInfo(claimableAt, owner, tokens);
 
-        withdrawalId = keccak256(abi.encode(withdrawal, nonce));
+        // solhint-disable-next-line gas-increment-by-one
+        withdrawalId = keccak256(abi.encode(withdrawal, nonces[owner]++));
 
         // copy withdrawal item 1-1 to memory
         WithdrawalInfo storage withdrawalStorageRef = withdrawals[withdrawalId];
@@ -71,7 +73,8 @@ contract Withdrawal is IWithdrawal {
         withdrawalStorageRef.owner = owner;
 
         // copy tokens data via a loop since direct memory copy isn't supported
-        for (uint256 i = 0; i < tokens.length; i++) {
+        uint256 length = tokens.length;
+        for (uint256 i = 0; i < length; ++i) {
             withdrawalStorageRef.tokens.push(tokens[i]);
         }
 
@@ -81,8 +84,9 @@ contract Withdrawal is IWithdrawal {
     function claimToSelf(bytes32 withdrawalId) external onlyOwner(withdrawalId) onlyWhenClaimable(withdrawalId) {
         WithdrawalInfo storage withdrawal = withdrawals[withdrawalId];
 
-        for (uint256 i = 0; i < withdrawal.tokens.length; i++) {
-            IERC20(withdrawal.tokens[i].token).transfer(withdrawal.owner, withdrawal.tokens[i].amount);
+        uint256 length = withdrawal.tokens.length;
+        for (uint256 i = 0; i < length; ++i) {
+            IERC20(withdrawal.tokens[i].token).safeTransfer(withdrawal.owner, withdrawal.tokens[i].amount);
         }
 
         delete withdrawals[withdrawalId];
@@ -90,19 +94,21 @@ contract Withdrawal is IWithdrawal {
         emit WithdrawalClaimed(withdrawalId, msg.sender);
     }
 
-    function claimRouted(bytes32 withdrawalId, address router)
+    function claimRouted(bytes32 withdrawalId, address router, bytes calldata routerData)
         external
         onlyOwner(withdrawalId)
         onlyWhenClaimable(withdrawalId)
     {
         WithdrawalInfo storage withdrawal = withdrawals[withdrawalId];
 
+        uint256 length = withdrawal.tokens.length;
+
         //  transfer funds to router
-        for (uint256 i = 0; i < withdrawal.tokens.length; i++) {
-            IERC20(withdrawal.tokens[i].token).transfer(router, withdrawal.tokens[i].amount);
+        for (uint256 i = 0; i < length; ++i) {
+            IERC20(withdrawal.tokens[i].token).safeTransfer(router, withdrawal.tokens[i].amount);
         }
 
-        IWithdrawalRouter(router).route(address(this), withdrawals[withdrawalId].tokens);
+        IWithdrawalRouter(router).route(address(this), withdrawals[withdrawalId].tokens, routerData);
 
         delete withdrawals[withdrawalId];
 

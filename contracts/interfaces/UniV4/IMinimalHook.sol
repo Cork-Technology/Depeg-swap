@@ -1,6 +1,7 @@
+// SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.24;
 
-import {IErrors} from "./IErrors.sol";
+import {IErrors} from "./../IErrors.sol";
 import {MarketSnapshot} from "Cork-Hook/lib/MarketSnapshot.sol";
 
 interface ICorkHook is IErrors {
