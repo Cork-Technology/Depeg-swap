@@ -87,9 +87,9 @@ interface IHedgeUnit {
      * @return paAmount The amount of PA tokens received for dissolving the specified amount of HedgeUnit tokens.
      */
     function previewDissolve(uint256 amount)
-        external
-        view
-        returns (uint256 dsAmount, uint256 paAmount, uint256 raAmount);
+    external
+    view
+    returns (uint256 dsAmount, uint256 paAmount, uint256 raAmount);
 
     /**
      * @notice Dissolves HedgeUnit tokens and returns the equivalent amount of DS and PA tokens.
@@ -108,4 +108,9 @@ interface IHedgeUnit {
     function updateMintCap(uint256 _newMintCap) external;
 
     function getReserves() external view returns (uint256 dsReserves, uint256 paReserves, uint256 raReserves);
+
+    /**
+     * @notice automatically sync reserve balance
+     */
+    function sync() external;
 }
