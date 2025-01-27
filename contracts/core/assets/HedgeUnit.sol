@@ -366,25 +366,6 @@ contract HedgeUnit is ERC20Permit, ReentrancyGuard, Ownable, Pausable, IHedgeUni
         emit Dissolve(msg.sender, amount, dsAmount, paAmount);
     }
 
-    function dissolve(uint256 amount, bytes memory rawHuPermitSig, uint256 deadline)
-        external
-        whenNotPaused
-        nonReentrant
-        autoUpdateDS
-        returns (uint256 dsAmount, uint256 paAmount, uint256 raAmount)
-    {
-        (dsAmount, paAmount, raAmount) = previewDissolve(amount);
-
-        Signature memory sig = MinimalSignatureHelper.split(rawHuPermitSig);
-        permit(msg.sender, address(this), amount, deadline, sig.v, sig.r, sig.s);
-
-        (uint256 _dsAmount, uint256 _paAmount, uint256 _raAmount) = _dissolve(amount);
-
-        assert(_dsAmount == dsAmount);
-        assert(_paAmount == paAmount);
-        assert(_raAmount == raAmount);
-    }
-
     /**
      * @notice Updates the mint cap.
      * @param _newMintCap The new mint cap value.
