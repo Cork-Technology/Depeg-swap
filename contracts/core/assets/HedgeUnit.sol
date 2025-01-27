@@ -18,10 +18,10 @@ import {ModuleCore} from "./../ModuleCore.sol";
 import {ERC20Permit} from "@openzeppelin/contracts/token/ERC20/extensions/ERC20Permit.sol";
 import {Signature, MinimalSignatureHelper} from "./../../libraries/SignatureHelperLib.sol";
 
-struct DSData {
-    address dsAddress;
-    uint256 totalDeposited;
-}
+    struct DSData {
+        address dsAddress;
+        uint256 totalDeposited;
+    }
 
 /**
  * @title HedgeUnit
@@ -39,6 +39,10 @@ contract HedgeUnit is ERC20Permit, ReentrancyGuard, Ownable, Pausable, IHedgeUni
     /// @notice The ERC20 token representing the pa asset.
     ERC20 public immutable pa;
     ERC20 public immutable ra;
+
+    uint256 public dsReserve;
+    uint256 public paReserve;
+    uint256 public raReserve;
 
     Id public id;
 
@@ -68,9 +72,9 @@ contract HedgeUnit is ERC20Permit, ReentrancyGuard, Ownable, Pausable, IHedgeUni
         address _config,
         address _flashSwapRouter
     )
-        ERC20(string(abi.encodePacked("Hedge Unit - ", _pairName)), string(abi.encodePacked("HU - ", _pairName)))
-        ERC20Permit(string(abi.encodePacked("Hedge Unit - ", _pairName)))
-        Ownable(_config)
+    ERC20(string(abi.encodePacked("Hedge Unit - ", _pairName)), string(abi.encodePacked("HU - ", _pairName)))
+    ERC20Permit(string(abi.encodePacked("Hedge Unit - ", _pairName)))
+    Ownable(_config)
     {
         MODULE_CORE = ModuleCore(_moduleCore);
         id = _id;
@@ -107,6 +111,21 @@ contract HedgeUnit is ERC20Permit, ReentrancyGuard, Ownable, Pausable, IHedgeUni
         _;
     }
 
+    modifier autoSync() {
+        _;
+        _sync();
+    }
+
+    function _sync() internal autoUpdateDS {
+        dsReserve = ds.balanceOf(address(this));
+        paReserve = pa.balanceOf(address(this));
+        raReserve = ra.balanceOf(address(this));
+    }
+
+    function sync() external autoUpdateDS {
+        _sync();
+    }
+
     function _fetchLatestDS() internal view returns (Asset) {
         uint256 dsId = MODULE_CORE.lastDsId(id);
         (, address dsAdd) = MODULE_CORE.swapAsset(id, dsId);
@@ -118,18 +137,16 @@ contract HedgeUnit is ERC20Permit, ReentrancyGuard, Ownable, Pausable, IHedgeUni
         return Asset(dsAdd);
     }
 
-    function getReserves() external view returns (uint256 dsReserves, uint256 paReserves, uint256 raReserves) {
-        Asset _ds = _fetchLatestDS();
-
-        dsReserves = _ds.balanceOf(address(this));
-        paReserves = pa.balanceOf(address(this));
-        raReserves = ra.balanceOf(address(this));
+    function getReserves() external view returns (uint256 _dsReserves, uint256 _paReserves, uint256 _raReserves) {
+        _dsReserves = dsReserve;
+        _paReserves = paReserve;
+        _raReserves = raReserve;
     }
 
     function requestLiquidationFunds(uint256 amount, address token)
-        external
-        onlyLiquidationContract
-        onlyValidToken(token)
+    external
+    onlyLiquidationContract
+    onlyValidToken(token)
     {
         uint256 balance = IERC20(token).balanceOf(address(this));
 
@@ -149,10 +166,10 @@ contract HedgeUnit is ERC20Permit, ReentrancyGuard, Ownable, Pausable, IHedgeUni
     }
 
     function useFunds(uint256 amount, uint256 amountOutMin, IDsFlashSwapCore.BuyAprroxParams calldata params)
-        external
-        autoUpdateDS
-        onlyOwnerOrLiquidator
-        returns (uint256 amountOut)
+    external
+    autoUpdateDS
+    onlyOwnerOrLiquidator
+    returns (uint256 amountOut)
     {
         uint256 dsId = MODULE_CORE.lastDsId(id);
 
@@ -184,6 +201,10 @@ contract HedgeUnit is ERC20Permit, ReentrancyGuard, Ownable, Pausable, IHedgeUni
     /**
      * @dev Internal function to get the latest DS address.
      * Calls moduleCore to get the latest DS id and retrieves the associated DS address.
+     * The reason we don't update the reserve is to avoid DDoS manipulation where user
+     * could frontrun and send just 1 wei more to skew the reserve. resulting in failing transaction.
+     * But since we need the address of the new DS if it's expired to transfer it correctly, we only update
+     * the address here at the start of the function call, then finally update the balance after the function call
      */
     function _getLastDS() internal {
         if (address(ds) == address(0) || ds.isExpired()) {
@@ -215,6 +236,10 @@ contract HedgeUnit is ERC20Permit, ReentrancyGuard, Ownable, Pausable, IHedgeUni
         return _tokenNativeDecimalsToFixed(ra.balanceOf(address(this)), ra);
     }
 
+    function _selfDsReserve() internal view returns (uint256) {
+        return dsReserve;
+    }
+
     function _transferNormalize(ERC20 token, address _to, uint256 _amount) internal {
         uint256 amount = _fixedToTokenNativeDecimals(_amount, token);
         IERC20(token).safeTransfer(_to, amount);
@@ -239,11 +264,9 @@ contract HedgeUnit is ERC20Permit, ReentrancyGuard, Ownable, Pausable, IHedgeUni
             revert MintCapExceeded();
         }
 
-        Asset _ds = _fetchLatestDS();
-
         uint256 paReserve = _selfPaReserve();
 
-        (dsAmount, paAmount) = HedgeUnitMath.previewMint(amount, paReserve, _ds.balanceOf(address(this)), totalSupply());
+        (dsAmount, paAmount) = HedgeUnitMath.previewMint(amount, paReserve, _selfDsReserve(), totalSupply());
 
         paAmount = _fixedToTokenNativeDecimals(paAmount, pa);
     }
@@ -258,11 +281,12 @@ contract HedgeUnit is ERC20Permit, ReentrancyGuard, Ownable, Pausable, IHedgeUni
      * @return paAmount The amount of pa tokens used to mint HedgeUnit tokens.
      */
     function mint(uint256 amount)
-        external
-        whenNotPaused
-        nonReentrant
-        autoUpdateDS
-        returns (uint256 dsAmount, uint256 paAmount)
+    external
+    whenNotPaused
+    nonReentrant
+    autoUpdateDS
+    autoSync
+    returns (uint256 dsAmount, uint256 paAmount)
     {
         (dsAmount, paAmount) = __mint(amount);
     }
@@ -276,7 +300,7 @@ contract HedgeUnit is ERC20Permit, ReentrancyGuard, Ownable, Pausable, IHedgeUni
             uint256 paReserve = _selfPaReserve();
 
             (dsAmount, paAmount) =
-                HedgeUnitMath.previewMint(amount, paReserve, ds.balanceOf(address(this)), totalSupply());
+            HedgeUnitMath.previewMint(amount, paReserve, _selfDsReserve(), totalSupply());
 
             paAmount = _fixedToTokenNativeDecimals(paAmount, pa);
         }
@@ -294,11 +318,12 @@ contract HedgeUnit is ERC20Permit, ReentrancyGuard, Ownable, Pausable, IHedgeUni
     }
 
     function mint(uint256 amount, bytes memory rawDsPermitSig, uint256 deadline)
-        external
-        whenNotPaused
-        nonReentrant
-        autoUpdateDS
-        returns (uint256 dsAmount, uint256 paAmount)
+    external
+    whenNotPaused
+    nonReentrant
+    autoUpdateDS
+    autoSync
+    returns (uint256 dsAmount, uint256 paAmount)
     {
         (dsAmount, paAmount) = previewMint(amount);
 
@@ -317,9 +342,9 @@ contract HedgeUnit is ERC20Permit, ReentrancyGuard, Ownable, Pausable, IHedgeUni
      * @return paAmount The amount of pa tokens received for dissolving the specified amount of HedgeUnit tokens.
      */
     function previewDissolve(uint256 amount)
-        public
-        view
-        returns (uint256 dsAmount, uint256 paAmount, uint256 raAmount)
+    public
+    view
+    returns (uint256 dsAmount, uint256 paAmount, uint256 raAmount)
     {
         if (amount > balanceOf(msg.sender)) {
             revert InvalidAmount();
@@ -341,11 +366,12 @@ contract HedgeUnit is ERC20Permit, ReentrancyGuard, Ownable, Pausable, IHedgeUni
      * @custom:reverts InvalidAmount if the user has insufficient HedgeUnit balance.
      */
     function dissolve(uint256 amount)
-        external
-        whenNotPaused
-        nonReentrant
-        autoUpdateDS
-        returns (uint256 dsAmount, uint256 paAmount, uint256 raAmount)
+    external
+    whenNotPaused
+    nonReentrant
+    autoUpdateDS
+    autoSync
+    returns (uint256 dsAmount, uint256 paAmount, uint256 raAmount)
     {
         (dsAmount, paAmount, raAmount) = _dissolve(amount);
     }
