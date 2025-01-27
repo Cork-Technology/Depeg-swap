@@ -38,10 +38,13 @@ contract RolloverTest is Helper {
     }
 
     function setUp() public {
-        vm.startPrank(DEFAULT_ADDRESS_ROLLOVER);
+        vm.startPrank(DEFAULT_ADDRESS);
 
         deployModuleCore();
+        (ra, pa, currencyId) = initializeAndIssueNewDs(block.timestamp + 1 days);
+        corkConfig.grantRole(corkConfig.MANAGER_ROLE(), DEFAULT_ADDRESS_ROLLOVER);
 
+        vm.startPrank(DEFAULT_ADDRESS_ROLLOVER);
         (ra, pa, currencyId) = initializeAndIssueNewDs(block.timestamp + 1 days);
         vm.deal(DEFAULT_ADDRESS_ROLLOVER, 100_000_000 ether);
         ra.deposit{value: 100000 ether}();

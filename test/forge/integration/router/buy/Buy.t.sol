@@ -72,7 +72,7 @@ contract BuyDsTest is Helper {
         // TODO : figure out the out of whack gas consumption
         vm.pauseGasMetering();
 
-        hook.updateBaseFeePercentage(address(ra), ct, 1 ether);
+        corkConfig.updateAmmBaseFeePercentage(address(ra), ct, 1 ether);
 
         uint256 amountOut = flashSwapRouter.swapRaforDs(currencyId, dsId, amount, 0, defaultBuyApproxParams());
         uint256 balanceRaAfter = Asset(address(ds)).balanceOf(DEFAULT_ADDRESS);
@@ -90,7 +90,7 @@ contract BuyDsTest is Helper {
         flashSwapRouter.swapRaforDs(currencyId, dsId, amount, 0, params);
 
         // there's no sufficient liquidity due to very low HIYA, so we disable the fee to make it work
-        hook.updateBaseFeePercentage(address(ra), ct, 0 ether);
+        corkConfig.updateAmmBaseFeePercentage(address(ra), ct, 0 ether);
 
         flashSwapRouter.swapRaforDs(currencyId, dsId, 0.01 ether, 0, params);
     }

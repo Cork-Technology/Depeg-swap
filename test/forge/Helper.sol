@@ -55,6 +55,21 @@ abstract contract Helper is SigUtils, TestHelper {
     // 50% split percentage
     uint256 internal DEFAULT_CT_SPLIT_PERCENTAGE = 50 ether;
 
+    address private overridenAddress;
+
+    function overridePrank(address _as) public {
+        (, address currentCaller,) = vm.readCallers();
+        overridenAddress = currentCaller;
+        vm.startPrank(_as);
+    }
+
+    function revertPrank() public {
+        vm.stopPrank();
+        vm.startPrank(overridenAddress);
+
+        overridenAddress = address(0);
+    }
+
     function defaultInitialArp() internal pure virtual returns (uint256) {
         return DEFAULT_INITIAL_DS_PRICE;
     }
@@ -196,7 +211,13 @@ abstract contract Helper is SigUtils, TestHelper {
     }
 
     function deployConfig() internal {
-        corkConfig = new CorkConfig();
+        corkConfig = new CorkConfig(DEFAULT_ADDRESS, DEFAULT_ADDRESS);
+        corkConfig.setHook(address(hook));
+
+        // transfer hook onwer to corkConfig
+        overridePrank(DEFAULT_HOOK_OWNER);
+        hook.transferOwnership(address(corkConfig));
+        revertPrank();
     }
 
     function setupConfig() internal {
@@ -235,7 +256,12 @@ abstract contract Helper is SigUtils, TestHelper {
     }
 
     function deployModuleCore() internal {
+        __workaround();
+
+        // workaround for uni v4
+        overridePrank(address(this));
         setupTest();
+        revertPrank();
 
         deployConfig();
         deployFlashSwapRouter();
@@ -274,5 +300,22 @@ abstract contract Helper is SigUtils, TestHelper {
 
     function forceUnpause() internal {
         forceUnpause(defaultCurrencyId);
+    }
+
+    function __workaround() internal {
+        PrankWorkAround _contract = new PrankWorkAround();
+        _contract.prankApply();
+    }
+}
+
+contract PrankWorkAround {
+    constructor() {
+        // This is a workaround to apply the prank to the contract
+        // since uniswap does whacky things with the contract creation
+    }
+
+    function prankApply() public {
+        // This is a workaround to apply the prank to the contract
+        // since uniswap does whacky things with the contract creation
     }
 }
