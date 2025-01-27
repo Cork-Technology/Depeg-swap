@@ -67,8 +67,9 @@ contract CorkConfig is AccessControl, Pausable {
         _;
     }
 
-    constructor() {
-        _grantRole(MANAGER_ROLE, msg.sender);
+    constructor(address adminAdd, address managerAdd) {
+        _grantRole(DEFAULT_ADMIN_ROLE, adminAdd);
+        _grantRole(MANAGER_ROLE, adminAdd);
     }
 
     function _computLiquidatorRoleHash(address account) public view returns (bytes32) {
