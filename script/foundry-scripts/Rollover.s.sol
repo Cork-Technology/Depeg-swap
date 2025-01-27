@@ -82,11 +82,11 @@ contract RolloverScript is Script {
         config.issueNewDs(
             id,
             DEFAULT_EXCHANGE_RATE,
-            asset.repruchaseFee,
             DEFAULT_DECAY_DISCOUNT_RATE,
             DEFAULT_ROLLOVER_PERIOD,
             block.timestamp + 10 seconds 
         );
+        config.updateRepurchaseFeeRate(id, asset.repruchaseFee);
 
         uint256 afterDsId = moduleCore.lastDsId(id);
         assert(afterDsId == dsId + 1);
