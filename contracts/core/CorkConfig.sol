@@ -26,6 +26,8 @@ contract CorkConfig is AccessControl, Pausable {
     CorkHook public hook;
     HedgeUnitFactory public hedgeUnitFactory;
 
+    address public treasury;
+
     uint256 public constant WHITELIST_TIME_DELAY = 7 days;
 
     /// @notice liquidation address => timestamp when liquidation is allowed
@@ -52,6 +54,8 @@ contract CorkConfig is AccessControl, Pausable {
     /// @notice Emitted when a hedgeUnitFactory variable set
     /// @param hedgeUnitFactory Address of hedgeUnitFactory contract
     event HedgeUnitFactorySet(address hedgeUnitFactory);
+
+    event TreasurySet(address treasury);
 
     modifier onlyManager() {
         if (!hasRole(MANAGER_ROLE, msg.sender)) {
@@ -140,6 +144,14 @@ contract CorkConfig is AccessControl, Pausable {
 
         hedgeUnitFactory = HedgeUnitFactory(_hedgeUnitFactory);
         emit HedgeUnitFactorySet(_hedgeUnitFactory);
+    }
+
+   function setTreasury(address _treasury) external onlyManager {
+        if (_treasury == address(0)) {
+            revert InvalidAddress();
+        }
+        treasury = _treasury;
+        emit TreasurySet(_treasury);
     }
 
     function updateAmmBaseFeePercentage(address ra, address ct, uint256 newBaseFeePercentage) external onlyManager {

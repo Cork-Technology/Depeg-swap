@@ -55,6 +55,8 @@ abstract contract Helper is SigUtils, TestHelper {
     // 50% split percentage
     uint256 internal DEFAULT_CT_SPLIT_PERCENTAGE = 50 ether;
 
+    address internal constant CORK_PROTOCOL_TREASURY = address(789);
+
     address private overridenAddress;
 
     function overridePrank(address _as) public {
@@ -223,6 +225,7 @@ abstract contract Helper is SigUtils, TestHelper {
     function setupConfig() internal {
         corkConfig.setModuleCore(address(moduleCore));
         corkConfig.setFlashSwapCore(address(flashSwapRouter));
+        corkConfig.setTreasury(CORK_PROTOCOL_TREASURY);        
     }
 
     function deployFlashSwapRouter() internal {

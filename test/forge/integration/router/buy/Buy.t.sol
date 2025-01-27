@@ -126,7 +126,7 @@ contract BuyDsTest is Helper {
         flashSwapRouter.swapRaforDs(currencyId, dsId, amount, 0, params);
 
         // there's no sufficient liquidity due to very low HIYA, so we disable the fee to make it work
-        hook.updateBaseFeePercentage(address(ra), ct, 0 ether);
+        corkConfig.updateAmmBaseFeePercentage(address(ra), ct, 0 ether);
 
         flashSwapRouter.swapRaforDs(currencyId, dsId, 0.001 ether, 0, params);
     }
