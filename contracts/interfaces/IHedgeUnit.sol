@@ -1,6 +1,9 @@
+// SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.24;
 
-interface IHedgeUnit {
+import {IErrors} from "./IErrors.sol";
+
+interface IHedgeUnit is IErrors {
     // Events
     /**
      * @notice Emitted when a user mints new HedgeUnit tokens.
@@ -10,13 +13,13 @@ interface IHedgeUnit {
     event Mint(address indexed minter, uint256 amount);
 
     /**
-     * @notice Emitted when a user dissolves HedgeUnit tokens.
+     * @notice Emitted when a user burns HedgeUnit tokens.
      * @param dissolver The address of the user dissolving the tokens.
-     * @param amount The amount of HedgeUnit tokens dissolved.
+     * @param amount The amount of HedgeUnit tokens burned.
      * @param dsAmount The amount of DS tokens received.
      * @param paAmount The amount of PA tokens received.
      */
-    event Dissolve(address indexed dissolver, uint256 amount, uint256 dsAmount, uint256 paAmount);
+    event Burn(address indexed dissolver, uint256 amount, uint256 dsAmount, uint256 paAmount);
 
     /**
      * @notice Emitted when the mint cap is updated.
@@ -25,36 +28,6 @@ interface IHedgeUnit {
     event MintCapUpdated(uint256 newMintCap);
 
     event RaRedeemed(address indexed redeemer, uint256 dsId, uint256 amount);
-
-    // Errors
-
-    /// @notice Error indicating an invalid amount was provided.
-    error InvalidAmount();
-
-    /// @notice Error indicating the mint cap has been exceeded.
-    error MintCapExceeded();
-
-    /// @notice Error indicating an invalid value was provided.
-    error InvalidValue();
-
-    /// @notice Thrown when the DS given when minting HU isn't proportional
-    error InsufficientDsAmount();
-
-    /// @notice Thrown when the PA given when minting HU isn't proportional
-    error InsufficientPaAmount();
-
-    /// @notice Thrown when trying to overdraw HU exceeding the available liquidity
-    error NotEnoughLiquidity();
-
-    error InsufficientFunds();
-
-    error NoValidDSExist();
-
-    error OnlyLiquidator();
-
-    error OnlyLiquidatorOrOwner();
-
-    error InvalidToken();
 
     // Read functions
     /**
@@ -82,23 +55,15 @@ interface IHedgeUnit {
     function mint(uint256 amount) external returns (uint256 dsAmount, uint256 paAmount);
 
     /**
-     * @notice Returns the dsAmount and paAmount received for dissolving the specified amount of HedgeUnit tokens.
+     * @notice Returns the dsAmount, paAmount and raAmount received for dissolving the specified amount of HedgeUnit tokens.
      * @return dsAmount The amount of DS tokens received for dissolving the specified amount of HedgeUnit tokens.
      * @return paAmount The amount of PA tokens received for dissolving the specified amount of HedgeUnit tokens.
+     * @return raAmount The amount of RA tokens received for dissolving the specified amount of HedgeUnit tokens.
      */
-    function previewDissolve(uint256 amount)
+    function previewBurn(address dissolver, uint256 amount)
         external
         view
         returns (uint256 dsAmount, uint256 paAmount, uint256 raAmount);
-
-    /**
-     * @notice Dissolves HedgeUnit tokens and returns the equivalent amount of DS and PA tokens.
-     * @param amount The amount of HedgeUnit tokens to dissolve.
-     * @return dsAmount The amount of DS tokens returned.
-     * @return paAmount The amount of PA tokens returned.
-     * @custom:reverts InvalidAmount if the user has insufficient HedgeUnit balance.
-     */
-    function dissolve(uint256 amount) external returns (uint256 dsAmount, uint256 paAmount, uint256 raAmount);
 
     /**
      * @notice Updates the mint cap.
