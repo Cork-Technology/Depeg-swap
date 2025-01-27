@@ -16,6 +16,7 @@ import {IDsFlashSwapCore} from "../interfaces/IDsFlashSwapRouter.sol";
 import {VaultLibrary} from "./VaultLib.sol";
 import {SafeERC20, IERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {ICorkHook} from "./../interfaces/UniV4/IMinimalHook.sol";
+import {TransferHelper} from "./TransferHelper.sol";
 
 /**
  * @title Psm Library Contract
@@ -88,17 +89,6 @@ library PsmLibrary {
         self.psm.poolArchive[self.globalAssetIdx].rolloverProfit += amount;
     }
 
-    function tranferRolloverClaims(State storage self, address from, address to, uint256 amount, uint256 dsId)
-        external
-    {
-        if (self.psm.poolArchive[dsId].rolloverClaims[from] < amount) {
-            revert InsufficientRolloverBalance(from, amount, self.psm.poolArchive[dsId].rolloverClaims[from]);
-        }
-
-        self.psm.poolArchive[dsId].rolloverClaims[from] -= amount;
-        self.psm.poolArchive[dsId].rolloverClaims[to] += amount;
-    }
-
     function rolloverCt(
         State storage self,
         address owner,
@@ -159,7 +149,8 @@ library PsmLibrary {
         Guard.safeBeforeExpired(currentDs);
 
         // by default the amount of CT received is the same as the amount of RA deposited
-        ctReceived = accruedRa;
+        // we convert it to 18 fixed decimals, since that's what the DS uses
+        ctReceived = TransferHelper.tokenNativeDecimalsToFixed(accruedRa, self.info.ra);
 
         // by default the amount of DS received is the same as CT
         dsReceived = ctReceived;
@@ -207,7 +198,8 @@ library PsmLibrary {
         prevArchive = self.psm.poolArchive[prevDsId];
 
         // caclulate accrued RA and PA proportional to CT amount
-        (accruedPa, accruedRa) = _calcRedeemAmount(amount, totalCtIssued, prevArchive.raAccrued, prevArchive.paAccrued);
+        (accruedPa, accruedRa) =
+            _calcRedeemAmount(self, amount, totalCtIssued, prevArchive.raAccrued, prevArchive.paAccrued);
         // accounting stuff(decrementing reserve etc)
         _beforeCtRedeem(self, prevDs, prevDsId, amount, accruedPa, accruedRa);
 
@@ -237,8 +229,14 @@ library PsmLibrary {
         }
 
         // calculate their share of profit
-        rolloverProfit =
-            MathHelper.calculateAccrued(amount, prevArchive.rolloverProfit, prevArchive.attributedToRolloverProfit);
+        rolloverProfit = MathHelper.calculateAccrued(
+            amount,
+            TransferHelper.tokenNativeDecimalsToFixed(prevArchive.rolloverProfit, self.info.ra),
+            prevArchive.attributedToRolloverProfit
+        );
+
+        rolloverProfit = TransferHelper.fixedToTokenNativeDecimals(rolloverProfit, self.info.ra);
+
         // reset their claim
         prevArchive.rolloverClaims[owner] -= amount;
         // decrement total profit
@@ -342,7 +340,8 @@ library PsmLibrary {
         Guard.safeBeforeExpired(ds);
         _exchangeRate = ds.exchangeRate();
 
-        received = amount;
+        // we convert it 18 fixed decimals, since that's what the DS uses
+        received = TransferHelper.tokenNativeDecimalsToFixed(amount, self.info.ra);
 
         self.psm.balances.ra.lockFrom(amount, depositor);
 
@@ -362,7 +361,8 @@ library PsmLibrary {
 
         self.psm.balances.ra.incLocked(amount);
 
-        received = amount;
+        // we convert it 18 fixed decimals, since that's what the DS uses
+        received = TransferHelper.tokenNativeDecimalsToFixed(amount, self.info.ra);
 
         ds.issue(address(this), received);
     }
@@ -382,7 +382,7 @@ library PsmLibrary {
         uint256 totalCtIssued = self.psm.poolArchive[dsId].ctAttributed;
         PsmPoolArchive storage archive = self.psm.poolArchive[dsId];
 
-        (accruedPa, accruedRa) = _calcRedeemAmount(amount, totalCtIssued, archive.raAccrued, archive.paAccrued);
+        (accruedPa, accruedRa) = _calcRedeemAmount(self, amount, totalCtIssued, archive.raAccrued, archive.paAccrued);
 
         _beforeCtRedeem(self, self.ds[dsId], dsId, amount, accruedPa, accruedRa);
 
@@ -393,7 +393,7 @@ library PsmLibrary {
         internal
         returns (uint256 ra)
     {
-        ra = amount;
+        ra = TransferHelper.fixedToTokenNativeDecimals(amount, self.info.ra);
 
         self.psm.balances.ra.unlockTo(owner, ra);
 
@@ -497,7 +497,7 @@ library PsmLibrary {
 
         // we use deposit here because technically the user deposit RA to the PSM when repurchasing
         receivedPa = MathHelper.calculateDepositAmountWithExchangeRate(amount, exchangeRates);
-        receivedDs = amount;
+        receivedDs = TransferHelper.tokenNativeDecimalsToFixed(amount, self.info.pa);
 
         uint256 available = self.psm.balances.paBalance;
 
@@ -554,7 +554,7 @@ library PsmLibrary {
 
         if (fee != 0) {
             // Provide liquidity with fee(if any)
-            VaultLibrary.__provideLiquidityWithRatio(self, fee, flashSwapRouter, ds.ct, ammRouter);
+            VaultLibrary.allocateFeesToVault(self, fee);
         }
     }
 
@@ -602,11 +602,9 @@ library PsmLibrary {
         uint256 dsId,
         bytes memory rawDsPermitSig,
         uint256 deadline
-    ) external returns (uint256 received, uint256 _exchangeRate, uint256 fee) {
+    ) external returns (uint256 received, uint256 _exchangeRate, uint256 fee, uint256 dsProvided) {
         DepegSwap storage ds = self.ds[dsId];
         Guard.safeBeforeExpired(ds);
-
-        uint256 dsProvided;
 
         (received, dsProvided, fee, _exchangeRate) = previewRedeemWithDs(self, dsId, amount);
 
@@ -631,10 +629,14 @@ library PsmLibrary {
         Guard.safeBeforeExpired(_ds);
 
         exchangeRates = _ds.exchangeRate();
+
+        // the amount here is the DS amount
+        amount = TransferHelper.tokenNativeDecimalsToFixed(amount, self.info.pa);
+
         uint256 raDs = MathHelper.calculateEqualSwapAmount(amount, exchangeRates);
 
         ds = raDs;
-        ra = raDs;
+        ra = TransferHelper.fixedToTokenNativeDecimals(raDs, self.info.ra);
 
         fee = MathHelper.calculatePercentageFee(ra, self.psm.psmBaseRedemptionFeePercentage);
         ra -= fee;
@@ -649,14 +651,22 @@ library PsmLibrary {
         expiry = Asset(ds._address).expiry();
     }
 
-    function _calcRedeemAmount(uint256 amount, uint256 totalCtIssued, uint256 availableRa, uint256 availablePa)
-        internal
-        pure
-        returns (uint256 accruedPa, uint256 accruedRa)
-    {
+    function _calcRedeemAmount(
+        State storage self,
+        uint256 amount,
+        uint256 totalCtIssued,
+        uint256 availableRa,
+        uint256 availablePa
+    ) internal view returns (uint256 accruedPa, uint256 accruedRa) {
+        availablePa = TransferHelper.tokenNativeDecimalsToFixed(availablePa, self.info.pa);
+        availableRa = TransferHelper.tokenNativeDecimalsToFixed(availableRa, self.info.ra);
+
         accruedPa = MathHelper.calculateAccrued(amount, availablePa, totalCtIssued);
 
         accruedRa = MathHelper.calculateAccrued(amount, availableRa, totalCtIssued);
+
+        accruedPa = TransferHelper.fixedToTokenNativeDecimals(accruedPa, self.info.pa);
+        accruedRa = TransferHelper.fixedToTokenNativeDecimals(accruedRa, self.info.ra);
     }
 
     function _beforeCtRedeem(
@@ -709,7 +719,7 @@ library PsmLibrary {
         uint256 totalCtIssued = self.psm.poolArchive[dsId].ctAttributed;
         PsmPoolArchive storage archive = self.psm.poolArchive[dsId];
 
-        (accruedPa, accruedRa) = _calcRedeemAmount(amount, totalCtIssued, archive.raAccrued, archive.paAccrued);
+        (accruedPa, accruedRa) = _calcRedeemAmount(self, amount, totalCtIssued, archive.raAccrued, archive.paAccrued);
 
         _beforeCtRedeem(self, ds, dsId, amount, accruedPa, accruedRa);
 

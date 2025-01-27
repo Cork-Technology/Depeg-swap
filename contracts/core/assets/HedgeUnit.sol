@@ -17,6 +17,7 @@ import {IDsFlashSwapCore} from "./../../interfaces/IDsFlashSwapRouter.sol";
 import {ModuleCore} from "./../ModuleCore.sol";
 import {ERC20Permit} from "@openzeppelin/contracts/token/ERC20/extensions/ERC20Permit.sol";
 import {Signature, MinimalSignatureHelper} from "./../../libraries/SignatureHelperLib.sol";
+import {TransferHelper} from "./../../libraries/TransferHelper.sol";
 
 struct DSData {
     address dsAddress;
@@ -31,7 +32,6 @@ struct DSData {
 contract HedgeUnit is ERC20Permit, ReentrancyGuard, Ownable, Pausable, IHedgeUnit, IHedgeUnitLiquidation {
     using SafeERC20 for IERC20;
 
-    uint8 internal constant TARGET_DECIMALS = 18;
     CorkConfig public immutable CONFIG;
     IDsFlashSwapCore public immutable FLASHSWAP_ROUTER;
     ModuleCore public immutable MODULE_CORE;
@@ -208,21 +208,11 @@ contract HedgeUnit is ERC20Permit, ReentrancyGuard, Ownable, Pausable, IHedgeUni
     }
 
     function _selfPaReserve() internal view returns (uint256) {
-        return _tokenNativeDecimalsToFixed(pa.balanceOf(address(this)), pa);
+        return TransferHelper.tokenNativeDecimalsToFixed(pa.balanceOf(address(this)), pa);
     }
 
     function _selfRaReserve() internal view returns (uint256) {
-        return _tokenNativeDecimalsToFixed(ra.balanceOf(address(this)), ra);
-    }
-
-    function _transferNormalize(ERC20 token, address _to, uint256 _amount) internal {
-        uint256 amount = _fixedToTokenNativeDecimals(_amount, token);
-        IERC20(token).safeTransfer(_to, amount);
-    }
-
-    function _transferFromNormalize(ERC20 token, address _from, uint256 _amount) internal {
-        uint256 amount = _fixedToTokenNativeDecimals(_amount, token);
-        IERC20(token).safeTransferFrom(_from, address(this), amount);
+        return TransferHelper.tokenNativeDecimalsToFixed(ra.balanceOf(address(this)), ra);
     }
 
     function _transferDs(address _to, uint256 _amount) internal {
@@ -245,7 +235,7 @@ contract HedgeUnit is ERC20Permit, ReentrancyGuard, Ownable, Pausable, IHedgeUni
 
         (dsAmount, paAmount) = HedgeUnitMath.previewMint(amount, paReserve, _ds.balanceOf(address(this)), totalSupply());
 
-        paAmount = _fixedToTokenNativeDecimals(paAmount, pa);
+        paAmount = TransferHelper.fixedToTokenNativeDecimals(paAmount, pa);
     }
 
     /**
@@ -278,14 +268,14 @@ contract HedgeUnit is ERC20Permit, ReentrancyGuard, Ownable, Pausable, IHedgeUni
             (dsAmount, paAmount) =
                 HedgeUnitMath.previewMint(amount, paReserve, ds.balanceOf(address(this)), totalSupply());
 
-            paAmount = _fixedToTokenNativeDecimals(paAmount, pa);
+            paAmount = TransferHelper.fixedToTokenNativeDecimals(paAmount, pa);
         }
 
-        _transferFromNormalize(ds, msg.sender, dsAmount);
+        TransferHelper.transferFromNormalize(ds, msg.sender, dsAmount);
 
         // this calculation is based on the assumption that the DS token has 18 decimals but pa can have different decimals
 
-        _transferFromNormalize(pa, msg.sender, paAmount);
+        TransferHelper.transferFromNormalize(pa, msg.sender, paAmount);
         dsHistory[dsIndexMap[address(ds)]].totalDeposited += amount;
 
         _mint(msg.sender, amount);
@@ -357,9 +347,9 @@ contract HedgeUnit is ERC20Permit, ReentrancyGuard, Ownable, Pausable, IHedgeUni
 
         (dsAmount, paAmount, raAmount) = previewDissolve(amount);
 
-        _transferNormalize(pa, msg.sender, paAmount);
+        TransferHelper.transferNormalize(pa, msg.sender, paAmount);
         _transferDs(msg.sender, dsAmount);
-        _transferNormalize(ra, msg.sender, raAmount);
+        TransferHelper.transferNormalize(ra, msg.sender, raAmount);
 
         _burn(msg.sender, amount);
 
@@ -410,16 +400,6 @@ contract HedgeUnit is ERC20Permit, ReentrancyGuard, Ownable, Pausable, IHedgeUni
      */
     function unpause() external onlyOwner {
         _unpause();
-    }
-
-    function _tokenNativeDecimalsToFixed(uint256 amount, IERC20Metadata token) public view returns (uint256) {
-        uint8 decimals = token.decimals();
-        return _normalize(amount, decimals, TARGET_DECIMALS);
-    }
-
-    function _fixedToTokenNativeDecimals(uint256 amount, IERC20Metadata token) public view returns (uint256) {
-        uint8 decimals = token.decimals();
-        return _normalize(amount, TARGET_DECIMALS, decimals);
     }
 
     function _normalize(uint256 amount, uint8 decimalsBefore, uint8 decimalsAfter) public pure returns (uint256) {

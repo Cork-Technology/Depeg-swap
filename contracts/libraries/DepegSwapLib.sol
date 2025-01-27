@@ -84,11 +84,6 @@ library DepegSwapLibrary {
         Asset(self.ct).mint(to, amount);
     }
 
-    function burnBothforSelf(DepegSwap storage self, uint256 amount) internal {
-        Asset(self._address).burn(amount);
-        Asset(self.ct).burn(amount);
-    }
-
     function burnCtSelf(DepegSwap storage self, uint256 amount) internal {
         Asset(self.ct).burn(amount);
     }

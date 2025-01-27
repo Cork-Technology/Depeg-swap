@@ -46,14 +46,6 @@ library RedemptionAssetManagerLibrary {
         return self.free;
     }
 
-    function tryConvertAllToFree(RedemptionAssetManager storage self) internal view returns (uint256) {
-        if (self.locked == 0) {
-            return self.free;
-        }
-
-        return self.free + self.locked;
-    }
-
     function decLocked(RedemptionAssetManager storage self, uint256 amount) internal {
         self.locked = self.locked - amount;
     }
