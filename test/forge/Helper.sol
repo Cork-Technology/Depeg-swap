@@ -294,6 +294,7 @@ abstract contract Helper is SigUtils, TestHelper {
     function setupConfig() internal {
         corkConfig.setModuleCore(address(moduleCore));
         corkConfig.setFlashSwapCore(address(flashSwapRouter));
+        corkConfig.grantRole(corkConfig.MARKET_INITIALIZER_ROLE(), DEFAULT_ADDRESS);
         corkConfig.setTreasury(CORK_PROTOCOL_TREASURY);
     }
 

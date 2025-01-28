@@ -250,6 +250,7 @@ contract DeployScript is Script {
         // flashswapRouter.transferOwnership(address(moduleCore));
         console.log("Transferred ownerships to Modulecore");
 
+        config.grantRole(config.MARKET_INITIALIZER_ROLE(), deployer);
         config.setModuleCore(address(moduleCore));
         flashswapRouter.setModuleCore(address(moduleCore));
         console.log("Modulecore configured in Config contract");

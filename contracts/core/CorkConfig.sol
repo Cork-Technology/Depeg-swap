@@ -17,7 +17,7 @@ import {HedgeUnit} from "./assets/HedgeUnit.sol";
 /**
  * @title Config Contract
  * @author Cork Team
- * @notice Config contract for managing configurations of Cork protocol
+ * @notice Config contract for managing pairs and configurations of Cork protocol
  */
 contract CorkConfig is AccessControl, Pausable {
     bytes32 public constant MANAGER_ROLE = keccak256("MANAGER_ROLE");
@@ -33,6 +33,9 @@ contract CorkConfig is AccessControl, Pausable {
     // instead of storing it themselves, since it'll be hard to update the treasury address in all the components if it changes vs updating it in the config contract once
     address public treasury;
 
+    /// @notice set to true when initializeModuleCore is allowed to call by anyone in permissionless way
+    bool public isInitPermissionless;
+
     uint256 public constant WHITELIST_TIME_DELAY = 7 days;
 
     /// @notice liquidation address => timestamp when liquidation is allowed
@@ -40,6 +43,9 @@ contract CorkConfig is AccessControl, Pausable {
 
     /// @notice thrown when caller is not manager/Admin of Cork Protocol
     error CallerNotManager();
+
+    /// @notice thrown when caller is not Market Initializer of Cork Protocol
+    error CallerNotInitializer();
 
     /// @notice thrown when passed Invalid/Zero Address
     error InvalidAddress();
@@ -71,6 +77,14 @@ contract CorkConfig is AccessControl, Pausable {
         _;
     }
 
+    /// @notice Checks if the caller is either the initializer of the market or initialization is allowed permissionlessly
+    modifier onlyInitializer() {
+        if (!hasRole(MARKET_INITIALIZER_ROLE, msg.sender) && !isInitPermissionless) {
+            revert CallerNotInitializer();
+        }
+        _;
+    }
+
     modifier onlyUpdaterOrManager() {
         if (!hasRole(RATE_UPDATERS_ROLE, msg.sender) && !hasRole(MANAGER_ROLE, msg.sender)) {
             revert CallerNotManager();
@@ -98,9 +112,13 @@ contract CorkConfig is AccessControl, Pausable {
     function setRoleAdmin(bytes32 role, bytes32 newAdminRole) external onlyRole(getRoleAdmin(role)) {
         _setRoleAdmin(role, newAdminRole);
     }
-    
-    function grantRole(bytes32 role, address account) public override onlyRole(getRoleAdmin(role)) {
+
+    function grantRole(bytes32 role, address account) public override onlyManager {
         _grantRole(role, account);
+    }
+
+    function updateMarketInitAllowance(bool _isInitPermissionless) external onlyManager {
+        isInitPermissionless = _isInitPermissionless;
     }
 
     function transferAdmin(address newAdmin) external onlyRole(DEFAULT_ADMIN_ROLE) {
@@ -121,7 +139,8 @@ contract CorkConfig is AccessControl, Pausable {
     }
 
     function isLiquidationWhitelisted(address liquidationAddress) external view returns (bool) {
-        return liquidationWhitelist[liquidationAddress] <= block.timestamp && liquidationWhitelist[liquidationAddress] != 0;
+        return
+            liquidationWhitelist[liquidationAddress] <= block.timestamp && liquidationWhitelist[liquidationAddress] != 0;
     }
 
     function blacklist(address liquidationAddress) external onlyManager {
@@ -210,7 +229,10 @@ contract CorkConfig is AccessControl, Pausable {
      * @param ra Address of RA
      * @param initialArp initial price of DS
      */
-    function initializeModuleCore(address pa, address ra, uint256 initialArp, uint256 expiryInterval) external onlyManager {
+    function initializeModuleCore(address pa, address ra, uint256 initialArp, uint256 expiryInterval)
+        external
+        onlyInitializer
+    {
         moduleCore.initializeModuleCore(pa, ra, initialArp, expiryInterval);
     }
 
@@ -227,11 +249,7 @@ contract CorkConfig is AccessControl, Pausable {
         uint256 ammLiquidationDeadline
     ) external whenNotPaused onlyManager {
         moduleCore.issueNewDs(
-            id,
-            exchangeRates,
-            decayDiscountRateInDays,
-            rolloverPeriodInblocks,
-            ammLiquidationDeadline
+            id, exchangeRates, decayDiscountRateInDays, rolloverPeriodInblocks, ammLiquidationDeadline
         );
 
         _autoAssignFees(id);
@@ -317,10 +335,7 @@ contract CorkConfig is AccessControl, Pausable {
      * @param id id of the pair
      * @param isPSMDepositPaused set to true if you want to pause PSM deposits
      */
-    function updatePsmDepositsStatus(
-        Id id,
-        bool isPSMDepositPaused
-    ) external onlyManager {
+    function updatePsmDepositsStatus(Id id, bool isPSMDepositPaused) external onlyManager {
         moduleCore.updatePsmDepositsStatus(id, isPSMDepositPaused);
     }
 
@@ -329,10 +344,7 @@ contract CorkConfig is AccessControl, Pausable {
      * @param id id of the pair
      * @param isPSMWithdrawalPaused set to true if you want to pause PSM withdrawals
      */
-    function updatePsmWithdrawalsStatus(
-        Id id,
-        bool isPSMWithdrawalPaused
-    ) external onlyManager {
+    function updatePsmWithdrawalsStatus(Id id, bool isPSMWithdrawalPaused) external onlyManager {
         moduleCore.updatePsmWithdrawalsStatus(id, isPSMWithdrawalPaused);
     }
 
@@ -341,10 +353,7 @@ contract CorkConfig is AccessControl, Pausable {
      * @param id id of the pair
      * @param isPSMRepurchasePaused set to true if you want to pause PSM repurchases
      */
-    function updatePsmRepurchasesStatus(
-        Id id,
-        bool isPSMRepurchasePaused
-    ) external onlyManager {
+    function updatePsmRepurchasesStatus(Id id, bool isPSMRepurchasePaused) external onlyManager {
         moduleCore.updatePsmRepurchasesStatus(id, isPSMRepurchasePaused);
     }
 
@@ -353,10 +362,7 @@ contract CorkConfig is AccessControl, Pausable {
      * @param id id of the pair
      * @param isLVDepositPaused set to true if you want to pause LV deposits
      */
-    function updateLvDepositsStatus(
-        Id id,
-        bool isLVDepositPaused
-    ) external onlyManager {
+    function updateLvDepositsStatus(Id id, bool isLVDepositPaused) external onlyManager {
         moduleCore.updateLvDepositsStatus(id, isLVDepositPaused);
     }
 
@@ -365,10 +371,7 @@ contract CorkConfig is AccessControl, Pausable {
      * @param id id of the pair
      * @param isLVWithdrawalPaused set to true if you want to pause LV withdrawals
      */
-    function updateLvWithdrawalsStatus(
-        Id id,
-        bool isLVWithdrawalPaused
-    ) external onlyManager {
+    function updateLvWithdrawalsStatus(Id id, bool isLVWithdrawalPaused) external onlyManager {
         moduleCore.updateLvWithdrawalsStatus(id, isLVWithdrawalPaused);
     }
 
@@ -376,8 +379,11 @@ contract CorkConfig is AccessControl, Pausable {
      * @notice Updates base redemption fee percentage
      * @param newPsmBaseRedemptionFeePercentage new value of fees, make sure it has 18 decimals(e.g 1% = 1e18)
      */
-    function updatePsmBaseRedemptionFeePercentage(Id id,uint256 newPsmBaseRedemptionFeePercentage) external onlyManager {
-        moduleCore.updatePsmBaseRedemptionFeePercentage(id,newPsmBaseRedemptionFeePercentage);
+    function updatePsmBaseRedemptionFeePercentage(Id id, uint256 newPsmBaseRedemptionFeePercentage)
+        external
+        onlyManager
+    {
+        moduleCore.updatePsmBaseRedemptionFeePercentage(id, newPsmBaseRedemptionFeePercentage);
     }
 
     function updateFlashSwapRouterDiscountInDays(Id id, uint256 newDiscountInDays) external onlyManager {
