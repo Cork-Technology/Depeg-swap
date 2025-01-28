@@ -2,16 +2,16 @@
 pragma solidity ^0.8.24;
 
 import {Helper} from "./../../Helper.sol";
-import {HedgeUnit} from "../../../../contracts/core/assets/HedgeUnit.sol";
+import {ProtectedUnit} from "../../../../contracts/core/assets/ProtectedUnit.sol";
 import {Liquidator} from "../../../../contracts/core/liquidators/cow-protocol/Liquidator.sol";
-import {IHedgeUnit} from "../../../../contracts/interfaces/IHedgeUnit.sol";
+import {IProtectedUnit} from "../../../../contracts/interfaces/IProtectedUnit.sol";
 import {DummyWETH} from "../../../../contracts/dummy/DummyWETH.sol";
 import {Id} from "./../../../../contracts/libraries/Pair.sol";
 import {PausableUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/PausableUpgradeable.sol";
 import "./../../../../contracts/core/liquidators/cow-protocol/Liquidator.sol";
 
-contract HedgeUnitTest is Helper {
-    HedgeUnit public hedgeUnit;
+contract ProtectedUnitTest is Helper {
+    ProtectedUnit public protectedUnit;
     DummyWETH public dsToken;
     DummyWETH internal ra;
     DummyWETH internal pa;
@@ -57,9 +57,9 @@ contract HedgeUnitTest is Helper {
 
         fetchProtocolGeneralInfo();
 
-        corkConfig.deployHedgeUnit(currencyId, address(pa), address(ra), "DS/PA", INITIAL_MINT_CAP);
-        // Deploy the HedgeUnit contract
-        hedgeUnit = HedgeUnit(hedgeUnitFactory.getHedgeUnitAddress(currencyId));
+        corkConfig.deployProtectedUnit(currencyId, address(pa), address(ra), "DS/PA", INITIAL_MINT_CAP);
+        // Deploy the ProtectedUnit contract
+        protectedUnit = ProtectedUnit(protectedUnitFactory.getProtectedUnitAddress(currencyId));
 
         // Transfer tokens to user for test_ing
         dsToken.transfer(user, USER_BALANCE);
@@ -76,10 +76,10 @@ contract HedgeUnitTest is Helper {
         vm.warp(block.timestamp + 10 days);
 
         uint256 amount = 100 ether;
-        pa.approve(address(hedgeUnit), amount);
-        dsToken.approve(address(hedgeUnit), amount);
+        pa.approve(address(protectedUnit), amount);
+        dsToken.approve(address(protectedUnit), amount);
 
-        hedgeUnit.mint(amount);
+        protectedUnit.mint(amount);
     }
 
     function fetchProtocolGeneralInfo() internal {
@@ -98,18 +98,18 @@ contract HedgeUnitTest is Helper {
         // irrelevant, since we're testing the logic ourself
         bytes memory randomOrderUid = bytes.concat(keccak256("orderUid"));
 
-        ILiquidator.CreateHedgeUnitOrderParams memory params = ILiquidator.CreateHedgeUnitOrderParams({
+        ILiquidator.CreateProtectedUnitOrderParams memory params = ILiquidator.CreateProtectedUnitOrderParams({
             internalRefId: randomRefId,
             orderUid: randomOrderUid,
             sellToken: address(pa),
             sellAmount: amountToSell,
             buyToken: address(ra),
-            hedgeUnit: address(hedgeUnit)
+            protectedUnit: address(protectedUnit)
         });
 
-        liquidator.createOrderHedgeUnit(params);
+        liquidator.createOrderProtectedUnit(params);
 
-        address receiver = liquidator.fetchHedgeUnitReceiver(randomRefId);
+        address receiver = liquidator.fetchProtectedUnitReceiver(randomRefId);
 
         // mimic trade execution
         vm.stopPrank();
@@ -118,16 +118,16 @@ contract HedgeUnitTest is Helper {
         vm.startPrank(DEFAULT_ADDRESS);
         ra.transfer(address(receiver), amountFilled);
 
-        uint256 paBalanceHedgeUnitBefore = pa.balanceOf(address(hedgeUnit));
-        uint256 raBalanceHedgeUnitBefore = ra.balanceOf(address(hedgeUnit));
+        uint256 paBalanceProtectedUnitBefore = pa.balanceOf(address(protectedUnit));
+        uint256 raBalanceProtectedUnitBefore = ra.balanceOf(address(protectedUnit));
 
-        liquidator.finishHedgeUnitOrder(randomRefId);
+        liquidator.finishProtectedUnitOrder(randomRefId);
 
-        uint256 paBalanceHedgeUnitAfter = pa.balanceOf(address(hedgeUnit));
-        uint256 raBalanceHedgeUnitAfter = ra.balanceOf(address(hedgeUnit));
+        uint256 paBalanceProtectedUnitAfter = pa.balanceOf(address(protectedUnit));
+        uint256 raBalanceProtectedUnitAfter = ra.balanceOf(address(protectedUnit));
 
-        vm.assertEq(paBalanceHedgeUnitAfter - paBalanceHedgeUnitBefore, expectedLeftover);
-        vm.assertEq(raBalanceHedgeUnitAfter - raBalanceHedgeUnitBefore, amountFilled);
+        vm.assertEq(paBalanceProtectedUnitAfter - paBalanceProtectedUnitBefore, expectedLeftover);
+        vm.assertEq(raBalanceProtectedUnitAfter - raBalanceProtectedUnitBefore, amountFilled);
     }
 
     function setPreSignature(bytes calldata orderUid, bool signed) external {
@@ -141,18 +141,18 @@ contract HedgeUnitTest is Helper {
         // irrelevant, since we're testing the logic ourself
         bytes memory randomOrderUid = bytes.concat(keccak256("orderUid"));
 
-        ILiquidator.CreateHedgeUnitOrderParams memory params = ILiquidator.CreateHedgeUnitOrderParams({
+        ILiquidator.CreateProtectedUnitOrderParams memory params = ILiquidator.CreateProtectedUnitOrderParams({
             internalRefId: randomRefId,
             orderUid: randomOrderUid,
             sellToken: address(pa),
             sellAmount: amountToSell,
             buyToken: address(ra),
-            hedgeUnit: address(hedgeUnit)
+            protectedUnit: address(protectedUnit)
         });
 
-        liquidator.createOrderHedgeUnit(params);
+        liquidator.createOrderProtectedUnit(params);
 
-        address receiver = liquidator.fetchHedgeUnitReceiver(randomRefId);
+        address receiver = liquidator.fetchProtectedUnitReceiver(randomRefId);
 
         // mimic trade execution
         vm.stopPrank();
@@ -161,16 +161,16 @@ contract HedgeUnitTest is Helper {
         vm.startPrank(DEFAULT_ADDRESS);
         ra.transfer(address(receiver), amountToSell);
 
-        uint256 paBalanceHedgeUnitBefore = pa.balanceOf(address(hedgeUnit));
-        uint256 raBalanceHedgeUnitBefore = ra.balanceOf(address(hedgeUnit));
+        uint256 paBalanceProtectedUnitBefore = pa.balanceOf(address(protectedUnit));
+        uint256 raBalanceProtectedUnitBefore = ra.balanceOf(address(protectedUnit));
 
-        liquidator.finishHedgeUnitOrder(randomRefId);
+        liquidator.finishProtectedUnitOrder(randomRefId);
 
-        uint256 paBalanceHedgeUnitAfter = pa.balanceOf(address(hedgeUnit));
-        uint256 raBalanceHedgeUnitAfter = ra.balanceOf(address(hedgeUnit));
+        uint256 paBalanceProtectedUnitAfter = pa.balanceOf(address(protectedUnit));
+        uint256 raBalanceProtectedUnitAfter = ra.balanceOf(address(protectedUnit));
 
-        vm.assertEq(paBalanceHedgeUnitAfter - paBalanceHedgeUnitBefore, 0);
-        vm.assertEq(raBalanceHedgeUnitAfter - raBalanceHedgeUnitBefore, amountToSell);
+        vm.assertEq(paBalanceProtectedUnitAfter - paBalanceProtectedUnitBefore, 0);
+        vm.assertEq(raBalanceProtectedUnitAfter - raBalanceProtectedUnitBefore, amountToSell);
     }
 
     function test_liquidationAndExecuteTrade() external {
@@ -180,18 +180,18 @@ contract HedgeUnitTest is Helper {
         // irrelevant, since we're testing the logic ourself
         bytes memory randomOrderUid = bytes.concat(keccak256("orderUid"));
 
-        ILiquidator.CreateHedgeUnitOrderParams memory params = ILiquidator.CreateHedgeUnitOrderParams({
+        ILiquidator.CreateProtectedUnitOrderParams memory params = ILiquidator.CreateProtectedUnitOrderParams({
             internalRefId: randomRefId,
             orderUid: randomOrderUid,
             sellToken: address(pa),
             sellAmount: amountToSell,
             buyToken: address(ra),
-            hedgeUnit: address(hedgeUnit)
+            protectedUnit: address(protectedUnit)
         });
 
-        liquidator.createOrderHedgeUnit(params);
+        liquidator.createOrderProtectedUnit(params);
 
-        address receiver = liquidator.fetchHedgeUnitReceiver(randomRefId);
+        address receiver = liquidator.fetchProtectedUnitReceiver(randomRefId);
 
         // mimic trade execution
         vm.stopPrank();
@@ -200,19 +200,19 @@ contract HedgeUnitTest is Helper {
         vm.startPrank(DEFAULT_ADDRESS);
         ra.transfer(address(receiver), amountToSell);
 
-        uint256 paBalanceHedgeUnitBefore = pa.balanceOf(address(hedgeUnit));
-        uint256 raBalanceHedgeUnitBefore = ra.balanceOf(address(hedgeUnit));
-        uint256 dsBalanceHedgeUnitBefore = dsToken.balanceOf(address(hedgeUnit));
+        uint256 paBalanceProtectedUnitBefore = pa.balanceOf(address(protectedUnit));
+        uint256 raBalanceProtectedUnitBefore = ra.balanceOf(address(protectedUnit));
+        uint256 dsBalanceProtectedUnitBefore = dsToken.balanceOf(address(protectedUnit));
 
-        uint256 dsBought = liquidator.finishHedgeUnitOrderAndExecuteTrade(randomRefId, 0, defaultBuyApproxParams(), defaultOffchainGuessParams());
+        uint256 dsBought = liquidator.finishProtectedUnitOrderAndExecuteTrade(randomRefId, 0, defaultBuyApproxParams(), defaultOffchainGuessParams());
 
-        uint256 paBalanceHedgeUnitAfter = pa.balanceOf(address(hedgeUnit));
-        uint256 raBalanceHedgeUnitAfter = ra.balanceOf(address(hedgeUnit));
-        uint256 dsBalanceHedgeUnitAfter = dsToken.balanceOf(address(hedgeUnit));
+        uint256 paBalanceProtectedUnitAfter = pa.balanceOf(address(protectedUnit));
+        uint256 raBalanceProtectedUnitAfter = ra.balanceOf(address(protectedUnit));
+        uint256 dsBalanceProtectedUnitAfter = dsToken.balanceOf(address(protectedUnit));
 
-        vm.assertEq(paBalanceHedgeUnitAfter - paBalanceHedgeUnitBefore, 0);
-        vm.assertEq(raBalanceHedgeUnitAfter - raBalanceHedgeUnitBefore, 0);
-        vm.assertEq(dsBalanceHedgeUnitAfter - dsBalanceHedgeUnitBefore, dsBought);
+        vm.assertEq(paBalanceProtectedUnitAfter - paBalanceProtectedUnitBefore, 0);
+        vm.assertEq(raBalanceProtectedUnitAfter - raBalanceProtectedUnitBefore, 0);
+        vm.assertEq(dsBalanceProtectedUnitAfter - dsBalanceProtectedUnitBefore, dsBought);
     }
 
     function test_liquidationAndExecuteTradeWhenItReverts() external {
@@ -222,18 +222,18 @@ contract HedgeUnitTest is Helper {
         // irrelevant, since we're testing the logic ourself
         bytes memory randomOrderUid = bytes.concat(keccak256("orderUid"));
 
-        ILiquidator.CreateHedgeUnitOrderParams memory params = ILiquidator.CreateHedgeUnitOrderParams({
+        ILiquidator.CreateProtectedUnitOrderParams memory params = ILiquidator.CreateProtectedUnitOrderParams({
             internalRefId: randomRefId,
             orderUid: randomOrderUid,
             sellToken: address(pa),
             sellAmount: amountToSell,
             buyToken: address(ra),
-            hedgeUnit: address(hedgeUnit)
+            protectedUnit: address(protectedUnit)
         });
 
-        liquidator.createOrderHedgeUnit(params);
+        liquidator.createOrderProtectedUnit(params);
 
-        address receiver = liquidator.fetchHedgeUnitReceiver(randomRefId);
+        address receiver = liquidator.fetchProtectedUnitReceiver(randomRefId);
 
         // mimic trade execution
         vm.stopPrank();
@@ -242,21 +242,21 @@ contract HedgeUnitTest is Helper {
         vm.startPrank(DEFAULT_ADDRESS);
         ra.transfer(address(receiver), amountToSell);
 
-        uint256 paBalanceHedgeUnitBefore = pa.balanceOf(address(hedgeUnit));
-        uint256 raBalanceHedgeUnitBefore = ra.balanceOf(address(hedgeUnit));
-        uint256 dsBalanceHedgeUnitBefore = dsToken.balanceOf(address(hedgeUnit));
+        uint256 paBalanceProtectedUnitBefore = pa.balanceOf(address(protectedUnit));
+        uint256 raBalanceProtectedUnitBefore = ra.balanceOf(address(protectedUnit));
+        uint256 dsBalanceProtectedUnitBefore = dsToken.balanceOf(address(protectedUnit));
 
         uint256 dsBought =
-            liquidator.finishHedgeUnitOrderAndExecuteTrade(randomRefId, 10000000 ether, defaultBuyApproxParams(), defaultOffchainGuessParams());
+            liquidator.finishProtectedUnitOrderAndExecuteTrade(randomRefId, 10000000 ether, defaultBuyApproxParams(), defaultOffchainGuessParams());
         vm.assertEq(dsBought, 0);
 
-        uint256 paBalanceHedgeUnitAfter = pa.balanceOf(address(hedgeUnit));
-        uint256 raBalanceHedgeUnitAfter = ra.balanceOf(address(hedgeUnit));
-        uint256 dsBalanceHedgeUnitAfter = dsToken.balanceOf(address(hedgeUnit));
+        uint256 paBalanceProtectedUnitAfter = pa.balanceOf(address(protectedUnit));
+        uint256 raBalanceProtectedUnitAfter = ra.balanceOf(address(protectedUnit));
+        uint256 dsBalanceProtectedUnitAfter = dsToken.balanceOf(address(protectedUnit));
 
-        vm.assertEq(paBalanceHedgeUnitAfter - paBalanceHedgeUnitBefore, 0);
-        vm.assertEq(raBalanceHedgeUnitAfter - raBalanceHedgeUnitBefore, amountToSell);
-        vm.assertEq(dsBalanceHedgeUnitAfter - dsBalanceHedgeUnitBefore, 0);
+        vm.assertEq(paBalanceProtectedUnitAfter - paBalanceProtectedUnitBefore, 0);
+        vm.assertEq(raBalanceProtectedUnitAfter - raBalanceProtectedUnitBefore, amountToSell);
+        vm.assertEq(dsBalanceProtectedUnitAfter - dsBalanceProtectedUnitBefore, 0);
     }
 
     function test_revertIfNotLiquidator() external {
@@ -266,20 +266,20 @@ contract HedgeUnitTest is Helper {
         // irrelevant, since we're testing the logic ourself
         bytes memory randomOrderUid = bytes.concat(keccak256("orderUid"));
 
-        ILiquidator.CreateHedgeUnitOrderParams memory params = ILiquidator.CreateHedgeUnitOrderParams({
+        ILiquidator.CreateProtectedUnitOrderParams memory params = ILiquidator.CreateProtectedUnitOrderParams({
             internalRefId: randomRefId,
             orderUid: randomOrderUid,
             sellToken: address(pa),
             sellAmount: amountToSell,
             buyToken: address(ra),
-            hedgeUnit: address(hedgeUnit)
+            protectedUnit: address(protectedUnit)
         });
 
         vm.startPrank(address(99));
         vm.expectRevert();
-        liquidator.createOrderHedgeUnit(params);
+        liquidator.createOrderProtectedUnit(params);
 
         vm.expectRevert();
-        liquidator.finishHedgeUnitOrderAndExecuteTrade(randomRefId, 10000000 ether, defaultBuyApproxParams(), defaultOffchainGuessParams());
+        liquidator.finishProtectedUnitOrderAndExecuteTrade(randomRefId, 10000000 ether, defaultBuyApproxParams(), defaultOffchainGuessParams());
     }
 }

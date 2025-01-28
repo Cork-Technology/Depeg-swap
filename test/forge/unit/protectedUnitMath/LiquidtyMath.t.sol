@@ -1,6 +1,6 @@
 pragma solidity ^0.8.24;
 
-import "./../../../../contracts/libraries/HedgeUnitMath.sol";
+import "./../../../../contracts/libraries/ProtectedUnitMath.sol";
 import "./../../../../contracts/interfaces/IErrors.sol";
 import "forge-std/Test.sol";
 import "forge-std/console.sol";
@@ -12,7 +12,7 @@ contract LiquidityMathTest is Test {
         uint256 reserveDs = 5 ether;
         uint256 totalLiquidity = 10 ether;
 
-        (uint256 amountDs, uint256 amountPa) = HedgeUnitMath.previewMint(1 ether, reservePa, reserveDs, totalLiquidity);
+        (uint256 amountDs, uint256 amountPa) = ProtectedUnitMath.previewMint(1 ether, reservePa, reserveDs, totalLiquidity);
 
         vm.assertEq(amountDs, 0.5 ether);
         vm.assertEq(amountPa, 1 ether);
@@ -22,19 +22,19 @@ contract LiquidityMathTest is Test {
         uint256 amount = 1000 ether;
         uint8 decimals = 18;
 
-        uint256 normalizedAmount = HedgeUnitMath.normalizeDecimals(amount, 18, decimals);
+        uint256 normalizedAmount = ProtectedUnitMath.normalizeDecimals(amount, 18, decimals);
 
         vm.assertEq(normalizedAmount, 1000 ether);
 
         decimals = 6;
 
-        normalizedAmount = HedgeUnitMath.normalizeDecimals(amount, 18, decimals);
+        normalizedAmount = ProtectedUnitMath.normalizeDecimals(amount, 18, decimals);
 
         vm.assertEq(normalizedAmount, 1000 ether / 1e12);
 
         decimals = 24;
 
-        normalizedAmount = HedgeUnitMath.normalizeDecimals(amount, 18, decimals);
+        normalizedAmount = ProtectedUnitMath.normalizeDecimals(amount, 18, decimals);
 
         vm.assertEq(normalizedAmount, 1000 ether * 1e6);
     }
@@ -47,7 +47,7 @@ contract LiquidityMathTest is Test {
         uint256 amountPa = 1000 ether;
         uint256 amountDs = 1000 ether;
 
-        uint256 liquidityMinted = HedgeUnitMath.mint(reservePa, totalLiquidity, amountPa, amountDs);
+        uint256 liquidityMinted = ProtectedUnitMath.mint(reservePa, totalLiquidity, amountPa, amountDs);
 
         vm.assertEq(liquidityMinted, 1000 ether);
     }
@@ -61,7 +61,7 @@ contract LiquidityMathTest is Test {
         uint256 amountDs = 900 ether;
 
         vm.expectRevert(IErrors.InvalidAmount.selector);
-        HedgeUnitMath.mint(reservePa, totalLiquidity, amountPa, amountDs);
+        ProtectedUnitMath.mint(reservePa, totalLiquidity, amountPa, amountDs);
     }
 
     function test_addLiquiditySubsequent() external {
@@ -72,7 +72,7 @@ contract LiquidityMathTest is Test {
         uint256 amountPa = 1000 ether;
         uint256 amountDs = 900 ether;
 
-        uint256 liquidityMinted = HedgeUnitMath.mint(reservePa, totalLiquidity, amountPa, amountDs);
+        uint256 liquidityMinted = ProtectedUnitMath.mint(reservePa, totalLiquidity, amountPa, amountDs);
 
         vm.assertApproxEqAbs(liquidityMinted, 474.3416491 ether, 0.0001 ether);
     }
@@ -85,7 +85,7 @@ contract LiquidityMathTest is Test {
 
         uint256 liquidityAmount = 100 ether;
         (uint256 amountPa, uint256 amountDs, uint256 amountRa) =
-            HedgeUnitMath.withdraw(reservePa, reserveDs, reserveRa, totalLiquidity, liquidityAmount);
+            ProtectedUnitMath.withdraw(reservePa, reserveDs, reserveRa, totalLiquidity, liquidityAmount);
 
         vm.assertApproxEqAbs(amountPa, 210.818 ether, 0.001 ether);
         vm.assertApproxEqAbs(amountDs, 189.736 ether, 0.001 ether);
@@ -94,7 +94,7 @@ contract LiquidityMathTest is Test {
         liquidityAmount = totalLiquidity;
 
         (amountPa, amountDs, amountRa) =
-            HedgeUnitMath.withdraw(reservePa, reserveDs, reserveRa, totalLiquidity, liquidityAmount);
+            ProtectedUnitMath.withdraw(reservePa, reserveDs, reserveRa, totalLiquidity, liquidityAmount);
 
         vm.assertEq(amountPa, 2000 ether);
         vm.assertEq(amountDs, 1800 ether);
@@ -111,7 +111,7 @@ contract LiquidityMathTest is Test {
         uint256 liquidityAmount = 0;
 
         vm.expectRevert();
-        HedgeUnitMath.withdraw(reservePa, reserveDs, reserveRa, totalLiquidity, liquidityAmount);
+        ProtectedUnitMath.withdraw(reservePa, reserveDs, reserveRa, totalLiquidity, liquidityAmount);
     }
 
     function testRevert_removeLiquidityNoLiquidity() external {
@@ -123,7 +123,7 @@ contract LiquidityMathTest is Test {
         uint256 liquidityAmount = 100 ether;
 
         vm.expectRevert();
-        HedgeUnitMath.withdraw(reservePa, reserveDs, reserveRa, totalLiquidity, liquidityAmount);
+        ProtectedUnitMath.withdraw(reservePa, reserveDs, reserveRa, totalLiquidity, liquidityAmount);
     }
 
     function testFuzz_proportionalAmount(uint256 amountPa) external {
@@ -132,7 +132,7 @@ contract LiquidityMathTest is Test {
         uint256 reservePa = 1000 ether;
         uint256 reserveDs = 2000 ether;
 
-        uint256 amountDs = HedgeUnitMath.getProportionalAmount(amountPa, reservePa, reserveDs);
+        uint256 amountDs = ProtectedUnitMath.getProportionalAmount(amountPa, reservePa, reserveDs);
 
         vm.assertEq(amountDs, amountPa * 2);
     }

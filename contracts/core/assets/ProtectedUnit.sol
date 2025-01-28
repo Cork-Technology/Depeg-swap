@@ -7,12 +7,12 @@ import {ERC20Burnable} from "@openzeppelin/contracts/token/ERC20/extensions/ERC2
 import {ERC20, IERC20Permit} from "@openzeppelin/contracts/token/ERC20/extensions/ERC20Permit.sol";
 import {ReentrancyGuardTransient} from "@openzeppelin/contracts/utils/ReentrancyGuardTransient.sol";
 import {SafeERC20, IERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import {IHedgeUnit} from "../../interfaces/IHedgeUnit.sol";
+import {IProtectedUnit} from "../../interfaces/IProtectedUnit.sol";
 import {Id} from "../../libraries/Pair.sol";
 import {Asset} from "./Asset.sol";
-import {HedgeUnitMath} from "./../../libraries/HedgeUnitMath.sol";
+import {ProtectedUnitMath} from "./../../libraries/ProtectedUnitMath.sol";
 import {CorkConfig} from "./../CorkConfig.sol";
-import {IHedgeUnitLiquidation} from "./../../interfaces/IHedgeUnitLiquidation.sol";
+import {IProtectedUnitLiquidation} from "./../../interfaces/IProtectedUnitLiquidation.sol";
 import {IDsFlashSwapCore} from "./../../interfaces/IDsFlashSwapRouter.sol";
 import {ModuleCore} from "./../ModuleCore.sol";
 import {ERC20Permit} from "@openzeppelin/contracts/token/ERC20/extensions/ERC20Permit.sol";
@@ -26,17 +26,17 @@ struct DSData {
 }
 
 /**
- * @title HedgeUnit
- * @notice This contract allows minting and dissolving HedgeUnit tokens in exchange for two underlying assets.
+ * @title ProtectedUnit
+ * @notice This contract allows minting and dissolving ProtectedUnit tokens in exchange for two underlying assets.
  * @dev The contract uses OpenZeppelin's ERC20, ReentrancyGuardTransient,Pausable and Ownable modules.
  */
-contract HedgeUnit is
+contract ProtectedUnit is
     ERC20Permit,
     ReentrancyGuardTransient,
     Ownable,
     Pausable,
-    IHedgeUnit,
-    IHedgeUnitLiquidation,
+    IProtectedUnit,
+    IProtectedUnitLiquidation,
     ERC20Burnable
 {
     string public constant DS_PERMIT_MINT_TYPEHASH = "mint(uint256 amount)";
@@ -60,7 +60,7 @@ contract HedgeUnit is
     /// @notice The ERC20 token representing the ds asset.
     Asset internal ds;
 
-    /// @notice Maximum supply cap for minting HedgeUnit tokens.
+    /// @notice Maximum supply cap for minting ProtectedUnit tokens.
     uint256 public mintCap;
 
     DSData[] public dsHistory;
@@ -70,8 +70,8 @@ contract HedgeUnit is
      * @dev Constructor that sets the DS and pa tokens and initializes the mint cap.
      * @param _moduleCore Address of the moduleCore.
      * @param _pa Address of the pa token.
-     * @param _pairName Name of the HedgeUnit pair.
-     * @param _mintCap Initial mint cap for the HedgeUnit tokens.
+     * @param _pairName Name of the ProtectedUnit pair.
+     * @param _mintCap Initial mint cap for the ProtectedUnit tokens.
      */
     constructor(
         address _moduleCore,
@@ -83,8 +83,8 @@ contract HedgeUnit is
         address _config,
         address _flashSwapRouter
     )
-        ERC20(string(abi.encodePacked("Hedge Unit - ", _pairName)), string(abi.encodePacked("HU - ", _pairName)))
-        ERC20Permit(string(abi.encodePacked("Hedge Unit - ", _pairName)))
+        ERC20(string(abi.encodePacked("Protected Unit - ", _pairName)), string(abi.encodePacked("HU - ", _pairName)))
+        ERC20Permit(string(abi.encodePacked("Protected Unit - ", _pairName)))
         Ownable(_config)
     {
         MODULE_CORE = ModuleCore(_moduleCore);
@@ -262,9 +262,9 @@ contract HedgeUnit is
     }
 
     /**
-     * @notice Returns the dsAmount and paAmount required to mint the specified amount of HedgeUnit tokens.
-     * @return dsAmount The amount of DS tokens required to mint the specified amount of HedgeUnit tokens.
-     * @return paAmount The amount of pa tokens required to mint the specified amount of HedgeUnit tokens.
+     * @notice Returns the dsAmount and paAmount required to mint the specified amount of ProtectedUnit tokens.
+     * @return dsAmount The amount of DS tokens required to mint the specified amount of ProtectedUnit tokens.
+     * @return paAmount The amount of pa tokens required to mint the specified amount of ProtectedUnit tokens.
      */
     function previewMint(uint256 amount) public view returns (uint256 dsAmount, uint256 paAmount) {
         if (amount == 0) {
@@ -277,19 +277,19 @@ contract HedgeUnit is
 
         uint256 paReserve = _selfPaReserve();
 
-        (dsAmount, paAmount) = HedgeUnitMath.previewMint(amount, paReserve, _selfDsReserve(), totalSupply());
+        (dsAmount, paAmount) = ProtectedUnitMath.previewMint(amount, paReserve, _selfDsReserve(), totalSupply());
 
         paAmount = TransferHelper.fixedToTokenNativeDecimals(paAmount, PA);
     }
 
     /**
-     * @notice Mints HedgeUnit tokens by transferring the equivalent amount of DS and pa tokens.
+     * @notice Mints ProtectedUnit tokens by transferring the equivalent amount of DS and pa tokens.
      * @dev The function checks for the paused state and mint cap before minting.
-     * @param amount The amount of HedgeUnit tokens to mint.
+     * @param amount The amount of ProtectedUnit tokens to mint.
      * @custom:reverts EnforcedPause if minting is currently paused.
      * @custom:reverts MintCapExceeded if the mint cap is exceeded.
-     * @return dsAmount The amount of DS tokens used to mint HedgeUnit tokens.
-     * @return paAmount The amount of pa tokens used to mint HedgeUnit tokens.
+     * @return dsAmount The amount of DS tokens used to mint ProtectedUnit tokens.
+     * @return paAmount The amount of pa tokens used to mint ProtectedUnit tokens.
      */
     function mint(uint256 amount)
         external
@@ -314,7 +314,7 @@ contract HedgeUnit is
         {
             uint256 paReserve = _selfPaReserve();
 
-            (dsAmount, paAmount) = HedgeUnitMath.previewMint(amount, paReserve, _selfDsReserve(), totalSupply());
+            (dsAmount, paAmount) = ProtectedUnitMath.previewMint(amount, paReserve, _selfDsReserve(), totalSupply());
 
             paAmount = TransferHelper.fixedToTokenNativeDecimals(paAmount, PA);
         }
@@ -364,10 +364,10 @@ contract HedgeUnit is
     }
 
     /**
-     * @notice Returns the dsAmount, paAmount and raAmount received for dissolving the specified amount of HedgeUnit tokens.
-     * @return dsAmount The amount of DS tokens received for dissolving the specified amount of HedgeUnit tokens.
-     * @return paAmount The amount of PA tokens received for dissolving the specified amount of HedgeUnit tokens.
-     * @return raAmount The amount of RA tokens received for dissolving the specified amount of HedgeUnit tokens.
+     * @notice Returns the dsAmount, paAmount and raAmount received for dissolving the specified amount of ProtectedUnit tokens.
+     * @return dsAmount The amount of DS tokens received for dissolving the specified amount of ProtectedUnit tokens.
+     * @return paAmount The amount of PA tokens received for dissolving the specified amount of ProtectedUnit tokens.
+     * @return raAmount The amount of RA tokens received for dissolving the specified amount of ProtectedUnit tokens.
      */
     function previewBurn(address dissolver, uint256 amount)
         public
@@ -382,14 +382,14 @@ contract HedgeUnit is
         uint256 reserveDs = ds.balanceOf(address(this));
         uint256 reserveRa = _selfRaReserve();
 
-        (paAmount, dsAmount, raAmount) = HedgeUnitMath.withdraw(reservePa, reserveDs, reserveRa, totalLiquidity, amount);
+        (paAmount, dsAmount, raAmount) = ProtectedUnitMath.withdraw(reservePa, reserveDs, reserveRa, totalLiquidity, amount);
     }
 
     /**
-     * @notice Burns HedgeUnit tokens and returns the equivalent amount of DS and pa tokens.
-     * @param amount The amount of HedgeUnit tokens to burn.
+     * @notice Burns ProtectedUnit tokens and returns the equivalent amount of DS and pa tokens.
+     * @param amount The amount of ProtectedUnit tokens to burn.
      * @custom:reverts EnforcedPause if minting is currently paused.
-     * @custom:reverts InvalidAmount if the user has insufficient HedgeUnit balance.
+     * @custom:reverts InvalidAmount if the user has insufficient ProtectedUnit balance.
      */
     function burnFrom(address account, uint256 amount)
         public
@@ -457,6 +457,6 @@ contract HedgeUnit is
     }
 
     function _normalize(uint256 amount, uint8 decimalsBefore, uint8 decimalsAfter) public pure returns (uint256) {
-        return HedgeUnitMath.normalizeDecimals(amount, decimalsBefore, decimalsAfter);
+        return ProtectedUnitMath.normalizeDecimals(amount, decimalsBefore, decimalsAfter);
     }
 }

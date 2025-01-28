@@ -18,8 +18,8 @@ import "./SigUtils.sol";
 import {TestHelper} from "Cork-Hook/../test/Helper.sol";
 import "./../../contracts/interfaces/IDsFlashSwapRouter.sol";
 import "./../../contracts/core/Withdrawal.sol";
-import "./../../contracts/core/assets/HedgeUnitFactory.sol";
-import {HedgeUnitRouter} from "../../contracts/core/assets/HedgeUnitRouter.sol";
+import "./../../contracts/core/assets/ProtectedUnitFactory.sol";
+import {ProtectedUnitRouter} from "../../contracts/core/assets/ProtectedUnitRouter.sol";
 
 contract CustomErc20 is DummyWETH {
     uint8 internal __decimals;
@@ -42,8 +42,8 @@ abstract contract Helper is SigUtils, TestHelper {
     TestFlashSwapRouter internal flashSwapRouter;
     DummyWETH internal weth = new DummyWETH();
     Withdrawal internal withdrawalContract;
-    HedgeUnitFactory internal hedgeUnitFactory;
-    HedgeUnitRouter internal hedgeUnitRouter;
+    ProtectedUnitFactory internal protectedUnitFactory;
+    ProtectedUnitRouter internal protectedUnitRouter;
 
     Id defaultCurrencyId;
 
@@ -355,13 +355,13 @@ abstract contract Helper is SigUtils, TestHelper {
         setupConfig();
         setupFlashSwapRouter();
         initializeWithdrawalContract();
-        initializeHedgeUnitFactory();
+        initializeProtectedUnitFactory();
     }
 
-    function initializeHedgeUnitFactory() internal {
-        hedgeUnitRouter = new HedgeUnitRouter();
-        hedgeUnitFactory = new HedgeUnitFactory(address(moduleCore), address(corkConfig), address(flashSwapRouter));
-        corkConfig.setHedgeUnitFactory(address(hedgeUnitFactory));
+    function initializeProtectedUnitFactory() internal {
+        protectedUnitRouter = new ProtectedUnitRouter();
+        protectedUnitFactory = new ProtectedUnitFactory(address(moduleCore), address(corkConfig), address(flashSwapRouter));
+        corkConfig.setProtectedUnitFactory(address(protectedUnitFactory));
     }
 
     function forceUnpause(Id id) internal {

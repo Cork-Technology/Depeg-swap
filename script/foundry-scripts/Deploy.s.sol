@@ -10,9 +10,9 @@ import {CorkConfig} from "../../contracts/core/CorkConfig.sol";
 import {RouterState} from "../../contracts/core/flash-swaps/FlashSwapRouter.sol";
 import {ModuleCore} from "../../contracts/core/ModuleCore.sol";
 import {Liquidator} from "../../contracts/core/liquidators/cow-protocol/Liquidator.sol";
-import {HedgeUnit} from "../../contracts/core/assets/HedgeUnit.sol";
-import {HedgeUnitFactory} from "../../contracts/core/assets/HedgeUnitFactory.sol";
-import {HedgeUnitRouter} from "../../contracts/core/assets/HedgeUnitRouter.sol";
+import {ProtectedUnit} from "../../contracts/core/assets/ProtectedUnit.sol";
+import {ProtectedUnitFactory} from "../../contracts/core/assets/ProtectedUnitFactory.sol";
+import {ProtectedUnitRouter} from "../../contracts/core/assets/ProtectedUnitRouter.sol";
 import {CETH} from "../../contracts/tokens/CETH.sol";
 import {CST} from "../../contracts/tokens/CST.sol";
 import {Id} from "../../contracts/libraries/Pair.sol";
@@ -34,13 +34,13 @@ contract DeployScript is Script {
     CorkHook public hook;
     LiquidityToken public liquidityToken;
     Liquidator public liquidator;
-    HedgeUnitFactory public hedgeUnitFactory;
-    HedgeUnitRouter public hedgeUnitRouter;
+    ProtectedUnitFactory public protectedUnitFactory;
+    ProtectedUnitRouter public protectedUnitRouter;
 
-    HedgeUnit public hedgeUnitbsETH;
-    HedgeUnit public hedgeUnitlbETH;
-    HedgeUnit public hedgeUnitwamuETH;
-    HedgeUnit public hedgeUnitmlETH;
+    ProtectedUnit public protectedUnitbsETH;
+    ProtectedUnit public protectedUnitlbETH;
+    ProtectedUnit public protectedUnitwamuETH;
+    ProtectedUnit public protectedUnitmlETH;
 
     bool public isProd = vm.envBool("PRODUCTION");
     uint256 public base_redemption_fee = vm.envUint("PSM_BASE_REDEMPTION_FEE_PERCENTAGE");
@@ -191,16 +191,16 @@ contract DeployScript is Script {
         console.log("Liquidator                      : ", address(liquidator));
         console.log("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-");
 
-        // Deploy the HedgeUnitFactry contract
-        hedgeUnitRouter = new HedgeUnitRouter();
-        hedgeUnitFactory = new HedgeUnitFactory(address(moduleCore), address(config), address(flashswapRouter));
-        config.setHedgeUnitFactory(address(hedgeUnitFactory));
-        console.log("HedgeUnit Factory               : ", address(hedgeUnitFactory));
+        // Deploy the ProtectedUnitFactry contract
+        protectedUnitRouter = new ProtectedUnitRouter();
+        protectedUnitFactory = new ProtectedUnitFactory(address(moduleCore), address(config), address(flashswapRouter));
+        config.setProtectedUnitFactory(address(protectedUnitFactory));
+        console.log("ProtectedUnit Factory               : ", address(protectedUnitFactory));
         console.log("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-");
 
-        // Deploy the HedgeUnit contract
-        hedgeUnitbsETH = HedgeUnit(
-            config.deployHedgeUnit(
+        // Deploy the ProtectedUnit contract
+        protectedUnitbsETH = ProtectedUnit(
+            config.deployProtectedUnit(
                 moduleCore.getId(bsETH, ceth, bsETH_CETH_expiry),
                 bsETH,
                 ceth,
@@ -208,10 +208,10 @@ contract DeployScript is Script {
                 INITIAL_MINT_CAP
             )
         );
-        console.log("HU bsETH                        : ", address(hedgeUnitbsETH));
+        console.log("HU bsETH                        : ", address(protectedUnitbsETH));
 
-        hedgeUnitlbETH = HedgeUnit(
-            config.deployHedgeUnit(
+        protectedUnitlbETH = ProtectedUnit(
+            config.deployProtectedUnit(
                 moduleCore.getId(lbETH, ceth, lbETH_CETH_expiry),
                 lbETH,
                 ceth,
@@ -219,10 +219,10 @@ contract DeployScript is Script {
                 INITIAL_MINT_CAP
             )
         );
-        console.log("HU lbETH                        : ", address(hedgeUnitlbETH));
+        console.log("HU lbETH                        : ", address(protectedUnitlbETH));
 
-        hedgeUnitwamuETH = HedgeUnit(
-            config.deployHedgeUnit(
+        protectedUnitwamuETH = ProtectedUnit(
+            config.deployProtectedUnit(
                 moduleCore.getId(wamuETH, ceth, wamuETH_CETH_expiry),
                 wamuETH,
                 ceth,
@@ -230,10 +230,10 @@ contract DeployScript is Script {
                 INITIAL_MINT_CAP
             )
         );
-        console.log("HU wamuETH                      : ", address(hedgeUnitwamuETH));
+        console.log("HU wamuETH                      : ", address(protectedUnitwamuETH));
 
-        hedgeUnitmlETH = HedgeUnit(
-            config.deployHedgeUnit(
+        protectedUnitmlETH = ProtectedUnit(
+            config.deployProtectedUnit(
                 moduleCore.getId(mlETH, ceth, mlETH_CETH_expiry),
                 mlETH,
                 ceth,
@@ -241,7 +241,7 @@ contract DeployScript is Script {
                 INITIAL_MINT_CAP
             )
         );
-        console.log("HU mlETH                        : ", address(hedgeUnitmlETH));
+        console.log("HU mlETH                        : ", address(protectedUnitmlETH));
         console.log("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-");
 
         // Transfer Ownership to moduleCore
