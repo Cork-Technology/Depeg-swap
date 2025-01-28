@@ -165,7 +165,12 @@ contract AssetFactory is IAssetFactory, OwnableUpgradeable, UUPSUpgradeable {
         uint256 psmExchangeRate,
         uint256 dsId
     ) external override onlyOwner returns (address ct, address ds) {
+        if(psmExchangeRate == 0) {
+            revert InvalidRate();
+        }
+
         Pair memory asset = Pair(_pa, _ra, expiryInterval);
+        Id id = asset.toId();
 
         uint256 expiry = block.timestamp + expiryInterval;
 
@@ -182,14 +187,14 @@ contract AssetFactory is IAssetFactory, OwnableUpgradeable, UUPSUpgradeable {
 
         // prevent deploying a swap asset of a non existent pair, logically won't ever happen
         // just to be safe
-        if (lvs[asset.toId()] == address(0)) {
+        if (lvs[id] == address(0)) {
             revert NotExist(_ra, _pa);
         }
 
         ct = address(new Asset(CT_PREFIX, pairname, _owner, expiry, psmExchangeRate, dsId));
         ds = address(new Asset(DS_PREFIX, pairname, _owner, expiry, psmExchangeRate, dsId));
 
-        swapAssets[Pair(_pa, _ra, expiryInterval).toId()].push(SwapPair(ct, ds));
+        swapAssets[id].push(SwapPair(ct, ds));
 
         deployed[ct] = true;
         deployed[ds] = true;
