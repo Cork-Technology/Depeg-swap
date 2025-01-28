@@ -40,7 +40,7 @@ contract Liquidator is ILiquidator {
     address public immutable CONFIG;
     address public immutable HOOK_TRAMPOLINE;
     address public immutable VAULT_LIQUIDATOR_BASE;
-    address public immutable HEDGEUNIT_LIQUIDATOR_BASE;
+    address public immutable PROTECTED_UNIT_LIQUIDATOR_BASE;
     address public immutable MODULE_CORE;
 
     mapping(bytes32 => Orders) internal orderCalls;
@@ -67,7 +67,7 @@ contract Liquidator is ILiquidator {
         CONFIG = _config;
         HOOK_TRAMPOLINE = _hookTrampoline;
         VAULT_LIQUIDATOR_BASE = address(new VaultChildLiquidator());
-        HEDGEUNIT_LIQUIDATOR_BASE = address(new ProtectedUnitChildLiquidator());
+        PROTECTED_UNIT_LIQUIDATOR_BASE = address(new ProtectedUnitChildLiquidator());
         MODULE_CORE = _moduleCore;
     }
 
@@ -76,7 +76,7 @@ contract Liquidator is ILiquidator {
     }
 
     function fetchProtectedUnitReceiver(bytes32 refId) external returns (address receiver) {
-        receiver = Clones.predictDeterministicAddress(HEDGEUNIT_LIQUIDATOR_BASE, refId, address(this));
+        receiver = Clones.predictDeterministicAddress(PROTECTED_UNIT_LIQUIDATOR_BASE, refId, address(this));
     }
 
     function _initializeVaultLiquidator(bytes32 refId, Details memory order, bytes memory orderUid)
@@ -93,7 +93,7 @@ contract Liquidator is ILiquidator {
         bytes memory orderUid,
         address protectedUnit
     ) internal returns (address liquidator) {
-        liquidator = Clones.cloneDeterministic(HEDGEUNIT_LIQUIDATOR_BASE, refId);
+        liquidator = Clones.cloneDeterministic(PROTECTED_UNIT_LIQUIDATOR_BASE, refId);
         ProtectedUnitChildLiquidator(liquidator).initialize(this, order, orderUid, protectedUnit, refId);
     }
 
