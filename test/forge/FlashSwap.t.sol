@@ -116,19 +116,19 @@ contract FlashSwapTest is Helper {
         IDsFlashSwapCore.BuyAprroxParams memory buyParams;
         buyParams.maxApproxIter = 256;
         buyParams.epsilon = 1e9;
-        buyParams.feeIntervalAdjustment = 1e16; 
+        buyParams.feeIntervalAdjustment = 1e16;
         buyParams.precisionBufferPercentage = 1e16;
-        flashSwapRouter.swapRaforDs(defaultCurrencyId, 1, 1e18, 0.9e18, buyParams);
-        flashSwapRouter.swapRaforDs(defaultCurrencyId, 1, 1e18, 0.9e18, buyParams);
+        flashSwapRouter.swapRaforDs(defaultCurrencyId, 1, 1e18, 0.9e18, buyParams, defaultOffchainGuessParams());
+        flashSwapRouter.swapRaforDs(defaultCurrencyId, 1, 1e18, 0.9e18, buyParams, defaultOffchainGuessParams());
 
         vm.startPrank(DEFAULT_ADDRESS);
         vm.warp(block.timestamp + 100 days);
-        corkConfig.issueNewDs(defaultCurrencyId, DEFAULT_EXCHANGE_RATES, DEFAULT_REPURCHASE_FEE, DEFAULT_DECAY_DISCOUNT_RATE, DEFAULT_ROLLOVER_PERIOD, block.timestamp + 10 seconds);
+        corkConfig.issueNewDs(defaultCurrencyId, DEFAULT_EXCHANGE_RATES, DEFAULT_DECAY_DISCOUNT_RATE, DEFAULT_ROLLOVER_PERIOD, block.timestamp + 10 seconds);
 
         ERC20 lv = ERC20(moduleCore.lvAsset(defaultCurrencyId));
         lv.approve(address(moduleCore), lv.balanceOf(address(DEFAULT_ADDRESS)));
-        IVault.RedeemEarlyParams memory redeemParams  = IVault.RedeemEarlyParams(
-            defaultCurrencyId, 
+        IVault.RedeemEarlyParams memory redeemParams = IVault.RedeemEarlyParams(
+            defaultCurrencyId,
             lv.balanceOf(address(DEFAULT_ADDRESS)),
             0,
             block.timestamp + 10 seconds
@@ -138,14 +138,14 @@ contract FlashSwapTest is Helper {
         vm.startPrank(user);
         lv.approve(address(moduleCore), 19e18);
 
-        redeemParams  = IVault.RedeemEarlyParams(
-            defaultCurrencyId, 
+        redeemParams = IVault.RedeemEarlyParams(
+            defaultCurrencyId,
             lv.balanceOf(address(user)),
             0,
             block.timestamp + 10 seconds
         );
         moduleCore.redeemEarlyLv(redeemParams);
 
-        flashSwapRouter.swapRaforDs(defaultCurrencyId, 2, 1e3, 1, buyParams);
+        flashSwapRouter.swapRaforDs(defaultCurrencyId, 2, 1e3, 1, buyParams, defaultOffchainGuessParams());
     }
 }
