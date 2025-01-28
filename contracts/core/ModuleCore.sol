@@ -80,6 +80,9 @@ contract ModuleCore is OwnableUpgradeable, UUPSUpgradeable, PsmCore, Initialize,
         override
         onlyConfig
     {
+        if(expiryInterval == 0) {
+            revert InvalidExpiry();
+        }        
         Pair memory key = PairLibrary.initalize(pa, ra, expiryInterval);
         Id id = key.toId();
 
@@ -266,9 +269,6 @@ contract ModuleCore is OwnableUpgradeable, UUPSUpgradeable, PsmCore, Initialize,
         external
         onlyConfig
     {
-        if (newPsmBaseRedemptionFeePercentage > PsmLibrary.MAX_ALLOWED_FEES) {
-            revert InvalidFees();
-        }
         State storage state = states[id];
         PsmLibrary.updatePSMBaseRedemptionFeePercentage(state, newPsmBaseRedemptionFeePercentage);
         emit PsmBaseRedemptionFeePercentageUpdated(id, newPsmBaseRedemptionFeePercentage);

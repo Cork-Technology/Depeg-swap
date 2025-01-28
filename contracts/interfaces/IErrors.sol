@@ -197,4 +197,7 @@ interface IErrors {
 
     /// @notice thron when the caller is not the liquidator
     error OnlyLiquidator();
+
+    /// @notice thrown when expiry is zero
+    error InvalidExpiry();
 }
