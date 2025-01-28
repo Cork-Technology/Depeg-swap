@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.24;
 
 import {IDsFlashSwapCore} from "./IDsFlashSwapRouter.sol";
@@ -21,9 +22,12 @@ interface IHedgeUnitLiquidation {
 
     /// @notice Use funds from liquidation, the Hedge Unit will use the received funds to buy DS
     /// IMPORTANT : the Hedge Unit must make sure only the config contract can call this function, that in turns only can be called by the config contract manager
-    function useFunds(uint256 amount, uint256 amountOutMin, IDsFlashSwapCore.BuyAprroxParams calldata params)
-        external
-        returns (uint256 amountOut);
+    function useFunds(
+        uint256 amount,
+        uint256 amountOutMin,
+        IDsFlashSwapCore.BuyAprroxParams calldata params,
+        IDsFlashSwapCore.OffchainGuess calldata offchainGuess
+    ) external returns (uint256 amountOut);
 
     /// @notice Returns the amount of funds available for liquidation or trading
     /// @param token The token to check, must be either RA or PA in the contract, will fail otherwise

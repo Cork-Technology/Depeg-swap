@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.24;
 
-import {Asset, ERC20Burnable} from "../core/assets/Asset.sol";
+import {Asset} from "../core/assets/Asset.sol";
 import {SafeERC20, IERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 /**
@@ -33,10 +33,6 @@ library LvAssetLibrary {
         return self._address != address(0);
     }
 
-    function depositUnchecked(LvAsset memory self, address from, uint256 amount) internal {
-        self.asErc20().safeTransferFrom(from, address(this), amount);
-    }
-
     function totalIssued(LvAsset memory self) internal view returns (uint256 total) {
         total = IERC20(self._address).totalSupply();
     }
@@ -65,10 +61,5 @@ library LvAssetLibrary {
 
     function lockUnchecked(LvAsset storage self, uint256 amount, address from) internal {
         self.asErc20().safeTransferFrom(from, address(this), amount);
-    }
-
-    function burnSelf(LvAsset storage self, uint256 amount) internal {
-        decLocked(self, amount);
-        ERC20Burnable(self._address).burn(amount);
     }
 }

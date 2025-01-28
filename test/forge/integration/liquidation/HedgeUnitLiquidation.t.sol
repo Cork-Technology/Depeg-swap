@@ -204,7 +204,7 @@ contract HedgeUnitTest is Helper {
         uint256 raBalanceHedgeUnitBefore = ra.balanceOf(address(hedgeUnit));
         uint256 dsBalanceHedgeUnitBefore = dsToken.balanceOf(address(hedgeUnit));
 
-        uint256 dsBought = liquidator.finishHedgeUnitOrderAndExecuteTrade(randomRefId, 0, defaultBuyApproxParams());
+        uint256 dsBought = liquidator.finishHedgeUnitOrderAndExecuteTrade(randomRefId, 0, defaultBuyApproxParams(), defaultOffchainGuessParams());
 
         uint256 paBalanceHedgeUnitAfter = pa.balanceOf(address(hedgeUnit));
         uint256 raBalanceHedgeUnitAfter = ra.balanceOf(address(hedgeUnit));
@@ -247,7 +247,7 @@ contract HedgeUnitTest is Helper {
         uint256 dsBalanceHedgeUnitBefore = dsToken.balanceOf(address(hedgeUnit));
 
         uint256 dsBought =
-            liquidator.finishHedgeUnitOrderAndExecuteTrade(randomRefId, 10000000 ether, defaultBuyApproxParams());
+            liquidator.finishHedgeUnitOrderAndExecuteTrade(randomRefId, 10000000 ether, defaultBuyApproxParams(), defaultOffchainGuessParams());
         vm.assertEq(dsBought, 0);
 
         uint256 paBalanceHedgeUnitAfter = pa.balanceOf(address(hedgeUnit));
@@ -280,6 +280,6 @@ contract HedgeUnitTest is Helper {
         liquidator.createOrderHedgeUnit(params);
 
         vm.expectRevert();
-        liquidator.finishHedgeUnitOrderAndExecuteTrade(randomRefId, 10000000 ether, defaultBuyApproxParams());
+        liquidator.finishHedgeUnitOrderAndExecuteTrade(randomRefId, 10000000 ether, defaultBuyApproxParams(), defaultOffchainGuessParams());
     }
 }

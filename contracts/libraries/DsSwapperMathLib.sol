@@ -3,8 +3,9 @@ pragma solidity ^0.8.24;
 
 import {SD59x18, convert, sd, add, mul, pow, sub, div, abs, unwrap, intoUD60x18} from "@prb/math/src/SD59x18.sol";
 import {UD60x18, convert as convertUd, ud, add, mul, pow, sub, div, unwrap} from "@prb/math/src/UD60x18.sol";
-import {IMathError} from "./../interfaces/IMathError.sol";
+import {IErrors} from "./../interfaces/IErrors.sol";
 import {MarketSnapshot, MarketSnapshotLib} from "Cork-Hook/lib/MarketSnapshot.sol";
+import {TransferHelper} from "./TransferHelper.sol";
 import {LogExpMath} from "./LogExpMath.sol";
 
 library BuyMathBisectionSolver {
@@ -31,7 +32,7 @@ library BuyMathBisectionSolver {
     }
 
     /// @notice f(s) = x^1-t + y^t - (x - s + e)^1-t - (y + s)^1-t
-    function f(SD59x18 x, SD59x18 y, SD59x18 e, SD59x18 s, SD59x18 _1MinusT) public pure returns (SD59x18) {
+    function f(SD59x18 x, SD59x18 y, SD59x18 e, SD59x18 s, SD59x18 oneMinusT) public pure returns (SD59x18) {
         SD59x18 xMinSplusE = sub(x, s);
         xMinSplusE = add(xMinSplusE, e);
 
@@ -41,14 +42,14 @@ library BuyMathBisectionSolver {
             SD59x18 zero = convert(0);
 
             if (xMinSplusE < zero && yPlusS < zero) {
-                revert IMathError.InvalidS();
+                revert IErrors.InvalidS();
             }
         }
 
-        SD59x18 xPow = _pow(x, _1MinusT);
-        SD59x18 yPow = _pow(y, _1MinusT);
-        SD59x18 xMinSplusEPow = _pow(xMinSplusE, _1MinusT);
-        SD59x18 yPlusSPow = _pow(yPlusS, _1MinusT);
+        SD59x18 xPow = _pow(x, oneMinusT);
+        SD59x18 yPow = _pow(y, oneMinusT);
+        SD59x18 xMinSplusEPow = _pow(xMinSplusE, oneMinusT);
+        SD59x18 yPlusSPow = _pow(yPlusS, oneMinusT);
 
         return sub(sub(add(xPow, yPow), xMinSplusEPow), yPlusSPow);
     }
@@ -61,7 +62,7 @@ library BuyMathBisectionSolver {
         return sd(int256(LogExpMath.pow(_x, _y)));
     }
 
-    function findRoot(SD59x18 x, SD59x18 y, SD59x18 e, SD59x18 _1MinusT, SD59x18 epsilon, uint256 maxIter)
+    function findRoot(SD59x18 x, SD59x18 y, SD59x18 e, SD59x18 oneMinusT, SD59x18 epsilon, uint256 maxIter)
         public
         pure
         returns (SD59x18)
@@ -74,29 +75,29 @@ library BuyMathBisectionSolver {
             b = sub(add(x, e), delta);
         }
 
-        SD59x18 fA = f(x, y, e, a, _1MinusT);
-        SD59x18 fB = f(x, y, e, b, _1MinusT);
+        SD59x18 fA = f(x, y, e, a, oneMinusT);
+        SD59x18 fB = f(x, y, e, b, oneMinusT);
         {
             if (mul(fA, fB) >= sd(0)) {
                 uint256 maxAdjustments = 1000;
 
                 SD59x18 adjustment = mul(convert(-1e4), b);
-                for (uint256 i = 0; i < maxAdjustments; i++) {
+                for (uint256 i = 0; i < maxAdjustments; ++i) {
                     b = sub(b, adjustment);
-                    fB = f(x, y, e, b, _1MinusT);
+                    fB = f(x, y, e, b, oneMinusT);
 
                     if (mul(fA, fB) < sd(0)) {
                         break;
                     }
                 }
 
-                revert IMathError.NoSignChange();
+                revert IErrors.NoSignChange();
             }
         }
 
-        for (uint256 i = 0; i < maxIter; i++) {
+        for (uint256 i = 0; i < maxIter; ++i) {
             SD59x18 c = div(add(a, b), convert(2));
-            SD59x18 fC = f(x, y, e, c, _1MinusT);
+            SD59x18 fC = f(x, y, e, c, oneMinusT);
 
             if (abs(fC) < epsilon) {
                 return c;
@@ -115,7 +116,7 @@ library BuyMathBisectionSolver {
             }
         }
 
-        revert IMathError.NoConverge();
+        revert IErrors.NoConverge();
     }
 }
 
@@ -139,7 +140,7 @@ library SwapperMathLibrary {
         returns (uint256 raPriceRatio, uint256 ctPriceRatio)
     {
         if (raReserve <= 0 || ctReserve <= 0) {
-            revert IMathError.ZeroReserve();
+            revert IErrors.ZeroReserve();
         }
 
         raPriceRatio = unwrap(div(ud(ctReserve), ud(raReserve)));
@@ -157,7 +158,7 @@ library SwapperMathLibrary {
         uint256 maxIter
     ) external pure returns (uint256 s) {
         if (e > x && x < y) {
-            revert IMathError.InsufficientLiquidity();
+            revert IErrors.InsufficientLiquidityForSwap();
         }
 
         SD59x18 oneMinusT = BuyMathBisectionSolver.computeOneMinusT(
@@ -248,7 +249,6 @@ library SwapperMathLibrary {
         decay = sub(convertUd(100), discount);
     }
 
-    // TODO : confirm with Peter that the t for fixed price rollover sale is constant at 1 since it's fixed price
     function _calculateRolloverSale(UD60x18 lvDsReserve, UD60x18 psmDsReserve, UD60x18 raProvided, UD60x18 hpa)
         public
         view
@@ -270,12 +270,11 @@ library SwapperMathLibrary {
         if (totalDsReserve >= dsReceived) {
             raLeft = convertUd(0); // No shortfall
         } else {
-            // Calculate the RA needed for the shortfall in DS
-            UD60x18 dsShortfall = sub(dsReceived, totalDsReserve);
-            raLeft = mul(dsShortfall, hpa);
-
             // Adjust the DS received to match the total reserve
             dsReceived = totalDsReserve;
+
+            // Recalculate raLeft to account for the dust
+            raLeft = sub(raProvided, mul(dsReceived, hpa));
         }
 
         // recalculate the DS user will receive, after the RA left is deducted
@@ -411,9 +410,9 @@ library SwapperMathLibrary {
      * lower bound = the initial borrowed amount - (feeIntervalAdjustment * maxIter). if this doesn't satisfy the condition we revert as there's no sane lower bounds
      * upper = the initial borrowed amount.
      */
-    function findOptimalBorrowedAmount(OptimalBorrowParams memory params)
+    function findOptimalBorrowedAmount(OptimalBorrowParams calldata params)
         external
-        pure
+        view
         returns (OptimalBorrowResult memory result)
     {
         UD60x18 amountOutUd = convertUd(params.initialAmountOut);
@@ -429,27 +428,37 @@ library SwapperMathLibrary {
 
         UD60x18 repaymentAmountUd = lowerBound == convertUd(0)
             ? convertUd(0)
-            : convertUd(params.market.getAmountIn(convertUd(lowerBound), false));
+            : convertUd(params.market.getAmountInNoConvert(convertUd(lowerBound), false));
 
         // we skip bounds check if the max lower bound is bigger than the initial borrowed amount
         // since it's guranteed to have enough liquidity if we never borrow
         if (repaymentAmountUd > amountOutUd && lowerBound != convertUd(0)) {
-            revert IMathError.NoLowerBound();
+            revert IErrors.NoLowerBound();
         }
 
         UD60x18 upperBound = initialBorrowedAmountUd;
         UD60x18 epsilon = convertUd(params.feeEpsilon);
 
-        for (uint256 i = 0; i < params.maxIter; i++) {
+        for (uint256 i = 0; i < params.maxIter; ++i) {
             // we break if we have reached the desired range
             if (sub(upperBound, lowerBound) <= epsilon) {
                 break;
             }
 
             UD60x18 midpoint = div(add(lowerBound, upperBound), convertUd(2));
-            repaymentAmountUd = convertUd(params.market.getAmountIn(convertUd(midpoint), false));
+            repaymentAmountUd = convertUd(params.market.getAmountInNoConvert(convertUd(midpoint), false));
 
             amountOutUd = add(midpoint, suppliedAmountUd);
+
+            // we re-adjust precision here, to mitigate problems that arise when the RA decimals is less than 18(e.g USDT)
+            // the problem occurs when it doesn't have enough precision to represent the actual amount of CT we received
+            // from PSM.
+            // example would be, we're supposed to pay 3.23 CT to the AMM, but the RA only has enough decimals
+            // to represent 3.2. so we deposit 3.2 RA, then we get 3.2 CT. this is less than 3.23 CT we're supposed to pay
+            // to circumvent this, we basically "round" the amountOut here on the fly to be accurate to the RA decimals.
+            // this will incur a slight gas costs, but it's necessary to ensure the math is correct
+            amountOutUd = convertUd(TransferHelper.fixedToTokenNativeDecimals(convertUd(amountOutUd), params.market.ra));
+            amountOutUd = convertUd(TransferHelper.tokenNativeDecimalsToFixed(convertUd(amountOutUd), params.market.ra));
 
             if (repaymentAmountUd > amountOutUd) {
                 upperBound = midpoint;
@@ -464,7 +473,7 @@ library SwapperMathLibrary {
 
         // this means that there's no suitable borrowed amount that satisfies the fee constraints
         if (result.borrowedAmount == 0) {
-            revert IMathError.NoConverge();
+            revert IErrors.NoConverge();
         }
     }
 }

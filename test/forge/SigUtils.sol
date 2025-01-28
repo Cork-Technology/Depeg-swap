@@ -4,7 +4,6 @@ pragma solidity ^0.8.24;
 import "forge-std/Test.sol";
 
 contract SigUtils is Test {
-
     // keccak256("Permit(address owner,address spender,uint256 value,uint256 nonce,uint256 deadline,bytes32 functionHash)");
     bytes32 public constant CUSTOM_PERMIT_TYPEHASH = 0x80b24e394b7fdf35ccd5eb8f755150927489ac082064fc8f3e9fb140f57f3725;
 
