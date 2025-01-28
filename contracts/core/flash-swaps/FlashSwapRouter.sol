@@ -26,11 +26,11 @@ import {ReturnDataSlotLib} from "./../../libraries/ReturnDataSlotLib.sol";
  * @notice Router contract for implementing flashswaps for DS/CT
  */
 contract RouterState is
-IDsFlashSwapUtility,
-IDsFlashSwapCore,
-AccessControlUpgradeable,
-UUPSUpgradeable,
-CorkSwapCallback
+    IDsFlashSwapUtility,
+    IDsFlashSwapCore,
+    AccessControlUpgradeable,
+    UUPSUpgradeable,
+    CorkSwapCallback
 {
     using DsFlashSwaplibrary for ReserveState;
     using DsFlashSwaplibrary for AssetPair;
@@ -166,9 +166,9 @@ CorkSwapCallback
     }
 
     function onNewIssuance(Id reserveId, uint256 dsId, address ds, address ra, address ct)
-    external
-    override
-    onlyModuleCore
+        external
+        override
+        onlyModuleCore
     {
         reserves[reserveId].onNewIssuance(dsId, ds, ra, ct);
 
@@ -205,10 +205,10 @@ CorkSwapCallback
     }
 
     function emptyReservePartialLv(Id reserveId, uint256 dsId, uint256 amount)
-    external
-    override
-    onlyModuleCore
-    returns (uint256 emptied)
+        external
+        override
+        onlyModuleCore
+        returns (uint256 emptied)
     {
         emptied = reserves[reserveId].emptyReservePartialLv(dsId, amount, _moduleCore);
         emit ReserveEmptied(reserveId, dsId, amount);
@@ -220,20 +220,20 @@ CorkSwapCallback
     }
 
     function emptyReservePartialPsm(Id reserveId, uint256 dsId, uint256 amount)
-    external
-    override
-    onlyModuleCore
-    returns (uint256 emptied)
+        external
+        override
+        onlyModuleCore
+        returns (uint256 emptied)
     {
         emptied = reserves[reserveId].emptyReservePartialPsm(dsId, amount, _moduleCore);
         emit ReserveEmptied(reserveId, dsId, amount);
     }
 
     function getCurrentPriceRatio(Id id, uint256 dsId)
-    external
-    view
-    override
-    returns (uint256 raPriceRatio, uint256 ctPriceRatio)
+        external
+        view
+        override
+        returns (uint256 raPriceRatio, uint256 ctPriceRatio)
     {
         (raPriceRatio, ctPriceRatio) = reserves[id].getPriceRatio(dsId, hook);
     }
@@ -249,14 +249,14 @@ CorkSwapCallback
     }
 
     /// will return that can't be filled from the reserve, this happens when the total reserve is less than the amount requested
-    function _swapRaForDsViaRollover(Id reserveId, uint256 dsId, uint256 amountRa)
-    internal
-    returns (uint256 raLeft, uint256 dsReceived)
+    function _swapRaForDsViaRollover(Id reserveId, uint256 dsId, address user, uint256 amountRa)
+        internal
+        returns (uint256 raLeft, uint256 dsReceived)
     {
         // this means that we ignore and don't do rollover sale when it's first issuance or it's not rollover time, or no hiya(means no trade, unlikely but edge case)
         if (
             dsId == DsFlashSwaplibrary.FIRST_ISSUANCE || !reserves[reserveId].rolloverSale()
-        || reserves[reserveId].hiya == 0
+                || reserves[reserveId].hiya == 0
         ) {
             // noop and return back the full amountRa
             return (amountRa, 0);
@@ -270,9 +270,7 @@ CorkSwapCallback
             return (amountRa, 0);
         }
 
-
         amountRa = TransferHelper.tokenNativeDecimalsToFixed(amountRa, reserves[reserveId].ds[dsId].ra);
-
 
         uint256 lvProfit;
         uint256 psmProfit;
@@ -280,7 +278,7 @@ CorkSwapCallback
         uint256 psmReserveUsed;
 
         (lvProfit, psmProfit, raLeft, dsReceived, lvReserveUsed, psmReserveUsed) =
-        SwapperMathLibrary.calculateRolloverSale(assetPair.lvReserve, assetPair.psmReserve, amountRa, self.hiya);
+            SwapperMathLibrary.calculateRolloverSale(assetPair.lvReserve, assetPair.psmReserve, amountRa, self.hiya);
 
         amountRa = TransferHelper.fixedToTokenNativeDecimals(amountRa, assetPair.ra);
         raLeft = TransferHelper.fixedToTokenNativeDecimals(raLeft, assetPair.ra);
@@ -298,11 +296,11 @@ CorkSwapCallback
         IPSMcore(_moduleCore).psmAcceptFlashSwapProfit(reserveId, psmProfit);
         IVault(_moduleCore).lvAcceptRolloverProfit(reserveId, lvProfit);
 
-        IERC20(assetPair.ds).safeTransfer(msg.sender, dsReceived);
+        IERC20(assetPair.ds).safeTransfer(user, dsReceived);
 
         {
             uint256 raLeftNormalized = TransferHelper.fixedToTokenNativeDecimals(raLeft, assetPair.ra);
-            emit RolloverSold(reserveId, dsId, msg.sender, dsReceived, raLeftNormalized);
+            emit RolloverSold(reserveId, dsId, user, dsReceived, raLeftNormalized);
         }
     }
 
@@ -317,45 +315,43 @@ CorkSwapCallback
         uint256 dsId,
         uint256 amount,
         uint256 amountOutMin,
+        address user,
         IDsFlashSwapCore.BuyAprroxParams memory approxParams,
         IDsFlashSwapCore.OffchainGuess memory offchainGuess
     ) internal returns (uint256 initialBorrowedAmount, uint256 finalBorrowedAmount) {
-
         uint256 dsReceived;
         // try to swap the RA for DS via rollover, this will noop if the condition for rollover is not met
-        (amount, dsReceived) = _swapRaForDsViaRollover(reserveId, dsId, amount);
+        (amount, dsReceived) = _swapRaForDsViaRollover(reserveId, dsId, user, amount);
 
         // short circuit if all the swap is filled using rollover
         if (amount == 0) {
             // we directly increase the return data slot value with DS that the user got from rollover sale here since,
             // there's no possibility of selling the reserve, hence no chance of mix-up of return value
             ReturnDataSlotLib.increase(ReturnDataSlotLib.RETURN_SLOT, dsReceived);
-
             return (0, 0);
         }
 
-        uint256 amountOut;
-
-        if (offchainGuess.initialBorrowAmount == 0) {
-            // calculate the amount of DS tokens attributed
-            (amountOut, finalBorrowedAmount) = assetPair.getAmountOutBuyDS(amount, hook, approxParams);
-            initialBorrowedAmount = finalBorrowedAmount;
-        } else {
-            // we convert the amount to fixed point 18 decimals since, the amount out will be DS, and DS is always 18 decimals.
-            amountOut =
-                                TransferHelper.tokenNativeDecimalsToFixed(offchainGuess.initialBorrowAmount + amount, assetPair.ra);
-            finalBorrowedAmount = offchainGuess.initialBorrowAmount;
-            initialBorrowedAmount = offchainGuess.initialBorrowAmount;
+        {
+            uint256 amountOut;
+            if (offchainGuess.initialBorrowAmount == 0) {
+                // calculate the amount of DS tokens attributed
+                (amountOut, finalBorrowedAmount) = assetPair.getAmountOutBuyDS(amount, hook, approxParams);
+                initialBorrowedAmount = finalBorrowedAmount;
+            } else {
+                // we convert the amount to fixed point 18 decimals since, the amount out will be DS, and DS is always 18 decimals.
+                amountOut =
+                    TransferHelper.tokenNativeDecimalsToFixed(offchainGuess.initialBorrowAmount + amount, assetPair.ra);
+                finalBorrowedAmount = offchainGuess.initialBorrowAmount;
+                initialBorrowedAmount = offchainGuess.initialBorrowAmount;
+            }
+            finalBorrowedAmount = calculateAndSellDsReserve(
+                self,
+                assetPair,
+                CalculateAndSellDsParams(
+                    reserveId, dsId, amount, approxParams, offchainGuess, finalBorrowedAmount, amountOut
+                )
+            );
         }
-
-        finalBorrowedAmount = calculateAndSellDsReserve(
-            self,
-            assetPair,
-            CalculateAndSellDsParams(
-                reserveId, dsId, amount, approxParams, offchainGuess, finalBorrowedAmount, amountOut
-            )
-        );
-
         // increase the return data slot value with DS that the user got from rollover sale
         // the reason we do this after selling the DS reserve is to prevent mix-up of return value
         // basically, the return value is increased when the reserve sell DS, but that value is meant for thr vault/psm
@@ -364,7 +360,7 @@ CorkSwapCallback
         ReturnDataSlotLib.increase(ReturnDataSlotLib.RETURN_SLOT, dsReceived);
 
         // trigger flash swaps and send the attributed DS tokens to the user
-        __flashSwap(assetPair, finalBorrowedAmount, 0, dsId, reserveId, true, msg.sender, amount);
+        __flashSwap(assetPair, finalBorrowedAmount, 0, dsId, reserveId, true, user, amount);
     }
 
     function calculateAndSellDsReserve(
@@ -397,9 +393,9 @@ CorkSwapCallback
     }
 
     function calculateSellFromReserve(ReserveState storage self, uint256 amountOut, uint256 dsId)
-    internal
-    view
-    returns (uint256 amount)
+        internal
+        view
+        returns (uint256 amount)
     {
         AssetPair storage assetPair = self.ds[dsId];
 
@@ -422,7 +418,7 @@ CorkSwapCallback
         //
         // this function can fail, if there's not enough CT liquidity to sell the DS tokens, in that case, we skip the selling part and let user buy the DS tokens
         (profitRa, success) =
-        __swapDsforRa(assetPair, params.reserveId, params.dsId, params.amountSellFromReserve, 0, _moduleCore);
+            __swapDsforRa(assetPair, params.reserveId, params.dsId, params.amountSellFromReserve, 0, _moduleCore);
 
         if (success) {
             uint256 lvReserve = assetPair.lvReserve;
@@ -470,7 +466,7 @@ CorkSwapCallback
         IERC20(assetPair.ra).safeTransferFrom(user, address(this), amount);
 
         (result.initialBorrow, result.afterSoldBorrow) =
-        _swapRaforDs(self, assetPair, reserveId, dsId, amount, amountOutMin, params, offchainGuess);
+            _swapRaforDs(self, assetPair, reserveId, dsId, amount, amountOutMin, user, params, offchainGuess);
 
         result.amountOut = ReturnDataSlotLib.get(ReturnDataSlotLib.RETURN_SLOT);
 
@@ -500,7 +496,7 @@ CorkSwapCallback
         IERC20(assetPair.ra).safeTransferFrom(msg.sender, address(this), amount);
 
         (result.initialBorrow, result.afterSoldBorrow) =
-        _swapRaforDs(self, assetPair, reserveId, dsId, amount, amountOutMin, params, offchainGuess);
+            _swapRaforDs(self, assetPair, reserveId, dsId, amount, amountOutMin, msg.sender, params, offchainGuess);
 
         result.amountOut = ReturnDataSlotLib.get(ReturnDataSlotLib.RETURN_SLOT);
 
@@ -561,9 +557,9 @@ CorkSwapCallback
      * @return amountOut amount of RA that's received
      */
     function swapDsforRa(Id reserveId, uint256 dsId, uint256 amount, uint256 amountOutMin)
-    external
-    autoClearReturnData
-    returns (uint256 amountOut)
+        external
+        autoClearReturnData
+        returns (uint256 amountOut)
     {
         ReserveState storage self = reserves[reserveId];
         AssetPair storage assetPair = self.ds[dsId];
@@ -612,7 +608,7 @@ CorkSwapCallback
         Id reserveId,
         bool buyDs,
         address caller,
-    // DS or RA amount provided
+        // DS or RA amount provided
         uint256 provided
     ) internal {
         uint256 borrowed = buyDs ? raAmount : ctAmount;

@@ -158,15 +158,18 @@ abstract contract Helper is SigUtils, TestHelper {
         );
     }
 
-    function initializeAndIssueNewDs(uint256 expiryInSeconds) internal returns (DummyWETH ra, DummyWETH pa, Id id) {
+    function initializeAndIssueNewDsWithRaAsPermit(uint256 expiryInSeconds)
+        internal
+        returns (DummyERCWithPermit ra, DummyERCWithPermit pa, Id id)
+    {
         if (block.timestamp + expiryInSeconds > block.timestamp + 100 days) {
             revert(
                 "Expiry too far in the future, specify a default decay rate, this will cause the discount to exceed 100!"
             );
         }
 
-        ra = new DummyWETH();
-        pa = new DummyWETH();
+        ra = new DummyERCWithPermit("RA", "RA");
+        pa = new DummyERCWithPermit("PA", "PA");
 
         Pair memory _id = PairLibrary.initalize(address(pa), address(ra), expiryInSeconds);
         id = PairLibrary.toId(_id);
@@ -183,18 +186,15 @@ abstract contract Helper is SigUtils, TestHelper {
         corkConfig.updateLvStrategyCtSplitPercentage(defaultCurrencyId, DEFAULT_CT_SPLIT_PERCENTAGE);
     }
 
-    function initializeAndIssueNewDsWithRaAsPermit(uint256 expiryInSeconds)
-        internal
-        returns (DummyERCWithPermit ra, DummyERCWithPermit pa, Id id)
-    {
+    function initializeAndIssueNewDs(uint256 expiryInSeconds) internal returns (DummyWETH ra, DummyWETH pa, Id id) {
         if (block.timestamp + expiryInSeconds > block.timestamp + 100 days) {
             revert(
                 "Expiry too far in the future, specify a default decay rate, this will cause the discount to exceed 100!"
             );
         }
 
-        ra = new DummyERCWithPermit("RA", "RA");
-        pa = new DummyERCWithPermit("PA", "PA");
+        ra = new DummyWETH();
+        pa = new DummyWETH();
 
         Pair memory _id = PairLibrary.initalize(address(pa), address(ra), expiryInSeconds);
         id = PairLibrary.toId(_id);
