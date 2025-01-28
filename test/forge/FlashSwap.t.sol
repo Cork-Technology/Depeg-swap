@@ -54,7 +54,11 @@ contract FlashSwapTest is Helper {
 
         ra.approve(address(flashSwapRouter), type(uint256).max);
 
-        uint256 amountOut = flashSwapRouter.swapRaforDs(currencyId, dsId, 1 ether, 0, defaultBuyApproxParams());
+        IDsFlashSwapCore.SwapRaForDsReturn memory result = flashSwapRouter.swapRaforDs(
+            currencyId, dsId, 1 ether, 0, defaultBuyApproxParams(), defaultOffchainGuessParams()
+        );
+
+        uint256 amountOut = result.amountOut;
 
         IPSMcore(moduleCore).updatePsmAutoSellStatus(currencyId, true);
 
@@ -64,7 +68,12 @@ contract FlashSwapTest is Helper {
 
         // should work, even though there's insfuicient liquidity to sell the LV reserves
         uint256 lvReserveBefore = flashSwapRouter.getLvReserve(currencyId, dsId);
-        amountOut = flashSwapRouter.swapRaforDs(currencyId, dsId, 100 ether, 0, defaultBuyApproxParams());
+
+        result = flashSwapRouter.swapRaforDs(
+            currencyId, dsId, 100 ether, 0, defaultBuyApproxParams(), defaultOffchainGuessParams()
+        );
+        amountOut = result.amountOut;
+
         uint256 lvReserveAfter = flashSwapRouter.getLvReserve(currencyId, dsId);
 
         vm.assertEq(lvReserveBefore, lvReserveAfter);
@@ -81,9 +90,62 @@ contract FlashSwapTest is Helper {
 
         // now if buy, it should sell from reserves
         lvReserveBefore = flashSwapRouter.getLvReserve(currencyId, dsId);
-        amountOut = flashSwapRouter.swapRaforDs(currencyId, dsId, 10 ether, 0, defaultBuyApproxParams());
+        result = flashSwapRouter.swapRaforDs(currencyId, dsId, 10 ether, 0, defaultBuyApproxParams(), defaultOffchainGuessParams());
+        amountOut = result.amountOut;
+
         lvReserveAfter = flashSwapRouter.getLvReserve(currencyId, dsId);
 
         vm.assertTrue(lvReserveAfter < lvReserveBefore);
+    }
+
+    function test_swapRaForDsShouldHandleWhenPsmAndLvReservesAreZero() public virtual {
+        address user = address(0x123456789);
+        deal(address(ra), user, 100e18);
+        deal(address(pa), user, 100e18);
+
+        vm.startPrank(user);
+        ra.approve(address(moduleCore), 100e18);
+        // moduleCore.depositPsm(defaultCurrencyId, 1e18);
+        moduleCore.depositLv(defaultCurrencyId, 19e18, 0, 0);
+
+        (address ct, address ds) = moduleCore.swapAsset(defaultCurrencyId, moduleCore.lastDsId(defaultCurrencyId));
+        ERC20(ds).approve(address(flashSwapRouter), 1e18);
+
+        ra.approve(address(flashSwapRouter), 100e18);
+
+        IDsFlashSwapCore.BuyAprroxParams memory buyParams;
+        buyParams.maxApproxIter = 256;
+        buyParams.epsilon = 1e9;
+        buyParams.feeIntervalAdjustment = 1e16;
+        buyParams.precisionBufferPercentage = 1e16;
+        flashSwapRouter.swapRaforDs(defaultCurrencyId, 1, 1e18, 0.9e18, buyParams, defaultOffchainGuessParams());
+        flashSwapRouter.swapRaforDs(defaultCurrencyId, 1, 1e18, 0.9e18, buyParams, defaultOffchainGuessParams());
+
+        vm.startPrank(DEFAULT_ADDRESS);
+        vm.warp(block.timestamp + 100 days);
+        corkConfig.issueNewDs(defaultCurrencyId, DEFAULT_EXCHANGE_RATES, DEFAULT_DECAY_DISCOUNT_RATE, DEFAULT_ROLLOVER_PERIOD, block.timestamp + 10 seconds);
+
+        ERC20 lv = ERC20(moduleCore.lvAsset(defaultCurrencyId));
+        lv.approve(address(moduleCore), lv.balanceOf(address(DEFAULT_ADDRESS)));
+        IVault.RedeemEarlyParams memory redeemParams = IVault.RedeemEarlyParams(
+            defaultCurrencyId,
+            lv.balanceOf(address(DEFAULT_ADDRESS)),
+            0,
+            block.timestamp + 10 seconds
+        );
+        moduleCore.redeemEarlyLv(redeemParams);
+
+        vm.startPrank(user);
+        lv.approve(address(moduleCore), 19e18);
+
+        redeemParams = IVault.RedeemEarlyParams(
+            defaultCurrencyId,
+            lv.balanceOf(address(user)),
+            0,
+            block.timestamp + 10 seconds
+        );
+        moduleCore.redeemEarlyLv(redeemParams);
+
+        flashSwapRouter.swapRaforDs(defaultCurrencyId, 2, 1e3, 1, buyParams, defaultOffchainGuessParams());
     }
 }
