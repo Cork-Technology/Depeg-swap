@@ -3,20 +3,21 @@ pragma solidity ^0.8.24;
 
 import {Id} from "../libraries/Pair.sol";
 import {State} from "../libraries/State.sol";
-import {ICommon} from "../interfaces/ICommon.sol";
+import {IErrors} from "./../interfaces/IErrors.sol";
 import {PsmLibrary} from "../libraries/PsmLib.sol";
 import {RouterState} from "./flash-swaps/FlashSwapRouter.sol";
 import {ICorkHook} from "./../interfaces/UniV4/IMinimalHook.sol";
 import {ILiquidatorRegistry} from "./../interfaces/ILiquidatorRegistry.sol";
 import {ReentrancyGuardTransient} from "@openzeppelin/contracts/utils/ReentrancyGuardTransient.sol";
 import {Withdrawal} from "./Withdrawal.sol";
+import {CorkConfig} from "./CorkConfig.sol";
 
 /**
  * @title ModuleState Abstract Contract
  * @author Cork Team
  * @notice Abstract ModuleState contract for providing base for Modulecore contract
  */
-abstract contract ModuleState is ICommon, ReentrancyGuardTransient {
+abstract contract ModuleState is IErrors, ReentrancyGuardTransient {
     using PsmLibrary for State;
 
     mapping(Id => State) internal states;
@@ -35,10 +36,11 @@ abstract contract ModuleState is ICommon, ReentrancyGuardTransient {
     /**
      * @dev checks if caller is config contract or not
      */
-    function onlyConfig() internal {
+    modifier onlyConfig() {
         if (msg.sender != CONFIG) {
             revert OnlyConfigAllowed();
         }
+        _;
     }
 
     function factory() external view returns (address) {
@@ -64,7 +66,7 @@ abstract contract ModuleState is ICommon, ReentrancyGuardTransient {
         AMM_HOOK = _ammHook;
     }
 
-    function _setWithdrawalContract(address _withdrawalContract) internal{
+    function _setWithdrawalContract(address _withdrawalContract) internal {
         WITHDRAWAL_CONTRACT = _withdrawalContract;
     }
 
@@ -80,49 +82,56 @@ abstract contract ModuleState is ICommon, ReentrancyGuardTransient {
         return Withdrawal(WITHDRAWAL_CONTRACT);
     }
 
-    function onlyInitialized(Id id) internal {
+    function getTreasuryAddress() internal view returns (address) {
+        return CorkConfig(CONFIG).treasury();
+    }
+
+    function onlyInitialized(Id id) internal view {
         if (!states[id].isInitialized()) {
-            revert Uninitialized();
+            revert NotInitialized();
         }
     }
 
-    function PSMDepositNotPaused(Id id) internal {
+    function PSMDepositNotPaused(Id id) internal view {
         if (states[id].psm.isDepositPaused) {
             revert PSMDepositPaused();
         }
     }
 
-    function onlyFlashSwapRouter() internal {
+    modifier onlyFlashSwapRouter() {
         if (msg.sender != DS_FLASHSWAP_ROUTER) {
             revert OnlyFlashSwapRouterAllowed();
         }
+        _;
     }
 
-    function PSMWithdrawalNotPaused(Id id) internal {
+    function PSMWithdrawalNotPaused(Id id) internal view {
         if (states[id].psm.isWithdrawalPaused) {
             revert PSMWithdrawalPaused();
         }
     }
 
-    function PSMRepurchaseNotPaused(Id id) internal {
+    function PSMRepurchaseNotPaused(Id id) internal view {
         if (states[id].psm.isRepurchasePaused) {
             revert PSMRepurchasePaused();
         }
     }
 
-    function LVDepositNotPaused(Id id) internal {
+    modifier LVDepositNotPaused(Id id) {
         if (states[id].vault.config.isDepositPaused) {
             revert LVDepositPaused();
         }
+        _;
     }
 
-    function LVWithdrawalNotPaused(Id id) internal {
+    modifier LVWithdrawalNotPaused(Id id) {
         if (states[id].vault.config.isWithdrawalPaused) {
             revert LVWithdrawalPaused();
         }
+        _;
     }
 
-    function onlyWhiteListedLiquidationContract() internal {
+    function onlyWhiteListedLiquidationContract() internal view {
         if (!ILiquidatorRegistry(CONFIG).isLiquidationWhitelisted(msg.sender)) {
             revert OnlyWhiteListed();
         }

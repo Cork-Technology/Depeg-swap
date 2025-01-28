@@ -4,7 +4,7 @@ pragma solidity ^0.8.24;
 import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import {UUPSUpgradeable} from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import {PsmLibrary} from "../libraries/PsmLib.sol";
-import {VaultLibrary, VaultConfigLibrary} from "../libraries/VaultLib.sol";
+import {VaultLibrary} from "../libraries/VaultLib.sol";
 import {Id, Pair, PairLibrary} from "../libraries/Pair.sol";
 import {IAssetFactory} from "../interfaces/IAssetFactory.sol";
 import {State} from "../libraries/State.sol";
@@ -38,10 +38,7 @@ contract ModuleCore is OwnableUpgradeable, UUPSUpgradeable, PsmCore, Initialize,
         address _flashSwapRouter,
         address _config
     ) external initializer {
-        if (
-            _swapAssetFactory == address(0) || _ammHook == address(0) || _flashSwapRouter == address(0)
-                || _config == address(0) 
-        ) {
+        if (_swapAssetFactory == address(0) || _ammHook == address(0) || _flashSwapRouter == address(0) || _config == address(0)) {
             revert ZeroAddress();
         }
 
@@ -50,9 +47,7 @@ contract ModuleCore is OwnableUpgradeable, UUPSUpgradeable, PsmCore, Initialize,
         initializeModuleState(_swapAssetFactory, _ammHook, _flashSwapRouter, _config);
     }
 
-    function setWithdrawalContract(address _withdrawalContract) external  {
-        onlyConfig();
-        
+    function setWithdrawalContract(address _withdrawalContract) external onlyConfig {
         _setWithdrawalContract(_withdrawalContract);
     }
 
@@ -78,13 +73,13 @@ contract ModuleCore is OwnableUpgradeable, UUPSUpgradeable, PsmCore, Initialize,
     function initializeModuleCore(
         address pa,
         address ra,
-        uint256 lvFee,
         uint256 initialArp,
-        uint256 psmBaseRedemptionFeePercentage,
         uint256 expiryInterval
-    ) external override {
-        onlyConfig();
-
+    )
+        external
+        override
+        onlyConfig
+    {
         Pair memory key = PairLibrary.initalize(pa, ra, expiryInterval);
         Id id = key.toId();
 
@@ -98,26 +93,21 @@ contract ModuleCore is OwnableUpgradeable, UUPSUpgradeable, PsmCore, Initialize,
 
         address lv = assetsFactory.deployLv(ra, pa, address(this), expiryInterval);
 
-        PsmLibrary.initialize(state, key, psmBaseRedemptionFeePercentage);
-        VaultLibrary.initialize(state.vault, lv, lvFee, ra, initialArp);
+        PsmLibrary.initialize(state, key);
+        VaultLibrary.initialize(state.vault, lv, ra, initialArp);
+        
         emit InitializedModuleCore(id, pa, ra, lv, expiryInterval);
     }
 
     function issueNewDs(
         Id id,
         uint256 exchangeRates,
-        uint256 repurchaseFeePercentage,
         uint256 decayDiscountRateInDays,
         // won't have effect on first issuance
         uint256 rolloverPeriodInblocks,
         uint256 ammLiquidationDeadline
-    ) external override {
-        onlyConfig();
+    ) external override onlyConfig {
         onlyInitialized(id);
-
-        if (repurchaseFeePercentage > PsmLibrary.MAX_ALLOWED_FEES) {
-            revert InvalidFees();
-        }
 
         State storage state = states[id];
 
@@ -128,7 +118,7 @@ contract ModuleCore is OwnableUpgradeable, UUPSUpgradeable, PsmCore, Initialize,
         );
 
         // avoid stack to deep error
-        _initOnNewIssuance(id, repurchaseFeePercentage, ct, ds, info.expiryInterval);
+        _initOnNewIssuance(id, ct, ds, info.expiryInterval);
         // avoid stack to deep error
         getRouterCore().setDecayDiscountAndRolloverPeriodOnNewIssuance(
             id, decayDiscountRateInDays, rolloverPeriodInblocks
@@ -138,16 +128,19 @@ contract ModuleCore is OwnableUpgradeable, UUPSUpgradeable, PsmCore, Initialize,
         );
     }
 
-    function _initOnNewIssuance(Id id, uint256 repurchaseFeePercentage, address ct, address ds, uint256 _expiryInterval)
-        internal
-    {
+    function _initOnNewIssuance(
+        Id id,
+        address ct,
+        address ds,
+        uint256 _expiryInterval
+    ) internal {
         State storage state = states[id];
 
         address ra = state.info.ra;
-        uint256 prevIdx = state.globalAssetIdx++;
-        uint256 idx = state.globalAssetIdx;
+        uint256 prevIdx = state.globalAssetIdx;
+        uint256 idx = ++state.globalAssetIdx;
 
-        PsmLibrary.onNewIssuance(state, ct, ds, idx, prevIdx, repurchaseFeePercentage);
+        PsmLibrary.onNewIssuance(state, ct, ds, idx, prevIdx);
 
         // TODO : must handle changes in flash swap router later
         getRouterCore().onNewIssuance(id, idx, ds, ra, ct);
@@ -156,22 +149,11 @@ contract ModuleCore is OwnableUpgradeable, UUPSUpgradeable, PsmCore, Initialize,
         emit Issued(id, idx, block.timestamp + _expiryInterval, ds, ct, AmmId.unwrap(toAmmId(ra, ct)));
     }
 
-    function updateRepurchaseFeeRate(Id id, uint256 newRepurchaseFeePercentage) external {
-        onlyConfig();
-
+    function updateRepurchaseFeeRate(Id id, uint256 newRepurchaseFeePercentage) external onlyConfig {
         State storage state = states[id];
         PsmLibrary.updateRepurchaseFeePercentage(state, newRepurchaseFeePercentage);
 
         emit RepurchaseFeeRateUpdated(id, newRepurchaseFeePercentage);
-    }
-
-    function updateEarlyRedemptionFeeRate(Id id, uint256 newEarlyRedemptionFeeRate) external {
-        onlyConfig();
-
-        State storage state = states[id];
-        VaultConfigLibrary.updateFee(state.vault.config, newEarlyRedemptionFeeRate);
-
-        emit EarlyRedemptionFeeRateUpdated(id, newEarlyRedemptionFeeRate);
     }
 
     /**
@@ -182,8 +164,7 @@ contract ModuleCore is OwnableUpgradeable, UUPSUpgradeable, PsmCore, Initialize,
     function updatePsmDepositsStatus(
         Id id,
         bool isPSMDepositPaused
-    ) external {
-        onlyConfig();
+    ) external onlyConfig {
         State storage state = states[id];
         PsmLibrary.updatePsmDepositsStatus(state, isPSMDepositPaused);
         emit PsmDepositsStatusUpdated(id, isPSMDepositPaused);
@@ -197,8 +178,7 @@ contract ModuleCore is OwnableUpgradeable, UUPSUpgradeable, PsmCore, Initialize,
     function updatePsmWithdrawalsStatus(
         Id id,
         bool isPSMWithdrawalPaused
-    ) external {
-        onlyConfig();
+    ) external onlyConfig {
         State storage state = states[id];
         PsmLibrary.updatePsmWithdrawalsStatus(state, isPSMWithdrawalPaused);
         emit PsmWithdrawalsStatusUpdated(id, isPSMWithdrawalPaused);
@@ -212,8 +192,7 @@ contract ModuleCore is OwnableUpgradeable, UUPSUpgradeable, PsmCore, Initialize,
     function updatePsmRepurchasesStatus(
         Id id,
         bool isPSMRepurchasePaused
-    ) external {
-        onlyConfig();
+    ) external onlyConfig {
         State storage state = states[id];
         PsmLibrary.updatePsmRepurchasesStatus(state, isPSMRepurchasePaused);
         emit PsmRepurchasesStatusUpdated(id, isPSMRepurchasePaused);
@@ -227,8 +206,7 @@ contract ModuleCore is OwnableUpgradeable, UUPSUpgradeable, PsmCore, Initialize,
     function updateLvDepositsStatus(
         Id id,
         bool isLVDepositPaused
-    ) external {
-        onlyConfig();
+    ) external onlyConfig {
         State storage state = states[id];
         VaultLibrary.updateLvDepositsStatus(state, isLVDepositPaused);
         emit LvDepositsStatusUpdated(id, isLVDepositPaused);
@@ -242,9 +220,7 @@ contract ModuleCore is OwnableUpgradeable, UUPSUpgradeable, PsmCore, Initialize,
     function updateLvWithdrawalsStatus(
         Id id,
         bool isLVWithdrawalPaused
-    ) external {
-        onlyConfig();
-
+    ) external onlyConfig {
         State storage state = states[id];
         VaultLibrary.updateLvWithdrawalsStatus(state, isLVWithdrawalPaused);
         emit LvWithdrawalsStatusUpdated(id, isLVWithdrawalPaused);
@@ -286,9 +262,10 @@ contract ModuleCore is OwnableUpgradeable, UUPSUpgradeable, PsmCore, Initialize,
      * @notice update value of PSMBaseRedemption fees
      * @param newPsmBaseRedemptionFeePercentage new value of fees
      */
-    function updatePsmBaseRedemptionFeePercentage(Id id, uint256 newPsmBaseRedemptionFeePercentage) external {
-        onlyConfig();
-
+    function updatePsmBaseRedemptionFeePercentage(Id id, uint256 newPsmBaseRedemptionFeePercentage)
+        external
+        onlyConfig
+    {
         if (newPsmBaseRedemptionFeePercentage > PsmLibrary.MAX_ALLOWED_FEES) {
             revert InvalidFees();
         }
@@ -297,7 +274,7 @@ contract ModuleCore is OwnableUpgradeable, UUPSUpgradeable, PsmCore, Initialize,
         emit PsmBaseRedemptionFeePercentageUpdated(id, newPsmBaseRedemptionFeePercentage);
     }
 
-    function expiry(Id id) external view override returns (uint256 _expiry) {
-        _expiry = PsmLibrary.nextExpiry(states[id]);
+    function expiry(Id id) external view override returns (uint256 expiry) {
+        expiry = PsmLibrary.nextExpiry(states[id]);
     }
 }
