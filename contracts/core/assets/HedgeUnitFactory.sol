@@ -3,13 +3,14 @@ pragma solidity ^0.8.24;
 
 import {HedgeUnit} from "./HedgeUnit.sol";
 import {Id, Pair, PairLibrary} from "../../libraries/Pair.sol";
+import {IHedgeUnitFactory} from "../../interfaces/IHedgeUnitFactory.sol";
 
 /**
  * @title HedgeUnitFactory
  * @notice This contract is used to deploy and manage multiple HedgeUnit contracts for different asset pairs.
  * @dev The factory contract keeps track of all deployed HedgeUnit contracts.
  */
-contract HedgeUnitFactory {
+contract HedgeUnitFactory is IHedgeUnitFactory {
     using PairLibrary for Pair;
 
     uint256 internal idx;
@@ -23,24 +24,15 @@ contract HedgeUnitFactory {
     mapping(Id => address) public hedgeUnitContracts;
     mapping(uint256 => Id) internal hedgeUnits;
 
-    // Event emitted when a new HedgeUnit contract is deployed
-    event HedgeUnitDeployed(Id indexed pairId, address indexed hedgeUnitAddress);
-
-    /// @notice Zero Address error, thrown when passed address is 0
-    error ZeroAddress();
-
-    error HedgeUnitExists();
-
-    error InvalidPairId();
-
     modifier onlyConfig() {
-        // TODO: move to interface with custom errors
-        require(msg.sender == CONFIG, "HedgeUnitFactory: Only config contract can call this function");
+        if(msg.sender != CONFIG){
+            revert NotConfig();
+        }
         _;
     }
 
     /**
-     * @notice Constructor sets the initial addresses for MODULE_CORE and LIQUIDATOR.
+     * @notice Constructor sets the initial addresses for moduleCore, config and flashswap router.
      * @param _moduleCore Address of the MODULE_CORE.
      * @param _config Address of the config contract
      */
@@ -96,7 +88,7 @@ contract HedgeUnitFactory {
      * @param _mintCap Initial mint cap for the HedgeUnit tokens.
      * @return newUnit of the newly deployed HedgeUnit contract.
      */
-    function deployHedgeUnit(Id _id, address _pa, address _ra, string memory _pairName, uint256 _mintCap)
+    function deployHedgeUnit(Id _id, address _pa, address _ra, string calldata _pairName, uint256 _mintCap)
         external
         onlyConfig
         returns (address newUnit)
@@ -111,9 +103,11 @@ contract HedgeUnitFactory {
 
         // Store the address of the new contract
         hedgeUnitContracts[_id] = newUnit;
+
+        // solhint-disable-next-line gas-increment-by-one
         hedgeUnits[idx++] = _id;
 
-        emit HedgeUnitDeployed(_id, newUnit);
+        emit HedgeUnitDeployed(_id, _pa, _ra, newUnit);
     }
 
     /**

@@ -7,6 +7,8 @@ import {PermitChecker} from "./PermitChecker.sol";
 import {ICorkHook} from "../interfaces/UniV4/IMinimalHook.sol";
 import {MarketSnapshot, MarketSnapshotLib} from "Cork-Hook/lib/MarketSnapshot.sol";
 import {IDsFlashSwapCore} from "./../interfaces/IDsFlashSwapRouter.sol";
+import {TransferHelper} from "./TransferHelper.sol";
+import {IErrors} from "./../interfaces/IErrors.sol";
 
 /**
  * @dev AssetPair structure for Asset Pairs
@@ -56,6 +58,7 @@ library DsFlashSwaplibrary {
         if (dsId != FIRST_ISSUANCE) {
             try SwapperMathLibrary.calculateHIYA(self.hiyaCumulated, self.vhiyaCumulated) returns (uint256 hiya) {
                 self.hiya = hiya;
+                // solhint-disable-next-line no-empty-blocks
             } catch {}
 
             self.hiyaCumulated = 0;
@@ -70,7 +73,7 @@ library DsFlashSwaplibrary {
     function updateReserveSellPressurePercentage(ReserveState storage self, uint256 newPercentage) external {
         // must be between 0.01 and 100
         if (newPercentage < 1e16 || newPercentage > 1e20) {
-            revert IDsFlashSwapCore.InvalidParams();
+            revert IErrors.InvalidParams();
         }
 
         self.reserveSellPressurePercentage = newPercentage;
@@ -134,22 +137,8 @@ library DsFlashSwaplibrary {
 
         (uint256 raReserve, uint256 ctReserve) = router.getReserves(address(asset.ra), address(asset.ct));
 
-        (raPriceRatio, ctPriceRatio) = SwapperMathLibrary.getPriceRatio(raReserve, ctReserve);
-    }
-
-    function tryGetPriceRatioAfterSellDs(
-        ReserveState storage self,
-        uint256 dsId,
-        uint256 ctSubstracted,
-        uint256 raAdded,
-        ICorkHook router
-    ) external view returns (uint256 raPriceRatio, uint256 ctPriceRatio) {
-        AssetPair storage asset = self.ds[dsId];
-
-        (uint256 raReserve, uint256 ctReserve) = router.getReserves(address(asset.ra), address(asset.ct));
-
-        raReserve += raAdded;
-        ctReserve -= ctSubstracted;
+        raReserve = TransferHelper.tokenNativeDecimalsToFixed(raReserve, asset.ra);
+        ctReserve = TransferHelper.tokenNativeDecimalsToFixed(ctReserve, asset.ct);
 
         (raPriceRatio, ctPriceRatio) = SwapperMathLibrary.getPriceRatio(raReserve, ctReserve);
     }
@@ -199,23 +188,33 @@ library DsFlashSwaplibrary {
     {
         repaymentAmount = router.getAmountIn(address(assetPair.ra), address(assetPair.ct), true, amount);
 
-        (success, amountOut) = SwapperMathLibrary.getAmountOutSellDs(repaymentAmount, amount);
+        // this is done in 18 decimals precision
+        (success, amountOut) = SwapperMathLibrary.getAmountOutSellDs(
+            TransferHelper.tokenNativeDecimalsToFixed(repaymentAmount, assetPair.ra), amount
+        );
+
+        // and then we convert it back to the original token decimals
+        amountOut = TransferHelper.fixedToTokenNativeDecimals(amountOut, assetPair.ra);
     }
 
     function getAmountOutBuyDS(
-        AssetPair storage assetPair,
+        AssetPair calldata assetPair,
         uint256 amount,
         ICorkHook router,
         IDsFlashSwapCore.BuyAprroxParams memory params
     ) external view returns (uint256 amountOut, uint256 borrowedAmount) {
-        (uint256 raReserve, uint256 ctReserve) = getReservesSorted(assetPair, router);
-
         MarketSnapshot memory market = router.getMarketSnapshot(address(assetPair.ra), address(assetPair.ct));
+
+        market.reserveRa = TransferHelper.tokenNativeDecimalsToFixed(market.reserveRa, assetPair.ra);
+        amount = TransferHelper.tokenNativeDecimalsToFixed(amount, assetPair.ra);
 
         uint256 issuedAt = assetPair.ds.issuedAt();
         uint256 end = assetPair.ds.expiry();
 
-        amountOut = _calculateInitialBuyOut(InitialTradeCaclParams(raReserve, ctReserve, issuedAt, end, amount, params));
+        // this expect 18 decimals both sides
+        amountOut = _calculateInitialBuyOut(
+            InitialTradeCaclParams(market.reserveRa, market.reserveCt, issuedAt, end, amount, params)
+        );
 
         // we subtract some percentage of it to account for dust imprecisions
         amountOut -= SwapperMathLibrary.calculatePercentage(amountOut, params.precisionBufferPercentage);
@@ -234,6 +233,9 @@ library DsFlashSwaplibrary {
 
         SwapperMathLibrary.OptimalBorrowResult memory result =
             SwapperMathLibrary.findOptimalBorrowedAmount(optimalParams);
+
+        // result.amountOut = TransferHelper.fixedToTokenNativeDecimals(result.amountOut, assetPair.ra);
+        result.borrowedAmount = TransferHelper.fixedToTokenNativeDecimals(result.borrowedAmount, assetPair.ra);
 
         amountOut = result.amountOut;
         borrowedAmount = result.borrowedAmount;
