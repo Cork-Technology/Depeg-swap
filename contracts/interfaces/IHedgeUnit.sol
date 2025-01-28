@@ -73,4 +73,9 @@ interface IHedgeUnit is IErrors {
     function updateMintCap(uint256 _newMintCap) external;
 
     function getReserves() external view returns (uint256 dsReserves, uint256 paReserves, uint256 raReserves);
+
+    /**
+     * @notice automatically sync reserve balance
+     */
+    function sync() external;
 }

@@ -38,7 +38,7 @@ contract RolloverTest is Helper {
     }
 
     function setUp() public {
-       vm.startPrank(DEFAULT_ADDRESS);
+        vm.startPrank(DEFAULT_ADDRESS);
 
         deployModuleCore();
         (ra, pa, currencyId) = initializeAndIssueNewDs(block.timestamp + 1 days);

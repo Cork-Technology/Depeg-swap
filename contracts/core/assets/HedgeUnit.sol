@@ -51,6 +51,10 @@ contract HedgeUnit is
     ERC20 public immutable PA;
     ERC20 public immutable RA;
 
+    uint256 public dsReserve;
+    uint256 public paReserve;
+    uint256 public raReserve;
+
     Id public id;
 
     /// @notice The ERC20 token representing the ds asset.
@@ -118,6 +122,21 @@ contract HedgeUnit is
         _;
     }
 
+    modifier autoSync() {
+        _;
+        _sync();
+    }
+
+    function _sync() internal autoUpdateDS {
+        dsReserve = ds.balanceOf(address(this));
+        paReserve = PA.balanceOf(address(this));
+        raReserve = RA.balanceOf(address(this));
+    }
+
+    function sync() external autoUpdateDS {
+        _sync();
+    }
+
     function _fetchLatestDS() internal view returns (Asset) {
         uint256 dsId = MODULE_CORE.lastDsId(id);
         (, address dsAdd) = MODULE_CORE.swapAsset(id, dsId);
@@ -133,12 +152,10 @@ contract HedgeUnit is
         return address(_fetchLatestDS());
     }
 
-    function getReserves() external view returns (uint256 dsReserves, uint256 paReserves, uint256 raReserves) {
-        Asset _ds = _fetchLatestDS();
-
-        dsReserves = _ds.balanceOf(address(this));
-        paReserves = PA.balanceOf(address(this));
-        raReserves = RA.balanceOf(address(this));
+    function getReserves() external view returns (uint256 _dsReserves, uint256 _paReserves, uint256 _raReserves) {
+        _dsReserves = dsReserve;
+        _paReserves = paReserve;
+        _raReserves = raReserve;
     }
 
     function requestLiquidationFunds(uint256 amount, address token)
@@ -176,7 +193,7 @@ contract HedgeUnit is
             FLASHSWAP_ROUTER.swapRaforDs(id, dsId, amount, amountOutMin, params, offchainGuess);
 
         amountOut = result.amountOut;
-        
+
         emit FundsUsed(msg.sender, dsId, amount, result.amountOut);
     }
 
@@ -201,6 +218,10 @@ contract HedgeUnit is
     /**
      * @dev Internal function to get the latest DS address.
      * Calls moduleCore to get the latest DS id and retrieves the associated DS address.
+     * The reason we don't update the reserve is to avoid DDoS manipulation where user
+     * could frontrun and send just 1 wei more to skew the reserve. resulting in failing transaction.
+     * But since we need the address of the new DS if it's expired to transfer it correctly, we only update
+     * the address here at the start of the function call, then finally update the balance after the function call
      */
     function _getLastDS() internal {
         if (address(ds) == address(0) || ds.isExpired()) {
@@ -232,6 +253,10 @@ contract HedgeUnit is
         return TransferHelper.tokenNativeDecimalsToFixed(RA.balanceOf(address(this)), RA);
     }
 
+    function _selfDsReserve() internal view returns (uint256) {
+        return dsReserve;
+    }
+
     function _transferDs(address _to, uint256 _amount) internal {
         IERC20(ds).safeTransfer(_to, _amount);
     }
@@ -250,11 +275,9 @@ contract HedgeUnit is
             revert MintCapExceeded();
         }
 
-        Asset _ds = _fetchLatestDS();
-
         uint256 paReserve = _selfPaReserve();
 
-        (dsAmount, paAmount) = HedgeUnitMath.previewMint(amount, paReserve, _ds.balanceOf(address(this)), totalSupply());
+        (dsAmount, paAmount) = HedgeUnitMath.previewMint(amount, paReserve, _selfDsReserve(), totalSupply());
 
         paAmount = TransferHelper.fixedToTokenNativeDecimals(paAmount, PA);
     }
@@ -273,6 +296,7 @@ contract HedgeUnit is
         whenNotPaused
         nonReentrant
         autoUpdateDS
+        autoSync
         returns (uint256 dsAmount, uint256 paAmount)
     {
         (dsAmount, paAmount) = __mint(msg.sender, amount);
@@ -290,8 +314,7 @@ contract HedgeUnit is
         {
             uint256 paReserve = _selfPaReserve();
 
-            (dsAmount, paAmount) =
-                HedgeUnitMath.previewMint(amount, paReserve, ds.balanceOf(address(this)), totalSupply());
+            (dsAmount, paAmount) = HedgeUnitMath.previewMint(amount, paReserve, _selfDsReserve(), totalSupply());
 
             paAmount = TransferHelper.fixedToTokenNativeDecimals(paAmount, PA);
         }
@@ -315,7 +338,7 @@ contract HedgeUnit is
         bytes calldata rawDsPermitSig,
         bytes calldata rawPaPermitSig,
         uint256 deadline
-    ) external whenNotPaused nonReentrant autoUpdateDS returns (uint256 dsAmount, uint256 paAmount) {
+    ) external whenNotPaused nonReentrant autoUpdateDS autoSync returns (uint256 dsAmount, uint256 paAmount) {
         if (rawDsPermitSig.length == 0 || rawPaPermitSig.length == 0 || deadline == 0) {
             revert InvalidSignature();
         }
@@ -368,11 +391,18 @@ contract HedgeUnit is
      * @custom:reverts EnforcedPause if minting is currently paused.
      * @custom:reverts InvalidAmount if the user has insufficient HedgeUnit balance.
      */
-    function burnFrom(address account, uint256 amount) public override whenNotPaused nonReentrant autoUpdateDS {
+    function burnFrom(address account, uint256 amount)
+        public
+        override
+        whenNotPaused
+        nonReentrant
+        autoUpdateDS
+        autoSync
+    {
         _burnHU(account, amount);
     }
 
-    function burn(uint256 amount) public override whenNotPaused nonReentrant autoUpdateDS {
+    function burn(uint256 amount) public override whenNotPaused nonReentrant autoUpdateDS autoSync {
         _burnHU(msg.sender, amount);
     }
 
