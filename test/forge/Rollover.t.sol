@@ -38,18 +38,19 @@ contract RolloverTest is Helper {
     }
 
     function setUp() public {
-        vm.startPrank(DEFAULT_ADDRESS_ROLLOVER);
+       vm.startPrank(DEFAULT_ADDRESS);
 
         deployModuleCore();
-
         (ra, pa, currencyId) = initializeAndIssueNewDs(block.timestamp + 1 days);
+        corkConfig.grantRole(corkConfig.MANAGER_ROLE(), DEFAULT_ADDRESS_ROLLOVER);
+
+        vm.startPrank(DEFAULT_ADDRESS_ROLLOVER);
         vm.deal(DEFAULT_ADDRESS_ROLLOVER, 100_000_000 ether);
         ra.deposit{value: 100000 ether}();
         pa.deposit{value: 100000 ether}();
 
         // save initial data
         fetchProtocolGeneralInfo();
-       
 
         // 10000 for psm 10000 for LV
         ra.approve(address(moduleCore), 100_000_000 ether);
@@ -119,7 +120,7 @@ contract RolloverTest is Helper {
 
         uint256 deadline = block.timestamp + 10 days;
 
-        bytes memory permit = getPermit(
+        bytes memory permit = getCustomPermit(
             DEFAULT_ADDRESS_ROLLOVER,
             address(moduleCore),
             DEFAULT_DEPOSIT_AMOUNT,
@@ -148,7 +149,11 @@ contract RolloverTest is Helper {
         uint256 expiry = Asset(ds).expiry();
         vm.warp(expiry - 100);
 
-        uint256 amountOut = flashSwapRouter.swapRaforDs(currencyId, dsId, 1 ether, 0, defaultBuyApproxParams());
+        IDsFlashSwapCore.SwapRaForDsReturn memory result = flashSwapRouter.swapRaforDs(
+            currencyId, dsId, 1 ether, 0, defaultBuyApproxParams(), defaultOffchainGuessParams()
+        );
+        uint256 amountOut = result.amountOut;
+
         uint256 HiyaCummulated = flashSwapRouter.getHiyaCumulated(currencyId);
         uint256 vHiyaCummulated = flashSwapRouter.getVhiyaCumulated(currencyId);
 
@@ -171,7 +176,10 @@ contract RolloverTest is Helper {
         // we autosell
         vm.assertEq(dsReceived, 0);
 
-        amountOut = flashSwapRouter.swapRaforDs(currencyId, dsId, 1 ether, 0, defaultBuyApproxParams());
+        result = flashSwapRouter.swapRaforDs(
+            currencyId, dsId, 1 ether, 0, defaultBuyApproxParams(), defaultOffchainGuessParams()
+        );
+        amountOut = result.amountOut;
 
         uint256 rolloverProfit = moduleCore.getPsmPoolArchiveRolloverProfit(currencyId, dsId);
         vm.assertNotEq(rolloverProfit, 0);
@@ -215,7 +223,11 @@ contract RolloverTest is Helper {
         uint256 expiry = Asset(ds).expiry();
         vm.warp(expiry - 100);
 
-        uint256 amountOut = flashSwapRouter.swapRaforDs(currencyId, dsId, 1 ether, 0, defaultBuyApproxParams());
+        IDsFlashSwapCore.SwapRaForDsReturn memory result = flashSwapRouter.swapRaforDs(
+            currencyId, dsId, 1 ether, 0, defaultBuyApproxParams(), defaultOffchainGuessParams()
+        );
+        uint256 amountOut = result.amountOut;
+
         uint256 HiyaCummulated = flashSwapRouter.getHiyaCumulated(currencyId);
         uint256 vHiyaCummulated = flashSwapRouter.getVhiyaCumulated(currencyId);
 
@@ -238,7 +250,8 @@ contract RolloverTest is Helper {
         // we autosell
         vm.assertEq(dsReceived, 0);
 
-        amountOut = flashSwapRouter.swapRaforDs(currencyId, dsId, 1 ether, 0, defaultBuyApproxParams());
+        result = flashSwapRouter.swapRaforDs(currencyId, dsId, 1 ether, 0, defaultBuyApproxParams(), defaultOffchainGuessParams());
+        amountOut = result.amountOut;
 
         uint256 rolloverProfit = moduleCore.getPsmPoolArchiveRolloverProfit(currencyId, dsId);
         vm.assertNotEq(rolloverProfit, 0);
@@ -265,7 +278,10 @@ contract RolloverTest is Helper {
         uint256 expiry = Asset(ds).expiry();
         vm.warp(expiry - 100);
 
-        uint256 amountOut = flashSwapRouter.swapRaforDs(currencyId, dsId, 1 ether, 0, defaultBuyApproxParams());
+        IDsFlashSwapCore.SwapRaForDsReturn memory result = flashSwapRouter.swapRaforDs(
+            currencyId, dsId, 1 ether, 0, defaultBuyApproxParams(), defaultOffchainGuessParams()
+        );
+        uint256 amountOut = result.amountOut;
 
         uint256 HiyaCummulated = flashSwapRouter.getHiyaCumulated(currencyId);
         uint256 vHiyaCummulated = flashSwapRouter.getVhiyaCumulated(currencyId);
@@ -297,11 +313,17 @@ contract RolloverTest is Helper {
         // we disable graduale sale to get an accurate representation
         disableDsGradualSale();
 
-        amountOut = flashSwapRouter.swapRaforDs(currencyId, dsId, expectedHPA, 0, defaultBuyApproxParams());
+        result = flashSwapRouter.swapRaforDs(
+            currencyId, dsId, expectedHPA, 0, defaultBuyApproxParams(), defaultOffchainGuessParams()
+        );
+        amountOut = result.amountOut;
 
         vm.assertApproxEqAbs(amountOut, 1 ether, 0.018 ether);
 
-        amountOut = flashSwapRouter.swapRaforDs(currencyId, dsId, expectedHPA * 10, 0, defaultBuyApproxParams());
+        result = flashSwapRouter.swapRaforDs(
+            currencyId, dsId, expectedHPA * 10, 0, defaultBuyApproxParams(), defaultOffchainGuessParams()
+        );
+        amountOut = result.amountOut;
 
         vm.assertApproxEqAbs(amountOut, 10 ether, 0.18 ether);
     }
@@ -315,7 +337,11 @@ contract RolloverTest is Helper {
         uint256 expiry = Asset(ds).expiry();
         vm.warp(expiry - 100);
 
-        uint256 amountOut = flashSwapRouter.swapRaforDs(currencyId, dsId, 1 ether, 0, defaultBuyApproxParams());
+        IDsFlashSwapCore.SwapRaForDsReturn memory result = flashSwapRouter.swapRaforDs(
+            currencyId, dsId, 1 ether, 0, defaultBuyApproxParams(), defaultOffchainGuessParams()
+        );
+        uint256 amountOut = result.amountOut;
+
         uint256 HiyaCummulated = flashSwapRouter.getHiyaCumulated(currencyId);
         uint256 vHiyaCummulated = flashSwapRouter.getVhiyaCumulated(currencyId);
 
@@ -341,6 +367,8 @@ contract RolloverTest is Helper {
         vm.assertEq(true, flashSwapRouter.isRolloverSale(currencyId));
 
         vm.expectRevert();
-        amountOut = flashSwapRouter.swapRaforDs(currencyId, dsId, Hiya, 1000000 ether, defaultBuyApproxParams());
+        flashSwapRouter.swapRaforDs(
+            currencyId, dsId, Hiya, 1000000 ether, defaultBuyApproxParams(), defaultOffchainGuessParams()
+        );
     }
 }

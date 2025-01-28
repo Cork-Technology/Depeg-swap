@@ -121,7 +121,7 @@ contract HedgeUnitTest is Helper {
 
         uint256 dsBalanceBefore = dsToken.balanceOf(address(hedgeUnit));
         uint256 amountOut =
-            corkConfig.buyDsFromHedgeUnit(address(hedgeUnit), requestAmount, 0, defaultBuyApproxParams());
+            corkConfig.buyDsFromHedgeUnit(address(hedgeUnit), requestAmount, 0, defaultBuyApproxParams(), defaultOffchainGuessParams());
 
         uint256 dsBalanceAfter = dsToken.balanceOf(address(hedgeUnit));
 
