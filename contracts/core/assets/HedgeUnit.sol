@@ -398,21 +398,12 @@ contract HedgeUnit is
         nonReentrant
         autoUpdateDS
         autoSync
-        returns (uint256 dsAmount, uint256 paAmount, uint256 raAmount)
     {
-        return _burnHU(account, amount);
+        _burnHU(account, amount);
     }
 
-    function burn(uint256 amount)
-        public
-        override
-        whenNotPaused
-        nonReentrant
-        autoUpdateDS
-        autoSync
-        returns (uint256 dsAmount, uint256 paAmount, uint256 raAmount)
-    {
-        return _burnHU(msg.sender, amount);
+    function burn(uint256 amount) public override whenNotPaused nonReentrant autoUpdateDS autoSync {
+        _burnHU(msg.sender, amount);
     }
 
     function _burnHU(address dissolver, uint256 amount)
