@@ -297,7 +297,6 @@ interface IDsFlashSwapCore is IDsFlashSwapUtility {
         uint256 dsId,
         uint256 amount,
         uint256 amountOutMin,
-        address user,
         bytes memory rawDsPermitSig,
         uint256 deadline
     ) external returns (uint256 amountOut);

@@ -525,7 +525,6 @@ CorkSwapCallback
         uint256 dsId,
         uint256 amount,
         uint256 amountOutMin,
-        address user,
         bytes calldata rawDsPermitSig,
         uint256 deadline
     ) external autoClearReturnData returns (uint256 amountOut) {
@@ -536,11 +535,11 @@ CorkSwapCallback
         AssetPair storage assetPair = self.ds[dsId];
 
         DepegSwapLibrary.permit(
-            address(assetPair.ds), rawDsPermitSig, user, address(this), amount, deadline, "swapDsforRa"
+            address(assetPair.ds), rawDsPermitSig, msg.sender, address(this), amount, deadline, "swapDsforRa"
         );
-        assetPair.ds.transferFrom(user, address(this), amount);
+        assetPair.ds.transferFrom(msg.sender, address(this), amount);
 
-        (, bool success) = __swapDsforRa(assetPair, reserveId, dsId, amount, amountOutMin, user);
+        (, bool success) = __swapDsforRa(assetPair, reserveId, dsId, amount, amountOutMin, msg.sender);
 
         if (!success) {
             revert IErrors.InsufficientLiquidityForSwap();
@@ -550,7 +549,7 @@ CorkSwapCallback
 
         self.recalculateHIYA(dsId, TransferHelper.tokenNativeDecimalsToFixed(amountOut, assetPair.ra), amount);
 
-        emit DsSwapped(reserveId, dsId, user, amount, amountOut);
+        emit DsSwapped(reserveId, dsId, msg.sender, amount, amountOut);
     }
 
     /**
