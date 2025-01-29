@@ -125,7 +125,7 @@ contract RouterState is
     }
 
     // solhint-disable-next-line no-empty-blocks
-    function _authorizeUpgrade(address newImplementation) internal override onlyConfig {}
+    function _authorizeUpgrade(address newImplementation) internal override onlyDefaultAdmin {}
 
     function updateDiscountRateInDdays(Id id, uint256 discountRateInDays) external override onlyConfig {
         reserves[id].decayDiscountRateInDays = discountRateInDays;

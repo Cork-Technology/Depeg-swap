@@ -338,15 +338,4 @@ abstract contract PsmCore is IPSMcore, ModuleState, Context {
         State storage state = states[id];
         state.psm.repurchaseFeeTreasurySplitPercentage = percentage;
     }
-
-    function updatePsmRepurchaseFeePercentage(Id id, uint256 percentage) external {
-        onlyConfig();
-
-        if (percentage > PsmLibrary.MAX_ALLOWED_FEES) {
-            revert InvalidFees();
-        }
-
-        State storage state = states[id];
-        state.psm.repurchaseFeePercentage = percentage;
-    }
 }

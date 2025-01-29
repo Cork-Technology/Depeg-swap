@@ -222,8 +222,8 @@ contract DeployScript is Script {
         console.log("Withdrawal                      : ", address(withdrawal));
         console.log("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-");
 
-        // Transfer Ownership to moduleCore
-        assetFactory.transferOwnership(address(moduleCore));
+        // Set the module core in the Asset Factory contract
+        assetFactory.setModuleCore(address(moduleCore));
         // hook.transferOwnership(address(config));
         console.log("Transferred ownerships to Modulecore");
 
@@ -343,7 +343,6 @@ contract DeployScript is Script {
         console.log("New DS issued");
 
         config.updatePsmBaseRedemptionFeePercentage(id, redmptionFee);
-        config.updatePsmRepurchaseFeePercentage(id, repurchaseFee);
         config.updateRepurchaseFeeRate(id, repurchaseFee);
         config.updateAmmBaseFeePercentage(id, ammBaseFeePercentage);
         console.log("Updated fees");

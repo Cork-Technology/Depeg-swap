@@ -33,7 +33,7 @@ contract DsPaRedeemTest is Helper {
         deployModuleCore();
 
         (ra, pa, currencyId) = initializeAndIssueNewDs(_expiry, redemptionFeePercentage);
-        corkConfig.updatePsmRepurchaseFeePercentage(defaultCurrencyId, redemptionFeePercentage);
+        corkConfig.updateRepurchaseFeeRate(defaultCurrencyId, redemptionFeePercentage);
         vm.deal(DEFAULT_ADDRESS, type(uint256).max);
 
         ra.deposit{value: type(uint128).max}();

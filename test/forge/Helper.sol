@@ -103,7 +103,7 @@ abstract contract Helper is SigUtils, TestHelper {
     }
 
     function setupAssetFactory() internal {
-        assetFactory.transferOwnership(address(moduleCore));
+        assetFactory.setModuleCore(address(moduleCore));
     }
 
     function defaultBuyApproxParams() internal pure returns (IDsFlashSwapCore.BuyAprroxParams memory) {

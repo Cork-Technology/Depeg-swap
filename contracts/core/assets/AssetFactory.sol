@@ -23,6 +23,7 @@ contract AssetFactory is IAssetFactory, OwnableUpgradeable, UUPSUpgradeable {
     string private constant DS_PREFIX = "DS";
     string private constant LV_PREFIX = "LV";
 
+    address public moduleCore;
     uint256 internal idx;
 
     struct SwapPair {
@@ -54,6 +55,13 @@ contract AssetFactory is IAssetFactory, OwnableUpgradeable, UUPSUpgradeable {
     modifier withinLimit(uint8 _limit) {
         if (_limit > MAX_LIMIT) {
             revert LimitTooLong(MAX_LIMIT, _limit);
+        }
+        _;
+    }
+
+    modifier onlyModuleCore() {
+        if (moduleCore != msg.sender) {
+            revert NotModuleCore();
         }
         _;
     }
@@ -164,7 +172,7 @@ contract AssetFactory is IAssetFactory, OwnableUpgradeable, UUPSUpgradeable {
         uint256 expiryInterval,
         uint256 psmExchangeRate,
         uint256 dsId
-    ) external override onlyOwner returns (address ct, address ds) {
+    ) external override onlyModuleCore returns (address ct, address ds) {
         Pair memory asset = Pair(_pa, _ra, expiryInterval);
 
         uint256 expiry = block.timestamp + expiryInterval;
@@ -207,7 +215,7 @@ contract AssetFactory is IAssetFactory, OwnableUpgradeable, UUPSUpgradeable {
     function deployLv(address _ra, address _pa, address _owner, uint256 _expiryInterval)
         external
         override
-        onlyOwner
+        onlyModuleCore
         returns (address lv)
     {
         string memory pairname;
@@ -231,4 +239,12 @@ contract AssetFactory is IAssetFactory, OwnableUpgradeable, UUPSUpgradeable {
 
     // solhint-disable-next-line no-empty-blocks
     function _authorizeUpgrade(address newImplementation) internal override onlyOwner {}
+
+    function setModuleCore(address _moduleCore) external onlyOwner {
+        if(_moduleCore == address(0)) {
+            revert ZeroAddress();
+        }
+        moduleCore = _moduleCore;
+        emit ModuleCoreChanged(moduleCore, _moduleCore);
+    }
 }

@@ -20,6 +20,11 @@ interface IAssetFactory is IErrors {
     /// @param lv Address of LV(Liquidity Vault) contract
     event LvAssetDeployed(address indexed ra, address indexed pa, address indexed lv);
 
+    /// @notice emitted when a module core is changed in asset factory
+    /// @param oldModuleCore old module core address
+    /// @param newModuleCore new module core address
+    event ModuleCoreChanged(address oldModuleCore, address newModuleCore);
+
     /**
      * @notice for getting list of deployed Assets with this factory
      * @param page page number
