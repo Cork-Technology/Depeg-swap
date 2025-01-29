@@ -19,6 +19,7 @@ import {CorkSwapCallback} from "Cork-Hook/interfaces/CorkSwapCallback.sol";
 import {IErrors} from "./../../interfaces/IErrors.sol";
 import {TransferHelper} from "./../../libraries/TransferHelper.sol";
 import {ReturnDataSlotLib} from "./../../libraries/ReturnDataSlotLib.sol";
+import {CorkConfig} from "../CorkConfig.sol";
 
 /**
  * @title Router contract for Flashswap
@@ -39,8 +40,12 @@ contract RouterState is
     bytes32 public constant MODULE_CORE = keccak256("MODULE_CORE");
     bytes32 public constant CONFIG = keccak256("CONFIG");
 
+    // 30% max fee
+    uint256 public constant MAX_DS_FEE = 30e18;
+
     address public _moduleCore;
     ICorkHook public hook;
+    CorkConfig public config;
     mapping(Id => ReserveState) internal reserves;
 
     // this is here to prevent stuck funds, essentially it can happen that the reserve DS is so low but not empty,
@@ -111,17 +116,19 @@ contract RouterState is
         _;
         ReturnDataSlotLib.clear(ReturnDataSlotLib.RETURN_SLOT);
         ReturnDataSlotLib.clear(ReturnDataSlotLib.REFUNDED_SLOT);
+        ReturnDataSlotLib.clear(ReturnDataSlotLib.DS_FEE_AMOUNT);
     }
 
     constructor() {
         _disableInitializers();
     }
 
-    function initialize(address config) external initializer {
+    function initialize(address _config) external initializer {
         __AccessControl_init();
         __UUPSUpgradeable_init();
         _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
-        _grantRole(CONFIG, config);
+        _grantRole(CONFIG, _config);
+        config = CorkConfig(_config);
     }
 
     // solhint-disable-next-line no-empty-blocks
