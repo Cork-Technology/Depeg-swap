@@ -364,7 +364,8 @@ contract RouterState is
                 finalBorrowedAmount = offchainGuess.initialBorrowAmount;
                 initialBorrowedAmount = offchainGuess.initialBorrowAmount;
             }
-            finalBorrowedAmount = calculateAndSellDsReserve(
+
+            (finalBorrowedAmount, amount) = calculateAndSellDsReserve(
                 self,
                 assetPair,
                 CalculateAndSellDsParams(
@@ -387,29 +388,58 @@ contract RouterState is
         ReserveState storage self,
         AssetPair storage assetPair,
         CalculateAndSellDsParams memory params
-    ) internal returns (uint256 borrowedAmount) {
+    ) internal returns (uint256 borrowedAmount, uint256 amount) {
+        // we initially set this to the initial amount user supplied, later we will charge a fee on this.
+        amount = params.amount;
         // calculate the amount of DS tokens that will be sold from reserve
         uint256 amountSellFromReserve = calculateSellFromReserve(self, params.initialAmountOut, params.dsId);
 
         if (amountSellFromReserve < RESERVE_MINIMUM_SELL_AMOUNT || self.gradualSaleDisabled) {
-            return params.initialBorrowedAmount;
+            return (params.initialBorrowedAmount, amount);
         }
 
         bool success = _sellDsReserve(
             assetPair,
-            SellDsParams(params.reserveId, params.dsId, amountSellFromReserve, params.amount, params.approxParams)
+            SellDsParams(params.reserveId, params.dsId, amountSellFromReserve, amount, params.approxParams)
         );
 
         if (!success) {
-            return params.initialBorrowedAmount;
+            return (params.initialBorrowedAmount, amount);
         }
+
+        amount = takeDsFee(self, assetPair, params.reserveId, amount);
 
         // we calculate the borrowed amount if user doesn't supply offchain guess
         if (params.offchainGuess.afterSoldBorrowAmount == 0) {
-            (, borrowedAmount) = assetPair.getAmountOutBuyDS(params.amount, hook, params.approxParams);
+            (, borrowedAmount) = assetPair.getAmountOutBuyDS(amount, hook, params.approxParams);
         } else {
             borrowedAmount = params.offchainGuess.afterSoldBorrowAmount;
         }
+    }
+
+    function takeDsFee(ReserveState storage self, AssetPair storage pair, Id reserveId, uint256 amount) internal returns (uint256 amountLeft) {
+        uint256 fee = SwapperMathLibrary.calculateDsExtraFee(amount, self.reserveSellPressurePercentage, self.dsExtraFeePercentage);
+
+        if (fee == 0) {
+            return amount;
+        }
+
+        amountLeft = amount - fee;
+
+        // increase the fee amount in transient slot
+        ReturnDataSlotLib.increase(ReturnDataSlotLib.DS_FEE_AMOUNT, fee);
+
+        uint256 attributedToTreasury = SwapperMathLibrary.calculatePercentage(fee, self.dsExtraFeeTreasurySplitPercentage);
+        uint256 attributedToVault = fee - attributedToTreasury;
+
+        assert(attributedToTreasury + attributedToVault == fee);
+
+        // we calculate it in native decimals, should go through
+        pair.ra.transfer(_moduleCore, attributedToVault);
+        IVault(_moduleCore).provideLiquidityWithFlashSwapFee(reserveId, attributedToVault);
+
+        address treasury = config.treasury();
+        pair.ra.transfer(treasury, attributedToTreasury);
     }
 
     function calculateSellFromReserve(ReserveState storage self, uint256 amountOut, uint256 dsId)
