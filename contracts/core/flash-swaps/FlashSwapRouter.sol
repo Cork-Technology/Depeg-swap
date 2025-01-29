@@ -526,10 +526,11 @@ contract RouterState is
         }
 
         result.ctRefunded = ReturnDataSlotLib.get(ReturnDataSlotLib.REFUNDED_SLOT);
+        result.fee = ReturnDataSlotLib.get(ReturnDataSlotLib.DS_FEE_AMOUNT);
 
         self.recalculateHIYA(dsId, TransferHelper.tokenNativeDecimalsToFixed(amount, assetPair.ra), result.amountOut);
 
-        emit RaSwapped(reserveId, dsId, user, amount, result.amountOut, result.ctRefunded);
+        emit RaSwapped(reserveId, dsId, user, amount, result.amountOut, result.ctRefunded, result.fee, self.dsExtraFeePercentage, self.reserveSellPressurePercentage);
     }
 
     function swapRaforDs(
@@ -556,10 +557,11 @@ contract RouterState is
         }
 
         result.ctRefunded = ReturnDataSlotLib.get(ReturnDataSlotLib.REFUNDED_SLOT);
+        result.fee = ReturnDataSlotLib.get(ReturnDataSlotLib.DS_FEE_AMOUNT);
 
         self.recalculateHIYA(dsId, TransferHelper.tokenNativeDecimalsToFixed(amount, assetPair.ra), result.amountOut);
 
-        emit RaSwapped(reserveId, dsId, msg.sender, amount, result.amountOut, result.ctRefunded);
+        emit RaSwapped(reserveId, dsId, msg.sender, amount, result.amountOut, result.ctRefunded, result.fee, self.dsExtraFeePercentage, self.reserveSellPressurePercentage);
     }
 
     function isRolloverSale(Id id) external view returns (bool) {
