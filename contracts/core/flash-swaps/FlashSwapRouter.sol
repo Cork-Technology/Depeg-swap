@@ -16,7 +16,9 @@ import {SafeERC20, IERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeE
 import {ICorkHook} from "../../interfaces/UniV4/IMinimalHook.sol";
 import {AmmId, toAmmId} from "Cork-Hook/lib/State.sol";
 import {CorkSwapCallback} from "Cork-Hook/interfaces/CorkSwapCallback.sol";
-import {IMathError} from "./../../interfaces/IMathError.sol";
+import {IErrors} from "./../../interfaces/IErrors.sol";
+import {TransferHelper} from "./../../libraries/TransferHelper.sol";
+import {ReturnDataSlotLib} from "./../../libraries/ReturnDataSlotLib.sol";
 
 /**
  * @title Router contract for Flashswap
@@ -39,11 +41,50 @@ contract RouterState is
 
     address public _moduleCore;
     ICorkHook public hook;
+    mapping(Id => ReserveState) internal reserves;
 
+    // this is here to prevent stuck funds, essentially it can happen that the reserve DS is so low but not empty,
+    // when the router tries to sell it, the trade fails, preventing user from buying DS properly
     uint256 public constant RESERVE_MINIMUM_SELL_AMOUNT = 0.001 ether;
 
+    struct CalculateAndSellDsParams {
+        Id reserveId;
+        uint256 dsId;
+        uint256 amount;
+        IDsFlashSwapCore.BuyAprroxParams approxParams;
+        IDsFlashSwapCore.OffchainGuess offchainGuess;
+        uint256 initialBorrowedAmount;
+        uint256 initialAmountOut;
+    }
+
+    struct SellDsParams {
+        Id reserveId;
+        uint256 dsId;
+        uint256 amountSellFromReserve;
+        uint256 amount;
+        BuyAprroxParams approxParams;
+    }
+
+    struct SellResult {
+        uint256 amountOut;
+        uint256 borrowedAmount;
+        bool success;
+    }
+
+    struct CallbackData {
+        bool buyDs;
+        address caller;
+        // CT or RA amount borrowed
+        uint256 borrowed;
+        // DS or RA amount provided
+        uint256 provided;
+        Id reserveId;
+        uint256 dsId;
+    }
+
     /// @notice __gap variable to prevent storage collisions
-    uint256[49] __gap;
+    // slither-disable-next-line unused-state
+    uint256[49] private __gap;
 
     modifier onlyDefaultAdmin() {
         if (!hasRole(DEFAULT_ADMIN_ROLE, msg.sender)) {
@@ -66,16 +107,36 @@ contract RouterState is
         _;
     }
 
+    modifier autoClearReturnData() {
+        _;
+        ReturnDataSlotLib.clear(ReturnDataSlotLib.RETURN_SLOT);
+        ReturnDataSlotLib.clear(ReturnDataSlotLib.REFUNDED_SLOT);
+    }
+
     constructor() {
         _disableInitializers();
     }
 
+    function initialize(address config) external initializer {
+        __AccessControl_init();
+        __UUPSUpgradeable_init();
+        _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
+        _grantRole(CONFIG, config);
+    }
+
+    // solhint-disable-next-line no-empty-blocks
+    function _authorizeUpgrade(address newImplementation) internal override onlyConfig {}
+
     function updateDiscountRateInDdays(Id id, uint256 discountRateInDays) external override onlyConfig {
         reserves[id].decayDiscountRateInDays = discountRateInDays;
+
+        emit DiscountRateUpdated(id, discountRateInDays);
     }
 
     function updateGradualSaleStatus(Id id, bool status) external override onlyConfig {
         reserves[id].gradualSaleDisabled = status;
+
+        emit GradualSaleStatusUpdated(id, status);
     }
 
     function getCurrentCumulativeHIYA(Id id) external view returns (uint256 hpaCummulative) {
@@ -86,19 +147,8 @@ contract RouterState is
         hpa = reserves[id].getEffectiveHIYA();
     }
 
-    function initialize(address config) external initializer {
-        __AccessControl_init();
-        __UUPSUpgradeable_init();
-        _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
-        _grantRole(CONFIG, config);
-    }
-
-    mapping(Id => ReserveState) internal reserves;
-
-    function _authorizeUpgrade(address newImplementation) internal override onlyConfig {}
-
     function setModuleCore(address moduleCore) external onlyDefaultAdmin {
-        if(moduleCore == address(0)) {
+        if (moduleCore == address(0)) {
             revert ZeroAddress();
         }
         _moduleCore = moduleCore;
@@ -107,6 +157,8 @@ contract RouterState is
 
     function updateReserveSellPressurePercentage(Id id, uint256 newPercentage) external override onlyConfig {
         reserves[id].updateReserveSellPressurePercentage(newPercentage);
+
+        emit ReserveSellPressurePercentageUpdated(id, newPercentage);
     }
 
     function setHook(address _hook) external onlyDefaultAdmin {
@@ -197,7 +249,7 @@ contract RouterState is
     }
 
     /// will return that can't be filled from the reserve, this happens when the total reserve is less than the amount requested
-    function _swapRaForDsViaRollover(Id reserveId, uint256 dsId, uint256 amountRa)
+    function _swapRaForDsViaRollover(Id reserveId, uint256 dsId, address user, uint256 amountRa)
         internal
         returns (uint256 raLeft, uint256 dsReceived)
     {
@@ -213,6 +265,13 @@ contract RouterState is
         ReserveState storage self = reserves[reserveId];
         AssetPair storage assetPair = self.ds[dsId];
 
+        // If there's no reserve, we will proceed without using rollover
+        if (assetPair.lvReserve == 0 && assetPair.psmReserve == 0) {
+            return (amountRa, 0);
+        }
+
+        amountRa = TransferHelper.tokenNativeDecimalsToFixed(amountRa, reserves[reserveId].ds[dsId].ra);
+
         uint256 lvProfit;
         uint256 psmProfit;
         uint256 lvReserveUsed;
@@ -221,19 +280,28 @@ contract RouterState is
         (lvProfit, psmProfit, raLeft, dsReceived, lvReserveUsed, psmReserveUsed) =
             SwapperMathLibrary.calculateRolloverSale(assetPair.lvReserve, assetPair.psmReserve, amountRa, self.hiya);
 
-        // we know that the math is correct, but for edge case protection, we don't subtract it directly but
-        // instead set it to 0 if it's less than the used amount, again this is meant to handle precision issues
-        assetPair.psmReserve = assetPair.psmReserve < psmReserveUsed ? 0 : assetPair.psmReserve - psmReserveUsed;
-        assetPair.lvReserve = assetPair.lvReserve < lvReserveUsed ? 0 : assetPair.lvReserve - lvReserveUsed;
+        amountRa = TransferHelper.fixedToTokenNativeDecimals(amountRa, assetPair.ra);
+        raLeft = TransferHelper.fixedToTokenNativeDecimals(raLeft, assetPair.ra);
 
-        IERC20(assetPair.ra).safeTransfer(_moduleCore, lvProfit + psmProfit);
+        assetPair.psmReserve = assetPair.psmReserve - psmReserveUsed;
+        assetPair.lvReserve = assetPair.lvReserve - lvReserveUsed;
 
+        // we first transfer and normalized the amount, we get back the actual normalized amount
+        psmProfit = TransferHelper.transferNormalize(assetPair.ra, _moduleCore, psmProfit);
+        lvProfit = TransferHelper.transferNormalize(assetPair.ra, _moduleCore, lvProfit);
+
+        assert(psmProfit + lvProfit <= amountRa);
+
+        // then use the profit
         IPSMcore(_moduleCore).psmAcceptFlashSwapProfit(reserveId, psmProfit);
         IVault(_moduleCore).lvAcceptRolloverProfit(reserveId, lvProfit);
 
-        IERC20(assetPair.ds).safeTransfer(msg.sender, dsReceived);
+        IERC20(assetPair.ds).safeTransfer(user, dsReceived);
 
-        emit RolloverSold(reserveId, dsId, msg.sender, dsReceived, amountRa - raLeft);
+        {
+            uint256 raLeftNormalized = TransferHelper.fixedToTokenNativeDecimals(raLeft, assetPair.ra);
+            emit RolloverSold(reserveId, dsId, user, dsReceived, raLeftNormalized);
+        }
     }
 
     function rolloverSaleEnds(Id reserveId) external view returns (uint256 endInBlockNumber) {
@@ -246,88 +314,118 @@ contract RouterState is
         Id reserveId,
         uint256 dsId,
         uint256 amount,
-        IDsFlashSwapCore.BuyAprroxParams memory approxParams
-    ) internal returns (uint256 amountOut) {
-        uint256 borrowedAmount;
-
+        uint256 amountOutMin,
+        address user,
+        IDsFlashSwapCore.BuyAprroxParams memory approxParams,
+        IDsFlashSwapCore.OffchainGuess memory offchainGuess
+    ) internal returns (uint256 initialBorrowedAmount, uint256 finalBorrowedAmount) {
         uint256 dsReceived;
         // try to swap the RA for DS via rollover, this will noop if the condition for rollover is not met
-        (amount, dsReceived) = _swapRaForDsViaRollover(reserveId, dsId, amount);
+        (amount, dsReceived) = _swapRaForDsViaRollover(reserveId, dsId, user, amount);
 
         // short circuit if all the swap is filled using rollover
         if (amount == 0) {
-            return dsReceived;
+            // we directly increase the return data slot value with DS that the user got from rollover sale here since,
+            // there's no possibility of selling the reserve, hence no chance of mix-up of return value
+            ReturnDataSlotLib.increase(ReturnDataSlotLib.RETURN_SLOT, dsReceived);
+            return (0, 0);
         }
 
-        // calculate the amount of DS tokens attributed
-        (amountOut, borrowedAmount) = assetPair.getAmountOutBuyDS(amount, hook, approxParams);
+        {
+            uint256 amountOut;
+            if (offchainGuess.initialBorrowAmount == 0) {
+                // calculate the amount of DS tokens attributed
+                (amountOut, finalBorrowedAmount) = assetPair.getAmountOutBuyDS(amount, hook, approxParams);
+                initialBorrowedAmount = finalBorrowedAmount;
+            } else {
+                // we convert the amount to fixed point 18 decimals since, the amount out will be DS, and DS is always 18 decimals.
+                amountOut =
+                    TransferHelper.tokenNativeDecimalsToFixed(offchainGuess.initialBorrowAmount + amount, assetPair.ra);
+                finalBorrowedAmount = offchainGuess.initialBorrowAmount;
+                initialBorrowedAmount = offchainGuess.initialBorrowAmount;
+            }
+            finalBorrowedAmount = calculateAndSellDsReserve(
+                self,
+                assetPair,
+                CalculateAndSellDsParams(
+                    reserveId, dsId, amount, approxParams, offchainGuess, finalBorrowedAmount, amountOut
+                )
+            );
+        }
+        // increase the return data slot value with DS that the user got from rollover sale
+        // the reason we do this after selling the DS reserve is to prevent mix-up of return value
+        // basically, the return value is increased when the reserve sell DS, but that value is meant for thr vault/psm
+        // so we clear them and start with a clean transient storage slot
+        ReturnDataSlotLib.clear(ReturnDataSlotLib.RETURN_SLOT);
+        ReturnDataSlotLib.increase(ReturnDataSlotLib.RETURN_SLOT, dsReceived);
 
-        // TODO : move this to a separate function
+        // trigger flash swaps and send the attributed DS tokens to the user
+        __flashSwap(assetPair, finalBorrowedAmount, 0, dsId, reserveId, true, user, amount);
+    }
+
+    function calculateAndSellDsReserve(
+        ReserveState storage self,
+        AssetPair storage assetPair,
+        CalculateAndSellDsParams memory params
+    ) internal returns (uint256 borrowedAmount) {
         // calculate the amount of DS tokens that will be sold from reserve
+        uint256 amountSellFromReserve = calculateSellFromReserve(self, params.initialAmountOut, params.dsId);
+
+        if (amountSellFromReserve < RESERVE_MINIMUM_SELL_AMOUNT || self.gradualSaleDisabled) {
+            return params.initialBorrowedAmount;
+        }
+
+        bool success = _sellDsReserve(
+            assetPair,
+            SellDsParams(params.reserveId, params.dsId, amountSellFromReserve, params.amount, params.approxParams)
+        );
+
+        if (!success) {
+            return params.initialBorrowedAmount;
+        }
+
+        // we calculate the borrowed amount if user doesn't supply offchain guess
+        if (params.offchainGuess.afterSoldBorrowAmount == 0) {
+            (, borrowedAmount) = assetPair.getAmountOutBuyDS(params.amount, hook, params.approxParams);
+        } else {
+            borrowedAmount = params.offchainGuess.afterSoldBorrowAmount;
+        }
+    }
+
+    function calculateSellFromReserve(ReserveState storage self, uint256 amountOut, uint256 dsId)
+        internal
+        view
+        returns (uint256 amount)
+    {
+        AssetPair storage assetPair = self.ds[dsId];
+
         uint256 amountSellFromReserve =
             amountOut - MathHelper.calculatePercentageFee(self.reserveSellPressurePercentage, amountOut);
 
-        {
-            uint256 lvReserve = assetPair.lvReserve;
-            uint256 totalReserve = lvReserve + assetPair.psmReserve;
+        uint256 lvReserve = assetPair.lvReserve;
+        uint256 totalReserve = lvReserve + assetPair.psmReserve;
 
-            // sell all tokens if the sell amount is higher than the available reserve
-            amountSellFromReserve = totalReserve < amountSellFromReserve ? totalReserve : amountSellFromReserve;
-        }
-        // sell the DS tokens from the reserve if there's any
-        if (amountSellFromReserve > RESERVE_MINIMUM_SELL_AMOUNT && !self.gradualSaleDisabled) {
-            SellResult memory sellDsReserveResult =
-                _sellDsReserve(assetPair, SellDsParams(reserveId, dsId, amountSellFromReserve, amount, approxParams));
-
-            if (sellDsReserveResult.success) {
-                amountOut = sellDsReserveResult.amountOut;
-                borrowedAmount = sellDsReserveResult.borrowedAmount;
-            }
-        }
-
-        // trigger flash swaps and send the attributed DS tokens to the user
-        __flashSwap(assetPair, borrowedAmount, 0, dsId, reserveId, true, amountOut, msg.sender, amount);
-
-        // add the amount of DS tokens from the rollover, if any
-        amountOut += dsReceived;
+        // sell all tokens if the sell amount is higher than the available reserve
+        amount = totalReserve < amountSellFromReserve ? totalReserve : amountSellFromReserve;
     }
 
-    struct SellDsParams {
-        Id reserveId;
-        uint256 dsId;
-        uint256 amountSellFromReserve;
-        uint256 amount;
-        BuyAprroxParams approxParams;
-    }
+    function _sellDsReserve(AssetPair storage assetPair, SellDsParams memory params) internal returns (bool success) {
+        uint256 profitRa;
 
-    struct SellResult {
-        uint256 amountOut;
-        uint256 borrowedAmount;
-        bool success;
-    }
-
-    function _sellDsReserve(AssetPair storage assetPair, SellDsParams memory params)
-        internal
-        returns (SellResult memory result)
-    {
         // sell the DS tokens from the reserve and accrue value to LV holders
         // it's safe to transfer all profit to the module core since the profit for each PSM and LV is calculated separately and we invoke
         // the profit acceptance function for each of them
         //
         // this function can fail, if there's not enough CT liquidity to sell the DS tokens, in that case, we skip the selling part and let user buy the DS tokens
-        (uint256 profitRa,, bool success) =
+        (profitRa, success) =
             __swapDsforRa(assetPair, params.reserveId, params.dsId, params.amountSellFromReserve, 0, _moduleCore);
 
-        result.success = success;
-
         if (success) {
-            // TODO : move this to a separate function
             uint256 lvReserve = assetPair.lvReserve;
             uint256 totalReserve = lvReserve + assetPair.psmReserve;
 
             // calculate the amount of DS tokens that will be sold from both reserve
             uint256 lvReserveUsed = lvReserve * params.amountSellFromReserve * 1e18 / (totalReserve) / 1e18;
-            // uint256 psmReserveUsed = amountSellFromReserve - lvReserveUsed;
 
             // decrement reserve
             assetPair.lvReserve -= lvReserveUsed;
@@ -340,10 +438,6 @@ contract RouterState is
             IVault(_moduleCore).provideLiquidityWithFlashSwapFee(params.reserveId, vaultProfit);
             // send profit to the PSM
             IPSMcore(_moduleCore).psmAcceptFlashSwapProfit(params.reserveId, profitRa - vaultProfit);
-
-            // recalculate the amount of DS tokens attributed, since we sold some from the reserve
-            (result.amountOut, result.borrowedAmount) =
-                assetPair.getAmountOutBuyDS(params.amount, hook, params.approxParams);
         }
     }
 
@@ -353,10 +447,11 @@ contract RouterState is
         uint256 amount,
         uint256 amountOutMin,
         address user,
-        bytes memory rawRaPermitSig,
+        bytes calldata rawRaPermitSig,
         uint256 deadline,
-        BuyAprroxParams memory params
-    ) external returns (uint256 amountOut) {
+        BuyAprroxParams calldata params,
+        OffchainGuess calldata offchainGuess
+    ) external autoClearReturnData returns (SwapRaForDsReturn memory result) {
         if (rawRaPermitSig.length == 0 || deadline == 0) {
             revert InvalidSignature();
         }
@@ -370,48 +465,51 @@ contract RouterState is
         DepegSwapLibrary.permitForRA(address(assetPair.ra), rawRaPermitSig, user, address(this), amount, deadline);
         IERC20(assetPair.ra).safeTransferFrom(user, address(this), amount);
 
-        amountOut = _swapRaforDs(self, assetPair, reserveId, dsId, amount, params);
+        (result.initialBorrow, result.afterSoldBorrow) =
+            _swapRaforDs(self, assetPair, reserveId, dsId, amount, amountOutMin, user, params, offchainGuess);
+
+        result.amountOut = ReturnDataSlotLib.get(ReturnDataSlotLib.RETURN_SLOT);
 
         // slippage protection, revert if the amount of DS tokens received is less than the minimum amount
-        if (amountOut < amountOutMin) {
-            revert InsufficientOutputAmount();
+        if (result.amountOut < amountOutMin) {
+            revert InsufficientOutputAmountForSwap();
         }
 
-        self.recalculateHIYA(dsId, amount, amountOut);
+        result.ctRefunded = ReturnDataSlotLib.get(ReturnDataSlotLib.REFUNDED_SLOT);
 
-        emit RaSwapped(reserveId, dsId, user, amount, amountOut);
+        self.recalculateHIYA(dsId, TransferHelper.tokenNativeDecimalsToFixed(amount, assetPair.ra), result.amountOut);
+
+        emit RaSwapped(reserveId, dsId, user, amount, result.amountOut, result.ctRefunded);
     }
 
-    /**
-     * @notice Swaps RA for DS
-     * @param reserveId the reserve id same as the id on PSM and LV
-     * @param dsId the ds id of the pair, the same as the DS id on PSM and LV
-     * @param amount the amount of RA to swap
-     * @param amountOutMin the minimum amount of DS to receive, will revert if the actual amount is less than this. should be inserted with value from previewSwapRaforDs
-     * @return amountOut amount of DS that's received
-     */
     function swapRaforDs(
         Id reserveId,
         uint256 dsId,
         uint256 amount,
         uint256 amountOutMin,
-        BuyAprroxParams memory params
-    ) external returns (uint256 amountOut) {
+        BuyAprroxParams calldata params,
+        OffchainGuess calldata offchainGuess
+    ) external autoClearReturnData returns (SwapRaForDsReturn memory result) {
         ReserveState storage self = reserves[reserveId];
         AssetPair storage assetPair = self.ds[dsId];
 
         IERC20(assetPair.ra).safeTransferFrom(msg.sender, address(this), amount);
 
-        amountOut = _swapRaforDs(self, assetPair, reserveId, dsId, amount, params);
+        (result.initialBorrow, result.afterSoldBorrow) =
+            _swapRaforDs(self, assetPair, reserveId, dsId, amount, amountOutMin, msg.sender, params, offchainGuess);
+
+        result.amountOut = ReturnDataSlotLib.get(ReturnDataSlotLib.RETURN_SLOT);
 
         // slippage protection, revert if the amount of DS tokens received is less than the minimum amount
-        if (amountOut < amountOutMin) {
-            revert InsufficientOutputAmount();
+        if (result.amountOut < amountOutMin) {
+            revert InsufficientOutputAmountForSwap();
         }
 
-        self.recalculateHIYA(dsId, amount, amountOut);
+        result.ctRefunded = ReturnDataSlotLib.get(ReturnDataSlotLib.REFUNDED_SLOT);
 
-        emit RaSwapped(reserveId, dsId, msg.sender, amount, amountOut);
+        self.recalculateHIYA(dsId, TransferHelper.tokenNativeDecimalsToFixed(amount, assetPair.ra), result.amountOut);
+
+        emit RaSwapped(reserveId, dsId, msg.sender, amount, result.amountOut, result.ctRefunded);
     }
 
     function isRolloverSale(Id id) external view returns (bool) {
@@ -423,10 +521,9 @@ contract RouterState is
         uint256 dsId,
         uint256 amount,
         uint256 amountOutMin,
-        address user,
-        bytes memory rawDsPermitSig,
+        bytes calldata rawDsPermitSig,
         uint256 deadline
-    ) external returns (uint256 amountOut) {
+    ) external autoClearReturnData returns (uint256 amountOut) {
         if (rawDsPermitSig.length == 0 || deadline == 0) {
             revert InvalidSignature();
         }
@@ -434,21 +531,21 @@ contract RouterState is
         AssetPair storage assetPair = self.ds[dsId];
 
         DepegSwapLibrary.permit(
-            address(assetPair.ds), rawDsPermitSig, user, address(this), amount, deadline, "swapDsforRa"
+            address(assetPair.ds), rawDsPermitSig, msg.sender, address(this), amount, deadline, "swapDsforRa"
         );
-        assetPair.ds.transferFrom(user, address(this), amount);
+        assetPair.ds.transferFrom(msg.sender, address(this), amount);
 
-        bool success;
-        uint256 repaymentAmount;
-        (amountOut, repaymentAmount, success) = __swapDsforRa(assetPair, reserveId, dsId, amount, amountOutMin, user);
+        (, bool success) = __swapDsforRa(assetPair, reserveId, dsId, amount, amountOutMin, msg.sender);
 
         if (!success) {
-            revert IMathError.InsufficientLiquidity();
+            revert IErrors.InsufficientLiquidityForSwap();
         }
 
-        self.recalculateHIYA(dsId, amountOut, amount);
+        amountOut = ReturnDataSlotLib.get(ReturnDataSlotLib.RETURN_SLOT);
 
-        emit DsSwapped(reserveId, dsId, user, amount, amountOut);
+        self.recalculateHIYA(dsId, TransferHelper.tokenNativeDecimalsToFixed(amountOut, assetPair.ra), amount);
+
+        emit DsSwapped(reserveId, dsId, msg.sender, amount, amountOut);
     }
 
     /**
@@ -461,6 +558,7 @@ contract RouterState is
      */
     function swapDsforRa(Id reserveId, uint256 dsId, uint256 amount, uint256 amountOutMin)
         external
+        autoClearReturnData
         returns (uint256 amountOut)
     {
         ReserveState storage self = reserves[reserveId];
@@ -468,16 +566,15 @@ contract RouterState is
 
         assetPair.ds.transferFrom(msg.sender, address(this), amount);
 
-        bool success;
-        uint256 repaymentAmount;
-        (amountOut, repaymentAmount, success) =
-            __swapDsforRa(assetPair, reserveId, dsId, amount, amountOutMin, msg.sender);
+        (, bool success) = __swapDsforRa(assetPair, reserveId, dsId, amount, amountOutMin, msg.sender);
 
         if (!success) {
-            revert IMathError.InsufficientLiquidity();
+            revert IErrors.InsufficientLiquidityForSwap();
         }
 
-        self.recalculateHIYA(dsId, amountOut, amount);
+        amountOut = ReturnDataSlotLib.get(ReturnDataSlotLib.RETURN_SLOT);
+
+        self.recalculateHIYA(dsId, TransferHelper.tokenNativeDecimalsToFixed(amountOut, assetPair.ra), amount);
 
         emit DsSwapped(reserveId, dsId, msg.sender, amount, amountOut);
     }
@@ -489,31 +586,18 @@ contract RouterState is
         uint256 amount,
         uint256 amountOutMin,
         address caller
-    ) internal returns (uint256 amountOut, uint256 repaymentAmount, bool success) {
-        (amountOut, repaymentAmount, success) = assetPair.getAmountOutSellDS(amount, hook);
+    ) internal returns (uint256 amountOut, bool success) {
+        (amountOut,, success) = assetPair.getAmountOutSellDS(amount, hook);
 
         if (!success) {
-            return (amountOut, repaymentAmount, success);
+            return (amountOut, success);
         }
 
         if (amountOut < amountOutMin) {
-            revert InsufficientOutputAmount();
+            revert InsufficientOutputAmountForSwap();
         }
 
-        __flashSwap(assetPair, 0, amount, dsId, reserveId, false, amountOut, caller, amount);
-    }
-
-    struct CallbackData {
-        bool buyDs;
-        address caller;
-        // CT or RA amount borrowed
-        uint256 borrowed;
-        // DS or RA amount provided
-        uint256 provided;
-        // DS/RA amount attributed to user
-        uint256 attributed;
-        Id reserveId;
-        uint256 dsId;
+        __flashSwap(assetPair, 0, amount, dsId, reserveId, false, caller, amount);
     }
 
     function __flashSwap(
@@ -523,15 +607,12 @@ contract RouterState is
         uint256 dsId,
         Id reserveId,
         bool buyDs,
-        // will be interpreted as the ra attributed to user for selling ds
-        // and ds attributed to user for buying ra
-        uint256 attributed,
         address caller,
         // DS or RA amount provided
         uint256 provided
     ) internal {
         uint256 borrowed = buyDs ? raAmount : ctAmount;
-        CallbackData memory callbackData = CallbackData(buyDs, caller, borrowed, provided, attributed, reserveId, dsId);
+        CallbackData memory callbackData = CallbackData(buyDs, caller, borrowed, provided, reserveId, dsId);
 
         bytes memory data = abi.encode(callbackData);
 
@@ -563,7 +644,6 @@ contract RouterState is
                 callbackData.reserveId,
                 callbackData.dsId,
                 callbackData.caller,
-                callbackData.attributed,
                 callbackData.provided,
                 callbackData.borrowed,
                 poolManager,
@@ -579,7 +659,6 @@ contract RouterState is
                 callbackData.reserveId,
                 callbackData.dsId,
                 callbackData.caller,
-                callbackData.attributed,
                 poolManager,
                 paymentAmount
             );
@@ -591,7 +670,6 @@ contract RouterState is
         Id reserveId,
         uint256 dsId,
         address caller,
-        uint256 dsAttributed,
         uint256 provided,
         uint256 borrowed,
         address poolManager,
@@ -606,13 +684,15 @@ contract RouterState is
         IPSMcore psm = IPSMcore(_moduleCore);
         (uint256 received,) = psm.depositPsm(reserveId, deposited);
 
+        // slither-disable-next-line uninitialized-local
         uint256 repaymentAmount;
         {
+            // slither-disable-next-line uninitialized-local
             uint256 refunded;
 
             // not enough liquidity
             if (actualRepaymentAmount > received) {
-                revert IMathError.InsufficientLiquidity();
+                revert IErrors.InsufficientLiquidityForSwap();
             } else {
                 refunded = received - actualRepaymentAmount;
                 repaymentAmount = actualRepaymentAmount;
@@ -622,21 +702,17 @@ contract RouterState is
                 // refund the user with extra ct
                 assetPair.ct.transfer(caller, refunded);
             }
+
+            ReturnDataSlotLib.increase(ReturnDataSlotLib.REFUNDED_SLOT, refunded);
         }
-
-        // for rounding error protection
-        dsAttributed -= 1;
-
-        assert(received >= dsAttributed);
-
-        // should be the same, we don't compare with the RA amount since we maybe dealing
-        // with a non-rebasing token, in which case the amount deposited and the amount received will always be different
-        // so we simply enforce that the amount received is equal to the amount attributed to the user
 
         // send caller their DS
         assetPair.ds.transfer(caller, received);
         // repay flash loan
         assetPair.ct.transfer(poolManager, repaymentAmount);
+
+        // set the return data slot
+        ReturnDataSlotLib.increase(ReturnDataSlotLib.RETURN_SLOT, received);
     }
 
     function __afterFlashswapSell(
@@ -645,7 +721,6 @@ contract RouterState is
         Id reserveId,
         uint256 dsId,
         address caller,
-        uint256 raAttributed,
         address poolManager,
         uint256 actualRepaymentAmount
     ) internal {
@@ -658,21 +733,19 @@ contract RouterState is
 
         uint256 received = psm.redeemRaWithCtDs(reserveId, ctAmount);
 
-        uint256 repaymentAmount = received - raAttributed;
-
         Asset ra = assetPair.ra;
 
-        if (actualRepaymentAmount > repaymentAmount) {
-            revert IMathError.InsufficientLiquidity();
-        } else if (actualRepaymentAmount < repaymentAmount) {
-            // refund excess
-            uint256 refunded = repaymentAmount - actualRepaymentAmount;
-            raAttributed += refunded;
+        if (actualRepaymentAmount > received) {
+            revert IErrors.InsufficientLiquidityForSwap();
         }
 
+        received = received - actualRepaymentAmount;
+
         // send caller their RA
-        IERC20(ra).safeTransfer(caller, raAttributed);
+        IERC20(ra).safeTransfer(caller, received);
         // repay flash loan
         IERC20(ra).safeTransfer(poolManager, actualRepaymentAmount);
+
+        ReturnDataSlotLib.increase(ReturnDataSlotLib.RETURN_SLOT, received);
     }
 }

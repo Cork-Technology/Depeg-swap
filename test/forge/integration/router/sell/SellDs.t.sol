@@ -65,7 +65,7 @@ contract SellDsTest is Helper {
 
         // TODO : figure out the out of whack gas consumption
         vm.pauseGasMetering();
-        hook.updateBaseFeePercentage(address(ra), ct, 1 ether);
+        corkConfig.updateAmmBaseFeePercentage(defaultCurrencyId, 1 ether);
 
         uint256 amountOut = flashSwapRouter.swapDsforRa(currencyId, dsId, amount, 0);
 
