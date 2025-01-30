@@ -57,6 +57,9 @@ library PsmLibrary {
     }
 
     function updateExchangeRate(State storage self, uint256 newRate) external {
+        if(newRate == 0) {
+            revert IErrors.InvalidRate();
+        }
         uint256 currentRate = self.ds[self.globalAssetIdx].exchangeRate();
 
         _ensureRateIsInDeltaRange(currentRate, newRate);
@@ -502,10 +505,8 @@ library PsmLibrary {
 
         receivedDs = amount;
 
-        uint256 available = self.psm.balances.paBalance;
-
         if (receivedPa > self.psm.balances.paBalance) {
-            revert IErrors.InsufficientLiquidity(available, receivedPa);
+            revert IErrors.InsufficientLiquidity(self.psm.balances.paBalance, receivedPa);
         }
 
         if (receivedDs > self.psm.balances.dsBalance) {

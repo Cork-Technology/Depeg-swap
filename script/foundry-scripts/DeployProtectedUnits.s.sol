@@ -4,22 +4,22 @@ import {Script, console} from "forge-std/Script.sol";
 import {ERC1967Proxy} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 import {ModuleCore} from "../../contracts/core/ModuleCore.sol";
 import {Liquidator} from "../../contracts/core/liquidators/cow-protocol/Liquidator.sol";
-import {HedgeUnit} from "../../contracts/core/assets/HedgeUnit.sol";
-import {HedgeUnitFactory} from "../../contracts/core/assets/HedgeUnitFactory.sol";
+import {ProtectedUnit} from "../../contracts/core/assets/ProtectedUnit.sol";
+import {ProtectedUnitFactory} from "../../contracts/core/assets/ProtectedUnitFactory.sol";
 
 contract DeployScript is Script {
     ModuleCore public moduleCore;
     Liquidator public liquidator;
-    HedgeUnitFactory public hedgeUnitFactory;
+    ProtectedUnitFactory public protectedUnitFactory;
     // TODO : insert this
     address corkConfig = address(0);
 
-    HedgeUnit public hedgeUnitbsETH;
-    HedgeUnit public hedgeUnitwamuETH;
-    HedgeUnit public hedgeUnitmlETH;
-    HedgeUnit public hedgeUnitsvbUSD;
-    HedgeUnit public hedgeUnitfedUSD;
-    HedgeUnit public hedgeUnitomgUSD;
+    ProtectedUnit public protectedUnitbsETH;
+    ProtectedUnit public protectedUnitwamuETH;
+    ProtectedUnit public protectedUnitmlETH;
+    ProtectedUnit public protectedUnitsvbUSD;
+    ProtectedUnit public protectedUnitfedUSD;
+    ProtectedUnit public protectedUnitomgUSD;
 
     bool public isProd = vm.envBool("PRODUCTION");
     uint256 public base_redemption_fee = vm.envUint("PSM_BASE_REDEMPTION_FEE_PERCENTAGE");
@@ -62,68 +62,68 @@ contract DeployScript is Script {
         // console.log("Liquidator                      : ", address(liquidator));
         // console.log("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-");
 
-        // // Deploy the HedgeUnitFactry contract
-        // hedgeUnitFactory = new HedgeUnitFactory(address(moduleCore), address(liquidator));
-        // console.log("HedgeUnit Factory               : ", address(hedgeUnitFactory));
+        // // Deploy the ProtectedUnitFactry contract
+        // protectedUnitFactory = new ProtectedUnitFactory(address(moduleCore), address(liquidator));
+        // console.log("ProtectedUnit Factory               : ", address(protectedUnitFactory));
         // console.log("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-");
 
-        // Deploy the HedgeUnit contract
-        // hedgeUnitwamuETH = HedgeUnit(
-        //     hedgeUnitFactory.deployHedgeUnit(
+        // Deploy the ProtectedUnit contract
+        // protectedUnitwamuETH = ProtectedUnit(
+        //     protectedUnitFactory.deployProtectedUnit(
         //         moduleCore.getId(wamuETH, ceth, wamuETHExpiry),
         //         wamuETH,
         //         "Washington Mutual restaked ETH - CETH",
         //         INITIAL_MINT_CAP
         //     )
         // );
-        // console.log("HU wamuETH                      : ", address(hedgeUnitwamuETH));
+        // console.log("HU wamuETH                      : ", address(protectedUnitwamuETH));
 
-        // hedgeUnitbsETH = HedgeUnit(
-        //     hedgeUnitFactory.deployHedgeUnit(
+        // protectedUnitbsETH = ProtectedUnit(
+        //     protectedUnitFactory.deployProtectedUnit(
         //         moduleCore.getId(bsETH, wamuETH, bsETHExpiry),
         //         bsETH,
         //         "Bear Sterns Restaked ETH - Washington Mutual restaked ETH",
         //         INITIAL_MINT_CAP
         //     )
         // );
-        // console.log("HU bsETH                        : ", address(hedgeUnitbsETH));
+        // console.log("HU bsETH                        : ", address(protectedUnitbsETH));
 
-        // hedgeUnitmlETH = HedgeUnit(
-        //     hedgeUnitFactory.deployHedgeUnit(
+        // protectedUnitmlETH = ProtectedUnit(
+        //     protectedUnitFactory.deployProtectedUnit(
         //         moduleCore.getId(mlETH, bsETH, mlETHExpiry),
         //         mlETH,
         //         "Merrill Lynch staked ETH - Bear Sterns Restaked ETH",
         //         INITIAL_MINT_CAP
         //     )
         // );
-        // console.log("HU mlETH                        : ", address(hedgeUnitmlETH));
+        // console.log("HU mlETH                        : ", address(protectedUnitmlETH));
 
-        // hedgeUnitfedUSD = HedgeUnit(
-        //     hedgeUnitFactory.deployHedgeUnit(
+        // protectedUnitfedUSD = ProtectedUnit(
+        //     protectedUnitFactory.deployProtectedUnit(
         //         moduleCore.getId(fedUSD, cUSD, fedUSDExpiry), fedUSD, "Fed Up USD - CUSD", INITIAL_MINT_CAP
         //     )
         // );
-        // console.log("HU fedUSD                      : ", address(hedgeUnitfedUSD));
+        // console.log("HU fedUSD                      : ", address(protectedUnitfedUSD));
 
-        // hedgeUnitsvbUSD = HedgeUnit(
-        //     hedgeUnitFactory.deployHedgeUnit(
+        // protectedUnitsvbUSD = ProtectedUnit(
+        //     protectedUnitFactory.deployProtectedUnit(
         //         moduleCore.getId(svbUSD, fedUSD, svbUSDExpiry),
         //         svbUSD,
         //         "Sillycoin Valley Bank USD - Fed Up USD",
         //         INITIAL_MINT_CAP
         //     )
         // );
-        // console.log("HU svbUSD                      : ", address(hedgeUnitsvbUSD));
+        // console.log("HU svbUSD                      : ", address(protectedUnitsvbUSD));
 
-        // hedgeUnitomgUSD = HedgeUnit(
-        //     hedgeUnitFactory.deployHedgeUnit(
+        // protectedUnitomgUSD = ProtectedUnit(
+        //     protectedUnitFactory.deployProtectedUnit(
         //         moduleCore.getId(omgUSD, svbUSD, omgUSDExpiry),
         //         omgUSD,
         //         "Own My Gold USD - Sillycoin Valley Bank USD",
         //         INITIAL_MINT_CAP
         //     )
         // );
-        // console.log("HU omgUSD                      : ", address(hedgeUnitomgUSD));
+        // console.log("HU omgUSD                      : ", address(protectedUnitomgUSD));
         // console.log("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-");
         vm.stopBroadcast();
     }

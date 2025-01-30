@@ -11,8 +11,8 @@ import {ModuleCore} from "./ModuleCore.sol";
 import {IVault} from "./../interfaces/IVault.sol";
 import {CorkHook} from "Cork-Hook/CorkHook.sol";
 import {MarketSnapshot} from "Cork-Hook/lib/MarketSnapshot.sol";
-import {HedgeUnitFactory} from "./assets/HedgeUnitFactory.sol";
-import {HedgeUnit} from "./assets/HedgeUnit.sol";
+import {ProtectedUnitFactory} from "./assets/ProtectedUnitFactory.sol";
+import {ProtectedUnit} from "./assets/ProtectedUnit.sol";
 
 /**
  * @title Config Contract
@@ -28,7 +28,7 @@ contract CorkConfig is AccessControl, Pausable {
     ModuleCore public moduleCore;
     IDsFlashSwapCore public flashSwapRouter;
     CorkHook public hook;
-    HedgeUnitFactory public hedgeUnitFactory;
+    ProtectedUnitFactory public protectedUnitFactory;
     // Cork Protocol's treasury address. Other Protocol component should fetch this address directly from the config contract
     // instead of storing it themselves, since it'll be hard to update the treasury address in all the components if it changes vs updating it in the config contract once
     address public treasury;
@@ -62,9 +62,9 @@ contract CorkConfig is AccessControl, Pausable {
     /// @param hook Address of hook contract
     event HookSet(address hook);
 
-    /// @notice Emitted when a hedgeUnitFactory variable set
-    /// @param hedgeUnitFactory Address of hedgeUnitFactory contract
-    event HedgeUnitFactorySet(address hedgeUnitFactory);
+    /// @notice Emitted when a protectedUnitFactory variable set
+    /// @param protectedUnitFactory Address of protectedUnitFactory contract
+    event ProtectedUnitFactorySet(address protectedUnitFactory);
 
     /// @notice Emitted when a treasury is set
     /// @param treasury Address of treasury contract/address
@@ -179,12 +179,12 @@ contract CorkConfig is AccessControl, Pausable {
         emit HookSet(_hook);
     }
 
-    function setHedgeUnitFactory(address _hedgeUnitFactory) external onlyManager {
-        if (_hedgeUnitFactory == address(0)) {
+    function setProtectedUnitFactory(address _protectedUnitFactory) external onlyManager {
+        if (_protectedUnitFactory == address(0)) {
             revert InvalidAddress();
         }
-        hedgeUnitFactory = HedgeUnitFactory(_hedgeUnitFactory);
-        emit HedgeUnitFactorySet(_hedgeUnitFactory);
+        protectedUnitFactory = ProtectedUnitFactory(_protectedUnitFactory);
+        emit ProtectedUnitFactorySet(_protectedUnitFactory);
     }
 
     function setTreasury(address _treasury) external onlyManager {
@@ -418,46 +418,46 @@ contract CorkConfig is AccessControl, Pausable {
         moduleCore.useTradeExecutionResultFunds(id);
     }
 
-    function updateHedgeUnitMintCap(address hedgeUnit, uint256 newMintCap) external onlyManager {
-        HedgeUnit(hedgeUnit).updateMintCap(newMintCap);
+    function updateProtectedUnitMintCap(address protectedUnit, uint256 newMintCap) external onlyManager {
+        ProtectedUnit(protectedUnit).updateMintCap(newMintCap);
     }
 
-    function deployHedgeUnit(Id id, address pa, address ra, string calldata pairName, uint256 mintCap)
+    function deployProtectedUnit(Id id, address pa, address ra, string calldata pairName, uint256 mintCap)
         external
         onlyManager
         returns (address)
     {
-        return hedgeUnitFactory.deployHedgeUnit(id, pa, ra, pairName, mintCap);
+        return protectedUnitFactory.deployProtectedUnit(id, pa, ra, pairName, mintCap);
     }
 
-    function deRegisterHedgeUnit(Id id) external onlyManager {
-        hedgeUnitFactory.deRegisterHedgeUnit(id);
+    function deRegisterProtectedUnit(Id id) external onlyManager {
+        protectedUnitFactory.deRegisterProtectedUnit(id);
     }
 
-    function pauseHedgeUnit(address hedgeUnit) external onlyManager {
-        HedgeUnit(hedgeUnit).pause();
+    function pauseProtectedUnit(address protectedUnit) external onlyManager {
+        ProtectedUnit(protectedUnit).pause();
     }
 
-    function pauseHedgeUnitMinting(address hedgeUnit) external onlyManager {
-        HedgeUnit(hedgeUnit).pause();
+    function pauseProtectedUnitMinting(address protectedUnit) external onlyManager {
+        ProtectedUnit(protectedUnit).pause();
     }
 
-    function resumeHedgeUnitMinting(address hedgeUnit) external onlyManager {
-        HedgeUnit(hedgeUnit).unpause();
+    function resumeProtectedUnitMinting(address protectedUnit) external onlyManager {
+        ProtectedUnit(protectedUnit).unpause();
     }
 
-    function redeemRaWithDsWithHedgeUnit(address hedgeUnit, uint256 amount, uint256 amountDS) external onlyManager {
-        HedgeUnit(hedgeUnit).redeemRaWithDs(amount, amountDS);
+    function redeemRaWithDsWithProtectedUnit(address protectedUnit, uint256 amount, uint256 amountDS) external onlyManager {
+        ProtectedUnit(protectedUnit).redeemRaWithDs(amount, amountDS);
     }
 
-    function buyDsFromHedgeUnit(
-        address hedgeUnit,
+    function buyDsFromProtectedUnit(
+        address protectedUnit,
         uint256 amount,
         uint256 amountOutMin,
         IDsFlashSwapCore.BuyAprroxParams calldata params,
         IDsFlashSwapCore.OffchainGuess calldata offchainGuess
     ) external onlyManager returns (uint256 amountOut) {
-        amountOut = HedgeUnit(hedgeUnit).useFunds(amount, amountOutMin, params, offchainGuess);
+        amountOut = ProtectedUnit(protectedUnit).useFunds(amount, amountOutMin, params, offchainGuess);
     }
 
     /**

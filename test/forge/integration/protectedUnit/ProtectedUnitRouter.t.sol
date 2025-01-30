@@ -2,16 +2,16 @@
 pragma solidity ^0.8.24;
 
 import {Helper} from "./../../Helper.sol";
-import {HedgeUnit} from "../../../../contracts/core/assets/HedgeUnit.sol";
+import {ProtectedUnit} from "../../../../contracts/core/assets/ProtectedUnit.sol";
 import {Liquidator} from "../../../../contracts/core/liquidators/cow-protocol/Liquidator.sol";
 import {DummyERCWithPermit} from "../../../../contracts/dummy/DummyERCWithPermit.sol";
 import {Id} from "../../../../contracts/libraries/Pair.sol";
-import {IHedgeUnitRouter} from "../../../../contracts/interfaces/IHedgeUnitRouter.sol";
+import {IProtectedUnitRouter} from "../../../../contracts/interfaces/IProtectedUnitRouter.sol";
 import {Asset} from "../../../../contracts/core/assets/Asset.sol";
 
-contract HedgeUnitRouterTest is Helper {
+contract ProtectedUnitRouterTest is Helper {
     Liquidator public liquidator;
-    HedgeUnit public hedgeUnit;
+    ProtectedUnit public protectedUnit;
     DummyERCWithPermit public dsToken;
     DummyERCWithPermit internal ra;
     DummyERCWithPermit internal pa;
@@ -60,9 +60,9 @@ contract HedgeUnitRouterTest is Helper {
         // Deploy the Liquidator contract
         liquidator = new Liquidator(address(corkConfig), hookTrampoline, settlementContract, address(moduleCore));
 
-        // Deploy the HedgeUnit contract
-        corkConfig.deployHedgeUnit(currencyId, address(pa), address(ra), "DS/PA", INITIAL_MINT_CAP);
-        hedgeUnit = HedgeUnit(hedgeUnitFactory.getHedgeUnitAddress(currencyId));
+        // Deploy the ProtectedUnit contract
+        corkConfig.deployProtectedUnit(currencyId, address(pa), address(ra), "DS/PA", INITIAL_MINT_CAP);
+        protectedUnit = ProtectedUnit(protectedUnitFactory.getProtectedUnitAddress(currencyId));
 
         // Transfer tokens to user for test_ing
         dsToken.transfer(user, USER_BALANCE);
@@ -80,17 +80,17 @@ contract HedgeUnitRouterTest is Helper {
     }
 
     function test_PreviewMint() public {
-        address[] memory hedgeUnits = new address[](1);
+        address[] memory protectedUnits = new address[](1);
         uint256[] memory amounts = new uint256[](1);
         
-        hedgeUnits[0] = address(hedgeUnit);
+        protectedUnits[0] = address(protectedUnit);
         amounts[0] = 100 * 1e18;
 
         uint256[] memory dsAmounts = new uint256[](1);
         uint256[] memory paAmounts = new uint256[](1);
 
-        // Preview minting 100 HedgeUnit tokens
-        (dsAmounts, paAmounts) = hedgeUnitRouter.previewBatchMint(hedgeUnits, amounts);
+        // Preview minting 100 ProtectedUnit tokens
+        (dsAmounts, paAmounts) = protectedUnitRouter.previewBatchMint(protectedUnits, amounts);
 
         // Check that the DS and PA amounts are correct
         assertEq(dsAmounts[0], 100 * 1e18);
@@ -101,21 +101,21 @@ contract HedgeUnitRouterTest is Helper {
         // Test_ minting by the user
         vm.startPrank(user);
 
-        // Approve tokens for HedgeUnit contract
-        dsToken.approve(address(hedgeUnit), USER_BALANCE);
-        pa.approve(address(hedgeUnit), USER_BALANCE);
+        // Approve tokens for ProtectedUnit contract
+        dsToken.approve(address(protectedUnit), USER_BALANCE);
+        pa.approve(address(protectedUnit), USER_BALANCE);
 
-        // Mint 100 HedgeUnit tokens
+        // Mint 100 ProtectedUnit tokens
         uint256 mintAmount = 100 * 1e18;
-        hedgeUnit.mint(mintAmount);
+        protectedUnit.mint(mintAmount);
 
         // Check balances and total supply
-        assertEq(hedgeUnit.balanceOf(user), mintAmount);
-        assertEq(hedgeUnit.totalSupply(), mintAmount);
+        assertEq(protectedUnit.balanceOf(user), mintAmount);
+        assertEq(protectedUnit.totalSupply(), mintAmount);
 
         // Check token balances in the contract
-        assertEq(dsToken.balanceOf(address(hedgeUnit)), mintAmount);
-        assertEq(pa.balanceOf(address(hedgeUnit)), mintAmount);
+        assertEq(dsToken.balanceOf(address(protectedUnit)), mintAmount);
+        assertEq(pa.balanceOf(address(protectedUnit)), mintAmount);
 
         vm.stopPrank();
     }
@@ -124,30 +124,30 @@ contract HedgeUnitRouterTest is Helper {
         // Test_ minting by the user
         vm.startPrank(user);
 
-        // Mint 100 HedgeUnit tokens
+        // Mint 100 ProtectedUnit tokens
         uint256 mintAmount = 100 * 1e18;
 
-        // Permit token approvals to HedgeUnit contract
-        (uint256 dsAmount, uint256 paAmount) = hedgeUnit.previewMint(mintAmount);
+        // Permit token approvals to ProtectedUnit contract
+        (uint256 dsAmount, uint256 paAmount) = protectedUnit.previewMint(mintAmount);
         bytes32 domain_separator = Asset(address(dsToken)).DOMAIN_SEPARATOR();
         uint256 deadline = block.timestamp + 10 days;
 
         bytes memory dsPermit = getCustomPermit(
             user,
-            address(hedgeUnit),
+            address(protectedUnit),
             dsAmount,
             Asset(address(dsToken)).nonces(user),
             deadline,
             USER_PK,
             domain_separator,
-            hedgeUnit.DS_PERMIT_MINT_TYPEHASH()
+            protectedUnit.DS_PERMIT_MINT_TYPEHASH()
         );
 
         domain_separator = Asset(address(pa)).DOMAIN_SEPARATOR();
 
         bytes memory paPermit = getPermit(
             user,
-            address(hedgeUnit),
+            address(protectedUnit),
             paAmount,
             Asset(address(pa)).nonces(user),
             deadline,
@@ -155,50 +155,50 @@ contract HedgeUnitRouterTest is Helper {
             domain_separator
         );
 
-        IHedgeUnitRouter.BatchMintParams memory param = IHedgeUnitRouter.BatchMintParams({
-            hedgeUnits: new address[](1),
+        IProtectedUnitRouter.BatchMintParams memory param = IProtectedUnitRouter.BatchMintParams({
+            protectedUnits: new address[](1),
             amounts: new uint256[](1),
             rawDsPermitSigs: new bytes[](1),
             rawPaPermitSigs: new bytes[](1),
             deadline: deadline
         });
 
-        param.hedgeUnits[0] = address(hedgeUnit);
+        param.protectedUnits[0] = address(protectedUnit);
         param.amounts[0] = mintAmount;
         param.rawDsPermitSigs[0] = dsPermit;
         param.rawPaPermitSigs[0] = paPermit;
-        hedgeUnitRouter.batchMint(param);
+        protectedUnitRouter.batchMint(param);
 
         // Check balances and total supply
-        assertEq(hedgeUnit.balanceOf(user), mintAmount);
-        assertEq(hedgeUnit.totalSupply(), mintAmount);
+        assertEq(protectedUnit.balanceOf(user), mintAmount);
+        assertEq(protectedUnit.totalSupply(), mintAmount);
 
         // Check token balances in the contract
-        assertEq(dsToken.balanceOf(address(hedgeUnit)), mintAmount);
-        assertEq(pa.balanceOf(address(hedgeUnit)), mintAmount);
+        assertEq(dsToken.balanceOf(address(protectedUnit)), mintAmount);
+        assertEq(pa.balanceOf(address(protectedUnit)), mintAmount);
 
         vm.stopPrank();
     }
 
     function test_PreviewBatchBurn() public {
         // Mint tokens first
-        dsToken.approve(address(hedgeUnit), USER_BALANCE);
-        pa.approve(address(hedgeUnit), USER_BALANCE);
+        dsToken.approve(address(protectedUnit), USER_BALANCE);
+        pa.approve(address(protectedUnit), USER_BALANCE);
         
         uint256 mintAmount = 100 * 1e18;
-        hedgeUnit.mint(mintAmount);
+        protectedUnit.mint(mintAmount);
 
-        address[] memory hedgeUnits = new address[](1);
+        address[] memory protectedUnits = new address[](1);
         uint256[] memory amounts = new uint256[](1);
         
-        hedgeUnits[0] = address(hedgeUnit);
+        protectedUnits[0] = address(protectedUnit);
         amounts[0] = 50 * 1e18;
 
         uint256[] memory dsAmounts = new uint256[](1);
         uint256[] memory paAmounts = new uint256[](1);
 
         // Preview dissolving 50 tokens
-        (dsAmounts, paAmounts,) = hedgeUnitRouter.previewBatchBurn(hedgeUnits, amounts);
+        (dsAmounts, paAmounts,) = protectedUnitRouter.previewBatchBurn(protectedUnits, amounts);
 
         // Check that the DS and PA amounts are correct
         assertEq(dsAmounts[0], 50 * 1e18);
@@ -213,19 +213,19 @@ contract HedgeUnitRouterTest is Helper {
 
         uint256 burnAmount = 50 * 1e18;
 
-        address[] memory hedgeUnits = new address[](1);
+        address[] memory protectedUnits = new address[](1);
         uint256[] memory amounts = new uint256[](1);
         
-        hedgeUnits[0] = address(hedgeUnit);
+        protectedUnits[0] = address(protectedUnit);
         amounts[0] = burnAmount;
 
-        hedgeUnit.approve(address(hedgeUnitRouter), burnAmount);
+        protectedUnit.approve(address(protectedUnitRouter), burnAmount);
 
         // Burn 50 tokens
-        hedgeUnitRouter.batchBurn(hedgeUnits, amounts);
+        protectedUnitRouter.batchBurn(protectedUnits, amounts);
 
-        // Check that the user's HedgeUnit balance and contract's DS/PA balance decreased
-        assertEq(hedgeUnit.balanceOf(user), 50 * 1e18); // 100 - 50 = 50 tokens left
+        // Check that the user's ProtectedUnit balance and contract's DS/PA balance decreased
+        assertEq(protectedUnit.balanceOf(user), 50 * 1e18); // 100 - 50 = 50 tokens left
         assertEq(dsToken.balanceOf(user), USER_BALANCE - 50 * 1e18); // 500 - 50
         assertEq(pa.balanceOf(user), USER_BALANCE - 50 * 1e18); // 500 - 50
 

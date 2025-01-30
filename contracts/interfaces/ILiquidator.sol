@@ -24,7 +24,7 @@ interface ILiquidator is IErrors {
         Id vaultId;
     }
 
-    struct CreateHedgeUnitOrderParams {
+    struct CreateProtectedUnitOrderParams {
         /// the internal reference id, used to associate which order is being liquidated in the liquidation contract
         /// sinceit's impossible to add the order id in the appData directly,
         /// backend must generate a random hash to be used as internalRefId when creating the order
@@ -35,7 +35,7 @@ interface ILiquidator is IErrors {
         address sellToken;
         uint256 sellAmount;
         address buyToken;
-        address hedgeUnit;
+        address protectedUnit;
     }
 
     struct Call {

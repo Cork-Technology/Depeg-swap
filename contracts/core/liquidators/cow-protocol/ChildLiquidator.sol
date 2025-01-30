@@ -5,7 +5,7 @@ import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/Own
 import {Liquidator, IGPv2SettlementContract} from "./Liquidator.sol";
 import {IErrors} from "../../../interfaces/IErrors.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import {IHedgeUnitLiquidation} from "./../../assets/HedgeUnit.sol";
+import {IProtectedUnitLiquidation} from "./../../assets/ProtectedUnit.sol";
 import {IVaultLiquidation} from "./../../../interfaces/IVaultLiquidation.sol";
 import {Id} from "../../../libraries/Pair.sol";
 
@@ -59,19 +59,19 @@ abstract contract ChildLiquidatorBase is OwnableUpgradeable {
     }
 }
 
-contract HedgeUnitChildLiquidator is ChildLiquidatorBase {
+contract ProtectedUnitChildLiquidator is ChildLiquidatorBase {
     function moveFunds() external onlyLiquidator returns (uint256 funds, uint256 leftover) {
         // move buy token balance of this contract to vault, by approving the vault to transfer the funds
         funds = IERC20(order.buyToken).balanceOf(address(this));
         SafeERC20.forceApprove(IERC20(order.buyToken), receiver, funds);
 
-        IHedgeUnitLiquidation(receiver).receiveFunds(funds, order.buyToken);
+        IProtectedUnitLiquidation(receiver).receiveFunds(funds, order.buyToken);
 
         // move leftover sell token balance of this contract to vault, by approving the vault to transfer the funds
         leftover = IERC20(order.sellToken).balanceOf(address(this));
         SafeERC20.forceApprove(IERC20(order.sellToken), receiver, leftover);
 
-        IHedgeUnitLiquidation(receiver).receiveFunds(leftover, order.sellToken);
+        IProtectedUnitLiquidation(receiver).receiveFunds(leftover, order.sellToken);
     }
 }
 
