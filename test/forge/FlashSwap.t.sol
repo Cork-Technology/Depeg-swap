@@ -188,7 +188,7 @@ contract FlashSwapTest is Helper {
         ERC20 lv = ERC20(moduleCore.lvAsset(defaultCurrencyId));
         lv.approve(address(moduleCore), lv.balanceOf(address(DEFAULT_ADDRESS)));
         IVault.RedeemEarlyParams memory redeemParams = IVault.RedeemEarlyParams(
-            defaultCurrencyId, lv.balanceOf(address(DEFAULT_ADDRESS)), 0, block.timestamp + 10 seconds
+            defaultCurrencyId, lv.balanceOf(address(DEFAULT_ADDRESS)), 0, block.timestamp + 10 seconds, 0, 0, 0
         );
         moduleCore.redeemEarlyLv(redeemParams);
 
@@ -196,7 +196,7 @@ contract FlashSwapTest is Helper {
         lv.approve(address(moduleCore), 19e18);
 
         redeemParams =
-            IVault.RedeemEarlyParams(defaultCurrencyId, lv.balanceOf(address(user)), 0, block.timestamp + 10 seconds);
+            IVault.RedeemEarlyParams(defaultCurrencyId, lv.balanceOf(address(user)), 0, block.timestamp + 10 seconds, 0, 0, 0);
         moduleCore.redeemEarlyLv(redeemParams);
 
         flashSwapRouter.swapRaforDs(defaultCurrencyId, 2, 1e3, 1, buyParams, defaultOffchainGuessParams());

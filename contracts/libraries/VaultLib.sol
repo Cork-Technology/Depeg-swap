@@ -596,15 +596,15 @@ library VaultLibrary {
         }
 
         if (result.ctReceivedFromAmm + result.ctReceivedFromVault < redeemParams.ctAmountOutMin) {
-            revert IVault.InsufficientOutputAmount(redeemParams.ctAmountOutMin, result.ctReceivedFromAmm + result.ctReceivedFromVault);
+            revert IErrors.InsufficientOutputAmount(redeemParams.ctAmountOutMin, result.ctReceivedFromAmm + result.ctReceivedFromVault);
         }
 
         if (result.dsReceived < redeemParams.dsAmountOutMin) {
-            revert IVault.InsufficientOutputAmount(redeemParams.dsAmountOutMin, result.dsReceived);
+            revert IErrors.InsufficientOutputAmount(redeemParams.dsAmountOutMin, result.dsReceived);
         }
 
         if (result.paReceived < redeemParams.paAmountOutMin) {
-            revert IVault.InsufficientOutputAmount(redeemParams.paAmountOutMin, result.paReceived);
+            revert IErrors.InsufficientOutputAmount(redeemParams.paAmountOutMin, result.paReceived);
         }
 
         // burn lv amount + fee
