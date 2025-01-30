@@ -146,18 +146,17 @@ contract RouterState is
         emit GradualSaleStatusUpdated(id, status);
     }
 
-    function updateDsExtraFeePercentage(Id id, uint256 newPercentage) external onlyConfig  {
+    function updateDsExtraFeePercentage(Id id, uint256 newPercentage) external onlyConfig {
         reserves[id].dsExtraFeePercentage = newPercentage;
 
         emit DsFeeUpdated(id, newPercentage);
     }
 
-    function updateDsExtraFeeTreasurySplitPercentage(Id id, uint256 newPercentage) external onlyConfig  {
+    function updateDsExtraFeeTreasurySplitPercentage(Id id, uint256 newPercentage) external onlyConfig {
         reserves[id].dsExtraFeeTreasurySplitPercentage = newPercentage;
 
         emit DsFeeTreasuryPercentageUpdated(id, newPercentage);
     }
-
 
     function getCurrentCumulativeHIYA(Id id) external view returns (uint256 hpaCummulative) {
         hpaCummulative = reserves[id].getCurrentCumulativeHIYA();
