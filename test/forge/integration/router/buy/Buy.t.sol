@@ -198,6 +198,64 @@ contract BuyDsTest is Helper {
     }
 
     /// forge-config: default.fuzz.show-logs = true
+    function testFuzz_buyDSWithDsFee(uint8 raDecimals, uint8 paDecimals) public {
+        uint256 amount = 1 ether;
+        (raDecimals, paDecimals) = setupDifferentDecimals(raDecimals, paDecimals);
+
+        // 10%
+        uint256 feePercentage = 10 ether;
+        // set up the necessary fees
+        corkConfig.updateRouterDsExtraFee(currencyId, feePercentage);
+        corkConfig.updateDsExtraFeeTreasurySplitPercentage(currencyId, feePercentage);
+        corkConfig.updateReserveSellPressurePercentage(currencyId, feePercentage);
+
+        amount = TransferHelper.normalizeDecimals(amount, TARGET_DECIMALS, raDecimals);
+
+        ra.approve(address(flashSwapRouter), type(uint256).max);
+
+        dsId = moduleCore.lastDsId(currencyId);
+        (ct, ds) = moduleCore.swapAsset(currencyId, dsId);
+
+        // 1-t = 0.1
+        Asset(ds).approve(address(flashSwapRouter), amount);
+
+        vm.warp(current);
+
+        // TODO : figure out the out of whack gas consumption
+        vm.pauseGasMetering();
+
+        address treasury = corkConfig.treasury();
+        uint256 balanceTreasuryBefore = ra.balanceOf(treasury);
+
+        IDsFlashSwapCore.SwapRaForDsReturn memory result = flashSwapRouter.swapRaforDs(
+            currencyId, dsId, amount, 0, defaultBuyApproxParams(), defaultOffchainGuessParams()
+        );
+
+        uint256 expectedFee = 0.01 ether;
+        expectedFee = TransferHelper.normalizeDecimals(expectedFee, TARGET_DECIMALS, raDecimals);
+        vm.assertEq(result.fee, expectedFee);
+
+        uint256 expectedTreasuryFee = 0.001 ether;
+        expectedTreasuryFee = TransferHelper.normalizeDecimals(expectedTreasuryFee, TARGET_DECIMALS, raDecimals);
+
+        uint256 balanceTreasuryAfter = ra.balanceOf(treasury);
+        vm.assertEq(balanceTreasuryAfter - balanceTreasuryBefore, expectedTreasuryFee);
+
+        amount = 10 ether;
+        amount = TransferHelper.normalizeDecimals(amount, TARGET_DECIMALS, raDecimals);
+
+        result = flashSwapRouter.swapRaforDs(
+            currencyId, dsId, amount, 0, defaultBuyApproxParams(), defaultOffchainGuessParams()
+        );
+
+        // the ds trades doesn't go through, fee should be 0
+        vm.assertEq(result.fee, 0);
+
+        // the ds trades doesn't go through, treasury balance should be the same
+        uint256 balanceTreasury = ra.balanceOf(treasury);
+        vm.assertEq(balanceTreasury, balanceTreasuryAfter);
+    }
+
     function testFuzz_buyDsOffchainGuess(uint256 amount, uint8 raDecimals, uint8 paDecimals) public {
         (raDecimals, paDecimals) = setupDifferentDecimals(raDecimals, paDecimals);
 
@@ -212,7 +270,6 @@ contract BuyDsTest is Helper {
         (uint256 raReserve, uint256 ctReserve) = hook.getReserves(address(ra), address(ct));
 
         // 1-t = 0.1
-
         Asset(ds).approve(address(flashSwapRouter), amount);
 
         uint256 balanceDsBefore = Asset(ds).balanceOf(DEFAULT_ADDRESS);
