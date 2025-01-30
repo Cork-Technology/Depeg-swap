@@ -398,8 +398,7 @@ contract RouterState is
         }
 
         bool success = _sellDsReserve(
-            assetPair,
-            SellDsParams(params.reserveId, params.dsId, amountSellFromReserve, amount, params.approxParams)
+            assetPair, SellDsParams(params.reserveId, params.dsId, amountSellFromReserve, amount, params.approxParams)
         );
 
         if (!success) {
@@ -416,8 +415,13 @@ contract RouterState is
         }
     }
 
-    function takeDsFee(ReserveState storage self, AssetPair storage pair, Id reserveId, uint256 amount) internal returns (uint256 amountLeft) {
-        uint256 fee = SwapperMathLibrary.calculateDsExtraFee(amount, self.reserveSellPressurePercentage, self.dsExtraFeePercentage);
+    function takeDsFee(ReserveState storage self, AssetPair storage pair, Id reserveId, uint256 amount)
+        internal
+        returns (uint256 amountLeft)
+    {
+        uint256 fee = SwapperMathLibrary.calculateDsExtraFee(
+            amount, self.reserveSellPressurePercentage, self.dsExtraFeePercentage
+        );
 
         if (fee == 0) {
             return amount;
@@ -428,7 +432,8 @@ contract RouterState is
         // increase the fee amount in transient slot
         ReturnDataSlotLib.increase(ReturnDataSlotLib.DS_FEE_AMOUNT, fee);
 
-        uint256 attributedToTreasury = SwapperMathLibrary.calculatePercentage(fee, self.dsExtraFeeTreasurySplitPercentage);
+        uint256 attributedToTreasury =
+            SwapperMathLibrary.calculatePercentage(fee, self.dsExtraFeeTreasurySplitPercentage);
         uint256 attributedToVault = fee - attributedToTreasury;
 
         assert(attributedToTreasury + attributedToVault == fee);
@@ -529,7 +534,22 @@ contract RouterState is
 
         self.recalculateHIYA(dsId, TransferHelper.tokenNativeDecimalsToFixed(amount, assetPair.ra), result.amountOut);
 
-        emit RaSwapped(reserveId, dsId, user, amount, result.amountOut, result.ctRefunded, result.fee, self.dsExtraFeePercentage, self.reserveSellPressurePercentage);
+        {
+            // we do a conditional here since we won't apply any fee if the router doesn't sold any DS
+            uint256 feePercentage = result.fee == 0 ? 0 : self.dsExtraFeePercentage;
+
+            emit RaSwapped(
+                reserveId,
+                dsId,
+                user,
+                amount,
+                result.amountOut,
+                result.ctRefunded,
+                result.fee,
+                feePercentage,
+                self.reserveSellPressurePercentage
+            );
+        }
     }
 
     function swapRaforDs(
@@ -558,9 +578,22 @@ contract RouterState is
         result.ctRefunded = ReturnDataSlotLib.get(ReturnDataSlotLib.REFUNDED_SLOT);
         result.fee = ReturnDataSlotLib.get(ReturnDataSlotLib.DS_FEE_AMOUNT);
 
+        // we do a conditional here since we won't apply any fee if the router doesn't sold any DS
+        uint256 feePercentage = result.fee == 0 ? 0 : self.dsExtraFeePercentage;
+
         self.recalculateHIYA(dsId, TransferHelper.tokenNativeDecimalsToFixed(amount, assetPair.ra), result.amountOut);
 
-        emit RaSwapped(reserveId, dsId, msg.sender, amount, result.amountOut, result.ctRefunded, result.fee, self.dsExtraFeePercentage, self.reserveSellPressurePercentage);
+        emit RaSwapped(
+            reserveId,
+            dsId,
+            msg.sender,
+            amount,
+            result.amountOut,
+            result.ctRefunded,
+            result.fee,
+            feePercentage,
+            self.reserveSellPressurePercentage
+        );
     }
 
     function isRolloverSale(Id id) external view returns (bool) {
