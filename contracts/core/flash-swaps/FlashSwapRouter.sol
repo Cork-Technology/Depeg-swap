@@ -147,6 +147,9 @@ contract RouterState is
     }
 
     function updateDsExtraFeePercentage(Id id, uint256 newPercentage) external onlyConfig {
+        if(newPercentage > MAX_DS_FEE) {
+            revert InvalidFee();
+        }
         reserves[id].dsExtraFeePercentage = newPercentage;
 
         emit DsFeeUpdated(id, newPercentage);
