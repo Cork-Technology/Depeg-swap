@@ -223,6 +223,14 @@ contract CorkConfig is AccessControl, Pausable {
         moduleCore.setWithdrawalContract(_withdrawalContract);
     }
 
+    function updateRouterDsExtraFee(Id id, uint256 newPercentage)  external onlyManager {
+        flashSwapRouter.updateDsExtraFeePercentage(id, newPercentage);
+    }
+
+    function updateDsExtraFeeTreasurySplitPercentage(Id id, uint256 newPercentage) external onlyManager {
+        flashSwapRouter.updateDsExtraFeeTreasurySplitPercentage(id, newPercentage);
+    }
+
     /**
      * @dev Initialize Module Core
      * @param pa Address of PA

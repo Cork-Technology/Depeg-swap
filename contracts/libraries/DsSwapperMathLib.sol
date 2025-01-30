@@ -147,6 +147,12 @@ library SwapperMathLibrary {
         ctPriceRatio = unwrap(div(ud(raReserve), ud(ctReserve)));
     }
 
+    // calculate the realized fee of a RA to DS swap
+    function calculateDsExtraFee(uint256 amount, uint256 salePercentage, uint256 feePercentage) internal pure returns(uint256 fee) {
+        fee = calculatePercentage(amount, salePercentage);
+        fee = calculatePercentage(fee, feePercentage);
+    }
+
     function getAmountOutBuyDs(
         uint256 x,
         uint256 y,

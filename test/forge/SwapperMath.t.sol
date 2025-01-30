@@ -87,4 +87,14 @@ contract SwapMathTest is Test {
 
         vm.assertTrue(success);
     }
+
+    function test_calculateDsExtraFee()  external {
+        uint256 amount = 10 ether;
+        uint256 reserveSellPercentage = 50 ether;
+        uint256 extraFeePercentage = 30 ether;
+
+        uint256 result = SwapperMathLibrary.calculateDsExtraFee(amount, reserveSellPercentage, extraFeePercentage);
+
+        vm.assertEq(result, 1.5 ether);
+    }
 }

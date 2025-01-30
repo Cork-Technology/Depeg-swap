@@ -38,6 +38,8 @@ struct ReserveState {
     uint256 decayDiscountRateInDays;
     uint256 rolloverEndInBlockNumber;
     uint256 hiya;
+    uint256 dsExtraFeePercentage;
+    uint256 dsExtraFeeTreasurySplitPercentage;
     bool gradualSaleDisabled;
 }
 

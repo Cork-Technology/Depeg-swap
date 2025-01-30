@@ -19,6 +19,7 @@ import {CorkSwapCallback} from "Cork-Hook/interfaces/CorkSwapCallback.sol";
 import {IErrors} from "./../../interfaces/IErrors.sol";
 import {TransferHelper} from "./../../libraries/TransferHelper.sol";
 import {ReturnDataSlotLib} from "./../../libraries/ReturnDataSlotLib.sol";
+import {CorkConfig} from "../CorkConfig.sol";
 
 /**
  * @title Router contract for Flashswap
@@ -39,8 +40,12 @@ contract RouterState is
     bytes32 public constant MODULE_CORE = keccak256("MODULE_CORE");
     bytes32 public constant CONFIG = keccak256("CONFIG");
 
+    // 30% max fee
+    uint256 public constant MAX_DS_FEE = 30e18;
+
     address public _moduleCore;
     ICorkHook public hook;
+    CorkConfig public config;
     mapping(Id => ReserveState) internal reserves;
 
     // this is here to prevent stuck funds, essentially it can happen that the reserve DS is so low but not empty,
@@ -111,17 +116,19 @@ contract RouterState is
         _;
         ReturnDataSlotLib.clear(ReturnDataSlotLib.RETURN_SLOT);
         ReturnDataSlotLib.clear(ReturnDataSlotLib.REFUNDED_SLOT);
+        ReturnDataSlotLib.clear(ReturnDataSlotLib.DS_FEE_AMOUNT);
     }
 
     constructor() {
         _disableInitializers();
     }
 
-    function initialize(address config) external initializer {
+    function initialize(address _config) external initializer {
         __AccessControl_init();
         __UUPSUpgradeable_init();
         _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
-        _grantRole(CONFIG, config);
+        _grantRole(CONFIG, _config);
+        config = CorkConfig(_config);
     }
 
     // solhint-disable-next-line no-empty-blocks
@@ -137,6 +144,21 @@ contract RouterState is
         reserves[id].gradualSaleDisabled = status;
 
         emit GradualSaleStatusUpdated(id, status);
+    }
+
+    function updateDsExtraFeePercentage(Id id, uint256 newPercentage) external onlyConfig {
+        if(newPercentage > MAX_DS_FEE) {
+            revert InvalidFee();
+        }
+        reserves[id].dsExtraFeePercentage = newPercentage;
+
+        emit DsFeeUpdated(id, newPercentage);
+    }
+
+    function updateDsExtraFeeTreasurySplitPercentage(Id id, uint256 newPercentage) external onlyConfig {
+        reserves[id].dsExtraFeeTreasurySplitPercentage = newPercentage;
+
+        emit DsFeeTreasuryPercentageUpdated(id, newPercentage);
     }
 
     function getCurrentCumulativeHIYA(Id id) external view returns (uint256 hpaCummulative) {
@@ -344,7 +366,8 @@ contract RouterState is
                 finalBorrowedAmount = offchainGuess.initialBorrowAmount;
                 initialBorrowedAmount = offchainGuess.initialBorrowAmount;
             }
-            finalBorrowedAmount = calculateAndSellDsReserve(
+
+            (finalBorrowedAmount, amount) = calculateAndSellDsReserve(
                 self,
                 assetPair,
                 CalculateAndSellDsParams(
@@ -367,29 +390,63 @@ contract RouterState is
         ReserveState storage self,
         AssetPair storage assetPair,
         CalculateAndSellDsParams memory params
-    ) internal returns (uint256 borrowedAmount) {
+    ) internal returns (uint256 borrowedAmount, uint256 amount) {
+        // we initially set this to the initial amount user supplied, later we will charge a fee on this.
+        amount = params.amount;
         // calculate the amount of DS tokens that will be sold from reserve
         uint256 amountSellFromReserve = calculateSellFromReserve(self, params.initialAmountOut, params.dsId);
 
         if (amountSellFromReserve < RESERVE_MINIMUM_SELL_AMOUNT || self.gradualSaleDisabled) {
-            return params.initialBorrowedAmount;
+            return (params.initialBorrowedAmount, amount);
         }
 
         bool success = _sellDsReserve(
-            assetPair,
-            SellDsParams(params.reserveId, params.dsId, amountSellFromReserve, params.amount, params.approxParams)
+            assetPair, SellDsParams(params.reserveId, params.dsId, amountSellFromReserve, amount, params.approxParams)
         );
 
         if (!success) {
-            return params.initialBorrowedAmount;
+            return (params.initialBorrowedAmount, amount);
         }
+
+        amount = takeDsFee(self, assetPair, params.reserveId, amount);
 
         // we calculate the borrowed amount if user doesn't supply offchain guess
         if (params.offchainGuess.afterSoldBorrowAmount == 0) {
-            (, borrowedAmount) = assetPair.getAmountOutBuyDS(params.amount, hook, params.approxParams);
+            (, borrowedAmount) = assetPair.getAmountOutBuyDS(amount, hook, params.approxParams);
         } else {
             borrowedAmount = params.offchainGuess.afterSoldBorrowAmount;
         }
+    }
+
+    function takeDsFee(ReserveState storage self, AssetPair storage pair, Id reserveId, uint256 amount)
+        internal
+        returns (uint256 amountLeft)
+    {
+        uint256 fee = SwapperMathLibrary.calculateDsExtraFee(
+            amount, self.reserveSellPressurePercentage, self.dsExtraFeePercentage
+        );
+
+        if (fee == 0) {
+            return amount;
+        }
+
+        amountLeft = amount - fee;
+
+        // increase the fee amount in transient slot
+        ReturnDataSlotLib.increase(ReturnDataSlotLib.DS_FEE_AMOUNT, fee);
+
+        uint256 attributedToTreasury =
+            SwapperMathLibrary.calculatePercentage(fee, self.dsExtraFeeTreasurySplitPercentage);
+        uint256 attributedToVault = fee - attributedToTreasury;
+
+        assert(attributedToTreasury + attributedToVault == fee);
+
+        // we calculate it in native decimals, should go through
+        pair.ra.transfer(_moduleCore, attributedToVault);
+        IVault(_moduleCore).provideLiquidityWithFlashSwapFee(reserveId, attributedToVault);
+
+        address treasury = config.treasury();
+        pair.ra.transfer(treasury, attributedToTreasury);
     }
 
     function calculateSellFromReserve(ReserveState storage self, uint256 amountOut, uint256 dsId)
@@ -476,10 +533,26 @@ contract RouterState is
         }
 
         result.ctRefunded = ReturnDataSlotLib.get(ReturnDataSlotLib.REFUNDED_SLOT);
+        result.fee = ReturnDataSlotLib.get(ReturnDataSlotLib.DS_FEE_AMOUNT);
 
         self.recalculateHIYA(dsId, TransferHelper.tokenNativeDecimalsToFixed(amount, assetPair.ra), result.amountOut);
 
-        emit RaSwapped(reserveId, dsId, user, amount, result.amountOut, result.ctRefunded);
+        {
+            // we do a conditional here since we won't apply any fee if the router doesn't sold any DS
+            uint256 feePercentage = result.fee == 0 ? 0 : self.dsExtraFeePercentage;
+
+            emit RaSwapped(
+                reserveId,
+                dsId,
+                user,
+                amount,
+                result.amountOut,
+                result.ctRefunded,
+                result.fee,
+                feePercentage,
+                self.reserveSellPressurePercentage
+            );
+        }
     }
 
     function swapRaforDs(
@@ -506,10 +579,24 @@ contract RouterState is
         }
 
         result.ctRefunded = ReturnDataSlotLib.get(ReturnDataSlotLib.REFUNDED_SLOT);
+        result.fee = ReturnDataSlotLib.get(ReturnDataSlotLib.DS_FEE_AMOUNT);
+
+        // we do a conditional here since we won't apply any fee if the router doesn't sold any DS
+        uint256 feePercentage = result.fee == 0 ? 0 : self.dsExtraFeePercentage;
 
         self.recalculateHIYA(dsId, TransferHelper.tokenNativeDecimalsToFixed(amount, assetPair.ra), result.amountOut);
 
-        emit RaSwapped(reserveId, dsId, msg.sender, amount, result.amountOut, result.ctRefunded);
+        emit RaSwapped(
+            reserveId,
+            dsId,
+            msg.sender,
+            amount,
+            result.amountOut,
+            result.ctRefunded,
+            result.fee,
+            feePercentage,
+            self.reserveSellPressurePercentage
+        );
     }
 
     function isRolloverSale(Id id) external view returns (bool) {
