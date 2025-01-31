@@ -71,17 +71,24 @@ contract ModuleCore is OwnableUpgradeable, UUPSUpgradeable, PsmCore, Initialize,
         return super._contextSuffixLength();
     }
 
-    function getId(address pa, address ra, uint256 expiryInterva) external pure returns (Id) {
-        return PairLibrary.initalize(pa, ra, expiryInterva).toId();
+    function getId(address pa, address ra, uint256 initialArp, uint256 expiry, address exchangeRateProvider)
+        external
+        pure
+        returns (Id)
+    {
+        return PairLibrary.initalize(pa, ra, initialArp, expiry, exchangeRateProvider).toId();
     }
 
-    function initializeModuleCore(address pa, address ra, uint256 initialArp, uint256 expiryInterval)
-        external
-        override
-    {
+    function initializeModuleCore(
+        address pa,
+        address ra,
+        uint256 initialArp,
+        uint256 expiryInterval,
+        address exchangeRateProvider
+    ) external override {
         onlyConfig();
 
-        Pair memory key = PairLibrary.initalize(pa, ra, expiryInterval);
+        Pair memory key = PairLibrary.initalize(pa, ra, initialArp, expiryInterval, exchangeRateProvider);
         Id id = key.toId();
 
         State storage state = states[id];
@@ -92,7 +99,7 @@ contract ModuleCore is OwnableUpgradeable, UUPSUpgradeable, PsmCore, Initialize,
 
         IAssetFactory assetsFactory = IAssetFactory(SWAP_ASSET_FACTORY);
 
-        address lv = assetsFactory.deployLv(ra, pa, address(this), expiryInterval);
+        address lv = assetsFactory.deployLv(ra, pa, address(this), initialArp, expiryInterval, exchangeRateProvider);
 
         PsmLibrary.initialize(state, key);
         VaultLibrary.initialize(state.vault, lv, ra, initialArp);
@@ -102,9 +109,7 @@ contract ModuleCore is OwnableUpgradeable, UUPSUpgradeable, PsmCore, Initialize,
 
     function issueNewDs(
         Id id,
-        uint256 exchangeRates,
         uint256 decayDiscountRateInDays,
-        // won't have effect on first issuance
         uint256 rolloverPeriodInblocks,
         uint256 ammLiquidationDeadline
     ) external override {
@@ -115,8 +120,22 @@ contract ModuleCore is OwnableUpgradeable, UUPSUpgradeable, PsmCore, Initialize,
 
         Pair storage info = state.info;
 
+        // we update the rate, if this is a yield bearing PA then the rate should go up
+        // this works since if the market uses our rate provider, then when updating the rate and the rate goes up
+        // the function would revert, but catched on the config contract, resulting in the provider also updating the rate accordingly that's used here
+        uint256 exchangeRates = _getRate(id, info);
+
         (address ct, address ds) = IAssetFactory(SWAP_ASSET_FACTORY).deploySwapAssets(
-            info.ra, state.info.pa, address(this), info.expiryInterval, exchangeRates, state.globalAssetIdx + 1
+            IAssetFactory.DeployParams(
+                info.ra,
+                state.info.pa,
+                address(this),
+                info.initialArp,
+                info.expiryInterval,
+                info.exchangeRateProvider,
+                exchangeRates,
+                state.globalAssetIdx + 1
+            )
         );
 
         // avoid stack to deep error
@@ -139,10 +158,8 @@ contract ModuleCore is OwnableUpgradeable, UUPSUpgradeable, PsmCore, Initialize,
 
         PsmLibrary.onNewIssuance(state, ct, ds, idx, prevIdx);
 
-        // TODO : must handle changes in flash swap router later
         getRouterCore().onNewIssuance(id, idx, ds, ra, ct);
 
-        // TODO : place holder, must change to the id later
         emit Issued(id, idx, block.timestamp + _expiryInterval, ds, ct, AmmId.unwrap(toAmmId(ra, ct)));
     }
 

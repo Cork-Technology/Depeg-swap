@@ -49,29 +49,28 @@ interface IAssetFactory is IErrors {
      * @return ct list of deployed CT assets
      * @return ds list of deployed DS assets
      */
-    function getDeployedSwapAssets(address ra, address pa, uint256 expiryInterval, uint8 page, uint8 limit)
-        external
-        view
-        returns (address[] memory ct, address[] memory ds);
-
-    /**
-     * @notice deploys new Swap Assets for given RA & PA
-     * @param ra Address of RA
-     * @param pa Address of PA
-     * @param owner Address of asset owners
-     * @param expiry expiry timestamp
-     * @param psmExchangeRate exchange rate for this pair
-     * @return ct new CT contract address
-     * @return ds new DS contract address
-     */
-    function deploySwapAssets(
+    function getDeployedSwapAssets(
         address ra,
         address pa,
-        address owner,
-        uint256 expiry,
-        uint256 psmExchangeRate,
-        uint256 dsId
-    ) external returns (address ct, address ds);
+        uint256 initialArp,
+        uint256 expiryInterval,
+        address exchangeRateProvider,
+        uint8 page,
+        uint8 limit
+    ) external view returns (address[] memory ct, address[] memory ds);
+
+    struct DeployParams {
+        address _ra;
+        address _pa;
+        address _owner;
+        uint256 initialArp;
+        uint256 expiryInterval;
+        address exchangeRateProvider;
+        uint256 psmExchangeRate;
+        uint256 dsId;
+    }
+
+    function deploySwapAssets(DeployParams calldata params) external returns (address ct, address ds);
 
     /**
      * @notice deploys new LV Assets for given RA & PA
@@ -80,7 +79,17 @@ interface IAssetFactory is IErrors {
      * @param owner Address of asset owners
      * @return lv new LV contract address
      */
-    function deployLv(address ra, address pa, address owner, uint256 expiryInterval) external returns (address lv);
+    function deployLv(
+        address ra,
+        address pa,
+        address owner,
+        uint256 _initialArp,
+        uint256 _expiryInterval,
+        address _exchangeRateProvider
+    ) external returns (address lv);
 
-    function getLv(address ra, address pa, uint256 expiryInterval) external view returns (address);
+    function getLv(address _ra, address _pa, uint256 initialArp, uint256 expiryInterval, address exchangeRateProvider)
+        external
+        view
+        returns (address);
 }
