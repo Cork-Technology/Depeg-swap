@@ -41,8 +41,13 @@ contract ExchangeRateProvider is IErrors, IExchangeRateProvider {
         return exchangeRate[id];
     }
 
-    function setRate(Id id, uint256 _rate) external {
+    /**
+     * @notice updates the exchange rate of the pair
+     * @param id the id of the pair
+     * @param newRate the exchange rate of the DS, token that are non-rebasing MUST set this to 1e18, and rebasing tokens should set this to the current exchange rate in the market
+     */
+    function setRate(Id id, uint256 newRate) external {
         onlyConfig();
-        exchangeRate[id] = _rate;
+        exchangeRate[id] = newRate;
     }
 }

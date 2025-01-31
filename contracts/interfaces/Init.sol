@@ -22,16 +22,13 @@ interface Initialize {
     /**
      * @notice issue a new DS, can only be done after the previous DS has expired(if any). will deploy CT, DS and initialize new AMM and increment ds Id
      * @param id the id of the pair
-     * @param exchangeRates the exchange rate of the DS, token that are non-rebasing MUST set this to 1e18, and rebasing tokens should set this to the current exchange rate in the market
-     * @param decayDiscountRateInDays the decay discount rate in days, make sure it has 18 decimals(e.g 1% = 1e18)
-     * @param rolloverPeriodInblocks the rollover sale period in blocks(e.g 500 means the rollover would happen right after this block until 500 blocks after the issuance block)
      */
     function issueNewDs(
         Id id,
-        uint256 exchangeRates,
-        uint256 decayDiscountRateInDays,
+        // uint256 exchangeRates,
+        // uint256 decayDiscountRateInDays, // protocol-level config
         // won't have effect on first issuance
-        uint256 rolloverPeriodInblocks,
+        // uint256 rolloverPeriodInblocks, // protocol-level config
         uint256 ammLiquidationDeadline
     ) external;
 

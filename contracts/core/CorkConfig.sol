@@ -216,7 +216,7 @@ contract CorkConfig is AccessControl, Pausable {
      */
     function initializeModuleCore(address pa, address ra, uint256 initialArp, uint256 expiryInterval, address exchangeRateProvider)
         external
-        onlyManager
+        // onlyManager
     {
         moduleCore.initializeModuleCore(pa, ra, initialArp, expiryInterval, exchangeRateProvider);
     }
@@ -227,14 +227,14 @@ contract CorkConfig is AccessControl, Pausable {
      */
     function issueNewDs(
         Id id,
-        uint256 exchangeRates,
-        uint256 decayDiscountRateInDays,
+        // uint256 exchangeRates,
+        // uint256 decayDiscountRateInDays, // protocol-level config
         // won't have effect on first issuance
-        uint256 rolloverPeriodInblocks,
+        // uint256 rolloverPeriodInblocks, // protocol-level config
         uint256 ammLiquidationDeadline
-    ) external whenNotPaused onlyManager {
+    ) external whenNotPaused {
         moduleCore.issueNewDs(
-            id, exchangeRates, decayDiscountRateInDays, rolloverPeriodInblocks, ammLiquidationDeadline
+            id, ammLiquidationDeadline
         );
 
         _autoAssignFees(id);
