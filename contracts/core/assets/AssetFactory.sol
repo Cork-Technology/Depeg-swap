@@ -58,8 +58,8 @@ contract AssetFactory is IAssetFactory, OwnableUpgradeable, UUPSUpgradeable {
         _;
     }
 
-    function getLv(address _ra, address _pa, uint256 expiryInterval) external view override returns (address) {
-        return lvs[Pair(_pa, _ra, expiryInterval).toId()];
+    function getLv(address _ra, address _pa, uint256 initialArp, uint256 expiryInterval, address exchangeRateProvider) external view override returns (address) {
+        return lvs[Pair(_pa, _ra, initialArp, expiryInterval, exchangeRateProvider).toId()];
     }
 
     /**
@@ -117,14 +117,14 @@ contract AssetFactory is IAssetFactory, OwnableUpgradeable, UUPSUpgradeable {
      * @return ct list of deployed CT assets
      * @return ds list of deployed DS assets
      */
-    function getDeployedSwapAssets(address _ra, address _pa, uint256 _expiryInterval, uint8 _page, uint8 _limit)
+    function getDeployedSwapAssets(address _ra, address _pa, uint256 _initialArp, uint256 _expiryInterval, address _exchangeRateProvider, uint8 _page, uint8 _limit)
         external
         view
         override
         withinLimit(_limit)
         returns (address[] memory ct, address[] memory ds)
     {
-        SwapPair[] storage _assets = swapAssets[Pair(_pa, _ra, _expiryInterval).toId()];
+        SwapPair[] storage _assets = swapAssets[Pair(_pa, _ra, _initialArp, _expiryInterval, _exchangeRateProvider).toId()];
 
         uint256 start = uint256(_page) * uint256(_limit);
         uint256 end = start + uint256(_limit);
@@ -161,7 +161,9 @@ contract AssetFactory is IAssetFactory, OwnableUpgradeable, UUPSUpgradeable {
         address _ra,
         address _pa,
         address _owner,
+        uint256 initialArp,
         uint256 expiryInterval,
+        address exchangeRateProvider,
         uint256 psmExchangeRate,
         uint256 dsId
     ) external override onlyOwner returns (address ct, address ds) {
@@ -189,7 +191,7 @@ contract AssetFactory is IAssetFactory, OwnableUpgradeable, UUPSUpgradeable {
         ct = address(new Asset(CT_PREFIX, pairname, _owner, expiry, psmExchangeRate, dsId));
         ds = address(new Asset(DS_PREFIX, pairname, _owner, expiry, psmExchangeRate, dsId));
 
-        swapAssets[Pair(_pa, _ra, expiryInterval).toId()].push(SwapPair(ct, ds));
+        swapAssets[Pair(_pa, _ra, initialArp, expiryInterval, exchangeRateProvider).toId()].push(SwapPair(ct, ds));
 
         deployed[ct] = 1;
         deployed[ds] = 1;
@@ -204,7 +206,7 @@ contract AssetFactory is IAssetFactory, OwnableUpgradeable, UUPSUpgradeable {
      * @param _owner Address of asset owners
      * @return lv new LV contract address
      */
-    function deployLv(address _ra, address _pa, address _owner, uint256 _expiryInterval)
+    function deployLv(address _ra, address _pa, address _owner, uint256 _initialArp, uint256 _expiryInterval, address _exchangeRateProvider)
         external
         override
         onlyOwner
@@ -219,7 +221,7 @@ contract AssetFactory is IAssetFactory, OwnableUpgradeable, UUPSUpgradeable {
         lv = address(new Asset(LV_PREFIX, pairname, _owner, 0, 0, 0));
 
         // signal that a pair actually exists. Only after this it's possible to deploy a swap asset for this pair
-        Pair memory pair = Pair(_pa, _ra, _expiryInterval);
+        Pair memory pair = Pair(_pa, _ra, _initialArp, _expiryInterval, _exchangeRateProvider);
 
         // solhint-disable-next-line gas-increment-by-one
         pairs[idx++] = pair;

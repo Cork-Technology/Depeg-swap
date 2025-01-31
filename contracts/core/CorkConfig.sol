@@ -214,11 +214,11 @@ contract CorkConfig is AccessControl, Pausable {
      * @param ra Address of RA
      * @param initialArp initial price of DS
      */
-    function initializeModuleCore(address pa, address ra, uint256 initialArp, uint256 expiryInterval)
+    function initializeModuleCore(address pa, address ra, uint256 initialArp, uint256 expiryInterval, address exchangeRateProvider)
         external
         onlyManager
     {
-        moduleCore.initializeModuleCore(pa, ra, initialArp, expiryInterval);
+        moduleCore.initializeModuleCore(pa, ra, initialArp, expiryInterval, exchangeRateProvider);
     }
 
     /**

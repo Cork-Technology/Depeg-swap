@@ -75,13 +75,13 @@ contract ModuleCore is OwnableUpgradeable, UUPSUpgradeable, PsmCore, Initialize,
         return PairLibrary.initalize(pa, ra, expiryInterva).toId();
     }
 
-    function initializeModuleCore(address pa, address ra, uint256 initialArp, uint256 expiryInterval)
+    function initializeModuleCore(address pa, address ra, uint256 initialArp, uint256 expiryInterval, address exchangeRateProvider)
         external
         override
     {
         onlyConfig();
 
-        Pair memory key = PairLibrary.initalize(pa, ra, expiryInterval);
+        Pair memory key = PairLibrary.initalize(pa, ra, initialArp, expiryInterval, exchangeRateProvider);
         Id id = key.toId();
 
         State storage state = states[id];
@@ -102,10 +102,10 @@ contract ModuleCore is OwnableUpgradeable, UUPSUpgradeable, PsmCore, Initialize,
 
     function issueNewDs(
         Id id,
-        uint256 exchangeRates,
-        uint256 decayDiscountRateInDays,
+        // uint256 exchangeRates,
+        // uint256 decayDiscountRateInDays, // protocol-level config
         // won't have effect on first issuance
-        uint256 rolloverPeriodInblocks,
+        // uint256 rolloverPeriodInblocks, // protocol-level config
         uint256 ammLiquidationDeadline
     ) external override {
         onlyConfig();
@@ -114,6 +114,11 @@ contract ModuleCore is OwnableUpgradeable, UUPSUpgradeable, PsmCore, Initialize,
         State storage state = states[id];
 
         Pair storage info = state.info;
+
+        uint256 exchangeRates = IExchangeRateProvider(info.exchangeRateProvider).rate();
+        if (exchangeRates == 0) {
+            exchangeRates = IExchangeRateProvider(info.exchangeRateProvider).rate(id);
+        }
 
         (address ct, address ds) = IAssetFactory(SWAP_ASSET_FACTORY).deploySwapAssets(
             info.ra, state.info.pa, address(this), info.expiryInterval, exchangeRates, state.globalAssetIdx + 1

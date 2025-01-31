@@ -15,8 +15,9 @@ interface Initialize {
      * @param ra address of RA token(e.g WETH)
      * @param initialArp initial assets ARP. the initial ds price will be derived from this value. must be in 18 decimals(e.g 1% = 1e18)
      * @param expiryInterval expiry interval for DS, this will be used to calculate the next expiry time for DS(block.timestamp + expiryInterval)
+     * @param exchangeRateProvider address of IExchangeRateProvider contract
      */
-    function initializeModuleCore(address pa, address ra, uint256 initialArp, uint256 expiryInterval) external;
+    function initializeModuleCore(address pa, address ra, uint256 initialArp, uint256 expiryInterval, address exchangeRateProvider) external;
 
     /**
      * @notice issue a new DS, can only be done after the previous DS has expired(if any). will deploy CT, DS and initialize new AMM and increment ds Id
