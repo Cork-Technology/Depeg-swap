@@ -47,7 +47,8 @@ contract ModuleCore is OwnableUpgradeable, UUPSUpgradeable, PsmCore, Initialize,
         initializeModuleState(_swapAssetFactory, _ammHook, _flashSwapRouter, _config);
     }
 
-    function setWithdrawalContract(address _withdrawalContract) external onlyConfig {
+    function setWithdrawalContract(address _withdrawalContract) external  {
+        onlyConfig();
         _setWithdrawalContract(_withdrawalContract);
     }
 
@@ -75,11 +76,8 @@ contract ModuleCore is OwnableUpgradeable, UUPSUpgradeable, PsmCore, Initialize,
         address ra,
         uint256 initialArp,
         uint256 expiryInterval
-    )
-        external
-        override
-        onlyConfig
-    {
+    ) external override {
+        onlyConfig();
         if(expiryInterval == 0) {
             revert InvalidExpiry();
         }
@@ -152,7 +150,8 @@ contract ModuleCore is OwnableUpgradeable, UUPSUpgradeable, PsmCore, Initialize,
         emit Issued(id, idx, block.timestamp + _expiryInterval, ds, ct, AmmId.unwrap(toAmmId(ra, ct)));
     }
 
-    function updateRepurchaseFeeRate(Id id, uint256 newRepurchaseFeePercentage) external onlyConfig {
+    function updateRepurchaseFeeRate(Id id, uint256 newRepurchaseFeePercentage) external {
+        onlyConfig();
         State storage state = states[id];
         PsmLibrary.updateRepurchaseFeePercentage(state, newRepurchaseFeePercentage);
 
@@ -223,7 +222,8 @@ contract ModuleCore is OwnableUpgradeable, UUPSUpgradeable, PsmCore, Initialize,
     function updateLvWithdrawalsStatus(
         Id id,
         bool isLVWithdrawalPaused
-    ) external onlyConfig {
+    ) external {
+        onlyConfig();
         State storage state = states[id];
         VaultLibrary.updateLvWithdrawalsStatus(state, isLVWithdrawalPaused);
         emit LvWithdrawalsStatusUpdated(id, isLVWithdrawalPaused);
@@ -265,10 +265,8 @@ contract ModuleCore is OwnableUpgradeable, UUPSUpgradeable, PsmCore, Initialize,
      * @notice update value of PSMBaseRedemption fees
      * @param newPsmBaseRedemptionFeePercentage new value of fees
      */
-    function updatePsmBaseRedemptionFeePercentage(Id id, uint256 newPsmBaseRedemptionFeePercentage)
-        external
-        onlyConfig
-    {
+    function updatePsmBaseRedemptionFeePercentage(Id id, uint256 newPsmBaseRedemptionFeePercentage) external {
+        onlyConfig();
         State storage state = states[id];
         PsmLibrary.updatePSMBaseRedemptionFeePercentage(state, newPsmBaseRedemptionFeePercentage);
         emit PsmBaseRedemptionFeePercentageUpdated(id, newPsmBaseRedemptionFeePercentage);

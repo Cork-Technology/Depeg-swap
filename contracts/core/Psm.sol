@@ -17,7 +17,8 @@ abstract contract PsmCore is IPSMcore, ModuleState, Context {
     using PsmLibrary for State;
     using PairLibrary for Pair;
 
-    function updateRate(Id id, uint256 newRate) external onlyConfig {
+    function updateRate(Id id, uint256 newRate) external {
+        onlyConfig();
         State storage state = states[id];
         uint256 previousRate = state.exchangeRate();
 
@@ -265,7 +266,8 @@ abstract contract PsmCore is IPSMcore, ModuleState, Context {
         return state.psm.psmBaseRedemptionFeePercentage;
     }
 
-    function psmAcceptFlashSwapProfit(Id id, uint256 profit) external onlyFlashSwapRouter {
+    function psmAcceptFlashSwapProfit(Id id, uint256 profit) external {
+        onlyFlashSwapRouter();
         State storage state = states[id];
         state.acceptRolloverProfit(profit);
     }

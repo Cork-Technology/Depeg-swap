@@ -90,17 +90,6 @@ library PsmLibrary {
         self.psm.poolArchive[self.globalAssetIdx].rolloverProfit += amount;
     }
 
-    function tranferRolloverClaims(State storage self, address from, address to, uint256 amount, uint256 dsId)
-        external
-    {
-        if (self.psm.poolArchive[dsId].rolloverClaims[from] < amount) {
-            revert InsufficientRolloverBalance(from, amount, self.psm.poolArchive[dsId].rolloverClaims[from]);
-        }
-
-        self.psm.poolArchive[dsId].rolloverClaims[from] -= amount;
-        self.psm.poolArchive[dsId].rolloverClaims[to] += amount;
-    }
-
     function rolloverCt(
         State storage self,
         address owner,
