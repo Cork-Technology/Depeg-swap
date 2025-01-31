@@ -2,14 +2,14 @@
 pragma solidity ^0.8.24;
 
 import {Id} from "../libraries/Pair.sol";
-import {IMathError} from "./IMathError.sol";
+import {IErrors} from "./IErrors.sol";
 
 /**
  * @title IDsFlashSwapUtility Interface
  * @author Cork Team
  * @notice Utility Interface for flashswap
  */
-interface IDsFlashSwapUtility is IMathError {
+interface IDsFlashSwapUtility is IErrors {
     /**
      * @notice returns the current price ratio of the pair
      * @param id the id of the pair
@@ -67,27 +67,6 @@ interface IDsFlashSwapUtility is IMathError {
  * @notice IDsFlashSwapCore interface for Flashswap Router contract
  */
 interface IDsFlashSwapCore is IDsFlashSwapUtility {
-    /// @notice Zero Address error, thrown when passed address is 0
-    error ZeroAddress();
-
-    /// @notice thrown when Permit is not supported in Given ERC20 contract
-    error PermitNotSupported();
-
-    /// @notice thrown when the caller is not the module core
-    error NotModuleCore();
-
-    /// @notice thrown when the caller is not Config contract
-    error NotConfig();
-
-    /// @notice thrown when the swap somehow got into rollover period, but the rollover period is not active
-    error RolloverNotActive();
-
-    error NotDefaultAdmin();
-
-    error ApproxExhausted();
-
-    error InvalidParams();
-
     struct BuyAprroxParams {
         /// @dev the maximum amount of iterations to find the optimal amount of DS to swap, 256 is a good number
         uint256 maxApproxIter;
@@ -108,8 +87,28 @@ interface IDsFlashSwapCore is IDsFlashSwapUtility {
         uint256 precisionBufferPercentage;
     }
 
-    /// @notice Revert when Signature is valid or signature deadline is incorrect
-    error InvalidSignature();
+    /// @notice offchain guess for RA AMM borrowing used in swapping RA for DS.
+    /// if empty, the router will try and calculate the optimal amount of RA to borrow
+    /// using this will greatly reduce the gas cost.
+    /// will be the default way to swap RA for DS
+    struct OffchainGuess {
+        uint256 initialBorrowAmount;
+        uint256 afterSoldBorrowAmount;
+    }
+
+    struct SwapRaForDsReturn {
+        uint256 amountOut;
+        uint256 ctRefunded;
+        /// @dev the amount of RA that needs to be borrowed on first iteration, this amount + user supplied / 2 of DS
+        /// will be sold from the reserve unless it doesn't met the minimum amount, the DS reserve is empty,
+        /// or the DS reserve sale is disabled. in such cases, this will be the final amount of RA that's borrowed
+        /// and the "afterSoldBorrow" will be 0.
+        /// if the swap is fully fullfilled by the rollover sale, both initialBorrow and afterSoldBorrow will be 0
+        uint256 initialBorrow;
+        /// @dev the final amount of RA that's borrowed after selling DS reserve
+        uint256 afterSoldBorrow;
+        uint256 fee;
+    }
 
     /**
      * @notice Emitted when DS is swapped for RA
@@ -119,7 +118,6 @@ interface IDsFlashSwapCore is IDsFlashSwapUtility {
      * @param amountIn the amount of DS that's swapped
      * @param amountOut the amount of RA that's received
      */
-
     event DsSwapped(
         Id indexed reserveId, uint256 indexed dsId, address indexed user, uint256 amountIn, uint256 amountOut
     );
@@ -131,9 +129,21 @@ interface IDsFlashSwapCore is IDsFlashSwapUtility {
      * @param user the user that's swapping
      * @param amountIn  the amount of RA that's swapped
      * @param amountOut the amount of DS that's received
+     * @param ctRefunded the amount of excess CT that's refunded to the user
+     * @param fee the DS fee that's been cut from the user RA. derived from amountIn * feePercentage * reserveSellPercentage
+     * @param feePercentage the fee percentage that's taken from user RA that's in theory filled with the reserve DS
+     * @param reserveSellPercentage this is the percentage of the amount of DS that's been sold from the router
      */
     event RaSwapped(
-        Id indexed reserveId, uint256 indexed dsId, address indexed user, uint256 amountIn, uint256 amountOut
+        Id indexed reserveId,
+        uint256 indexed dsId,
+        address indexed user,
+        uint256 amountIn,
+        uint256 amountOut,
+        uint256 ctRefunded,
+        uint256 fee,
+        uint256 feePercentage,
+        uint256 reserveSellPercentage
     );
 
     /**
@@ -196,6 +206,11 @@ interface IDsFlashSwapCore is IDsFlashSwapUtility {
         uint256 rolloverPeriodInblocks
     ) external;
 
+    function updateDsExtraFeePercentage(Id id, uint256 newPercentage) external;
+
+
+    function updateDsExtraFeeTreasurySplitPercentage(Id id, uint256 newPercentage) external;
+
     /**
      * @notice add more DS reserve from liquidity vault, can only be called by moduleCore
      * @param id the pair id
@@ -236,13 +251,17 @@ interface IDsFlashSwapCore is IDsFlashSwapUtility {
      * @param dsId the ds id of the pair, the same as the DS id on PSM and LV
      * @param amount the amount of RA to swap
      * @param amountOutMin the minimum amount of DS to receive, will revert if the actual amount is less than this.
-     * @return amountOut amount of DS that's received
      * @param params the buy approximation params(math stuff)
      * @param params the buy approximation params(math stuff)
      */
-    function swapRaforDs(Id reserveId, uint256 dsId, uint256 amount, uint256 amountOutMin, BuyAprroxParams memory params)
-        external
-        returns (uint256 amountOut);
+    function swapRaforDs(
+        Id reserveId,
+        uint256 dsId,
+        uint256 amount,
+        uint256 amountOutMin,
+        BuyAprroxParams memory params,
+        OffchainGuess memory offchainGuess
+    ) external returns (SwapRaForDsReturn memory result);
 
     /**
      * @notice Swaps RA for DS
@@ -250,7 +269,6 @@ interface IDsFlashSwapCore is IDsFlashSwapUtility {
      * @param dsId the ds id of the pair, the same as the DS id on PSM and LV
      * @param amount the amount of RA to swap
      * @param amountOutMin the minimum amount of DS to receive, will revert if the actual amount is less than this. should be inserted with value from previewSwapRaforDs
-     * @return amountOut amount of DS that's received
      * @param rawRaPermitSig the raw permit signature of RA
      * @param deadline the deadline for the swap
      */
@@ -262,8 +280,9 @@ interface IDsFlashSwapCore is IDsFlashSwapUtility {
         address user,
         bytes memory rawRaPermitSig,
         uint256 deadline,
-        BuyAprroxParams memory params
-    ) external returns (uint256 amountOut);
+        BuyAprroxParams memory params,
+        OffchainGuess memory offchainGuess
+    ) external returns (SwapRaForDsReturn memory result);
 
     /**
      * @notice Swaps DS for RA
@@ -290,7 +309,6 @@ interface IDsFlashSwapCore is IDsFlashSwapUtility {
         uint256 dsId,
         uint256 amount,
         uint256 amountOutMin,
-        address user,
         bytes memory rawDsPermitSig,
         uint256 deadline
     ) external returns (uint256 amountOut);
@@ -310,4 +328,14 @@ interface IDsFlashSwapCore is IDsFlashSwapUtility {
     function isRolloverSale(Id id) external view returns (bool);
 
     function updateReserveSellPressurePercentage(Id id, uint256 newPercentage) external;
+
+    event DiscountRateUpdated(Id indexed id, uint256 discountRateInDays);
+
+    event GradualSaleStatusUpdated(Id indexed id, bool disabled);
+
+    event ReserveSellPressurePercentageUpdated(Id indexed id, uint256 newPercentage);
+
+    event DsFeeUpdated(Id indexed id, uint256 newPercentage);
+
+    event DsFeeTreasuryPercentageUpdated(Id indexed id, uint256 newPercentage);
 }

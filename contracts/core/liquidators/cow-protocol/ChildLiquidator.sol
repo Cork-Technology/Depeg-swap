@@ -2,10 +2,10 @@ pragma solidity ^0.8.24;
 
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
-import {Liquidator, GPv2SettlementContract} from "./Liquidator.sol";
-import {ILiquidator} from "../../../interfaces/ILiquidator.sol";
+import {Liquidator, IGPv2SettlementContract} from "./Liquidator.sol";
+import {IErrors} from "../../../interfaces/IErrors.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import {IHedgeUnitLiquidation} from "./../../assets/HedgeUnit.sol";
+import {IProtectedUnitLiquidation} from "./../../assets/ProtectedUnit.sol";
 import {IVaultLiquidation} from "./../../../interfaces/IVaultLiquidation.sol";
 import {Id} from "../../../libraries/Pair.sol";
 
@@ -26,15 +26,15 @@ abstract contract ChildLiquidatorBase is OwnableUpgradeable {
 
     modifier onlyLiquidator() {
         if (msg.sender != owner()) {
-            revert ILiquidator.OnlyLiquidator();
+            revert IErrors.OnlyLiquidator();
         }
         _;
     }
 
     function initialize(
         Liquidator _liquidator,
-        Liquidator.Details memory _order,
-        bytes memory _orderUid,
+        Liquidator.Details calldata _order,
+        bytes calldata _orderUid,
         address _receiver,
         bytes32 _refId
     ) external initializer {
@@ -51,7 +51,7 @@ abstract contract ChildLiquidatorBase is OwnableUpgradeable {
     }
 
     function _approveSettlement() internal {
-        GPv2SettlementContract settlement = Liquidator(address(owner())).settlement();
+        IGPv2SettlementContract settlement = Liquidator(address(owner())).SETTLEMENT();
 
         settlement.setPreSignature(orderUid, true);
 
@@ -59,19 +59,19 @@ abstract contract ChildLiquidatorBase is OwnableUpgradeable {
     }
 }
 
-contract HedgeUnitChildLiquidator is ChildLiquidatorBase {
+contract ProtectedUnitChildLiquidator is ChildLiquidatorBase {
     function moveFunds() external onlyLiquidator returns (uint256 funds, uint256 leftover) {
         // move buy token balance of this contract to vault, by approving the vault to transfer the funds
         funds = IERC20(order.buyToken).balanceOf(address(this));
         SafeERC20.forceApprove(IERC20(order.buyToken), receiver, funds);
 
-        IHedgeUnitLiquidation(receiver).receiveFunds(funds, order.buyToken);
+        IProtectedUnitLiquidation(receiver).receiveFunds(funds, order.buyToken);
 
         // move leftover sell token balance of this contract to vault, by approving the vault to transfer the funds
         leftover = IERC20(order.sellToken).balanceOf(address(this));
         SafeERC20.forceApprove(IERC20(order.sellToken), receiver, leftover);
 
-        IHedgeUnitLiquidation(receiver).receiveFunds(leftover, order.sellToken);
+        IProtectedUnitLiquidation(receiver).receiveFunds(leftover, order.sellToken);
     }
 }
 

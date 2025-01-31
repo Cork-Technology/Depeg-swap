@@ -2,15 +2,15 @@
 pragma solidity ^0.8.24;
 
 import {Helper} from "./../../Helper.sol";
-import {HedgeUnit} from "../../../../contracts/core/assets/HedgeUnit.sol";
+import {ProtectedUnit} from "../../../../contracts/core/assets/ProtectedUnit.sol";
 import {Liquidator} from "../../../../contracts/core/liquidators/cow-protocol/Liquidator.sol";
-import {IHedgeUnit} from "../../../../contracts/interfaces/IHedgeUnit.sol";
+import {IProtectedUnit} from "../../../../contracts/interfaces/IProtectedUnit.sol";
 import {DummyWETH} from "../../../../contracts/dummy/DummyWETH.sol";
 import {Id} from "./../../../../contracts/libraries/Pair.sol";
 import {PausableUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/PausableUpgradeable.sol";
 
-contract HedgeUnitTest is Helper {
-    HedgeUnit public hedgeUnit;
+contract ProtectedUnitTest is Helper {
+    ProtectedUnit public protectedUnit;
     DummyWETH public dsToken;
     DummyWETH internal ra;
     DummyWETH internal pa;
@@ -59,9 +59,9 @@ contract HedgeUnitTest is Helper {
         corkConfig.whitelist(DEFAULT_ADDRESS);
         vm.warp(7 days + 1);
 
-        corkConfig.deployHedgeUnit(currencyId, address(pa), address(ra), "DS/PA", INITIAL_MINT_CAP);
-        // Deploy the HedgeUnit contract
-        hedgeUnit = HedgeUnit(hedgeUnitFactory.getHedgeUnitAddress(currencyId));
+        corkConfig.deployProtectedUnit(currencyId, address(pa), address(ra), "DS/PA", INITIAL_MINT_CAP);
+        // Deploy the ProtectedUnit contract
+        protectedUnit = ProtectedUnit(protectedUnitFactory.getProtectedUnitAddress(currencyId));
 
         // Transfer tokens to user for test_ing
         dsToken.transfer(user, USER_BALANCE);
@@ -72,10 +72,10 @@ contract HedgeUnitTest is Helper {
         corkConfig.updatePsmBaseRedemptionFeePercentage(defaultCurrencyId, 0);
 
         uint256 amount = 100 ether;
-        pa.approve(address(hedgeUnit), amount);
-        dsToken.approve(address(hedgeUnit), amount);
+        pa.approve(address(protectedUnit), amount);
+        dsToken.approve(address(protectedUnit), amount);
 
-        hedgeUnit.mint(amount);
+        protectedUnit.mint(amount);
     }
 
     function fetchProtocolGeneralInfo() internal {
@@ -89,7 +89,7 @@ contract HedgeUnitTest is Helper {
 
         uint256 balancePaBefore = pa.balanceOf(DEFAULT_ADDRESS);
 
-        hedgeUnit.requestLiquidationFunds(requestAmount, address(pa));
+        protectedUnit.requestLiquidationFunds(requestAmount, address(pa));
 
         uint256 balancePaAfter = pa.balanceOf(DEFAULT_ADDRESS);
 
@@ -99,13 +99,13 @@ contract HedgeUnitTest is Helper {
     function test_receiveFunds() external {
         uint256 requestAmount = 10 ether;
 
-        pa.approve(address(hedgeUnit), requestAmount);
+        pa.approve(address(protectedUnit), requestAmount);
 
-        uint256 balancePaBefore = pa.balanceOf(address(hedgeUnit));
+        uint256 balancePaBefore = pa.balanceOf(address(protectedUnit));
 
-        hedgeUnit.receiveFunds(requestAmount, address(pa));
+        protectedUnit.receiveFunds(requestAmount, address(pa));
 
-        uint256 balancePaAfter = pa.balanceOf(address(hedgeUnit));
+        uint256 balancePaAfter = pa.balanceOf(address(protectedUnit));
 
         assertEq(balancePaAfter - balancePaBefore, requestAmount);
     }
@@ -113,17 +113,17 @@ contract HedgeUnitTest is Helper {
     function test_useFunds() external {
         uint256 requestAmount = 10 ether;
 
-        ra.approve(address(hedgeUnit), requestAmount);
+        ra.approve(address(protectedUnit), requestAmount);
 
-        uint256 balancePaBefore = pa.balanceOf(address(hedgeUnit));
+        uint256 balancePaBefore = pa.balanceOf(address(protectedUnit));
 
-        hedgeUnit.receiveFunds(requestAmount, address(ra));
+        protectedUnit.receiveFunds(requestAmount, address(ra));
 
-        uint256 dsBalanceBefore = dsToken.balanceOf(address(hedgeUnit));
+        uint256 dsBalanceBefore = dsToken.balanceOf(address(protectedUnit));
         uint256 amountOut =
-            corkConfig.buyDsFromHedgeUnit(address(hedgeUnit), requestAmount, 0, defaultBuyApproxParams());
+            corkConfig.buyDsFromProtectedUnit(address(protectedUnit), requestAmount, 0, defaultBuyApproxParams(), defaultOffchainGuessParams());
 
-        uint256 dsBalanceAfter = dsToken.balanceOf(address(hedgeUnit));
+        uint256 dsBalanceAfter = dsToken.balanceOf(address(protectedUnit));
 
         assertEq(dsBalanceAfter - dsBalanceBefore, amountOut);
     }
@@ -131,13 +131,13 @@ contract HedgeUnitTest is Helper {
     function test_fundsAvailable() external {
         uint256 requestAmount = 10 ether;
 
-        pa.approve(address(hedgeUnit), requestAmount);
+        pa.approve(address(protectedUnit), requestAmount);
 
-        uint256 fundsAvailableBefore = hedgeUnit.fundsAvailable(address(pa));
+        uint256 fundsAvailableBefore = protectedUnit.fundsAvailable(address(pa));
 
-        hedgeUnit.receiveFunds(requestAmount, address(pa));
+        protectedUnit.receiveFunds(requestAmount, address(pa));
 
-        uint256 fundsAvailableAfter = hedgeUnit.fundsAvailable(address(pa));
+        uint256 fundsAvailableAfter = protectedUnit.fundsAvailable(address(pa));
 
         vm.assertEq(fundsAvailableAfter - fundsAvailableBefore, requestAmount);
     }

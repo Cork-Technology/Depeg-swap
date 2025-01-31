@@ -3,28 +3,38 @@ pragma solidity ^0.8.24;
 
 import {AccessControl} from "@openzeppelin/contracts/access/AccessControl.sol";
 import {Pausable} from "@openzeppelin/contracts/utils/Pausable.sol";
+import {Initialize} from "../interfaces/Init.sol";
 import {Id} from "../libraries/Pair.sol";
 import {IDsFlashSwapCore} from "../interfaces/IDsFlashSwapRouter.sol";
+import {Pair} from "../libraries/Pair.sol";
 import {ModuleCore} from "./ModuleCore.sol";
 import {IVault} from "./../interfaces/IVault.sol";
 import {CorkHook} from "Cork-Hook/CorkHook.sol";
-import {HedgeUnitFactory} from "./assets/HedgeUnitFactory.sol";
-import {HedgeUnit} from "./assets/HedgeUnit.sol";
+import {MarketSnapshot} from "Cork-Hook/lib/MarketSnapshot.sol";
+import {ProtectedUnitFactory} from "./assets/ProtectedUnitFactory.sol";
+import {ProtectedUnit} from "./assets/ProtectedUnit.sol";
 
 /**
  * @title Config Contract
  * @author Cork Team
- * @notice Config contract for managing configurations of Cork protocol
+ * @notice Config contract for managing pairs and configurations of Cork protocol
  */
 contract CorkConfig is AccessControl, Pausable {
     bytes32 public constant MANAGER_ROLE = keccak256("MANAGER_ROLE");
+    bytes32 public constant MARKET_INITIALIZER_ROLE = keccak256("MARKET_INITIALIZER_ROLE");
     bytes32 public constant RATE_UPDATERS_ROLE = keccak256("RATE_UPDATERS_ROLE");
     bytes32 public constant BASE_LIQUIDATOR_ROLE = keccak256("BASE_LIQUIDATOR_ROLE");
 
     ModuleCore public moduleCore;
     IDsFlashSwapCore public flashSwapRouter;
     CorkHook public hook;
-    HedgeUnitFactory public hedgeUnitFactory;
+    ProtectedUnitFactory public protectedUnitFactory;
+    // Cork Protocol's treasury address. Other Protocol component should fetch this address directly from the config contract
+    // instead of storing it themselves, since it'll be hard to update the treasury address in all the components if it changes vs updating it in the config contract once
+    address public treasury;
+
+    /// @notice set to true when initializeModuleCore is allowed to call by anyone in permissionless way
+    bool public isInitPermissionless;
 
     uint256 public constant WHITELIST_TIME_DELAY = 7 days;
 
@@ -33,6 +43,9 @@ contract CorkConfig is AccessControl, Pausable {
 
     /// @notice thrown when caller is not manager/Admin of Cork Protocol
     error CallerNotManager();
+
+    /// @notice thrown when caller is not Market Initializer of Cork Protocol
+    error CallerNotInitializer();
 
     /// @notice thrown when passed Invalid/Zero Address
     error InvalidAddress();
@@ -49,13 +62,25 @@ contract CorkConfig is AccessControl, Pausable {
     /// @param hook Address of hook contract
     event HookSet(address hook);
 
-    /// @notice Emitted when a hedgeUnitFactory variable set
-    /// @param hedgeUnitFactory Address of hedgeUnitFactory contract
-    event HedgeUnitFactorySet(address hedgeUnitFactory);
+    /// @notice Emitted when a protectedUnitFactory variable set
+    /// @param protectedUnitFactory Address of protectedUnitFactory contract
+    event ProtectedUnitFactorySet(address protectedUnitFactory);
+
+    /// @notice Emitted when a treasury is set
+    /// @param treasury Address of treasury contract/address
+    event TreasurySet(address treasury);
 
     modifier onlyManager() {
         if (!hasRole(MANAGER_ROLE, msg.sender)) {
             revert CallerNotManager();
+        }
+        _;
+    }
+
+    /// @notice Checks if the caller is either the initializer of the market or initialization is allowed permissionlessly
+    modifier onlyInitializer() {
+        if (!hasRole(MARKET_INITIALIZER_ROLE, msg.sender) && !isInitPermissionless) {
+            revert CallerNotInitializer();
         }
         _;
     }
@@ -67,28 +92,50 @@ contract CorkConfig is AccessControl, Pausable {
         _;
     }
 
-    constructor() {
-        _grantRole(MANAGER_ROLE, msg.sender);
+    constructor(address adminAdd, address managerAdd) {
+        if (adminAdd == address(0) || managerAdd == address(0)) {
+            revert InvalidAddress();
+        }
+        _setRoleAdmin(MARKET_INITIALIZER_ROLE, MANAGER_ROLE);
+        _setRoleAdmin(MANAGER_ROLE, DEFAULT_ADMIN_ROLE);
+        _setRoleAdmin(RATE_UPDATERS_ROLE, MANAGER_ROLE);
+        _setRoleAdmin(BASE_LIQUIDATOR_ROLE, MANAGER_ROLE);
+        _grantRole(DEFAULT_ADMIN_ROLE, adminAdd);
+        _grantRole(MANAGER_ROLE, managerAdd);
     }
 
-    function _computLiquidatorRoleHash(address account) public view returns (bytes32) {
+    function _computeLiquidatorRoleHash(address account) public view returns (bytes32) {
         return keccak256(abi.encodePacked(BASE_LIQUIDATOR_ROLE, account));
+    }
+
+    // This will be only used in case of emergency to change the manager of the different roles if any of the manager is compromised
+    function setRoleAdmin(bytes32 role, bytes32 newAdminRole) external onlyRole(getRoleAdmin(role)) {
+        _setRoleAdmin(role, newAdminRole);
     }
 
     function grantRole(bytes32 role, address account) public override onlyManager {
         _grantRole(role, account);
     }
 
+    function updateMarketInitAllowance(bool _isInitPermissionless) external onlyManager {
+        isInitPermissionless = _isInitPermissionless;
+    }
+
+    function transferAdmin(address newAdmin) external onlyRole(DEFAULT_ADMIN_ROLE) {
+        _revokeRole(DEFAULT_ADMIN_ROLE, msg.sender);
+        _grantRole(DEFAULT_ADMIN_ROLE, newAdmin);
+    }
+
     function isTrustedLiquidationExecutor(address liquidationContract, address user) external view returns (bool) {
-        return hasRole(_computLiquidatorRoleHash(liquidationContract), user);
+        return hasRole(_computeLiquidatorRoleHash(liquidationContract), user);
     }
 
     function grantLiquidatorRole(address liquidationContract, address account) external onlyManager {
-        _grantRole(_computLiquidatorRoleHash(liquidationContract), account);
+        _grantRole(_computeLiquidatorRoleHash(liquidationContract), account);
     }
 
     function revokeLiquidatorRole(address liquidationContract, address account) external onlyManager {
-        _revokeRole(_computLiquidatorRoleHash(liquidationContract), account);
+        _revokeRole(_computeLiquidatorRoleHash(liquidationContract), account);
     }
 
     function isLiquidationWhitelisted(address liquidationAddress) external view returns (bool) {
@@ -132,61 +179,154 @@ contract CorkConfig is AccessControl, Pausable {
         emit HookSet(_hook);
     }
 
-    function setHedgeUnitFactory(address _hedgeUnitFactory) external onlyManager {
-        if (_hedgeUnitFactory == address(0)) {
+    function setProtectedUnitFactory(address _protectedUnitFactory) external onlyManager {
+        if (_protectedUnitFactory == address(0)) {
             revert InvalidAddress();
         }
-
-        hedgeUnitFactory = HedgeUnitFactory(_hedgeUnitFactory);
-        emit HedgeUnitFactorySet(_hedgeUnitFactory);
+        protectedUnitFactory = ProtectedUnitFactory(_protectedUnitFactory);
+        emit ProtectedUnitFactorySet(_protectedUnitFactory);
     }
 
-    function updateAmmBaseFeePercentage(address ra, address ct, uint256 newBaseFeePercentage) external onlyManager {
+    function setTreasury(address _treasury) external onlyManager {
+        if (_treasury == address(0)) {
+            revert InvalidAddress();
+        }
+        treasury = _treasury;
+        emit TreasurySet(_treasury);
+    }
+
+    function updateAmmBaseFeePercentage(Id id, uint256 newBaseFeePercentage) external onlyManager {
+        (address ra,) = moduleCore.underlyingAsset(id);
+        (address ct,) = moduleCore.swapAsset(id, moduleCore.lastDsId(id));
         hook.updateBaseFeePercentage(ra, ct, newBaseFeePercentage);
+    }
+
+    function updateAmmTreasurySplitPercentage(Id id, uint256 newTreasurySplitPercentage) external onlyManager {
+        (address ra,) = moduleCore.underlyingAsset(id);
+        (address ct,) = moduleCore.swapAsset(id, moduleCore.lastDsId(id));
+        hook.updateTreasurySplitPercentage(ra, ct, newTreasurySplitPercentage);
+    }
+
+    function updatePsmBaseRedemptionFeeTreasurySplitPercentage(Id id, uint256 percentage) external onlyManager {
+        moduleCore.updatePsmBaseRedemptionFeeTreasurySplitPercentage(id, percentage);
+    }
+
+    function updatePsmRepurchaseFeeTreasurySplitPercentage(Id id, uint256 percentage) external onlyManager {
+        moduleCore.updatePsmRepurchaseFeeTreasurySplitPercentage(id, percentage);
+    }
+
+    function updatePsmRepurchaseFeePercentage(Id id, uint256 percentage) external onlyManager {
+        moduleCore.updatePsmRepurchaseFeePercentage(id, percentage);
     }
 
     function setWithdrawalContract(address _withdrawalContract) external onlyManager {
         moduleCore.setWithdrawalContract(_withdrawalContract);
     }
 
+    function updateRouterDsExtraFee(Id id, uint256 newPercentage)  external onlyManager {
+        flashSwapRouter.updateDsExtraFeePercentage(id, newPercentage);
+    }
+
+    function updateDsExtraFeeTreasurySplitPercentage(Id id, uint256 newPercentage) external onlyManager {
+        flashSwapRouter.updateDsExtraFeeTreasurySplitPercentage(id, newPercentage);
+    }
+
     /**
      * @dev Initialize Module Core
      * @param pa Address of PA
      * @param ra Address of RA
-     * @param lvFee fees for LV
-     * @param initialDsPrice initial price of DS
+     * @param initialArp initial price of DS
      */
-    function initializeModuleCore(
-        address pa,
-        address ra,
-        uint256 lvFee,
-        uint256 initialDsPrice,
-        uint256 _psmBaseRedemptionFeePercentage,
-        uint256 expiryInterval
-    ) external onlyManager {
-        moduleCore.initializeModuleCore(pa, ra, lvFee, initialDsPrice, _psmBaseRedemptionFeePercentage, expiryInterval);
+    function initializeModuleCore(address pa, address ra, uint256 initialArp, uint256 expiryInterval)
+        external
+        onlyInitializer
+    {
+        moduleCore.initializeModuleCore(pa, ra, initialArp, expiryInterval);
     }
 
     /**
-     * @dev Issues new assets
+     * @dev Issues new assets, will auto assign amm fees from the previous issuance
+     * for first issuance, separate transaction must be made to set the fees in the AMM
      */
     function issueNewDs(
         Id id,
         uint256 exchangeRates,
-        uint256 repurchaseFeePercentage,
         uint256 decayDiscountRateInDays,
         // won't have effect on first issuance
         uint256 rolloverPeriodInblocks,
         uint256 ammLiquidationDeadline
     ) external whenNotPaused onlyManager {
         moduleCore.issueNewDs(
-            id,
-            exchangeRates,
-            repurchaseFeePercentage,
-            decayDiscountRateInDays,
-            rolloverPeriodInblocks,
-            ammLiquidationDeadline
+            id, exchangeRates, decayDiscountRateInDays, rolloverPeriodInblocks, ammLiquidationDeadline
         );
+
+        _autoAssignFees(id);
+        _autoAssignTreasurySplitPercentage(id);
+    }
+
+    function _autoAssignFees(Id id) internal {
+        uint256 currentDsId = moduleCore.lastDsId(id);
+        uint256 prevDsId = currentDsId - 1;
+
+        // first issuance, no AMM fees to assign
+        if (prevDsId == 0) {
+            return;
+        }
+
+        // get previous issuance's assets
+        (address ra,) = moduleCore.underlyingAsset(id);
+        (address ct,) = moduleCore.swapAsset(id, prevDsId);
+
+        // get fees from previous issuance, we won't revert here since the fees can be assigned manually
+        // if for some reason the previous issuance AMM is not created for some reason(no LV deposits)
+        // slither-disable-next-line uninitialized-local
+        uint256 prevBaseFee;
+
+        try hook.getFee(ra, ct) returns (uint256 baseFee, uint256) {
+            prevBaseFee = baseFee;
+        } catch {
+            return;
+        }
+
+        // assign fees to current issuance
+        (ct,) = moduleCore.swapAsset(id, currentDsId);
+
+        // we don't revert here since an edge case would occur where the Lv token circulation is 0 but the issuance continues
+        // and in that case the AMM would not have been created yet. This is a rare edge case and the fees can be assigned manually in such cases
+        // solhint-disable-next-line no-empty-blocks
+        try hook.updateBaseFeePercentage(ra, ct, prevBaseFee) {} catch {}
+    }
+
+    function _autoAssignTreasurySplitPercentage(Id id) internal {
+        uint256 currentDsId = moduleCore.lastDsId(id);
+        uint256 prevDsId = currentDsId - 1;
+
+        // first issuance, no AMM fees to assign
+        if (prevDsId == 0) {
+            return;
+        }
+
+        // get previous issuance's assets
+        (address ra,) = moduleCore.underlyingAsset(id);
+        (address ct,) = moduleCore.swapAsset(id, prevDsId);
+
+        // get fees from previous issuance, we won't revert here since the fees can be assigned manually
+        // if for some reason the previous issuance AMM is not created for some reason(no LV deposits)
+        // slither-disable-next-line uninitialized-local
+        uint256 prevCtSplit;
+
+        try hook.getMarketSnapshot(ra, ct) returns (MarketSnapshot memory snapshot) {
+            prevCtSplit = snapshot.treasuryFeePercentage;
+        } catch {
+            return;
+        }
+
+        (ct,) = moduleCore.swapAsset(id, currentDsId);
+
+        // we don't revert here since an edge case would occur where the Lv token circulation is 0 but the issuance continues
+        // and in that case the AMM would not have been created yet. This is a rare edge case and the fees can be assigned manually in such cases
+        // solhint-disable-next-line no-empty-blocks
+        try hook.updateTreasurySplitPercentage(ra, ct, prevCtSplit) {} catch {}
     }
 
     /**
@@ -196,15 +336,6 @@ contract CorkConfig is AccessControl, Pausable {
      */
     function updateRepurchaseFeeRate(Id id, uint256 newRepurchaseFeePercentage) external onlyManager {
         moduleCore.updateRepurchaseFeeRate(id, newRepurchaseFeePercentage);
-    }
-
-    /**
-     * @notice Updates earlyFeeRedemption rates
-     * @param id id of PSM
-     * @param newEarlyRedemptionFeeRate new value of earlyRedemptin fees, make sure it has 18 decimals(e.g 1% = 1e18)
-     */
-    function updateEarlyRedemptionFeeRate(Id id, uint256 newEarlyRedemptionFeeRate) external onlyManager {
-        moduleCore.updateEarlyRedemptionFeeRate(id, newEarlyRedemptionFeeRate);
     }
 
     /**
@@ -287,47 +418,46 @@ contract CorkConfig is AccessControl, Pausable {
         moduleCore.useTradeExecutionResultFunds(id);
     }
 
-    function updateHedgeUnitMintCap(address hedgeUnit, uint256 newMintCap) external onlyManager {
-        HedgeUnit(hedgeUnit).updateMintCap(newMintCap);
+    function updateProtectedUnitMintCap(address protectedUnit, uint256 newMintCap) external onlyManager {
+        ProtectedUnit(protectedUnit).updateMintCap(newMintCap);
     }
 
-    function deployHedgeUnit(
-        Id id,
-        address pa,
-        address ra,
-        string memory pairName,
-        uint256 mintCap
-    ) external onlyManager {
-        hedgeUnitFactory.deployHedgeUnit(id, pa, ra, pairName, mintCap);
+    function deployProtectedUnit(Id id, address pa, address ra, string calldata pairName, uint256 mintCap)
+        external
+        onlyManager
+        returns (address)
+    {
+        return protectedUnitFactory.deployProtectedUnit(id, pa, ra, pairName, mintCap);
     }
 
-    function deRegisterHedgeUnit(Id id) external onlyManager {
-        hedgeUnitFactory.deRegisterHedgeUnit(id);
+    function deRegisterProtectedUnit(Id id) external onlyManager {
+        protectedUnitFactory.deRegisterProtectedUnit(id);
     }
 
-    function pauseHedgeUnit(address hedgeUnit) external onlyManager {
-        HedgeUnit(hedgeUnit).pause();
+    function pauseProtectedUnit(address protectedUnit) external onlyManager {
+        ProtectedUnit(protectedUnit).pause();
     }
 
-    function pauseHedgeUnitMinting(address hedgeUnit) external onlyManager {
-        HedgeUnit(hedgeUnit).pause();
+    function pauseProtectedUnitMinting(address protectedUnit) external onlyManager {
+        ProtectedUnit(protectedUnit).pause();
     }
 
-    function resumeHedgeUnitMinting(address hedgeUnit) external onlyManager {
-        HedgeUnit(hedgeUnit).unpause();
+    function resumeProtectedUnitMinting(address protectedUnit) external onlyManager {
+        ProtectedUnit(protectedUnit).unpause();
     }
 
-    function redeemRaWtihDsPaWithHedgeUnit(address hedgeUnit, uint256 amount, uint256 amountDS) external onlyManager {
-        HedgeUnit(hedgeUnit).redeemRaWithDsPa(amount, amountDS);
+    function redeemRaWithDsWithProtectedUnit(address protectedUnit, uint256 amount, uint256 amountDS) external onlyManager {
+        ProtectedUnit(protectedUnit).redeemRaWithDs(amount, amountDS);
     }
 
-    function buyDsFromHedgeUnit(
-        address hedgeUnit,
+    function buyDsFromProtectedUnit(
+        address protectedUnit,
         uint256 amount,
         uint256 amountOutMin,
-        IDsFlashSwapCore.BuyAprroxParams calldata params
+        IDsFlashSwapCore.BuyAprroxParams calldata params,
+        IDsFlashSwapCore.OffchainGuess calldata offchainGuess
     ) external onlyManager returns (uint256 amountOut) {
-        amountOut = HedgeUnit(hedgeUnit).useFunds(amount, amountOutMin, params);
+        amountOut = ProtectedUnit(protectedUnit).useFunds(amount, amountOutMin, params, offchainGuess);
     }
 
     /**

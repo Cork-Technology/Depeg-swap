@@ -2,11 +2,11 @@ pragma solidity ^0.8.24;
 
 import {convert, intoUD60x18} from "@prb/math/src/SD59x18.sol";
 import {UD60x18, convert, ud, add, mul, pow, sub, div, unwrap} from "@prb/math/src/UD60x18.sol";
-import {IHedgeUnit} from "./../interfaces/IHedgeUnit.sol";
+import {IErrors} from "./../interfaces/IErrors.sol";
 import {BuyMathBisectionSolver} from "./DsSwapperMathLib.sol";
 import {TransferHelper} from "./TransferHelper.sol";
 
-library HedgeUnitMath {
+library ProtectedUnitMath {
     // caller of this contract must ensure the both amount is already proportional in amount!
     function mint(uint256 reservePa, uint256 totalLiquidity, uint256 amountPa, uint256 amountDs)
         internal
@@ -17,7 +17,7 @@ library HedgeUnitMath {
         // we mint 1:1 if total liquidity is 0, also enforce that the amount must be the same
         if (totalLiquidity == 0) {
             if (amountPa != amountDs) {
-                revert IHedgeUnit.InvalidAmount();
+                revert IErrors.InvalidAmount();
             }
 
             liquidityMinted = amountPa;
@@ -64,11 +64,11 @@ library HedgeUnitMath {
         uint256 liquidityAmount
     ) internal pure returns (uint256 amountPa, uint256 amountDs, uint256 amountRa) {
         if (liquidityAmount <= 0) {
-            revert IHedgeUnit.InvalidAmount();
+            revert IErrors.InvalidAmount();
         }
 
         if (totalLiquidity <= 0) {
-            revert IHedgeUnit.NotEnoughLiquidity();
+            revert IErrors.NotEnoughLiquidity();
         }
 
         // Calculate the proportion of reserves to return based on the liquidity removed
@@ -77,28 +77,5 @@ library HedgeUnitMath {
         amountDs = unwrap(div(mul(ud(liquidityAmount), ud(reserveDs)), ud(totalLiquidity)));
 
         amountRa = unwrap(div(mul(ud(liquidityAmount), ud(reserveRa)), ud(totalLiquidity)));
-    }
-
-    /// @notice ds price = 1-(f / (rate +1)^t)
-    /// where f is always 1
-    function calculateSpotDsPrice(uint256 arp, uint256 start, uint256 current, uint256 end)
-        internal
-        pure
-        returns (uint256)
-    {
-        // normalize arp from 0-100 to 0-1
-        UD60x18 _arp = ud(arp / 100);
-
-        UD60x18 f = convert(uint256(1));
-
-        UD60x18 t = intoUD60x18(
-            BuyMathBisectionSolver.computeT(convert(int256(start)), convert(int256(end)), convert(int256(current)))
-        );
-        UD60x18 ratePlusOne = add(convert(uint256(1)), _arp);
-        UD60x18 ratePlusOnePowT = pow(ratePlusOne, t);
-
-        UD60x18 fdivRatePlusOnePowT = div(f, ratePlusOnePowT);
-
-        return unwrap(sub(convert(uint256(1)), fdivRatePlusOnePowT));
     }
 }

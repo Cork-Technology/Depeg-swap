@@ -10,8 +10,9 @@ import {CorkConfig} from "../../contracts/core/CorkConfig.sol";
 import {RouterState} from "../../contracts/core/flash-swaps/FlashSwapRouter.sol";
 import {ModuleCore} from "../../contracts/core/ModuleCore.sol";
 import {Liquidator} from "../../contracts/core/liquidators/cow-protocol/Liquidator.sol";
-import {HedgeUnit} from "../../contracts/core/assets/HedgeUnit.sol";
-import {HedgeUnitFactory} from "../../contracts/core/assets/HedgeUnitFactory.sol";
+import {ProtectedUnit} from "../../contracts/core/assets/ProtectedUnit.sol";
+import {ProtectedUnitFactory} from "../../contracts/core/assets/ProtectedUnitFactory.sol";
+import {ProtectedUnitRouter} from "../../contracts/core/assets/ProtectedUnitRouter.sol";
 import {CETH} from "../../contracts/tokens/CETH.sol";
 import {CST} from "../../contracts/tokens/CST.sol";
 import {Id} from "../../contracts/libraries/Pair.sol";
@@ -33,17 +34,19 @@ contract DeployScript is Script {
     CorkHook public hook;
     LiquidityToken public liquidityToken;
     Liquidator public liquidator;
-    HedgeUnitFactory public hedgeUnitFactory;
+    ProtectedUnitFactory public protectedUnitFactory;
+    ProtectedUnitRouter public protectedUnitRouter;
 
-    HedgeUnit public hedgeUnitbsETH;
-    HedgeUnit public hedgeUnitlbETH;
-    HedgeUnit public hedgeUnitwamuETH;
-    HedgeUnit public hedgeUnitmlETH;
+    ProtectedUnit public protectedUnitbsETH;
+    ProtectedUnit public protectedUnitlbETH;
+    ProtectedUnit public protectedUnitwamuETH;
+    ProtectedUnit public protectedUnitmlETH;
 
     bool public isProd = vm.envBool("PRODUCTION");
     uint256 public base_redemption_fee = vm.envUint("PSM_BASE_REDEMPTION_FEE_PERCENTAGE");
     address public ceth = vm.envAddress("WETH");
     uint256 public pk = vm.envUint("PRIVATE_KEY");
+    address public deployer = vm.addr(pk);
 
     address internal constant CREATE_2_PROXY = 0x4e59b44847b379578588920cA78FbF26c0B4956C;
 
@@ -128,7 +131,7 @@ contract DeployScript is Script {
         console.log("Asset Factory                   : ", address(assetFactory));
 
         // Deploy the CorkConfig contract
-        config = new CorkConfig();
+        config = new CorkConfig(deployer, deployer);
         console.log("Cork Config                     : ", address(config));
 
         // Deploy the FlashSwapRouter implementation (logic) contract
@@ -156,7 +159,7 @@ contract DeployScript is Script {
         console.log("ModuleCore Router Implementation : ", address(moduleCoreImplementation));
 
         // deploy hook
-        poolManager = new PoolManager();
+        poolManager = new PoolManager(deployer);
         liquidityToken = new LiquidityToken();
 
         bytes memory creationCode = type(CorkHook).creationCode;
@@ -188,53 +191,58 @@ contract DeployScript is Script {
         console.log("Liquidator                      : ", address(liquidator));
         console.log("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-");
 
-        // // Deploy the HedgeUnitFactry contract
-        // hedgeUnitFactory = new HedgeUnitFactory(address(moduleCore), address(liquidator));
-        // console.log("HedgeUnit Factory               : ", address(hedgeUnitFactory));
-        // console.log("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-");
+        // Deploy the ProtectedUnitFactry contract
+        protectedUnitRouter = new ProtectedUnitRouter();
+        protectedUnitFactory = new ProtectedUnitFactory(address(moduleCore), address(config), address(flashswapRouter));
+        config.setProtectedUnitFactory(address(protectedUnitFactory));
+        console.log("ProtectedUnit Factory               : ", address(protectedUnitFactory));
+        console.log("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-");
 
-        // Deploy the HedgeUnit contract
+        // Deploy the ProtectedUnit contract
+        protectedUnitbsETH = ProtectedUnit(
+            config.deployProtectedUnit(
+                moduleCore.getId(bsETH, ceth, bsETH_CETH_expiry),
+                bsETH,
+                ceth,
+                "Bear Sterns Restaked ETH - CETH",
+                INITIAL_MINT_CAP
+            )
+        );
+        console.log("HU bsETH                        : ", address(protectedUnitbsETH));
 
-        // hedgeUnitbsETH = HedgeUnit(
-        //     hedgeUnitFactory.deployHedgeUnit(
-        //         moduleCore.getId(bsETH, ceth, bsETH_CETH_expiry),
-        //         bsETH,
-        //         "Bear Sterns Restaked ETH - CETH",
-        //         INITIAL_MINT_CAP
-        //     )
-        // );
-        // console.log("HU bsETH                        : ", address(hedgeUnitbsETH));
+        protectedUnitlbETH = ProtectedUnit(
+            config.deployProtectedUnit(
+                moduleCore.getId(lbETH, ceth, lbETH_CETH_expiry),
+                lbETH,
+                ceth,
+                "Lehman Brothers Restaked ETH - CETH",
+                INITIAL_MINT_CAP
+            )
+        );
+        console.log("HU lbETH                        : ", address(protectedUnitlbETH));
 
-        // hedgeUnitlbETH = HedgeUnit(
-        //     hedgeUnitFactory.deployHedgeUnit(
-        //         moduleCore.getId(lbETH, ceth, lbETH_CETH_expiry),
-        //         lbETH,
-        //         "Lehman Brothers Restaked ETH - CETH",
-        //         INITIAL_MINT_CAP
-        //     )
-        // );
-        // console.log("HU lbETH                        : ", address(hedgeUnitlbETH));
+        protectedUnitwamuETH = ProtectedUnit(
+            config.deployProtectedUnit(
+                moduleCore.getId(wamuETH, ceth, wamuETH_CETH_expiry),
+                wamuETH,
+                ceth,
+                "Washington Mutual restaked ETH - CETH",
+                INITIAL_MINT_CAP
+            )
+        );
+        console.log("HU wamuETH                      : ", address(protectedUnitwamuETH));
 
-        // hedgeUnitwamuETH = HedgeUnit(
-        //     hedgeUnitFactory.deployHedgeUnit(
-        //         moduleCore.getId(wamuETH, ceth, wamuETH_CETH_expiry),
-        //         wamuETH,
-        //         "Washington Mutual restaked ETH - CETH",
-        //         INITIAL_MINT_CAP
-        //     )
-        // );
-        // console.log("HU wamuETH                      : ", address(hedgeUnitwamuETH));
-
-        // hedgeUnitmlETH = HedgeUnit(
-        //     hedgeUnitFactory.deployHedgeUnit(
-        //         moduleCore.getId(mlETH, ceth, mlETH_CETH_expiry),
-        //         mlETH,
-        //         "Merrill Lynch staked ETH - CETH",
-        //         INITIAL_MINT_CAP
-        //     )
-        // );
-        // console.log("HU mlETH                        : ", address(hedgeUnitmlETH));
-        // console.log("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-");
+        protectedUnitmlETH = ProtectedUnit(
+            config.deployProtectedUnit(
+                moduleCore.getId(mlETH, ceth, mlETH_CETH_expiry),
+                mlETH,
+                ceth,
+                "Merrill Lynch staked ETH - CETH",
+                INITIAL_MINT_CAP
+            )
+        );
+        console.log("HU mlETH                        : ", address(protectedUnitmlETH));
+        console.log("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-");
 
         // Transfer Ownership to moduleCore
         assetFactory.transferOwnership(address(moduleCore));
@@ -242,6 +250,7 @@ contract DeployScript is Script {
         // flashswapRouter.transferOwnership(address(moduleCore));
         console.log("Transferred ownerships to Modulecore");
 
+        config.grantRole(config.MARKET_INITIALIZER_ROLE(), deployer);
         config.setModuleCore(address(moduleCore));
         flashswapRouter.setModuleCore(address(moduleCore));
         console.log("Modulecore configured in Config contract");
@@ -268,19 +277,21 @@ contract DeployScript is Script {
         uint256 repurchaseFee,
         uint256 expiryPeriod
     ) public {
-        config.initializeModuleCore(cst, ceth, redmptionFee, dsPrice, base_redemption_fee, expiryPeriod);
+        config.initializeModuleCore(cst, ceth, dsPrice, expiryPeriod);
 
         Id id = moduleCore.getId(cst, ceth, expiryPeriod);
+        config.updatePsmBaseRedemptionFeePercentage(id, redmptionFee);
         config.issueNewDs(
             id,
             1 ether, // exchange rate = 1:1
-            repurchaseFee,
             6 ether, // 6% per day TODO
             block.timestamp + 6600, // 1 block per 12 second and 22 hours rollover during TC = 6600 // TODO
             block.timestamp + 10 seconds
         );
         console.log("New DS issued");
         console.log("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-");
+
+        config.updateRepurchaseFeeRate(id, repurchaseFee);
 
         // TODO : doesn't work properly for now
         // cETH.approve(address(moduleCore), depositLVAmt);

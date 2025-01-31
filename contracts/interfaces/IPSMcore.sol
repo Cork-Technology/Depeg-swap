@@ -17,14 +17,14 @@ interface IPSMcore is IRepurchase {
     event RateUpdated(Id indexed id, uint256 newRate, uint256 previousRate);
 
     /// @notice Emitted when a user deposits assets into a given PSM
-    /// @param Id The PSM id
+    /// @param id The PSM id
     /// @param dsId The DS id
     /// @param depositor The address of the depositor
     /// @param amount The amount of the asset deposited
     /// @param received The amount of swap asset received
     /// @param exchangeRate The exchange rate of DS at the time of deposit
     event PsmDeposited(
-        Id indexed Id,
+        Id indexed id,
         uint256 indexed dsId,
         address indexed depositor,
         uint256 amount,
@@ -33,7 +33,7 @@ interface IPSMcore is IRepurchase {
     );
 
     /// @notice Emitted when a user rolled over their CT
-    /// @param Id The PSM id
+    /// @param id The PSM id
     /// @param currentDsId The current DS id
     /// @param owner The address of the owner
     /// @param prevDsId The previous DS id
@@ -42,7 +42,7 @@ interface IPSMcore is IRepurchase {
     /// @param ctReceived The amount of CT received
     /// @param paReceived The amount of PA received
     event RolledOver(
-        Id indexed Id,
+        Id indexed id,
         uint256 indexed currentDsId,
         address indexed owner,
         uint256 prevDsId,
@@ -53,18 +53,18 @@ interface IPSMcore is IRepurchase {
     );
 
     /// @notice Emitted when a user claims profit from a rollover
-    /// @param Id The PSM id
+    /// @param id The PSM id
     /// @param dsId The DS id
     /// @param owner The address of the owner
     /// @param amount The amount of the asset claimed
     /// @param profit The amount of profit claimed
     /// @param remainingDs The amount of DS remaining user claimed
     event RolloverProfitClaimed(
-        Id indexed Id, uint256 indexed dsId, address indexed owner, uint256 amount, uint256 profit, uint256 remainingDs
+        Id indexed id, uint256 indexed dsId, address indexed owner, uint256 amount, uint256 profit, uint256 remainingDs
     );
 
     /// @notice Emitted when a user redeems a DS for a given PSM
-    /// @param Id The PSM id
+    /// @param id The PSM id
     /// @param dsId The DS id
     /// @param redeemer The address of the redeemer
     /// @param paUsed The amount of the PA redeemed
@@ -74,7 +74,7 @@ interface IPSMcore is IRepurchase {
     /// @param feePercentage The fee percentage charged for redemption
     /// @param fee The fee charged for redemption
     event DsRedeemed(
-        Id indexed Id,
+        Id indexed id,
         uint256 indexed dsId,
         address indexed redeemer,
         uint256 paUsed,
@@ -86,14 +86,14 @@ interface IPSMcore is IRepurchase {
     );
 
     /// @notice Emitted when a user redeems a CT for a given PSM
-    /// @param Id The PSM id
+    /// @param id The PSM id
     /// @param dsId The DS id
     /// @param redeemer The address of the redeemer
     /// @param amount The amount of the CT redeemed
     /// @param paReceived The amount of the pegged asset received
     /// @param raReceived The amount of the redemption asset received
     event CtRedeemed(
-        Id indexed Id,
+        Id indexed id,
         uint256 indexed dsId,
         address indexed redeemer,
         uint256 amount,
@@ -102,34 +102,34 @@ interface IPSMcore is IRepurchase {
     );
 
     /// @notice Emitted when a user cancels their DS position by depositing the CT + DS back into the PSM
-    /// @param Id The PSM id
+    /// @param id The PSM id
     /// @param dsId The DS id
     /// @param redeemer The address of the redeemer
     /// @param raAmount The amount of RA received
     /// @param swapAmount The amount of CT + DS swapped
     event Cancelled(
-        Id indexed Id, uint256 indexed dsId, address indexed redeemer, uint256 raAmount, uint256 swapAmount
+        Id indexed id, uint256 indexed dsId, address indexed redeemer, uint256 raAmount, uint256 swapAmount
     );
 
     /// @notice Emitted when a Admin updates status of Deposit in the PSM
-    /// @param Id The PSM id
+    /// @param id The PSM id
     /// @param isPSMDepositPaused The new value saying if Deposit allowed in PSM or not
-    event PsmDepositsStatusUpdated(Id indexed Id, bool isPSMDepositPaused);
+    event PsmDepositsStatusUpdated(Id indexed id, bool isPSMDepositPaused);
 
     /// @notice Emitted when a Admin updates status of Withdrawal in the PSM
-    /// @param Id The PSM id
+    /// @param id The PSM id
     /// @param isPSMWithdrawalPaused The new value saying if Withdrawal allowed in PSM or not
-    event PsmWithdrawalsStatusUpdated(Id indexed Id, bool isPSMWithdrawalPaused);
+    event PsmWithdrawalsStatusUpdated(Id indexed id, bool isPSMWithdrawalPaused);
 
     /// @notice Emitted when a Admin updates status of Repurchase in the PSM
-    /// @param Id The PSM id
+    /// @param id The PSM id
     /// @param isPSMRepurchasePaused The new value saying if Repurchase allowed in PSM or not
-    event PsmRepurchasesStatusUpdated(Id indexed Id, bool isPSMRepurchasePaused);
+    event PsmRepurchasesStatusUpdated(Id indexed id, bool isPSMRepurchasePaused);
 
     /// @notice Emitted when a Admin updates fee rates for early redemption
-    /// @param Id The PSM id
+    /// @param id The PSM id
     /// @param earlyRedemptionFeeRate The new value of early redemption fee rate
-    event EarlyRedemptionFeeRateUpdated(Id indexed Id, uint256 earlyRedemptionFeeRate);
+    event EarlyRedemptionFeeRateUpdated(Id indexed id, uint256 earlyRedemptionFeeRate);
 
     /// @notice Emmitted when psmBaseRedemptionFeePercentage is updated
     /// @param id the PSM id
@@ -240,10 +240,11 @@ interface IPSMcore is IRepurchase {
     function redeemRaWithCtDs(Id id, uint256 amount) external returns (uint256 ra);
 
     /**
-     * @notice returns amount of value locked in LV
+     * @notice returns amount of value locked in PSM
      * @param id The PSM id
+     * @param ra true if you want to get value locked in RA, false if you want to get value locked in PA
      */
-    function valueLocked(Id id) external view returns (uint256);
+    function valueLocked(Id id, bool ra) external view returns (uint256);
 
     /**
      * @notice returns base redemption fees (1e18 = 1%)

@@ -2,13 +2,14 @@
 pragma solidity ^0.8.24;
 
 import {Id} from "../libraries/Pair.sol";
+import {IErrors} from "./IErrors.sol";
 
 /**
  * @title IRepurchase Interface
  * @author Cork Team
  * @notice IRepurchase interface for supporting Repurchase features through PSMCore
  */
-interface IRepurchase {
+interface IRepurchase is IErrors {
     /**
      * @notice emitted when repurchase is done
      * @param id the id of PSM
@@ -34,16 +35,9 @@ interface IRepurchase {
     );
 
     /// @notice Emitted when a repurchaseFee is updated for a given PSM
-    /// @param Id The PSM id
+    /// @param id The PSM id
     /// @param repurchaseFeeRate The new repurchaseFee rate
-    event RepurchaseFeeRateUpdated(Id indexed Id, uint256 indexed repurchaseFeeRate);
-
-    /**
-     * @notice thrown when the user tries to repurchase more than the available PA + DSliquidity
-     * @param available the amount of available PA + DS
-     * @param requested the amount of PA + DS user will receive
-     */
-    error InsufficientLiquidity(uint256 available, uint256 requested);
+    event RepurchaseFeeRateUpdated(Id indexed id, uint256 indexed repurchaseFeeRate);
 
     /**
      * @notice returns the fee percentage for repurchasing(1e18 = 1%)
