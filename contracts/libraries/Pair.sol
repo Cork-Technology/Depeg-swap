@@ -36,7 +36,11 @@ library PairLibrary {
         id = Id.wrap(keccak256(abi.encode(key)));
     }
 
-    function initalize(address pa, address ra, uint256 initialArp, uint256 expiry, address exchangeRateProvider) internal pure returns (Pair memory key) {
+    function initalize(address pa, address ra, uint256 initialArp, uint256 expiry, address exchangeRateProvider)
+        internal
+        pure
+        returns (Pair memory key)
+    {
         if (pa == address(0) || ra == address(0)) {
             revert ZeroAddress();
         }

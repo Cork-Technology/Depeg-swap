@@ -52,5 +52,4 @@ contract ExchangeRateProvider is IErrors, IExchangeRateProvider {
 
         exchangeRate[id] = newRate;
     }
-    
 }

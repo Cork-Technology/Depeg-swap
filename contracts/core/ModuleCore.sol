@@ -71,14 +71,21 @@ contract ModuleCore is OwnableUpgradeable, UUPSUpgradeable, PsmCore, Initialize,
         return super._contextSuffixLength();
     }
 
-    function getId(address pa, address ra, uint256 initialArp, uint256 expiry, address exchangeRateProvider) external pure returns (Id) {
+    function getId(address pa, address ra, uint256 initialArp, uint256 expiry, address exchangeRateProvider)
+        external
+        pure
+        returns (Id)
+    {
         return PairLibrary.initalize(pa, ra, initialArp, expiry, exchangeRateProvider).toId();
     }
 
-    function initializeModuleCore(address pa, address ra, uint256 initialArp, uint256 expiryInterval, address exchangeRateProvider)
-        external
-        override
-    {
+    function initializeModuleCore(
+        address pa,
+        address ra,
+        uint256 initialArp,
+        uint256 expiryInterval,
+        address exchangeRateProvider
+    ) external override {
         onlyConfig();
 
         Pair memory key = PairLibrary.initalize(pa, ra, initialArp, expiryInterval, exchangeRateProvider);
@@ -119,7 +126,16 @@ contract ModuleCore is OwnableUpgradeable, UUPSUpgradeable, PsmCore, Initialize,
         uint256 exchangeRates = _getRate(id, info);
 
         (address ct, address ds) = IAssetFactory(SWAP_ASSET_FACTORY).deploySwapAssets(
-            IAssetFactory.DeployParams(info.ra, state.info.pa, address(this), info.initialArp, info.expiryInterval, info.exchangeRateProvider, exchangeRates, state.globalAssetIdx + 1)
+            IAssetFactory.DeployParams(
+                info.ra,
+                state.info.pa,
+                address(this),
+                info.initialArp,
+                info.expiryInterval,
+                info.exchangeRateProvider,
+                exchangeRates,
+                state.globalAssetIdx + 1
+            )
         );
 
         // avoid stack to deep error

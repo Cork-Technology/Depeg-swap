@@ -231,9 +231,13 @@ contract CorkConfig is AccessControl, Pausable {
      * @param ra Address of RA
      * @param initialArp initial price of DS
      */
-    function initializeModuleCore(address pa, address ra, uint256 initialArp, uint256 expiryInterval, address exchangeRateProvider)
-        external
-    {
+    function initializeModuleCore(
+        address pa,
+        address ra,
+        uint256 initialArp,
+        uint256 expiryInterval,
+        address exchangeRateProvider
+    ) external {
         moduleCore.initializeModuleCore(pa, ra, initialArp, expiryInterval, exchangeRateProvider);
     }
 
@@ -242,9 +246,7 @@ contract CorkConfig is AccessControl, Pausable {
      * for first issuance, separate transaction must be made to set the fees in the AMM
      */
     function issueNewDs(Id id, uint256 ammLiquidationDeadline) external whenNotPaused {
-        moduleCore.issueNewDs(
-            id, defaultDecayDiscountRateInDays, rolloverPeriodInBlocks, ammLiquidationDeadline
-        );
+        moduleCore.issueNewDs(id, defaultDecayDiscountRateInDays, rolloverPeriodInBlocks, ammLiquidationDeadline);
 
         _autoAssignFees(id);
         _autoAssignTreasurySplitPercentage(id);

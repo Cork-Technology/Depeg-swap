@@ -17,7 +17,13 @@ interface Initialize {
      * @param expiryInterval expiry interval for DS, this will be used to calculate the next expiry time for DS(block.timestamp + expiryInterval)
      * @param exchangeRateProvider address of IExchangeRateProvider contract
      */
-    function initializeModuleCore(address pa, address ra, uint256 initialArp, uint256 expiryInterval, address exchangeRateProvider) external;
+    function initializeModuleCore(
+        address pa,
+        address ra,
+        uint256 initialArp,
+        uint256 expiryInterval,
+        address exchangeRateProvider
+    ) external;
 
     /**
      * @notice issue a new DS, can only be done after the previous DS has expired(if any). will deploy CT, DS and initialize new AMM and increment ds Id
@@ -111,7 +117,10 @@ interface Initialize {
      */
     function swapAsset(Id id, uint256 dsId) external view returns (address ct, address ds);
 
-    function getId(address pa, address ra, uint256 initialArp, uint256 expiry, address exchangeRateProvider) external pure returns (Id);
+    function getId(address pa, address ra, uint256 initialArp, uint256 expiry, address exchangeRateProvider)
+        external
+        pure
+        returns (Id);
 
     /// @notice Emitted when a new LV and PSM is initialized with a given pair
     /// @param id The PSM id

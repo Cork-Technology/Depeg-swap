@@ -49,10 +49,15 @@ interface IAssetFactory is IErrors {
      * @return ct list of deployed CT assets
      * @return ds list of deployed DS assets
      */
-    function getDeployedSwapAssets(address ra, address pa, uint256 initialArp, uint256 expiryInterval, address exchangeRateProvider, uint8 page, uint8 limit)
-        external
-        view
-        returns (address[] memory ct, address[] memory ds);
+    function getDeployedSwapAssets(
+        address ra,
+        address pa,
+        uint256 initialArp,
+        uint256 expiryInterval,
+        address exchangeRateProvider,
+        uint8 page,
+        uint8 limit
+    ) external view returns (address[] memory ct, address[] memory ds);
 
     struct DeployParams {
         address _ra;

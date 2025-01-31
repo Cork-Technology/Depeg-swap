@@ -127,7 +127,7 @@ abstract contract Helper is SigUtils, TestHelper {
 
         corkConfig.initializeModuleCore(pa, ra, initialDsPrice, expiryInSeconds, exchangeRateProvider);
         corkConfig.updatePsmBaseRedemptionFeePercentage(defaultCurrencyId, baseRedemptionFee);
-        
+
         corkConfig.updatePsmRate(defaultCurrencyId, DEFAULT_EXCHANGE_RATES);
     }
 
@@ -138,7 +138,7 @@ abstract contract Helper is SigUtils, TestHelper {
 
         corkConfig.initializeModuleCore(pa, ra, initialDsPrice, expiryInSeconds, exchangeRateProvider);
         corkConfig.updatePsmBaseRedemptionFeePercentage(defaultCurrencyId, DEFAULT_BASE_REDEMPTION_FEE);
-        
+
         corkConfig.updatePsmRate(defaultCurrencyId, DEFAULT_EXCHANGE_RATES);
     }
 
@@ -149,9 +149,7 @@ abstract contract Helper is SigUtils, TestHelper {
         uint256 decayDiscountRateInDays,
         uint256 rolloverPeriodInblocks
     ) internal {
-        corkConfig.issueNewDs(
-            id, block.timestamp + 10 seconds
-        );
+        corkConfig.issueNewDs(id, block.timestamp + 10 seconds);
 
         corkConfig.updateDecayDiscountRateInDays(decayDiscountRateInDays);
         corkConfig.updateRolloverPeriodInBlocks(rolloverPeriodInblocks);
@@ -180,7 +178,8 @@ abstract contract Helper is SigUtils, TestHelper {
 
         address exchangeRateProvider = address(corkConfig.defaultExchangeRateProvider());
 
-        Pair memory _id = PairLibrary.initalize(address(pa), address(ra), defaultInitialArp(), expiryInSeconds, exchangeRateProvider);
+        Pair memory _id =
+            PairLibrary.initalize(address(pa), address(ra), defaultInitialArp(), expiryInSeconds, exchangeRateProvider);
         id = PairLibrary.toId(_id);
 
         defaultCurrencyId = id;
@@ -189,7 +188,11 @@ abstract contract Helper is SigUtils, TestHelper {
             address(pa), address(ra), defaultInitialArp(), DEFAULT_BASE_REDEMPTION_FEE, expiryInSeconds
         );
         issueNewDs(
-            defaultCurrencyId, defaultExchangeRate(), DEFAULT_REPURCHASE_FEE, DEFAULT_DECAY_DISCOUNT_RATE, DEFAULT_ROLLOVER_PERIOD
+            defaultCurrencyId,
+            defaultExchangeRate(),
+            DEFAULT_REPURCHASE_FEE,
+            DEFAULT_DECAY_DISCOUNT_RATE,
+            DEFAULT_ROLLOVER_PERIOD
         );
 
         corkConfig.updateLvStrategyCtSplitPercentage(defaultCurrencyId, DEFAULT_CT_SPLIT_PERCENTAGE);
@@ -210,7 +213,8 @@ abstract contract Helper is SigUtils, TestHelper {
 
         address exchangeRateProvider = address(corkConfig.defaultExchangeRateProvider());
 
-        Pair memory _id = PairLibrary.initalize(address(pa), address(ra), defaultInitialArp(), expiryInSeconds, exchangeRateProvider);
+        Pair memory _id =
+            PairLibrary.initalize(address(pa), address(ra), defaultInitialArp(), expiryInSeconds, exchangeRateProvider);
         id = PairLibrary.toId(_id);
 
         defaultCurrencyId = id;
@@ -240,14 +244,19 @@ abstract contract Helper is SigUtils, TestHelper {
 
         address exchangeRateProvider = address(corkConfig.defaultExchangeRateProvider());
 
-        Pair memory _id = PairLibrary.initalize(address(pa), address(ra), defaultInitialArp(), expiryInSeconds, exchangeRateProvider);
+        Pair memory _id =
+            PairLibrary.initalize(address(pa), address(ra), defaultInitialArp(), expiryInSeconds, exchangeRateProvider);
         id = PairLibrary.toId(_id);
 
         defaultCurrencyId = id;
 
         initializeNewModuleCore(address(pa), address(ra), defaultInitialArp(), baseRedemptionFee, expiryInSeconds);
         issueNewDs(
-            defaultCurrencyId, DEFAULT_EXCHANGE_RATES, DEFAULT_REPURCHASE_FEE, DEFAULT_DECAY_DISCOUNT_RATE, DEFAULT_ROLLOVER_PERIOD
+            defaultCurrencyId,
+            DEFAULT_EXCHANGE_RATES,
+            DEFAULT_REPURCHASE_FEE,
+            DEFAULT_DECAY_DISCOUNT_RATE,
+            DEFAULT_ROLLOVER_PERIOD
         );
         corkConfig.updateLvStrategyCtSplitPercentage(defaultCurrencyId, DEFAULT_CT_SPLIT_PERCENTAGE);
     }
@@ -267,7 +276,8 @@ abstract contract Helper is SigUtils, TestHelper {
 
         address exchangeRateProvider = address(corkConfig.defaultExchangeRateProvider());
 
-        Pair memory _id = PairLibrary.initalize(address(pa), address(ra), defaultInitialArp(), expiryInSeconds, exchangeRateProvider);
+        Pair memory _id =
+            PairLibrary.initalize(address(pa), address(ra), defaultInitialArp(), expiryInSeconds, exchangeRateProvider);
         id = PairLibrary.toId(_id);
 
         defaultCurrencyId = id;
@@ -276,7 +286,11 @@ abstract contract Helper is SigUtils, TestHelper {
             address(pa), address(ra), defaultInitialArp(), DEFAULT_BASE_REDEMPTION_FEE, expiryInSeconds
         );
         issueNewDs(
-            defaultCurrencyId, DEFAULT_EXCHANGE_RATES, DEFAULT_REPURCHASE_FEE, DEFAULT_DECAY_DISCOUNT_RATE, DEFAULT_ROLLOVER_PERIOD
+            defaultCurrencyId,
+            DEFAULT_EXCHANGE_RATES,
+            DEFAULT_REPURCHASE_FEE,
+            DEFAULT_DECAY_DISCOUNT_RATE,
+            DEFAULT_ROLLOVER_PERIOD
         );
         corkConfig.updateLvStrategyCtSplitPercentage(defaultCurrencyId, DEFAULT_CT_SPLIT_PERCENTAGE);
     }
@@ -294,7 +308,8 @@ abstract contract Helper is SigUtils, TestHelper {
 
         address exchangeRateProvider = address(corkConfig.defaultExchangeRateProvider());
 
-        Pair memory _id = PairLibrary.initalize(address(pa), address(ra), initialDsPrice, expiryInSeconds, exchangeRateProvider);
+        Pair memory _id =
+            PairLibrary.initalize(address(pa), address(ra), initialDsPrice, expiryInSeconds, exchangeRateProvider);
         id = PairLibrary.toId(_id);
 
         initializeNewModuleCore(address(pa), address(ra), initialDsPrice, expiryInSeconds);
