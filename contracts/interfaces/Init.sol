@@ -25,10 +25,9 @@ interface Initialize {
      */
     function issueNewDs(
         Id id,
-        // uint256 exchangeRates,
-        // uint256 decayDiscountRateInDays, // protocol-level config
+        uint256 decayDiscountRateInDays, // protocol-level config
         // won't have effect on first issuance
-        // uint256 rolloverPeriodInblocks, // protocol-level config
+        uint256 rolloverPeriodInblocks, // protocol-level config
         uint256 ammLiquidationDeadline
     ) external;
 
@@ -112,7 +111,7 @@ interface Initialize {
      */
     function swapAsset(Id id, uint256 dsId) external view returns (address ct, address ds);
 
-    function getId(address pa, address ra, uint256 expiryInterva) external pure returns (Id id);
+    function getId(address pa, address ra, uint256 initialArp, uint256 expiry, address exchangeRateProvider) external pure returns (Id);
 
     /// @notice Emitted when a new LV and PSM is initialized with a given pair
     /// @param id The PSM id

@@ -11,6 +11,7 @@ import {CorkHook} from "Cork-Hook/CorkHook.sol";
 import {MarketSnapshot} from "Cork-Hook/lib/MarketSnapshot.sol";
 import {HedgeUnitFactory} from "./assets/HedgeUnitFactory.sol";
 import {HedgeUnit} from "./assets/HedgeUnit.sol";
+import {ExchangeRateProvider} from "./ExchangeRateProvider.sol";
 
 /**
  * @title Config Contract
@@ -27,9 +28,14 @@ contract CorkConfig is AccessControl, Pausable {
     IDsFlashSwapCore public flashSwapRouter;
     CorkHook public hook;
     HedgeUnitFactory public hedgeUnitFactory;
+    ExchangeRateProvider public defaultExchangeRateProvider;
     // Cork Protocol's treasury address. Other Protocol component should fetch this address directly from the config contract
     // instead of storing it themselves, since it'll be hard to update the treasury address in all the components if it changes vs updating it in the config contract once
     address public treasury;
+
+    uint256 public rolloverPeriodInBlocks = 480;
+
+    uint256 public defaultDecayDiscountRateInDays = 0;
 
     uint256 public constant WHITELIST_TIME_DELAY = 7 days;
 
@@ -80,12 +86,23 @@ contract CorkConfig is AccessControl, Pausable {
         if (adminAdd == address(0) || managerAdd == address(0)) {
             revert InvalidAddress();
         }
+
+        defaultExchangeRateProvider = new ExchangeRateProvider(address(this));
+
         _setRoleAdmin(MARKET_INITIALIZER_ROLE, MANAGER_ROLE);
         _setRoleAdmin(MANAGER_ROLE, DEFAULT_ADMIN_ROLE);
         _setRoleAdmin(RATE_UPDATERS_ROLE, MANAGER_ROLE);
         _setRoleAdmin(BASE_LIQUIDATOR_ROLE, MANAGER_ROLE);
         _grantRole(DEFAULT_ADMIN_ROLE, adminAdd);
         _grantRole(MANAGER_ROLE, managerAdd);
+    }
+
+    function updateDecayDiscountRateInDays(uint256 newDiscountRateInDays) external onlyManager {
+        defaultDecayDiscountRateInDays = newDiscountRateInDays;
+    }
+
+    function updateRolloverPeriodInBlocks(uint256 newRolloverPeriodInBlocks) external onlyManager {
+        rolloverPeriodInBlocks = newRolloverPeriodInBlocks;
     }
 
     function _computeLiquidatorRoleHash(address account) public view returns (bytes32) {
@@ -216,7 +233,6 @@ contract CorkConfig is AccessControl, Pausable {
      */
     function initializeModuleCore(address pa, address ra, uint256 initialArp, uint256 expiryInterval, address exchangeRateProvider)
         external
-        // onlyManager
     {
         moduleCore.initializeModuleCore(pa, ra, initialArp, expiryInterval, exchangeRateProvider);
     }
@@ -225,16 +241,9 @@ contract CorkConfig is AccessControl, Pausable {
      * @dev Issues new assets, will auto assign amm fees from the previous issuance
      * for first issuance, separate transaction must be made to set the fees in the AMM
      */
-    function issueNewDs(
-        Id id,
-        // uint256 exchangeRates,
-        // uint256 decayDiscountRateInDays, // protocol-level config
-        // won't have effect on first issuance
-        // uint256 rolloverPeriodInblocks, // protocol-level config
-        uint256 ammLiquidationDeadline
-    ) external whenNotPaused {
+    function issueNewDs(Id id, uint256 ammLiquidationDeadline) external whenNotPaused {
         moduleCore.issueNewDs(
-            id, ammLiquidationDeadline
+            id, defaultDecayDiscountRateInDays, rolloverPeriodInBlocks, ammLiquidationDeadline
         );
 
         _autoAssignFees(id);
@@ -388,7 +397,12 @@ contract CorkConfig is AccessControl, Pausable {
     }
 
     function updatePsmRate(Id id, uint256 newRate) external onlyUpdaterOrManager {
-        moduleCore.updateRate(id, newRate);
+        // we update the rate in our provider regardless it's up or down
+        defaultExchangeRateProvider.setRate(id, newRate);
+
+        // we don't bubble up the error since if this is a yield bearing PA, then the value of PA goes up
+        // but we don't want to insure the yield, so we just ignore the error
+        try moduleCore.updateRate(id, newRate) {} catch {}
     }
 
     function useVaultTradeExecutionResultFunds(Id id) external onlyManager {

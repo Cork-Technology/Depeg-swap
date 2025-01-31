@@ -3,6 +3,7 @@ pragma solidity ^0.8.24;
 
 import {Id, Pair, PairLibrary} from "../libraries/Pair.sol";
 import {IErrors} from "./../interfaces/IErrors.sol";
+import {MathHelper} from "./../libraries/MathHelper.sol";
 import {IExchangeRateProvider} from "./../interfaces/IExchangeRateProvider.sol";
 
 /**
@@ -48,6 +49,8 @@ contract ExchangeRateProvider is IErrors, IExchangeRateProvider {
      */
     function setRate(Id id, uint256 newRate) external {
         onlyConfig();
+
         exchangeRate[id] = newRate;
     }
+    
 }

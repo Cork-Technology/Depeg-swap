@@ -147,56 +147,39 @@ contract AssetFactory is IAssetFactory, OwnableUpgradeable, UUPSUpgradeable {
         }
     }
 
-    /**
-     * @notice deploys new Swap Assets for given RA & PA
-     * @param _ra Address of RA
-     * @param _pa Address of PA
-     * @param _owner Address of asset owners
-     * @param expiryInterval expiry interval in seconds
-     * @param psmExchangeRate exchange rate for this pair
-     * @return ct new CT contract address
-     * @return ds new DS contract address
-     */
-    function deploySwapAssets(
-        address _ra,
-        address _pa,
-        address _owner,
-        uint256 initialArp,
-        uint256 expiryInterval,
-        address exchangeRateProvider,
-        uint256 psmExchangeRate,
-        uint256 dsId
-    ) external override onlyOwner returns (address ct, address ds) {
-        Pair memory asset = Pair(_pa, _ra, expiryInterval);
 
-        uint256 expiry = block.timestamp + expiryInterval;
+    function deploySwapAssets(DeployParams calldata params) external override onlyOwner returns (address ct, address ds) {
+        Pair memory asset = Pair(params._pa, params._ra, params.initialArp, params.expiryInterval, params.exchangeRateProvider);
 
-        string memory pairname;
-
-        {
-            (uint256 year, uint256 month, uint256 day) = BokkyPooBahsDateTimeLibrary.timestampToDate(expiry);
-            string memory expiryAsStrings =
-                string.concat(Strings.toString(year), "-", Strings.toString(month), "-", Strings.toString(day));
-
-            pairname =
-                string.concat(IERC20Metadata(_ra).symbol(), "-", IERC20Metadata(_pa).symbol(), "-", expiryAsStrings);
-        }
+        uint256 expiry = block.timestamp + params.expiryInterval;
 
         // prevent deploying a swap asset of a non existent pair, logically won't ever happen
         // just to be safe
         if (lvs[asset.toId()] == address(0)) {
-            revert NotExist(_ra, _pa);
+            revert NotExist(params._ra, params._pa);
         }
 
-        ct = address(new Asset(CT_PREFIX, pairname, _owner, expiry, psmExchangeRate, dsId));
-        ds = address(new Asset(DS_PREFIX, pairname, _owner, expiry, psmExchangeRate, dsId));
+        {
+            string memory pairname = _getAssetPairName(expiry, params._ra, params._pa);
 
-        swapAssets[Pair(_pa, _ra, initialArp, expiryInterval, exchangeRateProvider).toId()].push(SwapPair(ct, ds));
+            ct = address(new Asset(CT_PREFIX, pairname, params._owner, expiry, params.psmExchangeRate, params.dsId));
+            ds = address(new Asset(DS_PREFIX, pairname, params._owner, expiry, params.psmExchangeRate, params.dsId));
+        }
+
+        swapAssets[Pair(params._pa, params._ra, params.initialArp, params.expiryInterval, params.exchangeRateProvider).toId()].push(SwapPair(ct, ds));
 
         deployed[ct] = 1;
         deployed[ds] = 1;
 
-        emit AssetDeployed(_ra, ct, ds);
+        emit AssetDeployed(params._ra, ct, ds);
+    }
+
+    function _getAssetPairName(uint256 expiry, address _ra, address _pa) internal view returns (string memory) {
+        (uint256 year, uint256 month, uint256 day) = BokkyPooBahsDateTimeLibrary.timestampToDate(expiry);
+        string memory expiryAsStrings =
+            string.concat(Strings.toString(year), "-", Strings.toString(month), "-", Strings.toString(day));
+
+        return string.concat(IERC20Metadata(_ra).symbol(), "-", IERC20Metadata(_pa).symbol(), "-", expiryAsStrings);
     }
 
     /**
