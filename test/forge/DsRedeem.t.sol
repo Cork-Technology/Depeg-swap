@@ -45,7 +45,9 @@ contract DsPaRedeemTest is Helper {
         moduleCore.depositPsm(currencyId, DEFAULT_DEPOSIT_AMOUNT);
 
         // save initial data
-        lv = assetFactory.getLv(address(ra), address(pa), _expiry);
+        address exchangeRateProvider = address(corkConfig.defaultExchangeRateProvider());
+
+        lv = assetFactory.getLv(address(ra), address(pa), DEFAULT_INITIAL_DS_PRICE, _expiry, exchangeRateProvider);
         dsId = moduleCore.lastDsId(currencyId);
         (, ds) = moduleCore.swapAsset(currencyId, 1);
         Asset(ds).approve(address(moduleCore), type(uint256).max);
