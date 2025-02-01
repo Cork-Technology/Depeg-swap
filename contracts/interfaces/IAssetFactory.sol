@@ -2,6 +2,7 @@
 pragma solidity ^0.8.24;
 
 import "./IErrors.sol";
+import "./../libraries/Pair.sol";
 
 /**
  * @title IAssetFactory Interface
@@ -88,7 +89,7 @@ interface IAssetFactory is IErrors {
         address _exchangeRateProvider
     ) external returns (address lv);
 
-    function getLv(address _ra, address _pa, uint256 initialArp, uint256 expiryInterval, address exchangeRateProvider)
+    function getLv(Id id)
         external
         view
         returns (address);

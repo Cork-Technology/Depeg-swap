@@ -58,13 +58,13 @@ contract AssetFactory is IAssetFactory, OwnableUpgradeable, UUPSUpgradeable {
         _;
     }
 
-    function getLv(address _ra, address _pa, uint256 initialArp, uint256 expiryInterval, address exchangeRateProvider)
+    function getLv(Id id)
         external
         view
         override
         returns (address)
     {
-        return lvs[Pair(_pa, _ra, initialArp, expiryInterval, exchangeRateProvider).toId()];
+        return lvs[id];
     }
 
     /**
