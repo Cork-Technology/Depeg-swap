@@ -3,8 +3,9 @@ pragma solidity ^0.8.24;
 import {SafeERC20, IERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {IWithdrawalRouter} from "./../interfaces/IWithdrawalRouter.sol";
 import {IWithdrawal} from "./../interfaces/IWithdrawal.sol";
+import {ReentrancyGuardTransient} from "@openzeppelin/contracts/utils/ReentrancyGuardTransient.sol";
 
-contract Withdrawal is IWithdrawal {
+contract Withdrawal is ReentrancyGuardTransient, IWithdrawal {
     using SafeERC20 for IERC20;
 
     struct WithdrawalInfo {
@@ -81,7 +82,12 @@ contract Withdrawal is IWithdrawal {
         emit WithdrawalRequested(withdrawalId, owner, claimableAt);
     }
 
-    function claimToSelf(bytes32 withdrawalId) external onlyOwner(withdrawalId) onlyWhenClaimable(withdrawalId) {
+    function claimToSelf(bytes32 withdrawalId)
+        external
+        nonReentrant
+        onlyOwner(withdrawalId)
+        onlyWhenClaimable(withdrawalId)
+    {
         WithdrawalInfo storage withdrawal = withdrawals[withdrawalId];
 
         uint256 length = withdrawal.tokens.length;
@@ -96,6 +102,7 @@ contract Withdrawal is IWithdrawal {
 
     function claimRouted(bytes32 withdrawalId, address router, bytes calldata routerData)
         external
+        nonReentrant
         onlyOwner(withdrawalId)
         onlyWhenClaimable(withdrawalId)
     {

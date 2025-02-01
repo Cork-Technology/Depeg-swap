@@ -33,7 +33,7 @@ contract AssetFactory is IAssetFactory, OwnableUpgradeable, UUPSUpgradeable {
     mapping(Id => address) internal lvs;
     mapping(uint256 => Pair) internal pairs;
     mapping(Id => SwapPair[]) internal swapAssets;
-    mapping(address => uint256) internal deployed;
+    mapping(address => bool) internal deployed;
 
     /// @notice __gap variable to prevent storage collisions
     // slither-disable-next-line unused-state
@@ -48,7 +48,7 @@ contract AssetFactory is IAssetFactory, OwnableUpgradeable, UUPSUpgradeable {
      * @param asset the address of Asset contract
      */
     function isDeployed(address asset) external view override returns (bool) {
-        return (deployed[asset] == 1 ? true : false);
+        return deployed[asset];
     }
 
     modifier withinLimit(uint8 _limit) {
@@ -161,14 +161,18 @@ contract AssetFactory is IAssetFactory, OwnableUpgradeable, UUPSUpgradeable {
         onlyOwner
         returns (address ct, address ds)
     {
+        if (params.psmExchangeRate == 0) {
+            revert InvalidRate();
+        }
         Pair memory asset =
             Pair(params._pa, params._ra, params.initialArp, params.expiryInterval, params.exchangeRateProvider);
+        Id id = asset.toId();
 
         uint256 expiry = block.timestamp + params.expiryInterval;
 
         // prevent deploying a swap asset of a non existent pair, logically won't ever happen
         // just to be safe
-        if (lvs[asset.toId()] == address(0)) {
+        if (lvs[id] == address(0)) {
             revert NotExist(params._ra, params._pa);
         }
 
@@ -179,11 +183,10 @@ contract AssetFactory is IAssetFactory, OwnableUpgradeable, UUPSUpgradeable {
             ds = address(new Asset(DS_PREFIX, pairname, params._owner, expiry, params.psmExchangeRate, params.dsId));
         }
 
-        swapAssets[Pair(params._pa, params._ra, params.initialArp, params.expiryInterval, params.exchangeRateProvider)
-            .toId()].push(SwapPair(ct, ds));
+        swapAssets[id].push(SwapPair(ct, ds));
 
-        deployed[ct] = 1;
-        deployed[ds] = 1;
+        deployed[ct] = true;
+        deployed[ds] = true;
 
         emit AssetDeployed(params._ra, ct, ds);
     }

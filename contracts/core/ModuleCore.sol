@@ -51,7 +51,6 @@ contract ModuleCore is OwnableUpgradeable, UUPSUpgradeable, PsmCore, Initialize,
 
     function setWithdrawalContract(address _withdrawalContract) external {
         onlyConfig();
-
         _setWithdrawalContract(_withdrawalContract);
     }
 
@@ -87,7 +86,9 @@ contract ModuleCore is OwnableUpgradeable, UUPSUpgradeable, PsmCore, Initialize,
         address exchangeRateProvider
     ) external override {
         onlyConfig();
-
+        if (expiryInterval == 0) {
+            revert InvalidExpiry();
+        }
         Pair memory key = PairLibrary.initalize(pa, ra, initialArp, expiryInterval, exchangeRateProvider);
         Id id = key.toId();
 
@@ -165,7 +166,6 @@ contract ModuleCore is OwnableUpgradeable, UUPSUpgradeable, PsmCore, Initialize,
 
     function updateRepurchaseFeeRate(Id id, uint256 newRepurchaseFeePercentage) external {
         onlyConfig();
-
         State storage state = states[id];
         PsmLibrary.updateRepurchaseFeePercentage(state, newRepurchaseFeePercentage);
 
@@ -227,7 +227,6 @@ contract ModuleCore is OwnableUpgradeable, UUPSUpgradeable, PsmCore, Initialize,
      */
     function updateLvWithdrawalsStatus(Id id, bool isLVWithdrawalPaused) external {
         onlyConfig();
-
         State storage state = states[id];
         VaultLibrary.updateLvWithdrawalsStatus(state, isLVWithdrawalPaused);
         emit LvWithdrawalsStatusUpdated(id, isLVWithdrawalPaused);
@@ -271,16 +270,12 @@ contract ModuleCore is OwnableUpgradeable, UUPSUpgradeable, PsmCore, Initialize,
      */
     function updatePsmBaseRedemptionFeePercentage(Id id, uint256 newPsmBaseRedemptionFeePercentage) external {
         onlyConfig();
-
-        if (newPsmBaseRedemptionFeePercentage > PsmLibrary.MAX_ALLOWED_FEES) {
-            revert InvalidFees();
-        }
         State storage state = states[id];
         PsmLibrary.updatePSMBaseRedemptionFeePercentage(state, newPsmBaseRedemptionFeePercentage);
         emit PsmBaseRedemptionFeePercentageUpdated(id, newPsmBaseRedemptionFeePercentage);
     }
 
-    function expiry(Id id) external view override returns (uint256 _expiry) {
-        _expiry = PsmLibrary.nextExpiry(states[id]);
+    function expiry(Id id) external view override returns (uint256 expiry) {
+        expiry = PsmLibrary.nextExpiry(states[id]);
     }
 }

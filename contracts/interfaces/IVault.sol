@@ -29,6 +29,9 @@ interface IVault is IErrors {
         uint256 amount;
         uint256 amountOutMin;
         uint256 ammDeadline;
+        uint256 ctAmountOutMin;
+        uint256 dsAmountOutMin;
+        uint256 paAmountOutMin;
     }
 
     struct RedeemEarlyResult {

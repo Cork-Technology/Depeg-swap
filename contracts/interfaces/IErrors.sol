@@ -178,7 +178,7 @@ interface IErrors {
 
     error NoLowerBound();
 
-    error HedgeUnitExists();
+    error ProtectedUnitExists();
 
     error InvalidPairId();
 
@@ -187,7 +187,7 @@ interface IErrors {
 
     error CallerNotFactory();
 
-    error HedgeUnitNotExists();
+    error ProtectedUnitNotExists();
 
     /// @notice thrown when the internal reference id is invalid
     error InalidRefId();
@@ -197,4 +197,7 @@ interface IErrors {
 
     /// @notice thron when the caller is not the liquidator
     error OnlyLiquidator();
+
+    /// @notice thrown when expiry is zero
+    error InvalidExpiry();
 }

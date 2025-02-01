@@ -9,14 +9,14 @@ import {ModuleCore} from "./ModuleCore.sol";
 import {IVault} from "./../interfaces/IVault.sol";
 import {CorkHook} from "Cork-Hook/CorkHook.sol";
 import {MarketSnapshot} from "Cork-Hook/lib/MarketSnapshot.sol";
-import {HedgeUnitFactory} from "./assets/HedgeUnitFactory.sol";
-import {HedgeUnit} from "./assets/HedgeUnit.sol";
+import {ProtectedUnitFactory} from "./assets/ProtectedUnitFactory.sol";
+import {ProtectedUnit} from "./assets/ProtectedUnit.sol";
 import {ExchangeRateProvider} from "./ExchangeRateProvider.sol";
 
 /**
  * @title Config Contract
  * @author Cork Team
- * @notice Config contract for managing configurations of Cork protocol
+ * @notice Config contract for managing pairs and configurations of Cork protocol
  */
 contract CorkConfig is AccessControl, Pausable {
     bytes32 public constant MANAGER_ROLE = keccak256("MANAGER_ROLE");
@@ -27,7 +27,7 @@ contract CorkConfig is AccessControl, Pausable {
     ModuleCore public moduleCore;
     IDsFlashSwapCore public flashSwapRouter;
     CorkHook public hook;
-    HedgeUnitFactory public hedgeUnitFactory;
+    ProtectedUnitFactory public protectedUnitFactory;
     ExchangeRateProvider public defaultExchangeRateProvider;
     // Cork Protocol's treasury address. Other Protocol component should fetch this address directly from the config contract
     // instead of storing it themselves, since it'll be hard to update the treasury address in all the components if it changes vs updating it in the config contract once
@@ -37,6 +37,9 @@ contract CorkConfig is AccessControl, Pausable {
 
     uint256 public defaultDecayDiscountRateInDays = 0;
 
+    /// @notice set to true when initializeModuleCore is allowed to call by anyone in permissionless way
+    bool public isInitPermissionless;
+
     uint256 public constant WHITELIST_TIME_DELAY = 7 days;
 
     /// @notice liquidation address => timestamp when liquidation is allowed
@@ -44,6 +47,9 @@ contract CorkConfig is AccessControl, Pausable {
 
     /// @notice thrown when caller is not manager/Admin of Cork Protocol
     error CallerNotManager();
+
+    /// @notice thrown when caller is not Market Initializer of Cork Protocol
+    error CallerNotInitializer();
 
     /// @notice thrown when passed Invalid/Zero Address
     error InvalidAddress();
@@ -60,9 +66,9 @@ contract CorkConfig is AccessControl, Pausable {
     /// @param hook Address of hook contract
     event HookSet(address hook);
 
-    /// @notice Emitted when a hedgeUnitFactory variable set
-    /// @param hedgeUnitFactory Address of hedgeUnitFactory contract
-    event HedgeUnitFactorySet(address hedgeUnitFactory);
+    /// @notice Emitted when a protectedUnitFactory variable set
+    /// @param protectedUnitFactory Address of protectedUnitFactory contract
+    event ProtectedUnitFactorySet(address protectedUnitFactory);
 
     /// @notice Emitted when a treasury is set
     /// @param treasury Address of treasury contract/address
@@ -71,6 +77,14 @@ contract CorkConfig is AccessControl, Pausable {
     modifier onlyManager() {
         if (!hasRole(MANAGER_ROLE, msg.sender)) {
             revert CallerNotManager();
+        }
+        _;
+    }
+
+    /// @notice Checks if the caller is either the initializer of the market or initialization is allowed permissionlessly
+    modifier onlyInitializer() {
+        if (!hasRole(MARKET_INITIALIZER_ROLE, msg.sender) && !isInitPermissionless) {
+            revert CallerNotInitializer();
         }
         _;
     }
@@ -114,8 +128,12 @@ contract CorkConfig is AccessControl, Pausable {
         _setRoleAdmin(role, newAdminRole);
     }
 
-    function grantRole(bytes32 role, address account) public override onlyRole(getRoleAdmin(role)) {
+    function grantRole(bytes32 role, address account) public override onlyManager {
         _grantRole(role, account);
+    }
+
+    function updateMarketInitAllowance(bool _isInitPermissionless) external onlyManager {
+        isInitPermissionless = _isInitPermissionless;
     }
 
     function transferAdmin(address newAdmin) external onlyRole(DEFAULT_ADMIN_ROLE) {
@@ -176,36 +194,31 @@ contract CorkConfig is AccessControl, Pausable {
         emit HookSet(_hook);
     }
 
-    function setHedgeUnitFactory(address _hedgeUnitFactory) external onlyManager {
-        if (_hedgeUnitFactory == address(0)) {
+    function setProtectedUnitFactory(address _protectedUnitFactory) external onlyManager {
+        if (_protectedUnitFactory == address(0)) {
             revert InvalidAddress();
         }
-
-        hedgeUnitFactory = HedgeUnitFactory(_hedgeUnitFactory);
-        emit HedgeUnitFactorySet(_hedgeUnitFactory);
+        protectedUnitFactory = ProtectedUnitFactory(_protectedUnitFactory);
+        emit ProtectedUnitFactorySet(_protectedUnitFactory);
     }
 
     function setTreasury(address _treasury) external onlyManager {
         if (_treasury == address(0)) {
             revert InvalidAddress();
         }
-
         treasury = _treasury;
-
         emit TreasurySet(_treasury);
     }
 
     function updateAmmBaseFeePercentage(Id id, uint256 newBaseFeePercentage) external onlyManager {
         (address ra,) = moduleCore.underlyingAsset(id);
         (address ct,) = moduleCore.swapAsset(id, moduleCore.lastDsId(id));
-
         hook.updateBaseFeePercentage(ra, ct, newBaseFeePercentage);
     }
 
     function updateAmmTreasurySplitPercentage(Id id, uint256 newTreasurySplitPercentage) external onlyManager {
         (address ra,) = moduleCore.underlyingAsset(id);
         (address ct,) = moduleCore.swapAsset(id, moduleCore.lastDsId(id));
-
         hook.updateTreasurySplitPercentage(ra, ct, newTreasurySplitPercentage);
     }
 
@@ -223,6 +236,14 @@ contract CorkConfig is AccessControl, Pausable {
 
     function setWithdrawalContract(address _withdrawalContract) external onlyManager {
         moduleCore.setWithdrawalContract(_withdrawalContract);
+    }
+
+    function updateRouterDsExtraFee(Id id, uint256 newPercentage) external onlyManager {
+        flashSwapRouter.updateDsExtraFeePercentage(id, newPercentage);
+    }
+
+    function updateDsExtraFeeTreasurySplitPercentage(Id id, uint256 newPercentage) external onlyManager {
+        flashSwapRouter.updateDsExtraFeeTreasurySplitPercentage(id, newPercentage);
     }
 
     /**
@@ -411,46 +432,49 @@ contract CorkConfig is AccessControl, Pausable {
         moduleCore.useTradeExecutionResultFunds(id);
     }
 
-    function updateHedgeUnitMintCap(address hedgeUnit, uint256 newMintCap) external onlyManager {
-        HedgeUnit(hedgeUnit).updateMintCap(newMintCap);
+    function updateProtectedUnitMintCap(address protectedUnit, uint256 newMintCap) external onlyManager {
+        ProtectedUnit(protectedUnit).updateMintCap(newMintCap);
     }
 
-    function deployHedgeUnit(Id id, address pa, address ra, string calldata pairName, uint256 mintCap)
+    function deployProtectedUnit(Id id, address pa, address ra, string calldata pairName, uint256 mintCap)
         external
         onlyManager
         returns (address)
     {
-        return hedgeUnitFactory.deployHedgeUnit(id, pa, ra, pairName, mintCap);
+        return protectedUnitFactory.deployProtectedUnit(id, pa, ra, pairName, mintCap);
     }
 
-    function deRegisterHedgeUnit(Id id) external onlyManager {
-        hedgeUnitFactory.deRegisterHedgeUnit(id);
+    function deRegisterProtectedUnit(Id id) external onlyManager {
+        protectedUnitFactory.deRegisterProtectedUnit(id);
     }
 
-    function pauseHedgeUnit(address hedgeUnit) external onlyManager {
-        HedgeUnit(hedgeUnit).pause();
+    function pauseProtectedUnit(address protectedUnit) external onlyManager {
+        ProtectedUnit(protectedUnit).pause();
     }
 
-    function pauseHedgeUnitMinting(address hedgeUnit) external onlyManager {
-        HedgeUnit(hedgeUnit).pause();
+    function pauseProtectedUnitMinting(address protectedUnit) external onlyManager {
+        ProtectedUnit(protectedUnit).pause();
     }
 
-    function resumeHedgeUnitMinting(address hedgeUnit) external onlyManager {
-        HedgeUnit(hedgeUnit).unpause();
+    function resumeProtectedUnitMinting(address protectedUnit) external onlyManager {
+        ProtectedUnit(protectedUnit).unpause();
     }
 
-    function redeemRaWithDsPaWithHedgeUnit(address hedgeUnit, uint256 amount, uint256 amountDS) external onlyManager {
-        HedgeUnit(hedgeUnit).redeemRaWithDsPa(amount, amountDS);
+    function redeemRaWithDsPaWithProtectedUnit(address protectedUnit, uint256 amount, uint256 amountDS)
+        external
+        onlyManager
+    {
+        ProtectedUnit(protectedUnit).redeemRaWithDsPa(amount, amountDS);
     }
 
-    function buyDsFromHedgeUnit(
-        address hedgeUnit,
+    function buyDsFromProtectedUnit(
+        address protectedUnit,
         uint256 amount,
         uint256 amountOutMin,
         IDsFlashSwapCore.BuyAprroxParams calldata params,
         IDsFlashSwapCore.OffchainGuess calldata offchainGuess
     ) external onlyManager returns (uint256 amountOut) {
-        amountOut = HedgeUnit(hedgeUnit).useFunds(amount, amountOutMin, params, offchainGuess);
+        amountOut = ProtectedUnit(protectedUnit).useFunds(amount, amountOutMin, params, offchainGuess);
     }
 
     /**

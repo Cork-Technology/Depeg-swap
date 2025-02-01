@@ -275,7 +275,6 @@ abstract contract PsmCore is IPSMcore, ModuleState, Context {
 
     function psmAcceptFlashSwapProfit(Id id, uint256 profit) external {
         onlyFlashSwapRouter();
-
         State storage state = states[id];
         state.acceptRolloverProfit(profit);
     }
@@ -289,7 +288,6 @@ abstract contract PsmCore is IPSMcore, ModuleState, Context {
         uint256 ctDeadline
     ) external returns (uint256 ctReceived, uint256 dsReceived, uint256 paReceived) {
         PSMDepositNotPaused(id);
-
         if (rawCtPermitSig.length == 0 || ctDeadline == 0) {
             revert InvalidSignature();
         }
@@ -304,7 +302,6 @@ abstract contract PsmCore is IPSMcore, ModuleState, Context {
         returns (uint256 ctReceived, uint256 dsReceived, uint256 paReceived)
     {
         PSMDepositNotPaused(id);
-
         State storage state = states[id];
         // slither-disable-next-line uninitialized-local
         bytes memory signaturePlaceHolder;

@@ -18,8 +18,8 @@ import "./SigUtils.sol";
 import {TestHelper} from "Cork-Hook/../test/Helper.sol";
 import "./../../contracts/interfaces/IDsFlashSwapRouter.sol";
 import "./../../contracts/core/Withdrawal.sol";
-import "./../../contracts/core/assets/HedgeUnitFactory.sol";
-import {HedgeUnitRouter} from "../../contracts/core/assets/HedgeUnitRouter.sol";
+import "./../../contracts/core/assets/ProtectedUnitFactory.sol";
+import {ProtectedUnitRouter} from "../../contracts/core/assets/ProtectedUnitRouter.sol";
 
 contract CustomErc20 is DummyWETH {
     uint8 internal __decimals;
@@ -42,8 +42,8 @@ abstract contract Helper is SigUtils, TestHelper {
     TestFlashSwapRouter internal flashSwapRouter;
     DummyWETH internal weth = new DummyWETH();
     Withdrawal internal withdrawalContract;
-    HedgeUnitFactory internal hedgeUnitFactory;
-    HedgeUnitRouter internal hedgeUnitRouter;
+    ProtectedUnitFactory internal protectedUnitFactory;
+    ProtectedUnitRouter internal protectedUnitRouter;
 
     Id defaultCurrencyId;
 
@@ -166,38 +166,6 @@ abstract contract Helper is SigUtils, TestHelper {
         );
     }
 
-    function initializeAndIssueNewDs(uint256 expiryInSeconds) internal returns (DummyWETH ra, DummyWETH pa, Id id) {
-        if (block.timestamp + expiryInSeconds > block.timestamp + 100 days) {
-            revert(
-                "Expiry too far in the future, specify a default decay rate, this will cause the discount to exceed 100!"
-            );
-        }
-
-        ra = new DummyWETH();
-        pa = new DummyWETH();
-
-        address exchangeRateProvider = address(corkConfig.defaultExchangeRateProvider());
-
-        Pair memory _id =
-            PairLibrary.initalize(address(pa), address(ra), defaultInitialArp(), expiryInSeconds, exchangeRateProvider);
-        id = PairLibrary.toId(_id);
-
-        defaultCurrencyId = id;
-
-        initializeNewModuleCore(
-            address(pa), address(ra), defaultInitialArp(), DEFAULT_BASE_REDEMPTION_FEE, expiryInSeconds
-        );
-        issueNewDs(
-            defaultCurrencyId,
-            defaultExchangeRate(),
-            DEFAULT_REPURCHASE_FEE,
-            DEFAULT_DECAY_DISCOUNT_RATE,
-            DEFAULT_ROLLOVER_PERIOD
-        );
-
-        corkConfig.updateLvStrategyCtSplitPercentage(defaultCurrencyId, DEFAULT_CT_SPLIT_PERCENTAGE);
-    }
-
     function initializeAndIssueNewDsWithRaAsPermit(uint256 expiryInSeconds)
         internal
         returns (DummyERCWithPermit ra, DummyERCWithPermit pa, Id id)
@@ -210,6 +178,33 @@ abstract contract Helper is SigUtils, TestHelper {
 
         ra = new DummyERCWithPermit("RA", "RA");
         pa = new DummyERCWithPermit("PA", "PA");
+
+        address exchangeRateProvider = address(corkConfig.defaultExchangeRateProvider());
+        Pair memory _id =
+            PairLibrary.initalize(address(pa), address(ra), defaultInitialArp(), expiryInSeconds, exchangeRateProvider);
+        id = PairLibrary.toId(_id);
+
+        defaultCurrencyId = id;
+
+        initializeNewModuleCore(
+            address(pa), address(ra), defaultInitialArp(), DEFAULT_BASE_REDEMPTION_FEE, expiryInSeconds
+        );
+        issueNewDs(
+            id, defaultExchangeRate(), DEFAULT_REPURCHASE_FEE, DEFAULT_DECAY_DISCOUNT_RATE, DEFAULT_ROLLOVER_PERIOD
+        );
+
+        corkConfig.updateLvStrategyCtSplitPercentage(defaultCurrencyId, DEFAULT_CT_SPLIT_PERCENTAGE);
+    }
+
+    function initializeAndIssueNewDs(uint256 expiryInSeconds) internal returns (DummyWETH ra, DummyWETH pa, Id id) {
+        if (block.timestamp + expiryInSeconds > block.timestamp + 100 days) {
+            revert(
+                "Expiry too far in the future, specify a default decay rate, this will cause the discount to exceed 100!"
+            );
+        }
+
+        ra = new DummyWETH();
+        pa = new DummyWETH();
 
         address exchangeRateProvider = address(corkConfig.defaultExchangeRateProvider());
 
@@ -286,11 +281,7 @@ abstract contract Helper is SigUtils, TestHelper {
             address(pa), address(ra), defaultInitialArp(), DEFAULT_BASE_REDEMPTION_FEE, expiryInSeconds
         );
         issueNewDs(
-            defaultCurrencyId,
-            DEFAULT_EXCHANGE_RATES,
-            DEFAULT_REPURCHASE_FEE,
-            DEFAULT_DECAY_DISCOUNT_RATE,
-            DEFAULT_ROLLOVER_PERIOD
+            id, DEFAULT_EXCHANGE_RATES, DEFAULT_REPURCHASE_FEE, DEFAULT_DECAY_DISCOUNT_RATE, DEFAULT_ROLLOVER_PERIOD
         );
         corkConfig.updateLvStrategyCtSplitPercentage(defaultCurrencyId, DEFAULT_CT_SPLIT_PERCENTAGE);
     }
@@ -329,6 +320,7 @@ abstract contract Helper is SigUtils, TestHelper {
     function setupConfig() internal {
         corkConfig.setModuleCore(address(moduleCore));
         corkConfig.setFlashSwapCore(address(flashSwapRouter));
+        corkConfig.grantRole(corkConfig.MARKET_INITIALIZER_ROLE(), DEFAULT_ADDRESS);
         corkConfig.setTreasury(CORK_PROTOCOL_TREASURY);
     }
 
@@ -389,13 +381,14 @@ abstract contract Helper is SigUtils, TestHelper {
         setupConfig();
         setupFlashSwapRouter();
         initializeWithdrawalContract();
-        initializeHedgeUnitFactory();
+        initializeProtectedUnitFactory();
     }
 
-    function initializeHedgeUnitFactory() internal {
-        hedgeUnitRouter = new HedgeUnitRouter();
-        hedgeUnitFactory = new HedgeUnitFactory(address(moduleCore), address(corkConfig), address(flashSwapRouter));
-        corkConfig.setHedgeUnitFactory(address(hedgeUnitFactory));
+    function initializeProtectedUnitFactory() internal {
+        protectedUnitRouter = new ProtectedUnitRouter();
+        protectedUnitFactory =
+            new ProtectedUnitFactory(address(moduleCore), address(corkConfig), address(flashSwapRouter));
+        corkConfig.setProtectedUnitFactory(address(protectedUnitFactory));
     }
 
     function forceUnpause(Id id) internal {

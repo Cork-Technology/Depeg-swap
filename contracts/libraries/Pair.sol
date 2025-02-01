@@ -32,6 +32,8 @@ library PairLibrary {
     /// @notice Zero Address error, thrown when passed address is 0
     error ZeroAddress();
 
+    error InvalidAddress();
+
     function toId(Pair memory key) internal pure returns (Id id) {
         id = Id.wrap(keccak256(abi.encode(key)));
     }
@@ -43,6 +45,9 @@ library PairLibrary {
     {
         if (pa == address(0) || ra == address(0)) {
             revert ZeroAddress();
+        }
+        if (pa == ra) {
+            revert InvalidAddress();
         }
         key = Pair(pa, ra, initialArp, expiry, exchangeRateProvider);
     }
