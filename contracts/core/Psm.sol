@@ -267,7 +267,7 @@ abstract contract PsmCore is IPSMcore, ModuleState, Context {
         state.acceptRolloverProfit(profit);
     }
 
-    function rolloverCt(
+    function rolloverExpiredCt(
         Id id,
         address owner,
         uint256 amount,
@@ -281,11 +281,11 @@ abstract contract PsmCore is IPSMcore, ModuleState, Context {
         }
         State storage state = states[id];
         (ctReceived, dsReceived, paReceived) =
-            state.rolloverCt(owner, amount, dsId, getRouterCore(), rawCtPermitSig, ctDeadline);
+            state.rolloverExpiredCt(owner, amount, dsId, getRouterCore(), rawCtPermitSig, ctDeadline);
         emit RolledOver(id, state.globalAssetIdx, owner, dsId, amount, dsReceived, ctReceived, paReceived);
     }
 
-    function rolloverCt(Id id, uint256 amount, uint256 dsId)
+    function rolloverExpiredCt(Id id, uint256 amount, uint256 dsId)
         external
         returns (uint256 ctReceived, uint256 dsReceived, uint256 paReceived)
     {
@@ -293,7 +293,7 @@ abstract contract PsmCore is IPSMcore, ModuleState, Context {
         State storage state = states[id];
         bytes memory signaturePlaceHolder;
         (ctReceived, dsReceived, paReceived) =
-            state.rolloverCt(_msgSender(), amount, dsId, getRouterCore(), signaturePlaceHolder, 0);
+            state.rolloverExpiredCt(_msgSender(), amount, dsId, getRouterCore(), signaturePlaceHolder, 0);
         emit RolledOver(id, state.globalAssetIdx, _msgSender(), dsId, amount, dsReceived, ctReceived, paReceived);
     }
 

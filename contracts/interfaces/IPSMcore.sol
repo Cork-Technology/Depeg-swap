@@ -253,7 +253,7 @@ interface IPSMcore is IRepurchase {
 
     function psmAcceptFlashSwapProfit(Id id, uint256 profit) external;
 
-    function rolloverCt(
+    function rolloverExpiredCt(
         Id id,
         address owner,
         uint256 amount,
@@ -266,7 +266,7 @@ interface IPSMcore is IRepurchase {
         external
         returns (uint256 profit, uint256 dsReceived);
 
-    function rolloverCt(Id id, uint256 amount, uint256 prevDsId)
+    function rolloverExpiredCt(Id id, uint256 amount, uint256 prevDsId)
         external
         returns (uint256 ctReceived, uint256 dsReceived, uint256 paReceived);
 

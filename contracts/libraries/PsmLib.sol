@@ -101,7 +101,7 @@ library PsmLibrary {
         self.psm.poolArchive[dsId].rolloverClaims[to] += amount;
     }
 
-    function rolloverCt(
+    function rolloverExpiredCt(
         State storage self,
         address owner,
         uint256 amount,
@@ -116,7 +116,7 @@ library PsmLibrary {
             );
         }
 
-        (ctReceived, dsReceived, paReceived) = _rolloverCt(self, owner, amount, dsId, flashSwapRouter);
+        (ctReceived, dsReceived, paReceived) = _rolloverExpiredCt(self, owner, amount, dsId, flashSwapRouter);
     }
 
     function claimAutoSellProfit(
@@ -138,7 +138,7 @@ library PsmLibrary {
     // 7. send PA to user
     // regardless of amount, it will always send user all the profit from rollover
 
-    function _rolloverCt(
+    function _rolloverExpiredCt(
         State storage self,
         address owner,
         uint256 amount,
