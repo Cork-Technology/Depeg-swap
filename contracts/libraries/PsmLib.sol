@@ -107,12 +107,12 @@ library PsmLibrary {
         uint256 amount,
         uint256 dsId,
         IDsFlashSwapCore flashSwapRouter,
-        bytes memory rawCtPermitSig,
+        bytes calldata rawCtPermitSig,
         uint256 ctDeadline
     ) external returns (uint256 ctReceived, uint256 dsReceived, uint256 paReceived) {
         if (rawCtPermitSig.length > 0 && ctDeadline != 0) {
             DepegSwapLibrary.permit(
-                self.ds[dsId].ct, rawCtPermitSig, owner, address(this), amount, ctDeadline, "rolloverCt"
+                self.ds[dsId].ct, rawCtPermitSig, owner, address(this), amount, ctDeadline, "rolloverExpiredCt"
             );
         }
 
@@ -408,9 +408,9 @@ library PsmLibrary {
         State storage self,
         address owner,
         uint256 amount,
-        bytes memory rawDsPermitSig,
+        bytes calldata rawDsPermitSig,
         uint256 dsDeadline,
-        bytes memory rawCtPermitSig,
+        bytes calldata rawCtPermitSig,
         uint256 ctDeadline
     ) external returns (uint256 ra) {
         uint256 dsId = self.globalAssetIdx;
@@ -631,7 +631,7 @@ library PsmLibrary {
         address owner,
         uint256 amount,
         uint256 dsId,
-        bytes memory rawDsPermitSig,
+        bytes calldata rawDsPermitSig,
         uint256 deadline,
         address treasury
     ) external returns (uint256 received, uint256 _exchangeRate, uint256 fee, uint256 dsProvided) {
@@ -736,7 +736,7 @@ library PsmLibrary {
         address owner,
         uint256 amount,
         uint256 dsId,
-        bytes memory rawCtPermitSig,
+        bytes calldata rawCtPermitSig,
         uint256 deadline
     ) external returns (uint256 accruedPa, uint256 accruedRa) {
         DepegSwap storage ds = self.ds[dsId];

@@ -130,7 +130,7 @@ contract RolloverTest is Helper {
             deadline,
             DEFAULT_ADDRESS_PK,
             DOMAIN_SEPARATOR,
-            "rolloverCt"
+            "rolloverExpiredCt"
         );
 
         ff_expired();
