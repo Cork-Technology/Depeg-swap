@@ -36,9 +36,9 @@ contract TransferHelperTest is Helper {
         // approve all tokens
         token18.approve(user, 1000 * 10 ** 18);
         token6.approve(user, 1000 * 10 ** 6);
-        
+
         vm.startPrank(user);
-        
+
         // transfer some tokens to test address
         token18.transfer(address(this), 1000 * 10 ** 18);
         token6.transfer(address(this), 1000 * 10 ** 6);

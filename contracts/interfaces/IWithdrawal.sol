@@ -3,7 +3,7 @@ pragma solidity ^0.8.24;
 import {IWithdrawalRouter} from "./IWithdrawalRouter.sol";
 import {IErrors} from "./IErrors.sol";
 
-interface IWithdrawal is IErrors{
+interface IWithdrawal is IErrors {
     function add(address owner, IWithdrawalRouter.Tokens[] calldata tokens) external returns (bytes32 withdrawalId);
 
     function claimToSelf(bytes32 withdrawalId) external;

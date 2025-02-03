@@ -63,21 +63,15 @@ interface IVault is IErrors {
         bytes32 withdrawalId
     );
 
-    /// @notice Emitted when a Admin updates status of Deposit in the LV 
+    /// @notice Emitted when a Admin updates status of Deposit in the LV
     /// @param id The LV id
     /// @param isLVDepositPaused The new value saying if Deposit allowed in LV or not
-    event LvDepositsStatusUpdated(
-        Id indexed id,
-        bool isLVDepositPaused
-    );
+    event LvDepositsStatusUpdated(Id indexed id, bool isLVDepositPaused);
 
     /// @notice Emitted when a Admin updates status of Withdrawal in the LV
     /// @param id The LV id
     /// @param isLVWithdrawalPaused The new value saying if Withdrawal allowed in LV or not
-    event LvWithdrawalsStatusUpdated(
-        Id indexed id,
-        bool isLVWithdrawalPaused
-    );
+    event LvWithdrawalsStatusUpdated(Id indexed id, bool isLVWithdrawalPaused);
 
     /// @notice Emitted when the protocol receive sales profit from the router
     /// @param router The address of the router

@@ -48,8 +48,7 @@ contract ArpMath is Test {
         uint256 amount = 10 ether;
         uint256 decayDiscountInDays = 5 ether;
 
-        uint256 result =
-            SwapperMathLibrary.calcVHIYAaccumulated(startTime, currentTime, decayDiscountInDays, amount);
+        uint256 result = SwapperMathLibrary.calcVHIYAaccumulated(startTime, currentTime, decayDiscountInDays, amount);
 
         vm.assertEq(result, 10 ether);
     }
@@ -67,8 +66,7 @@ contract ArpMath is Test {
         uint256 hiyaAcc = SwapperMathLibrary.calcHIYAaccumulated(
             startTime, maturityTime, currentTime, amount, raProvided, decayDiscountInDays
         );
-        uint256 vhiyaAcc =
-            SwapperMathLibrary.calcVHIYAaccumulated(startTime, currentTime, decayDiscountInDays, amount);
+        uint256 vhiyaAcc = SwapperMathLibrary.calcVHIYAaccumulated(startTime, currentTime, decayDiscountInDays, amount);
 
         uint256 result = SwapperMathLibrary.calculateHIYA(hiyaAcc, vhiyaAcc);
 

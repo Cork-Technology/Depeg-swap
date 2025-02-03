@@ -4,11 +4,7 @@ import {ModuleState} from "./ModuleState.sol";
 import {Id, Pair} from "./../libraries/Pair.sol";
 import {DepegSwap} from "./../libraries/DepegSwapLib.sol";
 import {
-    VaultAmmLiquidityPool,
-    Balances,
-    VaultConfig,
-    VaultBalances,
-    VaultWithdrawalPool
+    VaultAmmLiquidityPool, Balances, VaultConfig, VaultBalances, VaultWithdrawalPool
 } from "./../libraries/State.sol";
 import {LvAsset} from "./../libraries/LvAssetLib.sol";
 import {BitMaps} from "@openzeppelin/contracts/utils/structs/BitMaps.sol";

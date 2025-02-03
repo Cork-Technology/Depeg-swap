@@ -23,7 +23,7 @@ contract FundUsersScript is Script {
         funder = Funder(payable(0xd301e625fAFF0C21e157f3b9154CFF44DD963728));
 
         address[] memory users = loadAddressesFromFile("addresses.txt");
-        fundUsers(users); 
+        fundUsers(users);
         console.log("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-");
         vm.stopBroadcast();
     }
@@ -33,15 +33,15 @@ contract FundUsersScript is Script {
         payable(address(funder)).transfer(users.length * sepoliaEthAmt);
         funder.fundUsers(users, sepoliaEthAmt, cEthAmt);
     }
-    
+
     function loadAddressesFromFile(string memory fileName) internal returns (address[] memory) {
         string memory fileContent = vm.readFile(fileName);
-        
+
         string[] memory addressStrings = vm.split(fileContent, "\n");
-        
+
         address[] memory users = new address[](addressStrings.length);
-        
-        for (uint i = 0; i < addressStrings.length; i++) {
+
+        for (uint256 i = 0; i < addressStrings.length; i++) {
             users[i] = vm.parseAddress(addressStrings[i]);
         }
         return users;

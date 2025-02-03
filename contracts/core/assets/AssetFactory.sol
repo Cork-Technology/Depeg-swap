@@ -165,10 +165,10 @@ contract AssetFactory is IAssetFactory, OwnableUpgradeable, UUPSUpgradeable {
         uint256 psmExchangeRate,
         uint256 dsId
     ) external override onlyOwner returns (address ct, address ds) {
-        if(psmExchangeRate == 0) {
+        if (psmExchangeRate == 0) {
             revert InvalidRate();
         }
-        
+
         Pair memory asset = Pair(_pa, _ra, expiryInterval);
         Id id = asset.toId();
 

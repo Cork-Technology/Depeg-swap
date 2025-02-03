@@ -117,12 +117,7 @@ library VaultLibrary {
         __provideAmmLiquidityFromPool(self, flashSwapRouter, self.ds[self.globalAssetIdx].ct, ammRouter);
     }
 
-    function _liquidateIfExpired(
-        State storage self,
-        uint256 dsId,
-        ICorkHook ammRouter,
-        uint256 deadline
-    ) internal {
+    function _liquidateIfExpired(State storage self, uint256 dsId, ICorkHook ammRouter, uint256 deadline) internal {
         DepegSwap storage ds = self.ds[dsId];
         // we don't want to revert here for easier control flow, expiry check should happen at contract level not library level
         if (!ds.isExpired()) {
@@ -277,7 +272,8 @@ library VaultLibrary {
         }
 
         // we use the returned value here since the amount is already normalized
-        ctAmount = PsmLibrary.unsafeIssueToLv(self, MathHelper.calculateProvideLiquidityAmount(amountRaOriginal, raAmount));
+        ctAmount =
+            PsmLibrary.unsafeIssueToLv(self, MathHelper.calculateProvideLiquidityAmount(amountRaOriginal, raAmount));
 
         (lp, dust) = __addLiquidityToAmmUnchecked(
             raAmount, ctAmount, self.info.redemptionAsset(), ctAddress, ammRouter, tolerance.ra, tolerance.ct
@@ -295,8 +291,7 @@ library VaultLibrary {
 
         uint256 ctRatio = __getAmmCtPriceRatio(self, flashSwapRouter, dsId);
 
-        (uint256 ra, uint256 ct, uint256 originalBalance) =
-            self.vault.pool.rationedToAmm(ctRatio);
+        (uint256 ra, uint256 ct, uint256 originalBalance) = self.vault.pool.rationedToAmm(ctRatio);
 
         // this doesn't really matter tbh, since the amm is fresh and we're the first one to add liquidity to it
         (uint256 raTolerance, uint256 ctTolerance) =
@@ -447,12 +442,7 @@ library VaultLibrary {
         (raReceived, ctReceived) = ammRouter.removeLiquidity(raAddress, ctAddress, lp, 0, 0, deadline);
     }
 
-    function _liquidatedLp(
-        State storage self,
-        uint256 dsId,
-        ICorkHook ammRouter,
-        uint256 deadline
-    ) internal {
+    function _liquidatedLp(State storage self, uint256 dsId, ICorkHook ammRouter, uint256 deadline) internal {
         DepegSwap storage ds = self.ds[dsId];
         uint256 lpBalance;
         {
@@ -479,12 +469,7 @@ library VaultLibrary {
         _redeemCtVault(self, dsId, ctAmm, raAmm);
     }
 
-    function _redeemCtVault(
-        State storage self,
-        uint256 dsId,
-        uint256 ctAmm,
-        uint256 raAmm
-    ) internal {
+    function _redeemCtVault(State storage self, uint256 dsId, uint256 ctAmm, uint256 raAmm) internal {
         uint256 psmPa;
         uint256 psmRa;
 
@@ -519,10 +504,7 @@ library VaultLibrary {
     }
 
     // IMPORTANT : only psm, flash swap router and early redeem LV can call this function
-    function allocateFeesToVault(
-        State storage self,
-        uint256 amount
-    ) public {
+    function allocateFeesToVault(State storage self, uint256 amount) public {
         self.vault.balances.ra.incLocked(amount);
     }
 

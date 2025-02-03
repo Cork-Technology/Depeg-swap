@@ -2,7 +2,7 @@
 pragma solidity ^0.8.24;
 
 /**
- * @dev Signature structure    
+ * @dev Signature structure
  */
 struct Signature {
     uint8 v;

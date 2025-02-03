@@ -82,7 +82,12 @@ contract Withdrawal is ReentrancyGuardTransient, IWithdrawal {
         emit WithdrawalRequested(withdrawalId, owner, claimableAt);
     }
 
-    function claimToSelf(bytes32 withdrawalId) external nonReentrant onlyOwner(withdrawalId) onlyWhenClaimable(withdrawalId) {
+    function claimToSelf(bytes32 withdrawalId)
+        external
+        nonReentrant
+        onlyOwner(withdrawalId)
+        onlyWhenClaimable(withdrawalId)
+    {
         WithdrawalInfo storage withdrawal = withdrawals[withdrawalId];
 
         uint256 length = withdrawal.tokens.length;

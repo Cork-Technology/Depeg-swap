@@ -57,7 +57,19 @@ abstract contract VaultCore is ModuleState, Context, IVault, IVaultLiquidation {
         });
 
         result = states[redeemParams.id].redeemEarly(redeemer, redeemParams, routers, permitParams);
-        emit LvRedeemEarly(redeemParams.id, _msgSender(), _msgSender(), redeemParams.amount, result.ctReceivedFromAmm, result.ctReceivedFromVault, result.dsReceived, result.paReceived, result.raReceivedFromAmm, result.raIdleReceived, result.withdrawalId);
+        emit LvRedeemEarly(
+            redeemParams.id,
+            _msgSender(),
+            _msgSender(),
+            redeemParams.amount,
+            result.ctReceivedFromAmm,
+            result.ctReceivedFromVault,
+            result.dsReceived,
+            result.paReceived,
+            result.raReceivedFromAmm,
+            result.raIdleReceived,
+            result.withdrawalId
+        );
     }
 
     /**
@@ -79,7 +91,19 @@ abstract contract VaultCore is ModuleState, Context, IVault, IVaultLiquidation {
         PermitParams memory permitParams = PermitParams({rawLvPermitSig: bytes(""), deadline: 0});
 
         result = states[redeemParams.id].redeemEarly(_msgSender(), redeemParams, routers, permitParams);
-        emit LvRedeemEarly(redeemParams.id, _msgSender(), _msgSender(), redeemParams.amount, result.ctReceivedFromAmm, result.ctReceivedFromVault, result.dsReceived, result.paReceived, result.raReceivedFromAmm, result.raIdleReceived, result.withdrawalId);
+        emit LvRedeemEarly(
+            redeemParams.id,
+            _msgSender(),
+            _msgSender(),
+            redeemParams.amount,
+            result.ctReceivedFromAmm,
+            result.ctReceivedFromVault,
+            result.dsReceived,
+            result.paReceived,
+            result.raReceivedFromAmm,
+            result.raIdleReceived,
+            result.withdrawalId
+        );
     }
 
     /**

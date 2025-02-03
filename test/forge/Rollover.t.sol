@@ -38,7 +38,7 @@ contract RolloverTest is Helper {
     }
 
     function setUp() public {
-       vm.startPrank(DEFAULT_ADDRESS);
+        vm.startPrank(DEFAULT_ADDRESS);
 
         deployModuleCore();
         (ra, pa, currencyId) = initializeAndIssueNewDs(block.timestamp + 1 days);
@@ -250,7 +250,9 @@ contract RolloverTest is Helper {
         // we autosell
         vm.assertEq(dsReceived, 0);
 
-        result = flashSwapRouter.swapRaforDs(currencyId, dsId, 1 ether, 0, defaultBuyApproxParams(), defaultOffchainGuessParams());
+        result = flashSwapRouter.swapRaforDs(
+            currencyId, dsId, 1 ether, 0, defaultBuyApproxParams(), defaultOffchainGuessParams()
+        );
         amountOut = result.amountOut;
 
         uint256 rolloverProfit = moduleCore.getPsmPoolArchiveRolloverProfit(currencyId, dsId);

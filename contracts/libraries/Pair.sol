@@ -38,7 +38,7 @@ library PairLibrary {
         if (pa == address(0) || ra == address(0)) {
             revert ZeroAddress();
         }
-        if(pa == ra) {
+        if (pa == ra) {
             revert InvalidAddress();
         }
         key = Pair(pa, ra, expiry);

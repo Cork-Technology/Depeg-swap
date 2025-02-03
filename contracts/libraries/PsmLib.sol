@@ -35,7 +35,7 @@ library PsmLibrary {
      *   This denotes maximum fee allowed in contract
      *   Here 1 ether = 1e18 so maximum 5% fee allowed
      */
-    uint256 constant internal MAX_ALLOWED_FEES = 5 ether;
+    uint256 internal constant MAX_ALLOWED_FEES = 5 ether;
 
     /// @notice inssuficient balance to perform rollover redeem(e.g having 5 CT worth of rollover to redeem but trying to redeem 10)
     error InsufficientRolloverBalance(address caller, uint256 requested, uint256 balance);
@@ -57,7 +57,7 @@ library PsmLibrary {
     }
 
     function updateExchangeRate(State storage self, uint256 newRate) external {
-        if(newRate == 0) {
+        if (newRate == 0) {
             revert IErrors.InvalidRate();
         }
         uint256 currentRate = self.ds[self.globalAssetIdx].exchangeRate();
@@ -111,7 +111,9 @@ library PsmLibrary {
         uint256 ctDeadline
     ) external returns (uint256 ctReceived, uint256 dsReceived, uint256 paReceived) {
         if (rawCtPermitSig.length > 0 && ctDeadline != 0) {
-            DepegSwapLibrary.permit(self.ds[dsId].ct, rawCtPermitSig, owner, address(this), amount, ctDeadline, "rolloverCt");
+            DepegSwapLibrary.permit(
+                self.ds[dsId].ct, rawCtPermitSig, owner, address(this), amount, ctDeadline, "rolloverCt"
+            );
         }
 
         (ctReceived, dsReceived, paReceived) = _rolloverCt(self, owner, amount, dsId, flashSwapRouter);
@@ -208,7 +210,8 @@ library PsmLibrary {
         prevArchive = self.psm.poolArchive[prevDsId];
 
         // caclulate accrued RA and PA proportional to CT amount
-        (accruedPa, accruedRa) = _calcRedeemAmount(self, amount, totalCtIssued, prevArchive.raAccrued, prevArchive.paAccrued);
+        (accruedPa, accruedRa) =
+            _calcRedeemAmount(self, amount, totalCtIssued, prevArchive.raAccrued, prevArchive.paAccrued);
         // accounting stuff(decrementing reserve etc)
         _beforeCtRedeem(self, prevDs, prevDsId, amount, accruedPa, accruedRa);
 
@@ -286,13 +289,7 @@ library PsmLibrary {
     }
 
     /// @notice issue a new pair of DS, will fail if the previous DS isn't yet expired
-    function onNewIssuance(
-        State storage self,
-        address ct,
-        address ds,
-        uint256 idx,
-        uint256 prevIdx
-    ) internal {
+    function onNewIssuance(State storage self, address ct, address ds, uint256 idx, uint256 prevIdx) internal {
         if (prevIdx != 0) {
             DepegSwap storage _prevDs = self.ds[prevIdx];
             Guard.safeAfterExpired(_prevDs);
@@ -421,7 +418,9 @@ library PsmLibrary {
         Guard.safeBeforeExpired(ds);
 
         if (dsDeadline != 0 && ctDeadline != 0) {
-            DepegSwapLibrary.permit(ds._address, rawDsPermitSig, owner, address(this), amount, dsDeadline, "redeemRaWithCtDs");
+            DepegSwapLibrary.permit(
+                ds._address, rawDsPermitSig, owner, address(this), amount, dsDeadline, "redeemRaWithCtDs"
+            );
             DepegSwapLibrary.permit(ds.ct, rawCtPermitSig, owner, address(this), amount, ctDeadline, "redeemRaWithCtDs");
         }
 
@@ -514,12 +513,7 @@ library PsmLibrary {
         }
     }
 
-    function repurchase(
-        State storage self,
-        address buyer,
-        uint256 amount,
-        address treasury
-    )
+    function repurchase(State storage self, address buyer, uint256 amount, address treasury)
         external
         returns (
             uint256 dsId,
@@ -647,7 +641,9 @@ library PsmLibrary {
         (received, dsProvided, fee, _exchangeRate) = previewRedeemWithDs(self, dsId, amount);
 
         if (deadline != 0 && rawDsPermitSig.length != 0) {
-            DepegSwapLibrary.permit(ds._address, rawDsPermitSig, owner, address(this), dsProvided, deadline, "redeemRaWithDs");
+            DepegSwapLibrary.permit(
+                ds._address, rawDsPermitSig, owner, address(this), dsProvided, deadline, "redeemRaWithDs"
+            );
         }
 
         _redeemDs(self.psm.balances, amount, dsProvided);
@@ -685,11 +681,13 @@ library PsmLibrary {
         expiry = Asset(ds._address).expiry();
     }
 
-    function _calcRedeemAmount(State storage self, uint256 amount, uint256 totalCtIssued, uint256 availableRa, uint256 availablePa)
-        internal
-        view
-        returns (uint256 accruedPa, uint256 accruedRa)
-    {
+    function _calcRedeemAmount(
+        State storage self,
+        uint256 amount,
+        uint256 totalCtIssued,
+        uint256 availableRa,
+        uint256 availablePa
+    ) internal view returns (uint256 accruedPa, uint256 accruedRa) {
         availablePa = TransferHelper.tokenNativeDecimalsToFixed(availablePa, self.info.pa);
         availableRa = TransferHelper.tokenNativeDecimalsToFixed(availableRa, self.info.ra);
 

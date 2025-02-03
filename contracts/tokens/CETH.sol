@@ -41,7 +41,6 @@ contract CETH is ERC20, AccessControl {
         _burn(from, amount);
     }
 
-
     /**
      * @dev Grant MINTER_ROLE to a new account (Only admin can grant)
      * @param account Address of the new minter
