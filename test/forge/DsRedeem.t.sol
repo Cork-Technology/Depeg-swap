@@ -45,7 +45,9 @@ contract DsPaRedeemTest is Helper {
         moduleCore.depositPsm(currencyId, DEFAULT_DEPOSIT_AMOUNT);
 
         // save initial data
-        lv = assetFactory.getLv(address(ra), address(pa), _expiry);
+        address exchangeRateProvider = address(corkConfig.defaultExchangeRateProvider());
+
+        lv = assetFactory.getLv(address(ra), address(pa), DEFAULT_INITIAL_DS_PRICE, _expiry, exchangeRateProvider);
         dsId = moduleCore.lastDsId(currencyId);
         (, ds) = moduleCore.swapAsset(currencyId, 1);
         Asset(ds).approve(address(moduleCore), type(uint256).max);
@@ -58,14 +60,14 @@ contract DsPaRedeemTest is Helper {
     }
 
     function testFuzz_redeemRepurchases(uint256 redeemAmount) external {
-        redeemAmount =  bound(redeemAmount, 0.1 ether, DEFAULT_DEPOSIT_AMOUNT);
+        redeemAmount = bound(redeemAmount, 0.1 ether, DEFAULT_DEPOSIT_AMOUNT);
 
         uint256 expectedFee = MathHelper.calculatePercentageFee(moduleCore.baseRedemptionFee(currencyId), redeemAmount);
         uint256 expectedTreasuryBalance = MathHelper.calculatePercentageFee(treasurySplit, expectedFee);
 
         uint256 received;
         uint256 fee;
-        (received,, fee,) = moduleCore.redeemRaWithDs(currencyId, dsId, redeemAmount);
+        (received,, fee,) = moduleCore.redeemRaWithDsPa(currencyId, dsId, redeemAmount);
         vm.assertEq(received, redeemAmount - expectedFee);
         vm.assertEq(fee, expectedFee);
 

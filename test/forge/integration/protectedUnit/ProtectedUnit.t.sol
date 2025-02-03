@@ -215,7 +215,7 @@ contract ProtectedUnitTest is Helper {
         uint256 dsBalanceBefore = dsToken.balanceOf(address(protectedUnit));
         uint256 raBalanceBefore = ra.balanceOf(address(protectedUnit));
 
-        corkConfig.redeemRaWithDsWithProtectedUnit(address(protectedUnit), initialAmount, initialAmount);
+        corkConfig.redeemRaWithDsPaWithProtectedUnit(address(protectedUnit), initialAmount, initialAmount);
 
         vm.assertEq(pa.balanceOf(address(protectedUnit)), paBalnceBefore - initialAmount);
         vm.assertEq(dsToken.balanceOf(address(protectedUnit)), dsBalanceBefore - initialAmount);

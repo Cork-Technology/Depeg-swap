@@ -25,7 +25,7 @@ contract ProtectedUnitFactory is IProtectedUnitFactory {
     mapping(uint256 => Id) internal protectedUnits;
 
     modifier onlyConfig() {
-        if(msg.sender != CONFIG){
+        if (msg.sender != CONFIG) {
             revert NotConfig();
         }
         _;
@@ -37,7 +37,7 @@ contract ProtectedUnitFactory is IProtectedUnitFactory {
      * @param _config Address of the config contract
      */
     constructor(address _moduleCore, address _config, address _flashSwapRouter) {
-        if(_moduleCore == address(0) || _config == address(0) || _flashSwapRouter == address(0)) {
+        if (_moduleCore == address(0) || _config == address(0) || _flashSwapRouter == address(0)) {
             revert ZeroAddress();
         }
         MODULE_CORE = _moduleCore;
@@ -98,7 +98,8 @@ contract ProtectedUnitFactory is IProtectedUnitFactory {
         }
 
         // Deploy a new ProtectedUnit contract
-        ProtectedUnit newProtectedUnit = new ProtectedUnit(MODULE_CORE, _id, _pa, _ra, _pairName, _mintCap, CONFIG, ROUTER);
+        ProtectedUnit newProtectedUnit =
+            new ProtectedUnit(MODULE_CORE, _id, _pa, _ra, _pairName, _mintCap, CONFIG, ROUTER);
         newUnit = address(newProtectedUnit);
 
         // Store the address of the new contract

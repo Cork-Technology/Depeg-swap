@@ -1,4 +1,5 @@
-name: unit test
+name: Unit Test
+
 on:
   pull_request:
     types:
@@ -8,7 +9,6 @@ on:
     branches:
       - main
       - tmp-changes
-
 
   push:
     paths:
@@ -21,16 +21,26 @@ on:
 jobs:
   forge-test:
     runs-on: ubuntu-latest
-    name: Forge unit test
+    name: Forge Unit Test
     steps:
+      # Step 1: Checkout the repository
       - uses: actions/checkout@v3
         with:
           submodules: recursive
+
+      # Step 2: Install Foundry
       - name: Install Foundry
         uses: foundry-rs/foundry-toolchain@v1
 
-      - name: Run tests
+      # Step 3: Enforce formatting check
+      - name: Check Solidity Formatting
+        run: |
+          forge fmt --check || (echo "Formatting issues detected! Please run 'forge fmt' locally to fix them." && exit 1)
+
+      # Step 4: Run unit tests
+      - name: Run Tests
         run: forge test -vvv
 
-      - name: Run snapshot
+      # Step 5: Run snapshot tests (if applicable)
+      - name: Run Snapshot
         run: forge snapshot

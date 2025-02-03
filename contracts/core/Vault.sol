@@ -41,12 +41,11 @@ abstract contract VaultCore is ModuleState, Context, IVault, IVaultLiquidation {
      * @param redeemer The address of the redeemer
      * @param permitParams The object with details for permit like rawLvPermitSig(Raw signature for LV approval permit) and deadline for signature
      */
-    function redeemEarlyLv(RedeemEarlyParams memory redeemParams, address redeemer, PermitParams memory permitParams)
-        external
-        override
-        nonReentrant
-        returns (IVault.RedeemEarlyResult memory result)
-    {
+    function redeemEarlyLv(
+        RedeemEarlyParams calldata redeemParams,
+        address redeemer,
+        PermitParams calldata permitParams
+    ) external override nonReentrant returns (IVault.RedeemEarlyResult memory result) {
         LVWithdrawalNotPaused(redeemParams.id);
         if (permitParams.rawLvPermitSig.length == 0 || permitParams.deadline == 0) {
             revert InvalidSignature();
@@ -58,14 +57,27 @@ abstract contract VaultCore is ModuleState, Context, IVault, IVaultLiquidation {
         });
 
         result = states[redeemParams.id].redeemEarly(redeemer, redeemParams, routers, permitParams);
-        emit LvRedeemEarly(redeemParams.id, _msgSender(), _msgSender(), redeemParams.amount, result.ctReceivedFromAmm, result.ctReceivedFromVault, result.dsReceived, result.paReceived, result.raReceivedFromAmm, result.raIdleReceived, result.withdrawalId);
+
+        emit LvRedeemEarly(
+            redeemParams.id,
+            _msgSender(),
+            _msgSender(),
+            redeemParams.amount,
+            result.ctReceivedFromAmm,
+            result.ctReceivedFromVault,
+            result.dsReceived,
+            result.paReceived,
+            result.raReceivedFromAmm,
+            result.raIdleReceived,
+            result.withdrawalId
+        );
     }
 
     /**
      * @notice Redeem lv before expiry
      * @param redeemParams The object with details like id, reciever, amount, amountOutMin, ammDeadline
      */
-    function redeemEarlyLv(RedeemEarlyParams memory redeemParams)
+    function redeemEarlyLv(RedeemEarlyParams calldata redeemParams)
         external
         override
         nonReentrant
@@ -80,7 +92,20 @@ abstract contract VaultCore is ModuleState, Context, IVault, IVaultLiquidation {
         PermitParams memory permitParams = PermitParams({rawLvPermitSig: bytes(""), deadline: 0});
 
         result = states[redeemParams.id].redeemEarly(_msgSender(), redeemParams, routers, permitParams);
-        emit LvRedeemEarly(redeemParams.id, _msgSender(), _msgSender(), redeemParams.amount, result.ctReceivedFromAmm, result.ctReceivedFromVault, result.dsReceived, result.paReceived, result.raReceivedFromAmm, result.raIdleReceived, result.withdrawalId);
+
+        emit LvRedeemEarly(
+            redeemParams.id,
+            _msgSender(),
+            _msgSender(),
+            redeemParams.amount,
+            result.ctReceivedFromAmm,
+            result.ctReceivedFromVault,
+            result.dsReceived,
+            result.paReceived,
+            result.raReceivedFromAmm,
+            result.raIdleReceived,
+            result.withdrawalId
+        );
     }
 
     /**

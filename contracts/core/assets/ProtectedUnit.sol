@@ -197,13 +197,13 @@ contract ProtectedUnit is
         emit FundsUsed(msg.sender, dsId, amount, result.amountOut);
     }
 
-    function redeemRaWithDs(uint256 amount, uint256 amountDs) external autoUpdateDS onlyOwner {
+    function redeemRaWithDsPa(uint256 amount, uint256 amountDs) external autoUpdateDS onlyOwner {
         uint256 dsId = MODULE_CORE.lastDsId(id);
 
         ds.approve(address(MODULE_CORE), amountDs);
         PA.approve(address(MODULE_CORE), amount);
 
-        MODULE_CORE.redeemRaWithDs(id, dsId, amount);
+        MODULE_CORE.redeemRaWithDsPa(id, dsId, amount);
 
         // auto pause
         _pause();
@@ -382,7 +382,8 @@ contract ProtectedUnit is
         uint256 reserveDs = ds.balanceOf(address(this));
         uint256 reserveRa = _selfRaReserve();
 
-        (paAmount, dsAmount, raAmount) = ProtectedUnitMath.withdraw(reservePa, reserveDs, reserveRa, totalLiquidity, amount);
+        (paAmount, dsAmount, raAmount) =
+            ProtectedUnitMath.withdraw(reservePa, reserveDs, reserveRa, totalLiquidity, amount);
     }
 
     /**

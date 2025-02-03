@@ -5,6 +5,7 @@
   "author": "ziankork <zian@cork.technology>",
   "license": "MIT",
   "scripts": {
+    "prepare": "husky || true",
     "test": "npx hardhat test",
     "test:all": "npx hardhat clean && forge clean && forge test -vvv && npx hardhat test",
     "build": "npx hardhat compile",
@@ -30,6 +31,7 @@
     "hardhat-deploy": "^0.12.4",
     "hardhat-deploy-ethers": "^0.4.2",
     "hardhat-gas-reporter": "^2.1.1",
+    "husky": "^9.1.7",
     "solidity-coverage": "^0.8.0",
     "ts-node": ">=8.0.0",
     "typescript": "~5.0.4",

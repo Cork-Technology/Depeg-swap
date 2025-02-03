@@ -23,7 +23,7 @@ contract UniswapPriceReader {
     // Get the price of Destination Token in terms of source token
     function getTokenPrice(address destToken, address sourceToken) public view returns (uint256 price) {
         address pair = IUniswapV2Factory(factory).getPair(destToken, sourceToken);
-        if(pair == address(0)){
+        if (pair == address(0)) {
             revert PairNotExist();
         }
 

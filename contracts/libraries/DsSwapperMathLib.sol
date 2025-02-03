@@ -148,7 +148,11 @@ library SwapperMathLibrary {
     }
 
     // calculate the realized fee of a RA to DS swap
-    function calculateDsExtraFee(uint256 amount, uint256 salePercentage, uint256 feePercentage) internal pure returns(uint256 fee) {
+    function calculateDsExtraFee(uint256 amount, uint256 salePercentage, uint256 feePercentage)
+        internal
+        pure
+        returns (uint256 fee)
+    {
         fee = calculatePercentage(amount, salePercentage);
         fee = calculatePercentage(fee, feePercentage);
     }
@@ -212,12 +216,11 @@ library SwapperMathLibrary {
     }
 
     /// @notice VHIYA_acc =  Volume_i  - ((Discount / 86400) * (currentTime - issuanceTime))
-    function calcVHIYAaccumulated(
-        uint256 startTime,
-        uint256 currentTime,
-        uint256 decayDiscountInDays,
-        uint256 amount
-    ) external pure returns (uint256) {
+    function calcVHIYAaccumulated(uint256 startTime, uint256 currentTime, uint256 decayDiscountInDays, uint256 amount)
+        external
+        pure
+        returns (uint256)
+    {
         UD60x18 decay = calculateDecayDiscount(ud(decayDiscountInDays), ud(startTime), ud(currentTime));
 
         return convertUd(calculatePercentage(convertUd(amount), decay));

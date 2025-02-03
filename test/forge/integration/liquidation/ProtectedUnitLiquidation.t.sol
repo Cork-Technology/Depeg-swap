@@ -204,7 +204,9 @@ contract ProtectedUnitTest is Helper {
         uint256 raBalanceProtectedUnitBefore = ra.balanceOf(address(protectedUnit));
         uint256 dsBalanceProtectedUnitBefore = dsToken.balanceOf(address(protectedUnit));
 
-        uint256 dsBought = liquidator.finishProtectedUnitOrderAndExecuteTrade(randomRefId, 0, defaultBuyApproxParams(), defaultOffchainGuessParams());
+        uint256 dsBought = liquidator.finishProtectedUnitOrderAndExecuteTrade(
+            randomRefId, 0, defaultBuyApproxParams(), defaultOffchainGuessParams()
+        );
 
         uint256 paBalanceProtectedUnitAfter = pa.balanceOf(address(protectedUnit));
         uint256 raBalanceProtectedUnitAfter = ra.balanceOf(address(protectedUnit));
@@ -246,8 +248,9 @@ contract ProtectedUnitTest is Helper {
         uint256 raBalanceProtectedUnitBefore = ra.balanceOf(address(protectedUnit));
         uint256 dsBalanceProtectedUnitBefore = dsToken.balanceOf(address(protectedUnit));
 
-        uint256 dsBought =
-            liquidator.finishProtectedUnitOrderAndExecuteTrade(randomRefId, 10000000 ether, defaultBuyApproxParams(), defaultOffchainGuessParams());
+        uint256 dsBought = liquidator.finishProtectedUnitOrderAndExecuteTrade(
+            randomRefId, 10000000 ether, defaultBuyApproxParams(), defaultOffchainGuessParams()
+        );
         vm.assertEq(dsBought, 0);
 
         uint256 paBalanceProtectedUnitAfter = pa.balanceOf(address(protectedUnit));
@@ -280,6 +283,8 @@ contract ProtectedUnitTest is Helper {
         liquidator.createOrderProtectedUnit(params);
 
         vm.expectRevert();
-        liquidator.finishProtectedUnitOrderAndExecuteTrade(randomRefId, 10000000 ether, defaultBuyApproxParams(), defaultOffchainGuessParams());
+        liquidator.finishProtectedUnitOrderAndExecuteTrade(
+            randomRefId, 10000000 ether, defaultBuyApproxParams(), defaultOffchainGuessParams()
+        );
     }
 }

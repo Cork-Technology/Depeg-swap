@@ -3,16 +3,15 @@ pragma solidity ^0.8.24;
 
 import {AccessControl} from "@openzeppelin/contracts/access/AccessControl.sol";
 import {Pausable} from "@openzeppelin/contracts/utils/Pausable.sol";
-import {Initialize} from "../interfaces/Init.sol";
 import {Id} from "../libraries/Pair.sol";
 import {IDsFlashSwapCore} from "../interfaces/IDsFlashSwapRouter.sol";
-import {Pair} from "../libraries/Pair.sol";
 import {ModuleCore} from "./ModuleCore.sol";
 import {IVault} from "./../interfaces/IVault.sol";
 import {CorkHook} from "Cork-Hook/CorkHook.sol";
 import {MarketSnapshot} from "Cork-Hook/lib/MarketSnapshot.sol";
 import {ProtectedUnitFactory} from "./assets/ProtectedUnitFactory.sol";
 import {ProtectedUnit} from "./assets/ProtectedUnit.sol";
+import {ExchangeRateProvider} from "./ExchangeRateProvider.sol";
 
 /**
  * @title Config Contract
@@ -21,7 +20,6 @@ import {ProtectedUnit} from "./assets/ProtectedUnit.sol";
  */
 contract CorkConfig is AccessControl, Pausable {
     bytes32 public constant MANAGER_ROLE = keccak256("MANAGER_ROLE");
-    bytes32 public constant MARKET_INITIALIZER_ROLE = keccak256("MARKET_INITIALIZER_ROLE");
     bytes32 public constant RATE_UPDATERS_ROLE = keccak256("RATE_UPDATERS_ROLE");
     bytes32 public constant BASE_LIQUIDATOR_ROLE = keccak256("BASE_LIQUIDATOR_ROLE");
 
@@ -29,12 +27,14 @@ contract CorkConfig is AccessControl, Pausable {
     IDsFlashSwapCore public flashSwapRouter;
     CorkHook public hook;
     ProtectedUnitFactory public protectedUnitFactory;
+    ExchangeRateProvider public defaultExchangeRateProvider;
     // Cork Protocol's treasury address. Other Protocol component should fetch this address directly from the config contract
     // instead of storing it themselves, since it'll be hard to update the treasury address in all the components if it changes vs updating it in the config contract once
     address public treasury;
 
-    /// @notice set to true when initializeModuleCore is allowed to call by anyone in permissionless way
-    bool public isInitPermissionless;
+    uint256 public rolloverPeriodInBlocks = 480;
+
+    uint256 public defaultDecayDiscountRateInDays = 0;
 
     uint256 public constant WHITELIST_TIME_DELAY = 7 days;
 
@@ -43,9 +43,6 @@ contract CorkConfig is AccessControl, Pausable {
 
     /// @notice thrown when caller is not manager/Admin of Cork Protocol
     error CallerNotManager();
-
-    /// @notice thrown when caller is not Market Initializer of Cork Protocol
-    error CallerNotInitializer();
 
     /// @notice thrown when passed Invalid/Zero Address
     error InvalidAddress();
@@ -70,21 +67,9 @@ contract CorkConfig is AccessControl, Pausable {
     /// @param treasury Address of treasury contract/address
     event TreasurySet(address treasury);
 
-    /// @notice Emitted when a treasury is set
-    /// @param treasury Address of treasury contract/address
-    event TreasurySet(address treasury);
-
     modifier onlyManager() {
         if (!hasRole(MANAGER_ROLE, msg.sender)) {
             revert CallerNotManager();
-        }
-        _;
-    }
-
-    /// @notice Checks if the caller is either the initializer of the market or initialization is allowed permissionlessly
-    modifier onlyInitializer() {
-        if (!hasRole(MARKET_INITIALIZER_ROLE, msg.sender) && !isInitPermissionless) {
-            revert CallerNotInitializer();
         }
         _;
     }
@@ -100,12 +85,22 @@ contract CorkConfig is AccessControl, Pausable {
         if (adminAdd == address(0) || managerAdd == address(0)) {
             revert InvalidAddress();
         }
-        _setRoleAdmin(MARKET_INITIALIZER_ROLE, MANAGER_ROLE);
+
+        defaultExchangeRateProvider = new ExchangeRateProvider(address(this));
+
         _setRoleAdmin(MANAGER_ROLE, DEFAULT_ADMIN_ROLE);
         _setRoleAdmin(RATE_UPDATERS_ROLE, MANAGER_ROLE);
         _setRoleAdmin(BASE_LIQUIDATOR_ROLE, MANAGER_ROLE);
         _grantRole(DEFAULT_ADMIN_ROLE, adminAdd);
         _grantRole(MANAGER_ROLE, managerAdd);
+    }
+
+    function updateDecayDiscountRateInDays(uint256 newDiscountRateInDays) external onlyManager {
+        defaultDecayDiscountRateInDays = newDiscountRateInDays;
+    }
+
+    function updateRolloverPeriodInBlocks(uint256 newRolloverPeriodInBlocks) external onlyManager {
+        rolloverPeriodInBlocks = newRolloverPeriodInBlocks;
     }
 
     function _computeLiquidatorRoleHash(address account) public view returns (bytes32) {
@@ -119,10 +114,6 @@ contract CorkConfig is AccessControl, Pausable {
 
     function grantRole(bytes32 role, address account) public override onlyManager {
         _grantRole(role, account);
-    }
-
-    function updateMarketInitAllowance(bool _isInitPermissionless) external onlyManager {
-        isInitPermissionless = _isInitPermissionless;
     }
 
     function transferAdmin(address newAdmin) external onlyRole(DEFAULT_ADMIN_ROLE) {
@@ -227,7 +218,7 @@ contract CorkConfig is AccessControl, Pausable {
         moduleCore.setWithdrawalContract(_withdrawalContract);
     }
 
-    function updateRouterDsExtraFee(Id id, uint256 newPercentage)  external onlyManager {
+    function updateRouterDsExtraFee(Id id, uint256 newPercentage) external onlyManager {
         flashSwapRouter.updateDsExtraFeePercentage(id, newPercentage);
     }
 
@@ -241,28 +232,22 @@ contract CorkConfig is AccessControl, Pausable {
      * @param ra Address of RA
      * @param initialArp initial price of DS
      */
-    function initializeModuleCore(address pa, address ra, uint256 initialArp, uint256 expiryInterval)
-        external
-        onlyInitializer
-    {
-        moduleCore.initializeModuleCore(pa, ra, initialArp, expiryInterval);
+    function initializeModuleCore(
+        address pa,
+        address ra,
+        uint256 initialArp,
+        uint256 expiryInterval,
+        address exchangeRateProvider
+    ) external {
+        moduleCore.initializeModuleCore(pa, ra, initialArp, expiryInterval, exchangeRateProvider);
     }
 
     /**
      * @dev Issues new assets, will auto assign amm fees from the previous issuance
      * for first issuance, separate transaction must be made to set the fees in the AMM
      */
-    function issueNewDs(
-        Id id,
-        uint256 exchangeRates,
-        uint256 decayDiscountRateInDays,
-        // won't have effect on first issuance
-        uint256 rolloverPeriodInblocks,
-        uint256 ammLiquidationDeadline
-    ) external whenNotPaused onlyManager {
-        moduleCore.issueNewDs(
-            id, exchangeRates, decayDiscountRateInDays, rolloverPeriodInblocks, ammLiquidationDeadline
-        );
+    function issueNewDs(Id id, uint256 ammLiquidationDeadline) external whenNotPaused {
+        moduleCore.issueNewDs(id, defaultDecayDiscountRateInDays, rolloverPeriodInBlocks, ammLiquidationDeadline);
 
         _autoAssignFees(id);
         _autoAssignTreasurySplitPercentage(id);
@@ -347,10 +332,7 @@ contract CorkConfig is AccessControl, Pausable {
      * @param id id of the pair
      * @param isPSMDepositPaused set to true if you want to pause PSM deposits
      */
-    function updatePsmDepositsStatus(
-        Id id,
-        bool isPSMDepositPaused
-    ) external onlyManager {
+    function updatePsmDepositsStatus(Id id, bool isPSMDepositPaused) external onlyManager {
         moduleCore.updatePsmDepositsStatus(id, isPSMDepositPaused);
     }
 
@@ -359,10 +341,7 @@ contract CorkConfig is AccessControl, Pausable {
      * @param id id of the pair
      * @param isPSMWithdrawalPaused set to true if you want to pause PSM withdrawals
      */
-    function updatePsmWithdrawalsStatus(
-        Id id,
-        bool isPSMWithdrawalPaused
-    ) external onlyManager {
+    function updatePsmWithdrawalsStatus(Id id, bool isPSMWithdrawalPaused) external onlyManager {
         moduleCore.updatePsmWithdrawalsStatus(id, isPSMWithdrawalPaused);
     }
 
@@ -371,10 +350,7 @@ contract CorkConfig is AccessControl, Pausable {
      * @param id id of the pair
      * @param isPSMRepurchasePaused set to true if you want to pause PSM repurchases
      */
-    function updatePsmRepurchasesStatus(
-        Id id,
-        bool isPSMRepurchasePaused
-    ) external onlyManager {
+    function updatePsmRepurchasesStatus(Id id, bool isPSMRepurchasePaused) external onlyManager {
         moduleCore.updatePsmRepurchasesStatus(id, isPSMRepurchasePaused);
     }
 
@@ -383,10 +359,7 @@ contract CorkConfig is AccessControl, Pausable {
      * @param id id of the pair
      * @param isLVDepositPaused set to true if you want to pause LV deposits
      */
-    function updateLvDepositsStatus(
-        Id id,
-        bool isLVDepositPaused
-    ) external onlyManager {
+    function updateLvDepositsStatus(Id id, bool isLVDepositPaused) external onlyManager {
         moduleCore.updateLvDepositsStatus(id, isLVDepositPaused);
     }
 
@@ -395,10 +368,7 @@ contract CorkConfig is AccessControl, Pausable {
      * @param id id of the pair
      * @param isLVWithdrawalPaused set to true if you want to pause LV withdrawals
      */
-    function updateLvWithdrawalsStatus(
-        Id id,
-        bool isLVWithdrawalPaused
-    ) external onlyManager {
+    function updateLvWithdrawalsStatus(Id id, bool isLVWithdrawalPaused) external onlyManager {
         moduleCore.updateLvWithdrawalsStatus(id, isLVWithdrawalPaused);
     }
 
@@ -430,7 +400,12 @@ contract CorkConfig is AccessControl, Pausable {
     }
 
     function updatePsmRate(Id id, uint256 newRate) external onlyUpdaterOrManager {
-        moduleCore.updateRate(id, newRate);
+        // we update the rate in our provider regardless it's up or down
+        defaultExchangeRateProvider.setRate(id, newRate);
+
+        // we don't bubble up the error since if this is a yield bearing PA, then the value of PA goes up
+        // but we don't want to insure the yield, so we just ignore the error
+        try moduleCore.updateRate(id, newRate) {} catch {}
     }
 
     function useVaultTradeExecutionResultFunds(Id id) external onlyManager {
@@ -465,8 +440,11 @@ contract CorkConfig is AccessControl, Pausable {
         ProtectedUnit(protectedUnit).unpause();
     }
 
-    function redeemRaWithDsWithProtectedUnit(address protectedUnit, uint256 amount, uint256 amountDS) external onlyManager {
-        ProtectedUnit(protectedUnit).redeemRaWithDs(amount, amountDS);
+    function redeemRaWithDsPaWithProtectedUnit(address protectedUnit, uint256 amount, uint256 amountDS)
+        external
+        onlyManager
+    {
+        ProtectedUnit(protectedUnit).redeemRaWithDsPa(amount, amountDS);
     }
 
     function buyDsFromProtectedUnit(

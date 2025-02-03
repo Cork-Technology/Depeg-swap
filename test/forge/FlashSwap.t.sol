@@ -177,13 +177,7 @@ contract FlashSwapTest is Helper {
 
         vm.startPrank(DEFAULT_ADDRESS);
         vm.warp(block.timestamp + 100 days);
-        corkConfig.issueNewDs(
-            defaultCurrencyId,
-            DEFAULT_EXCHANGE_RATES,
-            DEFAULT_DECAY_DISCOUNT_RATE,
-            DEFAULT_ROLLOVER_PERIOD,
-            block.timestamp + 10 seconds
-        );
+        corkConfig.issueNewDs(defaultCurrencyId, block.timestamp + 10 seconds);
 
         ERC20 lv = ERC20(moduleCore.lvAsset(defaultCurrencyId));
         lv.approve(address(moduleCore), lv.balanceOf(address(DEFAULT_ADDRESS)));
@@ -195,8 +189,9 @@ contract FlashSwapTest is Helper {
         vm.startPrank(user);
         lv.approve(address(moduleCore), 19e18);
 
-        redeemParams =
-            IVault.RedeemEarlyParams(defaultCurrencyId, lv.balanceOf(address(user)), 0, block.timestamp + 10 seconds, 0, 0, 0);
+        redeemParams = IVault.RedeemEarlyParams(
+            defaultCurrencyId, lv.balanceOf(address(user)), 0, block.timestamp + 10 seconds, 0, 0, 0
+        );
         moduleCore.redeemEarlyLv(redeemParams);
 
         flashSwapRouter.swapRaforDs(defaultCurrencyId, 2, 1e3, 1, buyParams, defaultOffchainGuessParams());

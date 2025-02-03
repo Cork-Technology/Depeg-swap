@@ -12,7 +12,8 @@ contract LiquidityMathTest is Test {
         uint256 reserveDs = 5 ether;
         uint256 totalLiquidity = 10 ether;
 
-        (uint256 amountDs, uint256 amountPa) = ProtectedUnitMath.previewMint(1 ether, reservePa, reserveDs, totalLiquidity);
+        (uint256 amountDs, uint256 amountPa) =
+            ProtectedUnitMath.previewMint(1 ether, reservePa, reserveDs, totalLiquidity);
 
         vm.assertEq(amountDs, 0.5 ether);
         vm.assertEq(amountPa, 1 ether);

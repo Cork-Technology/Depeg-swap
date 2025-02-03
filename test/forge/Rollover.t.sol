@@ -85,7 +85,8 @@ contract RolloverTest is Helper {
 
         ff_expired();
 
-        (uint256 ctReceived, uint256 dsReceived,) = moduleCore.rolloverCt(currencyId, DEFAULT_DEPOSIT_AMOUNT, prevDsId);
+        (uint256 ctReceived, uint256 dsReceived,) =
+            moduleCore.rolloverExpiredCt(currencyId, DEFAULT_DEPOSIT_AMOUNT, prevDsId);
 
         // verify that we have enough balance
         vm.assertEq(ctReceived, Asset(ds).balanceOf(DEFAULT_ADDRESS_ROLLOVER));
@@ -99,7 +100,8 @@ contract RolloverTest is Helper {
 
         ff_expired();
 
-        (uint256 ctReceived, uint256 dsReceived,) = moduleCore.rolloverCt(currencyId, DEFAULT_DEPOSIT_AMOUNT, prevDsId);
+        (uint256 ctReceived, uint256 dsReceived,) =
+            moduleCore.rolloverExpiredCt(currencyId, DEFAULT_DEPOSIT_AMOUNT, prevDsId);
 
         vm.assertEq(dsReceived, 0);
         vm.assertEq(ctReceived, Asset(ct).balanceOf(DEFAULT_ADDRESS_ROLLOVER));
@@ -128,12 +130,12 @@ contract RolloverTest is Helper {
             deadline,
             DEFAULT_ADDRESS_PK,
             DOMAIN_SEPARATOR,
-            "rolloverCt"
+            "rolloverExpiredCt"
         );
 
         ff_expired();
 
-        (uint256 ctReceived, uint256 dsReceived,) = moduleCore.rolloverCt(
+        (uint256 ctReceived, uint256 dsReceived,) = moduleCore.rolloverExpiredCt(
             currencyId, DEFAULT_ADDRESS_ROLLOVER, DEFAULT_DEPOSIT_AMOUNT, prevDsId, permit, deadline
         );
 
@@ -171,7 +173,8 @@ contract RolloverTest is Helper {
         IPSMcore(moduleCore).updatePsmAutoSellStatus(currencyId, true);
 
         // rollover our CT
-        (uint256 ctReceived, uint256 dsReceived,) = moduleCore.rolloverCt(currencyId, DEFAULT_DEPOSIT_AMOUNT, prevDsId);
+        (uint256 ctReceived, uint256 dsReceived,) =
+            moduleCore.rolloverExpiredCt(currencyId, DEFAULT_DEPOSIT_AMOUNT, prevDsId);
 
         // we autosell
         vm.assertEq(dsReceived, 0);
@@ -203,13 +206,13 @@ contract RolloverTest is Helper {
     function test_RevertClaimRolloverTwice() external {
         vm.expectRevert();
 
-        moduleCore.rolloverCt(currencyId, DEFAULT_DEPOSIT_AMOUNT, dsId - 1);
+        moduleCore.rolloverExpiredCt(currencyId, DEFAULT_DEPOSIT_AMOUNT, dsId - 1);
     }
 
     function test_RevertWhenNotExpired() external {
         vm.expectRevert();
 
-        moduleCore.rolloverCt(currencyId, DEFAULT_DEPOSIT_AMOUNT, dsId);
+        moduleCore.rolloverExpiredCt(currencyId, DEFAULT_DEPOSIT_AMOUNT, dsId);
     }
 
     function test_RevertClaimBalanceNotEnough() external {
@@ -245,12 +248,15 @@ contract RolloverTest is Helper {
         IPSMcore(moduleCore).updatePsmAutoSellStatus(currencyId, true);
 
         // rollover our CT
-        (uint256 ctReceived, uint256 dsReceived,) = moduleCore.rolloverCt(currencyId, DEFAULT_DEPOSIT_AMOUNT, prevDsId);
+        (uint256 ctReceived, uint256 dsReceived,) =
+            moduleCore.rolloverExpiredCt(currencyId, DEFAULT_DEPOSIT_AMOUNT, prevDsId);
 
         // we autosell
         vm.assertEq(dsReceived, 0);
 
-        result = flashSwapRouter.swapRaforDs(currencyId, dsId, 1 ether, 0, defaultBuyApproxParams(), defaultOffchainGuessParams());
+        result = flashSwapRouter.swapRaforDs(
+            currencyId, dsId, 1 ether, 0, defaultBuyApproxParams(), defaultOffchainGuessParams()
+        );
         amountOut = result.amountOut;
 
         uint256 rolloverProfit = moduleCore.getPsmPoolArchiveRolloverProfit(currencyId, dsId);
@@ -300,7 +306,8 @@ contract RolloverTest is Helper {
         IPSMcore(moduleCore).updatePsmAutoSellStatus(currencyId, true);
 
         // rollover our CT
-        (uint256 ctReceived, uint256 dsReceived,) = moduleCore.rolloverCt(currencyId, DEFAULT_DEPOSIT_AMOUNT, prevDsId);
+        (uint256 ctReceived, uint256 dsReceived,) =
+            moduleCore.rolloverExpiredCt(currencyId, DEFAULT_DEPOSIT_AMOUNT, prevDsId);
 
         // we autosell
         vm.assertEq(dsReceived, 0);
@@ -359,7 +366,8 @@ contract RolloverTest is Helper {
         IPSMcore(moduleCore).updatePsmAutoSellStatus(currencyId, true);
 
         // rollover our CT
-        (uint256 ctReceived, uint256 dsReceived,) = moduleCore.rolloverCt(currencyId, DEFAULT_DEPOSIT_AMOUNT, prevDsId);
+        (uint256 ctReceived, uint256 dsReceived,) =
+            moduleCore.rolloverExpiredCt(currencyId, DEFAULT_DEPOSIT_AMOUNT, prevDsId);
 
         // we autosell
         vm.assertEq(dsReceived, 0);

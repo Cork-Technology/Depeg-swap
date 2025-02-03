@@ -82,7 +82,7 @@ contract ProtectedUnitRouterTest is Helper {
     function test_PreviewMint() public {
         address[] memory protectedUnits = new address[](1);
         uint256[] memory amounts = new uint256[](1);
-        
+
         protectedUnits[0] = address(protectedUnit);
         amounts[0] = 100 * 1e18;
 
@@ -146,13 +146,7 @@ contract ProtectedUnitRouterTest is Helper {
         domain_separator = Asset(address(pa)).DOMAIN_SEPARATOR();
 
         bytes memory paPermit = getPermit(
-            user,
-            address(protectedUnit),
-            paAmount,
-            Asset(address(pa)).nonces(user),
-            deadline,
-            USER_PK,
-            domain_separator
+            user, address(protectedUnit), paAmount, Asset(address(pa)).nonces(user), deadline, USER_PK, domain_separator
         );
 
         IProtectedUnitRouter.BatchMintParams memory param = IProtectedUnitRouter.BatchMintParams({
@@ -184,13 +178,13 @@ contract ProtectedUnitRouterTest is Helper {
         // Mint tokens first
         dsToken.approve(address(protectedUnit), USER_BALANCE);
         pa.approve(address(protectedUnit), USER_BALANCE);
-        
+
         uint256 mintAmount = 100 * 1e18;
         protectedUnit.mint(mintAmount);
 
         address[] memory protectedUnits = new address[](1);
         uint256[] memory amounts = new uint256[](1);
-        
+
         protectedUnits[0] = address(protectedUnit);
         amounts[0] = 50 * 1e18;
 
@@ -215,7 +209,7 @@ contract ProtectedUnitRouterTest is Helper {
 
         address[] memory protectedUnits = new address[](1);
         uint256[] memory amounts = new uint256[](1);
-        
+
         protectedUnits[0] = address(protectedUnit);
         amounts[0] = burnAmount;
 

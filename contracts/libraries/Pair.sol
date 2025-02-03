@@ -13,8 +13,12 @@ struct Pair {
     address pa;
     // ra/ds
     address ra;
+    // initial arp
+    uint256 initialArp;
     // expiry interval
     uint256 expiryInterval;
+    // IExchangeRateProvider contract address
+    address exchangeRateProvider;
 }
 
 /**
@@ -34,14 +38,18 @@ library PairLibrary {
         id = Id.wrap(keccak256(abi.encode(key)));
     }
 
-    function initalize(address pa, address ra, uint256 expiry) internal pure returns (Pair memory key) {
+    function initalize(address pa, address ra, uint256 initialArp, uint256 expiry, address exchangeRateProvider)
+        internal
+        pure
+        returns (Pair memory key)
+    {
         if (pa == address(0) || ra == address(0)) {
             revert ZeroAddress();
         }
-        if(pa == ra) {
+        if (pa == ra) {
             revert InvalidAddress();
         }
-        key = Pair(pa, ra, expiry);
+        key = Pair(pa, ra, initialArp, expiry, exchangeRateProvider);
     }
 
     function peggedAsset(Pair memory key) internal pure returns (PeggedAsset memory pa) {

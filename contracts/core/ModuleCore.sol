@@ -22,7 +22,8 @@ import {AmmId, toAmmId} from "Cork-Hook/lib/State.sol";
  */
 contract ModuleCore is OwnableUpgradeable, UUPSUpgradeable, PsmCore, Initialize, VaultCore {
     /// @notice __gap variable to prevent storage collisions
-    uint256[49] __gap;
+    // slither-disable-next-line unused-state
+    uint256[49] private __gap;
 
     using PsmLibrary for State;
     using PairLibrary for Pair;
@@ -32,13 +33,14 @@ contract ModuleCore is OwnableUpgradeable, UUPSUpgradeable, PsmCore, Initialize,
     }
 
     /// @notice Initializer function for upgradeable contracts
-    function initialize(
-        address _swapAssetFactory,
-        address _ammHook,
-        address _flashSwapRouter,
-        address _config
-    ) external initializer {
-        if (_swapAssetFactory == address(0) || _ammHook == address(0) || _flashSwapRouter == address(0) || _config == address(0)) {
+    function initialize(address _swapAssetFactory, address _ammHook, address _flashSwapRouter, address _config)
+        external
+        initializer
+    {
+        if (
+            _swapAssetFactory == address(0) || _ammHook == address(0) || _flashSwapRouter == address(0)
+                || _config == address(0)
+        ) {
             revert ZeroAddress();
         }
 
@@ -47,12 +49,13 @@ contract ModuleCore is OwnableUpgradeable, UUPSUpgradeable, PsmCore, Initialize,
         initializeModuleState(_swapAssetFactory, _ammHook, _flashSwapRouter, _config);
     }
 
-    function setWithdrawalContract(address _withdrawalContract) external  {
+    function setWithdrawalContract(address _withdrawalContract) external {
         onlyConfig();
         _setWithdrawalContract(_withdrawalContract);
     }
 
     /// @notice Authorization function for UUPS proxy upgrades
+    // solhint-disable-next-line no-empty-blocks
     function _authorizeUpgrade(address newImplementation) internal override onlyOwner {}
 
     function _msgSender() internal view override(ContextUpgradeable, Context) returns (address) {
@@ -67,21 +70,26 @@ contract ModuleCore is OwnableUpgradeable, UUPSUpgradeable, PsmCore, Initialize,
         return super._contextSuffixLength();
     }
 
-    function getId(address pa, address ra, uint256 expiryInterva) external pure returns (Id) {
-        return PairLibrary.initalize(pa, ra, expiryInterva).toId();
+    function getId(address pa, address ra, uint256 initialArp, uint256 expiry, address exchangeRateProvider)
+        external
+        pure
+        returns (Id)
+    {
+        return PairLibrary.initalize(pa, ra, initialArp, expiry, exchangeRateProvider).toId();
     }
 
     function initializeModuleCore(
         address pa,
         address ra,
         uint256 initialArp,
-        uint256 expiryInterval
+        uint256 expiryInterval,
+        address exchangeRateProvider
     ) external override {
         onlyConfig();
-        if(expiryInterval == 0) {
+        if (expiryInterval == 0) {
             revert InvalidExpiry();
         }
-        Pair memory key = PairLibrary.initalize(pa, ra, expiryInterval);
+        Pair memory key = PairLibrary.initalize(pa, ra, initialArp, expiryInterval, exchangeRateProvider);
         Id id = key.toId();
 
         State storage state = states[id];
@@ -92,30 +100,43 @@ contract ModuleCore is OwnableUpgradeable, UUPSUpgradeable, PsmCore, Initialize,
 
         IAssetFactory assetsFactory = IAssetFactory(SWAP_ASSET_FACTORY);
 
-        address lv = assetsFactory.deployLv(ra, pa, address(this), expiryInterval);
+        address lv = assetsFactory.deployLv(ra, pa, address(this), initialArp, expiryInterval, exchangeRateProvider);
 
         PsmLibrary.initialize(state, key);
         VaultLibrary.initialize(state.vault, lv, ra, initialArp);
-        
+
         emit InitializedModuleCore(id, pa, ra, lv, expiryInterval);
     }
 
     function issueNewDs(
         Id id,
-        uint256 exchangeRates,
         uint256 decayDiscountRateInDays,
-        // won't have effect on first issuance
         uint256 rolloverPeriodInblocks,
         uint256 ammLiquidationDeadline
-    ) external override onlyConfig {
+    ) external override {
+        onlyConfig();
         onlyInitialized(id);
 
         State storage state = states[id];
 
         Pair storage info = state.info;
 
+        // we update the rate, if this is a yield bearing PA then the rate should go up
+        // this works since if the market uses our rate provider, then when updating the rate and the rate goes up
+        // the function would revert, but catched on the config contract, resulting in the provider also updating the rate accordingly that's used here
+        uint256 exchangeRates = _getRate(id, info);
+
         (address ct, address ds) = IAssetFactory(SWAP_ASSET_FACTORY).deploySwapAssets(
-            info.ra, state.info.pa, address(this), info.expiryInterval, exchangeRates, state.globalAssetIdx + 1
+            IAssetFactory.DeployParams(
+                info.ra,
+                state.info.pa,
+                address(this),
+                info.initialArp,
+                info.expiryInterval,
+                info.exchangeRateProvider,
+                exchangeRates,
+                state.globalAssetIdx + 1
+            )
         );
 
         // avoid stack to deep error
@@ -129,12 +150,7 @@ contract ModuleCore is OwnableUpgradeable, UUPSUpgradeable, PsmCore, Initialize,
         );
     }
 
-    function _initOnNewIssuance(
-        Id id,
-        address ct,
-        address ds,
-        uint256 _expiryInterval
-    ) internal {
+    function _initOnNewIssuance(Id id, address ct, address ds, uint256 _expiryInterval) internal {
         State storage state = states[id];
 
         address ra = state.info.ra;
@@ -143,10 +159,8 @@ contract ModuleCore is OwnableUpgradeable, UUPSUpgradeable, PsmCore, Initialize,
 
         PsmLibrary.onNewIssuance(state, ct, ds, idx, prevIdx);
 
-        // TODO : must handle changes in flash swap router later
         getRouterCore().onNewIssuance(id, idx, ds, ra, ct);
 
-        // TODO : place holder, must change to the id later
         emit Issued(id, idx, block.timestamp + _expiryInterval, ds, ct, AmmId.unwrap(toAmmId(ra, ct)));
     }
 
@@ -163,10 +177,8 @@ contract ModuleCore is OwnableUpgradeable, UUPSUpgradeable, PsmCore, Initialize,
      * @param id id of the pair
      * @param isPSMDepositPaused set to true if you want to pause PSM deposits
      */
-    function updatePsmDepositsStatus(
-        Id id,
-        bool isPSMDepositPaused
-    ) external onlyConfig {
+    function updatePsmDepositsStatus(Id id, bool isPSMDepositPaused) external {
+        onlyConfig();
         State storage state = states[id];
         PsmLibrary.updatePsmDepositsStatus(state, isPSMDepositPaused);
         emit PsmDepositsStatusUpdated(id, isPSMDepositPaused);
@@ -177,10 +189,8 @@ contract ModuleCore is OwnableUpgradeable, UUPSUpgradeable, PsmCore, Initialize,
      * @param id id of the pair
      * @param isPSMWithdrawalPaused set to true if you want to pause PSM withdrawals
      */
-    function updatePsmWithdrawalsStatus(
-        Id id,
-        bool isPSMWithdrawalPaused
-    ) external onlyConfig {
+    function updatePsmWithdrawalsStatus(Id id, bool isPSMWithdrawalPaused) external {
+        onlyConfig();
         State storage state = states[id];
         PsmLibrary.updatePsmWithdrawalsStatus(state, isPSMWithdrawalPaused);
         emit PsmWithdrawalsStatusUpdated(id, isPSMWithdrawalPaused);
@@ -191,10 +201,8 @@ contract ModuleCore is OwnableUpgradeable, UUPSUpgradeable, PsmCore, Initialize,
      * @param id id of the pair
      * @param isPSMRepurchasePaused set to true if you want to pause PSM repurchases
      */
-    function updatePsmRepurchasesStatus(
-        Id id,
-        bool isPSMRepurchasePaused
-    ) external onlyConfig {
+    function updatePsmRepurchasesStatus(Id id, bool isPSMRepurchasePaused) external {
+        onlyConfig();
         State storage state = states[id];
         PsmLibrary.updatePsmRepurchasesStatus(state, isPSMRepurchasePaused);
         emit PsmRepurchasesStatusUpdated(id, isPSMRepurchasePaused);
@@ -205,10 +213,8 @@ contract ModuleCore is OwnableUpgradeable, UUPSUpgradeable, PsmCore, Initialize,
      * @param id id of the pair
      * @param isLVDepositPaused set to true if you want to pause LV deposits
      */
-    function updateLvDepositsStatus(
-        Id id,
-        bool isLVDepositPaused
-    ) external onlyConfig {
+    function updateLvDepositsStatus(Id id, bool isLVDepositPaused) external {
+        onlyConfig();
         State storage state = states[id];
         VaultLibrary.updateLvDepositsStatus(state, isLVDepositPaused);
         emit LvDepositsStatusUpdated(id, isLVDepositPaused);
@@ -219,10 +225,7 @@ contract ModuleCore is OwnableUpgradeable, UUPSUpgradeable, PsmCore, Initialize,
      * @param id id of the pair
      * @param isLVWithdrawalPaused set to true if you want to pause LV withdrawals
      */
-    function updateLvWithdrawalsStatus(
-        Id id,
-        bool isLVWithdrawalPaused
-    ) external {
+    function updateLvWithdrawalsStatus(Id id, bool isLVWithdrawalPaused) external {
         onlyConfig();
         State storage state = states[id];
         VaultLibrary.updateLvWithdrawalsStatus(state, isLVWithdrawalPaused);

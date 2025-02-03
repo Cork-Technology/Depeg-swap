@@ -3,6 +3,7 @@ pragma solidity ^0.8.24;
 
 import {Id} from "./../libraries/Pair.sol";
 import {IErrors} from "./IErrors.sol";
+import {IDsFlashSwapCore} from "./IDsFlashSwapRouter.sol";
 
 /**
  * @title ILiquidator Interface
@@ -56,4 +57,19 @@ interface ILiquidator is IErrors {
     function createOrderVault(ILiquidator.CreateVaultOrderParams memory params) external;
 
     function finishVaultOrder(bytes32 refId) external;
+
+    function finishProtectedUnitOrder(bytes32 refId) external;
+
+    function fetchVaultReceiver(bytes32 refId) external returns (address receiver);
+
+    function finishProtectedUnitOrderAndExecuteTrade(
+        bytes32 refId,
+        uint256 amountOutMin,
+        IDsFlashSwapCore.BuyAprroxParams calldata params,
+        IDsFlashSwapCore.OffchainGuess calldata offchainGuess
+    ) external returns (uint256 amountOut);
+
+    function createOrderProtectedUnit(ILiquidator.CreateProtectedUnitOrderParams calldata params) external;
+
+    function fetchProtectedUnitReceiver(bytes32 refId) external returns (address receiver);
 }

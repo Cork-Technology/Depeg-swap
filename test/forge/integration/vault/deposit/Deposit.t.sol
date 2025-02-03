@@ -137,8 +137,7 @@ contract DepositTest is Helper {
             Asset lv = Asset(moduleCore.lvAsset(id));
             uint256 balance = lv.balanceOf(DEFAULT_ADDRESS);
             lv.approve(address(moduleCore), balance);
-            redeemParams =
-                IVault.RedeemEarlyParams( id,  balance,  0,  block.timestamp, 0, 0, 0);
+            redeemParams = IVault.RedeemEarlyParams(id, balance, 0, block.timestamp, 0, 0, 0);
         }
 
         IVault.RedeemEarlyResult memory result = moduleCore.redeemEarlyLv(redeemParams);
@@ -209,7 +208,7 @@ contract DepositTest is Helper {
             IERC20(ds).approve(address(moduleCore), psmDepositAmount);
 
             // redeem RA back so that we have PA in PSM
-            moduleCore.redeemRaWithDs(id, dsId, psmDepositAmount);
+            moduleCore.redeemRaWithDsPa(id, dsId, psmDepositAmount);
 
             vm.assertEq(balanceAfter, balanceBefore + received);
 
@@ -225,7 +224,7 @@ contract DepositTest is Helper {
         }
 
         IVault.RedeemEarlyParams memory redeemParams =
-            IVault.RedeemEarlyParams( id,  received, 0, block.timestamp, 0, 0, 0);
+            IVault.RedeemEarlyParams(id, received, 0, block.timestamp, 0, 0, 0);
 
         // should fail since we have PA deposited in PSM
         vm.expectRevert(IErrors.LVDepositPaused.selector);
@@ -276,7 +275,7 @@ contract DepositTest is Helper {
         lv.approve(address(moduleCore), received);
 
         IVault.RedeemEarlyParams memory redeemParams =
-            IVault.RedeemEarlyParams(id,  received, 0,  block.timestamp, 0, 0, 0);
+            IVault.RedeemEarlyParams(id, received, 0, block.timestamp, 0, 0, 0);
 
         IVault.RedeemEarlyResult memory result = moduleCore.redeemEarlyLv(redeemParams);
         vm.warp(3 days + 1);

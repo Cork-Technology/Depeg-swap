@@ -73,7 +73,8 @@ contract ProtectedUnitRouter is IProtectedUnitRouter, ReentrancyGuardTransient {
         // If large number of ProtectedUnits are passed, this function will revert due to gas limit.
         // So we will keep the limit to 10 ProtectedUnits(or even less if needed) from frontend.
         for (uint256 i = 0; i < length; ++i) {
-            (dsAmounts[i], paAmounts[i], raAmounts[i]) = ProtectedUnit(protectedUnits[i]).previewBurn(msg.sender, amounts[i]);
+            (dsAmounts[i], paAmounts[i], raAmounts[i]) =
+                ProtectedUnit(protectedUnits[i]).previewBurn(msg.sender, amounts[i]);
         }
     }
 

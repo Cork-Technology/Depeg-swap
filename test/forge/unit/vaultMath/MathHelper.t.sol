@@ -52,8 +52,9 @@ contract MathHelperTest is Helper {
         uint256 feePercentage = 10 ether;
         uint256 amount = 1 ether;
 
-        (uint256 result, uint256 actualPercentage) = MathHelper.calculateRepurchaseFee(start, end, current, amount, feePercentage);
-        
+        (uint256 result, uint256 actualPercentage) =
+            MathHelper.calculateRepurchaseFee(start, end, current, amount, feePercentage);
+
         vm.assertApproxEqAbs(actualPercentage, 10 ether, 0.01 ether);
         vm.assertApproxEqAbs(result, 0.1 ether, 0.01 ether);
     }

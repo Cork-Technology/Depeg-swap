@@ -16,6 +16,6 @@ library VaultConfigLibrary {
     uint256 internal constant MAX_ALLOWED_FEES = 5 ether;
 
     function initialize() internal pure returns (VaultConfig memory) {
-        return VaultConfig({ isDepositPaused: false, isWithdrawalPaused: false});
+        return VaultConfig({isDepositPaused: false, isWithdrawalPaused: false});
     }
 }

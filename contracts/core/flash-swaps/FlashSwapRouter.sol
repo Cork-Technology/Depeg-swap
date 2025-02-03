@@ -147,7 +147,7 @@ contract RouterState is
     }
 
     function updateDsExtraFeePercentage(Id id, uint256 newPercentage) external onlyConfig {
-        if(newPercentage > MAX_DS_FEE) {
+        if (newPercentage > MAX_DS_FEE) {
             revert InvalidFee();
         }
         reserves[id].dsExtraFeePercentage = newPercentage;
@@ -818,7 +818,7 @@ contract RouterState is
 
         IPSMcore psm = IPSMcore(_moduleCore);
 
-        uint256 received = psm.redeemRaWithCtDs(reserveId, ctAmount);
+        uint256 received = psm.returnRaWithCtDs(reserveId, ctAmount);
 
         Asset ra = assetPair.ra;
 

@@ -120,8 +120,9 @@ contract ProtectedUnitTest is Helper {
         protectedUnit.receiveFunds(requestAmount, address(ra));
 
         uint256 dsBalanceBefore = dsToken.balanceOf(address(protectedUnit));
-        uint256 amountOut =
-            corkConfig.buyDsFromProtectedUnit(address(protectedUnit), requestAmount, 0, defaultBuyApproxParams(), defaultOffchainGuessParams());
+        uint256 amountOut = corkConfig.buyDsFromProtectedUnit(
+            address(protectedUnit), requestAmount, 0, defaultBuyApproxParams(), defaultOffchainGuessParams()
+        );
 
         uint256 dsBalanceAfter = dsToken.balanceOf(address(protectedUnit));
 

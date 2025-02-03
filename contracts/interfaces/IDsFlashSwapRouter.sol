@@ -208,7 +208,6 @@ interface IDsFlashSwapCore is IDsFlashSwapUtility {
 
     function updateDsExtraFeePercentage(Id id, uint256 newPercentage) external;
 
-
     function updateDsExtraFeeTreasurySplitPercentage(Id id, uint256 newPercentage) external;
 
     /**

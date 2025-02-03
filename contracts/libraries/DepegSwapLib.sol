@@ -26,6 +26,7 @@ library DepegSwapLibrary {
     /// @notice the exchange rate of DS can only go down at maximum 10% at a time
     uint256 internal constant MAX_RATE_DELTA_PERCENTAGE = 10e18;
     /// @notice Zero Address error, thrown when passed address is 0
+
     error ZeroAddress();
 
     function isExpired(DepegSwap storage self) internal view returns (bool) {
@@ -41,7 +42,7 @@ library DepegSwapLibrary {
     }
 
     function initialize(address _address, address ct) internal pure returns (DepegSwap memory) {
-        if(_address == address(0) || ct == address(0)) {
+        if (_address == address(0) || ct == address(0)) {
             revert ZeroAddress();
         }
         return DepegSwap({expiredEventEmitted: false, _address: _address, ct: ct, ctRedeemed: 0});

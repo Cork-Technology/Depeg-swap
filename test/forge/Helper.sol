@@ -123,15 +123,23 @@ abstract contract Helper is SigUtils, TestHelper {
         uint256 baseRedemptionFee,
         uint256 expiryInSeconds
     ) internal {
-        corkConfig.initializeModuleCore(pa, ra, initialDsPrice, expiryInSeconds);
+        address exchangeRateProvider = address(corkConfig.defaultExchangeRateProvider());
+
+        corkConfig.initializeModuleCore(pa, ra, initialDsPrice, expiryInSeconds, exchangeRateProvider);
         corkConfig.updatePsmBaseRedemptionFeePercentage(defaultCurrencyId, baseRedemptionFee);
+
+        corkConfig.updatePsmRate(defaultCurrencyId, DEFAULT_EXCHANGE_RATES);
     }
 
     function initializeNewModuleCore(address pa, address ra, uint256 initialDsPrice, uint256 expiryInSeconds)
         internal
     {
-        corkConfig.initializeModuleCore(pa, ra, initialDsPrice, expiryInSeconds);
+        address exchangeRateProvider = address(corkConfig.defaultExchangeRateProvider());
+
+        corkConfig.initializeModuleCore(pa, ra, initialDsPrice, expiryInSeconds, exchangeRateProvider);
         corkConfig.updatePsmBaseRedemptionFeePercentage(defaultCurrencyId, DEFAULT_BASE_REDEMPTION_FEE);
+
+        corkConfig.updatePsmRate(defaultCurrencyId, DEFAULT_EXCHANGE_RATES);
     }
 
     function issueNewDs(
@@ -141,10 +149,10 @@ abstract contract Helper is SigUtils, TestHelper {
         uint256 decayDiscountRateInDays,
         uint256 rolloverPeriodInblocks
     ) internal {
-        corkConfig.issueNewDs(
-            id, exchangeRates, decayDiscountRateInDays, rolloverPeriodInblocks, block.timestamp + 10 seconds
-        );
+        corkConfig.issueNewDs(id, block.timestamp + 10 seconds);
 
+        corkConfig.updateDecayDiscountRateInDays(decayDiscountRateInDays);
+        corkConfig.updateRolloverPeriodInBlocks(rolloverPeriodInblocks);
         corkConfig.updateRepurchaseFeeRate(id, repurchaseFeePercentage);
     }
 
@@ -171,7 +179,9 @@ abstract contract Helper is SigUtils, TestHelper {
         ra = new DummyERCWithPermit("RA", "RA");
         pa = new DummyERCWithPermit("PA", "PA");
 
-        Pair memory _id = PairLibrary.initalize(address(pa), address(ra), expiryInSeconds);
+        address exchangeRateProvider = address(corkConfig.defaultExchangeRateProvider());
+        Pair memory _id =
+            PairLibrary.initalize(address(pa), address(ra), defaultInitialArp(), expiryInSeconds, exchangeRateProvider);
         id = PairLibrary.toId(_id);
 
         defaultCurrencyId = id;
@@ -196,7 +206,10 @@ abstract contract Helper is SigUtils, TestHelper {
         ra = new DummyWETH();
         pa = new DummyWETH();
 
-        Pair memory _id = PairLibrary.initalize(address(pa), address(ra), expiryInSeconds);
+        address exchangeRateProvider = address(corkConfig.defaultExchangeRateProvider());
+
+        Pair memory _id =
+            PairLibrary.initalize(address(pa), address(ra), defaultInitialArp(), expiryInSeconds, exchangeRateProvider);
         id = PairLibrary.toId(_id);
 
         defaultCurrencyId = id;
@@ -224,14 +237,21 @@ abstract contract Helper is SigUtils, TestHelper {
         ra = new DummyWETH();
         pa = new DummyWETH();
 
-        Pair memory _id = PairLibrary.initalize(address(pa), address(ra), expiryInSeconds);
+        address exchangeRateProvider = address(corkConfig.defaultExchangeRateProvider());
+
+        Pair memory _id =
+            PairLibrary.initalize(address(pa), address(ra), defaultInitialArp(), expiryInSeconds, exchangeRateProvider);
         id = PairLibrary.toId(_id);
 
         defaultCurrencyId = id;
 
         initializeNewModuleCore(address(pa), address(ra), defaultInitialArp(), baseRedemptionFee, expiryInSeconds);
         issueNewDs(
-            id, DEFAULT_EXCHANGE_RATES, DEFAULT_REPURCHASE_FEE, DEFAULT_DECAY_DISCOUNT_RATE, DEFAULT_ROLLOVER_PERIOD
+            defaultCurrencyId,
+            DEFAULT_EXCHANGE_RATES,
+            DEFAULT_REPURCHASE_FEE,
+            DEFAULT_DECAY_DISCOUNT_RATE,
+            DEFAULT_ROLLOVER_PERIOD
         );
         corkConfig.updateLvStrategyCtSplitPercentage(defaultCurrencyId, DEFAULT_CT_SPLIT_PERCENTAGE);
     }
@@ -249,7 +269,10 @@ abstract contract Helper is SigUtils, TestHelper {
         ra = new CustomErc20(raDecimals);
         pa = new CustomErc20(paDecimals);
 
-        Pair memory _id = PairLibrary.initalize(address(pa), address(ra), expiryInSeconds);
+        address exchangeRateProvider = address(corkConfig.defaultExchangeRateProvider());
+
+        Pair memory _id =
+            PairLibrary.initalize(address(pa), address(ra), defaultInitialArp(), expiryInSeconds, exchangeRateProvider);
         id = PairLibrary.toId(_id);
 
         defaultCurrencyId = id;
@@ -274,7 +297,10 @@ abstract contract Helper is SigUtils, TestHelper {
         ra = new DummyWETH();
         pa = new DummyWETH();
 
-        Pair memory _id = PairLibrary.initalize(address(pa), address(ra), expiryInSeconds);
+        address exchangeRateProvider = address(corkConfig.defaultExchangeRateProvider());
+
+        Pair memory _id =
+            PairLibrary.initalize(address(pa), address(ra), initialDsPrice, expiryInSeconds, exchangeRateProvider);
         id = PairLibrary.toId(_id);
 
         initializeNewModuleCore(address(pa), address(ra), initialDsPrice, expiryInSeconds);
@@ -294,7 +320,6 @@ abstract contract Helper is SigUtils, TestHelper {
     function setupConfig() internal {
         corkConfig.setModuleCore(address(moduleCore));
         corkConfig.setFlashSwapCore(address(flashSwapRouter));
-        corkConfig.grantRole(corkConfig.MARKET_INITIALIZER_ROLE(), DEFAULT_ADDRESS);
         corkConfig.setTreasury(CORK_PROTOCOL_TREASURY);
     }
 
@@ -360,7 +385,8 @@ abstract contract Helper is SigUtils, TestHelper {
 
     function initializeProtectedUnitFactory() internal {
         protectedUnitRouter = new ProtectedUnitRouter();
-        protectedUnitFactory = new ProtectedUnitFactory(address(moduleCore), address(corkConfig), address(flashSwapRouter));
+        protectedUnitFactory =
+            new ProtectedUnitFactory(address(moduleCore), address(corkConfig), address(flashSwapRouter));
         corkConfig.setProtectedUnitFactory(address(protectedUnitFactory));
     }
 

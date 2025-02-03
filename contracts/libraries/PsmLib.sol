@@ -35,7 +35,7 @@ library PsmLibrary {
      *   This denotes maximum fee allowed in contract
      *   Here 1 ether = 1e18 so maximum 5% fee allowed
      */
-    uint256 constant internal MAX_ALLOWED_FEES = 5 ether;
+    uint256 internal constant MAX_ALLOWED_FEES = 5 ether;
 
     /// @notice inssuficient balance to perform rollover redeem(e.g having 5 CT worth of rollover to redeem but trying to redeem 10)
     error InsufficientRolloverBalance(address caller, uint256 requested, uint256 balance);
@@ -57,7 +57,7 @@ library PsmLibrary {
     }
 
     function updateExchangeRate(State storage self, uint256 newRate) external {
-        if(newRate == 0) {
+        if (newRate == 0) {
             revert IErrors.InvalidRate();
         }
         uint256 currentRate = self.ds[self.globalAssetIdx].exchangeRate();
@@ -90,17 +90,19 @@ library PsmLibrary {
         self.psm.poolArchive[self.globalAssetIdx].rolloverProfit += amount;
     }
 
-    function rolloverCt(
+    function rolloverExpiredCt(
         State storage self,
         address owner,
         uint256 amount,
         uint256 dsId,
         IDsFlashSwapCore flashSwapRouter,
-        bytes memory rawCtPermitSig,
+        bytes calldata rawCtPermitSig,
         uint256 ctDeadline
     ) external returns (uint256 ctReceived, uint256 dsReceived, uint256 paReceived) {
         if (rawCtPermitSig.length > 0 && ctDeadline != 0) {
-            DepegSwapLibrary.permit(self.ds[dsId].ct, rawCtPermitSig, owner, address(this), amount, ctDeadline, "rolloverCt");
+            DepegSwapLibrary.permit(
+                self.ds[dsId].ct, rawCtPermitSig, owner, address(this), amount, ctDeadline, "rolloverExpiredCt"
+            );
         }
 
         (ctReceived, dsReceived, paReceived) = _rolloverCt(self, owner, amount, dsId, flashSwapRouter);
@@ -197,7 +199,8 @@ library PsmLibrary {
         prevArchive = self.psm.poolArchive[prevDsId];
 
         // caclulate accrued RA and PA proportional to CT amount
-        (accruedPa, accruedRa) = _calcRedeemAmount(self, amount, totalCtIssued, prevArchive.raAccrued, prevArchive.paAccrued);
+        (accruedPa, accruedRa) =
+            _calcRedeemAmount(self, amount, totalCtIssued, prevArchive.raAccrued, prevArchive.paAccrued);
         // accounting stuff(decrementing reserve etc)
         _beforeCtRedeem(self, prevDs, prevDsId, amount, accruedPa, accruedRa);
 
@@ -275,13 +278,7 @@ library PsmLibrary {
     }
 
     /// @notice issue a new pair of DS, will fail if the previous DS isn't yet expired
-    function onNewIssuance(
-        State storage self,
-        address ct,
-        address ds,
-        uint256 idx,
-        uint256 prevIdx
-    ) internal {
+    function onNewIssuance(State storage self, address ct, address ds, uint256 idx, uint256 prevIdx) internal {
         if (prevIdx != 0) {
             DepegSwap storage _prevDs = self.ds[prevIdx];
             Guard.safeAfterExpired(_prevDs);
@@ -396,13 +393,13 @@ library PsmLibrary {
         ERC20Burnable(ds._address).burnFrom(owner, amount);
     }
 
-    function redeemRaWithCtDs(
+    function returnRaWithCtDs(
         State storage self,
         address owner,
         uint256 amount,
-        bytes memory rawDsPermitSig,
+        bytes calldata rawDsPermitSig,
         uint256 dsDeadline,
-        bytes memory rawCtPermitSig,
+        bytes calldata rawCtPermitSig,
         uint256 ctDeadline
     ) external returns (uint256 ra) {
         uint256 dsId = self.globalAssetIdx;
@@ -410,8 +407,10 @@ library PsmLibrary {
         Guard.safeBeforeExpired(ds);
 
         if (dsDeadline != 0 && ctDeadline != 0) {
-            DepegSwapLibrary.permit(ds._address, rawDsPermitSig, owner, address(this), amount, dsDeadline, "redeemRaWithCtDs");
-            DepegSwapLibrary.permit(ds.ct, rawCtPermitSig, owner, address(this), amount, ctDeadline, "redeemRaWithCtDs");
+            DepegSwapLibrary.permit(
+                ds._address, rawDsPermitSig, owner, address(this), amount, dsDeadline, "returnRaWithCtDs"
+            );
+            DepegSwapLibrary.permit(ds.ct, rawCtPermitSig, owner, address(this), amount, ctDeadline, "returnRaWithCtDs");
         }
 
         ra = _redeemRaWithCtDs(self, ds, owner, amount);
@@ -491,7 +490,6 @@ library PsmLibrary {
         // we use deposit here because technically the user deposit RA to the PSM when repurchasing
         receivedPa = MathHelper.calculateDepositAmountWithExchangeRate(amount, exchangeRates);
         receivedPa = TransferHelper.fixedToTokenNativeDecimals(receivedPa, self.info.pa);
-
         receivedDs = amount;
 
         if (receivedPa > self.psm.balances.paBalance) {
@@ -503,12 +501,7 @@ library PsmLibrary {
         }
     }
 
-    function repurchase(
-        State storage self,
-        address buyer,
-        uint256 amount,
-        address treasury
-    )
+    function repurchase(State storage self, address buyer, uint256 amount, address treasury)
         external
         returns (
             uint256 dsId,
@@ -525,8 +518,10 @@ library PsmLibrary {
 
         // decrease PSM balance
         // we also include the fee here to separate the accumulated fee from the repurchase
-        self.psm.balances.paBalance -= (receivedPa);
-        self.psm.balances.dsBalance -= (receivedDs);
+        {
+            self.psm.balances.paBalance -= (receivedPa);
+            self.psm.balances.dsBalance -= (receivedDs);
+        }
 
         // transfer user RA to the PSM/LV
         self.psm.balances.ra.lockFrom(amount, buyer);
@@ -537,9 +532,12 @@ library PsmLibrary {
         }
 
         // transfer user attrubuted DS + PA
+
         // PA
-        (, address pa) = self.info.underlyingAsset();
-        IERC20(pa).safeTransfer(buyer, receivedPa);
+        {
+            (, address pa) = self.info.underlyingAsset();
+            IERC20(pa).safeTransfer(buyer, receivedPa);
+        }
 
         // DS
         IERC20(ds._address).safeTransfer(buyer, receivedDs);
@@ -626,7 +624,7 @@ library PsmLibrary {
         address owner,
         uint256 amount,
         uint256 dsId,
-        bytes memory rawDsPermitSig,
+        bytes calldata rawDsPermitSig,
         uint256 deadline,
         address treasury
     ) external returns (uint256 received, uint256 _exchangeRate, uint256 fee, uint256 dsProvided) {
@@ -636,7 +634,9 @@ library PsmLibrary {
         (received, dsProvided, fee, _exchangeRate) = previewRedeemWithDs(self, dsId, amount);
 
         if (deadline != 0 && rawDsPermitSig.length != 0) {
-            DepegSwapLibrary.permit(ds._address, rawDsPermitSig, owner, address(this), dsProvided, deadline, "redeemRaWithDs");
+            DepegSwapLibrary.permit(
+                ds._address, rawDsPermitSig, owner, address(this), dsProvided, deadline, "redeemRaWithDsPa"
+            );
         }
 
         _redeemDs(self.psm.balances, amount, dsProvided);
@@ -674,11 +674,13 @@ library PsmLibrary {
         expiry = Asset(ds._address).expiry();
     }
 
-    function _calcRedeemAmount(State storage self, uint256 amount, uint256 totalCtIssued, uint256 availableRa, uint256 availablePa)
-        internal
-        view
-        returns (uint256 accruedPa, uint256 accruedRa)
-    {
+    function _calcRedeemAmount(
+        State storage self,
+        uint256 amount,
+        uint256 totalCtIssued,
+        uint256 availableRa,
+        uint256 availablePa
+    ) internal view returns (uint256 accruedPa, uint256 accruedRa) {
         availablePa = TransferHelper.tokenNativeDecimalsToFixed(availablePa, self.info.pa);
         availableRa = TransferHelper.tokenNativeDecimalsToFixed(availableRa, self.info.ra);
 
@@ -722,18 +724,20 @@ library PsmLibrary {
     /// we depends on the frontend to make approval to the PA contract before calling this function.
     /// for the CT, we use the permit function to approve the transfer.
     /// the parameter passed here MUST be the same as the one used to generate the ct permit signature.
-    function redeemWithCt(
+    function redeemWithExpiredCt(
         State storage self,
         address owner,
         uint256 amount,
         uint256 dsId,
-        bytes memory rawCtPermitSig,
+        bytes calldata rawCtPermitSig,
         uint256 deadline
     ) external returns (uint256 accruedPa, uint256 accruedRa) {
         DepegSwap storage ds = self.ds[dsId];
         Guard.safeAfterExpired(ds);
         if (deadline != 0) {
-            DepegSwapLibrary.permit(ds.ct, rawCtPermitSig, owner, address(this), amount, deadline, "redeemWithCT");
+            DepegSwapLibrary.permit(
+                ds.ct, rawCtPermitSig, owner, address(this), amount, deadline, "redeemWithExpiredCt"
+            );
         }
         _separateLiquidity(self, dsId);
 
