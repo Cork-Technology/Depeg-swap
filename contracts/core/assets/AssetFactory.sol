@@ -56,6 +56,8 @@ contract AssetFactory is IAssetFactory, OwnableUpgradeable, UUPSUpgradeable {
         string memory
     }
 
+
+    // TODO : add exchange rate update test
     // will generate symbol such as wstETH03CT or wstETH!LV
     function _generateSymbol(address pa, uint256 expiry, uint256 prefix) internal  {
         string memory baseSymbol = IERC20Metadata(pa).symbol();
