@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.24;
 
 import {PsmLibrary} from "../libraries/PsmLib.sol";
@@ -302,6 +303,7 @@ abstract contract PsmCore is IPSMcore, ModuleState, Context {
     {
         PSMDepositNotPaused(id);
         State storage state = states[id];
+        // slither-disable-next-line uninitialized-local
         bytes memory signaturePlaceHolder;
         (ctReceived, dsReceived, paReceived) =
             state.rolloverExpiredCt(_msgSender(), amount, dsId, getRouterCore(), signaturePlaceHolder, 0);

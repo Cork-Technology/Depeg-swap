@@ -22,7 +22,7 @@ import {AmmId, toAmmId} from "Cork-Hook/lib/State.sol";
  */
 contract ModuleCore is OwnableUpgradeable, UUPSUpgradeable, PsmCore, Initialize, VaultCore {
     /// @notice __gap variable to prevent storage collisions
-    uint256[49] __gap;
+    uint256[49] private __gap;
 
     using PsmLibrary for State;
     using PairLibrary for Pair;
@@ -54,6 +54,7 @@ contract ModuleCore is OwnableUpgradeable, UUPSUpgradeable, PsmCore, Initialize,
     }
 
     /// @notice Authorization function for UUPS proxy upgrades
+    // solhint-disable-next-line no-empty-blocks
     function _authorizeUpgrade(address newImplementation) internal override onlyOwner {}
 
     function _msgSender() internal view override(ContextUpgradeable, Context) returns (address) {
