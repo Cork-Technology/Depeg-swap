@@ -20,7 +20,6 @@ import {ExchangeRateProvider} from "./ExchangeRateProvider.sol";
  */
 contract CorkConfig is AccessControl, Pausable {
     bytes32 public constant MANAGER_ROLE = keccak256("MANAGER_ROLE");
-    bytes32 public constant MARKET_INITIALIZER_ROLE = keccak256("MARKET_INITIALIZER_ROLE");
     bytes32 public constant RATE_UPDATERS_ROLE = keccak256("RATE_UPDATERS_ROLE");
     bytes32 public constant BASE_LIQUIDATOR_ROLE = keccak256("BASE_LIQUIDATOR_ROLE");
 
@@ -37,9 +36,6 @@ contract CorkConfig is AccessControl, Pausable {
 
     uint256 public defaultDecayDiscountRateInDays = 0;
 
-    /// @notice set to true when initializeModuleCore is allowed to call by anyone in permissionless way
-    bool public isInitPermissionless;
-
     uint256 public constant WHITELIST_TIME_DELAY = 7 days;
 
     /// @notice liquidation address => timestamp when liquidation is allowed
@@ -47,9 +43,6 @@ contract CorkConfig is AccessControl, Pausable {
 
     /// @notice thrown when caller is not manager/Admin of Cork Protocol
     error CallerNotManager();
-
-    /// @notice thrown when caller is not Market Initializer of Cork Protocol
-    error CallerNotInitializer();
 
     /// @notice thrown when passed Invalid/Zero Address
     error InvalidAddress();
@@ -81,14 +74,6 @@ contract CorkConfig is AccessControl, Pausable {
         _;
     }
 
-    /// @notice Checks if the caller is either the initializer of the market or initialization is allowed permissionlessly
-    modifier onlyInitializer() {
-        if (!hasRole(MARKET_INITIALIZER_ROLE, msg.sender) && !isInitPermissionless) {
-            revert CallerNotInitializer();
-        }
-        _;
-    }
-
     modifier onlyUpdaterOrManager() {
         if (!hasRole(RATE_UPDATERS_ROLE, msg.sender) && !hasRole(MANAGER_ROLE, msg.sender)) {
             revert CallerNotManager();
@@ -103,7 +88,6 @@ contract CorkConfig is AccessControl, Pausable {
 
         defaultExchangeRateProvider = new ExchangeRateProvider(address(this));
 
-        _setRoleAdmin(MARKET_INITIALIZER_ROLE, MANAGER_ROLE);
         _setRoleAdmin(MANAGER_ROLE, DEFAULT_ADMIN_ROLE);
         _setRoleAdmin(RATE_UPDATERS_ROLE, MANAGER_ROLE);
         _setRoleAdmin(BASE_LIQUIDATOR_ROLE, MANAGER_ROLE);
@@ -130,10 +114,6 @@ contract CorkConfig is AccessControl, Pausable {
 
     function grantRole(bytes32 role, address account) public override onlyManager {
         _grantRole(role, account);
-    }
-
-    function updateMarketInitAllowance(bool _isInitPermissionless) external onlyManager {
-        isInitPermissionless = _isInitPermissionless;
     }
 
     function transferAdmin(address newAdmin) external onlyRole(DEFAULT_ADMIN_ROLE) {
