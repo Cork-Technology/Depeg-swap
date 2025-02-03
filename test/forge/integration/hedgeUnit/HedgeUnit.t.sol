@@ -215,7 +215,7 @@ contract HedgeUnitTest is Helper {
         uint256 dsBalanceBefore = dsToken.balanceOf(address(hedgeUnit));
         uint256 raBalanceBefore = ra.balanceOf(address(hedgeUnit));
 
-        corkConfig.redeemRaWithDsWithHedgeUnit(address(hedgeUnit), initialAmount, initialAmount);
+        corkConfig.redeemRaWithDsPaWithHedgeUnit(address(hedgeUnit), initialAmount, initialAmount);
 
         vm.assertEq(pa.balanceOf(address(hedgeUnit)), paBalnceBefore - initialAmount);
         vm.assertEq(dsToken.balanceOf(address(hedgeUnit)), dsBalanceBefore - initialAmount);

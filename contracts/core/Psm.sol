@@ -100,7 +100,7 @@ abstract contract PsmCore is IPSMcore, ModuleState, Context {
         emit PsmDeposited(id, dsId, _msgSender(), amount, received, _exchangeRate);
     }
 
-    function redeemRaWithDs(
+    function redeemRaWithDsPa(
         Id id,
         uint256 dsId,
         uint256 amount,
@@ -124,7 +124,7 @@ abstract contract PsmCore is IPSMcore, ModuleState, Context {
         );
     }
 
-    function redeemRaWithDs(Id id, uint256 dsId, uint256 amount)
+    function redeemRaWithDsPa(Id id, uint256 dsId, uint256 amount)
         external
         override
         nonReentrant
@@ -161,7 +161,7 @@ abstract contract PsmCore is IPSMcore, ModuleState, Context {
         rates = state.exchangeRate();
     }
 
-    function redeemWithCT(
+    function redeemWithExpiredCt(
         Id id,
         uint256 dsId,
         uint256 amount,
@@ -177,12 +177,12 @@ abstract contract PsmCore is IPSMcore, ModuleState, Context {
         }
         State storage state = states[id];
 
-        (accruedPa, accruedRa) = state.redeemWithCt(redeemer, amount, dsId, rawCtPermitSig, deadline);
+        (accruedPa, accruedRa) = state.redeemWithExpiredCt(redeemer, amount, dsId, rawCtPermitSig, deadline);
 
         emit CtRedeemed(id, dsId, redeemer, amount, accruedPa, accruedRa);
     }
 
-    function redeemWithCT(Id id, uint256 dsId, uint256 amount)
+    function redeemWithExpiredCt(Id id, uint256 dsId, uint256 amount)
         external
         override
         nonReentrant
@@ -193,7 +193,7 @@ abstract contract PsmCore is IPSMcore, ModuleState, Context {
 
         State storage state = states[id];
 
-        (accruedPa, accruedRa) = state.redeemWithCt(_msgSender(), amount, dsId, bytes(""), 0);
+        (accruedPa, accruedRa) = state.redeemWithExpiredCt(_msgSender(), amount, dsId, bytes(""), 0);
 
         emit CtRedeemed(id, dsId, _msgSender(), amount, accruedPa, accruedRa);
     }
@@ -216,7 +216,7 @@ abstract contract PsmCore is IPSMcore, ModuleState, Context {
      * @param rawCtPermitSig raw signature for CT approval permit
      * @param ctDeadline deadline for CT approval permit signature
      */
-    function redeemRaWithCtDs(
+    function returnRaWithCtDs(
         Id id,
         uint256 amount,
         address redeemer,
@@ -231,7 +231,7 @@ abstract contract PsmCore is IPSMcore, ModuleState, Context {
             revert InvalidSignature();
         }
         State storage state = states[id];
-        ra = state.redeemRaWithCtDs(redeemer, amount, rawDsPermitSig, dsDeadline, rawCtPermitSig, ctDeadline);
+        ra = state.returnRaWithCtDs(redeemer, amount, rawDsPermitSig, dsDeadline, rawCtPermitSig, ctDeadline);
 
         emit Cancelled(id, state.globalAssetIdx, redeemer, ra, amount);
     }
@@ -242,12 +242,12 @@ abstract contract PsmCore is IPSMcore, ModuleState, Context {
      * @param amount amount user wants to redeem
      * @return ra amount of RA user received
      */
-    function redeemRaWithCtDs(Id id, uint256 amount) external override nonReentrant returns (uint256 ra) {
+    function returnRaWithCtDs(Id id, uint256 amount) external override nonReentrant returns (uint256 ra) {
         PSMWithdrawalNotPaused(id);
 
         State storage state = states[id];
 
-        ra = state.redeemRaWithCtDs(_msgSender(), amount, bytes(""), 0, bytes(""), 0);
+        ra = state.returnRaWithCtDs(_msgSender(), amount, bytes(""), 0, bytes(""), 0);
 
         emit Cancelled(id, state.globalAssetIdx, _msgSender(), ra, amount);
     }

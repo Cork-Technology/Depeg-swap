@@ -161,7 +161,7 @@ interface IPSMcore is IRepurchase {
      * @param rawDsPermitSig The raw signature for DS approval permit
      * @param deadline The deadline for DS approval permit signature
      */
-    function redeemRaWithDs(
+    function redeemRaWithDsPa(
         Id id,
         uint256 dsId,
         uint256 amount,
@@ -179,7 +179,7 @@ interface IPSMcore is IRepurchase {
      * @return _exchangeRate The effective rate at the time of redemption
      * @return fee The fee charged for redemption
      */
-    function redeemRaWithDs(Id id, uint256 dsId, uint256 amount)
+    function redeemRaWithDsPa(Id id, uint256 dsId, uint256 amount)
         external
         returns (uint256 received, uint256 _exchangeRate, uint256 fee, uint256 dsUsed);
     /**
@@ -191,7 +191,7 @@ interface IPSMcore is IRepurchase {
      * @param rawCtPermitSig The raw signature for CT approval permit
      * @param deadline The deadline for CT approval permit signature
      */
-    function redeemWithCT(
+    function redeemWithExpiredCt(
         Id id,
         uint256 dsId,
         uint256 amount,
@@ -206,7 +206,7 @@ interface IPSMcore is IRepurchase {
      * @param dsId The DS id
      * @param amount The amount of CT to redeem
      */
-    function redeemWithCT(Id id, uint256 dsId, uint256 amount)
+    function redeemWithExpiredCt(Id id, uint256 dsId, uint256 amount)
         external
         returns (uint256 accruedPa, uint256 accruedRa);
 
@@ -221,7 +221,7 @@ interface IPSMcore is IRepurchase {
      * @param ctDeadline deadline for CT approval permit signature
      * @return ra amount of RA user received
      */
-    function redeemRaWithCtDs(
+    function returnRaWithCtDs(
         Id id,
         uint256 amount,
         address redeemer,
@@ -237,7 +237,7 @@ interface IPSMcore is IRepurchase {
      * @param amount amount user wants to redeem
      * @return ra amount of RA user received
      */
-    function redeemRaWithCtDs(Id id, uint256 amount) external returns (uint256 ra);
+    function returnRaWithCtDs(Id id, uint256 amount) external returns (uint256 ra);
 
     /**
      * @notice returns amount of value locked in PSM

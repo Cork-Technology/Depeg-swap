@@ -437,8 +437,8 @@ contract CorkConfig is AccessControl, Pausable {
         HedgeUnit(hedgeUnit).unpause();
     }
 
-    function redeemRaWithDsWithHedgeUnit(address hedgeUnit, uint256 amount, uint256 amountDS) external onlyManager {
-        HedgeUnit(hedgeUnit).redeemRaWithDs(amount, amountDS);
+    function redeemRaWithDsPaWithHedgeUnit(address hedgeUnit, uint256 amount, uint256 amountDS) external onlyManager {
+        HedgeUnit(hedgeUnit).redeemRaWithDsPa(amount, amountDS);
     }
 
     function buyDsFromHedgeUnit(
