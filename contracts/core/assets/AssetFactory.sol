@@ -34,6 +34,7 @@ contract AssetFactory is IAssetFactory, OwnableUpgradeable, UUPSUpgradeable {
     mapping(uint256 => Pair) internal pairs;
     mapping(Id => SwapPair[]) internal swapAssets;
     mapping(address => bool) internal deployed;
+    mapping(bytes32 => uint256) internal variantIndex;
 
     /// @notice __gap variable to prevent storage collisions
     // slither-disable-next-line unused-state
@@ -41,6 +42,30 @@ contract AssetFactory is IAssetFactory, OwnableUpgradeable, UUPSUpgradeable {
 
     constructor() {
         _disableInitializers();
+    }
+
+    function _generateVariant(string memory baseSymbol) internal returns(string memory variant){
+        bytes32 hash = keccak256(abi.encodePacked(baseSymbol));
+        uint256 variantUint = ++variantIndex[hash];
+
+        variant =  Strings.toString(variantUint);
+    }
+
+    // will generate symbol such as wstETH03CT-1
+    function _generateSymbolWithVariant(address pa, uint256 expiry, string memory prefix) internal returns(string memory symbol){
+        string memory
+    }
+
+    // will generate symbol such as wstETH03CT or wstETH!LV
+    function _generateSymbol(address pa, uint256 expiry, uint256 prefix) internal  {
+        string memory baseSymbol = IERC20Metadata(pa).symbol();
+        string memory separator = expiry == 0 ? "!" : Strings.toString(BokkyPooBahsDateTimeLibrary.getMonth(expiry));
+        return string.concat(baseSymbol, separator, prefix);
+    }
+
+    function _generateRawSymbols(address pa, uint256 expiry) internal returns(string memory symbol){
+        string memory baseSymbol = IERC20Metadata(pa).symbol();
+        string memory separator = expiry == 0 ? "!" : Strings.toString(BokkyPooBahsDateTimeLibrary.getMonth(expiry));
     }
 
     /**
