@@ -577,6 +577,20 @@ library VaultLibrary {
             revert IErrors.InsufficientOutputAmount(redeemParams.amountOutMin, result.raReceivedFromAmm);
         }
 
+        if (result.ctReceivedFromAmm + result.ctReceivedFromVault < redeemParams.ctAmountOutMin) {
+            revert IErrors.InsufficientOutputAmount(
+                redeemParams.ctAmountOutMin, result.ctReceivedFromAmm + result.ctReceivedFromVault
+            );
+        }
+
+        if (result.dsReceived < redeemParams.dsAmountOutMin) {
+            revert IErrors.InsufficientOutputAmount(redeemParams.dsAmountOutMin, result.dsReceived);
+        }
+
+        if (result.paReceived < redeemParams.paAmountOutMin) {
+            revert IErrors.InsufficientOutputAmount(redeemParams.paAmountOutMin, result.paReceived);
+        }
+
         // burn lv amount + fee
         ERC20Burnable(self.vault.lv._address).burnFrom(owner, redeemParams.amount);
 

@@ -90,17 +90,6 @@ library PsmLibrary {
         self.psm.poolArchive[self.globalAssetIdx].rolloverProfit += amount;
     }
 
-    function tranferRolloverClaims(State storage self, address from, address to, uint256 amount, uint256 dsId)
-        external
-    {
-        if (self.psm.poolArchive[dsId].rolloverClaims[from] < amount) {
-            revert InsufficientRolloverBalance(from, amount, self.psm.poolArchive[dsId].rolloverClaims[from]);
-        }
-
-        self.psm.poolArchive[dsId].rolloverClaims[from] -= amount;
-        self.psm.poolArchive[dsId].rolloverClaims[to] += amount;
-    }
-
     function rolloverExpiredCt(
         State storage self,
         address owner,
@@ -501,7 +490,6 @@ library PsmLibrary {
         // we use deposit here because technically the user deposit RA to the PSM when repurchasing
         receivedPa = MathHelper.calculateDepositAmountWithExchangeRate(amount, exchangeRates);
         receivedPa = TransferHelper.fixedToTokenNativeDecimals(receivedPa, self.info.pa);
-
         receivedDs = amount;
 
         if (receivedPa > self.psm.balances.paBalance) {

@@ -6,6 +6,7 @@ import {IPSMcore} from "../interfaces/IPSMcore.sol";
 import {State} from "../libraries/State.sol";
 import {ModuleState} from "./ModuleState.sol";
 import {Context} from "@openzeppelin/contracts/utils/Context.sol";
+import {IExchangeRateProvider} from "./../interfaces/IExchangeRateProvider.sol";
 
 /**
  * @title PsmCore Abstract Contract
@@ -24,6 +25,16 @@ abstract contract PsmCore is IPSMcore, ModuleState, Context {
         state.updateExchangeRate(newRate);
 
         emit RateUpdated(id, newRate, previousRate);
+    }
+
+    function _getRate(Id id, Pair storage info) internal view returns (uint256) {
+        uint256 exchangeRates = IExchangeRateProvider(info.exchangeRateProvider).rate();
+
+        if (exchangeRates == 0) {
+            exchangeRates = IExchangeRateProvider(info.exchangeRateProvider).rate(id);
+        }
+
+        return exchangeRates;
     }
 
     /**

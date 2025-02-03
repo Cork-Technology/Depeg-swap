@@ -18,7 +18,7 @@ contract CorkConfigTest is Test {
     event ModuleCoreSet(address moduleCore);
     event FlashSwapCoreSet(address flashSwapRouter);
     event HookSet(address hook);
-    event HedgeUnitFactorySet(address hedgeUnitFactory);
+    event ProtectedUnitFactorySet(address protectedUnitFactory);
     event TreasurySet(address treasury);
     event RoleGranted(bytes32 indexed role, address indexed account, address indexed sender);
     event RoleRevoked(bytes32 indexed role, address indexed account, address indexed sender);
@@ -123,33 +123,33 @@ contract CorkConfigTest is Test {
         assertEq(address(config.hook()), mockHook);
     }
 
-    function test_SetHedgeUnitFactoryRevertWhenCalledByNonManager() public {
-        address mockHedgeUnitFactory = address(5);
+    function test_SetProtectedUnitFactoryRevertWhenCalledByNonManager() public {
+        address mockProtectedUnitFactory = address(5);
         vm.startPrank(address(8));
 
-        assertEq(address(config.hedgeUnitFactory()), address(0));
+        assertEq(address(config.protectedUnitFactory()), address(0));
         vm.expectRevert(CorkConfig.CallerNotManager.selector);
-        config.setHedgeUnitFactory(mockHedgeUnitFactory);
-        assertEq(address(config.hedgeUnitFactory()), address(0));
+        config.setProtectedUnitFactory(mockProtectedUnitFactory);
+        assertEq(address(config.protectedUnitFactory()), address(0));
     }
 
-    function test_SetHedgeUnitFactoryRevertWhenPassedZeroAddress() public {
+    function test_SetProtectedUnitFactoryRevertWhenPassedZeroAddress() public {
         vm.startPrank(manager);
-        assertEq(address(config.hedgeUnitFactory()), address(0));
+        assertEq(address(config.protectedUnitFactory()), address(0));
         vm.expectRevert(CorkConfig.InvalidAddress.selector);
-        config.setHedgeUnitFactory(address(0));
-        assertEq(address(config.hedgeUnitFactory()), address(0));
+        config.setProtectedUnitFactory(address(0));
+        assertEq(address(config.protectedUnitFactory()), address(0));
     }
 
-    function test_SetHedgeUnitFactoryShouldWorkCorrectly() public {
-        address mockHedgeUnitFactory = address(5);
+    function test_SetProtectedUnitFactoryShouldWorkCorrectly() public {
+        address mockProtectedUnitFactory = address(5);
         vm.startPrank(manager);
-        assertEq(address(config.hedgeUnitFactory()), address(0));
+        assertEq(address(config.protectedUnitFactory()), address(0));
 
         vm.expectEmit(false, false, false, true);
-        emit HedgeUnitFactorySet(mockHedgeUnitFactory);
-        config.setHedgeUnitFactory(mockHedgeUnitFactory);
-        assertEq(address(config.hedgeUnitFactory()), mockHedgeUnitFactory);
+        emit ProtectedUnitFactorySet(mockProtectedUnitFactory);
+        config.setProtectedUnitFactory(mockProtectedUnitFactory);
+        assertEq(address(config.protectedUnitFactory()), mockProtectedUnitFactory);
     }
 
     function test_SetTreasuryRevertWhenCalledByNonManager() public {

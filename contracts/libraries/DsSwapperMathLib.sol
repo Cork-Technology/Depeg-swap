@@ -147,6 +147,16 @@ library SwapperMathLibrary {
         ctPriceRatio = unwrap(div(ud(raReserve), ud(ctReserve)));
     }
 
+    // calculate the realized fee of a RA to DS swap
+    function calculateDsExtraFee(uint256 amount, uint256 salePercentage, uint256 feePercentage)
+        internal
+        pure
+        returns (uint256 fee)
+    {
+        fee = calculatePercentage(amount, salePercentage);
+        fee = calculatePercentage(fee, feePercentage);
+    }
+
     function getAmountOutBuyDs(
         uint256 x,
         uint256 y,
@@ -248,7 +258,6 @@ library SwapperMathLibrary {
         decay = sub(convertUd(100), discount);
     }
 
-    // TODO : confirm with Peter that the t for fixed price rollover sale is constant at 1 since it's fixed price
     function _calculateRolloverSale(UD60x18 lvDsReserve, UD60x18 psmDsReserve, UD60x18 raProvided, UD60x18 hpa)
         public
         view
@@ -270,12 +279,11 @@ library SwapperMathLibrary {
         if (totalDsReserve >= dsReceived) {
             raLeft = convertUd(0); // No shortfall
         } else {
-            // Calculate the RA needed for the shortfall in DS
-            UD60x18 dsShortfall = sub(dsReceived, totalDsReserve);
-            raLeft = mul(dsShortfall, hpa);
-
             // Adjust the DS received to match the total reserve
             dsReceived = totalDsReserve;
+
+            // Recalculate raLeft to account for the dust
+            raLeft = sub(raProvided, mul(dsReceived, hpa));
         }
 
         // recalculate the DS user will receive, after the RA left is deducted

@@ -1,11 +1,12 @@
+// SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.24;
 
 import {IErrors} from "./IErrors.sol";
 
-interface IHedgeUnitRouter is IErrors {
+interface IProtectedUnitRouter is IErrors {
     struct BatchMintParams {
         uint256 deadline;
-        address[] hedgeUnits;
+        address[] protectedUnits;
         uint256[] amounts;
         bytes[] rawDsPermitSigs;
         bytes[] rawPaPermitSigs;
@@ -16,10 +17,10 @@ interface IHedgeUnitRouter is IErrors {
         address spender;
         uint256 value;
         uint256 deadline;
-        bytes rawHedgeUnitPermitSig;
+        bytes rawProtectedUnitPermitSig;
     }
 
-    event HedgeUnitSet(address hedgeUnit);
+    event ProtectedUnitSet(address protectedUnit);
 
-    event HedgeUnitRemoved(address hedgeUnit);
+    event ProtectedUnitRemoved(address protectedUnit);
 }
