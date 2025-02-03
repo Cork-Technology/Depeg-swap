@@ -50,7 +50,7 @@ contract AssetFactory is IAssetFactory, OwnableUpgradeable, UUPSUpgradeable {
 
         // this will assign a fixed variant number to a pair
         // so if the same pair deploys a new asset it will have the same variant number
-        uint256 variantUint = variantIndexPair[id] == 0 ? variantIndex[hash]++ : variantIndexPair[id];
+        uint256 variantUint = variantIndexPair[id] == 0 ? ++variantIndex[hash] : variantIndexPair[id];
         variantIndexPair[id] = variantUint;
 
         variant = string.concat(baseSymbol, "-", Strings.toString(variantUint));
