@@ -81,19 +81,12 @@ contract Asset is ERC20Burnable, CustomERC20Permit, Ownable, Expiry, ExchangeRat
     string public pairName;
 
     constructor(
-        string memory prefix,
         string memory _pairName,
         address _owner,
         uint256 _expiry,
         uint256 _rate,
         uint256 _dsId
-    )
-        ExchangeRate(_rate)
-        ERC20(string(abi.encodePacked(prefix, "-", _pairName)), string(abi.encodePacked(prefix, "-", _pairName)))
-        CustomERC20Permit(string(abi.encodePacked(prefix, "-", _pairName)))
-        Ownable(_owner)
-        Expiry(_expiry)
-    {
+    ) ExchangeRate(_rate) ERC20(_pairName, _pairName) CustomERC20Permit(_pairName) Ownable(_owner) Expiry(_expiry) {
         pairName = _pairName;
         DS_ID = _dsId;
     }

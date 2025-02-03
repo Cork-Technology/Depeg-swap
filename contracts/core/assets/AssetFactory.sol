@@ -35,6 +35,7 @@ contract AssetFactory is IAssetFactory, OwnableUpgradeable, UUPSUpgradeable {
     mapping(Id => SwapPair[]) internal swapAssets;
     mapping(address => bool) internal deployed;
     mapping(bytes32 => uint256) internal variantIndex;
+    mapping(Id => uint256) internal variantIndexPair;
 
     /// @notice __gap variable to prevent storage collisions
     // slither-disable-next-line unused-state
@@ -44,30 +45,28 @@ contract AssetFactory is IAssetFactory, OwnableUpgradeable, UUPSUpgradeable {
         _disableInitializers();
     }
 
-    function _generateVariant(string memory baseSymbol) internal returns(string memory variant){
+    function _generateVariant(string memory baseSymbol, Id id) internal returns (string memory variant) {
         bytes32 hash = keccak256(abi.encodePacked(baseSymbol));
-        uint256 variantUint = ++variantIndex[hash];
 
-        variant =  Strings.toString(variantUint);
+        // this will assign a fixed variant number to a pair
+        // so if the same pair deploys a new asset it will have the same variant number
+        uint256 variantUint = variantIndexPair[id] == 0 ? variantIndex[hash]++ : variantIndexPair[id];
+        variantIndexPair[id] = variantUint;
+
+        variant = string.concat(baseSymbol, "-", Strings.toString(variantUint));
     }
 
     // will generate symbol such as wstETH03CT-1
-    function _generateSymbolWithVariant(address pa, uint256 expiry, string memory prefix) internal returns(string memory symbol){
-        string memory
-    }
-
-
-    // TODO : add exchange rate update test
-    // will generate symbol such as wstETH03CT or wstETH!LV
-    function _generateSymbol(address pa, uint256 expiry, uint256 prefix) internal  {
+    function _generateSymbolWithVariant(address pa, uint256 expiry, string memory prefix, Id id)
+        internal
+        returns (string memory symbol)
+    {
         string memory baseSymbol = IERC20Metadata(pa).symbol();
         string memory separator = expiry == 0 ? "!" : Strings.toString(BokkyPooBahsDateTimeLibrary.getMonth(expiry));
-        return string.concat(baseSymbol, separator, prefix);
-    }
 
-    function _generateRawSymbols(address pa, uint256 expiry) internal returns(string memory symbol){
-        string memory baseSymbol = IERC20Metadata(pa).symbol();
-        string memory separator = expiry == 0 ? "!" : Strings.toString(BokkyPooBahsDateTimeLibrary.getMonth(expiry));
+        string memory base = string.concat(baseSymbol, separator, prefix);
+
+        symbol = _generateVariant(base, id);
     }
 
     /**
@@ -204,10 +203,24 @@ contract AssetFactory is IAssetFactory, OwnableUpgradeable, UUPSUpgradeable {
         }
 
         {
-            string memory pairname = _getAssetPairName(expiry, params._ra, params._pa);
-
-            ct = address(new Asset(CT_PREFIX, pairname, params._owner, expiry, params.psmExchangeRate, params.dsId));
-            ds = address(new Asset(DS_PREFIX, pairname, params._owner, expiry, params.psmExchangeRate, params.dsId));
+            ct = address(
+                new Asset(
+                    _generateSymbolWithVariant(asset.pa, expiry, CT_PREFIX, id),
+                    params._owner,
+                    expiry,
+                    params.psmExchangeRate,
+                    params.dsId
+                )
+            );
+            ds = address(
+                new Asset(
+                    _generateSymbolWithVariant(asset.pa, expiry, DS_PREFIX, id),
+                    params._owner,
+                    expiry,
+                    params.psmExchangeRate,
+                    params.dsId
+                )
+            );
         }
 
         swapAssets[id].push(SwapPair(ct, ds));
@@ -216,14 +229,6 @@ contract AssetFactory is IAssetFactory, OwnableUpgradeable, UUPSUpgradeable {
         deployed[ds] = true;
 
         emit AssetDeployed(params._ra, ct, ds);
-    }
-
-    function _getAssetPairName(uint256 expiry, address _ra, address _pa) internal view returns (string memory) {
-        (uint256 year, uint256 month, uint256 day) = BokkyPooBahsDateTimeLibrary.timestampToDate(expiry);
-        string memory expiryAsStrings =
-            string.concat(Strings.toString(year), "-", Strings.toString(month), "-", Strings.toString(day));
-
-        return string.concat(IERC20Metadata(_ra).symbol(), "-", IERC20Metadata(_pa).symbol(), "-", expiryAsStrings);
     }
 
     /**
@@ -241,16 +246,13 @@ contract AssetFactory is IAssetFactory, OwnableUpgradeable, UUPSUpgradeable {
         uint256 _expiryInterval,
         address _exchangeRateProvider
     ) external override onlyOwner returns (address lv) {
-        string memory pairname;
-
-        {
-            pairname = string.concat(IERC20Metadata(_ra).symbol(), "-", IERC20Metadata(_pa).symbol());
-        }
-
-        lv = address(new Asset(LV_PREFIX, pairname, _owner, 0, 0, 0));
-
         // signal that a pair actually exists. Only after this it's possible to deploy a swap asset for this pair
         Pair memory pair = Pair(_pa, _ra, _initialArp, _expiryInterval, _exchangeRateProvider);
+
+        {
+            string memory pairname = _generateSymbolWithVariant(_pa, 0, LV_PREFIX, pair.toId());
+            lv = address(new Asset(pairname, _owner, 0, 0, 0));
+        }
 
         // solhint-disable-next-line gas-increment-by-one
         pairs[idx++] = pair;
