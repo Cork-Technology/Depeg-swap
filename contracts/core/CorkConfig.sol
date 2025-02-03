@@ -32,9 +32,6 @@ contract CorkConfig is AccessControl, Pausable {
     // instead of storing it themselves, since it'll be hard to update the treasury address in all the components if it changes vs updating it in the config contract once
     address public treasury;
 
-    /// @notice set to true when initializeModuleCore is allowed to call by anyone in permissionless way
-    bool public isInitPermissionless;
-
     uint256 public constant WHITELIST_TIME_DELAY = 7 days;
 
     /// @notice liquidation address => timestamp when liquidation is allowed
@@ -42,9 +39,6 @@ contract CorkConfig is AccessControl, Pausable {
 
     /// @notice thrown when caller is not manager/Admin of Cork Protocol
     error CallerNotManager();
-
-    /// @notice thrown when caller is not Market Initializer of Cork Protocol
-    error CallerNotInitializer();
 
     /// @notice thrown when passed Invalid/Zero Address
     error InvalidAddress();
@@ -72,14 +66,6 @@ contract CorkConfig is AccessControl, Pausable {
     modifier onlyManager() {
         if (!hasRole(MANAGER_ROLE, msg.sender)) {
             revert CallerNotManager();
-        }
-        _;
-    }
-
-    /// @notice Checks if the caller is either the initializer of the market or initialization is allowed permissionlessly
-    modifier onlyInitializer() {
-        if (!hasRole(MARKET_INITIALIZER_ROLE, msg.sender) && !isInitPermissionless) {
-            revert CallerNotInitializer();
         }
         _;
     }
@@ -114,10 +100,6 @@ contract CorkConfig is AccessControl, Pausable {
 
     function grantRole(bytes32 role, address account) public override onlyManager {
         _grantRole(role, account);
-    }
-
-    function updateMarketInitAllowance(bool _isInitPermissionless) external onlyManager {
-        isInitPermissionless = _isInitPermissionless;
     }
 
     function transferAdmin(address newAdmin) external onlyRole(DEFAULT_ADMIN_ROLE) {
@@ -228,10 +210,7 @@ contract CorkConfig is AccessControl, Pausable {
      * @param ra Address of RA
      * @param initialArp initial price of DS
      */
-    function initializeModuleCore(address pa, address ra, uint256 initialArp, uint256 expiryInterval)
-        external
-        onlyInitializer
-    {
+    function initializeModuleCore(address pa, address ra, uint256 initialArp, uint256 expiryInterval) external {
         moduleCore.initializeModuleCore(pa, ra, initialArp, expiryInterval);
     }
 
@@ -246,7 +225,7 @@ contract CorkConfig is AccessControl, Pausable {
         // won't have effect on first issuance
         uint256 rolloverPeriodInblocks,
         uint256 ammLiquidationDeadline
-    ) external whenNotPaused onlyManager {
+    ) external whenNotPaused {
         moduleCore.issueNewDs(
             id, exchangeRates, decayDiscountRateInDays, rolloverPeriodInblocks, ammLiquidationDeadline
         );
