@@ -48,7 +48,8 @@ contract ModuleCore is OwnableUpgradeable, UUPSUpgradeable, PsmCore, Initialize,
         initializeModuleState(_swapAssetFactory, _ammHook, _flashSwapRouter, _config);
     }
 
-    function setWithdrawalContract(address _withdrawalContract) external onlyConfig {
+    function setWithdrawalContract(address _withdrawalContract) external {
+        onlyConfig();
         _setWithdrawalContract(_withdrawalContract);
     }
 
@@ -74,8 +75,8 @@ contract ModuleCore is OwnableUpgradeable, UUPSUpgradeable, PsmCore, Initialize,
     function initializeModuleCore(address pa, address ra, uint256 initialArp, uint256 expiryInterval)
         external
         override
-        onlyConfig
     {
+        onlyConfig();
         if (expiryInterval == 0) {
             revert InvalidExpiry();
         }
@@ -105,7 +106,8 @@ contract ModuleCore is OwnableUpgradeable, UUPSUpgradeable, PsmCore, Initialize,
         // won't have effect on first issuance
         uint256 rolloverPeriodInblocks,
         uint256 ammLiquidationDeadline
-    ) external override onlyConfig {
+    ) external override {
+        onlyConfig();
         onlyInitialized(id);
 
         State storage state = states[id];
@@ -143,7 +145,8 @@ contract ModuleCore is OwnableUpgradeable, UUPSUpgradeable, PsmCore, Initialize,
         emit Issued(id, idx, block.timestamp + _expiryInterval, ds, ct, AmmId.unwrap(toAmmId(ra, ct)));
     }
 
-    function updateRepurchaseFeeRate(Id id, uint256 newRepurchaseFeePercentage) external onlyConfig {
+    function updateRepurchaseFeeRate(Id id, uint256 newRepurchaseFeePercentage) external {
+        onlyConfig();
         State storage state = states[id];
         PsmLibrary.updateRepurchaseFeePercentage(state, newRepurchaseFeePercentage);
 
@@ -155,7 +158,8 @@ contract ModuleCore is OwnableUpgradeable, UUPSUpgradeable, PsmCore, Initialize,
      * @param id id of the pair
      * @param isPSMDepositPaused set to true if you want to pause PSM deposits
      */
-    function updatePsmDepositsStatus(Id id, bool isPSMDepositPaused) external onlyConfig {
+    function updatePsmDepositsStatus(Id id, bool isPSMDepositPaused) external {
+        onlyConfig();
         State storage state = states[id];
         PsmLibrary.updatePsmDepositsStatus(state, isPSMDepositPaused);
         emit PsmDepositsStatusUpdated(id, isPSMDepositPaused);
@@ -166,7 +170,8 @@ contract ModuleCore is OwnableUpgradeable, UUPSUpgradeable, PsmCore, Initialize,
      * @param id id of the pair
      * @param isPSMWithdrawalPaused set to true if you want to pause PSM withdrawals
      */
-    function updatePsmWithdrawalsStatus(Id id, bool isPSMWithdrawalPaused) external onlyConfig {
+    function updatePsmWithdrawalsStatus(Id id, bool isPSMWithdrawalPaused) external {
+        onlyConfig();
         State storage state = states[id];
         PsmLibrary.updatePsmWithdrawalsStatus(state, isPSMWithdrawalPaused);
         emit PsmWithdrawalsStatusUpdated(id, isPSMWithdrawalPaused);
@@ -177,7 +182,8 @@ contract ModuleCore is OwnableUpgradeable, UUPSUpgradeable, PsmCore, Initialize,
      * @param id id of the pair
      * @param isPSMRepurchasePaused set to true if you want to pause PSM repurchases
      */
-    function updatePsmRepurchasesStatus(Id id, bool isPSMRepurchasePaused) external onlyConfig {
+    function updatePsmRepurchasesStatus(Id id, bool isPSMRepurchasePaused) external {
+        onlyConfig();
         State storage state = states[id];
         PsmLibrary.updatePsmRepurchasesStatus(state, isPSMRepurchasePaused);
         emit PsmRepurchasesStatusUpdated(id, isPSMRepurchasePaused);
@@ -188,7 +194,8 @@ contract ModuleCore is OwnableUpgradeable, UUPSUpgradeable, PsmCore, Initialize,
      * @param id id of the pair
      * @param isLVDepositPaused set to true if you want to pause LV deposits
      */
-    function updateLvDepositsStatus(Id id, bool isLVDepositPaused) external onlyConfig {
+    function updateLvDepositsStatus(Id id, bool isLVDepositPaused) external {
+        onlyConfig();
         State storage state = states[id];
         VaultLibrary.updateLvDepositsStatus(state, isLVDepositPaused);
         emit LvDepositsStatusUpdated(id, isLVDepositPaused);
@@ -199,7 +206,8 @@ contract ModuleCore is OwnableUpgradeable, UUPSUpgradeable, PsmCore, Initialize,
      * @param id id of the pair
      * @param isLVWithdrawalPaused set to true if you want to pause LV withdrawals
      */
-    function updateLvWithdrawalsStatus(Id id, bool isLVWithdrawalPaused) external onlyConfig {
+    function updateLvWithdrawalsStatus(Id id, bool isLVWithdrawalPaused) external {
+        onlyConfig();
         State storage state = states[id];
         VaultLibrary.updateLvWithdrawalsStatus(state, isLVWithdrawalPaused);
         emit LvWithdrawalsStatusUpdated(id, isLVWithdrawalPaused);
@@ -241,10 +249,8 @@ contract ModuleCore is OwnableUpgradeable, UUPSUpgradeable, PsmCore, Initialize,
      * @notice update value of PSMBaseRedemption fees
      * @param newPsmBaseRedemptionFeePercentage new value of fees
      */
-    function updatePsmBaseRedemptionFeePercentage(Id id, uint256 newPsmBaseRedemptionFeePercentage)
-        external
-        onlyConfig
-    {
+    function updatePsmBaseRedemptionFeePercentage(Id id, uint256 newPsmBaseRedemptionFeePercentage) external {
+        onlyConfig();
         State storage state = states[id];
         PsmLibrary.updatePSMBaseRedemptionFeePercentage(state, newPsmBaseRedemptionFeePercentage);
         emit PsmBaseRedemptionFeePercentageUpdated(id, newPsmBaseRedemptionFeePercentage);

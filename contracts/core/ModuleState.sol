@@ -36,11 +36,10 @@ abstract contract ModuleState is IErrors, ReentrancyGuardTransient {
     /**
      * @dev checks if caller is config contract or not
      */
-    modifier onlyConfig() {
+    function onlyConfig() internal view {
         if (msg.sender != CONFIG) {
             revert OnlyConfigAllowed();
         }
-        _;
     }
 
     function factory() external view returns (address) {
@@ -98,11 +97,10 @@ abstract contract ModuleState is IErrors, ReentrancyGuardTransient {
         }
     }
 
-    modifier onlyFlashSwapRouter() {
+    function onlyFlashSwapRouter() internal view {
         if (msg.sender != DS_FLASHSWAP_ROUTER) {
             revert OnlyFlashSwapRouterAllowed();
         }
-        _;
     }
 
     function PSMWithdrawalNotPaused(Id id) internal view {
@@ -117,18 +115,16 @@ abstract contract ModuleState is IErrors, ReentrancyGuardTransient {
         }
     }
 
-    modifier LVDepositNotPaused(Id id) {
+    function LVDepositNotPaused(Id id) internal view {
         if (states[id].vault.config.isDepositPaused) {
             revert LVDepositPaused();
         }
-        _;
     }
 
-    modifier LVWithdrawalNotPaused(Id id) {
+    function LVWithdrawalNotPaused(Id id) internal view {
         if (states[id].vault.config.isWithdrawalPaused) {
             revert LVWithdrawalPaused();
         }
-        _;
     }
 
     function onlyWhiteListedLiquidationContract() internal view {
