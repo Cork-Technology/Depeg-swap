@@ -279,13 +279,10 @@ contract RouterState is
         if (
             dsId == DsFlashSwaplibrary.FIRST_ISSUANCE || !reserves[reserveId].rolloverSale()
                 || reserves[reserveId].hiya == 0
-                || (reserves[reserveId].ds[dsId].lvReserve == 0 && reserves[reserveId].ds[dsId].psmReserve == 0)
         ) {
             // noop and return back the full amountRa
             return (amountRa, 0);
         }
-
-        amountRa = TransferHelper.tokenNativeDecimalsToFixed(amountRa, reserves[reserveId].ds[dsId].ra);
 
         ReserveState storage self = reserves[reserveId];
         AssetPair storage assetPair = self.ds[dsId];
