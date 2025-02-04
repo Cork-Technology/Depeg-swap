@@ -50,7 +50,8 @@ contract VaultRedeemTest is Helper {
         moduleCore.depositLv(currencyId, DEFAULT_DEPOSIT_AMOUNT, 0, 0);
 
         // save initial data
-        lv = assetFactory.getLv(address(ra), address(pa), _expiry);
+        address exchangeRateProvider = address(corkConfig.defaultExchangeRateProvider());
+        lv = assetFactory.getLv(address(ra), address(pa), DEFAULT_INITIAL_DS_PRICE, _expiry, exchangeRateProvider);
         dsId = moduleCore.lastDsId(currencyId);
     }
 

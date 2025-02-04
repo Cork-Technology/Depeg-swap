@@ -107,6 +107,7 @@ interface IDsFlashSwapCore is IDsFlashSwapUtility {
         uint256 initialBorrow;
         /// @dev the final amount of RA that's borrowed after selling DS reserve
         uint256 afterSoldBorrow;
+        uint256 fee;
     }
 
     /**
@@ -129,6 +130,9 @@ interface IDsFlashSwapCore is IDsFlashSwapUtility {
      * @param amountIn  the amount of RA that's swapped
      * @param amountOut the amount of DS that's received
      * @param ctRefunded the amount of excess CT that's refunded to the user
+     * @param fee the DS fee that's been cut from the user RA. derived from amountIn * feePercentage * reserveSellPercentage
+     * @param feePercentage the fee percentage that's taken from user RA that's in theory filled with the reserve DS
+     * @param reserveSellPercentage this is the percentage of the amount of DS that's been sold from the router
      */
     event RaSwapped(
         Id indexed reserveId,
@@ -136,7 +140,10 @@ interface IDsFlashSwapCore is IDsFlashSwapUtility {
         address indexed user,
         uint256 amountIn,
         uint256 amountOut,
-        uint256 ctRefunded
+        uint256 ctRefunded,
+        uint256 fee,
+        uint256 feePercentage,
+        uint256 reserveSellPercentage
     );
 
     /**
@@ -198,6 +205,10 @@ interface IDsFlashSwapCore is IDsFlashSwapUtility {
         uint256 decayDiscountRateInDays,
         uint256 rolloverPeriodInblocks
     ) external;
+
+    function updateDsExtraFeePercentage(Id id, uint256 newPercentage) external;
+
+    function updateDsExtraFeeTreasurySplitPercentage(Id id, uint256 newPercentage) external;
 
     /**
      * @notice add more DS reserve from liquidity vault, can only be called by moduleCore
@@ -297,7 +308,6 @@ interface IDsFlashSwapCore is IDsFlashSwapUtility {
         uint256 dsId,
         uint256 amount,
         uint256 amountOutMin,
-        address user,
         bytes memory rawDsPermitSig,
         uint256 deadline
     ) external returns (uint256 amountOut);
@@ -323,4 +333,8 @@ interface IDsFlashSwapCore is IDsFlashSwapUtility {
     event GradualSaleStatusUpdated(Id indexed id, bool disabled);
 
     event ReserveSellPressurePercentageUpdated(Id indexed id, uint256 newPercentage);
+
+    event DsFeeUpdated(Id indexed id, uint256 newPercentage);
+
+    event DsFeeTreasuryPercentageUpdated(Id indexed id, uint256 newPercentage);
 }

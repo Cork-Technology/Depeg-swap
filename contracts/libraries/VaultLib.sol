@@ -118,19 +118,12 @@ library VaultLibrary {
         __provideAmmLiquidityFromPool(self, flashSwapRouter, self.ds[self.globalAssetIdx].ct, ammRouter);
     }
 
-    function _liquidateIfExpired(
-        State storage self,
-        uint256 dsId,
-        ICorkHook ammRouter,
-        uint256 deadline
-    ) internal {
+    function _liquidateIfExpired(State storage self, uint256 dsId, ICorkHook ammRouter, uint256 deadline) internal {
         DepegSwap storage ds = self.ds[dsId];
-
         // we don't want to revert here for easier control flow, expiry check should happen at contract level not library level
         if (!ds.isExpired()) {
             return;
         }
-
         if (!self.vault.lpLiquidated.get(dsId)) {
             _liquidatedLp(self, dsId, ammRouter, deadline);
             _redeemCtStrategy(self, dsId);
@@ -171,7 +164,6 @@ library VaultLibrary {
         Tolerance memory tolerance
     ) internal returns (uint256 ra, uint256 ct, uint256 lp) {
         (ra, ct) = __calculateProvideLiquidityAmount(self, amount, flashSwapRouter);
-
         (lp,) = __provideLiquidity(self, ra, ct, flashSwapRouter, ctAddress, ammRouter, tolerance, amount);
     }
 
@@ -185,7 +177,6 @@ library VaultLibrary {
         Tolerance memory tolerance
     ) internal returns (uint256 ra, uint256 ct, uint256 dust) {
         (ra, ct) = __calculateProvideLiquidityAmount(self, amount, flashSwapRouter);
-
         (, dust) = __provideLiquidity(self, ra, ct, flashSwapRouter, ctAddress, ammRouter, tolerance, amount);
     }
 
@@ -452,12 +443,7 @@ library VaultLibrary {
         (raReceived, ctReceived) = ammRouter.removeLiquidity(raAddress, ctAddress, lp, 0, 0, deadline);
     }
 
-    function _liquidatedLp(
-        State storage self,
-        uint256 dsId,
-        ICorkHook ammRouter,
-        uint256 deadline
-    ) internal {
+    function _liquidatedLp(State storage self, uint256 dsId, ICorkHook ammRouter, uint256 deadline) internal {
         DepegSwap storage ds = self.ds[dsId];
         uint256 lpBalance;
         {
@@ -484,12 +470,7 @@ library VaultLibrary {
         _redeemCtVault(self, dsId, ctAmm, raAmm);
     }
 
-    function _redeemCtVault(
-        State storage self,
-        uint256 dsId,
-        uint256 ctAmm,
-        uint256 raAmm
-    ) internal {
+    function _redeemCtVault(State storage self, uint256 dsId, uint256 ctAmm, uint256 raAmm) internal {
         uint256 psmPa;
         uint256 psmRa;
 
@@ -595,6 +576,20 @@ library VaultLibrary {
 
         if (result.raReceivedFromAmm < redeemParams.amountOutMin) {
             revert IErrors.InsufficientOutputAmount(redeemParams.amountOutMin, result.raReceivedFromAmm);
+        }
+
+        if (result.ctReceivedFromAmm + result.ctReceivedFromVault < redeemParams.ctAmountOutMin) {
+            revert IErrors.InsufficientOutputAmount(
+                redeemParams.ctAmountOutMin, result.ctReceivedFromAmm + result.ctReceivedFromVault
+            );
+        }
+
+        if (result.dsReceived < redeemParams.dsAmountOutMin) {
+            revert IErrors.InsufficientOutputAmount(redeemParams.dsAmountOutMin, result.dsReceived);
+        }
+
+        if (result.paReceived < redeemParams.paAmountOutMin) {
+            revert IErrors.InsufficientOutputAmount(redeemParams.paAmountOutMin, result.paReceived);
         }
 
         // burn lv amount + fee

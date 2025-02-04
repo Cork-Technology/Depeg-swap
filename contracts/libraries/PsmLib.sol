@@ -57,6 +57,9 @@ library PsmLibrary {
     }
 
     function updateExchangeRate(State storage self, uint256 newRate) external {
+        if (newRate == 0) {
+            revert IErrors.InvalidRate();
+        }
         uint256 currentRate = self.ds[self.globalAssetIdx].exchangeRate();
 
         _ensureRateIsInDeltaRange(currentRate, newRate);
@@ -85,17 +88,6 @@ library PsmLibrary {
 
     function acceptRolloverProfit(State storage self, uint256 amount) external {
         self.psm.poolArchive[self.globalAssetIdx].rolloverProfit += amount;
-    }
-
-    function tranferRolloverClaims(State storage self, address from, address to, uint256 amount, uint256 dsId)
-        external
-    {
-        if (self.psm.poolArchive[dsId].rolloverClaims[from] < amount) {
-            revert InsufficientRolloverBalance(from, amount, self.psm.poolArchive[dsId].rolloverClaims[from]);
-        }
-
-        self.psm.poolArchive[dsId].rolloverClaims[from] -= amount;
-        self.psm.poolArchive[dsId].rolloverClaims[to] += amount;
     }
 
     function rolloverExpiredCt(
@@ -243,7 +235,6 @@ library PsmLibrary {
             TransferHelper.tokenNativeDecimalsToFixed(prevArchive.rolloverProfit, self.info.ra),
             prevArchive.attributedToRolloverProfit
         );
-
         rolloverProfit = TransferHelper.fixedToTokenNativeDecimals(rolloverProfit, self.info.ra);
 
         // reset their claim
@@ -287,13 +278,7 @@ library PsmLibrary {
     }
 
     /// @notice issue a new pair of DS, will fail if the previous DS isn't yet expired
-    function onNewIssuance(
-        State storage self,
-        address ct,
-        address ds,
-        uint256 idx,
-        uint256 prevIdx
-    ) internal {
+    function onNewIssuance(State storage self, address ct, address ds, uint256 idx, uint256 prevIdx) internal {
         if (prevIdx != 0) {
             DepegSwap storage _prevDs = self.ds[prevIdx];
             Guard.safeAfterExpired(_prevDs);
@@ -494,7 +479,6 @@ library PsmLibrary {
         // the fee is taken directly from RA before it's even converted to DS
         {
             Asset dsToken = Asset(ds._address);
-
             (fee, feePercentage) = MathHelper.calculateRepurchaseFee(
                 dsToken.issuedAt(), dsToken.expiry(), block.timestamp, amount, self.psm.repurchaseFeePercentage
             );
@@ -506,13 +490,10 @@ library PsmLibrary {
         // we use deposit here because technically the user deposit RA to the PSM when repurchasing
         receivedPa = MathHelper.calculateDepositAmountWithExchangeRate(amount, exchangeRates);
         receivedPa = TransferHelper.fixedToTokenNativeDecimals(receivedPa, self.info.pa);
-
         receivedDs = amount;
 
-        uint256 available = self.psm.balances.paBalance;
-
         if (receivedPa > self.psm.balances.paBalance) {
-            revert IErrors.InsufficientLiquidity(available, receivedPa);
+            revert IErrors.InsufficientLiquidity(self.psm.balances.paBalance, receivedPa);
         }
 
         if (receivedDs > self.psm.balances.dsBalance) {
@@ -520,12 +501,7 @@ library PsmLibrary {
         }
     }
 
-    function repurchase(
-        State storage self,
-        address buyer,
-        uint256 amount,
-        address treasury
-    )
+    function repurchase(State storage self, address buyer, uint256 amount, address treasury)
         external
         returns (
             uint256 dsId,
@@ -568,7 +544,6 @@ library PsmLibrary {
 
         if (fee != 0) {
             uint256 remainingFee = _attributeFeeToTreasury(self, fee, treasury);
-
             // Provide liquidity with the remaining fee(if any)
             VaultLibrary.allocateFeesToVault(self, remainingFee);
         }
@@ -679,10 +654,8 @@ library PsmLibrary {
         Guard.safeBeforeExpired(_ds);
 
         exchangeRates = _ds.exchangeRate();
-
         // the amount here is the PA amount
         amount = TransferHelper.tokenNativeDecimalsToFixed(amount, self.info.pa);
-
         uint256 raDs = MathHelper.calculateEqualSwapAmount(amount, exchangeRates);
 
         ds = raDs;
@@ -762,7 +735,9 @@ library PsmLibrary {
         DepegSwap storage ds = self.ds[dsId];
         Guard.safeAfterExpired(ds);
         if (deadline != 0) {
-            DepegSwapLibrary.permit(ds.ct, rawCtPermitSig, owner, address(this), amount, deadline, "redeemWithExpiredCt");
+            DepegSwapLibrary.permit(
+                ds.ct, rawCtPermitSig, owner, address(this), amount, deadline, "redeemWithExpiredCt"
+            );
         }
         _separateLiquidity(self, dsId);
 

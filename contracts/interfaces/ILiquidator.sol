@@ -1,7 +1,9 @@
+// SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.24;
 
 import {Id} from "./../libraries/Pair.sol";
 import {IErrors} from "./IErrors.sol";
+import {IDsFlashSwapCore} from "./IDsFlashSwapRouter.sol";
 
 /**
  * @title ILiquidator Interface
@@ -23,7 +25,7 @@ interface ILiquidator is IErrors {
         Id vaultId;
     }
 
-    struct CreateHedgeUnitOrderParams {
+    struct CreateProtectedUnitOrderParams {
         /// the internal reference id, used to associate which order is being liquidated in the liquidation contract
         /// sinceit's impossible to add the order id in the appData directly,
         /// backend must generate a random hash to be used as internalRefId when creating the order
@@ -34,7 +36,7 @@ interface ILiquidator is IErrors {
         address sellToken;
         uint256 sellAmount;
         address buyToken;
-        address hedgeUnit;
+        address protectedUnit;
     }
 
     struct Call {
@@ -55,4 +57,19 @@ interface ILiquidator is IErrors {
     function createOrderVault(ILiquidator.CreateVaultOrderParams memory params) external;
 
     function finishVaultOrder(bytes32 refId) external;
+
+    function finishProtectedUnitOrder(bytes32 refId) external;
+
+    function fetchVaultReceiver(bytes32 refId) external returns (address receiver);
+
+    function finishProtectedUnitOrderAndExecuteTrade(
+        bytes32 refId,
+        uint256 amountOutMin,
+        IDsFlashSwapCore.BuyAprroxParams calldata params,
+        IDsFlashSwapCore.OffchainGuess calldata offchainGuess
+    ) external returns (uint256 amountOut);
+
+    function createOrderProtectedUnit(ILiquidator.CreateProtectedUnitOrderParams calldata params) external;
+
+    function fetchProtectedUnitReceiver(bytes32 refId) external returns (address receiver);
 }

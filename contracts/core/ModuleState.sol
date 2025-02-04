@@ -36,7 +36,7 @@ abstract contract ModuleState is IErrors, ReentrancyGuardTransient {
     /**
      * @dev checks if caller is config contract or not
      */
-    function onlyConfig() internal {
+    function onlyConfig() internal view {
         if (msg.sender != CONFIG) {
             revert OnlyConfigAllowed();
         }

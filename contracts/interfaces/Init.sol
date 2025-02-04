@@ -15,22 +15,25 @@ interface Initialize {
      * @param ra address of RA token(e.g WETH)
      * @param initialArp initial assets ARP. the initial ds price will be derived from this value. must be in 18 decimals(e.g 1% = 1e18)
      * @param expiryInterval expiry interval for DS, this will be used to calculate the next expiry time for DS(block.timestamp + expiryInterval)
+     * @param exchangeRateProvider address of IExchangeRateProvider contract
      */
-    function initializeModuleCore(address pa, address ra, uint256 initialArp, uint256 expiryInterval) external;
+    function initializeModuleCore(
+        address pa,
+        address ra,
+        uint256 initialArp,
+        uint256 expiryInterval,
+        address exchangeRateProvider
+    ) external;
 
     /**
      * @notice issue a new DS, can only be done after the previous DS has expired(if any). will deploy CT, DS and initialize new AMM and increment ds Id
      * @param id the id of the pair
-     * @param exchangeRates the exchange rate of the DS, token that are non-rebasing MUST set this to 1e18, and rebasing tokens should set this to the current exchange rate in the market
-     * @param decayDiscountRateInDays the decay discount rate in days, make sure it has 18 decimals(e.g 1% = 1e18)
-     * @param rolloverPeriodInblocks the rollover sale period in blocks(e.g 500 means the rollover would happen right after this block until 500 blocks after the issuance block)
      */
     function issueNewDs(
         Id id,
-        uint256 exchangeRates,
-        uint256 decayDiscountRateInDays,
+        uint256 decayDiscountRateInDays, // protocol-level config
         // won't have effect on first issuance
-        uint256 rolloverPeriodInblocks,
+        uint256 rolloverPeriodInblocks, // protocol-level config
         uint256 ammLiquidationDeadline
     ) external;
 
@@ -114,7 +117,10 @@ interface Initialize {
      */
     function swapAsset(Id id, uint256 dsId) external view returns (address ct, address ds);
 
-    function getId(address pa, address ra, uint256 expiryInterva) external pure returns (Id id);
+    function getId(address pa, address ra, uint256 initialArp, uint256 expiry, address exchangeRateProvider)
+        external
+        pure
+        returns (Id);
 
     /// @notice Emitted when a new LV and PSM is initialized with a given pair
     /// @param id The PSM id

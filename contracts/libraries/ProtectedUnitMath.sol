@@ -6,7 +6,7 @@ import {IErrors} from "./../interfaces/IErrors.sol";
 import {BuyMathBisectionSolver} from "./DsSwapperMathLib.sol";
 import {TransferHelper} from "./TransferHelper.sol";
 
-library HedgeUnitMath {
+library ProtectedUnitMath {
     // caller of this contract must ensure the both amount is already proportional in amount!
     function mint(uint256 reservePa, uint256 totalLiquidity, uint256 amountPa, uint256 amountDs)
         internal

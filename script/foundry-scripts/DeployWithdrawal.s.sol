@@ -13,6 +13,7 @@ contract DeployWithdrawalScript is Script {
     uint256 public pk = vm.envUint("PRIVATE_KEY");
     address moduleCore = 0xc5f00EE3e3499e1b211d1224d059B8149cD2972D;
     address configAdd = 0x7DD402c84fd951Dbef2Ef4459F67dFe8a4128f21;
+
     function setUp() public {}
 
     function run() public {

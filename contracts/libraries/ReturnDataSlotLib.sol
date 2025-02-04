@@ -7,6 +7,9 @@ library ReturnDataSlotLib {
     // keccak256("REFUNDED")
     bytes32 public constant REFUNDED_SLOT = 0x0ae202c5d1ff9dcd4329d24acbf3bddff6279ad182d19d899440adb36d927795;
 
+    // keccak256("DS_FEE_AMOUNT")
+    bytes32 public constant DS_FEE_AMOUNT = 0x2edcf68d3b1bfd48ba1b97a39acb4e9553bc609ae5ceef6b88a0581565dba754;
+
     function increase(bytes32 slot, uint256 _value) internal {
         uint256 prev = get(slot);
 
