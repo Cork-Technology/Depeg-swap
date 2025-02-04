@@ -84,7 +84,7 @@ contract ProtectedUnit is
         address _config,
         address _flashSwapRouter
     )
-        ERC20(string(abi.encodePacked("Protected Unit - ", _pairName)), string(abi.encodePacked("HU - ", _pairName)))
+        ERC20(string(abi.encodePacked("Protected Unit - ", _pairName)), string(abi.encodePacked("PU - ", _pairName)))
         ERC20Permit(string(abi.encodePacked("Protected Unit - ", _pairName)))
         Ownable(_config)
     {

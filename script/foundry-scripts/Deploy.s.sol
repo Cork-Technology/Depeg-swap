@@ -221,7 +221,6 @@ contract DeployScript is Script {
 
         withdrawal = new Withdrawal(address(moduleCore));
         console.log("Withdrawal                      : ", address(withdrawal));
-        console.log("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-");
 
         exchangeRateProvider = address(config.defaultExchangeRateProvider());
         console.log("Exchange Rate Provider          : ", exchangeRateProvider);
