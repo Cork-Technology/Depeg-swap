@@ -53,19 +53,4 @@ contract ExchangeRateProvider is IErrors, IExchangeRateProvider {
 
         exchangeRate[id] = newRate;
     }
-
-    function _ensureRateIsInDeltaRange(uint256 currentRate, uint256 newRate) internal {
-        // rate must never go higher than the current rate
-        if (newRate > currentRate) {
-            revert IErrors.InvalidRate();
-        }
-
-        uint256 delta = MathHelper.calculatePercentageFee(DepegSwapLibrary.MAX_RATE_DELTA_PERCENTAGE, currentRate);
-        delta = currentRate - delta;
-
-        // rate must never go down below delta
-        if (newRate < delta) {
-            revert IErrors.InvalidRate();
-        }
-    }
 }
