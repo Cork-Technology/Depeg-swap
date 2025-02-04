@@ -128,7 +128,15 @@ interface Initialize {
     /// @param ra The address of the redemption asset
     /// @param lv The address of the LV
     /// @param expiry The expiry interval of the DS
-    event InitializedModuleCore(Id indexed id, address indexed pa, address indexed ra, address lv, uint256 expiry);
+    event InitializedModuleCore(
+        Id indexed id,
+        address indexed pa,
+        address indexed ra,
+        address lv,
+        uint256 expiry,
+        uint256 initialArp,
+        address exchangeRateProvider
+    );
 
     /// @notice Emitted when a new DS is issued for a given PSM
     /// @param id The PSM id
