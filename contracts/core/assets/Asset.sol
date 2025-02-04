@@ -80,13 +80,13 @@ contract Asset is ERC20Burnable, CustomERC20Permit, Ownable, Expiry, ExchangeRat
 
     string public pairName;
 
-    constructor(
-        string memory _pairName,
-        address _owner,
-        uint256 _expiry,
-        uint256 _rate,
-        uint256 _dsId
-    ) ExchangeRate(_rate) ERC20(_pairName, _pairName) CustomERC20Permit(_pairName) Ownable(_owner) Expiry(_expiry) {
+    constructor(string memory _pairName, address _owner, uint256 _expiry, uint256 _rate, uint256 _dsId)
+        ExchangeRate(_rate)
+        ERC20(_pairName, _pairName)
+        CustomERC20Permit(_pairName)
+        Ownable(_owner)
+        Expiry(_expiry)
+    {
         pairName = _pairName;
         DS_ID = _dsId;
     }

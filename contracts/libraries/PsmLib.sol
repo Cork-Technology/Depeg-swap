@@ -74,7 +74,6 @@ library PsmLibrary {
         self.ds[self.globalAssetIdx].updateExchangeRate(rate);
     }
 
-
     function initialize(State storage self, Pair calldata key) external {
         self.info = key;
         self.psm.balances.ra = RedemptionAssetManagerLibrary.initialize(key.redemptionAsset());

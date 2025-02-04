@@ -45,7 +45,7 @@ contract RateUpdateTest is Helper {
 
     // ff to expiry and update infos
     function ff_expired() internal {
-        (,address ds) = moduleCore.swapAsset(defaultCurrencyId, 1);
+        (, address ds) = moduleCore.swapAsset(defaultCurrencyId, 1);
 
         // fast forward to expiry
         uint256 expiry = Asset(ds).expiry();
