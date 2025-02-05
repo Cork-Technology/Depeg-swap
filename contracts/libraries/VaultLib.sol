@@ -558,8 +558,6 @@ library VaultLibrary {
 
             redeemAmount = MathHelper.calculateRedeemLv(params);
             result.ctReceivedFromVault = redeemAmount.ctReceived;
-            // decrease the ct balance in the vault
-            self.vault.balances.ctBalance -= result.ctReceivedFromVault;
 
             result.dsReceived = redeemAmount.dsReceived;
             result.raIdleReceived = redeemAmount.idleRaReceived;
@@ -574,6 +572,8 @@ library VaultLibrary {
             result.raReceivedFromAmm = raFromAmm;
             result.ctReceivedFromAmm = ctFromAmm;
         }
+
+        _decreaseInternalBalanceAfterRedeem(self, result);
 
         if (result.raReceivedFromAmm < redeemParams.amountOutMin) {
             revert IErrors.InsufficientOutputAmount(redeemParams.amountOutMin, result.raReceivedFromAmm);
@@ -626,6 +626,12 @@ library VaultLibrary {
 
         // send PA to user
         SafeERC20.safeTransfer(IERC20(pair.pa), address(contracts.withdrawalContract), result.paReceived);
+    }
+
+    function _decreaseInternalBalanceAfterRedeem(State storage self, IVault.RedeemEarlyResult memory result) internal {
+        self.vault.balances.ra.decLocked(result.raIdleReceived);
+        self.vault.balances.ctBalance -= result.ctReceivedFromVault;
+        self.vault.pool.withdrawalPool.paBalance -= result.paReceived;
     }
 
     function vaultLp(State storage self, ICorkHook ammRotuer) internal view returns (uint256) {
