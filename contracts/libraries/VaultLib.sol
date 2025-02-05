@@ -320,9 +320,8 @@ library VaultLibrary {
 
         self.vault.balances.ra.lockUnchecked(amount, from);
 
-        uint256 splitted;
         // split the RA first according to the lv strategy
-        (amount, splitted) = _splitCtWithStrategy(self, flashSwapRouter, amount);
+        (uint256 remaining, uint256 splitted) = _splitCtWithStrategy(self, flashSwapRouter, amount);
 
         uint256 dsId = self.globalAssetIdx;
 
@@ -331,15 +330,18 @@ library VaultLibrary {
             address ct = self.ds[dsId].ct;
 
             (,, lp) = __provideLiquidityWithRatioGetLP(
-                self, amount, flashSwapRouter, ct, ammRouter, Tolerance(raTolerance, ctTolerance)
+                self, remaining, flashSwapRouter, ct, ammRouter, Tolerance(raTolerance, ctTolerance)
             );
         }
 
         // we mint 1:1 if it's the first deposit, else we mint based on current vault NAV
         if (!self.vault.initialized) {
+            // we use the initial amount as the received amount on first issuance
+            // though this makes no difference in actual calculation, just for consistency sake
             received = amount;
             self.vault.initialized = true;
         } else {
+            // we used the initial deposit amount to accurately calculate the NAV per share
             received = _calculateReceivedDeposit(self, ammRouter, splitted, lp, dsId, amount, flashSwapRouter);
         }
 
