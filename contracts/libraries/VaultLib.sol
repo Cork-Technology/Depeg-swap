@@ -372,6 +372,8 @@ library VaultLibrary {
         }
 
         self.vault.lv.issue(from, received);
+
+        self.syncLpBalance(ammRouter, dsId);
     }
 
     function _calculateReceivedDeposit(
