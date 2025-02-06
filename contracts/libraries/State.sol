@@ -68,6 +68,7 @@ struct Balances {
 struct VaultBalances {
     RedemptionAssetManager ra;
     uint256 ctBalance;
+    uint256 lpBalance;
 }
 
 /**
