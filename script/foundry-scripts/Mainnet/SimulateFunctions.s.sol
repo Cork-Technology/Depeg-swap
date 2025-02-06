@@ -8,6 +8,7 @@ import {Id, PairLibrary} from "../../../contracts/libraries/Pair.sol";
 import {ERC20, IERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import {IVault} from "../../../contracts/interfaces/IVault.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import {IDsFlashSwapCore} from "../../../contracts/interfaces/IDsFlashSwapRouter.sol";
 
 struct Market {
     address redemptionAsset;
@@ -130,7 +131,7 @@ contract SimulateScript is Script {
             uint256 dsId = moduleCore.lastDsId(marketId);
             (address ct, address ds) = moduleCore.swapAsset(marketId, dsId);
 
-            uint256 lvDepositAmt = 100;
+            uint256 lvDepositAmt = 5000;
             depositLv(market, marketId, lvDepositAmt);
 
             uint256 psmDepositAmt = 100;
@@ -143,10 +144,10 @@ contract SimulateScript is Script {
 
             // redeemLv(market, marketId, redeemAmt, ct);
 
-            // swapRaForDs(assets[i], 0.01 ether);
+            uint256 swapAmt = 1;
+            swapDsForRa(market, marketId, dsId, swapAmt, ds);
 
-            // uint256 swapAmt = 1;
-            // swapDsForRa(market, marketId, dsId, swapAmt, ds);
+            swapRaForDs(market, marketId, dsId, swapAmt);
         }
 
         console.log("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-");
@@ -188,12 +189,6 @@ contract SimulateScript is Script {
         moduleCore.returnRaWithCtDs(marketId, redeemAmt);
     }
 
-    // function returnRaWithCtDs(Market memory market, Id marketId, uint256 dsId, uint256 redeemAmt, address ds) public {
-    //     ERC20(ds).approve(address(moduleCore), 1000 ether);
-    //     ERC20(market.peggedAsset).approve(address(moduleCore), redeemAmt);
-    //     moduleCore.returnRaWithCtDs(marketId, dsId, redeemAmt);
-    // }
-
     function redeemLv(Market memory market, Id marketId, uint256 redeemAmt, address lv) public {
         uint256 decimals = ERC20(lv).decimals();
         redeemAmt = redeemAmt * 10 ** decimals;
@@ -201,19 +196,21 @@ contract SimulateScript is Script {
         moduleCore.redeemEarlyLv(IVault.RedeemEarlyParams(marketId, redeemAmt, 0, block.timestamp + 1 days, 0, 0, 0));
     }
 
-    // function swapRaForDs(Market memory market, Id marketId, uint256 swapAmt, address ds) public {
-    //     ERC20(market.redemptionAsset).approve(address(routerState), swapAmt);
-    //     IDsFlashSwapCore.BuyAprroxParams memory params =
-    //         IDsFlashSwapCore.BuyAprroxParams(108, 108, 1 ether, 1 gwei, 1 gwei, 0.01 ether);
-
-    //     // Add correct default offchain guess params
-    //     // routerState.swapRaforDs(reserveId, dsId, swapAmt, 0, params, defaultOffchainGuessParams());
-    // }
-
     function swapDsForRa(Market memory market, Id marketId, uint256 dsId, uint256 swapAmt, address ds) public {
         uint256 decimals = ERC20(ds).decimals();
         swapAmt = swapAmt * 10 ** decimals;
         ERC20(ds).approve(address(routerState), swapAmt);
         routerState.swapDsforRa(marketId, dsId, swapAmt, 0);
+    }
+
+    function swapRaForDs(Market memory market, Id marketId, uint256 dsId, uint256 swapAmt) public {
+        uint256 decimals = ERC20(market.redemptionAsset).decimals();
+        swapAmt = swapAmt * 10 ** decimals;
+        ERC20(market.redemptionAsset).approve(address(routerState), swapAmt);
+        IDsFlashSwapCore.BuyAprroxParams memory buyApprox =
+            IDsFlashSwapCore.BuyAprroxParams(108, 108, 1 ether, 1 gwei, 1 gwei, 0.01 ether);
+        IDsFlashSwapCore.OffchainGuess memory offchainguess =
+            IDsFlashSwapCore.OffchainGuess({initialBorrowAmount: swapAmt, afterSoldBorrowAmount: 0});
+        routerState.swapRaforDs(marketId, dsId, swapAmt, 0, buyApprox, offchainguess);
     }
 }

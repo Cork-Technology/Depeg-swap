@@ -160,18 +160,16 @@ contract DeployScript is Script {
         console.log("Transferred ownerships to Modulecore");
 
         config.setModuleCore(address(moduleCore));
-        flashswapRouter.setModuleCore(address(moduleCore));
-        console.log("Modulecore configured in Config contract");
-
+        config.setFlashSwapCore(address(flashswapRouter));
         config.setHook(address(hook));
-        flashswapRouter.setHook(address(hook));
-        console.log("Hook configured in FlashswapRouter contract");
-
-        config.setWithdrawalContract(address(withdrawal));
-        console.log("Withdrawal contract configured in Config contract");
-
+        config.setProtectedUnitFactory(address(protectedUnitFactory));
         config.setTreasury(deployer);
-        console.log("Set treasury in Config contract");
+        config.setWithdrawalContract(address(withdrawal));
+        console.log("Contracts configured in Config");
+
+        flashswapRouter.setModuleCore(address(moduleCore));
+        flashswapRouter.setHook(address(hook));
+        console.log("Contracts configured in Modulecore");
         console.log("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-");
 
         deployProtectedUnits(

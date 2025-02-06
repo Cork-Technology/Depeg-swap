@@ -151,6 +151,14 @@ contract SetupMarketScript is Script {
         config.updatePsmBaseRedemptionFeePercentage(id, redmptionFee);
         config.updateRepurchaseFeeRate(id, repurchaseFee);
         config.updateAmmBaseFeePercentage(id, ammBaseFeePercentage);
+        // config.updateRouterDsExtraFee(id, 10 ether);
+        // config.updateReserveSellPressurePercentage(id, 45 ether);
+
+        // config.updateAmmTreasurySplitPercentage(id, 0);
+        // config.updatePsmBaseRedemptionFeeTreasurySplitPercentage(id, 0);
+        // config.updatePsmRepurchaseFeeTreasurySplitPercentage(id, 0);
+        // config.updateDsExtraFeeTreasurySplitPercentage(id, 0);
+        // config.updateLvStrategyCtSplitPercentage(id, 0);
 
         console.log("Redemption Fee          : ", percentage(redmptionFee), "%");
         console.log("Repurchase Fee          : ", percentage(repurchaseFee), "%");
