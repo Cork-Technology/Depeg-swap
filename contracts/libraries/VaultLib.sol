@@ -22,6 +22,7 @@ import {LiquidityToken} from "Cork-Hook/LiquidityToken.sol";
 import {MarketSnapshot} from "Cork-Hook/lib/MarketSnapshot.sol";
 import {IWithdrawalRouter} from "./../interfaces/IWithdrawalRouter.sol";
 import {TransferHelper} from "./TransferHelper.sol";
+import {VaultBalanceLibrary} from "./VaultBalancesLib.sol";
 
 /**
  * @title Vault Library Contract
@@ -38,6 +39,7 @@ library VaultLibrary {
     using DepegSwapLibrary for DepegSwap;
     using VaultPoolLibrary for VaultPool;
     using SafeERC20 for IERC20;
+    using VaultBalanceLibrary for State;
 
     // for avoiding stack too deep errors
     struct Tolerance {
