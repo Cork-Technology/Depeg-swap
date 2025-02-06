@@ -52,6 +52,11 @@ contract SetupMarketScript is Script {
     uint256 constant sUSDS_USDe_AmmBaseFee = 0.2 ether;
     uint256 constant sUSDe_USDT_AmmBaseFee = 0.1 ether;
 
+    uint256 constant weth_wstETH_FeesSplit = 0 ether;
+    uint256 constant wstETH_weETH_FeesSplit = 10 ether;
+    uint256 constant sUSDS_USDe_FeesSplit = 10 ether;
+    uint256 constant sUSDe_USDT_FeesSplit = 10 ether;
+
     uint256 public pk = vm.envUint("PRIVATE_KEY");
     address public deployer = vm.addr(pk);
 
@@ -69,7 +74,8 @@ contract SetupMarketScript is Script {
             weth_wstETH_Expiry,
             weth_wstETH_RedemptionFee,
             weth_wstETH_RepurchaseFee,
-            weth_wstETH_AmmBaseFee
+            weth_wstETH_AmmBaseFee,
+            weth_wstETH_FeesSplit
         );
 
         setupMarket(weETH, wstETH, wstETH_weETH_Expiry, wstETH_weETH_ARP, wstETH_weETH_ExchangeRate);
@@ -80,7 +86,8 @@ contract SetupMarketScript is Script {
             wstETH_weETH_Expiry,
             wstETH_weETH_RedemptionFee,
             wstETH_weETH_RepurchaseFee,
-            wstETH_weETH_AmmBaseFee
+            wstETH_weETH_AmmBaseFee,
+            wstETH_weETH_FeesSplit
         );
 
         setupMarket(USDe, sUSDS, sUSDS_USDe_Expiry, sUSDS_USDe_ARP, sUSDS_USDe_ExchangeRate);
@@ -91,7 +98,8 @@ contract SetupMarketScript is Script {
             sUSDS_USDe_Expiry,
             sUSDS_USDe_RedemptionFee,
             sUSDS_USDe_RepurchaseFee,
-            sUSDS_USDe_AmmBaseFee
+            sUSDS_USDe_AmmBaseFee,
+            sUSDS_USDe_FeesSplit
         );
 
         setupMarket(USDT, sUSDe, sUSDe_USDT_Expiry, sUSDe_USDT_ARP, sUSDe_USDT_ExchangeRate);
@@ -102,7 +110,8 @@ contract SetupMarketScript is Script {
             sUSDe_USDT_Expiry,
             sUSDe_USDT_RedemptionFee,
             sUSDe_USDT_RepurchaseFee,
-            sUSDe_USDT_AmmBaseFee
+            sUSDe_USDT_AmmBaseFee,
+            sUSDe_USDT_FeesSplit
         );
         console.log("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-");
         vm.stopBroadcast();
@@ -145,20 +154,21 @@ contract SetupMarketScript is Script {
         uint256 expiryPeriod,
         uint256 redmptionFee,
         uint256 repurchaseFee,
-        uint256 ammBaseFeePercentage
+        uint256 ammBaseFeePercentage,
+        uint256 feesSplit
     ) public {
         Id id = moduleCore.getId(paToken, raToken, initialARP, expiryPeriod, defaultExchangeProvider);
         config.updatePsmBaseRedemptionFeePercentage(id, redmptionFee);
         config.updateRepurchaseFeeRate(id, repurchaseFee);
         config.updateAmmBaseFeePercentage(id, ammBaseFeePercentage);
-        // config.updateRouterDsExtraFee(id, 10 ether);
-        // config.updateReserveSellPressurePercentage(id, 45 ether);
+        config.updateRouterDsExtraFee(id, 10 ether); // 10% fees
+        config.updateReserveSellPressurePercentage(id, 45 ether); // 45%
 
-        // config.updateAmmTreasurySplitPercentage(id, 0);
-        // config.updatePsmBaseRedemptionFeeTreasurySplitPercentage(id, 0);
-        // config.updatePsmRepurchaseFeeTreasurySplitPercentage(id, 0);
-        // config.updateDsExtraFeeTreasurySplitPercentage(id, 0);
-        // config.updateLvStrategyCtSplitPercentage(id, 0);
+        config.updateAmmTreasurySplitPercentage(id, feesSplit);
+        config.updatePsmBaseRedemptionFeeTreasurySplitPercentage(id, feesSplit);
+        config.updatePsmRepurchaseFeeTreasurySplitPercentage(id, feesSplit);
+        config.updateDsExtraFeeTreasurySplitPercentage(id, feesSplit);
+        config.updateLvStrategyCtSplitPercentage(id, 0); // 0%
 
         console.log("Redemption Fee          : ", percentage(redmptionFee), "%");
         console.log("Repurchase Fee          : ", percentage(repurchaseFee), "%");
