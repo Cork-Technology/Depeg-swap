@@ -20,6 +20,9 @@ import {ERC20Permit} from "@openzeppelin/contracts/token/ERC20/extensions/ERC20P
 import {Signature, MinimalSignatureHelper} from "./../../libraries/SignatureHelperLib.sol";
 import {TransferHelper} from "./../../libraries/TransferHelper.sol";
 import {PermitChecker} from "../../libraries/PermitChecker.sol";
+import {IPermit2} from "../../interfaces/uniswap-v2/Permit2.sol";
+import {ISignatureTransfer} from "../../interfaces/uniswap-v2/SignatureTransfer.sol";
+
 
 struct DSData {
     address dsAddress;
@@ -55,6 +58,10 @@ contract ProtectedUnit is
     uint256 public dsReserve;
     uint256 public paReserve;
     uint256 public raReserve;
+    uint256 public dsNonce;
+    uint256 public paNonce;
+    // should be passed in constructor
+    IPermit2 public immutable PERMIT2 = IPermit2(0x000000000022d473030f116ddee9f6b43ac78ba3); // hardcoded for ethereum 
 
     Id public id;
 
@@ -95,6 +102,9 @@ contract ProtectedUnit is
         mintCap = _mintCap;
         FLASHSWAP_ROUTER = IDsFlashSwapCore(_flashSwapRouter);
         CONFIG = CorkConfig(_config);
+        dsNonce=0;
+        paNonce=0;
+
     }
 
     modifier autoUpdateDS() {
@@ -336,8 +346,8 @@ contract ProtectedUnit is
     function mint(
         address minter,
         uint256 amount,
-        bytes calldata rawDsPermitSig,
-        bytes calldata rawPaPermitSig,
+        bytes calldata rawDsPermitSig,  // EIP 712 compliant
+        bytes calldata rawPaPermitSig,  // EIP 712 compliant
         uint256 deadline
     ) external whenNotPaused nonReentrant autoUpdateDS autoSync returns (uint256 dsAmount, uint256 paAmount) {
         if (rawDsPermitSig.length == 0 || rawPaPermitSig.length == 0 || deadline == 0) {
@@ -346,22 +356,71 @@ contract ProtectedUnit is
 
         if (!PermitChecker.supportsPermit(address(PA))) {
             revert PermitNotSupported();
-        }
+        } 
 
         (dsAmount, paAmount) = previewMint(amount);
 
-        Signature memory sig = MinimalSignatureHelper.split(rawDsPermitSig);
-        ds.permit(minter, address(this), dsAmount, deadline, sig.v, sig.r, sig.s, DS_PERMIT_MINT_TYPEHASH);
+        ISignatureTransfer.TokenPermissions memory dsPermitted = ISignatureTransfer.TokenPermissions({
+            token: address(ds),
+            amount: dsAmount
+        });
 
-        if (rawPaPermitSig.length != 0) {
-            sig = MinimalSignatureHelper.split(rawPaPermitSig);
-            IERC20Permit(address(PA)).permit(minter, address(this), paAmount, deadline, sig.v, sig.r, sig.s);
-        }
+        ISignatureTransfer.PermitTransferFrom memory dsPermit = ISignatureTransfer.PermitTransferFrom({
+            permitted: dsPermitted,
+            nonce: dsNonce,
+            deadline: deadline
+        });
+
+        ISignatureTransfer.TokenPermissions memory paPermitted = ISignatureTransfer.TokenPermissions({
+            token: address(PA),
+            amount: paAmount
+        });
+
+        ISignatureTransfer.PermitTransferFrom memory paPermit = ISignatureTransfer.PermitTransferFrom({
+            permitted: paPermitted,
+            nonce: paNonce,
+            deadline: deadline
+        });
+
+        ISignatureTransfer.SignatureTransferDetails memory dsTransferDetails = ISignatureTransfer.SignatureTransferDetails({
+            to: address(this),
+            requestedAmount: dsAmount
+        });
+
+        ISignatureTransfer.SignatureTransferDetails memory paTransferDetails = ISignatureTransfer.SignatureTransferDetails({
+            to: address(this),
+            requestedAmount: paAmount
+        });
+
+         
+        PERMIT2.permitTransferFrom(
+            dsPermit,
+            dsTransferDetails,
+            minter,
+            rawDsPermitSig
+        );
+
+        PERMIT2.permitTransferFrom(
+            paPermit,
+            paTransferDetails,
+            minter,
+            rawPaPermitSig
+        );
+
+        // Signature memory sig = MinimalSignatureHelper.split(rawDsPermitSig);
+        // ds.permit(minter, address(this), dsAmount, deadline, sig.v, sig.r, sig.s, DS_PERMIT_MINT_TYPEHASH);
+
+        // if (rawPaPermitSig.length != 0) {
+        //     sig = MinimalSignatureHelper.split(rawPaPermitSig);
+        //     IERC20Permit(address(PA)).permit(minter, address(this), paAmount, deadline, sig.v, sig.r, sig.s);
+        // }
 
         (uint256 _actualDs, uint256 _actualPa) = __mint(minter, amount);
 
         assert(_actualDs == dsAmount);
         assert(_actualPa == paAmount);
+        dsNonce++;
+        paNonce++;
     }
 
     /**
