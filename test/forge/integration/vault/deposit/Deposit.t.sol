@@ -451,4 +451,110 @@ contract DepositTest is Helper {
         assertLe(moduleCore.vaultLp(id), 10);
         assertLe(flashSwapRouter.getLvReserve(id, dsId), 10);
     }
+
+    function testFuzz_redeemStateFailureStrict(uint8 raDecimals, uint8 paDecimals) external {
+        (raDecimals, paDecimals) = setupDifferentDecimals(raDecimals, paDecimals);
+
+        uint256 rawAmount = 10 ether;
+        uint256 amount = TransferHelper.normalizeDecimals(rawAmount, TARGET_DECIMALS, raDecimals);
+
+        Id id = defaultCurrencyId;
+        Asset lv = Asset(moduleCore.lvAsset(id));
+
+        // fast forward to expiry, since we want to test it with amm
+        ff_expired();
+
+        uint256 received;
+
+        {
+            uint256 psmDepositAmount = TransferHelper.normalizeDecimals(1 ether, TARGET_DECIMALS, raDecimals);
+
+            uint256 balanceBefore = lv.balanceOf(DEFAULT_ADDRESS);
+
+            received = moduleCore.depositLv(id, amount, 0, 0);
+
+            uint256 balanceAfter = lv.balanceOf(DEFAULT_ADDRESS);
+
+            moduleCore.depositPsm(id, psmDepositAmount);
+
+            // normalize pa redeemAmount
+            uint256 paRedeemAmount = TransferHelper.normalizeDecimals(psmDepositAmount, raDecimals, paDecimals);
+
+            // approve DS
+            IERC20(ds).approve(address(moduleCore), 1 ether);
+
+            // redeem RA back so that we have PA in PSM
+            moduleCore.redeemRaWithDsPa(id, dsId, paRedeemAmount);
+
+            vm.assertEq(balanceAfter, balanceBefore + rawAmount); //we expect the first deposit to get exactly the same amount that it put in, and to be in the same decimals as the LV
+
+            lv.approve(address(moduleCore), 2 ** 256 - 1);
+        }
+
+        {
+            moduleCore.depositLv(id, amount, 0, 0); // a second deposit
+            uint256 expectedLvBalance = TransferHelper.normalizeDecimals(amount * 2, raDecimals, TARGET_DECIMALS);
+            assertApproxEqAbs(received = lv.balanceOf(DEFAULT_ADDRESS), expectedLvBalance, expectedLvBalance / 500); // there is going to be less than a 0.1% difference
+        }
+        // fast forward to expiry
+        ff_expired();
+
+        {
+            VaultWithdrawalPool memory pool = moduleCore.getVaultWithdrawalPool(id);
+            vm.assertTrue(pool.paBalance > 0);
+        }
+
+        IVault.RedeemEarlyParams memory redeemParams = IVault.RedeemEarlyParams({
+            id: id,
+            amount: received / 8,
+            amountOutMin: 0,
+            ammDeadline: block.timestamp,
+            ctAmountOutMin: 0,
+            dsAmountOutMin: 0,
+            paAmountOutMin: 0
+        });
+
+        // should fail since we have PA deposited in PSM
+        {
+            vm.expectRevert(IErrors.LVDepositPaused.selector);
+            moduleCore.depositLv(id, 1 ether, 0, 0);
+        }
+
+        forceUnpause();
+
+        uint256 totalPaBalance = moduleCore.liquidationFundsAvailable(id);
+        uint256 totalRaBalance = moduleCore.tradeExecutionFundsAvailable(id);
+        uint256 totalLpBalance = moduleCore.vaultLp(id);
+        uint256 totalDsBalance = flashSwapRouter.getLvReserve(id, dsId);
+
+        uint256 deltaRa = TransferHelper.normalizeDecimals(100, TARGET_DECIMALS, raDecimals);
+        uint256 deltaPa = TransferHelper.normalizeDecimals(100, TARGET_DECIMALS, paDecimals);
+
+        // just we can have some margin for rounding errors
+        // it's quite big since we're potentially dealing with high decimal numbers
+        // say 29 for example, so we set it to 10 to have some wiggle room
+        deltaRa = deltaRa <= 1 ? 10 : deltaRa;
+        deltaPa = deltaPa <= 1 ? 10 : deltaPa;
+
+        assertEq(lv.balanceOf(DEFAULT_ADDRESS), received);
+
+        for (uint256 i = 0; i < 8; i++) {
+            moduleCore.redeemEarlyLv(redeemParams);
+
+            assertApproxEqAbs(lv.balanceOf(DEFAULT_ADDRESS), received * (7 - i) / 8, 100);
+            assertApproxEqAbs(moduleCore.liquidationFundsAvailable(id), totalPaBalance * (7 - i) / 8, deltaPa);
+            assertApproxEqAbs(moduleCore.tradeExecutionFundsAvailable(id), totalRaBalance * (7 - i) / 8, deltaRa);
+            assertApproxEqAbs(lv.totalSupply(), received * (7 - i) / 8, 100);
+            assertApproxEqAbs(moduleCore.vaultLp(id), totalLpBalance * (7 - i) / 8, 100);
+            assertApproxEqAbs(flashSwapRouter.getLvReserve(id, dsId), totalDsBalance * (7 - i) / 8, 100);
+            // we may also want to check the tokens are in this address, but that'll blow up the stack
+        }
+
+        // Sanity check it is all basically empty
+        assertLe(moduleCore.liquidationFundsAvailable(id), deltaPa);
+        assertLe(moduleCore.tradeExecutionFundsAvailable(id), deltaRa);
+        assertLe(lv.totalSupply(), 10);
+        assertLe(moduleCore.vaultLp(id), 10);
+        assertLe(flashSwapRouter.getLvReserve(id, dsId), 10);
+    }
 }
