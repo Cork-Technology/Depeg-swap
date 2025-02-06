@@ -403,7 +403,7 @@ library VaultLibrary {
             // the provide liquidity automatically adds the lp, so we need to subtract it first here
             vaultCt: self.vault.balances.ctBalance - ctSplitted,
             vaultDs: flashSwapRouter.getLvReserve(id, dsId) - ctSplitted,
-            vaultLp: IERC20(snapshot.liquidityToken).balanceOf(address(this)),
+            vaultLp: self.lpBalance(),
             vaultIdleRa: self.vault.pool.ammLiquidityPool.balance
         });
 
@@ -460,6 +460,7 @@ library VaultLibrary {
     }
 
     function __liquidateUnchecked(
+        State storage self,
         address raAddress,
         address ctAddress,
         ICorkHook ammRouter,
@@ -470,15 +471,13 @@ library VaultLibrary {
 
         // amountAMin & amountBMin = 0 for 100% tolerence
         (raReceived, ctReceived) = ammRouter.removeLiquidity(raAddress, ctAddress, lp, 0, 0, deadline);
+
+        self.syncLpBalance(ammRouter, ctAddress);
     }
 
     function _liquidatedLp(State storage self, uint256 dsId, ICorkHook ammRouter, uint256 deadline) internal {
         DepegSwap storage ds = self.ds[dsId];
-        uint256 lpBalance;
-        {
-            IERC20 lpToken = IERC20(ammRouter.getLiquidityToken(self.info.ra, ds.ct));
-            lpBalance = lpToken.balanceOf(address(this));
-        }
+        uint256 lpBalance = self.lpBalance();
 
         // if there's no LP, then there's nothing to liquidate
         if (lpBalance == 0) {
@@ -493,7 +492,7 @@ library VaultLibrary {
         // 4. End state: Only RA + redeemed PA remains
         self.vault.lpLiquidated.set(dsId);
 
-        (uint256 raAmm, uint256 ctAmm) = __liquidateUnchecked(self.info.ra, ds.ct, ammRouter, lpBalance, deadline);
+        (uint256 raAmm, uint256 ctAmm) = __liquidateUnchecked(self, self.info.ra, ds.ct, ammRouter, lpBalance, deadline);
 
         // avoid stack too deep error
         _redeemCtVault(self, dsId, ctAmm, raAmm);
@@ -568,11 +567,7 @@ library VaultLibrary {
 
         MathHelper.RedeemResult memory redeemAmount;
         {
-            uint256 lpBalance;
-            {
-                IERC20 lpToken = IERC20(contracts.ammRouter.getLiquidityToken(pair.ra, ds.ct));
-                lpBalance = lpToken.balanceOf(address(this));
-            }
+            uint256 lpBalance = self.lpBalance();
 
             MathHelper.RedeemParams memory params = MathHelper.RedeemParams({
                 amountLvClaimed: redeemParams.amount,
@@ -596,7 +591,7 @@ library VaultLibrary {
 
         {
             (uint256 raFromAmm, uint256 ctFromAmm) = __liquidateUnchecked(
-                pair.ra, ds.ct, contracts.ammRouter, redeemAmount.lpLiquidated, redeemParams.ammDeadline
+                self, pair.ra, ds.ct, contracts.ammRouter, redeemAmount.lpLiquidated, redeemParams.ammDeadline
             );
 
             result.raReceivedFromAmm = raFromAmm;
@@ -657,12 +652,7 @@ library VaultLibrary {
     }
 
     function vaultLp(State storage self, ICorkHook ammRotuer) internal view returns (uint256) {
-        uint256 lpBalance;
-
-        IERC20 lpToken = IERC20(ammRotuer.getLiquidityToken(self.info.ra, self.ds[self.globalAssetIdx].ct));
-        lpBalance = lpToken.balanceOf(address(this));
-
-        return lpBalance;
+        return self.lpBalance();
     }
 
     function requestLiquidationFunds(State storage self, uint256 amount, address to) internal {
