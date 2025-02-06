@@ -165,7 +165,8 @@ library VaultLibrary {
         Tolerance memory tolerance
     ) internal returns (uint256 ra, uint256 ct, uint256 lp) {
         (ra, ct) = __calculateProvideLiquidityAmount(self, amount, flashSwapRouter);
-        (lp,) = __provideLiquidity(self, ra, ct, flashSwapRouter, ctAddress, ammRouter, tolerance, amount);
+        // we don't sync here since we wanna sync after the calculation has been done
+        (lp,) = __provideLiquidityNoSync(self, ra, ct, flashSwapRouter, ctAddress, ammRouter, tolerance, amount);
     }
 
     // Duplicate function of __provideLiquidityWithRatioGetLP to avoid stack too deep error
@@ -266,10 +267,36 @@ library VaultLibrary {
         Tolerance memory tolerance,
         uint256 amountRaOriginal
     ) internal returns (uint256 lp, uint256 dust) {
+        (lp, dust) = __provideLiquidityNoSync(
+            self, raAmount, ctAmount, flashSwapRouter, ctAddress, ammRouter, tolerance, amountRaOriginal
+        );
+
+        self.syncLpBalance(ammRouter, self.globalAssetIdx);
+    }
+
+    function __provideLiquidityNoSync(
+        State storage self,
+        uint256 raAmount,
+        uint256 ctAmount,
+        IDsFlashSwapCore flashSwapRouter,
+        address ctAddress,
+        ICorkHook ammRouter,
+        Tolerance memory tolerance,
+        uint256 amountRaOriginal
+    ) internal returns (uint256 lp, uint256 dust) {
         uint256 dsId = self.globalAssetIdx;
 
+        address ra = self.info.ra;
         // no need to provide liquidity if the amount is 0
         if (raAmount == 0 || ctAmount == 0) {
+            if (raAmount != 0) {
+                SafeERC20.safeTransfer(IERC20(ra), msg.sender, raAmount);
+            }
+
+            if (ctAmount != 0) {
+                SafeERC20.safeTransfer(IERC20(ctAddress), msg.sender, ctAmount);
+            }
+
             return (0, 0);
         }
 
@@ -277,9 +304,8 @@ library VaultLibrary {
         ctAmount =
             PsmLibrary.unsafeIssueToLv(self, MathHelper.calculateProvideLiquidityAmount(amountRaOriginal, raAmount));
 
-        (lp, dust) = __addLiquidityToAmmUnchecked(
-            raAmount, ctAmount, self.info.redemptionAsset(), ctAddress, ammRouter, tolerance.ra, tolerance.ct
-        );
+        (lp, dust) =
+            __addLiquidityToAmmUnchecked(raAmount, ctAmount, ra, ctAddress, ammRouter, tolerance.ra, tolerance.ct);
         _addFlashSwapReserveLv(self, flashSwapRouter, self.ds[dsId], ctAmount);
     }
 
