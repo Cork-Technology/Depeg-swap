@@ -124,7 +124,6 @@ interface Initialize {
 
     function markets(Id id) external view returns (Pair memory);
 
-
     /// @notice Emitted when a new LV and PSM is initialized with a given pair
     /// @param id The PSM id
     /// @param pa The address of the pegged asset
