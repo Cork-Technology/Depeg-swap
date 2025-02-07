@@ -354,13 +354,6 @@ library VaultLibrary {
         uint256 dsId = self.globalAssetIdx;
 
         uint256 lp;
-        {
-            address ct = self.ds[dsId].ct;
-
-            (,, lp) = __provideLiquidityWithRatioGetLP(
-                self, remaining, flashSwapRouter, ct, ammRouter, Tolerance(raTolerance, ctTolerance)
-            );
-        }
 
         // we mint 1:1 if it's the first deposit, else we mint based on current vault NAV
         if (!self.vault.initialized) {
@@ -376,7 +369,6 @@ library VaultLibrary {
                 ammRouter,
                 CalculateReceivedDepositParams({
                     ctSplitted: splitted,
-                    lpGenerated: lp,
                     dsId: dsId,
                     amount: amount,
                     flashSwapRouter: flashSwapRouter
@@ -384,14 +376,20 @@ library VaultLibrary {
             );
         }
 
-        self.vault.lv.issue(from, received);
+        {
+            address ct = self.ds[dsId].ct;
 
+            (,, lp) = __provideLiquidityWithRatioGetLP(
+                self, remaining, flashSwapRouter, ct, ammRouter, Tolerance(raTolerance, ctTolerance)
+            );
+        }
+
+        self.vault.lv.issue(from, received);
         self.syncLpBalance(ammRouter, dsId);
     }
 
     struct CalculateReceivedDepositParams {
         uint256 ctSplitted;
-        uint256 lpGenerated;
         uint256 dsId;
         uint256 amount;
         IDsFlashSwapCore flashSwapRouter;
@@ -406,7 +404,8 @@ library VaultLibrary {
         address ct = self.ds[params.dsId].ct;
 
         MarketSnapshot memory snapshot = ammRouter.getMarketSnapshot(self.info.ra, ct);
-        uint256 lpSupply = IERC20(snapshot.liquidityToken).totalSupply() - params.lpGenerated;
+        uint256 lpSupply = IERC20(snapshot.liquidityToken).totalSupply();
+        uint256 vaultLp = self.lpBalance();
 
         // we convert ra reserve to 18 decimals to get accurate results
         snapshot.reserveRa = TransferHelper.tokenNativeDecimalsToFixed(snapshot.reserveRa, self.info.ra);
@@ -421,8 +420,8 @@ library VaultLibrary {
             lvSupply: Asset(self.vault.lv._address).totalSupply(),
             // the provide liquidity automatically adds the lp, so we need to subtract it first here
             vaultCt: self.vault.balances.ctBalance - params.ctSplitted,
-            vaultDs: params.flashSwapRouter.getLvReserve(id, params.dsId) - params.ctSplitted,
-            vaultLp: self.lpBalance(),
+            vaultDs: params.flashSwapRouter.getLvReserve(id, params.dsId),
+            vaultLp: vaultLp,
             vaultIdleRa: TransferHelper.tokenNativeDecimalsToFixed(self.vault.balances.ra.locked, self.info.ra)
         });
 

@@ -579,7 +579,7 @@ contract DepositTest is Helper {
         // ~0.5 from split, ~0.2 from AMM with some precision tolerance
         vm.assertApproxEqAbs(dsReserve, depositAmount * 3 / 4, depositAmount / 100);
 
-        vm.assertEq(received, 1);
+        vm.assertEq(received, 2);
 
         (received,) = moduleCore.depositPsm(defaultCurrencyId, 1 ether);
 
