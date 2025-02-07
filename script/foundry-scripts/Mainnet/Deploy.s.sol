@@ -140,13 +140,13 @@ contract DeployScript is Script {
         console.log("Liquidator                      : ", address(liquidator));
         console.log("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-");
 
-        // Deploy the ProtectedUnitFactry contract
-        protectedUnitRouter = new ProtectedUnitRouter();
-        console.log("ProtectedUnit Router            : ", address(protectedUnitRouter));
+        // // Deploy the ProtectedUnitFactry contract
+        // protectedUnitRouter = new ProtectedUnitRouter();
+        // console.log("ProtectedUnit Router            : ", address(protectedUnitRouter));
 
-        protectedUnitFactory = new ProtectedUnitFactory(address(moduleCore), address(config), address(flashswapRouter));
-        config.setProtectedUnitFactory(address(protectedUnitFactory));
-        console.log("ProtectedUnit Factory           : ", address(protectedUnitFactory));
+        // protectedUnitFactory = new ProtectedUnitFactory(address(moduleCore), address(config), address(flashswapRouter));
+        // config.setProtectedUnitFactory(address(protectedUnitFactory));
+        // console.log("ProtectedUnit Factory           : ", address(protectedUnitFactory));
 
         withdrawal = new Withdrawal(address(moduleCore));
         console.log("Withdrawal                      : ", address(withdrawal));
@@ -162,7 +162,7 @@ contract DeployScript is Script {
         config.setModuleCore(address(moduleCore));
         config.setFlashSwapCore(address(flashswapRouter));
         config.setHook(address(hook));
-        config.setProtectedUnitFactory(address(protectedUnitFactory));
+        // config.setProtectedUnitFactory(address(protectedUnitFactory));
         config.setTreasury(deployer);
         config.setWithdrawalContract(address(withdrawal));
         console.log("Contracts configured in Config");
@@ -172,34 +172,34 @@ contract DeployScript is Script {
         console.log("Contracts configured in Modulecore");
         console.log("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-");
 
-        deployProtectedUnits(
-            wstETH,
-            weth,
-            weth_wstETH_Expiry,
-            string.concat("PU", ERC20(weth).name(), "-", ERC20(wstETH).name()),
-            weth_wstETH_ARP
-        );
-        deployProtectedUnits(
-            weETH,
-            wstETH,
-            wstETH_weETH_Expiry,
-            string.concat("PU", ERC20(wstETH).name(), "-", ERC20(weETH).name()),
-            wstETH_weETH_ARP
-        );
-        deployProtectedUnits(
-            USDe,
-            sUSDS,
-            sUSDS_USDe_Expiry,
-            string.concat("PU", ERC20(sUSDS).name(), "-", ERC20(USDe).name()),
-            sUSDS_USDe_ARP
-        );
-        deployProtectedUnits(
-            USDT,
-            sUSDe,
-            sUSDe_USDT_Expiry,
-            string.concat("PU", ERC20(sUSDe).name(), "-", ERC20(USDT).name()),
-            sUSDe_USDT_ARP
-        );
+        // deployProtectedUnits(
+        //     wstETH,
+        //     weth,
+        //     weth_wstETH_Expiry,
+        //     string.concat("PU", ERC20(weth).name(), "-", ERC20(wstETH).name()),
+        //     weth_wstETH_ARP
+        // );
+        // deployProtectedUnits(
+        //     weETH,
+        //     wstETH,
+        //     wstETH_weETH_Expiry,
+        //     string.concat("PU", ERC20(wstETH).name(), "-", ERC20(weETH).name()),
+        //     wstETH_weETH_ARP
+        // );
+        // deployProtectedUnits(
+        //     USDe,
+        //     sUSDS,
+        //     sUSDS_USDe_Expiry,
+        //     string.concat("PU", ERC20(sUSDS).name(), "-", ERC20(USDe).name()),
+        //     sUSDS_USDe_ARP
+        // );
+        // deployProtectedUnits(
+        //     USDT,
+        //     sUSDe,
+        //     sUSDe_USDT_Expiry,
+        //     string.concat("PU", ERC20(sUSDe).name(), "-", ERC20(USDT).name()),
+        //     sUSDe_USDT_ARP
+        // );
         vm.stopBroadcast();
     }
 

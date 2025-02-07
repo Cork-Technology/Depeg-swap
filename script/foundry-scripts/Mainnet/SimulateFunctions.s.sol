@@ -24,10 +24,10 @@ struct Market {
 contract SimulateScript is Script {
     using SafeERC20 for IERC20;
 
-    CorkConfig public config = CorkConfig(0xa20e3D0CCFa98f5dA170f86682b652EcaadE7888);
-    ModuleCore public moduleCore = ModuleCore(0xf63B2E90DB4F128Fee825B052dF0D6064D6974A7);
-    RouterState public routerState = RouterState(0x8D2E77aA31e4f956B3573503d52e5005e97913ac);
-    address public exchangeProvider = 0xEa68408e974e4AEA1c40eCc38614493b513d2A63;
+    CorkConfig public config = CorkConfig(0x4f217EDafBd17eC975D7e05DDafc4634fbdb258F);
+    ModuleCore public moduleCore = ModuleCore(0x0dCd8A118566ec6b8B96A3334C4B5A1DB2345d72);
+    RouterState public routerState = RouterState(0x039DB5B6BfAbf2F2A2d926087d45E7dd01E2d2A0);
+    address public exchangeProvider = 0xeF72B8f15f4DD2A4E124B9D16F5B7c76e0DF5781;
 
     uint256 public pk = vm.envUint("PRIVATE_KEY");
     address public deployer = vm.addr(pk);
@@ -65,10 +65,10 @@ contract SimulateScript is Script {
     uint256 constant sUSDS_USDe_RepurchaseFee = 0.61 ether;
     uint256 constant sUSDe_USDT_RepurchaseFee = 0.3 ether;
 
-    uint256 constant weth_wstETH_AmmBaseFee = 0.08 ether;
-    uint256 constant wstETH_weETH_AmmBaseFee = 0.1 ether;
-    uint256 constant sUSDS_USDe_AmmBaseFee = 0.2 ether;
-    uint256 constant sUSDe_USDT_AmmBaseFee = 0.1 ether;
+    uint256 constant weth_wstETH_AmmBaseFee = 0.018 ether;
+    uint256 constant wstETH_weETH_AmmBaseFee = 0.025 ether;
+    uint256 constant sUSDS_USDe_AmmBaseFee = 0.049 ether;
+    uint256 constant sUSDe_USDT_AmmBaseFee = 0.025 ether;
 
     Market weth_wstETH_market = Market(
         weth,
@@ -119,8 +119,8 @@ contract SimulateScript is Script {
 
         console.log("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-");
 
-        Market[4] memory markets = [weth_wstETH_market, wstETH_weETH_market, sUSDS_USDe_market, sUSDe_USDT_market];
-        // Market[1] memory markets = [weth_wstETH_market];
+        // Market[4] memory markets = [weth_wstETH_market, wstETH_weETH_market, sUSDS_USDe_market, sUSDe_USDT_market];
+        Market[1] memory markets = [weth_wstETH_market];
 
         for (uint256 i = 0; i < markets.length; i++) {
             Market memory market = markets[i];
@@ -142,7 +142,7 @@ contract SimulateScript is Script {
 
             returnRaWithCtDs(market, marketId, redeemAmt, ds, ct);
 
-            // redeemLv(market, marketId, redeemAmt, ct);
+            redeemLv(market, marketId, redeemAmt, ct);
 
             uint256 swapAmt = 1;
             swapDsForRa(market, marketId, dsId, swapAmt, ds);

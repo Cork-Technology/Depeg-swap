@@ -9,9 +9,9 @@ import {Strings} from "openzeppelin-contracts/contracts/utils/Strings.sol";
 import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
 contract SetupMarketScript is Script {
-    CorkConfig public config = CorkConfig(0xa20e3D0CCFa98f5dA170f86682b652EcaadE7888);
-    ModuleCore public moduleCore = ModuleCore(0xf63B2E90DB4F128Fee825B052dF0D6064D6974A7);
-    address public defaultExchangeProvider = 0xEa68408e974e4AEA1c40eCc38614493b513d2A63;
+    CorkConfig public config = CorkConfig(0x4f217EDafBd17eC975D7e05DDafc4634fbdb258F);
+    ModuleCore public moduleCore = ModuleCore(0x0dCd8A118566ec6b8B96A3334C4B5A1DB2345d72);
+    address public defaultExchangeProvider = 0xeF72B8f15f4DD2A4E124B9D16F5B7c76e0DF5781;
 
     address constant weth = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
     address constant wstETH = 0x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca0;
@@ -47,10 +47,10 @@ contract SetupMarketScript is Script {
     uint256 constant sUSDS_USDe_RepurchaseFee = 0.61 ether;
     uint256 constant sUSDe_USDT_RepurchaseFee = 0.3 ether;
 
-    uint256 constant weth_wstETH_AmmBaseFee = 0.08 ether;
-    uint256 constant wstETH_weETH_AmmBaseFee = 0.1 ether;
-    uint256 constant sUSDS_USDe_AmmBaseFee = 0.2 ether;
-    uint256 constant sUSDe_USDT_AmmBaseFee = 0.1 ether;
+    uint256 constant weth_wstETH_AmmBaseFee = 0.018 ether;
+    uint256 constant wstETH_weETH_AmmBaseFee = 0.025 ether;
+    uint256 constant sUSDS_USDe_AmmBaseFee = 0.049 ether;
+    uint256 constant sUSDe_USDT_AmmBaseFee = 0.025 ether;
 
     uint256 constant weth_wstETH_FeesSplit = 0 ether;
     uint256 constant wstETH_weETH_FeesSplit = 10 ether;
