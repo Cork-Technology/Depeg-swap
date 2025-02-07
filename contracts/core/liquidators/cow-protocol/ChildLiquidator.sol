@@ -55,7 +55,7 @@ abstract contract ChildLiquidatorBase is OwnableUpgradeable {
 
         settlement.setPreSignature(orderUid, true);
 
-        SafeERC20.forceApprove(IERC20(order.sellToken), address(settlement), order.sellAmount);
+        SafeERC20.safeIncreaseAllowance(IERC20(order.sellToken), address(settlement), order.sellAmount);
     }
 }
 
@@ -63,13 +63,13 @@ contract ProtectedUnitChildLiquidator is ChildLiquidatorBase {
     function moveFunds() external onlyLiquidator returns (uint256 funds, uint256 leftover) {
         // move buy token balance of this contract to vault, by approving the vault to transfer the funds
         funds = IERC20(order.buyToken).balanceOf(address(this));
-        SafeERC20.forceApprove(IERC20(order.buyToken), receiver, funds);
+        SafeERC20.safeIncreaseAllowance(IERC20(order.buyToken), receiver, funds);
 
         IProtectedUnitLiquidation(receiver).receiveFunds(funds, order.buyToken);
 
         // move leftover sell token balance of this contract to vault, by approving the vault to transfer the funds
         leftover = IERC20(order.sellToken).balanceOf(address(this));
-        SafeERC20.forceApprove(IERC20(order.sellToken), receiver, leftover);
+        SafeERC20.safeIncreaseAllowance(IERC20(order.sellToken), receiver, leftover);
 
         IProtectedUnitLiquidation(receiver).receiveFunds(leftover, order.sellToken);
     }
@@ -79,13 +79,13 @@ contract VaultChildLiquidator is ChildLiquidatorBase {
     function moveFunds(Id id) external onlyLiquidator {
         // move buy token balance of this contract to vault, by approving the vault to transfer the funds
         uint256 balance = IERC20(order.buyToken).balanceOf(address(this));
-        SafeERC20.forceApprove(IERC20(order.buyToken), receiver, balance);
+        SafeERC20.safeIncreaseAllowance(IERC20(order.buyToken), receiver, balance);
 
         IVaultLiquidation(receiver).receiveTradeExecuctionResultFunds(id, balance);
 
         // move leftover sell token balance of this contract to vault, by approving the vault to transfer the funds
         balance = IERC20(order.sellToken).balanceOf(address(this));
-        SafeERC20.forceApprove(IERC20(order.sellToken), receiver, balance);
+        SafeERC20.safeIncreaseAllowance(IERC20(order.sellToken), receiver, balance);
 
         IVaultLiquidation(receiver).receiveLeftoverFunds(id, balance);
     }

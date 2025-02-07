@@ -442,11 +442,11 @@ contract RouterState is
         assert(attributedToTreasury + attributedToVault == fee);
 
         // we calculate it in native decimals, should go through
-        pair.ra.transfer(_moduleCore, attributedToVault);
+        IERC20(address(pair.ra)).safeTransfer(_moduleCore, attributedToVault);
         IVault(_moduleCore).provideLiquidityWithFlashSwapFee(reserveId, attributedToVault);
 
         address treasury = config.treasury();
-        pair.ra.transfer(treasury, attributedToTreasury);
+        IERC20(address(pair.ra)).safeTransfer(treasury, attributedToTreasury);
     }
 
     function calculateSellFromReserve(ReserveState storage self, uint256 amountOut, uint256 dsId)
