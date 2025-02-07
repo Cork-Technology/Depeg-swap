@@ -306,43 +306,6 @@ contract DepositTest is Helper {
         received = moduleCore.depositLv(id, amount, 100000 ether, 10000 ether);
     }
 
-    function test_depositInflation() external {
-        uint256 depositAmount = 2;
-
-        uint256 adjustedDepositAmount = depositAmount;
-
-        VaultBalances memory balances = moduleCore.getVaultBalances(defaultCurrencyId);
-        vm.assertEq(balances.ra.locked, 0);
-        vm.assertEq(balances.ctBalance, 0);
-
-        uint256 received = moduleCore.depositLv(defaultCurrencyId, adjustedDepositAmount, 0, 0);
-
-        balances = moduleCore.getVaultBalances(defaultCurrencyId);
-        vm.assertEq(balances.ra.locked, 0);
-
-        // default split is 50/50
-        vm.assertApproxEqAbs(balances.ctBalance, depositAmount / 2, depositAmount / 100);
-
-        uint256 dsReserve = flashSwapRouter.getLvReserve(defaultCurrencyId, 1);
-        // ~0.5 from split, ~0.2 from AMM with some precision tolerance
-        vm.assertApproxEqAbs(dsReserve, depositAmount * 3 / 4, depositAmount / 100);
-
-        vm.assertEq(received, 1);
-
-        (received,) = moduleCore.depositPsm(defaultCurrencyId, 1 ether);
-
-        ICorkHook ammRouter = moduleCore.getAmmRouter();
-        ra.approve(address(ammRouter), 1 ether);
-        IERC20(ct).approve(address(ammRouter), 1 ether);
-        (,, uint256 minted) = ammRouter.addLiquidity(address(ra), ct, 1 ether, 1 ether, 0, 0, block.timestamp);
-
-        vm.assertGe(minted, 1e9);
-        IERC20(ammRouter.getLiquidityToken(address(ra), ct)).transfer(address(moduleCore), minted);
-
-        received = moduleCore.depositLv(defaultCurrencyId, 1 ether, 0, 0);
-        vm.assertGe(received, 100);
-    }
-
     function test_redeemStateFailure() external {
         uint256 amount = 10 ether;
         uint256 psmDepositAmount = 1 ether;
@@ -593,5 +556,42 @@ contract DepositTest is Helper {
         assertLe(lv.totalSupply(), 10);
         assertLe(moduleCore.vaultLp(id), 10);
         assertLe(flashSwapRouter.getLvReserve(id, dsId), 10);
+    }
+
+    function test_depositInflation() external {
+        uint256 depositAmount = 2;
+
+        uint256 adjustedDepositAmount = depositAmount;
+
+        VaultBalances memory balances = moduleCore.getVaultBalances(defaultCurrencyId);
+        vm.assertEq(balances.ra.locked, 0);
+        vm.assertEq(balances.ctBalance, 0);
+
+        uint256 received = moduleCore.depositLv(defaultCurrencyId, adjustedDepositAmount, 0, 0);
+
+        balances = moduleCore.getVaultBalances(defaultCurrencyId);
+        vm.assertEq(balances.ra.locked, 0);
+
+        // default split is 50/50
+        vm.assertApproxEqAbs(balances.ctBalance, depositAmount / 2, depositAmount / 100);
+
+        uint256 dsReserve = flashSwapRouter.getLvReserve(defaultCurrencyId, 1);
+        // ~0.5 from split, ~0.2 from AMM with some precision tolerance
+        vm.assertApproxEqAbs(dsReserve, depositAmount * 3 / 4, depositAmount / 100);
+
+        vm.assertEq(received, 2);
+
+        (received,) = moduleCore.depositPsm(defaultCurrencyId, 1 ether);
+
+        ICorkHook ammRouter = moduleCore.getAmmRouter();
+        ra.approve(address(ammRouter), 1 ether);
+        IERC20(ct).approve(address(ammRouter), 1 ether);
+        (,, uint256 minted) = ammRouter.addLiquidity(address(ra), ct, 1 ether, 1 ether, 0, 0, block.timestamp);
+
+        vm.assertGe(minted, 1e9);
+        IERC20(ammRouter.getLiquidityToken(address(ra), ct)).transfer(address(moduleCore), minted);
+
+        received = moduleCore.depositLv(defaultCurrencyId, 1 ether, 0, 0);
+        vm.assertGe(received, 100);
     }
 }
