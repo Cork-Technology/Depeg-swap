@@ -400,12 +400,8 @@ contract CorkConfig is AccessControl, Pausable {
     }
 
     function updatePsmRate(Id id, uint256 newRate) external onlyUpdaterOrManager {
-        // we update the rate in our provider regardless it's up or down
+        // we update the rate in our provider regardless it's up or down. won't affect other market's rates that doesn't use this provider
         defaultExchangeRateProvider.setRate(id, newRate);
-
-        // we don't bubble up the error since if this is a yield bearing PA, then the value of PA goes up
-        // but we don't want to insure the yield, so we just ignore the error
-        try moduleCore.updateRate(id, newRate) {} catch {}
     }
 
     function useVaultTradeExecutionResultFunds(Id id) external onlyManager {

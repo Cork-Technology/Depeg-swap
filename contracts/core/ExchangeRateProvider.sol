@@ -5,6 +5,7 @@ import {Id, Pair, PairLibrary} from "../libraries/Pair.sol";
 import {IErrors} from "./../interfaces/IErrors.sol";
 import {MathHelper} from "./../libraries/MathHelper.sol";
 import {IExchangeRateProvider} from "./../interfaces/IExchangeRateProvider.sol";
+import {DepegSwapLibrary} from "./../libraries/DepegSwapLib.sol";
 
 /**
  * @title ExchangeRateProvider Contract
