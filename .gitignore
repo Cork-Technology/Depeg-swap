@@ -150,3 +150,5 @@ gas-report.json
 /cache_forge
 
 /.idea/
+
+/optimized-out/

@@ -37,10 +37,6 @@ library DepegSwapLibrary {
         return self._address != address(0) && self.ct != address(0);
     }
 
-    function exchangeRate(DepegSwap storage self) internal view returns (uint256) {
-        return Asset(self._address).exchangeRate();
-    }
-
     function initialize(address _address, address ct) internal pure returns (DepegSwap memory) {
         if (_address == address(0) || ct == address(0)) {
             revert ZeroAddress();

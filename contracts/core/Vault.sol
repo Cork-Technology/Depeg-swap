@@ -32,7 +32,7 @@ abstract contract VaultCore is ModuleState, Context, IVault, IVaultLiquidation {
         LVDepositNotPaused(id);
         State storage state = states[id];
         received = state.deposit(_msgSender(), amount, getRouterCore(), getAmmRouter(), raTolerance, ctTolerance);
-        emit LvDeposited(id, _msgSender(), received);
+        emit LvDeposited(id, _msgSender(), received, amount);
     }
 
     /**
