@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.24;
 
-import {Id} from "../libraries/Pair.sol";
+import {Id, Pair} from "../libraries/Pair.sol";
 
 /**
  * @title Initialize Interface
@@ -121,6 +121,9 @@ interface Initialize {
         external
         pure
         returns (Id);
+
+    function markets(Id id) external view returns (Pair memory);
+
 
     /// @notice Emitted when a new LV and PSM is initialized with a given pair
     /// @param id The PSM id
