@@ -275,6 +275,4 @@ interface IPSMcore is IRepurchase {
     function rolloverProfitRemaining(Id id, uint256 dsId) external view returns (uint256);
 
     function psmAutoSellStatus(Id id) external view returns (bool);
-
-    function updateRate(Id id, uint256 newRate) external;
 }
