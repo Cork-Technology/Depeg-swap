@@ -122,7 +122,10 @@ interface Initialize {
         pure
         returns (Id);
 
-    function markets(Id id) external view returns (Pair memory);
+    function markets(Id id)
+        external
+        view
+        returns (address pa, address ra, uint256 initialArp, uint256 expiryInterval, address exchangeRateProvider);
 
     /// @notice Emitted when a new LV and PSM is initialized with a given pair
     /// @param id The PSM id
