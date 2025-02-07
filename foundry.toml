@@ -1,8 +1,8 @@
 [profile.default]
 src = "contracts"
-evm_version = "cancun"   
+evm_version = "cancun"
 out = "out"
-libs = ["node_modules","lib"]
+libs = ["node_modules", "lib"]
 test = "test"
 cache_path = "cache_forge"
 ffi = true
@@ -15,6 +15,7 @@ solc_version = "0.8.26"
 fs_permissions = [{ access = "read", path = "./"}]
 
 
+# Compile only the production code with IR see https://github.com/foundry-rs/forge-std/issues/321#issuecomment-1462351522
 [profile.optimized]
 out = "optimized-out"
 test = "test"
