@@ -28,12 +28,7 @@ contract TransferTokensScript is Script {
 
     function run() public {
         vm.startBroadcast(pk);
-        transferTokens(0x2620F783e6Bf36905859D55e4B91adAC3F2105Fa);
-        transferTokens(0x105F72D0f48A1B1B27B09eC58F3608F894B3c880);
-        transferTokens(0xc7D0Fd6DD83955B027f0f038c861D7D031c59785);
-        transferTokens(0x59F230c66E2F1fcfdE0f6b85F2AE2d61f14a4b23);
-        transferTokens(0x6B905a32b02f6C002c18F9733e4B428F59EF86a8);
-        transferTokens(0x998e15be45A6A3E1C9a824c1Ef1Aaa4C988EC29F);
+        transferTokens(0x0000000000000000000000000000000000000000);
         console.log("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-");
         vm.stopBroadcast();
     }
