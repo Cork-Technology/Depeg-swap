@@ -201,7 +201,7 @@ contract ProtectedUnit is
         uint256 dsId = MODULE_CORE.lastDsId(id);
 
         ds.approve(address(MODULE_CORE), amountDs);
-        PA.approve(address(MODULE_CORE), amount);
+        IERC20(PA).safeIncreaseAllowance(address(MODULE_CORE), amount);
 
         MODULE_CORE.redeemRaWithDsPa(id, dsId, amount);
 
