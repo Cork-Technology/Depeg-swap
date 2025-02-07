@@ -78,6 +78,10 @@ contract ModuleCore is OwnableUpgradeable, UUPSUpgradeable, PsmCore, Initialize,
         return PairLibrary.initalize(pa, ra, initialArp, expiry, exchangeRateProvider).toId();
     }
 
+    function markets(Id id) external view returns (Pair memory) {
+        return states[id].info;
+    }
+
     function initializeModuleCore(
         address pa,
         address ra,
