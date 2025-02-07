@@ -418,7 +418,7 @@ library VaultLibrary {
             oneMinusT: snapshot.oneMinusT,
             lpSupply: lpSupply,
             lvSupply: Asset(self.vault.lv._address).totalSupply(),
-            // the provide liquidity automatically adds the lp, so we need to subtract it first here
+            // we already split the CT so we need to subtract it first here
             vaultCt: self.vault.balances.ctBalance - params.ctSplitted,
             vaultDs: params.flashSwapRouter.getLvReserve(id, params.dsId),
             vaultLp: vaultLp,
