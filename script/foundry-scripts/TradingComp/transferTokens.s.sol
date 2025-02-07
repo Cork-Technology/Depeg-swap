@@ -33,32 +33,33 @@ contract TransferTokensScript is Script {
         transferTokens(0xc7D0Fd6DD83955B027f0f038c861D7D031c59785);
         transferTokens(0x59F230c66E2F1fcfdE0f6b85F2AE2d61f14a4b23);
         transferTokens(0x6B905a32b02f6C002c18F9733e4B428F59EF86a8);
+        transferTokens(0x998e15be45A6A3E1C9a824c1Ef1Aaa4C988EC29F);
         console.log("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-");
         vm.stopBroadcast();
     }
 
     function transferTokens(address user) public {
-        payable(user).transfer(100 ether);
+        payable(user).transfer(0.1 ether);
 
         decimals = ERC20(weth).decimals();
-        ERC20(weth).transfer(user, transferAmt * 10 ** decimals);
+        ERC20(weth).safeTransfer(user, transferAmt * 10 ** decimals);
 
         decimals = ERC20(wstETH).decimals();
-        ERC20(wstETH).transfer(user, transferAmt * 10 ** decimals);
+        ERC20(wstETH).safeTransfer(user, transferAmt * 10 ** decimals);
 
         decimals = ERC20(weETH).decimals();
-        ERC20(weETH).transfer(user, transferAmt * 10 ** decimals);
+        ERC20(weETH).safeTransfer(user, transferAmt * 10 ** decimals);
 
         decimals = ERC20(sUSDS).decimals();
-        ERC20(sUSDS).transfer(user, transferAmt * 10 ** decimals);
+        ERC20(sUSDS).safeTransfer(user, transferAmt * 10 ** decimals);
 
         decimals = ERC20(USDe).decimals();
-        ERC20(USDe).transfer(user, transferAmt * 10 ** decimals);
+        ERC20(USDe).safeTransfer(user, transferAmt * 10 ** decimals);
 
         decimals = ERC20(sUSDe).decimals();
-        ERC20(sUSDe).transfer(user, transferAmt * 10 ** decimals);
+        ERC20(sUSDe).safeTransfer(user, transferAmt * 10 ** decimals);
 
-        // decimals = ERC20(USDT).decimals();
-        // ERC20(USDT).transfer(user, transferAmt * 10 ** decimals);
+        decimals = ERC20(USDT).decimals();
+        ERC20(USDT).safeTransfer(user, transferAmt * 10 ** decimals);
     }
 }
