@@ -17,7 +17,7 @@ library MathHelper {
 
     // this is used to calculate tolerance level when adding liqudity to AMM pair
     /// @dev 1e18 == 1%.
-    uint256 internal constant UNI_STATIC_TOLERANCE = 5e18;
+    uint256 internal constant UNI_STATIC_TOLERANCE = 95e18;
 
     /**
      * @dev calculate the amount of ra and ct needed to provide AMM with liquidity in respect to the price ratio
