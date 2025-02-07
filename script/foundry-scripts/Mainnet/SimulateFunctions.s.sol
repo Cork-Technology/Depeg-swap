@@ -119,8 +119,8 @@ contract SimulateScript is Script {
 
         console.log("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-");
 
-        // Market[4] memory markets = [weth_wstETH_market, wstETH_weETH_market, sUSDS_USDe_market, sUSDe_USDT_market];
-        Market[1] memory markets = [weth_wstETH_market];
+        Market[4] memory markets = [weth_wstETH_market, wstETH_weETH_market, sUSDS_USDe_market, sUSDe_USDT_market];
+        // Market[1] memory markets = [weth_wstETH_market];
 
         for (uint256 i = 0; i < markets.length; i++) {
             Market memory market = markets[i];
@@ -130,6 +130,7 @@ contract SimulateScript is Script {
 
             uint256 dsId = moduleCore.lastDsId(marketId);
             (address ct, address ds) = moduleCore.swapAsset(marketId, dsId);
+            address lv = moduleCore.lvAsset(marketId);
 
             uint256 lvDepositAmt = 5000;
             depositLv(market, marketId, lvDepositAmt);
@@ -142,7 +143,7 @@ contract SimulateScript is Script {
 
             returnRaWithCtDs(market, marketId, redeemAmt, ds, ct);
 
-            redeemLv(market, marketId, redeemAmt, ct);
+            redeemLv(market, marketId, redeemAmt, lv);
 
             uint256 swapAmt = 1;
             swapDsForRa(market, marketId, dsId, swapAmt, ds);
