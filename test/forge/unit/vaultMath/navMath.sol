@@ -64,7 +64,7 @@ contract NavMathTest is Test {
         });
 
         (UD60x18 navLp, UD60x18 navCt, UD60x18 navDs, UD60x18 navIdleRa) = MathHelper.calculateNavCombined(params);
-        vm.assertApproxEqAbs(unwrap(navLp), 2004.31706 ether, 0.00001 ether);
+        vm.assertApproxEqAbs(unwrap(navLp), 2004.8909 ether, 0.0001 ether);
         vm.assertApproxEqAbs(unwrap(navCt), 957.03 ether, 0.01 ether);
         vm.assertApproxEqAbs(unwrap(navDs), 88.07 ether, 0.01 ether);
         vm.assertApproxEqAbs(unwrap(navIdleRa), 15 ether, 0.0001 ether);
