@@ -36,6 +36,10 @@ contract CorkConfig is AccessControl, Pausable {
 
     uint256 public defaultDecayDiscountRateInDays = 0;
 
+    // this essentially means deposit will not be allowed if the NAV of the pair is below this threshold
+    // the nav is updated every vault deposit
+    uint256 public defaultNavThreshold = 90 ether;
+
     uint256 public constant WHITELIST_TIME_DELAY = 7 days;
 
     /// @notice liquidation address => timestamp when liquidation is allowed
