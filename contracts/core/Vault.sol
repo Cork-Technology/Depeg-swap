@@ -179,4 +179,13 @@ abstract contract VaultCore is ModuleState, Context, IVault, IVaultLiquidation {
     function receiveLeftoverFunds(Id id, uint256 amount) external {
         states[id].receiveLeftoverFunds(amount, _msgSender());
     }
+
+    function updateVaultNavThreshold(Id id, uint256 newNavThreshold) external {
+        onlyConfig();
+        onlyInitialized(id);
+
+        State storage state = states[id];
+        VaultLibrary.updateNavThreshold(state, newNavThreshold);
+        emit VaultNavThresholdUpdated(id, newNavThreshold);
+    }
 }

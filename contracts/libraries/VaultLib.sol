@@ -681,4 +681,8 @@ library VaultLibrary {
     function updateLvWithdrawalsStatus(State storage self, bool isLVWithdrawalPaused) external {
         self.vault.config.isWithdrawalPaused = isLVWithdrawalPaused;
     }
+
+    function updateNavThreshold(State storage self, uint256 navThreshold) external {
+        self.vault.navThreshold = navThreshold;
+    }
 }

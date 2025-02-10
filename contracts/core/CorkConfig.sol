@@ -107,6 +107,14 @@ contract CorkConfig is AccessControl, Pausable {
         rolloverPeriodInBlocks = newRolloverPeriodInBlocks;
     }
 
+    function updateDefaultNavThreshold(uint256 newNavThreshold) external onlyManager {
+        defaultNavThreshold = newNavThreshold;
+    }
+
+    function updateNavThreshold(Id id, uint256 newNavThreshold) external onlyManager {
+        moduleCore.updateVaultNavThreshold(id, newNavThreshold);
+    }
+
     function _computeLiquidatorRoleHash(address account) public view returns (bytes32) {
         return keccak256(abi.encodePacked(BASE_LIQUIDATOR_ROLE, account));
     }
