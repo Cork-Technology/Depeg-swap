@@ -27,6 +27,7 @@ abstract contract VaultCore is ModuleState, Context, IVault, IVaultLiquidation {
     function depositLv(Id id, uint256 amount, uint256 raTolerance, uint256 ctTolerance)
         external
         override
+        nonReentrant
         returns (uint256 received)
     {
         LVDepositNotPaused(id);
