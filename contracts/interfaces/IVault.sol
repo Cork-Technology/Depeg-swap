@@ -81,6 +81,8 @@ interface IVault is IErrors {
     /// @param amount The amount of RA tokens transferred.
     event ProfitReceived(address indexed router, uint256 amount);
 
+    event VaultNavThresholdUpdated(Id indexed id, uint256 navThreshold);
+
     /**
      * @notice Deposit a wrapped asset into a given vault
      * @param id The Module id that is used to reference both psm and lv of a given pair

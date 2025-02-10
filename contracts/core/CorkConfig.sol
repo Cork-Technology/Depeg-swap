@@ -252,6 +252,9 @@ contract CorkConfig is AccessControl, Pausable {
         address exchangeRateProvider
     ) external {
         moduleCore.initializeModuleCore(pa, ra, initialArp, expiryInterval, exchangeRateProvider);
+
+        // auto assign nav threshold
+        Id id = moduleCore.getId(pa, ra, initialArp, expiryInterval, exchangeRateProvider);
     }
 
     /**
