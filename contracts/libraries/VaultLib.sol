@@ -165,8 +165,7 @@ library VaultLibrary {
         Tolerance memory tolerance
     ) internal returns (uint256 ra, uint256 ct, uint256 lp) {
         (ra, ct) = __calculateProvideLiquidityAmount(self, amount, flashSwapRouter);
-        // we don't sync here since we wanna sync after the calculation has been done
-        (lp,) = __provideLiquidityNoSync(self, ra, ct, flashSwapRouter, ctAddress, ammRouter, tolerance, amount);
+        (lp,) = __provideLiquidity(self, ra, ct, flashSwapRouter, ctAddress, ammRouter, tolerance, amount);
     }
 
     // Duplicate function of __provideLiquidityWithRatioGetLP to avoid stack too deep error
@@ -267,23 +266,6 @@ library VaultLibrary {
         Tolerance memory tolerance,
         uint256 amountRaOriginal
     ) internal returns (uint256 lp, uint256 dust) {
-        (lp, dust) = __provideLiquidityNoSync(
-            self, raAmount, ctAmount, flashSwapRouter, ctAddress, ammRouter, tolerance, amountRaOriginal
-        );
-
-        self.syncLpBalance(ammRouter, self.globalAssetIdx);
-    }
-
-    function __provideLiquidityNoSync(
-        State storage self,
-        uint256 raAmount,
-        uint256 ctAmount,
-        IDsFlashSwapCore flashSwapRouter,
-        address ctAddress,
-        ICorkHook ammRouter,
-        Tolerance memory tolerance,
-        uint256 amountRaOriginal
-    ) internal returns (uint256 lp, uint256 dust) {
         uint256 dsId = self.globalAssetIdx;
 
         address ra = self.info.ra;
@@ -307,6 +289,8 @@ library VaultLibrary {
         (lp, dust) =
             __addLiquidityToAmmUnchecked(raAmount, ctAmount, ra, ctAddress, ammRouter, tolerance.ra, tolerance.ct);
         _addFlashSwapReserveLv(self, flashSwapRouter, self.ds[dsId], ctAmount);
+
+        self.addLpBalance(lp);
     }
 
     function __provideAmmLiquidityFromPool(
@@ -385,7 +369,6 @@ library VaultLibrary {
         }
 
         self.vault.lv.issue(from, received);
-        self.syncLpBalance(ammRouter, dsId);
     }
 
     struct CalculateReceivedDepositParams {
@@ -491,7 +474,7 @@ library VaultLibrary {
         // amountAMin & amountBMin = 0 for 100% tolerence
         (raReceived, ctReceived) = ammRouter.removeLiquidity(raAddress, ctAddress, lp, 0, 0, deadline);
 
-        self.syncLpBalance(ammRouter, ctAddress);
+        self.subtractLpBalance(lp);
     }
 
     function _liquidatedLp(State storage self, uint256 dsId, ICorkHook ammRouter, uint256 deadline) internal {
