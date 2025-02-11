@@ -106,7 +106,7 @@ library PsmLibrary {
             );
         }
 
-        (ctReceived, dsReceived, paReceived) = _rolloverCt(self, owner, amount, dsId, flashSwapRouter);
+        (ctReceived, dsReceived, paReceived) = _rolloverExpiredCt(self, owner, amount, dsId, flashSwapRouter);
     }
 
     function claimAutoSellProfit(
@@ -128,7 +128,7 @@ library PsmLibrary {
     // 7. send PA to user
     // regardless of amount, it will always send user all the profit from rollover
 
-    function _rolloverCt(
+    function _rolloverExpiredCt(
         State storage self,
         address owner,
         uint256 amount,
@@ -382,7 +382,7 @@ library PsmLibrary {
         self.ds[dsId].burnCtSelf(amount);
     }
 
-    function _redeemRaWithCtDs(State storage self, DepegSwap storage ds, address owner, uint256 amount)
+    function _returnRaWithCtDs(State storage self, DepegSwap storage ds, address owner, uint256 amount)
         internal
         returns (uint256 ra)
     {
@@ -414,7 +414,7 @@ library PsmLibrary {
             DepegSwapLibrary.permit(ds.ct, rawCtPermitSig, owner, address(this), amount, ctDeadline, "returnRaWithCtDs");
         }
 
-        ra = _redeemRaWithCtDs(self, ds, owner, amount);
+        ra = _returnRaWithCtDs(self, ds, owner, amount);
     }
 
     function availableForRepurchase(State storage self) external view returns (uint256 pa, uint256 ds, uint256 dsId) {
@@ -519,10 +519,8 @@ library PsmLibrary {
 
         // decrease PSM balance
         // we also include the fee here to separate the accumulated fee from the repurchase
-        {
-            self.psm.balances.paBalance -= (receivedPa);
-            self.psm.balances.dsBalance -= (receivedDs);
-        }
+        self.psm.balances.paBalance -= (receivedPa);
+        self.psm.balances.dsBalance -= (receivedDs);
 
         // transfer user RA to the PSM/LV
         self.psm.balances.ra.lockFrom(amount, buyer);
@@ -533,12 +531,9 @@ library PsmLibrary {
         }
 
         // transfer user attrubuted DS + PA
-
         // PA
-        {
-            (, address pa) = self.info.underlyingAsset();
-            IERC20(pa).safeTransfer(buyer, receivedPa);
-        }
+        (, address pa) = self.info.underlyingAsset();
+        IERC20(pa).safeTransfer(buyer, receivedPa);
 
         // DS
         IERC20(ds._address).safeTransfer(buyer, receivedDs);

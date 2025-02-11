@@ -49,8 +49,9 @@ interface IVault is IErrors {
     /// @notice Emitted when a user deposits assets into a given Vault
     /// @param id The Module id that is used to reference both psm and lv of a given pair
     /// @param depositor The address of the depositor
-    /// @param amount  The amount of the asset deposited
-    event LvDeposited(Id indexed id, address indexed depositor, uint256 amount);
+    /// @param received The amount of lv asset received
+    /// @param deposited The amount of the asset deposited
+    event LvDeposited(Id indexed id, address indexed depositor, uint256 received, uint256 deposited);
 
     event LvRedeemEarly(
         Id indexed id,

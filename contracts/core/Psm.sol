@@ -143,12 +143,12 @@ abstract contract PsmCore is IPSMcore, ModuleState, Context {
             fee
         );
     }
-
     /**
      * This determines the rate of how much the user will receive for the amount of asset they want to deposit.
      * for example, if the rate is 1.5, then the user will need to deposit 1.5 token to get 1 CT and DS.
      * @param id the id of the PSM
      */
+
     function exchangeRate(Id id) external view override returns (uint256 rates) {
         State storage state = states[id];
         rates = state.exchangeRate();
@@ -329,11 +329,9 @@ abstract contract PsmCore is IPSMcore, ModuleState, Context {
 
     function updatePsmRepurchaseFeePercentage(Id id, uint256 percentage) external {
         onlyConfig();
-
         if (percentage > PsmLibrary.MAX_ALLOWED_FEES) {
             revert InvalidFees();
         }
-
         State storage state = states[id];
         state.psm.repurchaseFeePercentage = percentage;
     }

@@ -398,7 +398,7 @@ describe("CorkConfig", function () {
       ).to.be.rejectedWith("PSMWithdrawalPaused()");
 
       await expect(
-        fixture.moduleCore.read.previewRedeemRaWithCtDs([
+        fixture.moduleCore.read.previewReturnRaWithCtDs([
           fixture.Id,
           parseEther("2"),
         ])

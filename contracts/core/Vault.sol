@@ -32,7 +32,7 @@ abstract contract VaultCore is ModuleState, Context, IVault, IVaultLiquidation {
         LVDepositNotPaused(id);
         State storage state = states[id];
         received = state.deposit(_msgSender(), amount, getRouterCore(), getAmmRouter(), raTolerance, ctTolerance);
-        emit LvDeposited(id, _msgSender(), received);
+        emit LvDeposited(id, _msgSender(), received, amount);
     }
 
     /**
@@ -57,7 +57,6 @@ abstract contract VaultCore is ModuleState, Context, IVault, IVaultLiquidation {
         });
 
         result = states[redeemParams.id].redeemEarly(redeemer, redeemParams, routers, permitParams);
-
         emit LvRedeemEarly(
             redeemParams.id,
             _msgSender(),
@@ -92,7 +91,6 @@ abstract contract VaultCore is ModuleState, Context, IVault, IVaultLiquidation {
         PermitParams memory permitParams = PermitParams({rawLvPermitSig: bytes(""), deadline: 0});
 
         result = states[redeemParams.id].redeemEarly(_msgSender(), redeemParams, routers, permitParams);
-
         emit LvRedeemEarly(
             redeemParams.id,
             _msgSender(),

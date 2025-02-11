@@ -114,7 +114,6 @@ library VaultLibrary {
         }
 
         _liquidateIfExpired(self, prevDsId, ammRouter, deadline);
-
         __provideAmmLiquidityFromPool(self, flashSwapRouter, self.ds[self.globalAssetIdx].ct, ammRouter);
     }
 
@@ -321,9 +320,8 @@ library VaultLibrary {
 
         self.vault.balances.ra.lockUnchecked(amount, from);
 
-        uint256 splitted;
         // split the RA first according to the lv strategy
-        (amount, splitted) = _splitCtWithStrategy(self, flashSwapRouter, amount);
+        (uint256 remaining, uint256 splitted) = _splitCtWithStrategy(self, flashSwapRouter, amount);
 
         uint256 dsId = self.globalAssetIdx;
 
@@ -332,50 +330,70 @@ library VaultLibrary {
             address ct = self.ds[dsId].ct;
 
             (,, lp) = __provideLiquidityWithRatioGetLP(
-                self, amount, flashSwapRouter, ct, ammRouter, Tolerance(raTolerance, ctTolerance)
+                self, remaining, flashSwapRouter, ct, ammRouter, Tolerance(raTolerance, ctTolerance)
             );
         }
 
         // we mint 1:1 if it's the first deposit, else we mint based on current vault NAV
         if (!self.vault.initialized) {
-            received = amount;
+            // we use the initial amount as the received amount on first issuance
+            // this is important to normalize to 18 decimals since without it
+            // the lv share pricing will ehave as though the lv decimals is the same as the ra
+            received = TransferHelper.tokenNativeDecimalsToFixed(amount, self.info.ra);
             self.vault.initialized = true;
         } else {
-            received = _calculateReceivedDeposit(self, ammRouter, splitted, lp, dsId, amount, flashSwapRouter);
+            // we used the initial deposit amount to accurately calculate the NAV per share
+            received = _calculateReceivedDeposit(
+                self,
+                ammRouter,
+                CalculateReceivedDepositParams({
+                    ctSplitted: splitted,
+                    lpGenerated: lp,
+                    dsId: dsId,
+                    amount: amount,
+                    flashSwapRouter: flashSwapRouter
+                })
+            );
         }
 
         self.vault.lv.issue(from, received);
     }
 
+    struct CalculateReceivedDepositParams {
+        uint256 ctSplitted;
+        uint256 lpGenerated;
+        uint256 dsId;
+        uint256 amount;
+        IDsFlashSwapCore flashSwapRouter;
+    }
+
     function _calculateReceivedDeposit(
         State storage self,
         ICorkHook ammRouter,
-        uint256 ctSplitted,
-        uint256 lpGenerated,
-        uint256 dsId,
-        uint256 amount,
-        IDsFlashSwapCore flashSwapRouter
+        CalculateReceivedDepositParams memory params
     ) internal returns (uint256 received) {
         Id id = self.info.toId();
-        address ct = self.ds[dsId].ct;
+        address ct = self.ds[params.dsId].ct;
+
         MarketSnapshot memory snapshot = ammRouter.getMarketSnapshot(self.info.ra, ct);
-        uint256 lpSupply = IERC20(snapshot.liquidityToken).totalSupply() - lpGenerated;
+        uint256 lpSupply = IERC20(snapshot.liquidityToken).totalSupply() - params.lpGenerated;
 
         // we convert ra reserve to 18 decimals to get accurate results
         snapshot.reserveRa = TransferHelper.tokenNativeDecimalsToFixed(snapshot.reserveRa, self.info.ra);
+        params.amount = TransferHelper.tokenNativeDecimalsToFixed(params.amount, self.info.ra);
 
         MathHelper.DepositParams memory params = MathHelper.DepositParams({
-            depositAmount: amount,
+            depositAmount: params.amount,
             reserveRa: snapshot.reserveRa,
             reserveCt: snapshot.reserveCt,
             oneMinusT: snapshot.oneMinusT,
             lpSupply: lpSupply,
             lvSupply: Asset(self.vault.lv._address).totalSupply(),
             // the provide liquidity automatically adds the lp, so we need to subtract it first here
-            vaultCt: self.vault.balances.ctBalance - ctSplitted,
-            vaultDs: flashSwapRouter.getLvReserve(id, dsId) - ctSplitted,
+            vaultCt: self.vault.balances.ctBalance - params.ctSplitted,
+            vaultDs: params.flashSwapRouter.getLvReserve(id, params.dsId) - params.ctSplitted,
             vaultLp: IERC20(snapshot.liquidityToken).balanceOf(address(this)),
-            vaultIdleRa: self.vault.pool.ammLiquidityPool.balance
+            vaultIdleRa: TransferHelper.tokenNativeDecimalsToFixed(self.vault.balances.ra.locked, self.info.ra)
         });
 
         received = MathHelper.calculateDepositLv(params);
@@ -395,6 +413,7 @@ library VaultLibrary {
         splitted = MathHelper.calculatePercentageFee(ctHeldPercentage, amount);
     }
 
+    // return the amount left and the CT splitted(in 18 decimals)
     function _splitCtWithStrategy(State storage self, IDsFlashSwapCore flashSwapRouter, uint256 amount)
         internal
         returns (uint256 amountLeft, uint256 splitted)
@@ -404,13 +423,13 @@ library VaultLibrary {
         amountLeft = amount - splitted;
 
         // actually mint ct & ds to vault and used the normalized value
-        uint256 ctDsReceivedNormalized = PsmLibrary.unsafeIssueToLv(self, splitted);
+        splitted = PsmLibrary.unsafeIssueToLv(self, splitted);
 
         // increase the ct balance in the vault
-        self.vault.balances.ctBalance += ctDsReceivedNormalized;
+        self.vault.balances.ctBalance += splitted;
 
         // add ds to flash swap reserve
-        _addFlashSwapReserveLv(self, flashSwapRouter, self.ds[self.globalAssetIdx], ctDsReceivedNormalized);
+        _addFlashSwapReserveLv(self, flashSwapRouter, self.ds[self.globalAssetIdx], splitted);
     }
 
     // redeem CT that's been held in the pool, must only be called after liquidating LP on new issuance
@@ -557,8 +576,6 @@ library VaultLibrary {
 
             redeemAmount = MathHelper.calculateRedeemLv(params);
             result.ctReceivedFromVault = redeemAmount.ctReceived;
-            // decrease the ct balance in the vault
-            self.vault.balances.ctBalance -= result.ctReceivedFromVault;
 
             result.dsReceived = redeemAmount.dsReceived;
             result.raIdleReceived = redeemAmount.idleRaReceived;
@@ -573,6 +590,8 @@ library VaultLibrary {
             result.raReceivedFromAmm = raFromAmm;
             result.ctReceivedFromAmm = ctFromAmm;
         }
+
+        _decreaseInternalBalanceAfterRedeem(self, result);
 
         if (result.raReceivedFromAmm < redeemParams.amountOutMin) {
             revert IErrors.InsufficientOutputAmount(redeemParams.amountOutMin, result.raReceivedFromAmm);
@@ -625,6 +644,12 @@ library VaultLibrary {
 
         // send PA to user
         SafeERC20.safeTransfer(IERC20(pair.pa), address(contracts.withdrawalContract), result.paReceived);
+    }
+
+    function _decreaseInternalBalanceAfterRedeem(State storage self, IVault.RedeemEarlyResult memory result) internal {
+        self.vault.balances.ra.decLocked(result.raIdleReceived);
+        self.vault.balances.ctBalance -= result.ctReceivedFromVault;
+        self.vault.pool.withdrawalPool.paBalance -= result.paReceived;
     }
 
     function vaultLp(State storage self, ICorkHook ammRotuer) internal view returns (uint256) {

@@ -93,6 +93,8 @@ struct VaultWithdrawalPool {
 
 /**
  * @dev VaultAmmLiquidityPool structure for providing AMM pools in Vault(Liquidity Pool)
+ * This should only be used at the end of each epoch(dsId) lifecyle(e.g at expiry) to pool all RA to be used
+ * as liquidity for initiating AMM in the next epoch
  */
 struct VaultAmmLiquidityPool {
     uint256 balance;
