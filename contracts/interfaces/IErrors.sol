@@ -200,4 +200,8 @@ interface IErrors {
 
     /// @notice thrown when expiry is zero
     error InvalidExpiry();
+
+    /// @notice the current NAV share is below the acceptable threshold for deposit
+    /// try again later
+    error NavBelowThreshold();
 }
