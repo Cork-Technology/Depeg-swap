@@ -683,6 +683,6 @@ library VaultLibrary {
     }
 
     function updateNavThreshold(State storage self, uint256 navThreshold) external {
-        self.vault.navThreshold = navThreshold;
+        self.vault.config.navCircuitBreaker.navThreshold = navThreshold;
     }
 }

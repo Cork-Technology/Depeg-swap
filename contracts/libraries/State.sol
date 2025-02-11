@@ -118,7 +118,6 @@ struct VaultState {
     uint256 ctHeldPercetage;
     /// @notice dsId => totalRA. will be updated on every new issuance, so dsId 1 would be update at new issuance of dsId 2
     mapping(uint256 => uint256) totalRaSnapshot;
-    uint256 navThreshold;
 }
 
 /**
@@ -127,4 +126,13 @@ struct VaultState {
 struct VaultConfig {
     bool isDepositPaused;
     bool isWithdrawalPaused;
+    NavCircuitBreaker navCircuitBreaker;
+}
+
+struct NavCircuitBreaker {
+    uint256 snapshot0;
+    uint256 lastUpdate0;
+    uint256 snapshot1;
+    uint256 lastUpdate1;
+    uint256 navThreshold;
 }
