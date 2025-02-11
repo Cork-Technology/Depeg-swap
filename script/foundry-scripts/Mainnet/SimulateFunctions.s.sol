@@ -3,6 +3,7 @@ pragma solidity ^0.8.24;
 import {Script, console} from "forge-std/Script.sol";
 import {ModuleCore} from "../../../contracts/core/ModuleCore.sol";
 import {CorkConfig} from "../../../contracts/core/CorkConfig.sol";
+import {CorkHook} from "Cork-Hook/CorkHook.sol";
 import {RouterState} from "../../../contracts/core/flash-swaps/FlashSwapRouter.sol";
 import {Id, PairLibrary} from "../../../contracts/libraries/Pair.sol";
 import {ERC20, IERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
@@ -27,6 +28,7 @@ contract SimulateScript is Script {
     CorkConfig public config = CorkConfig(0x4f217EDafBd17eC975D7e05DDafc4634fbdb258F);
     ModuleCore public moduleCore = ModuleCore(0x0dCd8A118566ec6b8B96A3334C4B5A1DB2345d72);
     RouterState public routerState = RouterState(0x039DB5B6BfAbf2F2A2d926087d45E7dd01E2d2A0);
+    CorkHook public corkHook = CorkHook(0x7639Ad5E1b9e59a33366890fB372471D8A29AA88);
     address public exchangeProvider = 0xeF72B8f15f4DD2A4E124B9D16F5B7c76e0DF5781;
 
     uint256 public pk = vm.envUint("PRIVATE_KEY");
@@ -149,6 +151,8 @@ contract SimulateScript is Script {
             swapDsForRa(market, marketId, dsId, swapAmt, ds);
 
             swapRaForDs(market, marketId, dsId, swapAmt);
+
+            swapRaCtTokens(market, marketId, swapAmt, ct);
         }
 
         console.log("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-");
@@ -204,6 +208,20 @@ contract SimulateScript is Script {
         IDsFlashSwapCore.OffchainGuess memory offchainguess =
             IDsFlashSwapCore.OffchainGuess({initialBorrowAmount: swapAmt, afterSoldBorrowAmount: 0});
         routerState.swapRaforDs(marketId, dsId, swapAmt, 0, buyApprox, offchainguess);
+    }
+
+    function swapRaCtTokens(Market memory market, Id marketId, uint256 swapAmt, address ct) public {
+        uint256 inputAmt = convertToDecimals(market.redemptionAsset, swapAmt);
+        uint256 amountOut = corkHook.getAmountOut(market.redemptionAsset, ct, true, inputAmt);
+        ERC20(market.redemptionAsset).approve(address(corkHook), inputAmt + inputAmt / 20);
+        corkHook.swap(market.redemptionAsset, ct, 0, amountOut, bytes(""));
+        console.log("Swapped RA with CT");
+
+        inputAmt = convertToDecimals(ct, swapAmt);
+        amountOut = corkHook.getAmountOut(market.redemptionAsset, ct, false, inputAmt);
+        ERC20(ct).approve(address(corkHook), inputAmt + inputAmt / 20);
+        corkHook.swap(market.redemptionAsset, ct, amountOut, 0, bytes(""));
+        console.log("Swapped CT with RA");
     }
 
     function convertToDecimals(address token, uint256 value) public view returns (uint256) {
