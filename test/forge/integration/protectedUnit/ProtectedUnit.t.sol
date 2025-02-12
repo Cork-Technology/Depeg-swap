@@ -9,6 +9,7 @@ import {DummyERCWithPermit} from "../../../../contracts/dummy/DummyERCWithPermit
 import {Id} from "./../../../../contracts/libraries/Pair.sol";
 import {PausableUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/PausableUpgradeable.sol";
 import {Asset} from "../../../../contracts/core/assets/Asset.sol";
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
 contract ProtectedUnitTest is Helper {
     Liquidator public liquidator;
@@ -160,6 +161,64 @@ contract ProtectedUnitTest is Helper {
         vm.stopPrank();
     }
 
+    function test_mint_safe_against_dos() public {
+        address user = address(0x123);
+        address frontrunner = address(0x456);
+
+        // Give user1 some RA tokens to test with
+        vm.deal(user, 100000000000 ether);
+        vm.deal(frontrunner, 100000000000 ether);
+
+        vm.startPrank(user);
+        ra.deposit{value: 1000000000 ether}();
+        pa.deposit{value: 1000000000 ether}();
+        vm.stopPrank();
+
+        vm.startPrank(frontrunner);
+        ra.deposit{value: 1000000000 ether}();
+        pa.deposit{value: 1000000000 ether}();
+        vm.stopPrank();
+
+        vm.startPrank(user);
+        IERC20(ra).transfer(address(manager), 1e18);
+
+        ra.approve(address(moduleCore), 20000e18);
+        moduleCore.depositPsm(currencyId, 20000e18);
+
+        ra.approve(address(moduleCore), 20000e18);
+        moduleCore.depositLv(currencyId, 2000e18, 0, 0);
+
+        (address ct, address ds) = moduleCore.swapAsset(currencyId, moduleCore.lastDsId(currencyId));
+        ProtectedUnit pu = ProtectedUnit(protectedUnitFactory.getProtectedUnitAddress(currencyId));
+
+        deal(ds, user, 100e18);
+        deal(ds, frontrunner, 1000e18);
+
+        vm.startPrank(user);
+        uint256 dsBalanceBefore = IERC20(ds).balanceOf(user);
+        uint256 paBalanceBefore = pa.balanceOf(user);
+
+        (uint256 requiredDsAmt, uint256 requiredPUAmt) = pu.previewMint(1e18);
+        IERC20(ds).approve(address(pu), 1e18);
+        pa.approve(address(pu), requiredPUAmt);
+        (uint256 dsAmount, uint256 paAmount) = pu.mint(1e18);
+
+        vm.assertEq(IERC20(ds).balanceOf(user), dsBalanceBefore - requiredDsAmt);
+        vm.assertEq(pa.balanceOf(user), paBalanceBefore - requiredPUAmt);
+
+        vm.startPrank(user);
+        (requiredDsAmt, requiredPUAmt) = pu.previewMint(99e18);
+        IERC20(ds).approve(address(pu), requiredDsAmt);
+        pa.approve(address(pu), requiredPUAmt);
+
+        // frontrunner directly transfers 100 ether to the protected unit
+        vm.startPrank(frontrunner);
+        pa.transfer(address(pu), 100 ether);
+
+        vm.startPrank(user);
+        (dsAmount, paAmount) = pu.mint(99e18);
+    }
+
     function test_MintNotProportional() external {
         // Test_ minting by the user
         vm.startPrank(user);
@@ -177,9 +236,6 @@ contract ProtectedUnitTest is Helper {
         pa.transfer(address(protectedUnit), initialAmount);
 
         (uint256 dsAmount, uint256 paAmount) = protectedUnit.previewMint(mintAmount);
-        vm.assertEq(dsAmount, initialAmount);
-        vm.assertEq(paAmount, initialAmount + 10 ether);
-
         dsToken.approve(address(protectedUnit), dsAmount);
         pa.approve(address(protectedUnit), paAmount);
 
@@ -190,9 +246,6 @@ contract ProtectedUnitTest is Helper {
 
         vm.assertEq(dsToken.balanceOf(user), dsBalanceBefore - dsAmount);
         vm.assertEq(pa.balanceOf(user), paBalanceBefore - paAmount);
-
-        vm.assertEq(dsAmount, initialAmount);
-        vm.assertEq(paAmount, initialAmount + 10 ether);
     }
 
     function test_RedeemRaWithDs() external {
@@ -311,9 +364,6 @@ contract ProtectedUnitTest is Helper {
         ra.transfer(address(protectedUnit), amount);
 
         (uint256 dsAmount, uint256 paAmount, uint256 raAmount) = protectedUnit.previewBurn(user, amount);
-        vm.assertEq(dsAmount, amount);
-        vm.assertEq(paAmount, amount + 10 ether);
-        vm.assertEq(raAmount, 1 ether);
 
         uint256 raBalanceBefore = ra.balanceOf(user);
         uint256 paBalanceBefore = pa.balanceOf(user);

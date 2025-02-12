@@ -94,10 +94,9 @@ interface IVault is IErrors {
     /**
      * @notice Redeem lv before expiry
      * @param redeemParams The object with details like id, reciever, amount, amountOutMin, ammDeadline
-     * @param redeemer The address of the redeemer
      * @param permitParams The object with details for permit like rawLvPermitSig(Raw signature for LV approval permit) and deadline for signature
      */
-    function redeemEarlyLv(RedeemEarlyParams memory redeemParams, address redeemer, PermitParams memory permitParams)
+    function redeemEarlyLv(RedeemEarlyParams memory redeemParams, PermitParams memory permitParams)
         external
         returns (RedeemEarlyResult memory result);
 

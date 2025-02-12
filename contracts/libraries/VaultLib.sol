@@ -176,10 +176,14 @@ library VaultLibrary {
         uint256 amount,
         IDsFlashSwapCore flashSwapRouter,
         address ctAddress,
-        ICorkHook ammRouter,
-        Tolerance memory tolerance
+        ICorkHook ammRouter
     ) internal returns (uint256 ra, uint256 ct, uint256 dust) {
+        Tolerance memory tolerance;
+
         (ra, ct) = __calculateProvideLiquidityAmount(self, amount, flashSwapRouter);
+
+        (tolerance.ra, tolerance.ct) = MathHelper.calculateWithTolerance(ra, ct, MathHelper.UNI_STATIC_TOLERANCE);
+
         (, dust) = __provideLiquidity(self, ra, ct, flashSwapRouter, ctAddress, ammRouter, tolerance, amount);
     }
 
@@ -201,12 +205,7 @@ library VaultLibrary {
         address ctAddress,
         ICorkHook ammRouter
     ) internal returns (uint256 ra, uint256 ct, uint256 dust) {
-        (uint256 raTolerance, uint256 ctTolerance) =
-            MathHelper.calculateWithTolerance(ra, ct, MathHelper.UNI_STATIC_TOLERANCE);
-
-        (ra, ct, dust) = __provideLiquidityWithRatioGetDust(
-            self, amount, flashSwapRouter, ctAddress, ammRouter, Tolerance(raTolerance, ctTolerance)
-        );
+        (ra, ct, dust) = __provideLiquidityWithRatioGetDust(self, amount, flashSwapRouter, ctAddress, ammRouter);
     }
 
     function __getAmmCtPriceRatio(State storage self, IDsFlashSwapCore flashSwapRouter, uint256 dsId)
