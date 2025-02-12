@@ -9,9 +9,9 @@ import {Strings} from "openzeppelin-contracts/contracts/utils/Strings.sol";
 import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
 contract SetupMarketScript is Script {
-    CorkConfig public config = CorkConfig(0x4f217EDafBd17eC975D7e05DDafc4634fbdb258F);
-    ModuleCore public moduleCore = ModuleCore(0x0dCd8A118566ec6b8B96A3334C4B5A1DB2345d72);
-    address public defaultExchangeProvider = 0xeF72B8f15f4DD2A4E124B9D16F5B7c76e0DF5781;
+    CorkConfig public config = CorkConfig(0xa5FCad978e6c53F68a273313434572AcEa0Fed84);
+    ModuleCore public moduleCore = ModuleCore(0xC353F7dCe133911Bf975A090C76880333eD59A3a);
+    address public defaultExchangeProvider = 0x1427bB500Bf4584ec9603e29aE3016eD73C068A3;
 
     address constant weth = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
     address constant wstETH = 0x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca0;

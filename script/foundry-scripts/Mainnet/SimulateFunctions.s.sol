@@ -25,11 +25,11 @@ struct Market {
 contract SimulateScript is Script {
     using SafeERC20 for IERC20;
 
-    CorkConfig public config = CorkConfig(0x4f217EDafBd17eC975D7e05DDafc4634fbdb258F);
-    ModuleCore public moduleCore = ModuleCore(0x0dCd8A118566ec6b8B96A3334C4B5A1DB2345d72);
-    RouterState public routerState = RouterState(0x039DB5B6BfAbf2F2A2d926087d45E7dd01E2d2A0);
-    CorkHook public corkHook = CorkHook(0x7639Ad5E1b9e59a33366890fB372471D8A29AA88);
-    address public exchangeProvider = 0xeF72B8f15f4DD2A4E124B9D16F5B7c76e0DF5781;
+    CorkConfig public config = CorkConfig(0xa5FCad978e6c53F68a273313434572AcEa0Fed84);
+    ModuleCore public moduleCore = ModuleCore(0xC353F7dCe133911Bf975A090C76880333eD59A3a);
+    RouterState public routerState = RouterState(0xce5D9F238d5ecf753AEA688A2e966104773Da8a4);
+    CorkHook public corkHook = CorkHook(0x64E9B987532f5D3517D9fbA49852543F463f2A88);
+    address public exchangeProvider = 0x1427bB500Bf4584ec9603e29aE3016eD73C068A3;
 
     uint256 public pk = vm.envUint("PRIVATE_KEY");
     address public deployer = vm.addr(pk);
@@ -213,13 +213,15 @@ contract SimulateScript is Script {
     function swapRaCtTokens(Market memory market, Id marketId, uint256 swapAmt, address ct) public {
         uint256 inputAmt = convertToDecimals(market.redemptionAsset, swapAmt);
         uint256 amountOut = corkHook.getAmountOut(market.redemptionAsset, ct, true, inputAmt);
-        ERC20(market.redemptionAsset).approve(address(corkHook), inputAmt + inputAmt / 20);
+        uint256 inputOut = corkHook.getAmountIn(market.redemptionAsset, ct, true, amountOut);
+        ERC20(market.redemptionAsset).approve(address(corkHook), inputOut + inputOut / 100000);
         corkHook.swap(market.redemptionAsset, ct, 0, amountOut, bytes(""));
         console.log("Swapped RA with CT");
 
         inputAmt = convertToDecimals(ct, swapAmt);
         amountOut = corkHook.getAmountOut(market.redemptionAsset, ct, false, inputAmt);
-        ERC20(ct).approve(address(corkHook), inputAmt + inputAmt / 20);
+        inputOut = corkHook.getAmountIn(market.redemptionAsset, ct, false, amountOut);
+        ERC20(ct).approve(address(corkHook), inputOut + inputOut / 100000);
         corkHook.swap(market.redemptionAsset, ct, amountOut, 0, bytes(""));
         console.log("Swapped CT with RA");
     }
