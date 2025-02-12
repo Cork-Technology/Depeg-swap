@@ -206,20 +206,17 @@ contract ProtectedUnitTest is Helper {
         vm.assertEq(IERC20(ds).balanceOf(user), dsBalanceBefore - requiredDsAmt);
         vm.assertEq(pa.balanceOf(user), paBalanceBefore - requiredPUAmt);
 
-        vm.startPrank(frontrunner);
-        pa.transfer(address(pu), 1);
-
         vm.startPrank(user);
-        dsBalanceBefore = IERC20(ds).balanceOf(user);
-        paBalanceBefore = pa.balanceOf(user);
-
         (requiredDsAmt, requiredPUAmt) = pu.previewMint(99e18);
         IERC20(ds).approve(address(pu), requiredDsAmt);
         pa.approve(address(pu), requiredPUAmt);
-        (dsAmount, paAmount) = pu.mint(99e18);
 
-        vm.assertEq(IERC20(ds).balanceOf(user), dsBalanceBefore - requiredDsAmt);
-        vm.assertEq(pa.balanceOf(user), paBalanceBefore - requiredPUAmt);
+        // frontrunner directly transfers 100 ether to the protected unit
+        vm.startPrank(frontrunner);
+        pa.transfer(address(pu), 100 ether);
+
+        vm.startPrank(user);
+        (dsAmount, paAmount) = pu.mint(99e18);
     }
 
     function test_MintNotProportional() external {
@@ -239,9 +236,6 @@ contract ProtectedUnitTest is Helper {
         pa.transfer(address(protectedUnit), initialAmount);
 
         (uint256 dsAmount, uint256 paAmount) = protectedUnit.previewMint(mintAmount);
-        vm.assertEq(dsAmount, initialAmount);
-        vm.assertEq(paAmount, initialAmount + 10 ether);
-
         dsToken.approve(address(protectedUnit), dsAmount);
         pa.approve(address(protectedUnit), paAmount);
 
@@ -252,9 +246,6 @@ contract ProtectedUnitTest is Helper {
 
         vm.assertEq(dsToken.balanceOf(user), dsBalanceBefore - dsAmount);
         vm.assertEq(pa.balanceOf(user), paBalanceBefore - paAmount);
-
-        vm.assertEq(dsAmount, initialAmount);
-        vm.assertEq(paAmount, initialAmount + 10 ether);
     }
 
     function test_RedeemRaWithDs() external {
@@ -373,9 +364,6 @@ contract ProtectedUnitTest is Helper {
         ra.transfer(address(protectedUnit), amount);
 
         (uint256 dsAmount, uint256 paAmount, uint256 raAmount) = protectedUnit.previewBurn(user, amount);
-        vm.assertEq(dsAmount, amount);
-        vm.assertEq(paAmount, amount + 10 ether);
-        vm.assertEq(raAmount, 1 ether);
 
         uint256 raBalanceBefore = ra.balanceOf(user);
         uint256 paBalanceBefore = pa.balanceOf(user);

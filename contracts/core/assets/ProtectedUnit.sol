@@ -246,11 +246,11 @@ contract ProtectedUnit is
     }
 
     function _selfPaReserve() internal view returns (uint256) {
-        return TransferHelper.tokenNativeDecimalsToFixed(PA.balanceOf(address(this)), PA);
+        return TransferHelper.tokenNativeDecimalsToFixed(paReserve, PA);
     }
 
     function _selfRaReserve() internal view returns (uint256) {
-        return TransferHelper.tokenNativeDecimalsToFixed(RA.balanceOf(address(this)), RA);
+        return TransferHelper.tokenNativeDecimalsToFixed(raReserve, RA);
     }
 
     function _selfDsReserve() internal view returns (uint256) {
@@ -275,9 +275,7 @@ contract ProtectedUnit is
             revert MintCapExceeded();
         }
 
-        uint256 paReserve = _selfPaReserve();
-
-        (dsAmount, paAmount) = ProtectedUnitMath.previewMint(amount, paReserve, _selfDsReserve(), totalSupply());
+        (dsAmount, paAmount) = ProtectedUnitMath.previewMint(amount, _selfPaReserve(), _selfDsReserve(), totalSupply());
 
         paAmount = TransferHelper.fixedToTokenNativeDecimals(paAmount, PA);
     }
@@ -312,9 +310,8 @@ contract ProtectedUnit is
         }
 
         {
-            uint256 paReserve = _selfPaReserve();
-
-            (dsAmount, paAmount) = ProtectedUnitMath.previewMint(amount, paReserve, _selfDsReserve(), totalSupply());
+            (dsAmount, paAmount) =
+                ProtectedUnitMath.previewMint(amount, _selfPaReserve(), _selfDsReserve(), totalSupply());
 
             paAmount = TransferHelper.fixedToTokenNativeDecimals(paAmount, PA);
         }
@@ -459,5 +456,18 @@ contract ProtectedUnit is
 
     function _normalize(uint256 amount, uint8 decimalsBefore, uint8 decimalsAfter) public pure returns (uint256) {
         return ProtectedUnitMath.normalizeDecimals(amount, decimalsBefore, decimalsAfter);
+    }
+
+    //  Make reserves in sync with the actual balance of the contract
+    function skim(address to) external nonReentrant {
+        if (PA.balanceOf(address(this)) - paReserve > 0) {
+            PA.transfer(to, PA.balanceOf(address(this)) - paReserve);
+        }
+        if (RA.balanceOf(address(this)) - raReserve > 0) {
+            RA.transfer(to, RA.balanceOf(address(this)) - raReserve);
+        }
+        if (ds.balanceOf(address(this)) - dsReserve > 0) {
+            ds.transfer(to, ds.balanceOf(address(this)) - dsReserve);
+        }
     }
 }
