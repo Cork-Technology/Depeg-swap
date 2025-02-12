@@ -36,6 +36,10 @@ contract CorkConfig is AccessControl, Pausable {
 
     uint256 public defaultDecayDiscountRateInDays = 0;
 
+    // this essentially means deposit will not be allowed if the NAV of the pair is below this threshold
+    // the nav is updated every vault deposit
+    uint256 public defaultNavThreshold = 90 ether;
+
     uint256 public constant WHITELIST_TIME_DELAY = 7 days;
 
     /// @notice liquidation address => timestamp when liquidation is allowed
@@ -101,6 +105,14 @@ contract CorkConfig is AccessControl, Pausable {
 
     function updateRolloverPeriodInBlocks(uint256 newRolloverPeriodInBlocks) external onlyManager {
         rolloverPeriodInBlocks = newRolloverPeriodInBlocks;
+    }
+
+    function updateDefaultNavThreshold(uint256 newNavThreshold) external onlyManager {
+        defaultNavThreshold = newNavThreshold;
+    }
+
+    function updateNavThreshold(Id id, uint256 newNavThreshold) external onlyManager {
+        moduleCore.updateVaultNavThreshold(id, newNavThreshold);
     }
 
     function _computeLiquidatorRoleHash(address account) public view returns (bytes32) {
@@ -222,6 +234,10 @@ contract CorkConfig is AccessControl, Pausable {
         flashSwapRouter.updateDsExtraFeeTreasurySplitPercentage(id, newPercentage);
     }
 
+    function forceUpdateNavCircuitBreakerReferenceValue(Id id) external onlyManager {
+        moduleCore.forceUpdateNavCircuitBreakerReferenceValue(id);
+    }
+
     /**
      * @dev Initialize Module Core
      * @param pa Address of PA
@@ -236,6 +252,10 @@ contract CorkConfig is AccessControl, Pausable {
         address exchangeRateProvider
     ) external {
         moduleCore.initializeModuleCore(pa, ra, initialArp, expiryInterval, exchangeRateProvider);
+
+        // auto assign nav threshold
+        Id id = moduleCore.getId(pa, ra, initialArp, expiryInterval, exchangeRateProvider);
+        moduleCore.updateVaultNavThreshold(id, defaultNavThreshold);
     }
 
     /**

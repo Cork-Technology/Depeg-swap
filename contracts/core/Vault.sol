@@ -27,6 +27,7 @@ abstract contract VaultCore is ModuleState, Context, IVault, IVaultLiquidation {
     function depositLv(Id id, uint256 amount, uint256 raTolerance, uint256 ctTolerance)
         external
         override
+        nonReentrant
         returns (uint256 received)
     {
         LVDepositNotPaused(id);
@@ -176,7 +177,24 @@ abstract contract VaultCore is ModuleState, Context, IVault, IVaultLiquidation {
         return states[id].vault.totalRaSnapshot[dsId];
     }
 
-    function receiveLeftoverFunds(Id id, uint256 amount) external {
+    function receiveLeftoverFunds(Id id, uint256 amount) external override {
         states[id].receiveLeftoverFunds(amount, _msgSender());
+    }
+
+    function updateVaultNavThreshold(Id id, uint256 newNavThreshold) external override {
+        onlyConfig();
+        onlyInitialized(id);
+
+        State storage state = states[id];
+        VaultLibrary.updateNavThreshold(state, newNavThreshold);
+        emit VaultNavThresholdUpdated(id, newNavThreshold);
+    }
+
+    function forceUpdateNavCircuitBreakerReferenceValue(Id id) external {
+        onlyConfig();
+        onlyInitialized(id);
+
+        State storage state = states[id];
+        state.forceUpdateNavCircuitBreakerReferenceValue(getRouterCore(), getAmmRouter(), state.globalAssetIdx);
     }
 }
