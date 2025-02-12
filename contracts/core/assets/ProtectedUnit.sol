@@ -162,6 +162,7 @@ contract ProtectedUnit is
         external
         onlyLiquidationContract
         onlyValidToken(token)
+        autoSync
     {
         uint256 balance = IERC20(token).balanceOf(address(this));
 
@@ -174,7 +175,7 @@ contract ProtectedUnit is
         emit LiquidationFundsRequested(msg.sender, token, amount);
     }
 
-    function receiveFunds(uint256 amount, address token) external onlyValidToken(token) {
+    function receiveFunds(uint256 amount, address token) external onlyValidToken(token) autoSync {
         IERC20(token).safeTransferFrom(msg.sender, address(this), amount);
 
         emit FundsReceived(msg.sender, token, amount);
@@ -185,7 +186,7 @@ contract ProtectedUnit is
         uint256 amountOutMin,
         IDsFlashSwapCore.BuyAprroxParams calldata params,
         IDsFlashSwapCore.OffchainGuess calldata offchainGuess
-    ) external autoUpdateDS onlyOwnerOrLiquidator returns (uint256 amountOut) {
+    ) external autoUpdateDS onlyOwnerOrLiquidator autoSync returns (uint256 amountOut) {
         uint256 dsId = MODULE_CORE.lastDsId(id);
         IERC20(RA).safeIncreaseAllowance(address(FLASHSWAP_ROUTER), amount);
 
@@ -197,7 +198,7 @@ contract ProtectedUnit is
         emit FundsUsed(msg.sender, dsId, amount, result.amountOut);
     }
 
-    function redeemRaWithDsPa(uint256 amount, uint256 amountDs) external autoUpdateDS onlyOwner {
+    function redeemRaWithDsPa(uint256 amount, uint256 amountDs) external autoUpdateDS onlyOwner autoSync {
         uint256 dsId = MODULE_CORE.lastDsId(id);
 
         ds.approve(address(MODULE_CORE), amountDs);
@@ -336,7 +337,7 @@ contract ProtectedUnit is
         bytes calldata rawPaPermitSig,
         uint256 deadline
     ) external whenNotPaused nonReentrant autoUpdateDS autoSync returns (uint256 dsAmount, uint256 paAmount) {
-        if (rawDsPermitSig.length == 0  || deadline == 0) {
+        if (rawDsPermitSig.length == 0 || deadline == 0) {
             revert InvalidSignature();
         }
 
