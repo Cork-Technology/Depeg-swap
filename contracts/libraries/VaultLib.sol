@@ -403,7 +403,7 @@ library VaultLibrary {
             lvSupply: Asset(self.vault.lv._address).totalSupply(),
             // we already split the CT so we need to subtract it first here
             vaultCt: self.vault.balances.ctBalance - params.ctSplitted,
-            vaultDs: params.flashSwapRouter.getLvReserve(id, params.dsId),
+            vaultDs: params.flashSwapRouter.getLvReserve(id, params.dsId) - params.ctSplitted,
             vaultLp: vaultLp,
             vaultIdleRa: TransferHelper.tokenNativeDecimalsToFixed(self.vault.balances.ra.locked, self.info.ra)
         });
