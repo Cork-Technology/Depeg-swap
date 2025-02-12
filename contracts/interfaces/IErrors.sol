@@ -203,5 +203,5 @@ interface IErrors {
 
     /// @notice the current NAV share is below the acceptable threshold for deposit
     /// try again later
-    error NavBelowThreshold();
+    error NavBelowThreshold(uint256 referenceNav, uint256 delta, uint256 currentNav);
 }
