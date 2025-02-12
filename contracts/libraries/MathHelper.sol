@@ -258,10 +258,10 @@ library MathHelper {
         navCt = calculateNav(prices.ctPrice, ud(params.vaultCt));
         navDs = calculateNav(prices.dsPrice, ud(params.vaultDs));
 
-        UD60x18 raPerLp = div(ud(params.lpSupply), ud(params.reserveRa));
+        UD60x18 raPerLp = div(ud(params.reserveRa), ud(params.lpSupply));
         UD60x18 navRaLp = calculateNav(prices.raPrice, mul(ud(params.vaultLp), raPerLp));
 
-        UD60x18 ctPerLp = div(ud(params.lpSupply), ud(params.reserveCt));
+        UD60x18 ctPerLp = div(ud(params.reserveCt), ud(params.lpSupply));
         UD60x18 navCtLp = calculateNav(prices.ctPrice, mul(ud(params.vaultLp), ctPerLp));
 
         navIdleRa = calculateNav(prices.raPrice, ud(params.vaultIdleRa));
