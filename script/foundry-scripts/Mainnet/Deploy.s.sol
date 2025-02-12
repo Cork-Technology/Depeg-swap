@@ -57,10 +57,10 @@ contract DeployScript is Script {
     uint256 constant sUSDS_USDe_Expiry = 90 days;
     uint256 constant sUSDe_USDT_Expiry = 90 days;
 
-    uint256 constant weth_wstETH_ARP = 1.5 ether;
-    uint256 constant wstETH_weETH_ARP = 2 ether;
-    uint256 constant sUSDS_USDe_ARP = 4 ether;
-    uint256 constant sUSDe_USDT_ARP = 2 ether;
+    uint256 constant weth_wstETH_ARP = 0.3698630137 ether;
+    uint256 constant wstETH_weETH_ARP = 0.4931506849 ether;
+    uint256 constant sUSDS_USDe_ARP = 0.9863013699 ether;
+    uint256 constant sUSDe_USDT_ARP = 0.4931506849 ether;
 
     uint256 constant INITIAL_MINT_CAP = 1_000_000 ether; // Cap of 1 million
 
