@@ -336,12 +336,8 @@ contract ProtectedUnit is
         bytes calldata rawPaPermitSig,
         uint256 deadline
     ) external whenNotPaused nonReentrant autoUpdateDS autoSync returns (uint256 dsAmount, uint256 paAmount) {
-        if (rawDsPermitSig.length == 0 || rawPaPermitSig.length == 0 || deadline == 0) {
+        if (rawDsPermitSig.length == 0  || deadline == 0) {
             revert InvalidSignature();
-        }
-
-        if (!PermitChecker.supportsPermit(address(PA))) {
-            revert PermitNotSupported();
         }
 
         (dsAmount, paAmount) = previewMint(amount);
