@@ -26,7 +26,7 @@ contract DepositTest is Helper {
         vm.startPrank(DEFAULT_ADDRESS);
 
         deployModuleCore();
-        (ra, pa,) = initializeAndIssueNewDs(block.timestamp + 1 days);
+        (ra, pa,) = initializeAndIssueNewDs(block.timestamp + 10 days);
 
         vm.deal(DEFAULT_ADDRESS, 1_000_000_000 ether);
         ra.deposit{value: 1_000_000_000 ether}();
@@ -559,7 +559,7 @@ contract DepositTest is Helper {
     }
 
     function test_depositInflation() external {
-        uint256 depositAmount = 2;
+        uint256 depositAmount = 1e10;
 
         uint256 adjustedDepositAmount = depositAmount;
 
@@ -579,7 +579,7 @@ contract DepositTest is Helper {
         // ~0.5 from split, ~0.2 from AMM with some precision tolerance
         vm.assertApproxEqAbs(dsReserve, depositAmount * 3 / 4, depositAmount / 100);
 
-        vm.assertEq(received, 2);
+        vm.assertEq(received, depositAmount);
 
         (received,) = moduleCore.depositPsm(defaultCurrencyId, 1 ether);
 
@@ -593,5 +593,77 @@ contract DepositTest is Helper {
 
         received = moduleCore.depositLv(defaultCurrencyId, 1 ether, 0, 0);
         vm.assertGe(received, 100);
+    }
+
+    function test_vaultExpiryRedeem() external {
+        amount = bound(amount, 0.001 ether, DEPOSIT_AMOUNT);
+
+        Id id = defaultCurrencyId;
+        Asset lv = Asset(moduleCore.lvAsset(id));
+
+        uint256 balanceBefore = lv.balanceOf(DEFAULT_ADDRESS);
+
+        uint256 received = moduleCore.depositLv(id, amount, 0, 0);
+
+        uint256 balanceAfter = lv.balanceOf(DEFAULT_ADDRESS);
+
+        vm.assertEq(balanceAfter, balanceBefore + received);
+
+        lv.approve(address(moduleCore), received);
+
+        uint256 expiry = moduleCore.expiry(id);
+        vm.warp(expiry);
+
+        IVault.RedeemEarlyParams memory redeemParams =
+            IVault.RedeemEarlyParams(id, received, 0, block.timestamp, 0, 0, 0);
+
+        // should fail to deposit as this is expired
+        vm.expectRevert(IErrors.Expired.selector);
+        moduleCore.depositLv(id, amount, 0, 0);
+
+        IVault.RedeemEarlyResult memory result = moduleCore.redeemEarlyLv(redeemParams);
+        vm.warp(block.timestamp + 3 days);
+
+        Withdrawal.WithdrawalInfo memory info = withdrawalContract.getWithdrawal(result.withdrawalId);
+
+        for (uint256 i = 0; i < info.tokens.length; i++) {
+            // record balances before
+            balances[info.tokens[i].token] = IERC20(info.tokens[i].token).balanceOf(DEFAULT_ADDRESS);
+        }
+
+        withdrawalContract.claimToSelf(result.withdrawalId);
+
+        for (uint256 i = 0; i < info.tokens.length; i++) {
+            // record balances after
+            uint256 balanceAfterClaim = IERC20(info.tokens[i].token).balanceOf(DEFAULT_ADDRESS);
+            vm.assertEq(balanceAfterClaim, balances[info.tokens[i].token] + info.tokens[i].amount);
+        }
+    }
+
+    function test_RevertWhenTryingToManipulateShares() external {
+        // so we just get not 0 timestamp
+        vm.warp(5 days);
+
+        (uint256 received,) = moduleCore.depositPsm(defaultCurrencyId, 150 ether);
+
+        moduleCore.depositLv(defaultCurrencyId, 100 ether, 0, 0);
+
+        // we fast forward 1 day to make the next malicious deposit update the second nav reference value
+        vm.warp(block.timestamp + 1 days);
+
+        (address ct, address ds) = moduleCore.swapAsset(defaultCurrencyId, 1);
+
+        Asset(ct).approve(address(hook), 1000000000 ether);
+
+        (uint256 raReserve, uint256 ctReserve) = hook.getReserves(address(ra), ct);
+
+        // dump CT
+        hook.swap(address(ra), ct, 20 ether, 0, "");
+
+        // set a really high delta
+        corkConfig.updateNavThreshold(defaultCurrencyId, 99 ether);
+
+        vm.expectRevert();
+        moduleCore.depositLv(defaultCurrencyId, 100 ether, 0, 0);
     }
 }

@@ -30,12 +30,11 @@ contract NavMathTest is Test {
     }
 
     function test_calculateInternalPrices() external {
-        MathHelper.DepositParams memory params = MathHelper.DepositParams({
+        MathHelper.NavParams memory params = MathHelper.NavParams({
             reserveRa: 1000 ether,
             oneMinusT: 0.1 ether,
             reserveCt: 1050 ether,
             lpSupply: 1024 ether,
-            depositAmount: 1 ether,
             lvSupply: 2050 ether,
             vaultCt: 1000 ether,
             vaultDs: 2050 ether,
@@ -50,12 +49,11 @@ contract NavMathTest is Test {
     }
 
     function test_calculateNavCombined() external {
-        MathHelper.DepositParams memory params = MathHelper.DepositParams({
+        MathHelper.NavParams memory params = MathHelper.NavParams({
             reserveRa: 1000 ether,
             oneMinusT: 0.1 ether,
             reserveCt: 1050 ether,
             lpSupply: 1024 ether,
-            depositAmount: 1 ether,
             lvSupply: 2050 ether,
             vaultCt: 1000 ether,
             vaultDs: 2050 ether,
@@ -71,19 +69,19 @@ contract NavMathTest is Test {
     }
 
     function test_calculateLvMinted() external {
-        MathHelper.DepositParams memory params = MathHelper.DepositParams({
+        MathHelper.NavParams memory params = MathHelper.NavParams({
             reserveRa: 1000 ether,
             oneMinusT: 0.1 ether,
             reserveCt: 1050 ether,
             lpSupply: 1024 ether,
-            depositAmount: 1 ether,
             lvSupply: 2050 ether,
             vaultCt: 1000 ether,
             vaultDs: 2050 ether,
             vaultLp: 1024 ether,
             vaultIdleRa: 15 ether
         });
-        uint256 minted = MathHelper.calculateDepositLv(params);
+        uint256 nav = MathHelper.calculateNav(params);
+        uint256 minted = MathHelper.calculateDepositLv(nav, 1 ether, params.lvSupply);
         vm.assertApproxEqAbs(minted, 0.668 ether, 0.01 ether);
     }
 
