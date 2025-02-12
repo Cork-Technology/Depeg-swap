@@ -663,7 +663,7 @@ contract DepositTest is Helper {
         // set a really high delta
         corkConfig.updateNavThreshold(defaultCurrencyId, 99 ether);
 
-        vm.expectRevert(); 
+        vm.expectRevert();
         moduleCore.depositLv(defaultCurrencyId, 100 ether, 0, 0);
     }
 }

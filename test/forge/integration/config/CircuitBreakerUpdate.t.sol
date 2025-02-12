@@ -4,7 +4,6 @@ import "./../../Helper.sol";
 import "./../../../../contracts/libraries/State.sol";
 import "./../../../../contracts/dummy/DummyWETH.sol";
 
-
 contract CircuiBreakerUpdate is Helper {
     DummyWETH ra;
     DummyWETH pa;
@@ -28,9 +27,9 @@ contract CircuiBreakerUpdate is Helper {
     function test_shouldUpdateCircuitBreaker() external {
         // dummy deposit to get nav
         moduleCore.depositLv(defaultCurrencyId, 100 ether, 0, 0);
-        
+
         VaultConfig memory config = moduleCore.getVaultConfig(defaultCurrencyId);
-        
+
         vm.assertNotEq(config.navCircuitBreaker.lastUpdate0, 0);
         vm.assertEq(config.navCircuitBreaker.lastUpdate1, 0);
 
