@@ -102,6 +102,79 @@ contract DeployScript is Script {
         address corkConfig = Defender.deployContract("CorkConfig.sol", opts);
         console.log("Deployed Cork-Config : ", corkConfig);
 
+        opts.defender.salt = "1003";
+        address routerImplementation = Defender.deployContract("FlashSwapRouter.sol", opts);
+        console.log("Deployed FlashSwapRouter Implementation : ", routerImplementation);
+
+        bytes memory data = abi.encodeWithSelector(RouterState.initialize.selector, corkConfig);
+        ERC1967Proxy routerProxy = new ERC1967Proxy(routerImplementation, data);
+        flashswapRouter = RouterState(address(routerProxy));
+        console.log("Deployed FlashSwapRouter Proxy : ", address(flashswapRouter));
+
+        opts.defender.salt = "1004";
+        address moduleCoreImplementation = Defender.deployContract("ModuleCore.sol", opts);
+        console.log("Deployed ModuleCore Implementation : ", moduleCoreImplementation);
+
+        poolManager = new PoolManager(deployer);
+        console.log("Deployed Pool Manager : ", address(poolManager));
+
+        liquidityToken = new LiquidityToken();
+        console.log("Deployed Liquidity Token : ", address(liquidityToken));
+
+        bytes memory creationCode = type(CorkHook).creationCode;
+        bytes memory constructorArgs = abi.encode(poolManager, liquidityToken, corkConfig);
+
+        (address hookAddress, bytes32 salt) = HookMiner.find(CREATE_2_PROXY, hookFlags, creationCode, constructorArgs);
+
+        hook = new CorkHook{salt: salt}(poolManager, liquidityToken, corkConfig);
+        require(address(hook) == hookAddress, "hook address mismatch");
+        console.log("Deployed Hook : ", hookAddress);
+
+        data = abi.encodeWithSelector(ModuleCore.initialize.selector, assetFactory, hook, flashswapRouter, corkConfig);
+        ERC1967Proxy moduleCoreProxy = new ERC1967Proxy(moduleCoreImplementation, data);
+        moduleCore = ModuleCore(address(moduleCoreProxy));
+        console.log("Deployed Module Core : ", address(moduleCore));
+
+        opts.defender.salt = "1005";
+        address liquidatorAddress = Defender.deployContract("Liquidator.sol", opts);
+        liquidator = Liquidator(liquidatorAddress);
+        console.log("Deployed Liquidator : ", address(liquidator));
+
+        opts.defender.salt = "1006";
+        address protectedUnitRouterAddress = Defender.deployContract("ProtectedUnitRouter.sol", opts);
+        protectedUnitRouter = ProtectedUnitRouter(protectedUnitRouterAddress);
+        console.log("Deployed ProtectedUnit Router : ", address(protectedUnitRouter));
+
+        opts.defender.salt = "1007";
+        address protectedUnitFactoryAddress = Defender.deployContract("ProtectedUnitFactory.sol", opts);
+        protectedUnitFactory = ProtectedUnitFactory(protectedUnitFactoryAddress);
+        console.log("Deployed ProtectedUnit Factory : ", address(protectedUnitFactory));
+
+        opts.defender.salt = "1008";
+        address withdrawalAddress = Defender.deployContract("Withdrawal.sol", opts);
+        withdrawal = Withdrawal(withdrawalAddress);
+        console.log("Deployed Withdrawal : ", address(withdrawal));
+
+        defaultExchangeProvider = corkConfig.defaultExchangeRateProvider();
+        console.log("Exchange Rate Provider : ", defaultExchangeProvider);
+
+        assetFactory.setModuleCore(address(moduleCore));
+        hook.transferOwnership(address(corkConfig));
+        console.log("Transferred ownerships to Modulecore");
+
+        corkConfig.setModuleCore(address(moduleCore));
+        corkConfig.setFlashSwapCore(address(flashswapRouter));
+        corkConfig.setHook(address(hook));
+        corkConfig.setProtectedUnitFactory(address(protectedUnitFactory));
+        corkConfig.setTreasury(deployer);
+        corkConfig.setWithdrawalContract(address(withdrawal));
+        console.log("Contracts configured in Config");
+
+        flashswapRouter.setModuleCore(address(moduleCore));
+        flashswapRouter.setHook(address(hook));
+        console.log("Contracts configured in Modulecore");
+        console.log("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-");
+
         // // Deploy the CorkConfig contract
         // config = new CorkConfig(deployer, deployer);
         // console.log("Cork Config                     : ", address(config));
