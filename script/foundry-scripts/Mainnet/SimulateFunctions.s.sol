@@ -3,6 +3,7 @@ pragma solidity ^0.8.24;
 import {Script, console} from "forge-std/Script.sol";
 import {ModuleCore} from "../../../contracts/core/ModuleCore.sol";
 import {CorkConfig} from "../../../contracts/core/CorkConfig.sol";
+import {CorkHook} from "Cork-Hook/CorkHook.sol";
 import {RouterState} from "../../../contracts/core/flash-swaps/FlashSwapRouter.sol";
 import {Id, PairLibrary} from "../../../contracts/libraries/Pair.sol";
 import {ERC20, IERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
@@ -24,10 +25,11 @@ struct Market {
 contract SimulateScript is Script {
     using SafeERC20 for IERC20;
 
-    CorkConfig public config = CorkConfig(0x4f217EDafBd17eC975D7e05DDafc4634fbdb258F);
-    ModuleCore public moduleCore = ModuleCore(0x0dCd8A118566ec6b8B96A3334C4B5A1DB2345d72);
-    RouterState public routerState = RouterState(0x039DB5B6BfAbf2F2A2d926087d45E7dd01E2d2A0);
-    address public exchangeProvider = 0xeF72B8f15f4DD2A4E124B9D16F5B7c76e0DF5781;
+    CorkConfig public config = CorkConfig(0xa5FCad978e6c53F68a273313434572AcEa0Fed84);
+    ModuleCore public moduleCore = ModuleCore(0xC353F7dCe133911Bf975A090C76880333eD59A3a);
+    RouterState public routerState = RouterState(0xce5D9F238d5ecf753AEA688A2e966104773Da8a4);
+    CorkHook public corkHook = CorkHook(0x64E9B987532f5D3517D9fbA49852543F463f2A88);
+    address public exchangeProvider = 0x1427bB500Bf4584ec9603e29aE3016eD73C068A3;
 
     uint256 public pk = vm.envUint("PRIVATE_KEY");
     address public deployer = vm.addr(pk);
@@ -45,10 +47,10 @@ contract SimulateScript is Script {
     uint256 constant sUSDS_USDe_Expiry = 90 days;
     uint256 constant sUSDe_USDT_Expiry = 90 days;
 
-    uint256 constant weth_wstETH_ARP = 1.5 ether;
-    uint256 constant wstETH_weETH_ARP = 2 ether;
-    uint256 constant sUSDS_USDe_ARP = 4 ether;
-    uint256 constant sUSDe_USDT_ARP = 2 ether;
+    uint256 constant weth_wstETH_ARP = 0.3698630137 ether;
+    uint256 constant wstETH_weETH_ARP = 0.4931506849 ether;
+    uint256 constant sUSDS_USDe_ARP = 0.9863013699 ether;
+    uint256 constant sUSDe_USDT_ARP = 0.4931506849 ether;
 
     uint256 constant weth_wstETH_ExchangeRate = 1.192057609 ether;
     uint256 constant wstETH_weETH_ExchangeRate = 0.8881993472 ether;
@@ -149,6 +151,8 @@ contract SimulateScript is Script {
             swapDsForRa(market, marketId, dsId, swapAmt, ds);
 
             swapRaForDs(market, marketId, dsId, swapAmt);
+
+            swapRaCtTokens(market, marketId, swapAmt, ct);
         }
 
         console.log("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-");
@@ -204,6 +208,22 @@ contract SimulateScript is Script {
         IDsFlashSwapCore.OffchainGuess memory offchainguess =
             IDsFlashSwapCore.OffchainGuess({initialBorrowAmount: swapAmt, afterSoldBorrowAmount: 0});
         routerState.swapRaforDs(marketId, dsId, swapAmt, 0, buyApprox, offchainguess);
+    }
+
+    function swapRaCtTokens(Market memory market, Id marketId, uint256 swapAmt, address ct) public {
+        uint256 inputAmt = convertToDecimals(market.redemptionAsset, swapAmt);
+        uint256 amountOut = corkHook.getAmountOut(market.redemptionAsset, ct, true, inputAmt);
+        uint256 inputOut = corkHook.getAmountIn(market.redemptionAsset, ct, true, amountOut);
+        ERC20(market.redemptionAsset).approve(address(corkHook), inputOut + inputOut / 100000);
+        corkHook.swap(market.redemptionAsset, ct, 0, amountOut, bytes(""));
+        console.log("Swapped RA with CT");
+
+        inputAmt = convertToDecimals(ct, swapAmt);
+        amountOut = corkHook.getAmountOut(market.redemptionAsset, ct, false, inputAmt);
+        inputOut = corkHook.getAmountIn(market.redemptionAsset, ct, false, amountOut);
+        ERC20(ct).approve(address(corkHook), inputOut + inputOut / 100000);
+        corkHook.swap(market.redemptionAsset, ct, amountOut, 0, bytes(""));
+        console.log("Swapped CT with RA");
     }
 
     function convertToDecimals(address token, uint256 value) public view returns (uint256) {
