@@ -238,6 +238,10 @@ contract CorkConfig is AccessControl, Pausable {
         flashSwapRouter.updateDsExtraFeeTreasurySplitPercentage(id, newPercentage);
     }
 
+    function forceUpdateNavCircuitBreakerReferenceValue(Id id) external onlyManager {
+        moduleCore.forceUpdateNavCircuitBreakerReferenceValue(id);
+    }
+
     /**
      * @dev Initialize Module Core
      * @param pa Address of PA
@@ -255,6 +259,7 @@ contract CorkConfig is AccessControl, Pausable {
 
         // auto assign nav threshold
         Id id = moduleCore.getId(pa, ra, initialArp, expiryInterval, exchangeRateProvider);
+        moduleCore.updateVaultNavThreshold(id, defaultNavThreshold);
     }
 
     /**
