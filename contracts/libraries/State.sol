@@ -110,7 +110,6 @@ struct VaultState {
     LvAsset lv;
     BitMaps.BitMap lpLiquidated;
     VaultPool pool;
-    uint256 initialArp;
     // will be set to true after first deposit to LV.
     // to prevent manipulative behavior when depositing to Lv since we depend on preview redeem early to get
     // the correct exchange rate of LV
@@ -129,4 +128,13 @@ struct VaultState {
 struct VaultConfig {
     bool isDepositPaused;
     bool isWithdrawalPaused;
+    NavCircuitBreaker navCircuitBreaker;
+}
+
+struct NavCircuitBreaker {
+    uint256 snapshot0;
+    uint256 lastUpdate0;
+    uint256 snapshot1;
+    uint256 lastUpdate1;
+    uint256 navThreshold;
 }
