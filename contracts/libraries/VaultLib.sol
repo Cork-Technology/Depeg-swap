@@ -153,18 +153,6 @@ library VaultLibrary {
         Guard.safeAfterExpired(ds);
     }
 
-    function __provideLiquidityWithRatioWithMinimumLiquidity(
-        State storage self,
-        uint256 amount,
-        IDsFlashSwapCore flashSwapRouter,
-        address ctAddress,
-        ICorkHook ammRouter,
-        Tolerance memory tolerance
-    ) internal returns (uint256 ra, uint256 ct, uint256 lp) {
-        (ra, ct) = __calculateProvideLiquidityAmount(self, amount, flashSwapRouter);
-        (lp,) = __provideLiquidity(self, ra, ct, flashSwapRouter, ctAddress, ammRouter, tolerance, amount);
-    }
-
     function __provideLiquidityWithRatioGetLP(
         State storage self,
         uint256 amount,
