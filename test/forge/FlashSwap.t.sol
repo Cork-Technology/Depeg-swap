@@ -187,7 +187,7 @@ contract FlashSwapTest is Helper {
         moduleCore.redeemEarlyLv(redeemParams);
 
         vm.startPrank(user);
-        lv.approve(address(moduleCore), 19e18);
+        lv.approve(address(moduleCore), lv.balanceOf(address(user)));
 
         redeemParams = IVault.RedeemEarlyParams(
             defaultCurrencyId, lv.balanceOf(address(user)), 0, block.timestamp + 10 seconds, 0, 0, 0

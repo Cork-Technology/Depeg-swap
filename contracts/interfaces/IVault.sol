@@ -67,6 +67,11 @@ interface IVault is IErrors {
         bytes32 withdrawalId
     );
 
+    /// @notice Emitted when the nav circuit breaker reference value is updated
+    /// @param snapshotIndex The index of the snapshot that was updated(0 or 1)
+    /// @param newValue The new value of the snapshot
+    event SnapshotUpdated(uint256 snapshotIndex, uint256 newValue);
+
     /// @notice Emitted when a Admin updates status of Deposit in the LV
     /// @param id The LV id
     /// @param isLVDepositPaused The new value saying if Deposit allowed in LV or not
@@ -81,6 +86,8 @@ interface IVault is IErrors {
     /// @param router The address of the router
     /// @param amount The amount of RA tokens transferred.
     event ProfitReceived(address indexed router, uint256 amount);
+
+    event VaultNavThresholdUpdated(Id indexed id, uint256 navThreshold);
 
     /**
      * @notice Deposit a wrapped asset into a given vault
@@ -133,4 +140,6 @@ interface IVault is IErrors {
      * @param dsId The DsId
      */
     function totalRaAt(Id id, uint256 dsId) external view returns (uint256);
+
+    function updateVaultNavThreshold(Id id, uint256 newNavThreshold) external;
 }

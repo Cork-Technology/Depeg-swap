@@ -11,6 +11,7 @@ import {ILiquidatorRegistry} from "./../interfaces/ILiquidatorRegistry.sol";
 import {ReentrancyGuardTransient} from "@openzeppelin/contracts/utils/ReentrancyGuardTransient.sol";
 import {Withdrawal} from "./Withdrawal.sol";
 import {CorkConfig} from "./CorkConfig.sol";
+import {Pair} from "../libraries/Pair.sol";
 
 /**
  * @title ModuleState Abstract Contract
