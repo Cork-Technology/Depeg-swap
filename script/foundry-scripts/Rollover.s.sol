@@ -5,7 +5,7 @@
 
 // import {Script, console} from "forge-std/Script.sol";
 // import {CorkConfig} from "../../contracts/core/CorkConfig.sol";
-// import {RouterState} from "../../contracts/core/flash-swaps/FlashSwapRouter.sol";
+// import {FlashSwapRouter} from "../../contracts/core/flash-swaps/FlashSwapRouter.sol";
 // import {ModuleCore} from "../../contracts/core/ModuleCore.sol";
 // import {CETH} from "../../contracts/tokens/CETH.sol";
 // import {CST} from "../../contracts/tokens/CST.sol";
@@ -49,7 +49,7 @@
 //     Assets omgUSD = Assets(svbUSDAdd, omgUSDAdd, omgUSDExpiry, 0.75 ether);
 
 //     CorkConfig config = CorkConfig(0xcb5272bfdFE8b4819ce1bfe007D0c885fF6Cb4c0);
-//     RouterState flashSwapRouter = RouterState(0x7a08C790bE2573D1a89A300b65439aa82aC40476);
+//     FlashSwapRouter flashSwapRouter = FlashSwapRouter(0x7a08C790bE2573D1a89A300b65439aa82aC40476);
 //     ModuleCore moduleCore = ModuleCore(0x488e595D1aE7f99dA690fc37097e31e3F74f59da);
 
 //     // 6% decay discount rate

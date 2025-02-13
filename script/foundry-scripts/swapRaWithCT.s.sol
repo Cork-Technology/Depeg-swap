@@ -4,7 +4,7 @@
 // import {Script, console} from "forge-std/Script.sol";
 // import {ERC1967Proxy} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 // import {CorkConfig} from "../../contracts/core/CorkConfig.sol";
-// import {RouterState} from "../../contracts/core/flash-swaps/FlashSwapRouter.sol";
+// import {FlashSwapRouter} from "../../contracts/core/flash-swaps/FlashSwapRouter.sol";
 // import {ModuleCore} from "../../contracts/core/ModuleCore.sol";
 // import {CETH} from "../../contracts/tokens/CETH.sol";
 // import {CUSD} from "../../contracts/tokens/CUSD.sol";
@@ -15,7 +15,7 @@
 // contract SwapScript is Script {
 //     CorkHook public hook;
 //     CorkConfig public config;
-//     RouterState public flashswapRouter;
+//     FlashSwapRouter public flashswapRouter;
 //     ModuleCore public moduleCore;
 
 //     bool public isProd = vm.envBool("PRODUCTION");

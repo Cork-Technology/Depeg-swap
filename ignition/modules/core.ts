@@ -18,7 +18,7 @@ export const flashSwapRouter = buildModule("FlashSwapRouter", (m) => {
   const { MathHelper } = m.useModule(mathHelper);
   const { SwapperMathLibrary } = m.useModule(flashSwapMath);
 
-  const contract = m.contract("RouterState", [], {
+  const contract = m.contract("FlashSwapRouter", [], {
     libraries: {
       MathHelper,
       SwapperMathLibrary,

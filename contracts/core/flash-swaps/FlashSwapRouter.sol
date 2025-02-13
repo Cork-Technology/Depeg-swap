@@ -26,7 +26,7 @@ import {CorkConfig} from "../CorkConfig.sol";
  * @author Cork Team
  * @notice Router contract for implementing flashswaps for DS/CT
  */
-contract RouterState is
+contract FlashSwapRouter is
     IDsFlashSwapUtility,
     IDsFlashSwapCore,
     AccessControlUpgradeable,

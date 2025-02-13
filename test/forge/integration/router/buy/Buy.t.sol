@@ -33,11 +33,11 @@ contract BuyDsTest is Helper {
         return 1.1 ether;
     }
 
-    function snapshotRouterState() internal {
+    function snapshotFlashSwapRouter() internal {
         stateId = vm.snapshotState();
     }
 
-    function revertRouterState() internal {
+    function revertFlashSwapRouter() internal {
         vm.revertToStateAndDelete(stateId);
         stateId = 0;
     }
@@ -279,7 +279,7 @@ contract BuyDsTest is Helper {
         // TODO : figure out the out of whack gas consumption
         vm.pauseGasMetering();
 
-        snapshotRouterState();
+        snapshotFlashSwapRouter();
 
         IDsFlashSwapCore.SwapRaForDsReturn memory result = flashSwapRouter.swapRaforDs(
             currencyId, dsId, amount, 0, defaultBuyApproxParams(), defaultOffchainGuessParams()
@@ -289,7 +289,7 @@ contract BuyDsTest is Helper {
         offchainGuess.initialBorrowAmount = result.initialBorrow;
         offchainGuess.afterSoldBorrowAmount = result.afterSoldBorrow;
 
-        revertRouterState();
+        revertFlashSwapRouter();
 
         // should pass
         result = flashSwapRouter.swapRaforDs(currencyId, dsId, amount, 0, defaultBuyApproxParams(), offchainGuess);
@@ -309,14 +309,14 @@ contract BuyDsTest is Helper {
         (raReserve, ctReserve) = hook.getReserves(address(ra), address(ct));
 
         // should work after expiry
-        snapshotRouterState();
+        snapshotFlashSwapRouter();
 
         result = flashSwapRouter.swapRaforDs(currencyId, dsId, amount, 0, params, defaultOffchainGuessParams());
 
         offchainGuess.initialBorrowAmount = result.initialBorrow;
         offchainGuess.afterSoldBorrowAmount = result.afterSoldBorrow;
 
-        revertRouterState();
+        revertFlashSwapRouter();
         result = flashSwapRouter.swapRaforDs(currencyId, dsId, amount, 0, params, offchainGuess);
 
         // there's no sufficient liquidity due to very low HIYA, so we disable the fee to make it work
@@ -326,13 +326,13 @@ contract BuyDsTest is Helper {
 
         amount = TransferHelper.normalizeDecimals(0.001 ether, TARGET_DECIMALS, raDecimals);
 
-        snapshotRouterState();
+        snapshotFlashSwapRouter();
         result = flashSwapRouter.swapRaforDs(currencyId, dsId, amount, 0, params, defaultOffchainGuessParams());
 
         offchainGuess.initialBorrowAmount = result.initialBorrow;
         offchainGuess.afterSoldBorrowAmount = result.afterSoldBorrow;
 
-        revertRouterState();
+        revertFlashSwapRouter();
 
         flashSwapRouter.swapRaforDs(currencyId, dsId, amount, 0, params, offchainGuess);
     }

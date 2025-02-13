@@ -4,7 +4,7 @@ import {Script, console} from "forge-std/Script.sol";
 import {ERC1967Proxy} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 import {AssetFactory} from "../../../contracts/core/assets/AssetFactory.sol";
 import {CorkConfig} from "../../../contracts/core/CorkConfig.sol";
-import {RouterState} from "../../../contracts/core/flash-swaps/FlashSwapRouter.sol";
+import {FlashSwapRouter} from "../../../contracts/core/flash-swaps/FlashSwapRouter.sol";
 import {ModuleCore} from "../../../contracts/core/ModuleCore.sol";
 import {Liquidator} from "../../../contracts/core/liquidators/cow-protocol/Liquidator.sol";
 import {ProtectedUnit} from "../../../contracts/core/assets/ProtectedUnit.sol";
@@ -20,15 +20,20 @@ import {HookMiner} from "../Utils/HookMiner.sol";
 import {PoolKey, Currency, CorkHook, LiquidityToken, Hooks} from "Cork-Hook/CorkHook.sol";
 import {Withdrawal} from "../../../contracts/core/Withdrawal.sol";
 import {Strings} from "openzeppelin-contracts/contracts/utils/Strings.sol";
-import {Defender, ApprovalProcessResponse} from "openzeppelin-foundry-upgrades/Defender.sol";
+import {
+    Defender,
+    ApprovalProcessResponse,
+    DefenderDeploy,
+    DefenderOptions
+} from "openzeppelin-foundry-upgrades/Defender.sol";
 import {Upgrades, Options} from "openzeppelin-foundry-upgrades/Upgrades.sol";
 
 contract DeployScript is Script {
+    PoolManager public poolManager = PoolManager(0x000000000004444c5dc75cB358380D2e3dE08A90);
     AssetFactory public assetFactory;
     CorkConfig public config;
-    RouterState public flashswapRouter;
+    FlashSwapRouter public flashswapRouter;
     ModuleCore public moduleCore;
-    PoolManager public poolManager;
     CorkHook public hook;
     LiquidityToken public liquidityToken;
     Liquidator public liquidator;
@@ -68,6 +73,7 @@ contract DeployScript is Script {
 
     uint256 public pk = vm.envUint("PRIVATE_KEY");
     address public deployer = vm.addr(pk);
+    address public multisig = 0x8724f0884FFeF34A73084F026F317b903C6E9d06;
 
     uint160 hookFlags = uint160(
         Hooks.BEFORE_INITIALIZE_FLAG | Hooks.BEFORE_ADD_LIQUIDITY_FLAG | Hooks.BEFORE_REMOVE_LIQUIDITY_FLAG
@@ -98,22 +104,36 @@ contract DeployScript is Script {
         address assetFactory = Upgrades.deployUUPSProxy("AssetFactory.sol", initializerData, opts);
         console.log("Deployed AssetFactory proxy : ", assetFactory);
 
-        opts.defender.salt = "1002";
-        address corkConfig = Defender.deployContract("CorkConfig.sol", opts);
+        DefenderOptions memory defenderOpts;
+        defenderOpts.salt = "1002";
+        defenderOpts.useDefenderDeploy = true;
+
+        bytes memory constructorData = abi.encode(multisig, multisig);
+        address corkConfig = DefenderDeploy.deploy("CorkConfig.sol", constructorData, defenderOpts);
         console.log("Deployed Cork-Config : ", corkConfig);
+
+        constructorData = "";
+        address liquidityToken = DefenderDeploy.deploy("LiquidityToken.sol", constructorData, defenderOpts);
+        console.log("Deployed liquidityToken : ", liquidityToken);
+
+        opts.defender.salt = "1003";
+        initializerData =
+            abi.encodeWithSelector(FlashSwapRouter.initialize.selector, "0x257dB16f013a9e7061baE32A9807497eCD72d9Ce");
+        address flashswapRouter = Upgrades.deployUUPSProxy("FlashSwapRouter.sol", initializerData, opts);
+        console.log("Deployed FlashSwapRouter proxy : ", flashswapRouter);
 
         // // Deploy the CorkConfig contract
         // config = new CorkConfig(deployer, deployer);
         // console.log("Cork Config                     : ", address(config));
 
         // // Deploy the FlashSwapRouter implementation (logic) contract
-        // RouterState routerImplementation = new RouterState();
+        // FlashSwapRouter routerImplementation = new FlashSwapRouter();
         // console.log("Flashswap Router Implementation : ", address(routerImplementation));
 
         // // Deploy the FlashSwapRouter Proxy contract
         // data = abi.encodeWithSelector(routerImplementation.initialize.selector, address(config));
         // ERC1967Proxy routerProxy = new ERC1967Proxy(address(routerImplementation), data);
-        // flashswapRouter = RouterState(address(routerProxy));
+        // flashswapRouter = FlashSwapRouter(address(routerProxy));
         // console.log("Flashswap Router Proxy          : ", address(flashswapRouter));
 
         // // Deploy the ModuleCore implementation (logic) contract
