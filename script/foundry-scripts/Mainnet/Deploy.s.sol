@@ -89,7 +89,7 @@ contract DeployScript is Script {
         console.log("Asset Factory                   : ", address(assetFactory));
 
         // Deploy the CorkConfig contract
-        config = new CorkConfig(deployer, deployer);
+        config = new CorkConfig(0x8724f0884FFeF34A73084F026F317b903C6E9d06, 0x8724f0884FFeF34A73084F026F317b903C6E9d06);
         console.log("Cork Config                     : ", address(config));
 
         // Deploy the FlashSwapRouter implementation (logic) contract
@@ -107,7 +107,7 @@ contract DeployScript is Script {
         console.log("ModuleCore Router Implementation: ", address(moduleCoreImplementation));
 
         // deploy hook
-        poolManager = new PoolManager(deployer);
+        poolManager = new PoolManager(0x000000000004444c5dc75cB358380D2e3dE08A90);
         console.log("Pool Manager                    : ", address(poolManager));
         liquidityToken = new LiquidityToken();
         console.log("Liquidity Token                 : ", address(liquidityToken));
@@ -135,10 +135,10 @@ contract DeployScript is Script {
         console.log("Module Core                     : ", address(moduleCore));
         console.log("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-");
 
-        // Deploy the Liquidator contract
-        liquidator = new Liquidator(address(config), deployer, SETTLEMENT_CONTRACT, address(moduleCore));
-        console.log("Liquidator                      : ", address(liquidator));
-        console.log("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-");
+        // // Deploy the Liquidator contract
+        // liquidator = new Liquidator(address(config), deployer, SETTLEMENT_CONTRACT, address(moduleCore));
+        // console.log("Liquidator                      : ", address(liquidator));
+        // console.log("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-");
 
         // // Deploy the ProtectedUnitFactry contract
         // protectedUnitRouter = new ProtectedUnitRouter();
@@ -155,22 +155,22 @@ contract DeployScript is Script {
         console.log("Exchange Rate Provider          : ", defaultExchangeProvider);
         console.log("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-");
 
-        assetFactory.setModuleCore(address(moduleCore));
-        // hook.transferOwnership(address(config));
-        console.log("Transferred ownerships to Modulecore");
+        // assetFactory.setModuleCore(address(moduleCore));
+        // // hook.transferOwnership(address(config));
+        // console.log("Transferred ownerships to Modulecore");
 
-        config.setModuleCore(address(moduleCore));
-        config.setFlashSwapCore(address(flashswapRouter));
-        config.setHook(address(hook));
-        // config.setProtectedUnitFactory(address(protectedUnitFactory));
-        config.setTreasury(deployer);
-        config.setWithdrawalContract(address(withdrawal));
-        console.log("Contracts configured in Config");
+        // config.setModuleCore(address(moduleCore));
+        // config.setFlashSwapCore(address(flashswapRouter));
+        // config.setHook(address(hook));
+        // // config.setProtectedUnitFactory(address(protectedUnitFactory));
+        // config.setTreasury(0xb9EEeBa3659466d251E8A732dB2341E390AA059F);
+        // config.setWithdrawalContract(address(withdrawal));
+        // console.log("Contracts configured in Config");
 
-        flashswapRouter.setModuleCore(address(moduleCore));
-        flashswapRouter.setHook(address(hook));
-        console.log("Contracts configured in Modulecore");
-        console.log("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-");
+        // flashswapRouter.setModuleCore(address(moduleCore));
+        // flashswapRouter.setHook(address(hook));
+        // console.log("Contracts configured in Modulecore");
+        // console.log("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-");
 
         // deployProtectedUnits(
         //     wstETH,
