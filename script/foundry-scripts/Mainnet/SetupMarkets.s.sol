@@ -11,11 +11,11 @@ import {Strings} from "openzeppelin-contracts/contracts/utils/Strings.sol";
 import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
 contract SetupMarketScript is Script {
-    CorkConfig public config = CorkConfig(0xa5FCad978e6c53F68a273313434572AcEa0Fed84);
-    ModuleCore public moduleCore = ModuleCore(0xC353F7dCe133911Bf975A090C76880333eD59A3a);
-    CorkHook public hook = CorkHook(0x64E9B987532f5D3517D9fbA49852543F463f2A88);
+    CorkConfig public config = CorkConfig(0x2A4594eeb45ca870C9442e8F6a0b2EdE8bd8680B);
+    ModuleCore public moduleCore = ModuleCore(0xC9Fa7245476F0C9F3cA64097Cc52e8e56A9D7Dcf);
+    CorkHook public hook = CorkHook(0x14c4006a2D755C6f6c9458c1F25343303fbc2A88);
 
-    address public defaultExchangeProvider = 0x1427bB500Bf4584ec9603e29aE3016eD73C068A3;
+    address public defaultExchangeProvider = 0x1626929c4fba914041636C6A4D5b22526999F4c6;
 
     address constant weth = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
     address constant wstETH = 0x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca0;
@@ -207,21 +207,21 @@ contract SetupMarketScript is Script {
         return string.concat(Strings.toString(wholePart), ".", Strings.toString(fractionalPart));
     }
 
-         // Main function to convert number to string with 18 decimal places
+    // Main function to convert number to string with 18 decimal places
     function formatDecimals(uint256 number) public pure returns (string memory) {
         // Convert to string first
         string memory numStr = uint2str(number);
         uint256 length = bytes(numStr).length;
-        
+
         // If number is less than 1e18, we need to pad with leading zeros
         if (length < 18) {
             numStr = padZeros(numStr, 18 - length);
         }
-        
+
         // Insert decimal point
         return insertDecimalPoint(numStr, 18);
     }
-    
+
     // Helper function to convert uint to string
     function uint2str(uint256 _i) internal pure returns (string memory str) {
         if (_i == 0) {
@@ -245,49 +245,49 @@ contract SetupMarketScript is Script {
         }
         str = string(bstr);
     }
-    
+
     // Helper function to pad zeros at the start
     function padZeros(string memory input, uint256 zeros) internal pure returns (string memory) {
         bytes memory paddedBytes = new bytes(zeros + bytes(input).length);
-        
+
         // Add leading zeros
-        for(uint256 i = 0; i < zeros; i++) {
+        for (uint256 i = 0; i < zeros; i++) {
             paddedBytes[i] = bytes1("0");
         }
-        
+
         // Copy original number
         bytes memory inputBytes = bytes(input);
-        for(uint256 i = 0; i < inputBytes.length; i++) {
+        for (uint256 i = 0; i < inputBytes.length; i++) {
             paddedBytes[i + zeros] = inputBytes[i];
         }
-        
+
         return string(paddedBytes);
     }
-    
+
     // Helper function to insert decimal point
     function insertDecimalPoint(string memory input, uint256 decimals) internal pure returns (string memory) {
         bytes memory inputBytes = bytes(input);
         uint256 length = inputBytes.length;
-        
+
         if (length <= decimals) {
             return input;
         }
-        
+
         bytes memory outputBytes = new bytes(length + 1);
         uint256 decimalPosition = length - decimals;
-        
-        for(uint256 i = 0; i < decimalPosition; i++) {
+
+        for (uint256 i = 0; i < decimalPosition; i++) {
             outputBytes[i] = inputBytes[i];
         }
-        
+
         // Insert decimal point
         outputBytes[decimalPosition] = ".";
-        
+
         // Copy rest of the number
-        for(uint256 i = decimalPosition; i < length; i++) {
+        for (uint256 i = decimalPosition; i < length; i++) {
             outputBytes[i + 1] = inputBytes[i];
         }
-        
+
         return string(outputBytes);
     }
 }
