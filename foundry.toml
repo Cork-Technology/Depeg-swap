@@ -17,7 +17,7 @@ fs_permissions = [{ access = "read", path = "./"}]
 
 # Compile only the production code with IR see https://github.com/foundry-rs/forge-std/issues/321#issuecomment-1462351522
 [profile.optimized]
-out = "optimized-out"
+out = "out"
 test = "test"
 via_ir = true
 optimizer = true
