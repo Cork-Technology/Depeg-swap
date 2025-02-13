@@ -79,27 +79,27 @@ contract DeployScript is Script {
         console.log("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-");
 
         // Deploy the Asset Factory implementation (logic) contract
-        AssetFactory assetFactoryImplementation = new AssetFactory();
-        console.log("Asset Factory Implementation    : ", address(assetFactoryImplementation));
+        // AssetFactory assetFactoryImplementation = new AssetFactory();
+        // console.log("Asset Factory Implementation    : ", address(assetFactoryImplementation));
 
         // Deploy the Asset Factory Proxy contract
-        bytes memory data = abi.encodeWithSelector(assetFactoryImplementation.initialize.selector);
-        ERC1967Proxy assetFactoryProxy = new ERC1967Proxy(address(assetFactoryImplementation), data);
-        assetFactory = AssetFactory(address(assetFactoryProxy));
+        // bytes memory data = abi.encodeWithSelector(assetFactoryImplementation.initialize.selector);
+        // ERC1967Proxy assetFactoryProxy = new ERC1967Proxy(address(assetFactoryImplementation), data);
+        assetFactory = AssetFactory(0x96E0121D1cb39a46877aaE11DB85bc661f88D5fA);
         console.log("Asset Factory                   : ", address(assetFactory));
 
         // Deploy the CorkConfig contract
-        config = new CorkConfig(0x8724f0884FFeF34A73084F026F317b903C6E9d06, 0x8724f0884FFeF34A73084F026F317b903C6E9d06);
+        config = CorkConfig(0xF0DA8927Df8D759d5BA6d3d714B1452135D99cFC);
         console.log("Cork Config                     : ", address(config));
 
         // Deploy the FlashSwapRouter implementation (logic) contract
-        RouterState routerImplementation = new RouterState();
-        console.log("Flashswap Router Implementation : ", address(routerImplementation));
+        // RouterState routerImplementation = new RouterState();
+        // console.log("Flashswap Router Implementation : ", address(routerImplementation));
 
         // Deploy the FlashSwapRouter Proxy contract
-        data = abi.encodeWithSelector(routerImplementation.initialize.selector, address(config));
-        ERC1967Proxy routerProxy = new ERC1967Proxy(address(routerImplementation), data);
-        flashswapRouter = RouterState(address(routerProxy));
+        // data = abi.encodeWithSelector(routerImplementation.initialize.selector, address(config));
+        // ERC1967Proxy routerProxy = new ERC1967Proxy(address(routerImplementation), data);
+        flashswapRouter = RouterState(0x55B90B37416DC0Bd936045A8110d1aF3B6Bf0fc3);
         console.log("Flashswap Router Proxy          : ", address(flashswapRouter));
 
         // Deploy the ModuleCore implementation (logic) contract
@@ -107,7 +107,7 @@ contract DeployScript is Script {
         console.log("ModuleCore Router Implementation: ", address(moduleCoreImplementation));
 
         // deploy hook
-        poolManager = new PoolManager(0x000000000004444c5dc75cB358380D2e3dE08A90);
+        poolManager = PoolManager(0x000000000004444c5dc75cB358380D2e3dE08A90);
         console.log("Pool Manager                    : ", address(poolManager));
         liquidityToken = new LiquidityToken();
         console.log("Liquidity Token                 : ", address(liquidityToken));
