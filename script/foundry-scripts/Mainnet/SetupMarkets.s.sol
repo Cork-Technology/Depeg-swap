@@ -4,6 +4,8 @@ import {Script, console} from "forge-std/Script.sol";
 import {ERC1967Proxy} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 import {CorkConfig} from "../../../contracts/core/CorkConfig.sol";
 import {ModuleCore} from "../../../contracts/core/ModuleCore.sol";
+import {TransferHelper} from "./../../../contracts/libraries/TransferHelper.sol";
+import {CorkHook} from "Cork-Hook/CorkHook.sol";
 import {Id} from "../../../contracts/libraries/Pair.sol";
 import {Strings} from "openzeppelin-contracts/contracts/utils/Strings.sol";
 import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
@@ -11,6 +13,8 @@ import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 contract SetupMarketScript is Script {
     CorkConfig public config = CorkConfig(0xa5FCad978e6c53F68a273313434572AcEa0Fed84);
     ModuleCore public moduleCore = ModuleCore(0xC353F7dCe133911Bf975A090C76880333eD59A3a);
+    CorkHook public hook = CorkHook(0x64E9B987532f5D3517D9fbA49852543F463f2A88);
+
     address public defaultExchangeProvider = 0x1427bB500Bf4584ec9603e29aE3016eD73C068A3;
 
     address constant weth = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
@@ -27,10 +31,10 @@ contract SetupMarketScript is Script {
     uint256 constant sUSDS_USDe_Expiry = 90 days;
     uint256 constant sUSDe_USDT_Expiry = 90 days;
 
-    uint256 constant weth_wstETH_ARP = 0.3698630137 ether;
-    uint256 constant wstETH_weETH_ARP = 0.4931506849 ether;
-    uint256 constant sUSDS_USDe_ARP = 0.9863013699 ether;
-    uint256 constant sUSDe_USDT_ARP = 0.4931506849 ether;
+    uint256 constant weth_wstETH_ARP = 0.3698630135 ether;
+    uint256 constant wstETH_weETH_ARP = 0.4931506847 ether;
+    uint256 constant sUSDS_USDe_ARP = 0.9863013697 ether;
+    uint256 constant sUSDe_USDT_ARP = 0.4931506847 ether;
 
     uint256 constant weth_wstETH_ExchangeRate = 1.192057609 ether;
     uint256 constant wstETH_weETH_ExchangeRate = 0.8881993472 ether;
@@ -137,14 +141,32 @@ contract SetupMarketScript is Script {
         console.log("New DS issued for pair");
         console.log("");
 
+        uint8 raDecimals = ERC20(raToken).decimals();
+
+        console.log("ID                      : ", Strings.toHexString(uint256(Id.unwrap(id))));
         console.log("paToken                 : ", paToken);
         console.log("raToken                 : ", raToken);
+        console.log("RA Decimals             : ", raDecimals);
         console.log("ARP                     : ", percentage(initialARP), "%");
         console.log("Expiry                  : ", expiryPeriod / 1 days, "days");
         console.log("exchangeRate            : ", percentage(exchangeRate));
         console.log("Decay Rate              :  0");
         console.log("Rollover period         : ", block.timestamp + 7200, "timestamp");
         console.log("AMM liquidation deadline: ", block.timestamp + 30 minutes, "timestamp");
+
+        uint256 depositAmount = TransferHelper.normalizeDecimals(0.1 ether, 18, raDecimals);
+        ERC20(raToken).approve(address(moduleCore), depositAmount);
+        moduleCore.depositLv(id, depositAmount, 0, 0);
+
+        (address ct,) = moduleCore.swapAsset(id, 1);
+        (uint256 raReserve, uint256 ctReserve) = hook.getReserves(raToken, ct);
+
+        console.log("RA Reserve              : ", raReserve);
+        console.log("CT Reserve              : ", ctReserve);
+
+        uint256 initialDsPrice = 1e18 - (raReserve * 1e18) / ctReserve;
+        console.log("Initial DS Price Raw    : ", initialDsPrice);
+        console.log("Initial DS Price        : ", formatDecimals(initialDsPrice));
     }
 
     function configureFees(
@@ -183,5 +205,89 @@ contract SetupMarketScript is Script {
         uint256 wholePart = value / scale; // Get the integer part
         uint256 fractionalPart = (value % scale) * precision / scale; // Get the fractional part
         return string.concat(Strings.toString(wholePart), ".", Strings.toString(fractionalPart));
+    }
+
+         // Main function to convert number to string with 18 decimal places
+    function formatDecimals(uint256 number) public pure returns (string memory) {
+        // Convert to string first
+        string memory numStr = uint2str(number);
+        uint256 length = bytes(numStr).length;
+        
+        // If number is less than 1e18, we need to pad with leading zeros
+        if (length < 18) {
+            numStr = padZeros(numStr, 18 - length);
+        }
+        
+        // Insert decimal point
+        return insertDecimalPoint(numStr, 18);
+    }
+    
+    // Helper function to convert uint to string
+    function uint2str(uint256 _i) internal pure returns (string memory str) {
+        if (_i == 0) {
+            return "0";
+        }
+        uint256 j = _i;
+        uint256 length;
+        while (j != 0) {
+            length++;
+            j /= 10;
+        }
+        bytes memory bstr = new bytes(length);
+        uint256 k = length;
+        j = _i;
+        while (j != 0) {
+            k = k - 1;
+            uint8 temp = uint8(48 + j % 10);
+            bytes1 b1 = bytes1(temp);
+            bstr[k] = b1;
+            j /= 10;
+        }
+        str = string(bstr);
+    }
+    
+    // Helper function to pad zeros at the start
+    function padZeros(string memory input, uint256 zeros) internal pure returns (string memory) {
+        bytes memory paddedBytes = new bytes(zeros + bytes(input).length);
+        
+        // Add leading zeros
+        for(uint256 i = 0; i < zeros; i++) {
+            paddedBytes[i] = bytes1("0");
+        }
+        
+        // Copy original number
+        bytes memory inputBytes = bytes(input);
+        for(uint256 i = 0; i < inputBytes.length; i++) {
+            paddedBytes[i + zeros] = inputBytes[i];
+        }
+        
+        return string(paddedBytes);
+    }
+    
+    // Helper function to insert decimal point
+    function insertDecimalPoint(string memory input, uint256 decimals) internal pure returns (string memory) {
+        bytes memory inputBytes = bytes(input);
+        uint256 length = inputBytes.length;
+        
+        if (length <= decimals) {
+            return input;
+        }
+        
+        bytes memory outputBytes = new bytes(length + 1);
+        uint256 decimalPosition = length - decimals;
+        
+        for(uint256 i = 0; i < decimalPosition; i++) {
+            outputBytes[i] = inputBytes[i];
+        }
+        
+        // Insert decimal point
+        outputBytes[decimalPosition] = ".";
+        
+        // Copy rest of the number
+        for(uint256 i = decimalPosition; i < length; i++) {
+            outputBytes[i + 1] = inputBytes[i];
+        }
+        
+        return string(outputBytes);
     }
 }
