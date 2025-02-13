@@ -101,26 +101,57 @@ contract DeployScript is Script {
         opts.defender.salt = "1001";
 
         bytes memory initializerData = abi.encodeWithSelector(AssetFactory.initialize.selector);
-        address assetFactory = Upgrades.deployUUPSProxy("AssetFactory.sol", initializerData, opts);
-        console.log("Deployed AssetFactory proxy : ", assetFactory);
+        // address assetFactory = Upgrades.deployUUPSProxy("AssetFactory.sol", initializerData, opts);
+        // console.log("Deployed AssetFactory proxy : ", assetFactory);
 
         DefenderOptions memory defenderOpts;
         defenderOpts.salt = "1002";
         defenderOpts.useDefenderDeploy = true;
 
         bytes memory constructorData = abi.encode(multisig, multisig);
-        address corkConfig = DefenderDeploy.deploy("CorkConfig.sol", constructorData, defenderOpts);
-        console.log("Deployed Cork-Config : ", corkConfig);
+        // address corkConfig = DefenderDeploy.deploy("CorkConfig.sol", constructorData, defenderOpts);
+        // console.log("Deployed Cork-Config : ", corkConfig);
 
-        constructorData = "";
-        address liquidityToken = DefenderDeploy.deploy("LiquidityToken.sol", constructorData, defenderOpts);
-        console.log("Deployed liquidityToken : ", liquidityToken);
+        // constructorData = "";
+        // address liquidityToken = DefenderDeploy.deploy("LiquidityToken.sol", constructorData, defenderOpts);
+        // console.log("Deployed liquidityToken : ", liquidityToken);
 
-        opts.defender.salt = "1003";
-        initializerData =
-            abi.encodeWithSelector(FlashSwapRouter.initialize.selector, "0x257dB16f013a9e7061baE32A9807497eCD72d9Ce");
-        address flashswapRouter = Upgrades.deployUUPSProxy("FlashSwapRouter.sol", initializerData, opts);
-        console.log("Deployed FlashSwapRouter proxy : ", flashswapRouter);
+        // opts.defender.salt = "1003";
+        // initializerData =
+        //     abi.encodeWithSelector(FlashSwapRouter.initialize.selector, "0x257dB16f013a9e7061baE32A9807497eCD72d9Ce");
+        // address flashswapRouter = Upgrades.deployUUPSProxy("FlashSwapRouter.sol", initializerData, opts);
+        // console.log("Deployed FlashSwapRouter proxy : ", flashswapRouter);
+
+        // constructorData = abi.encode(
+        //     address(poolManager),
+        //     "0x692e05C45E9924c4ab5DA4aEb360a20B411784fd",
+        //     "0x257dB16f013a9e7061baE32A9807497eCD72d9Ce"
+        // );
+        // bytes memory creationCode = type(CorkHook).creationCode;
+        // (address hookAddress, bytes32 salt) = HookMiner.find(0x762fcF49C5EF21510755191BbeD6AA2a702f0348, hookFlags, creationCode, constructorData);
+        // defenderOpts.salt = salt;
+        // address corkHook = DefenderDeploy.deploy("CorkHook.sol", constructorData, defenderOpts);
+        // require(address(corkHook) == hookAddress, "hook address mismatch");
+        // console.log("Deployed CorkHook : ", corkHook);
+
+        // data = abi.encodeWithSelector(
+        //     moduleCoreImplementation.initialize.selector,
+        //     address(assetFactory),
+        //     address(hook),
+        //     address(flashswapRouter),
+        //     address(config)
+        // );
+        opts.defender.salt = "1111";
+        opts.unsafeAllow = "external-library-linking";
+        initializerData = abi.encodeWithSelector(
+            ModuleCore.initialize.selector,
+            "0x257dB16f013a9e7061baE32A9807497eCD72d9Ce",
+            "0x257dB16f013a9e7061baE32A9807497eCD72d9Ce",
+            "0x257dB16f013a9e7061baE32A9807497eCD72d9Ce",
+            "0x257dB16f013a9e7061baE32A9807497eCD72d9Ce"
+        );
+        address moduleCore = Upgrades.deployUUPSProxy("ModuleCore.sol", initializerData, opts);
+        console.log("Deployed FlashSwapRouter proxy : ", moduleCore);
 
         // // Deploy the CorkConfig contract
         // config = new CorkConfig(deployer, deployer);
