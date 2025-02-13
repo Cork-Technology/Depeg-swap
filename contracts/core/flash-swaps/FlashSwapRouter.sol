@@ -26,7 +26,7 @@ import {CorkConfig} from "../CorkConfig.sol";
  * @author Cork Team
  * @notice Router contract for implementing flashswaps for DS/CT
  */
-contract RouterState is
+contract FlashSwapRouter is
     IDsFlashSwapUtility,
     IDsFlashSwapCore,
     AccessControlUpgradeable,
@@ -119,6 +119,7 @@ contract RouterState is
         ReturnDataSlotLib.clear(ReturnDataSlotLib.DS_FEE_AMOUNT);
     }
 
+    /// @custom:oz-upgrades-unsafe-allow constructor
     constructor() {
         _disableInitializers();
     }

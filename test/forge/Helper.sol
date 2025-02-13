@@ -9,7 +9,7 @@ import {IUniswapV2Factory} from "./../../contracts/interfaces/uniswap-v2/factory
 import {IUniswapV2Router02} from "./../../contracts/interfaces/uniswap-v2/RouterV2.sol";
 import {Id, Pair, PairLibrary} from "./../../contracts/libraries/Pair.sol";
 import {CorkConfig} from "./../../contracts/core/CorkConfig.sol";
-import {RouterState} from "./../../contracts/core/flash-swaps/FlashSwapRouter.sol";
+import {FlashSwapRouter} from "./../../contracts/core/flash-swaps/FlashSwapRouter.sol";
 import {DummyERCWithPermit} from "./../../contracts/dummy/DummyERCWithPermit.sol";
 import {DummyWETH} from "./../../contracts/dummy/DummyWETH.sol";
 import {TestModuleCore} from "./TestModuleCore.sol";

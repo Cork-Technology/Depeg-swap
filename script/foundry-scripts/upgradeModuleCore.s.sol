@@ -14,7 +14,7 @@ contract UpgradeUUPSScript is Script {
         vm.startBroadcast(deployerPrivateKey);
         address moduleCoreProxyAddress = 0x2A97d50f625974A708eDbF6cF7ABA3fd9c08554F;
 
-        // Step 1: Deploy the new implementation contract (RouterState)
+        // Step 1: Deploy the new implementation contract (FlashSwapRouter)
         ModuleCore newImplementation = new ModuleCore();
         console.log("New implementation deployed at:", address(newImplementation));
 

@@ -3,8 +3,8 @@ pragma solidity ^0.8.24;
 import "./../../contracts/core/flash-swaps/FlashSwapRouter.sol";
 
 /// @title TestFlashSwapRouter Contract, used for testing FlashSwapRouter contract, mostly here for getter functions
-contract TestFlashSwapRouter is RouterState {
-    constructor() RouterState() {}
+contract TestFlashSwapRouter is FlashSwapRouter {
+    constructor() FlashSwapRouter() {}
 
     // ------------------------------------------------------------ Getters ------------------------------
     function getAssetPair(Id id, uint256 dsId) external view returns (AssetPair memory) {

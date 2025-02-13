@@ -2,7 +2,7 @@
 pragma solidity ^0.8.24;
 
 import "forge-std/Script.sol";
-import {RouterState} from "../../contracts/core/flash-swaps/FlashSwapRouter.sol";
+import {FlashSwapRouter} from "../../contracts/core/flash-swaps/FlashSwapRouter.sol";
 import {ERC1967Proxy} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 
 contract UpgradeUUPSScript is Script {
@@ -15,10 +15,10 @@ contract UpgradeUUPSScript is Script {
         address user = vm.addr(deployerPrivateKey);
         address flashSwapProxyAddress = 0x8547ac5A696bEB301D5239CdE9F3894B106476C9;
 
-        RouterState(flashSwapProxyAddress).grantRole(keccak256("CONFIG"), address(user));
+        FlashSwapRouter(flashSwapProxyAddress).grantRole(keccak256("CONFIG"), address(user));
 
-        // Step 1: Deploy the new implementation contract (RouterState)
-        RouterState newImplementation = new RouterState();
+        // Step 1: Deploy the new implementation contract (FlashSwapRouter)
+        FlashSwapRouter newImplementation = new FlashSwapRouter();
         console.log("New implementation deployed at:", address(newImplementation));
 
         // Step 2: Upgrade the proxy contract to use the new implementation

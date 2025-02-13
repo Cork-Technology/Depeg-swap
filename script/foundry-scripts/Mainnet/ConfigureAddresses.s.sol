@@ -8,7 +8,7 @@ import {Id} from "../../../contracts/libraries/Pair.sol";
 import {Strings} from "openzeppelin-contracts/contracts/utils/Strings.sol";
 import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import {AssetFactory} from "../../../contracts/core/assets/AssetFactory.sol";
-import {RouterState} from "../../../contracts/core/flash-swaps/FlashSwapRouter.sol";
+import {FlashSwapRouter} from "../../../contracts/core/flash-swaps/FlashSwapRouter.sol";
 import {Liquidator} from "../../../contracts/core/liquidators/cow-protocol/Liquidator.sol";
 import {ProtectedUnit} from "../../../contracts/core/assets/ProtectedUnit.sol";
 import {ProtectedUnitFactory} from "../../../contracts/core/assets/ProtectedUnitFactory.sol";
@@ -21,7 +21,7 @@ contract ConfigureAddressesScript is Script {
     AssetFactory public assetFactory = AssetFactory(0x5fCA6b54e7033e18c1663C5D07C9125FE6ACa55C);
     CorkConfig public config = CorkConfig(0xa20e3D0CCFa98f5dA170f86682b652EcaadE7888);
     ModuleCore public moduleCore = ModuleCore(0xf63B2E90DB4F128Fee825B052dF0D6064D6974A7);
-    RouterState public flashswapRouter = RouterState(0x8D2E77aA31e4f956B3573503d52e5005e97913ac);
+    FlashSwapRouter public flashswapRouter = FlashSwapRouter(0x8D2E77aA31e4f956B3573503d52e5005e97913ac);
     PoolManager public poolManager = PoolManager(0x0690dE6C169bC97f67Fa2e043332e68ab0eA8165);
     CorkHook public hook = CorkHook(0x58Fc79db69e45A5C7f8Fe31AB4D8BC8C39352a88);
     LiquidityToken public liquidityToken = LiquidityToken(0xA1838ce4edBd09616276938F045C17a74Ec23671);

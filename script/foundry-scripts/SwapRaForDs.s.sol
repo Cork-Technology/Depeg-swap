@@ -3,7 +3,7 @@
 // import {Script, console} from "forge-std/Script.sol";
 // import {ModuleCore} from "../../contracts/core/ModuleCore.sol";
 // import {CorkConfig} from "../../contracts/core/CorkConfig.sol";
-// import {RouterState} from "../../contracts/core/flash-swaps/FlashSwapRouter.sol";
+// import {FlashSwapRouter} from "../../contracts/core/flash-swaps/FlashSwapRouter.sol";
 // import {CETH} from "../../contracts/tokens/CETH.sol";
 // import {CST} from "../../contracts/tokens/CST.sol";
 // import {Id, PairLibrary} from "../../contracts/libraries/Pair.sol";
@@ -18,7 +18,7 @@
 
 // contract SwapRAForDSScript is Script {
 //     ModuleCore public moduleCore;
-//     RouterState public routerState;
+//     FlashSwapRouter public routerState;
 //     CorkConfig public config;
 
 //     bool public isProd = vm.envBool("PRODUCTION");
@@ -55,7 +55,7 @@
 //         vm.pauseGasMetering();
 
 //         moduleCore = ModuleCore(0xc5f00EE3e3499e1b211d1224d059B8149cD2972D);
-//         routerState = RouterState(0xC89c5b91d6389FDDa8A0Ee29dc2eFC7330Ee42A1);
+//         routerState = FlashSwapRouter(0xC89c5b91d6389FDDa8A0Ee29dc2eFC7330Ee42A1);
 //         config = CorkConfig(address(0));
 //         console.log("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-");
 

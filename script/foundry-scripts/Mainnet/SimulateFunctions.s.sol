@@ -4,7 +4,7 @@ import {Script, console} from "forge-std/Script.sol";
 import {ModuleCore} from "../../../contracts/core/ModuleCore.sol";
 import {CorkConfig} from "../../../contracts/core/CorkConfig.sol";
 import {CorkHook} from "Cork-Hook/CorkHook.sol";
-import {RouterState} from "../../../contracts/core/flash-swaps/FlashSwapRouter.sol";
+import {FlashSwapRouter} from "../../../contracts/core/flash-swaps/FlashSwapRouter.sol";
 import {Id, PairLibrary} from "../../../contracts/libraries/Pair.sol";
 import {ERC20, IERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import {IVault} from "../../../contracts/interfaces/IVault.sol";
@@ -27,7 +27,7 @@ contract SimulateScript is Script {
 
     CorkConfig public config = CorkConfig(0xa5FCad978e6c53F68a273313434572AcEa0Fed84);
     ModuleCore public moduleCore = ModuleCore(0xC353F7dCe133911Bf975A090C76880333eD59A3a);
-    RouterState public routerState = RouterState(0xce5D9F238d5ecf753AEA688A2e966104773Da8a4);
+    FlashSwapRouter public routerState = FlashSwapRouter(0xce5D9F238d5ecf753AEA688A2e966104773Da8a4);
     CorkHook public corkHook = CorkHook(0x64E9B987532f5D3517D9fbA49852543F463f2A88);
     address public exchangeProvider = 0x1427bB500Bf4584ec9603e29aE3016eD73C068A3;
 

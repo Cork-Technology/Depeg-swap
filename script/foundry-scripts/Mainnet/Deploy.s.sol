@@ -4,7 +4,7 @@ import {Script, console} from "forge-std/Script.sol";
 import {ERC1967Proxy} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 import {AssetFactory} from "../../../contracts/core/assets/AssetFactory.sol";
 import {CorkConfig} from "../../../contracts/core/CorkConfig.sol";
-import {RouterState} from "../../../contracts/core/flash-swaps/FlashSwapRouter.sol";
+import {FlashSwapRouter} from "../../../contracts/core/flash-swaps/FlashSwapRouter.sol";
 import {ModuleCore} from "../../../contracts/core/ModuleCore.sol";
 import {Liquidator} from "../../../contracts/core/liquidators/cow-protocol/Liquidator.sol";
 import {ProtectedUnit} from "../../../contracts/core/assets/ProtectedUnit.sol";
@@ -24,7 +24,7 @@ import {Strings} from "openzeppelin-contracts/contracts/utils/Strings.sol";
 contract DeployScript is Script {
     AssetFactory public assetFactory;
     CorkConfig public config;
-    RouterState public flashswapRouter;
+    FlashSwapRouter public flashswapRouter;
     ModuleCore public moduleCore;
     PoolManager public poolManager;
     CorkHook public hook;
@@ -93,13 +93,13 @@ contract DeployScript is Script {
         console.log("Cork Config                     : ", address(config));
 
         // Deploy the FlashSwapRouter implementation (logic) contract
-        RouterState routerImplementation = new RouterState();
+        FlashSwapRouter routerImplementation = new FlashSwapRouter();
         console.log("Flashswap Router Implementation : ", address(routerImplementation));
 
         // Deploy the FlashSwapRouter Proxy contract
         data = abi.encodeWithSelector(routerImplementation.initialize.selector, address(config));
         ERC1967Proxy routerProxy = new ERC1967Proxy(address(routerImplementation), data);
-        flashswapRouter = RouterState(address(routerProxy));
+        flashswapRouter = FlashSwapRouter(address(routerProxy));
         console.log("Flashswap Router Proxy          : ", address(flashswapRouter));
 
         // Deploy the ModuleCore implementation (logic) contract

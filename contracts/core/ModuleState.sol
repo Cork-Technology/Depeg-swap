@@ -5,7 +5,7 @@ import {Id} from "../libraries/Pair.sol";
 import {State} from "../libraries/State.sol";
 import {IErrors} from "./../interfaces/IErrors.sol";
 import {PsmLibrary} from "../libraries/PsmLib.sol";
-import {RouterState} from "./flash-swaps/FlashSwapRouter.sol";
+import {FlashSwapRouter} from "./flash-swaps/FlashSwapRouter.sol";
 import {ICorkHook} from "./../interfaces/UniV4/IMinimalHook.sol";
 import {ILiquidatorRegistry} from "./../interfaces/ILiquidatorRegistry.sol";
 import {ReentrancyGuardTransient} from "@openzeppelin/contracts/utils/ReentrancyGuardTransient.sol";
@@ -70,8 +70,8 @@ abstract contract ModuleState is IErrors, ReentrancyGuardTransient {
         WITHDRAWAL_CONTRACT = _withdrawalContract;
     }
 
-    function getRouterCore() public view returns (RouterState) {
-        return RouterState(DS_FLASHSWAP_ROUTER);
+    function getRouterCore() public view returns (FlashSwapRouter) {
+        return FlashSwapRouter(DS_FLASHSWAP_ROUTER);
     }
 
     function getAmmRouter() public view returns (ICorkHook) {
