@@ -109,22 +109,20 @@ contract PsmTest is ModuleCoreTest {
 
     function _mockCallsRedeemRaWithDs(uint256 amount) internal returns (uint256 raReceived, uint256 dsProvided) {
         // Proved in MathHelperTest.testCalculatePercentageFee that ra == amount * exchangeRates / UNIT
-        uint256 ra = freshUInt256Bounded("ra");
-        vm.mockCall(address(MathHelper), abi.encodeWithSelector(MathHelper.calculateEqualSwapAmount.selector), abi.encode(ra));
+        vm.mockCall(address(MathHelper), abi.encodeWithSelector(MathHelper.calculateEqualSwapAmount.selector), abi.encode(amount));
         // underflow check assumption
-        vm.assume(ra <= moduleCore.getPsmBalances(id).ra.locked);
+        vm.assume(amount <= moduleCore.getPsmBalances(id).ra.locked);
         
-        dsProvided = ra;
+        dsProvided = amount;
 
         // Mock call to MathHelper.calculatePercentageFee
         // Proved in MathHelperTest.testCalculatePercentageFee that fee <= amount
         uint256 fee = kevm.freshUInt(32, "fee");
         // 5 ether is the upper bound of psmBaseRedemptionFeePercentage
-        vm.assume(fee <= (ra * 5 ether) / (100 * UNIT));
-        //vm.assume(fee <= ra);
+        vm.assume(fee <= (amount * 5 ether) / (100 * UNIT));
         vm.mockCall(address(MathHelper), abi.encodeWithSelector(MathHelper.calculatePercentageFee.selector), abi.encode(fee));
 
-        raReceived = ra - fee;
+        raReceived = amount - fee;
 
         // We can mock this function with 0 because we are not using the returned values since hook.addLiquidity
         // also has a mocked implementation
@@ -158,6 +156,9 @@ contract PsmTest is ModuleCoreTest {
         vm.assume(!moduleCore.getPsmIsWithdrawalPaused(id));
         // assume safeBeforeExpired
         vm.assume(!moduleCore.getDsIsExpired(id));
+        // assume exchangeRate is 1
+        (address ds,) = moduleCore.getDsCtPair(id);
+        vm.assume(TestAsset(ds).exchangeRate() == 1e18);
 
         (uint256 raReceived, uint256 dsProvided) = _mockCallsRedeemRaWithDs(amount);
 
@@ -176,9 +177,9 @@ contract PsmTest is ModuleCoreTest {
         (uint256 received, uint256 _exchangeRate, uint256 fee, uint256 dsUsed) = moduleCore.redeemRaWithDs(id, dsId, amount);
 
         // Assume invariants hold before the function call
-        _invariant_DS_CT_backed_PA_RA(Mode.Assume);
-        _invariant_ctBalance(Mode.Assume);
-        _invariant_lvReserve(Mode.Assume);
+        _invariant_DS_CT_backed_PA_RA(Mode.Assert);
+        _invariant_ctBalance(Mode.Assert);
+        _invariant_lvReserve(Mode.Assert);
 
         //_stateSnapshotRedeemPSM(posState, redeemer);
 

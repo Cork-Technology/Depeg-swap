@@ -5,7 +5,8 @@ import {ModuleCoreTest} from "./ModuleCoreTest.k.sol";
 import {Id, Pair}        from "../../../contracts/libraries/Pair.sol";
 import {IDsFlashSwapCore} from "../../../contracts/interfaces/IDsFlashSwapRouter.sol";
 import {SwapperMathLibrary} from "../../../contracts/libraries/DsSwapperMathLib.sol";
-import {AssetPair} from "../../../contracts/libraries/DsFlashSwap.sol";
+import {AssetPair, DsFlashSwaplibrary} from "../../../contracts/libraries/DsFlashSwap.sol";
+import {MathHelper} from "../../../contracts/libraries/MathHelper.sol";
 
 import {Asset}     from "../../../contracts/core/assets/Asset.sol";
 import {TestAsset}     from "./TestAsset.k.sol";
@@ -267,4 +268,57 @@ contract RouterTest is ModuleCoreTest {
         assertEq(preState.routerRaBalance, posState.routerRaBalance);
         /* TODO: CT, DS should be burned during the redemption */
     }
+
+    /* TODO: this test requires more detailed specification, 
+        e.g., it currently reverts when 
+        - `amountOut == 0 && (actualRepaymentAmount == (borrowed + amount))`
+        - `amountOut -= 1 underflows`
+        - ...
+
+    function test_swapRaForDs_flashSwap(uint256 amount, uint256 amountOutMin) public {
+        (address ds, address ct) = moduleCore.getDsCtPair(id);
+        address ra = moduleCore.getPairInfo(id).ra;
+
+        // Setting up the hook;
+        hook.setFlashSwapRouter(address(flashSwapRouter));
+        hook.isFlashSwap(true);
+        // Setting up a seller
+        address seller = address(0xABCDE);
+        // Assuming preconditions, defining mocks
+        _assumeSwapRaForDsPreState(seller, amount);        
+        _mockSwapDsForRaRouterCalls();
+        _stateSnapshotSwap(preState, seller);
+
+        IDsFlashSwapCore.BuyAprroxParams memory params = IDsFlashSwapCore.BuyAprroxParams(256, 256, 1e16, 1e9, 1e9, 0.01 ether);
+        uint256 dsId = moduleCore.getDsId(id);
+        // Assuming that the rollover sale is not possible
+        vm.assume(block.number > flashSwapRouter.getRolloverEndInBlockNumber(id));
+        // Mocking the `getAmountOutBuyDS` function
+        (uint256 amountOut, uint256 borrowed) = (freshUInt256Bounded("amountOut"), freshUInt256Bounded("borrowed"));
+        vm.mockCall(address(DsFlashSwaplibrary), abi.encodeWithSelector(DsFlashSwaplibrary.getAmountOutBuyDS.selector), abi.encode(amountOut, borrowed));
+        // Mocking the `calculatePercentageFee` function with `amountOut` value so no gradual sale is executed
+        vm.mockCall(address(MathHelper), abi.encodeWithSelector(MathHelper.calculatePercentageFee.selector), abi.encode(amountOut));
+        // Assuming that the gradual sale is disabled, proceeding to flash swap
+        vm.assume(flashSwapRouter.getGradualSaleDisabled(id));
+        // Setting up the hook contract
+        hook.setFlashSwapRouter(address(flashSwapRouter));
+        // No overflow occurs in seller balance during the DS token transfer
+        uint256 sellerBalanceDs = TestAsset(ds).balanceOf(seller);
+        unchecked {
+            vm.assume(sellerBalanceDs + amountOut >= sellerBalanceDs);
+        }
+        // Assuming `amountOut` is sufficient
+        vm.assume(amountOut >= amountOutMin);
+        
+        // Calling `swapRaForDs` with symbolic values
+        vm.prank(seller);
+        uint256 amountReceived = flashSwapRouter.swapRaforDs(id, dsId, amount, amountOutMin, params);
+        _stateSnapshotSwap(posState, seller);
+
+        // Checking resulting balances of user, router
+        assertEq(amountOut, amountReceived);
+        assertEq(preState.sellerDsBalance + amountOut, TestAsset(ds).balanceOf(seller));
+        assertEq(preState.routerRaBalance + amount, TestERC20(ra).balanceOf(address(flashSwapRouter)));
+    }
+    */
 }

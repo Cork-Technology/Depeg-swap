@@ -38,6 +38,7 @@ contract TestFlashSwapRouter is RouterState, KontrolTest {
         reserves[id].ds[dsId].lvReserve = lvReserve;
         uint256 psmReserve = freshUInt256Bounded("psmReserve");
         reserves[id].ds[dsId].psmReserve = psmReserve;
+        reserves[id].gradualSaleDisabled = kevm.freshBool("gradualSaleDisabled");
     }
 
     function assumeRollOverSale(Id id, uint256 dsId) external {
@@ -72,6 +73,10 @@ contract TestFlashSwapRouter is RouterState, KontrolTest {
 
     function getHiya(Id id) external view returns (uint256) {
         return reserves[id].hiya;
+    }
+
+    function getGradualSaleDisabled(Id id) external view returns (bool) {
+        return reserves[id].gradualSaleDisabled;
     }
 
     // ------------------------------------------------------------ Auxiliary Mock Functions ------------------------------ 
