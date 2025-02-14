@@ -22,3 +22,6 @@
 [submodule "lib/v2-core"]
 	path = lib/v2-core
 	url = https://github.com/Cork-Technology/v2-core
+[submodule "lib/kontrol-cheatcodes"]
+	path = lib/kontrol-cheatcodes
+	url = https://github.com/runtimeverification/kontrol-cheatcodes

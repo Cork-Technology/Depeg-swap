@@ -368,7 +368,7 @@ library VaultLibrary {
         uint256 dsId,
         uint256 amount,
         IDsFlashSwapCore flashSwapRouter
-    ) internal returns (uint256 received) {
+    ) internal view returns (uint256 received) {
         Id id = self.info.toId();
         address ct = self.ds[dsId].ct;
         MarketSnapshot memory snapshot = ammRouter.getMarketSnapshot(self.info.ra, ct);
