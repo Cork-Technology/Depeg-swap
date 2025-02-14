@@ -25,11 +25,11 @@ struct Market {
 contract SimulateScript is Script {
     using SafeERC20 for IERC20;
 
-    CorkConfig public config = CorkConfig(0xa5FCad978e6c53F68a273313434572AcEa0Fed84);
-    ModuleCore public moduleCore = ModuleCore(0xC353F7dCe133911Bf975A090C76880333eD59A3a);
-    RouterState public routerState = RouterState(0xce5D9F238d5ecf753AEA688A2e966104773Da8a4);
-    CorkHook public corkHook = CorkHook(0x64E9B987532f5D3517D9fbA49852543F463f2A88);
-    address public exchangeProvider = 0x1427bB500Bf4584ec9603e29aE3016eD73C068A3;
+    CorkConfig public config = CorkConfig(0xF0DA8927Df8D759d5BA6d3d714B1452135D99cFC);
+    ModuleCore public moduleCore = ModuleCore(0xCCd90F6435dd78C4ECCED1FA4db0D7242548a2a9);
+    RouterState public routerState = RouterState(0x55B90B37416DC0Bd936045A8110d1aF3B6Bf0fc3);
+    CorkHook public corkHook = CorkHook(0x5287E8915445aee78e10190559D8Dd21E0E9Ea88);
+    address public exchangeProvider = 0x7b285955DdcbAa597155968f9c4e901bb4c99263;
 
     uint256 public pk = vm.envUint("PRIVATE_KEY");
     address public deployer = vm.addr(pk);
@@ -121,8 +121,8 @@ contract SimulateScript is Script {
 
         console.log("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-");
 
-        Market[4] memory markets = [weth_wstETH_market, wstETH_weETH_market, sUSDS_USDe_market, sUSDe_USDT_market];
-        // Market[1] memory markets = [weth_wstETH_market];
+        // Market[4] memory markets = [weth_wstETH_market, wstETH_weETH_market, sUSDS_USDe_market, sUSDe_USDT_market];
+        Market[1] memory markets = [weth_wstETH_market];
 
         for (uint256 i = 0; i < markets.length; i++) {
             Market memory market = markets[i];
