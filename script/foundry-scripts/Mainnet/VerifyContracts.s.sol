@@ -44,6 +44,8 @@ contract VerificationScript is Script {
     address constant USDT = 0xdAC17F958D2ee523a2206206994597C13D831ec7;
 
     address constant treasury = 0xb9EEeBa3659466d251E8A732dB2341E390AA059F;
+    address constant multisig = 0x8724f0884FFeF34A73084F026F317b903C6E9d06;
+    address constant deployerAdd = 0x777777727073E72Fbb3c81f9A8B88Cc49fEAe2F5;
 
     uint256 constant weth_wstETH_Expiry = 90 days;
     uint256 constant wstETH_weETH_Expiry = 90 days;
@@ -98,12 +100,17 @@ contract VerificationScript is Script {
 
         // Asset Factory
         assert(assetFactory.moduleCore() == address(moduleCore));
+        assert(assetFactory.owner() == multisig);
 
         // Cork Config
         assert(address(config.moduleCore()) == address(moduleCore));
         assert(address(config.flashSwapRouter()) == address(flashswapRouter));
         assert(address(config.hook()) == address(hook));
         assert(config.treasury() == treasury);
+        assert(config.hasRole(config.DEFAULT_ADMIN_ROLE(), multisig) == true);
+        assert(config.hasRole(config.MANAGER_ROLE(), multisig) == true);
+        assert(config.hasRole(config.DEFAULT_ADMIN_ROLE(), deployerAdd) == false);
+        assert(config.hasRole(config.MANAGER_ROLE(), deployerAdd) == false);
 
         // Module Core
         assert(address(moduleCore.factory()) == address(assetFactory));
@@ -111,11 +118,15 @@ contract VerificationScript is Script {
         assert(address(moduleCore.getRouterCore()) == address(flashswapRouter));
         assert(address(moduleCore.getTreasuryAddress()) == address(treasury));
         assert(address(moduleCore.getWithdrawalContract()) == address(withdrawal));
+        assert(moduleCore.owner() == multisig);
 
         // FlashSwapRouter
         assert(address(flashswapRouter.config()) == address(config));
         assert(flashswapRouter._moduleCore() == address(moduleCore));
         assert(address(flashswapRouter.hook()) == address(hook));
+        assert(flashswapRouter.hasRole(flashswapRouter.DEFAULT_ADMIN_ROLE(), multisig) == true);
+        assert(flashswapRouter.hasRole(flashswapRouter.CONFIG(), address(config)) == true);
+        assert(flashswapRouter.hasRole(flashswapRouter.DEFAULT_ADMIN_ROLE(), deployerAdd) == false);
 
         // Cork Hook
         assert(hook.getPoolManager() == address(poolManager));

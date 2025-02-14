@@ -22,6 +22,3 @@ test = "test"
 via_ir = true
 optimizer = true
 optimizer_runs = 200
-
-[etherscan]
-unknown_chain = { key = "${TENDERLY_ACCESS_KEY}", chain = 123123, url = "${TENDERLY_VIRTUAL_TESTNET_RPC_URL}/verify/etherscan" }
