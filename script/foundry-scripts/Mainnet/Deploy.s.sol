@@ -122,7 +122,7 @@ contract DeployScript is Script {
         console.log("Hook                            : ", hookAddress);
 
         // Deploy the ModuleCore Proxy contract
-        data = abi.encodeWithSelector(
+        bytes memory data = abi.encodeWithSelector(
             moduleCoreImplementation.initialize.selector,
             address(assetFactory),
             address(hook),

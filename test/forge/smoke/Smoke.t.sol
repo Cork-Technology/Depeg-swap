@@ -127,12 +127,11 @@ contract SimulateScript is Test {
     );
 
     function setUp() public {
-        // change this to activate the tests
-        string memory forkUrl = "";
-        uint256 forkBlock = 0;
+        string memory forkUrl = "https://eth-mainnet.g.alchemy.com/v2/gzI8LQXepLdh79tT_5euk6f0AKcLtImH";
+        uint256 forkBlock = 21865580;
 
         if (forkBlock == 0 || keccak256(abi.encodePacked(forkUrl)) == keccak256("")) {
-            vm.skip(true, "no fork url and block was found, assign this in the \"setUp\" function in test/forge/smoke/Smoke.t.sol file");
+            vm.skip(true, "no fork url and block was found");
         }
 
         vm.createSelectFork(forkUrl, forkBlock);
