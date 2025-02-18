@@ -36,9 +36,6 @@ contract SimulateScript is Test {
     CorkHook public corkHook = CorkHook(0x5287E8915445aee78e10190559D8Dd21E0E9Ea88);
     address public exchangeProvider = 0x7b285955DdcbAa597155968f9c4e901bb4c99263;
 
-    uint256 public pk = vm.envUint("PRIVATE_KEY");
-    address public deployer = vm.addr(pk);
-
     address constant weth = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
     address constant wstETH = 0x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca0;
     address constant weETH = 0xCd5fE23C85820F7B72D0926FC9b05b43E359b7ee;
@@ -126,9 +123,11 @@ contract SimulateScript is Test {
         0xF977814e90dA44bFA03b6295A0616a897441aceC
     );
 
+    EnvGetters internal env = new EnvGetters();
+
     function setUp() public {
-        string memory forkUrl = "https://eth-mainnet.g.alchemy.com/v2/gzI8LQXepLdh79tT_5euk6f0AKcLtImH";
-        uint256 forkBlock = 21865580;
+        string memory forkUrl = envStringNoRevert("FORK_URL");
+        uint256 forkBlock = envUintNoRevert("FORK_BLOCK");
 
         if (forkBlock == 0 || keccak256(abi.encodePacked(forkUrl)) == keccak256("")) {
             vm.skip(true, "no fork url and block was found");
@@ -137,11 +136,27 @@ contract SimulateScript is Test {
         vm.createSelectFork(forkUrl, forkBlock);
     }
 
+    function envStringNoRevert(string memory key) internal view returns (string memory) {
+        try env.envString(key) returns (string memory value) {
+            return value;
+        } catch {
+            return "";
+        }
+    }
+
+    function envUintNoRevert(string memory key) internal view returns (uint256) {
+        try env.envUint(key) returns (uint256 value) {
+            return value;
+        } catch {
+            return 0;
+        }
+    }
+
     function test_allMarket() public {
         address impl = address(new ModuleCore());
         bytes memory implCode = impl.code;
 
-        vm.etch(address(moduleCore), implCode);
+        // vm.etch(address(moduleCore), implCode);
 
         vm.pauseGasMetering();
 
@@ -175,23 +190,28 @@ contract SimulateScript is Test {
             address lv = moduleCore.lvAsset(marketId);
 
             uint256 lvDepositAmt = 0.001 ether;
-            console.log(block.timestamp);
+            console.log("Depositing %s RA", lvDepositAmt);
             uint256 redeemLvAmt = depositLv(market, marketId, lvDepositAmt);
 
             uint256 psmDepositAmt = 0.1 ether;
+            console.log("Depositing %s RA", psmDepositAmt);
             depositPsm(market, marketId, psmDepositAmt);
 
             uint256 redeemAmt = 0.001 ether;
+            console.log("Redeeming %s RA with DS", redeemAmt);
             redeemRaWithDsPa(market, marketId, dsId, redeemAmt, ds);
 
+            console.log("Returning %s RA with CT and DS", redeemAmt);
             returnRaWithCtDs(market, marketId, redeemAmt, ds, ct);
 
+            console.log("Redeeming %s LV", redeemLvAmt);
             redeemLv(market, marketId, redeemLvAmt, lv);
 
             // deposit again to add liquidity for testing swaps
-            lvDepositAmt = 100 ether;
+            lvDepositAmt = 0.1 ether;
+            console.log("Depositing %s RA", lvDepositAmt);
             depositLv(market, marketId, lvDepositAmt);
-            uint256 swapAmt = 1 ether;
+            uint256 swapAmt = 0.01 ether;
             console.log("Swapping RA with DS");
             swapRaForDs(market, marketId, dsId, swapAmt);
 

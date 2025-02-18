@@ -44,6 +44,7 @@ abstract contract Helper is SigUtils, TestHelper {
     Withdrawal internal withdrawalContract;
     ProtectedUnitFactory internal protectedUnitFactory;
     ProtectedUnitRouter internal protectedUnitRouter;
+    EnvGetters internal env = new EnvGetters();
 
     Id defaultCurrencyId;
 
@@ -405,6 +406,32 @@ abstract contract Helper is SigUtils, TestHelper {
     function __workaround() internal {
         PrankWorkAround _contract = new PrankWorkAround();
         _contract.prankApply();
+    }
+
+    function envStringNoRevert(string memory key) internal view returns (string memory) {
+        try env.envString(key) returns (string memory value) {
+            return value;
+        } catch {
+            return "";
+        }
+    }
+
+    function envUintNoRevert(string memory key) internal view returns (uint256) {
+        try env.envUint(key) returns (uint256 value) {
+            return value;
+        } catch {
+            return 0;
+        }
+    }
+}
+
+contract EnvGetters is TestHelper {
+    function envString(string memory key) public view returns (string memory) {
+        return vm.envString(key);
+    }
+
+    function envUint(string memory key) public view returns (uint256) {
+        return vm.envUint(key);
     }
 }
 
