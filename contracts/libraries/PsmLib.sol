@@ -646,6 +646,10 @@ library PsmLibrary {
 
         (received, dsProvided, fee, _exchangeRate) = previewRedeemWithDs(self, dsId, amount);
 
+        if (received > self.psm.balances.ra.locked) {
+            revert IErrors.InsufficientLiquidity(self.psm.balances.ra.locked, received);
+        }
+
         if (deadline != 0 && rawDsPermitSig.length != 0) {
             DepegSwapLibrary.permit(
                 ds._address, rawDsPermitSig, owner, address(this), dsProvided, deadline, "redeemRaWithDsPa"
