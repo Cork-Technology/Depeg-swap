@@ -7,6 +7,7 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "./../../../../contracts/libraries/TransferHelper.sol";
 import "./../../../../contracts/core/assets/Asset.sol";
 import "forge-std/console.sol";
+import "./../../../../contracts/interfaces/IErrors.sol";
 
 contract PsmTest is Helper {
     DummyWETH internal ra;
@@ -226,6 +227,27 @@ contract PsmTest is Helper {
         vm.assertEq(_pa, 0);
         vm.assertEq(ds, 0);
         vm.assertEq(_dsId, 1);
+    }
+
+    function test_RevertRedeemRaWithDsPaWithInsufficientLiquidity() external {
+        vm.startPrank(DEFAULT_ADDRESS);
+        ra.approve(address(moduleCore), 1 ether);
+
+        (uint256 received, uint256 exchangeRate) = moduleCore.depositPsm(defaultCurrencyId, 1 ether);
+
+        vm.assertEq(received, 1 ether);
+        vm.assertEq(exchangeRate, defaultExchangeRate(), "Exchange rate should match default");
+
+        dsId = moduleCore.lastDsId(defaultCurrencyId);
+        (address _ds, address _ct) = moduleCore.swapAsset(defaultCurrencyId, 1);
+        ds = Asset(_ds);
+
+        ds.approve(address(moduleCore), 200 ether);
+        pa.approve(address(moduleCore), 200 ether);
+
+        vm.expectRevert(IErrors.InsufficientLiquidity.selector);
+        moduleCore.redeemRaWithDsPa(defaultCurrencyId, dsId, 100 ether);
+        vm.stopPrank();
     }
 
     function defaultExchangeRate() internal pure override returns (uint256) {
