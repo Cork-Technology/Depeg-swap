@@ -116,6 +116,10 @@ library PsmLibrary {
         uint256 dsId,
         uint256 amount
     ) external returns (uint256 profit, uint256 remainingDsReceived) {
+        if (amount == 0) {
+            revert IErrors.ZeroDeposit();
+        }
+
         (profit, remainingDsReceived) =
             _claimAutoSellProfit(self, self.psm.poolArchive[dsId], flashSwapRouter, owner, amount, dsId);
     }
@@ -137,6 +141,10 @@ library PsmLibrary {
     ) internal returns (uint256 ctReceived, uint256 dsReceived, uint256 paReceived) {
         if (prevDsId == self.globalAssetIdx) {
             revert NoActiveIssuance();
+        }
+
+        if (amount == 0) {
+            revert IErrors.ZeroDeposit();
         }
 
         // claim logic
@@ -403,6 +411,10 @@ library PsmLibrary {
         bytes calldata rawCtPermitSig,
         uint256 ctDeadline
     ) external returns (uint256 ra) {
+        if (amount == 0) {
+            revert IErrors.ZeroDeposit();
+        }
+
         uint256 dsId = self.globalAssetIdx;
         DepegSwap storage ds = self.ds[dsId];
         Guard.safeBeforeExpired(ds);
@@ -513,6 +525,10 @@ library PsmLibrary {
             uint256 exchangeRates
         )
     {
+        if (amount == 0) {
+            revert IErrors.ZeroDeposit();
+        }
+
         DepegSwap storage ds;
 
         (dsId, receivedPa, receivedDs, feePercentage, fee, exchangeRates, ds) = previewRepurchase(self, amount);
@@ -545,9 +561,6 @@ library PsmLibrary {
         }
     }
 
-    // TODO :
-    // - test repurchase treasury split
-    // - test redeem DS treasury split
     function _attributeFeeToTreasury(State storage self, uint256 fee, address treasury)
         internal
         returns (uint256 remaining)
@@ -624,6 +637,10 @@ library PsmLibrary {
         uint256 deadline,
         address treasury
     ) external returns (uint256 received, uint256 _exchangeRate, uint256 fee, uint256 dsProvided) {
+        if (amount == 0) {
+            revert IErrors.ZeroDeposit();
+        }
+
         DepegSwap storage ds = self.ds[dsId];
         Guard.safeBeforeExpired(ds);
 
@@ -728,6 +745,10 @@ library PsmLibrary {
         bytes calldata rawCtPermitSig,
         uint256 deadline
     ) external returns (uint256 accruedPa, uint256 accruedRa) {
+        if (amount == 0) {
+            revert IErrors.ZeroDeposit();
+        }
+
         DepegSwap storage ds = self.ds[dsId];
         Guard.safeAfterExpired(ds);
         if (deadline != 0) {

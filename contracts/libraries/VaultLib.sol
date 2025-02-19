@@ -618,6 +618,16 @@ library VaultLibrary {
         IVault.ProtocolContracts memory contracts,
         IVault.PermitParams calldata permitParams
     ) external returns (IVault.RedeemEarlyResult memory result) {
+        if (redeemParams.amount == 0) {
+            revert IErrors.ZeroDeposit();
+        }
+
+        uint256 lvSupply = Asset(self.vault.lv._address).totalSupply();
+
+        if (lvSupply > redeemParams.amount) {
+            revert IErrors.InvalidAmount();
+        }
+
         if (permitParams.deadline != 0) {
             DepegSwapLibrary.permit(
                 self.vault.lv._address,
@@ -647,7 +657,7 @@ library VaultLibrary {
 
             MathHelper.RedeemParams memory params = MathHelper.RedeemParams({
                 amountLvClaimed: redeemParams.amount,
-                totalLvIssued: Asset(self.vault.lv._address).totalSupply(),
+                totalLvIssued: lvSupply,
                 totalVaultLp: lpBalance,
                 totalVaultCt: self.vault.balances.ctBalance,
                 totalVaultDs: contracts.flashSwapRouter.getLvReserve(redeemParams.id, dsId),
