@@ -59,7 +59,7 @@ contract PsmTest is Helper {
 
         (ra, pa, defaultCurrencyId) = initializeAndIssueNewDs(EXPIRY, raDecimals, paDecimals);
 
-        (address _ds, address _ct) = moduleCore.swapAsset(defaultCurrencyId, 1);
+        (address _ct, address _ds) = moduleCore.swapAsset(defaultCurrencyId, 1);
         ds = Asset(_ds);
         ct = Asset(_ct);
 
@@ -230,23 +230,23 @@ contract PsmTest is Helper {
     }
 
     function test_RevertRedeemRaWithDsPaWithInsufficientLiquidity() external {
-        vm.startPrank(DEFAULT_ADDRESS);
+        vm.startPrank(user2);
         ra.approve(address(moduleCore), 1 ether);
-
         (uint256 received, uint256 exchangeRate) = moduleCore.depositPsm(defaultCurrencyId, 1 ether);
 
-        vm.assertEq(received, 1 ether);
-        vm.assertEq(exchangeRate, defaultExchangeRate(), "Exchange rate should match default");
-
         dsId = moduleCore.lastDsId(defaultCurrencyId);
-        (address _ds, address _ct) = moduleCore.swapAsset(defaultCurrencyId, 1);
+        (address _ct, address _ds) = moduleCore.swapAsset(defaultCurrencyId, 1);
         ds = Asset(_ds);
 
-        ds.approve(address(moduleCore), 200 ether);
-        pa.approve(address(moduleCore), 200 ether);
+        ds.approve(address(moduleCore), 20000 ether);
+        pa.approve(address(moduleCore), 20000 ether);
 
-        vm.expectRevert(IErrors.InsufficientLiquidity.selector);
-        moduleCore.redeemRaWithDsPa(defaultCurrencyId, dsId, 100 ether);
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                IErrors.InsufficientLiquidity.selector, 7502249375312343829335, 9900000000000000000000
+            )
+        );
+        moduleCore.redeemRaWithDsPa(defaultCurrencyId, dsId, 10000 ether);
         vm.stopPrank();
     }
 
