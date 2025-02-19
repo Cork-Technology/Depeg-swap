@@ -205,8 +205,8 @@ interface IErrors {
     /// try again later
     error NavBelowThreshold(uint256 referenceNav, uint256 delta, uint256 currentNav);
 
-    /// @notice thrown when trying to swap RA for DS 
-    /// but the RA:CT pool is in massive imbalance 
+    /// @notice thrown when trying to swap RA for DS
+    /// but the RA:CT pool is in massive imbalance
     /// or it's verrrry close to expiry
     error InvalidPoolStateOrNearExpired();
 }
