@@ -204,4 +204,9 @@ interface IErrors {
     /// @notice the current NAV share is below the acceptable threshold for deposit
     /// try again later
     error NavBelowThreshold(uint256 referenceNav, uint256 delta, uint256 currentNav);
+
+    /// @notice thrown when trying to swap RA for DS 
+    /// but the RA:CT pool is in massive imbalance 
+    /// or it's verrrry close to expiry
+    error InvalidPoolStateOrNearExpired();
 }
