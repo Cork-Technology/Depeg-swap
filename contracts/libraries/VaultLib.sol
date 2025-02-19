@@ -622,10 +622,12 @@ library VaultLibrary {
             revert IErrors.ZeroDeposit();
         }
 
-        uint256 lvSupply = Asset(self.vault.lv._address).totalSupply();
+        {
+            uint256 lvSupply = Asset(self.vault.lv._address).totalSupply();
 
-        if (lvSupply > redeemParams.amount) {
-            revert IErrors.InvalidAmount();
+            if (lvSupply < redeemParams.amount) {
+                revert IErrors.InvalidAmount();
+            }
         }
 
         if (permitParams.deadline != 0) {
@@ -657,7 +659,7 @@ library VaultLibrary {
 
             MathHelper.RedeemParams memory params = MathHelper.RedeemParams({
                 amountLvClaimed: redeemParams.amount,
-                totalLvIssued: lvSupply,
+                totalLvIssued: Asset(self.vault.lv._address).totalSupply(),
                 totalVaultLp: lpBalance,
                 totalVaultCt: self.vault.balances.ctBalance,
                 totalVaultDs: contracts.flashSwapRouter.getLvReserve(redeemParams.id, dsId),
