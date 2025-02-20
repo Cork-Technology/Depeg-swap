@@ -200,6 +200,11 @@ abstract contract PsmCore is IPSMcore, ModuleState, Context {
         return state.valueLocked(ra);
     }
 
+    function valueLocked(Id id, uint256 dsId, bool ra) external view override returns (uint256) {
+        State storage state = states[id];
+        return state.valueLocked(dsId, ra);
+    }
+
     /**
      * @notice returns amount of ra user will get when Redeem RA with CT+DS
      * @param id The PSM id
