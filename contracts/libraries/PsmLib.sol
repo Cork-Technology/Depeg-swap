@@ -617,6 +617,16 @@ library PsmLibrary {
         }
     }
 
+    function valueLocked(State storage self, uint256 dsId, bool ra) external view returns (uint256) {
+        PsmPoolArchive storage archive = self.psm.poolArchive[dsId];
+
+        if (ra) {
+            return archive.raAccrued;
+        } else {
+            return archive.paAccrued;
+        }
+    }
+
     function exchangeRate(State storage self) external view returns (uint256 rates) {
         uint256 dsId = self.globalAssetIdx;
         DepegSwap storage ds = self.ds[dsId];
