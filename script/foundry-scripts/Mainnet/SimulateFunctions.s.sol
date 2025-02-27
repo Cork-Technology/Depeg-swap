@@ -42,10 +42,10 @@ contract SimulateScript is Script {
     address constant sUSDe = 0x9D39A5DE30e57443BfF2A8307A4256c8797A3497;
     address constant USDT = 0xdAC17F958D2ee523a2206206994597C13D831ec7;
 
-    uint256 constant weth_wstETH_Expiry = 90 days;
-    uint256 constant wstETH_weETH_Expiry = 90 days;
-    uint256 constant sUSDS_USDe_Expiry = 90 days;
-    uint256 constant sUSDe_USDT_Expiry = 90 days;
+    uint256 constant weth_wstETH_Expiry = 90 days + 1;
+    uint256 constant wstETH_weETH_Expiry = 90 days + 1;
+    uint256 constant sUSDS_USDe_Expiry = 90 days + 1;
+    uint256 constant sUSDe_USDT_Expiry = 90 days + 1;
 
     uint256 constant weth_wstETH_ARP = 0.3698630135 ether;
     uint256 constant wstETH_weETH_ARP = 0.4931506847 ether;

@@ -11,11 +11,11 @@ import {Strings} from "openzeppelin-contracts/contracts/utils/Strings.sol";
 import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
 contract SetupMarketScript is Script {
-    CorkConfig public config = CorkConfig(0x2A4594eeb45ca870C9442e8F6a0b2EdE8bd8680B);
-    ModuleCore public moduleCore = ModuleCore(0xC9Fa7245476F0C9F3cA64097Cc52e8e56A9D7Dcf);
-    CorkHook public hook = CorkHook(0x14c4006a2D755C6f6c9458c1F25343303fbc2A88);
+    CorkConfig public config = CorkConfig(0xF0DA8927Df8D759d5BA6d3d714B1452135D99cFC);
+    ModuleCore public moduleCore = ModuleCore(0xCCd90F6435dd78C4ECCED1FA4db0D7242548a2a9);
+    CorkHook public hook = CorkHook(0x5287E8915445aee78e10190559D8Dd21E0E9Ea88);
 
-    address public defaultExchangeProvider = 0x1626929c4fba914041636C6A4D5b22526999F4c6;
+    address public defaultExchangeProvider = 0x7b285955DdcbAa597155968f9c4e901bb4c99263;
 
     address constant weth = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
     address constant wstETH = 0x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca0;
@@ -26,10 +26,10 @@ contract SetupMarketScript is Script {
     address constant sUSDe = 0x9D39A5DE30e57443BfF2A8307A4256c8797A3497;
     address constant USDT = 0xdAC17F958D2ee523a2206206994597C13D831ec7;
 
-    uint256 constant weth_wstETH_Expiry = 90 days;
-    uint256 constant wstETH_weETH_Expiry = 90 days;
-    uint256 constant sUSDS_USDe_Expiry = 90 days;
-    uint256 constant sUSDe_USDT_Expiry = 90 days;
+    uint256 constant weth_wstETH_Expiry = 90 days + 1;
+    uint256 constant wstETH_weETH_Expiry = 90 days + 1;
+    uint256 constant sUSDS_USDe_Expiry = 90 days + 1;
+    uint256 constant sUSDe_USDT_Expiry = 90 days + 1;
 
     uint256 constant weth_wstETH_ARP = 0.3698630135 ether;
     uint256 constant wstETH_weETH_ARP = 0.4931506847 ether;
@@ -139,7 +139,6 @@ contract SetupMarketScript is Script {
 
         config.issueNewDs(id, block.timestamp + 30 minutes);
         console.log("New DS issued for pair");
-        console.log("");
 
         uint8 raDecimals = ERC20(raToken).decimals();
 
