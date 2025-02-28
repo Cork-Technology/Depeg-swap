@@ -13,9 +13,6 @@
 [submodule "lib/BokkyPooBahsDateTimeLibrary"]
 	path = lib/BokkyPooBahsDateTimeLibrary
 	url = https://github.com/bokkypoobah/BokkyPooBahsDateTimeLibrary
-[submodule "lib/Cork-Hook"]
-	path = lib/Cork-Hook
-	url = https://github.com/Cork-Technology/Cork-Hook
 [submodule "lib/v2-core"]
 	path = lib/v2-core
 	url = https://github.com/Uniswap/v2-core
@@ -25,3 +22,6 @@
 [submodule "lib/openzeppelin-foundry-upgrades"]
 	path = lib/openzeppelin-foundry-upgrades
 	url = https://github.com/OpenZeppelin/openzeppelin-foundry-upgrades
+[submodule "lib/Cork-Hook"]
+	path = lib/Cork-Hook
+	url = https://github.com/Cork-Technology/Cork-Hook
