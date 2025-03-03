@@ -503,7 +503,6 @@ contract RouterState is
         uint256 dsId,
         uint256 amount,
         uint256 amountOutMin,
-        address user,
         bytes calldata rawRaPermitSig,
         uint256 deadline,
         BuyAprroxParams calldata params,
@@ -519,11 +518,11 @@ contract RouterState is
             revert PermitNotSupported();
         }
 
-        DepegSwapLibrary.permitForRA(address(assetPair.ra), rawRaPermitSig, user, address(this), amount, deadline);
-        IERC20(assetPair.ra).safeTransferFrom(user, address(this), amount);
+        DepegSwapLibrary.permitForRA(address(assetPair.ra), rawRaPermitSig, msg.sender, address(this), amount, deadline);
+        IERC20(assetPair.ra).safeTransferFrom(msg.sender, address(this), amount);
 
         (result.initialBorrow, result.afterSoldBorrow) =
-            _swapRaforDs(self, assetPair, reserveId, dsId, amount, amountOutMin, user, params, offchainGuess);
+            _swapRaforDs(self, assetPair, reserveId, dsId, amount, amountOutMin, msg.sender, params, offchainGuess);
 
         result.amountOut = ReturnDataSlotLib.get(ReturnDataSlotLib.RETURN_SLOT);
 
@@ -544,7 +543,7 @@ contract RouterState is
             emit RaSwapped(
                 reserveId,
                 dsId,
-                user,
+                msg.sender,
                 amount,
                 result.amountOut,
                 result.ctRefunded,

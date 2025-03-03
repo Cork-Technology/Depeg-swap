@@ -8,6 +8,7 @@ import {Id, Pair, PairLibrary} from "./../../contracts/libraries/Pair.sol";
 import "./../../contracts/interfaces/IPSMcore.sol";
 import "./../../contracts/interfaces/IDsFlashSwapRouter.sol";
 import "forge-std/console.sol";
+import {ERC20Permit} from "@openzeppelin/contracts/token/ERC20/extensions/ERC20Permit.sol";
 
 contract FlashSwapTest is Helper {
     DummyERCWithPermit internal ra;
@@ -132,12 +133,28 @@ contract FlashSwapTest is Helper {
 
         // Execute the swap
         vm.prank(user2);
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                ERC20Permit.ERC2612InvalidSigner.selector, 0x08F4e3688C2e0b1C8CEEFe73220787bcDf605C5F, user2
+            )
+        );
+        flashSwapRouter.swapRaforDs(
+            currencyId,
+            dsId,
+            10 ether,
+            0,
+            rawRaPermitSig,
+            block.timestamp + 100000,
+            defaultBuyApproxParams(),
+            defaultOffchainGuessParams()
+        );
+
+        vm.prank(user1);
         IDsFlashSwapCore.SwapRaForDsReturn memory result = flashSwapRouter.swapRaforDs(
             currencyId,
             dsId,
             10 ether,
             0,
-            user1,
             rawRaPermitSig,
             block.timestamp + 100000,
             defaultBuyApproxParams(),
