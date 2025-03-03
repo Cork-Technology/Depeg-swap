@@ -135,7 +135,13 @@ describe("CorkConfig", function () {
       const { pa, ra } = await loadFixture(helper.backedAssets);
       await expect(
         await corkConfig.write.initializeModuleCore(
-          [pa.address, ra.address, fixture.lvFee, initialDsPrice],
+          [
+            pa.address,
+            ra.address,
+            fixture.lvFee,
+            initialDsPrice,
+            parseEther("1"),
+          ],
           {
             account: defaultSigner.account,
           }
@@ -146,7 +152,13 @@ describe("CorkConfig", function () {
     it("Revert when non MANAGER call initializeModuleCore", async function () {
       await expect(
         corkConfig.write.initializeModuleCore(
-          [pa.address, fixture.ra.address, fixture.lvFee, initialDsPrice],
+          [
+            pa.address,
+            fixture.ra.address,
+            fixture.lvFee,
+            initialDsPrice,
+            parseEther("1"),
+          ],
           {
             account: secondSigner.account,
           }
@@ -166,6 +178,7 @@ describe("CorkConfig", function () {
             parseEther("5"),
             parseEther("1"),
             10n,
+            BigInt(helper.expiry(1000000)),
           ],
           {
             account: defaultSigner.account,
@@ -188,6 +201,7 @@ describe("CorkConfig", function () {
             parseEther("10"),
             parseEther("1"),
             10n,
+            BigInt(helper.expiry(1000000)),
           ],
           {
             account: secondSigner.account,
@@ -205,6 +219,7 @@ describe("CorkConfig", function () {
           parseEther("5.00000001"),
           parseEther("1"),
           10n,
+          BigInt(helper.expiry(1000000)),
         ])
       ).to.be.rejectedWith("InvalidFees()");
     });
@@ -219,6 +234,7 @@ describe("CorkConfig", function () {
             parseEther("10"),
             parseEther("1"),
             10n,
+            BigInt(helper.expiry(1000000)),
           ],
           {
             account: secondSigner.account,
@@ -276,32 +292,38 @@ describe("CorkConfig", function () {
     });
   });
 
-  describe("updatePsmBaseRedemptionFeePrecentage", function () {
-    it("updatePsmBaseRedemptionFeePrecentage should work correctly", async function () {
-      expect(await moduleCore.read.baseRedemptionFee()).to.be.equals(
-        parseEther("5")
-      );
+  describe("updatePsmBaseRedemptionFeePercentage", function () {
+    it("updatePsmBaseRedemptionFeePercentage should work correctly", async function () {
       expect(
-        await corkConfig.write.updatePsmBaseRedemptionFeePrecentage([1000n], {
-          account: defaultSigner.account,
-        })
+        await moduleCore.read.baseRedemptionFee([fixture.Id])
+      ).to.be.equals(parseEther("5"));
+      expect(
+        await corkConfig.write.updatePsmBaseRedemptionFeePercentage(
+          [fixture.Id, 1000n],
+          {
+            account: defaultSigner.account,
+          }
+        )
       ).to.be.ok;
-      expect(await moduleCore.read.baseRedemptionFee()).to.be.equals(
-        parseUnits("1000", 0)
-      );
+      expect(
+        await moduleCore.read.baseRedemptionFee([fixture.Id])
+      ).to.be.equals(parseUnits("1000", 0));
     });
 
-    it("Revert when non MANAGER call updatePsmBaseRedemptionFeePrecentage", async function () {
+    it("Revert when non MANAGER call updatePsmBaseRedemptionFeePercentage", async function () {
       await expect(
-        corkConfig.write.updatePsmBaseRedemptionFeePrecentage([1000n], {
-          account: secondSigner.account,
-        })
+        corkConfig.write.updatePsmBaseRedemptionFeePercentage(
+          [fixture.Id, 1000n],
+          {
+            account: secondSigner.account,
+          }
+        )
       ).to.be.rejectedWith("CallerNotManager()");
     });
   });
 
-  describe("updatePoolsStatus", function () {
-    it("updatePoolsStatus should work correctly", async function () {
+  describe("update Deposit/Withdrawal/Repurchase for PSM or LV", function () {
+    it("update Deposit/Withdrawal/Repurchase Status should work correctly for PSM or LV", async function () {
       const depositAmount = parseEther("10");
       pa.write.approve([fixture.moduleCore.address, depositAmount]);
       const { dsId } = await issueNewSwapAssets(
@@ -312,18 +334,27 @@ describe("CorkConfig", function () {
       // don't actually matter in this context
       const preview = 0n;
 
-      expect(
-        await corkConfig.write.updatePoolsStatus([Id, true, true, true, true], {
-          account: defaultSigner.account,
-        })
-      ).to.be.ok;
+      expect(await corkConfig.write.updatePsmDepositsStatus([Id, true])).to.be
+        .ok;
+      expect(await corkConfig.write.updatePsmWithdrawalsStatus([Id, true])).to
+        .be.ok;
+      expect(await corkConfig.write.updatePsmRepurchasesStatus([Id, true])).to
+        .be.ok;
+      expect(await corkConfig.write.updateLvDepositsStatus([Id, true])).to.be
+        .ok;
+      expect(await corkConfig.write.updateLvWithdrawalsStatus([Id, true])).to.be
+        .ok;
 
       await expect(
         fixture.moduleCore.write.depositPsm([fixture.Id, depositAmount])
       ).to.be.rejectedWith("PSMDepositPaused()");
 
       await expect(
-        fixture.moduleCore.write.redeemRaWithDs([
+        fixture.moduleCore.read.previewDepositPsm([fixture.Id, depositAmount])
+      ).to.be.rejectedWith("PSMDepositPaused()");
+
+      await expect(
+        fixture.moduleCore.write.redeemRaWithDsPa([
           fixture.Id,
           dsId!,
           depositAmount,
@@ -331,7 +362,7 @@ describe("CorkConfig", function () {
       ).to.be.rejectedWith("PSMWithdrawalPaused()");
 
       await expect(
-        fixture.moduleCore.write.redeemWithCT([
+        fixture.moduleCore.read.previewRedeemRaWithDs([
           fixture.Id,
           dsId!,
           depositAmount,
@@ -339,26 +370,92 @@ describe("CorkConfig", function () {
       ).to.be.rejectedWith("PSMWithdrawalPaused()");
 
       await expect(
-        fixture.moduleCore.write.redeemRaWithCtDs([fixture.Id, parseEther("2")])
+        fixture.moduleCore.write.repurchase([fixture.Id, depositAmount])
+      ).to.be.rejectedWith("PSMRepurchasePaused()");
+
+      await expect(
+        fixture.moduleCore.read.previewRepurchase([fixture.Id, depositAmount])
+      ).to.be.rejectedWith("PSMRepurchasePaused()");
+
+      await expect(
+        fixture.moduleCore.write.redeemWithExpiredCt([
+          fixture.Id,
+          dsId!,
+          depositAmount,
+        ])
       ).to.be.rejectedWith("PSMWithdrawalPaused()");
 
       await expect(
-        fixture.moduleCore.write.depositLv([fixture.Id, parseEther("2")])
+        fixture.moduleCore.read.previewRedeemWithCt([
+          fixture.Id,
+          dsId!,
+          depositAmount,
+        ])
+      ).to.be.rejectedWith("PSMWithdrawalPaused()");
+
+      await expect(
+        fixture.moduleCore.write.returnRaWithCtDs([fixture.Id, parseEther("2")])
+      ).to.be.rejectedWith("PSMWithdrawalPaused()");
+
+      await expect(
+        fixture.moduleCore.read.previewReturnRaWithCtDs([
+          fixture.Id,
+          parseEther("2"),
+        ])
+      ).to.be.rejectedWith("PSMWithdrawalPaused()");
+
+      await expect(
+        fixture.moduleCore.write.depositLv([
+          fixture.Id,
+          parseEther("2"),
+          0n,
+          0n,
+        ])
+      ).to.be.rejectedWith("LVDepositPaused()");
+
+      await expect(
+        fixture.moduleCore.read.previewLvDeposit([fixture.Id, parseEther("2")])
       ).to.be.rejectedWith("LVDepositPaused()");
 
       await expect(
         fixture.moduleCore.write.redeemEarlyLv([
-          fixture.Id,
-          defaultSigner.account.address,
-          parseEther("1"),
-          preview
+          {
+            id: fixture.Id, // Id
+            amount: parseEther("1"), // amount
+            amountOutMin: preview, // amountOutMin
+            ammDeadline: BigInt(helper.expiry(1000000)), // ammDeadline
+          },
         ])
       ).to.be.rejectedWith("LVWithdrawalPaused()");
     });
 
-    it("Revert when non MANAGER call updatePoolsStatus", async function () {
+    it("Revert when non MANAGER call update Deposit/Withdrawal/Repurchase status for PSM or LV", async function () {
       await expect(
-        corkConfig.write.updatePoolsStatus([Id, false, false, false, false], {
+        corkConfig.write.updatePsmDepositsStatus([Id, false], {
+          account: secondSigner.account,
+        })
+      ).to.be.rejectedWith("CallerNotManager()");
+
+      await expect(
+        corkConfig.write.updatePsmWithdrawalsStatus([Id, false], {
+          account: secondSigner.account,
+        })
+      ).to.be.rejectedWith("CallerNotManager()");
+
+      await expect(
+        corkConfig.write.updatePsmRepurchasesStatus([Id, false], {
+          account: secondSigner.account,
+        })
+      ).to.be.rejectedWith("CallerNotManager()");
+
+      await expect(
+        corkConfig.write.updateLvDepositsStatus([Id, false], {
+          account: secondSigner.account,
+        })
+      ).to.be.rejectedWith("CallerNotManager()");
+
+      await expect(
+        corkConfig.write.updateLvWithdrawalsStatus([Id, false], {
           account: secondSigner.account,
         })
       ).to.be.rejectedWith("CallerNotManager()");

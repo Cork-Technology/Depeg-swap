@@ -1,7 +1,11 @@
+// SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.24;
 
 library MinimalUniswapV2Library {
     error InvalidToken();
+    error INSUFFICIENT_INPUT_AMOUNT();
+    error INSUFFICIENT_OUTPUT_AMOUNT();
+    error INSUFFICIENT_LIQUIDITY();
 
     // 0.3%
     uint256 public constant FEE = 997;
@@ -64,8 +68,12 @@ library MinimalUniswapV2Library {
         pure
         returns (uint256 amountOut)
     {
-        require(amountIn > 0, "UniswapV2Library: INSUFFICIENT_INPUT_AMOUNT");
-        require(reserveIn > 0 && reserveOut > 0, "UniswapV2Library: INSUFFICIENT_LIQUIDITY");
+        if (amountIn == 0) {
+            revert INSUFFICIENT_INPUT_AMOUNT();
+        }
+        if (reserveIn == 0 || reserveOut == 0) {
+            revert INSUFFICIENT_LIQUIDITY();
+        }
         uint256 amountInWithFee = amountIn * NO_FEE;
         uint256 numerator = amountInWithFee * reserveOut;
         uint256 denominator = reserveIn * 1000;
@@ -79,8 +87,12 @@ library MinimalUniswapV2Library {
         pure
         returns (uint256 amountIn)
     {
-        require(amountOut > 0, "UniswapV2Library: INSUFFICIENT_OUTPUT_AMOUNT");
-        require(reserveIn > 0 && reserveOut > 0, "UniswapV2Library: INSUFFICIENT_LIQUIDITY");
+        if (amountOut == 0) {
+            revert INSUFFICIENT_OUTPUT_AMOUNT();
+        }
+        if (reserveIn == 0 || reserveOut == 0) {
+            revert INSUFFICIENT_LIQUIDITY();
+        }
         uint256 numerator = reserveIn * amountOut * 1000;
         uint256 denominator = reserveOut * NO_FEE;
         amountIn = (numerator / denominator);

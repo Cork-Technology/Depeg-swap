@@ -13,7 +13,7 @@ contract CSTTEST is Helper {
     address secondUser = address(2);
 
     function setUp() external {
-        ceth = new CETH();
+        ceth = new CETH("Cork Competition ETH", "CETH");
         cst = new CST("Cork Staked Ethereum", "CST", address(ceth), DEFAULT_ADDRESS, 0, 0 ether);
         ceth.grantRole(ceth.MINTER_ROLE(), address(cst));
 

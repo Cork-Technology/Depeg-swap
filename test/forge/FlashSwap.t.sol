@@ -2,45 +2,44 @@ pragma solidity ^0.8.24;
 
 import "./../../contracts/core/flash-swaps/FlashSwapRouter.sol";
 import {Helper} from "./Helper.sol";
-import {DummyWETH} from "./../../contracts/dummy/DummyWETH.sol";
+import {DummyERCWithPermit} from "./../../contracts/dummy/DummyERCWithPermit.sol";
 import "./../../contracts/core/assets/Asset.sol";
 import {Id, Pair, PairLibrary} from "./../../contracts/libraries/Pair.sol";
 import "./../../contracts/interfaces/IPSMcore.sol";
 import "./../../contracts/interfaces/IDsFlashSwapRouter.sol";
 import "forge-std/console.sol";
+import {ERC20Permit} from "@openzeppelin/contracts/token/ERC20/extensions/ERC20Permit.sol";
 
 contract FlashSwapTest is Helper {
-    DummyWETH internal ra;
-    DummyWETH internal pa;
+    DummyERCWithPermit internal ra;
+    DummyERCWithPermit internal pa;
     Id public currencyId;
 
-    uint256 public DEFAULT_DEPOSIT_AMOUNT = 40_000 ether;
-    uint256 internal constant MERRYL_LYNCH_DEFAULT_INITIAL_DS_PRICE = 0.005 ether;
+    uint256 public DEFAULT_DEPOSIT_AMOUNT = 2050 ether;
 
     uint256 public dsId;
 
     address public ct;
     address public ds;
 
-    function defaultInitialDsPrice() internal pure override returns (uint256) {
-        return MERRYL_LYNCH_DEFAULT_INITIAL_DS_PRICE;
+    function defaultInitialArp() internal pure virtual override returns (uint256) {
+        return 5 ether;
     }
 
-    function setUp() public {
+    function setUp() public virtual {
         vm.startPrank(DEFAULT_ADDRESS);
 
         deployModuleCore();
 
-        (ra, pa, currencyId) = initializeAndIssueNewDs(block.timestamp + 1 days);
+        (ra, pa, currencyId) = initializeAndIssueNewDsWithRaAsPermit(block.timestamp + 1 days);
         vm.deal(DEFAULT_ADDRESS, 100_000_000_000 ether);
         ra.deposit{value: 1_000_000_000 ether}();
         pa.deposit{value: 1_000_000_000 ether}();
 
-        // 10000 for psm 10000 for LV
         ra.approve(address(moduleCore), 100_000_000_000 ether);
 
         moduleCore.depositPsm(currencyId, DEFAULT_DEPOSIT_AMOUNT);
-        moduleCore.depositLv(currencyId, DEFAULT_DEPOSIT_AMOUNT);
+        moduleCore.depositLv(currencyId, DEFAULT_DEPOSIT_AMOUNT, 0, 0);
 
         // save initial data
         fetchProtocolGeneralInfo();
@@ -51,68 +50,167 @@ contract FlashSwapTest is Helper {
         (ct, ds) = moduleCore.swapAsset(currencyId, dsId);
     }
 
-    // ff to expiry and update infos
-    function ff_expired() internal {
-        // fast forward to expiry
-        uint256 expiry = Asset(ds).expiry();
-        vm.warp(expiry);
-
-        uint256 rolloverBlocks = flashSwapRouter.getRolloverEndInBlockNumber(currencyId);
-        vm.roll(block.number + rolloverBlocks);
-
-        Asset(ct).approve(address(moduleCore), DEFAULT_DEPOSIT_AMOUNT);
-
-        issueNewDs(currencyId, block.timestamp + 1 days);
-
-        fetchProtocolGeneralInfo();
-    }
-
-    function test_buyBack() external {
+    function test_buyBack() public virtual {
         uint256 prevDsId = dsId;
-        uint256 amountOutMin = flashSwapRouter.previewSwapRaforDs(currencyId, dsId, 1 ether);
 
         ra.approve(address(flashSwapRouter), type(uint256).max);
 
-        uint256 amountOut = flashSwapRouter.swapRaforDs(currencyId, dsId, 1 ether, 0);
-        uint256 hpaCummulated = flashSwapRouter.getHpaCumulated(currencyId);
-        uint256 vhpaCummulated = flashSwapRouter.getVhpaCumulated(currencyId);
+        IDsFlashSwapCore.SwapRaForDsReturn memory result = flashSwapRouter.swapRaforDs(
+            currencyId, dsId, 1 ether, 0, defaultBuyApproxParams(), defaultOffchainGuessParams()
+        );
 
-        // we fetch the hpa after expiry so that it's calculated
-        uint256 hpa = flashSwapRouter.getHpa(currencyId);
+        uint256 amountOut = result.amountOut;
 
-        IPSMcore(moduleCore).updatePsmAutoSellStatus(currencyId, DEFAULT_ADDRESS, true);
-
-        amountOutMin = flashSwapRouter.previewSwapRaforDs(currencyId, dsId, 0.1 ether);
+        IPSMcore(moduleCore).updatePsmAutoSellStatus(currencyId, true);
 
         // should fail, not enough liquidity
         vm.expectRevert();
-        uint256 amountOutSell = flashSwapRouter.previewSwapDsforRa(currencyId, dsId, 1000 ether);
+        flashSwapRouter.swapDsforRa(currencyId, dsId, 50 ether, 0);
 
         // should work, even though there's insfuicient liquidity to sell the LV reserves
         uint256 lvReserveBefore = flashSwapRouter.getLvReserve(currencyId, dsId);
-        amountOutMin = flashSwapRouter.previewSwapRaforDs(currencyId, dsId, 100 ether);
-        amountOut = flashSwapRouter.swapRaforDs(currencyId, dsId, 100 ether, amountOutMin);
+
+        result = flashSwapRouter.swapRaforDs(
+            currencyId, dsId, 100 ether, 0, defaultBuyApproxParams(), defaultOffchainGuessParams()
+        );
+        amountOut = result.amountOut;
+
         uint256 lvReserveAfter = flashSwapRouter.getLvReserve(currencyId, dsId);
 
         vm.assertEq(lvReserveBefore, lvReserveAfter);
-        vm.assertEq(amountOut, amountOutMin);
 
         uint256 raBalanceBefore = ra.balanceOf(DEFAULT_ADDRESS);
         Asset(ds).approve(address(flashSwapRouter), 1000 ether);
-        amountOutSell = flashSwapRouter.swapDsforRa(currencyId, dsId, 1000 ether, 0);
+        uint256 amountOutSell = flashSwapRouter.swapDsforRa(currencyId, dsId, 50 ether, 0);
         uint256 raBalanceAfter = ra.balanceOf(DEFAULT_ADDRESS);
 
         vm.assertEq(raBalanceAfter, raBalanceBefore + amountOutSell);
 
         // add more liquidity to the router and AMM
-        moduleCore.depositLv(currencyId, 10_000 ether);
+        moduleCore.depositLv(currencyId, 10_000 ether, 0, 0);
 
         // now if buy, it should sell from reserves
         lvReserveBefore = flashSwapRouter.getLvReserve(currencyId, dsId);
-        uint256 previewAmountOut = flashSwapRouter.previewSwapRaforDs(currencyId, dsId, 10 ether);
-        amountOut = flashSwapRouter.swapRaforDs(currencyId, dsId, 10 ether, 0);
+        result = flashSwapRouter.swapRaforDs(
+            currencyId, dsId, 10 ether, 0, defaultBuyApproxParams(), defaultOffchainGuessParams()
+        );
+        amountOut = result.amountOut;
+
         lvReserveAfter = flashSwapRouter.getLvReserve(currencyId, dsId);
 
         vm.assertTrue(lvReserveAfter < lvReserveBefore);
+    }
+
+    function test_swapRaForDsShouldHandlePermitCorrectly() public virtual {
+        uint256 user1Key = vm.deriveKey("test test test test test test test test test test test junk", 0);
+        // Create address from the private key
+        address user1 = vm.addr(user1Key);
+        address user2 = makeAddr("user2");
+
+        // Give user1 some RA tokens to test with
+        vm.deal(user1, 10 ether);
+        vm.startPrank(user1);
+        ra.deposit{value: 10 ether}();
+        vm.stopPrank();
+
+        bytes memory rawRaPermitSig = getPermit(
+            user1,
+            address(flashSwapRouter),
+            10 ether,
+            ra.nonces(user1),
+            block.timestamp + 100000,
+            user1Key,
+            ra.DOMAIN_SEPARATOR()
+        );
+
+        Asset dsAsset = Asset(ds);
+
+        // Before swap
+        uint256 user1RaBalance = ra.balanceOf(user1);
+        uint256 user1DsBalance = dsAsset.balanceOf(user1);
+        uint256 user2RaBalance = ra.balanceOf(user2);
+        uint256 user2DsBalance = dsAsset.balanceOf(user2);
+
+        // Execute the swap
+        vm.prank(user2);
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                ERC20Permit.ERC2612InvalidSigner.selector, 0x08F4e3688C2e0b1C8CEEFe73220787bcDf605C5F, user2
+            )
+        );
+        flashSwapRouter.swapRaforDs(
+            currencyId,
+            dsId,
+            10 ether,
+            0,
+            rawRaPermitSig,
+            block.timestamp + 100000,
+            defaultBuyApproxParams(),
+            defaultOffchainGuessParams()
+        );
+
+        vm.prank(user1);
+        IDsFlashSwapCore.SwapRaForDsReturn memory result = flashSwapRouter.swapRaforDs(
+            currencyId,
+            dsId,
+            10 ether,
+            0,
+            rawRaPermitSig,
+            block.timestamp + 100000,
+            defaultBuyApproxParams(),
+            defaultOffchainGuessParams()
+        );
+        uint256 amountOut = result.amountOut;
+
+        // After swap
+        vm.assertEq(ra.balanceOf(user1), user1RaBalance - 10 ether);
+        vm.assertEq(dsAsset.balanceOf(user1), user1DsBalance + amountOut);
+        vm.assertEq(ra.balanceOf(user2), user2RaBalance);
+        vm.assertEq(dsAsset.balanceOf(user2), user2DsBalance);
+    }
+
+    function test_swapRaForDsShouldHandleWhenPsmAndLvReservesAreZero() public virtual {
+        address user = address(0x123456789);
+        deal(address(ra), user, 100e18);
+        deal(address(pa), user, 100e18);
+
+        vm.startPrank(user);
+        ra.approve(address(moduleCore), 100e18);
+        // moduleCore.depositPsm(defaultCurrencyId, 1e18);
+        moduleCore.depositLv(defaultCurrencyId, 19e18, 0, 0);
+
+        (address ct, address ds) = moduleCore.swapAsset(defaultCurrencyId, moduleCore.lastDsId(defaultCurrencyId));
+        ERC20(ds).approve(address(flashSwapRouter), 1e18);
+
+        ra.approve(address(flashSwapRouter), 100e18);
+
+        IDsFlashSwapCore.BuyAprroxParams memory buyParams;
+        buyParams.maxApproxIter = 256;
+        buyParams.epsilon = 1e9;
+        buyParams.feeIntervalAdjustment = 1e16;
+        buyParams.precisionBufferPercentage = 1e16;
+        flashSwapRouter.swapRaforDs(defaultCurrencyId, 1, 1e18, 0.9e18, buyParams, defaultOffchainGuessParams());
+        flashSwapRouter.swapRaforDs(defaultCurrencyId, 1, 1e18, 0.9e18, buyParams, defaultOffchainGuessParams());
+
+        vm.startPrank(DEFAULT_ADDRESS);
+        vm.warp(block.timestamp + 100 days);
+        corkConfig.issueNewDs(defaultCurrencyId, block.timestamp + 10 seconds);
+
+        ERC20 lv = ERC20(moduleCore.lvAsset(defaultCurrencyId));
+        lv.approve(address(moduleCore), lv.balanceOf(address(DEFAULT_ADDRESS)));
+        IVault.RedeemEarlyParams memory redeemParams = IVault.RedeemEarlyParams(
+            defaultCurrencyId, lv.balanceOf(address(DEFAULT_ADDRESS)), 0, block.timestamp + 10 seconds, 0, 0, 0
+        );
+        moduleCore.redeemEarlyLv(redeemParams);
+
+        vm.startPrank(user);
+        lv.approve(address(moduleCore), lv.balanceOf(address(user)));
+
+        redeemParams = IVault.RedeemEarlyParams(
+            defaultCurrencyId, lv.balanceOf(address(user)), 0, block.timestamp + 10 seconds, 0, 0, 0
+        );
+        moduleCore.redeemEarlyLv(redeemParams);
+
+        flashSwapRouter.swapRaforDs(defaultCurrencyId, 2, 1e3, 1, buyParams, defaultOffchainGuessParams());
     }
 }

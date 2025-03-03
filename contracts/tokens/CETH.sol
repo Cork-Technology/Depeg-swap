@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: MIT
+// SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.24;
 
 import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
@@ -14,7 +14,7 @@ contract CETH is ERC20, AccessControl {
     bytes32 public constant MINTER_ROLE = keccak256("MINTER_ROLE");
     bytes32 public constant BURNER_ROLE = keccak256("BURNER_ROLE");
 
-    constructor() ERC20("Cork ETH", "CETH") {
+    constructor(string memory name, string memory symbol) ERC20(name, symbol) {
         // Grant the contract deployer the default admin role: they can grant and revoke roles
         _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
 
@@ -40,7 +40,6 @@ contract CETH is ERC20, AccessControl {
     function burn(address from, uint256 amount) public onlyRole(BURNER_ROLE) {
         _burn(from, amount);
     }
-
 
     /**
      * @dev Grant MINTER_ROLE to a new account (Only admin can grant)

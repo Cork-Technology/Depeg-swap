@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.24;
 
 import {DepegSwap, DepegSwapLibrary} from "./DepegSwapLib.sol";
@@ -19,7 +20,7 @@ library Guard {
     error NotExpired();
 
     /// @notice asset is not initialized
-    error Uinitialized();
+    error Uninitialized();
 
     function _onlyNotExpired(DepegSwap storage ds) internal view {
         if (ds.isExpired()) {
@@ -35,7 +36,7 @@ library Guard {
 
     function _onlyInitialized(DepegSwap storage ds) internal view {
         if (!ds.isInitialized()) {
-            revert Uinitialized();
+            revert Uninitialized();
         }
     }
 

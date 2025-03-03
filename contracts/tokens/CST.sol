@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.24;
 
 import {ERC20, IERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
@@ -125,7 +126,7 @@ contract CST is ERC20, Ownable {
         uint256 cethBalance = ceth.balanceOf(address(this));
 
         // Iterate through all users with pending withdrawals
-        for (uint256 i = 0; i < usersToProcess; i++) {
+        for (uint256 i = 0; i < usersToProcess; ++i) {
             address user = pendingUsers[i];
             WithdrawalRequest memory request = requestedWithdrawals[user];
 
@@ -153,7 +154,7 @@ contract CST is ERC20, Ownable {
                     break;
                 }
 
-                i--; // Adjust the index after removal
+                --i; // Adjust the index after removal
             }
         }
     }
