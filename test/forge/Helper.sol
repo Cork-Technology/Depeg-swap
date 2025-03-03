@@ -14,9 +14,9 @@ import {DummyERCWithPermit} from "./../../contracts/dummy/DummyERCWithPermit.sol
 import {DummyWETH} from "./../../contracts/dummy/DummyWETH.sol";
 import {TestModuleCore} from "./TestModuleCore.sol";
 import {TestFlashSwapRouter} from "./TestFlashSwapRouter.sol";
-import "./SigUtils.sol";
+import {SigUtils} from "./SigUtils.sol";
 import {TestHelper} from "Cork-Hook/../test/Helper.sol";
-import "./../../contracts/interfaces/IDsFlashSwapRouter.sol";
+import {IDsFlashSwapCore} from "./../../contracts/interfaces/IDsFlashSwapRouter.sol";
 import "./../../contracts/core/Withdrawal.sol";
 import "./../../contracts/core/assets/ProtectedUnitFactory.sol";
 import {ProtectedUnitRouter} from "../../contracts/core/assets/ProtectedUnitRouter.sol";
@@ -44,6 +44,7 @@ abstract contract Helper is SigUtils, TestHelper {
     Withdrawal internal withdrawalContract;
     ProtectedUnitFactory internal protectedUnitFactory;
     ProtectedUnitRouter internal protectedUnitRouter;
+    EnvGetters internal env = new EnvGetters();
 
     Id defaultCurrencyId;
 
@@ -103,7 +104,7 @@ abstract contract Helper is SigUtils, TestHelper {
     }
 
     function setupAssetFactory() internal {
-        assetFactory.transferOwnership(address(moduleCore));
+        assetFactory.setModuleCore(address(moduleCore));
     }
 
     function defaultBuyApproxParams() internal pure returns (IDsFlashSwapCore.BuyAprroxParams memory) {
@@ -405,6 +406,32 @@ abstract contract Helper is SigUtils, TestHelper {
     function __workaround() internal {
         PrankWorkAround _contract = new PrankWorkAround();
         _contract.prankApply();
+    }
+
+    function envStringNoRevert(string memory key) internal view returns (string memory) {
+        try env.envString(key) returns (string memory value) {
+            return value;
+        } catch {
+            return "";
+        }
+    }
+
+    function envUintNoRevert(string memory key) internal view returns (uint256) {
+        try env.envUint(key) returns (uint256 value) {
+            return value;
+        } catch {
+            return 0;
+        }
+    }
+}
+
+contract EnvGetters is TestHelper {
+    function envString(string memory key) public view returns (string memory) {
+        return vm.envString(key);
+    }
+
+    function envUint(string memory key) public view returns (uint256) {
+        return vm.envUint(key);
     }
 }
 

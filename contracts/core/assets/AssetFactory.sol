@@ -23,6 +23,7 @@ contract AssetFactory is IAssetFactory, OwnableUpgradeable, UUPSUpgradeable {
     string private constant DS_PREFIX = "DS";
     string private constant LV_PREFIX = "LV";
 
+    address public moduleCore;
     uint256 internal idx;
 
     struct SwapPair {
@@ -80,6 +81,13 @@ contract AssetFactory is IAssetFactory, OwnableUpgradeable, UUPSUpgradeable {
     modifier withinLimit(uint8 _limit) {
         if (_limit > MAX_LIMIT) {
             revert LimitTooLong(MAX_LIMIT, _limit);
+        }
+        _;
+    }
+
+    modifier onlyModuleCore() {
+        if (moduleCore != msg.sender) {
+            revert NotModuleCore();
         }
         _;
     }
@@ -184,7 +192,7 @@ contract AssetFactory is IAssetFactory, OwnableUpgradeable, UUPSUpgradeable {
     function deploySwapAssets(DeployParams calldata params)
         external
         override
-        onlyOwner
+        onlyModuleCore
         returns (address ct, address ds)
     {
         if (params.psmExchangeRate == 0) {
@@ -245,7 +253,7 @@ contract AssetFactory is IAssetFactory, OwnableUpgradeable, UUPSUpgradeable {
         uint256 _initialArp,
         uint256 _expiryInterval,
         address _exchangeRateProvider
-    ) external override onlyOwner returns (address lv) {
+    ) external override onlyModuleCore returns (address lv) {
         // signal that a pair actually exists. Only after this it's possible to deploy a swap asset for this pair
         Pair memory pair = Pair(_pa, _ra, _initialArp, _expiryInterval, _exchangeRateProvider);
 
@@ -264,4 +272,12 @@ contract AssetFactory is IAssetFactory, OwnableUpgradeable, UUPSUpgradeable {
 
     // solhint-disable-next-line no-empty-blocks
     function _authorizeUpgrade(address newImplementation) internal override onlyOwner {}
+
+    function setModuleCore(address _moduleCore) external onlyOwner {
+        if (_moduleCore == address(0)) {
+            revert ZeroAddress();
+        }
+        moduleCore = _moduleCore;
+        emit ModuleCoreChanged(moduleCore, _moduleCore);
+    }
 }

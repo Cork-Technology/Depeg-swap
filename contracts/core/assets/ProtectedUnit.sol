@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.24;
 
 // TODO : support permit
@@ -83,7 +84,7 @@ contract ProtectedUnit is
         address _config,
         address _flashSwapRouter
     )
-        ERC20(string(abi.encodePacked("Protected Unit - ", _pairName)), string(abi.encodePacked("HU - ", _pairName)))
+        ERC20(string(abi.encodePacked("Protected Unit - ", _pairName)), string(abi.encodePacked("PU - ", _pairName)))
         ERC20Permit(string(abi.encodePacked("Protected Unit - ", _pairName)))
         Ownable(_config)
     {
@@ -198,18 +199,18 @@ contract ProtectedUnit is
         emit FundsUsed(msg.sender, dsId, amount, result.amountOut);
     }
 
-    function redeemRaWithDsPa(uint256 amount, uint256 amountDs) external autoUpdateDS onlyOwner autoSync {
+    function redeemRaWithDsPa(uint256 amountPa, uint256 amountDs) external autoUpdateDS onlyOwner autoSync {
         uint256 dsId = MODULE_CORE.lastDsId(id);
 
         ds.approve(address(MODULE_CORE), amountDs);
-        IERC20(PA).safeIncreaseAllowance(address(MODULE_CORE), amount);
+        IERC20(PA).safeIncreaseAllowance(address(MODULE_CORE), amountPa);
 
-        MODULE_CORE.redeemRaWithDsPa(id, dsId, amount);
+        MODULE_CORE.redeemRaWithDsPa(id, dsId, amountPa);
 
         // auto pause
         _pause();
 
-        emit RaRedeemed(msg.sender, dsId, amount);
+        emit RaRedeemed(msg.sender, dsId, amountPa);
     }
 
     function fundsAvailable(address token) external view onlyValidToken(token) returns (uint256) {

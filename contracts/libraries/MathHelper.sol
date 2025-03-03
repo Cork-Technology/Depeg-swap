@@ -1,4 +1,3 @@
-// TODO : change math related contract license to MIT/GPL
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.24;
 
@@ -246,7 +245,9 @@ library MathHelper {
     function calculateInternalPrice(NavParams memory params) internal pure returns (InternalPrices memory) {
         UD60x18 t = sub(convert(1), ud(params.oneMinusT));
         UD60x18 ctPrice = calculatePriceQuote(ud(params.reserveRa), ud(params.reserveCt), t);
-        UD60x18 dsPrice = sub(convert(1), ctPrice);
+        // we set the default ds price to 0 if for some reason the ct price is worth above 1 RA
+        // if not, this'll trigger an underflow error
+        UD60x18 dsPrice = ctPrice > convert(1) ? ud(0) : sub(convert(1), ctPrice);
         // we're pricing RA in term of itself
         UD60x18 raPrice = convert(1);
 

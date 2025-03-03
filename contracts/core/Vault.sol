@@ -93,6 +93,7 @@ abstract contract VaultCore is ModuleState, Context, IVault, IVaultLiquidation {
         PermitParams memory permitParams = PermitParams({rawLvPermitSig: bytes(""), deadline: 0});
 
         result = states[redeemParams.id].redeemEarly(_msgSender(), redeemParams, routers, permitParams);
+
         emit LvRedeemEarly(
             redeemParams.id,
             _msgSender(),

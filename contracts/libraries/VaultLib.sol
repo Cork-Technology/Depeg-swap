@@ -113,6 +113,7 @@ library VaultLibrary {
         }
 
         _liquidateIfExpired(self, prevDsId, ammRouter, deadline);
+
         __provideAmmLiquidityFromPool(self, flashSwapRouter, self.ds[self.globalAssetIdx].ct, ammRouter);
     }
 
@@ -617,6 +618,18 @@ library VaultLibrary {
         IVault.ProtocolContracts memory contracts,
         IVault.PermitParams calldata permitParams
     ) external returns (IVault.RedeemEarlyResult memory result) {
+        if (redeemParams.amount == 0) {
+            revert IErrors.ZeroDeposit();
+        }
+
+        {
+            uint256 lvSupply = Asset(self.vault.lv._address).totalSupply();
+
+            if (lvSupply < redeemParams.amount) {
+                revert IErrors.InvalidAmount();
+            }
+        }
+
         if (permitParams.deadline != 0) {
             DepegSwapLibrary.permit(
                 self.vault.lv._address,

@@ -5,11 +5,11 @@ import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import {AccessControl} from "@openzeppelin/contracts/access/AccessControl.sol";
 
 /**
- * @title CETH Contract
+ * @title CUSD Contract
  * @author Cork Team
- * @notice CETH contract represents Cork ETH with role-based minting
+ * @notice CUSD contract represents Cork USD with role-based minting
  */
-contract CETH is ERC20, AccessControl {
+contract CUSD is ERC20, AccessControl {
     // Define a new role identifier for minters
     bytes32 public constant MINTER_ROLE = keccak256("MINTER_ROLE");
     bytes32 public constant BURNER_ROLE = keccak256("BURNER_ROLE");
@@ -24,18 +24,18 @@ contract CETH is ERC20, AccessControl {
     }
 
     /**
-     * @dev Function for minting new Cork ETH (Only accounts with MINTER_ROLE can mint)
+     * @dev Function for minting new Cork USD (Only accounts with MINTER_ROLE can mint)
      * @param to Address of destination wallet
-     * @param amount number of CETH to be minted
+     * @param amount number of CUSD to be minted
      */
     function mint(address to, uint256 amount) public onlyRole(MINTER_ROLE) {
         _mint(to, amount);
     }
 
     /**
-     * @dev Function for burning new Cork ETH (Only accounts with Burner_ROLE can burn)
+     * @dev Function for burning new Cork USD (Only accounts with Burner_ROLE can burn)
      * @param from Address of from wallet
-     * @param amount number of CETH to be burned
+     * @param amount number of CUSD to be burned
      */
     function burn(address from, uint256 amount) public onlyRole(BURNER_ROLE) {
         _burn(from, amount);

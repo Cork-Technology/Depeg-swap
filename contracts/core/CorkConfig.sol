@@ -222,10 +222,6 @@ contract CorkConfig is AccessControl, Pausable {
         moduleCore.updatePsmRepurchaseFeeTreasurySplitPercentage(id, percentage);
     }
 
-    function updatePsmRepurchaseFeePercentage(Id id, uint256 percentage) external onlyManager {
-        moduleCore.updatePsmRepurchaseFeePercentage(id, percentage);
-    }
-
     function setWithdrawalContract(address _withdrawalContract) external onlyManager {
         moduleCore.setWithdrawalContract(_withdrawalContract);
     }
@@ -442,10 +438,6 @@ contract CorkConfig is AccessControl, Pausable {
 
     function deRegisterProtectedUnit(Id id) external onlyManager {
         protectedUnitFactory.deRegisterProtectedUnit(id);
-    }
-
-    function pauseProtectedUnit(address protectedUnit) external onlyManager {
-        ProtectedUnit(protectedUnit).pause();
     }
 
     function pauseProtectedUnitMinting(address protectedUnit) external onlyManager {

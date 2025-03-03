@@ -382,7 +382,7 @@ contract ProtectedUnitTest is Helper {
 
     function test_MintingPaused() public {
         // Pause minting
-        corkConfig.pauseProtectedUnit(address(protectedUnit));
+        corkConfig.pauseProtectedUnitMinting(address(protectedUnit));
 
         // Expect revert when minting while paused
         vm.startPrank(user);
