@@ -1,43 +1,46 @@
+// SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.24;
 
 import {Id} from "../libraries/Pair.sol";
 import {State} from "../libraries/State.sol";
-import {ICommon} from "../interfaces/ICommon.sol";
+import {IErrors} from "./../interfaces/IErrors.sol";
 import {PsmLibrary} from "../libraries/PsmLib.sol";
-import {IUniswapV2Factory} from "../interfaces/uniswap-v2/factory.sol";
 import {RouterState} from "./flash-swaps/FlashSwapRouter.sol";
-import {IUniswapV2Router02} from "../interfaces/uniswap-v2/RouterV2.sol";
+import {ICorkHook} from "./../interfaces/UniV4/IMinimalHook.sol";
+import {ILiquidatorRegistry} from "./../interfaces/ILiquidatorRegistry.sol";
 import {ReentrancyGuardTransient} from "@openzeppelin/contracts/utils/ReentrancyGuardTransient.sol";
+import {Withdrawal} from "./Withdrawal.sol";
+import {CorkConfig} from "./CorkConfig.sol";
+import {Pair} from "../libraries/Pair.sol";
 
 /**
  * @title ModuleState Abstract Contract
  * @author Cork Team
  * @notice Abstract ModuleState contract for providing base for Modulecore contract
  */
-abstract contract ModuleState is ICommon, ReentrancyGuardTransient {
+abstract contract ModuleState is IErrors, ReentrancyGuardTransient {
     using PsmLibrary for State;
 
     mapping(Id => State) internal states;
-    address internal SWAP_ASSET_FACTORY;
 
-    /// @dev in this case is uni v2
-    address internal AMM_FACTORY;
+    address internal SWAP_ASSET_FACTORY;
 
     address internal DS_FLASHSWAP_ROUTER;
 
-    /// @dev in this case is uni v2
-    address internal AMM_ROUTER;
+    /// @dev in this case is uni v4
+    address internal AMM_HOOK;
 
     address internal CONFIG;
+
+    address internal WITHDRAWAL_CONTRACT;
 
     /**
      * @dev checks if caller is config contract or not
      */
-    modifier onlyConfig() {
+    function onlyConfig() internal view {
         if (msg.sender != CONFIG) {
             revert OnlyConfigAllowed();
         }
-        _;
     }
 
     function factory() external view returns (address) {
@@ -46,83 +49,88 @@ abstract contract ModuleState is ICommon, ReentrancyGuardTransient {
 
     function initializeModuleState(
         address _swapAssetFactory,
-        address _ammFactory,
+        address _ammHook,
         address _dsFlashSwapRouter,
-        address _ammRouter,
         address _config
     ) internal {
         if (
-            _swapAssetFactory == address(0) || _ammFactory == address(0) || _dsFlashSwapRouter == address(0)
-                || _ammRouter == address(0) || _config == address(0)
+            _swapAssetFactory == address(0) || _ammHook == address(0) || _dsFlashSwapRouter == address(0)
+                || _config == address(0)
         ) {
             revert ZeroAddress();
         }
 
         SWAP_ASSET_FACTORY = _swapAssetFactory;
-        AMM_FACTORY = _ammFactory;
         DS_FLASHSWAP_ROUTER = _dsFlashSwapRouter;
-        AMM_ROUTER = _ammRouter;
         CONFIG = _config;
+        AMM_HOOK = _ammHook;
     }
 
-    function getRouterCore() internal view returns (RouterState) {
+    function _setWithdrawalContract(address _withdrawalContract) internal {
+        WITHDRAWAL_CONTRACT = _withdrawalContract;
+    }
+
+    function getRouterCore() public view returns (RouterState) {
         return RouterState(DS_FLASHSWAP_ROUTER);
     }
 
-    function getAmmFactory() internal view returns (IUniswapV2Factory) {
-        return IUniswapV2Factory(AMM_FACTORY);
+    function getAmmRouter() public view returns (ICorkHook) {
+        return ICorkHook(AMM_HOOK);
     }
 
-    function getAmmRouter() internal view returns (IUniswapV2Router02) {
-        return IUniswapV2Router02(AMM_ROUTER);
+    function getWithdrawalContract() public view returns (Withdrawal) {
+        return Withdrawal(WITHDRAWAL_CONTRACT);
     }
 
-    modifier onlyInitialized(Id id) {
+    function getTreasuryAddress() public view returns (address) {
+        return CorkConfig(CONFIG).treasury();
+    }
+
+    function onlyInitialized(Id id) internal view {
         if (!states[id].isInitialized()) {
-            revert Uinitialized();
+            revert NotInitialized();
         }
-        _;
     }
 
-    modifier PSMDepositNotPaused(Id id) {
+    function PSMDepositNotPaused(Id id) internal view {
         if (states[id].psm.isDepositPaused) {
             revert PSMDepositPaused();
         }
-        _;
     }
 
-    modifier onlyFlashSwapRouter() {
+    function onlyFlashSwapRouter() internal view {
         if (msg.sender != DS_FLASHSWAP_ROUTER) {
             revert OnlyFlashSwapRouterAllowed();
         }
-        _;
     }
 
-    modifier PSMWithdrawalNotPaused(Id id) {
+    function PSMWithdrawalNotPaused(Id id) internal view {
         if (states[id].psm.isWithdrawalPaused) {
             revert PSMWithdrawalPaused();
         }
-        _;
     }
 
-    modifier PSMRepurchaseNotPaused(Id id) {
+    function PSMRepurchaseNotPaused(Id id) internal view {
         if (states[id].psm.isRepurchasePaused) {
             revert PSMRepurchasePaused();
         }
-        _;
     }
 
-    modifier LVDepositNotPaused(Id id) {
+    function LVDepositNotPaused(Id id) internal view {
         if (states[id].vault.config.isDepositPaused) {
             revert LVDepositPaused();
         }
-        _;
     }
 
-    modifier LVWithdrawalNotPaused(Id id) {
+    function LVWithdrawalNotPaused(Id id) internal view {
         if (states[id].vault.config.isWithdrawalPaused) {
             revert LVWithdrawalPaused();
         }
-        _;
+    }
+
+    function onlyWhiteListedLiquidationContract() internal view {
+        if (!ILiquidatorRegistry(CONFIG).isLiquidationWhitelisted(msg.sender)) {
+            revert OnlyWhiteListed();
+        }
     }
 }

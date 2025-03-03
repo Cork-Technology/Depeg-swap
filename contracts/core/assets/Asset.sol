@@ -1,7 +1,8 @@
+// SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.24;
 
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
-import {IERC20, ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import {ERC20Burnable} from "@openzeppelin/contracts/token/ERC20/extensions/ERC20Burnable.sol";
 import {IExpiry} from "../../interfaces/IExpiry.sol";
 import {IRates} from "../../interfaces/IRates.sol";
@@ -11,18 +12,19 @@ import {CustomERC20Permit} from "../../libraries/ERC/CustomERC20Permit.sol";
  * @author Cork Team
  * @notice Adds Exchange Rate functionality to Assets contracts
  */
-contract ExchangeRate is IRates {
-    uint256 internal immutable RATE;
+
+abstract contract ExchangeRate is IRates {
+    uint256 internal rate;
 
     constructor(uint256 _rate) {
-        RATE = _rate;
+        rate = _rate;
     }
 
     /**
      * @notice returns the current exchange rate
      */
     function exchangeRate() external view override returns (uint256) {
-        return RATE;
+        return rate;
     }
 }
 
@@ -32,7 +34,7 @@ contract ExchangeRate is IRates {
  * @notice Adds Expiry functionality to Assets contracts
  * @dev Used for adding Expiry functionality to contracts like DS
  */
-contract Expiry is IExpiry {
+abstract contract Expiry is IExpiry {
     uint256 internal immutable EXPIRY;
     uint256 internal immutable ISSUED_AT;
 
@@ -76,13 +78,16 @@ contract Expiry is IExpiry {
 contract Asset is ERC20Burnable, CustomERC20Permit, Ownable, Expiry, ExchangeRate {
     uint256 internal immutable DS_ID;
 
-    constructor(string memory prefix, string memory pairName, address _owner, uint256 _expiry, uint256 _rate, uint256 _dsId)
+    string public pairName;
+
+    constructor(string memory _pairName, address _owner, uint256 _expiry, uint256 _rate, uint256 _dsId)
         ExchangeRate(_rate)
-        ERC20(string(abi.encodePacked(prefix, "-", pairName)), string(abi.encodePacked(prefix, "-", pairName)))
-        CustomERC20Permit(string(abi.encodePacked(prefix, "-", pairName)))
+        ERC20(_pairName, _pairName)
+        CustomERC20Permit(_pairName)
         Ownable(_owner)
         Expiry(_expiry)
     {
+        pairName = _pairName;
         DS_ID = _dsId;
     }
 
@@ -100,5 +105,9 @@ contract Asset is ERC20Burnable, CustomERC20Permit, Ownable, Expiry, ExchangeRat
      */
     function dsId() external view virtual returns (uint256) {
         return DS_ID;
+    }
+
+    function updateRate(uint256 newRate) external override onlyOwner {
+        rate = newRate;
     }
 }

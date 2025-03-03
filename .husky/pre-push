@@ -1,0 +1,6 @@
+echo "Checking Solidity formatting with forge fmt..."
+forge fmt --check || {
+    echo "Formatting issues detected! Please run 'forge fmt' to fix them."
+    exit 1
+}
+echo "Solidity formatting status : Passed"

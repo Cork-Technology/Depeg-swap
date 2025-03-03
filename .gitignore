@@ -148,4 +148,7 @@ gas-report.json
 
 #Forge ciles
 /cache_forge
-/broadcast
+
+/.idea/
+
+/optimized-out/

@@ -1,3 +1,9 @@
 # directories
 **/artifacts
 **/node_modules
+**/out
+**/broadcast
+**/cache
+**/cahe/forge
+**/docs
+**/lib

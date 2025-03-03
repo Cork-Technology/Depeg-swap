@@ -5,10 +5,11 @@
   "author": "ziankork <zian@cork.technology>",
   "license": "MIT",
   "scripts": {
+    "prepare": "husky || true",
     "test": "npx hardhat test",
     "test:all": "npx hardhat clean && forge clean && forge test -vvv && npx hardhat test",
     "build": "npx hardhat compile",
-    "compile:organise":"npx hardhat clean && npx hardhat compile && node script/node-scripts/organiseArtifacts.js",
+    "compile:organise": "npx hardhat clean && npx hardhat compile && node script/node-scripts/organiseArtifacts.js",
     "lint:contract": "npx solhint 'contracts/**/*.sol'",
     "lint:contract:fix": "npx solhint 'contracts/**/*.sol' --fix"
   },
@@ -30,12 +31,14 @@
     "hardhat-deploy": "^0.12.4",
     "hardhat-deploy-ethers": "^0.4.2",
     "hardhat-gas-reporter": "^2.1.1",
+    "husky": "^9.1.7",
     "solidity-coverage": "^0.8.0",
     "ts-node": ">=8.0.0",
     "typescript": "~5.0.4",
     "viem": "^2.13.7"
   },
   "dependencies": {
+    "@balancer-labs/v2-solidity-utils": "^4.0.0",
     "@nomicfoundation/hardhat-ethers": "^3.0.6",
     "@nomicfoundation/hardhat-foundry": "^1.1.2",
     "@openzeppelin/contracts": "^5.0.2",
@@ -46,6 +49,6 @@
     "dotenv": "^16.4.5",
     "ethers": "5.6.2",
     "hardhat-contract-sizer": "^2.10.0",
-    "solhint": "^5.0.2"
+    "solhint": "^5.0.5"
   }
 }

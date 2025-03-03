@@ -1,4 +1,4 @@
-pragma solidity 0.8.24;
+pragma solidity ^0.8.24;
 
 library Utils {
     // Function to convert Wei to Ether format (string)

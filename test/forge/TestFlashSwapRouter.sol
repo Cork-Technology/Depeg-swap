@@ -6,8 +6,8 @@ import "./../../contracts/core/flash-swaps/FlashSwapRouter.sol";
 contract TestFlashSwapRouter is RouterState {
     constructor() RouterState() {}
 
-    // ------------------------------------------------------------ Getters ------------------------------ 
-    function getAssetPair(Id id,uint256 dsId) external view returns (AssetPair memory) {
+    // ------------------------------------------------------------ Getters ------------------------------
+    function getAssetPair(Id id, uint256 dsId) external view returns (AssetPair memory) {
         return reserves[id].ds[dsId];
     }
 
@@ -15,12 +15,12 @@ contract TestFlashSwapRouter is RouterState {
         return reserves[id].reserveSellPressurePercentage;
     }
 
-    function getHpaCumulated(Id id) external view returns (uint256) {
-        return reserves[id].hpaCumulated;
+    function getHiyaCumulated(Id id) external view returns (uint256) {
+        return reserves[id].hiyaCumulated;
     }
 
-    function getVhpaCumulated(Id id) external view returns (uint256) {
-        return reserves[id].vhpaCumulated;
+    function getVhiyaCumulated(Id id) external view returns (uint256) {
+        return reserves[id].vhiyaCumulated;
     }
 
     function getDecayDiscountRateInDays(Id id) external view returns (uint256) {
@@ -31,8 +31,7 @@ contract TestFlashSwapRouter is RouterState {
         return reserves[id].rolloverEndInBlockNumber;
     }
 
-    function getHpa(Id id) external view returns (uint256) {
-        return reserves[id].hpa;
+    function getHiya(Id id) external view returns (uint256) {
+        return reserves[id].hiya;
     }
-
 }
