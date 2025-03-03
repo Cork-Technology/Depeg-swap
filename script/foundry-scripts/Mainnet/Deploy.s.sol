@@ -6,13 +6,6 @@ import {AssetFactory} from "../../../contracts/core/assets/AssetFactory.sol";
 import {CorkConfig} from "../../../contracts/core/CorkConfig.sol";
 import {RouterState} from "../../../contracts/core/flash-swaps/FlashSwapRouter.sol";
 import {ModuleCore} from "../../../contracts/core/ModuleCore.sol";
-import {Liquidator} from "../../../contracts/core/liquidators/cow-protocol/Liquidator.sol";
-import {ProtectedUnit} from "../../../contracts/core/assets/ProtectedUnit.sol";
-import {ProtectedUnitFactory} from "../../../contracts/core/assets/ProtectedUnitFactory.sol";
-import {ProtectedUnitRouter} from "../../../contracts/core/assets/ProtectedUnitRouter.sol";
-import {CETH} from "../../../contracts/tokens/CETH.sol";
-import {CUSD} from "../../../contracts/tokens/CUSD.sol";
-import {CST} from "../../../contracts/tokens/CST.sol";
 import {Id} from "../../../contracts/libraries/Pair.sol";
 import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import {PoolManager} from "v4-core/PoolManager.sol";
@@ -29,15 +22,7 @@ contract DeployScript is Script {
     PoolManager public poolManager;
     CorkHook public hook;
     LiquidityToken public liquidityToken;
-    Liquidator public liquidator;
-    ProtectedUnitFactory public protectedUnitFactory;
-    ProtectedUnitRouter public protectedUnitRouter;
     Withdrawal public withdrawal;
-
-    ProtectedUnit public protectedUnit_weth_wstETH;
-    ProtectedUnit public protectedUnit_wstETH_weETH;
-    ProtectedUnit public protectedUnit_sUSDS_USDe;
-    ProtectedUnit public protectedUnit_sUSDe_USDT;
 
     address public defaultExchangeProvider;
 
@@ -62,8 +47,6 @@ contract DeployScript is Script {
     uint256 constant sUSDS_USDe_ARP = 0.9863013699 ether;
     uint256 constant sUSDe_USDT_ARP = 0.4931506849 ether;
 
-    uint256 constant INITIAL_MINT_CAP = 1_000_000 ether; // Cap of 1 million
-
     uint256 public pk = vm.envUint("PRIVATE_KEY");
     address public deployer = vm.addr(pk);
 
@@ -79,27 +62,25 @@ contract DeployScript is Script {
         console.log("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-");
 
         // Deploy the Asset Factory implementation (logic) contract
-        // AssetFactory assetFactoryImplementation = new AssetFactory();
-        // console.log("Asset Factory Implementation    : ", address(assetFactoryImplementation));
+        AssetFactory assetFactoryImplementation = new AssetFactory();
+        console.log("Asset Factory Implementation    : ", address(assetFactoryImplementation));
 
         // Deploy the Asset Factory Proxy contract
-        // bytes memory data = abi.encodeWithSelector(assetFactoryImplementation.initialize.selector);
-        // ERC1967Proxy assetFactoryProxy = new ERC1967Proxy(address(assetFactoryImplementation), data);
-        assetFactory = AssetFactory(0x96E0121D1cb39a46877aaE11DB85bc661f88D5fA);
+        bytes memory data = abi.encodeWithSelector(assetFactoryImplementation.initialize.selector);
+        ERC1967Proxy assetFactoryProxy = new ERC1967Proxy(address(assetFactoryImplementation), data);
         console.log("Asset Factory                   : ", address(assetFactory));
 
         // Deploy the CorkConfig contract
-        config = CorkConfig(0xF0DA8927Df8D759d5BA6d3d714B1452135D99cFC);
+        config = new CorkConfig(deployer, deployer);
         console.log("Cork Config                     : ", address(config));
 
         // Deploy the FlashSwapRouter implementation (logic) contract
-        // RouterState routerImplementation = new RouterState();
-        // console.log("Flashswap Router Implementation : ", address(routerImplementation));
+        RouterState routerImplementation = new RouterState();
+        console.log("Flashswap Router Implementation : ", address(routerImplementation));
 
         // Deploy the FlashSwapRouter Proxy contract
-        // data = abi.encodeWithSelector(routerImplementation.initialize.selector, address(config));
-        // ERC1967Proxy routerProxy = new ERC1967Proxy(address(routerImplementation), data);
-        flashswapRouter = RouterState(0x55B90B37416DC0Bd936045A8110d1aF3B6Bf0fc3);
+        data = abi.encodeWithSelector(routerImplementation.initialize.selector, address(config));
+        ERC1967Proxy routerProxy = new ERC1967Proxy(address(routerImplementation), data);
         console.log("Flashswap Router Proxy          : ", address(flashswapRouter));
 
         // Deploy the ModuleCore implementation (logic) contract
@@ -122,7 +103,7 @@ contract DeployScript is Script {
         console.log("Hook                            : ", hookAddress);
 
         // Deploy the ModuleCore Proxy contract
-        bytes memory data = abi.encodeWithSelector(
+        data = abi.encodeWithSelector(
             moduleCoreImplementation.initialize.selector,
             address(assetFactory),
             address(hook),
@@ -135,19 +116,6 @@ contract DeployScript is Script {
         console.log("Module Core                     : ", address(moduleCore));
         console.log("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-");
 
-        // // Deploy the Liquidator contract
-        // liquidator = new Liquidator(address(config), deployer, SETTLEMENT_CONTRACT, address(moduleCore));
-        // console.log("Liquidator                      : ", address(liquidator));
-        // console.log("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-");
-
-        // // Deploy the ProtectedUnitFactry contract
-        // protectedUnitRouter = new ProtectedUnitRouter();
-        // console.log("ProtectedUnit Router            : ", address(protectedUnitRouter));
-
-        // protectedUnitFactory = new ProtectedUnitFactory(address(moduleCore), address(config), address(flashswapRouter));
-        // config.setProtectedUnitFactory(address(protectedUnitFactory));
-        // console.log("ProtectedUnit Factory           : ", address(protectedUnitFactory));
-
         withdrawal = new Withdrawal(address(moduleCore));
         console.log("Withdrawal                      : ", address(withdrawal));
 
@@ -155,73 +123,20 @@ contract DeployScript is Script {
         console.log("Exchange Rate Provider          : ", defaultExchangeProvider);
         console.log("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-");
 
-        // assetFactory.setModuleCore(address(moduleCore));
-        // // hook.transferOwnership(address(config));
-        // console.log("Transferred ownerships to Modulecore");
+        assetFactory.setModuleCore(address(moduleCore));
+        console.log("Transferred ownerships to Modulecore");
 
-        // config.setModuleCore(address(moduleCore));
-        // config.setFlashSwapCore(address(flashswapRouter));
-        // config.setHook(address(hook));
-        // // config.setProtectedUnitFactory(address(protectedUnitFactory));
-        // config.setTreasury(0xb9EEeBa3659466d251E8A732dB2341E390AA059F);
-        // config.setWithdrawalContract(address(withdrawal));
-        // console.log("Contracts configured in Config");
+        config.setModuleCore(address(moduleCore));
+        config.setFlashSwapCore(address(flashswapRouter));
+        config.setHook(address(hook));
+        config.setTreasury(0xb9EEeBa3659466d251E8A732dB2341E390AA059F);
+        config.setWithdrawalContract(address(withdrawal));
+        console.log("Contracts configured in Config");
 
-        // flashswapRouter.setModuleCore(address(moduleCore));
-        // flashswapRouter.setHook(address(hook));
-        // console.log("Contracts configured in Modulecore");
-        // console.log("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-");
-
-        // deployProtectedUnits(
-        //     wstETH,
-        //     weth,
-        //     weth_wstETH_Expiry,
-        //     string.concat("PU", ERC20(weth).name(), "-", ERC20(wstETH).name()),
-        //     weth_wstETH_ARP
-        // );
-        // deployProtectedUnits(
-        //     weETH,
-        //     wstETH,
-        //     wstETH_weETH_Expiry,
-        //     string.concat("PU", ERC20(wstETH).name(), "-", ERC20(weETH).name()),
-        //     wstETH_weETH_ARP
-        // );
-        // deployProtectedUnits(
-        //     USDe,
-        //     sUSDS,
-        //     sUSDS_USDe_Expiry,
-        //     string.concat("PU", ERC20(sUSDS).name(), "-", ERC20(USDe).name()),
-        //     sUSDS_USDe_ARP
-        // );
-        // deployProtectedUnits(
-        //     USDT,
-        //     sUSDe,
-        //     sUSDe_USDT_Expiry,
-        //     string.concat("PU", ERC20(sUSDe).name(), "-", ERC20(USDT).name()),
-        //     sUSDe_USDT_ARP
-        // );
-        vm.stopBroadcast();
-    }
-
-    function deployProtectedUnits(
-        address paToken,
-        address raToken,
-        uint256 expiryPeriod,
-        string memory pairName,
-        uint256 arp
-    ) public {
-        console.log("Pair: ", ERC20(raToken).name(), "-", ERC20(paToken).name());
-
-        ProtectedUnit protectedUnit = ProtectedUnit(
-            config.deployProtectedUnit(
-                moduleCore.getId(paToken, raToken, arp, expiryPeriod, defaultExchangeProvider),
-                paToken,
-                raToken,
-                pairName,
-                INITIAL_MINT_CAP
-            )
-        );
-        console.log("PU address                      : ", address(protectedUnit));
+        flashswapRouter.setModuleCore(address(moduleCore));
+        flashswapRouter.setHook(address(hook));
+        console.log("Contracts configured in Modulecore");
         console.log("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-");
+        vm.stopBroadcast();
     }
 }

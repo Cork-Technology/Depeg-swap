@@ -121,8 +121,7 @@ contract SimulateScript is Script {
 
         console.log("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-");
 
-        // Market[4] memory markets = [weth_wstETH_market, wstETH_weETH_market, sUSDS_USDe_market, sUSDe_USDT_market];
-        Market[1] memory markets = [weth_wstETH_market];
+        Market[4] memory markets = [weth_wstETH_market, wstETH_weETH_market, sUSDS_USDe_market, sUSDe_USDT_market];
 
         for (uint256 i = 0; i < markets.length; i++) {
             Market memory market = markets[i];
