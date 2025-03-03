@@ -120,6 +120,11 @@ contract ProtectedUnitFactory is IProtectedUnitFactory {
         return protectedUnitContracts[_id];
     }
 
+    /**
+     * @notice Deregisters a protected unit by its ID.
+     * @dev This function can only be called by the configuration contract.
+     * @param _id The ID of the protected unit to deregister.
+     */
     function deRegisterProtectedUnit(Id _id) external onlyConfig {
         delete protectedUnitContracts[_id];
     }

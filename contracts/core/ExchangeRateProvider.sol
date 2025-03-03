@@ -27,6 +27,12 @@ contract ExchangeRateProvider is IErrors, IExchangeRateProvider {
         }
     }
 
+    /**
+     * @dev Constructor for the ExchangeRateProvider contract.
+     * @param _config The address of the configuration contract. Must not be the zero address.
+     * @notice Initializes the contract with the provided configuration address.
+     * @dev Reverts with `IErrors.ZeroAddress` if `_config` is the zero address.
+     */
     constructor(address _config) {
         if (_config == address(0)) {
             revert IErrors.ZeroAddress();
@@ -34,10 +40,20 @@ contract ExchangeRateProvider is IErrors, IExchangeRateProvider {
         CONFIG = _config;
     }
 
+    /**
+     * @notice Returns a default exchange rate.
+     * @dev This function currently returns 0 and is reserved for future use.
+     * @return uint256 The default exchange rate.
+     */
     function rate() external view returns (uint256) {
         return 0; // For future use
     }
 
+    /**
+     * @notice Returns the exchange rate for a given ID.
+     * @param id The identifier for which the exchange rate is requested.
+     * @return uint256 The exchange rate associated with the given ID.
+     */
     function rate(Id id) external view returns (uint256) {
         return exchangeRate[id];
     }

@@ -59,6 +59,15 @@ contract Liquidator is ILiquidator {
         _;
     }
 
+    /**
+     * @notice Constructor for the Liquidator contract.
+     * @param _config The address of the configuration contract.
+     * @param _hookTrampoline The address of the hook trampoline contract.
+     * @param _settlementContract The address of the settlement contract.
+     * @param _moduleCore The address of the module core contract.
+     * @dev Initializes the contract with the provided addresses and sets up the base addresses for vault and protected unit liquidators.
+     * @dev Reverts if any of the provided addresses are zero.
+     */
     constructor(address _config, address _hookTrampoline, address _settlementContract, address _moduleCore) {
         if (
             _config == address(0) || _hookTrampoline == address(0) || _settlementContract == address(0)
@@ -74,10 +83,20 @@ contract Liquidator is ILiquidator {
         MODULE_CORE = _moduleCore;
     }
 
+    /**
+     * @notice Fetches the address of the vault receiver for a given reference ID.
+     * @param refId The reference ID used to predict the deterministic address.
+     * @return receiver The predicted address of the vault receiver.
+     */
     function fetchVaultReceiver(bytes32 refId) external returns (address receiver) {
         receiver = Clones.predictDeterministicAddress(VAULT_LIQUIDATOR_BASE, refId, address(this));
     }
 
+    /**
+     * @notice Fetches the address of the protected unit receiver for a given reference ID.
+     * @param refId The reference ID used to predict the deterministic address.
+     * @return receiver The predicted address of the protected unit receiver.
+     */
     function fetchProtectedUnitReceiver(bytes32 refId) external returns (address receiver) {
         receiver = Clones.predictDeterministicAddress(PROTECTED_UNIT_LIQUIDATOR_BASE, refId, address(this));
     }
@@ -112,6 +131,17 @@ contract Liquidator is ILiquidator {
         SafeERC20.safeTransfer(IERC20(details.sellToken), liquidator, details.sellAmount);
     }
 
+    /**
+     * @notice Creates a new order vault and initializes the liquidator for the vault.
+     * @dev This function can only be called by an authorized liquidator.
+     * @param params The parameters required to create the vault order, encapsulated in a struct.
+     * @param params.sellToken The address of the token to be sold.
+     * @param params.sellAmount The amount of the sell token.
+     * @param params.buyToken The address of the token to be bought.
+     * @param params.internalRefId The internal reference ID for the order.
+     * @param params.orderUid The unique identifier for the order.
+     * @param params.vaultId The ID of the vault where the funds will be moved.
+     */
     function createOrderVault(ILiquidator.CreateVaultOrderParams calldata params) external onlyLiquidator {
         Details memory details = Details(params.sellToken, params.sellAmount, params.buyToken);
 
@@ -133,6 +163,17 @@ contract Liquidator is ILiquidator {
             liquidator
         );
     }
+    /**
+     * @notice Creates a protected unit order.
+     * @dev This function initializes a protected unit liquidator, records the order details, moves the protected unit funds, and emits an event with the order details.
+     * @param params The parameters required to create a protected unit order, encapsulated in `ILiquidator.CreateProtectedUnitOrderParams`.
+     * @param params.internalRefId The internal reference ID for the order.
+     * @param params.sellToken The address of the token to be sold.
+     * @param params.sellAmount The amount of the token to be sold.
+     * @param params.buyToken The address of the token to be bought.
+     * @param params.orderUid The unique identifier for the order.
+     * @param params.protectedUnit The address of the protected unit.
+     */
 
     function createOrderProtectedUnit(ILiquidator.CreateProtectedUnitOrderParams calldata params)
         external
@@ -160,6 +201,11 @@ contract Liquidator is ILiquidator {
         );
     }
 
+    /**
+     * @notice Finalizes the vault order associated with the given reference ID.
+     * @dev This function can only be called by an authorized liquidator.
+     * @param refId The reference ID of the order to be finalized.
+     */
     function finishVaultOrder(bytes32 refId) external onlyLiquidator {
         Orders memory order = orderCalls[refId];
 
@@ -168,6 +214,11 @@ contract Liquidator is ILiquidator {
         delete orderCalls[refId];
     }
 
+    /**
+     * @notice Completes the protected unit order identified by the given reference ID.
+     * @dev This function can only be called by an authorized liquidator.
+     * @param refId The reference ID of the order to be completed.
+     */
     function finishProtectedUnitOrder(bytes32 refId) external onlyLiquidator {
         Orders memory order = orderCalls[refId];
 
@@ -176,6 +227,15 @@ contract Liquidator is ILiquidator {
         delete orderCalls[refId];
     }
 
+    /**
+     * @notice Finalizes a protected unit order and executes a trade.
+     * @dev This function attempts to move funds and use them for a trade. If the trade fails, it does not revert.
+     * @param refId The reference ID of the order.
+     * @param amountOutMin The minimum amount of output tokens expected from the trade.
+     * @param params The parameters for the buy approximation.
+     * @param offchainGuess The offchain guess parameters.
+     * @return amountOut The amount of output tokens received from the trade.
+     */
     function finishProtectedUnitOrderAndExecuteTrade(
         bytes32 refId,
         uint256 amountOutMin,

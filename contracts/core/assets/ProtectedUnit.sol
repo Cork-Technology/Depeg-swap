@@ -159,6 +159,13 @@ contract ProtectedUnit is
         _raReserves = raReserve;
     }
 
+    /**
+     * @notice Requests liquidation funds from the contract.
+     * @dev This function can only be called by the liquidation contract and for valid tokens.
+     *      It ensures the contract has sufficient funds before transferring the requested amount.
+     * @param amount The amount of tokens to request for liquidation.
+     * @param token The address of the token to request.
+     */
     function requestLiquidationFunds(uint256 amount, address token)
         external
         onlyLiquidationContract
@@ -176,12 +183,28 @@ contract ProtectedUnit is
         emit LiquidationFundsRequested(msg.sender, token, amount);
     }
 
+    /**
+     * @notice Receives funds in the specified token and amount.
+     * @dev Transfers the specified amount of the token from the sender to this contract.
+     * Emits a {FundsReceived} event upon successful transfer.
+     * @param amount The amount of the token to be transferred.
+     * @param token The address of the token to be transferred.
+     */
     function receiveFunds(uint256 amount, address token) external onlyValidToken(token) autoSync {
         IERC20(token).safeTransferFrom(msg.sender, address(this), amount);
 
         emit FundsReceived(msg.sender, token, amount);
     }
 
+    /**
+     * @notice Uses funds to perform a flash swap.
+     * @dev This function increases the allowance for the flash swap router, performs the swap, and emits an event.
+     * @param amount The amount of RA tokens to be swapped.
+     * @param amountOutMin The minimum amount of DS tokens expected from the swap.
+     * @param params The parameters for the flash swap.
+     * @param offchainGuess The offchain guess parameters for the swap.
+     * @return amountOut The amount of DS tokens received from the swap.
+     */
     function useFunds(
         uint256 amount,
         uint256 amountOutMin,
@@ -199,6 +222,13 @@ contract ProtectedUnit is
         emit FundsUsed(msg.sender, dsId, amount, result.amountOut);
     }
 
+    /**
+     * @notice Redeems RA tokens using DS and PA tokens.
+     * @dev This function allows the owner to redeem RA tokens by providing DS and PA tokens.
+     * It automatically updates DS, syncs the state, and pauses the contract after redemption.
+     * @param amountPa The amount of PA tokens to be used for redemption.
+     * @param amountDs The amount of DS tokens to be used for redemption.
+     */
     function redeemRaWithDsPa(uint256 amountPa, uint256 amountDs) external autoUpdateDS onlyOwner autoSync {
         uint256 dsId = MODULE_CORE.lastDsId(id);
 
@@ -213,6 +243,12 @@ contract ProtectedUnit is
         emit RaRedeemed(msg.sender, dsId, amountPa);
     }
 
+    /**
+     * @notice Returns the available funds of a specified token.
+     * @dev This function checks the balance of the specified token in the contract.
+     * @param token The address of the token to check the balance of.
+     * @return The balance of the specified token in the contract.
+     */
     function fundsAvailable(address token) external view onlyValidToken(token) returns (uint256) {
         return IERC20(token).balanceOf(address(this));
     }
@@ -331,6 +367,18 @@ contract ProtectedUnit is
     }
 
     // if pa do not support permit, then user can still use this function with only ds permit and manual approval on the PA side
+    /**
+     * @notice Mints new tokens to the specified minter address.
+     * @dev This function requires valid signatures for DS and optionally PA permits.
+     *      It also ensures the contract is not paused and prevents reentrancy.
+     * @param minter The address to which the minted tokens will be sent.
+     * @param amount The amount of tokens to be minted.
+     * @param rawDsPermitSig The raw signature for the DS permit.
+     * @param rawPaPermitSig The raw signature for the PA permit (optional).
+     * @param deadline The deadline timestamp by which the permit signatures must be valid.
+     * @return dsAmount The amount of DS tokens minted.
+     * @return paAmount The amount of PA tokens minted.
+     */
     function mint(
         address minter,
         uint256 amount,
@@ -457,6 +505,13 @@ contract ProtectedUnit is
     }
 
     //  Make reserves in sync with the actual balance of the contract
+    /**
+     * @notice Transfers excess tokens from the contract to the specified address.
+     * @dev This function is protected against reentrancy attacks by the `nonReentrant` modifier.
+     *      It checks the balance of PA, RA, and ds tokens in the contract and transfers any amount
+     *      exceeding the respective reserves to the specified address.
+     * @param to The address to which the excess tokens will be transferred.
+     */
     function skim(address to) external nonReentrant {
         if (PA.balanceOf(address(this)) - paReserve > 0) {
             PA.transfer(to, PA.balanceOf(address(this)) - paReserve);

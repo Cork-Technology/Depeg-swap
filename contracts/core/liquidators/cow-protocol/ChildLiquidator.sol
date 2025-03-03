@@ -61,6 +61,12 @@ abstract contract ChildLiquidatorBase is OwnableUpgradeable {
 }
 
 contract ProtectedUnitChildLiquidator is ChildLiquidatorBase {
+    /**
+     * @notice Moves the funds from this contract to the vault.
+     * @dev This function transfers the buy token and sell token balances of this contract to the vault by approving the vault to transfer the funds.
+     * @return funds The amount of buy token funds moved to the vault.
+     * @return leftover The amount of sell token leftover moved to the vault.
+     */
     function moveFunds() external onlyLiquidator returns (uint256 funds, uint256 leftover) {
         // move buy token balance of this contract to vault, by approving the vault to transfer the funds
         funds = IERC20(order.buyToken).balanceOf(address(this));
@@ -77,6 +83,12 @@ contract ProtectedUnitChildLiquidator is ChildLiquidatorBase {
 }
 
 contract VaultChildLiquidator is ChildLiquidatorBase {
+    /**
+     * @notice Moves the funds associated with a given order ID to the vault.
+     * @dev This function transfers the buy token and leftover sell token balances of this contract to the vault.
+     * It approves the vault to transfer the funds before calling the vault's functions to receive the funds.
+     * @param id The ID of the order whose funds are being moved.
+     */
     function moveFunds(Id id) external onlyLiquidator {
         // move buy token balance of this contract to vault, by approving the vault to transfer the funds
         uint256 balance = IERC20(order.buyToken).balanceOf(address(this));

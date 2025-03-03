@@ -49,6 +49,10 @@ contract ModuleCore is OwnableUpgradeable, UUPSUpgradeable, PsmCore, Initialize,
         initializeModuleState(_swapAssetFactory, _ammHook, _flashSwapRouter, _config);
     }
 
+    /**
+     * @notice Sets the withdrawal contract address
+     * @param _withdrawalContract Address of the new withdrawal contract
+     */
     function setWithdrawalContract(address _withdrawalContract) external {
         onlyConfig();
         _setWithdrawalContract(_withdrawalContract);
@@ -58,18 +62,39 @@ contract ModuleCore is OwnableUpgradeable, UUPSUpgradeable, PsmCore, Initialize,
     // solhint-disable-next-line no-empty-blocks
     function _authorizeUpgrade(address newImplementation) internal override onlyOwner {}
 
+    /**
+     * @notice Gets the message sender address
+     * @return address The address of the message sender
+     */
     function _msgSender() internal view override(ContextUpgradeable, Context) returns (address) {
         return super._msgSender();
     }
 
+    /**
+     * @notice Gets the message data
+     * @return bytes The message data
+     */
     function _msgData() internal view override(ContextUpgradeable, Context) returns (bytes calldata) {
         return super._msgData();
     }
 
+    /**
+     * @notice Gets the context suffix length
+     * @return uint256 The length of the context suffix
+     */
     function _contextSuffixLength() internal view override(ContextUpgradeable, Context) returns (uint256) {
         return super._contextSuffixLength();
     }
 
+    /**
+     * @notice Generates a unique identifier for a pair of assets
+     * @param pa Protected Asset address
+     * @param ra Reserve Asset address
+     * @param initialArp Initial ARP value
+     * @param expiry Expiry timestamp
+     * @param exchangeRateProvider Address of exchange rate provider
+     * @return Id The unique identifier for the pair
+     */
     function getId(address pa, address ra, uint256 initialArp, uint256 expiry, address exchangeRateProvider)
         external
         pure
@@ -78,6 +103,15 @@ contract ModuleCore is OwnableUpgradeable, UUPSUpgradeable, PsmCore, Initialize,
         return PairLibrary.initalize(pa, ra, initialArp, expiry, exchangeRateProvider).toId();
     }
 
+    /**
+     * @notice Retrieves market information for a given pair ID
+     * @param id The unique identifier for the pair
+     * @return pa Protected Asset address
+     * @return ra Reserve Asset address
+     * @return initialArp Initial ARP value
+     * @return expiryInterval Expiry interval
+     * @return exchangeRateProvider Exchange rate provider address
+     */
     function markets(Id id)
         external
         view
@@ -91,6 +125,15 @@ contract ModuleCore is OwnableUpgradeable, UUPSUpgradeable, PsmCore, Initialize,
         exchangeRateProvider = pair.exchangeRateProvider;
     }
 
+    /**
+     * @notice Initializes the core module with the provided parameters.
+     * @dev This function can only be called by the configuration contract.
+     * @param pa The address of the primary asset.
+     * @param ra The address of the reserve asset.
+     * @param initialArp The initial annualized rate percentage.
+     * @param expiryInterval The interval after which the module expires.
+     * @param exchangeRateProvider The address of the exchange rate provider.
+     */
     function initializeModuleCore(
         address pa,
         address ra,
@@ -121,6 +164,14 @@ contract ModuleCore is OwnableUpgradeable, UUPSUpgradeable, PsmCore, Initialize,
         emit InitializedModuleCore(id, pa, ra, lv, expiryInterval, initialArp, exchangeRateProvider);
     }
 
+    /**
+     * @notice Issues a new Depeg Swap (Ds) for the given ID with specified parameters.
+     * @dev This function can only be called by the contract owner or an authorized entity.
+     * @param id The unique identifier for the Depeg Swap.
+     * @param decayDiscountRateInDays The rate at which the discount decays over days.
+     * @param rolloverPeriodInblocks The number of blocks for the rollover period.
+     * @param ammLiquidationDeadline The deadline for AMM liquidation in blocks.
+     */
     function issueNewDs(
         Id id,
         uint256 decayDiscountRateInDays,
@@ -162,6 +213,13 @@ contract ModuleCore is OwnableUpgradeable, UUPSUpgradeable, PsmCore, Initialize,
         );
     }
 
+    /**
+     * @notice Initializes a new module core instance with provided parameters
+     * @param id The unique identifier for the pair
+     * @param ct Address of the CT token
+     * @param ds Address of the DS token
+     * @param _expiryInterval Expiry interval for the pair
+     */
     function _initOnNewIssuance(Id id, address ct, address ds, uint256 _expiryInterval) internal {
         State storage state = states[id];
 
@@ -176,6 +234,11 @@ contract ModuleCore is OwnableUpgradeable, UUPSUpgradeable, PsmCore, Initialize,
         emit Issued(id, idx, block.timestamp + _expiryInterval, ds, ct, AmmId.unwrap(toAmmId(ra, ct)));
     }
 
+    /**
+     * @notice Updates the repurchase fee rate for a given pair
+     * @param id The unique identifier for the pair
+     * @param newRepurchaseFeePercentage New repurchase fee percentage
+     */
     function updateRepurchaseFeeRate(Id id, uint256 newRepurchaseFeePercentage) external {
         onlyConfig();
         State storage state = states[id];
@@ -287,6 +350,11 @@ contract ModuleCore is OwnableUpgradeable, UUPSUpgradeable, PsmCore, Initialize,
         emit PsmBaseRedemptionFeePercentageUpdated(id, newPsmBaseRedemptionFeePercentage);
     }
 
+    /**
+     * @notice Gets the expiry timestamp for a given pair
+     * @param id The unique identifier for the pair
+     * @return expiry The expiry timestamp
+     */
     function expiry(Id id) external view override returns (uint256 expiry) {
         expiry = PsmLibrary.nextExpiry(states[id]);
     }
