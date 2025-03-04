@@ -27,9 +27,10 @@ struct DSData {
 }
 
 /**
- * @title ProtectedUnit
- * @notice This contract allows minting and dissolving ProtectedUnit tokens in exchange for two underlying assets.
- * @dev The contract uses OpenZeppelin's ERC20, ReentrancyGuardTransient,Pausable and Ownable modules.
+ * @title Protected Unit Token
+ * @notice A token that represents a bundled position of multiple assets (DS, PA, and RA tokens)
+ * @dev This contract allows users to create (mint) and redeem (burn) Protected Unit tokens
+ * by depositing or withdrawing the underlying assets in the correct proportions
  */
 contract ProtectedUnit is
     ERC20Permit,
@@ -68,11 +69,15 @@ contract ProtectedUnit is
     mapping(address => uint256) private dsIndexMap;
 
     /**
-     * @dev Constructor that sets the DS and pa tokens and initializes the mint cap.
-     * @param _moduleCore Address of the moduleCore.
-     * @param _pa Address of the pa token.
-     * @param _pairName Name of the ProtectedUnit pair.
-     * @param _mintCap Initial mint cap for the ProtectedUnit tokens.
+     * @notice Creates a new Protected Unit token contract
+     * @param _moduleCore Address of the core module that manages this token
+     * @param _id Unique identifier for this Protected Unit
+     * @param _pa Address of the Protected Asset token
+     * @param _ra Address of the Return Asset token
+     * @param _pairName Human-readable name for this token pair
+     * @param _mintCap Maximum number of tokens that can be created
+     * @param _config Address of the configuration contract
+     * @param _flashSwapRouter Address of the flash swap router
      */
     constructor(
         address _moduleCore,
@@ -153,6 +158,12 @@ contract ProtectedUnit is
         return address(_fetchLatestDS());
     }
 
+    /**
+     * @notice Gets the current reserves of all tokens held by this contract
+     * @return _dsReserves Amount of DS tokens in reserve
+     * @return _paReserves Amount of PA tokens in reserve
+     * @return _raReserves Amount of RA tokens in reserve
+     */
     function getReserves() external view returns (uint256 _dsReserves, uint256 _paReserves, uint256 _raReserves) {
         _dsReserves = dsReserve;
         _paReserves = paReserve;
@@ -160,11 +171,9 @@ contract ProtectedUnit is
     }
 
     /**
-     * @notice Requests liquidation funds from the contract.
-     * @dev This function can only be called by the liquidation contract and for valid tokens.
-     *      It ensures the contract has sufficient funds before transferring the requested amount.
-     * @param amount The amount of tokens to request for liquidation.
-     * @param token The address of the token to request.
+     * @notice Allows the liquidator to request funds for liquidation
+     * @param amount How many tokens to request
+     * @param token Which token to request (must be PA or RA)
      */
     function requestLiquidationFunds(uint256 amount, address token)
         external
@@ -184,11 +193,11 @@ contract ProtectedUnit is
     }
 
     /**
-     * @notice Receives funds in the specified token and amount.
+     * @notice Accepts incoming funds from liquidation or other operations
      * @dev Transfers the specified amount of the token from the sender to this contract.
      * Emits a {FundsReceived} event upon successful transfer.
-     * @param amount The amount of the token to be transferred.
-     * @param token The address of the token to be transferred.
+     * @param amount How many tokens are being received
+     * @param token Which token is being received (must be PA or RA)
      */
     function receiveFunds(uint256 amount, address token) external onlyValidToken(token) autoSync {
         IERC20(token).safeTransferFrom(msg.sender, address(this), amount);

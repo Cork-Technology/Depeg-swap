@@ -6,9 +6,9 @@ import {Id, Pair, PairLibrary} from "../../libraries/Pair.sol";
 import {IProtectedUnitFactory} from "../../interfaces/IProtectedUnitFactory.sol";
 
 /**
- * @title ProtectedUnitFactory
- * @notice This contract is used to deploy and manage multiple ProtectedUnit contracts for different asset pairs.
- * @dev The factory contract keeps track of all deployed ProtectedUnit contracts.
+ * @title Protected Unit Factory
+ * @notice A factory contract that creates and manages Protected Unit tokens
+ * @dev Creates new Protected Unit contracts and keeps track of all deployed instances
  */
 contract ProtectedUnitFactory is IProtectedUnitFactory {
     using PairLibrary for Pair;
@@ -32,9 +32,11 @@ contract ProtectedUnitFactory is IProtectedUnitFactory {
     }
 
     /**
-     * @notice Constructor sets the initial addresses for moduleCore, config and flashswap router.
-     * @param _moduleCore Address of the MODULE_CORE.
-     * @param _config Address of the config contract
+     * @notice Sets up the factory with required contract addresses
+     * @param _moduleCore Address of the core module that manages Protected Units
+     * @param _config Address of the configuration contract
+     * @param _flashSwapRouter Address of the router for flash swaps
+     * @dev All addresses must be non-zero
      */
     constructor(address _moduleCore, address _config, address _flashSwapRouter) {
         if (_moduleCore == address(0) || _config == address(0) || _flashSwapRouter == address(0)) {
@@ -46,11 +48,12 @@ contract ProtectedUnitFactory is IProtectedUnitFactory {
     }
 
     /**
-     * @notice Fetches a paginated list of ProtectedUnits deployed by this factory.
-     * @param _page Page number (starting from 0).
-     * @param _limit Number of entries per page.
-     * @return protectedUnitsList List of deployed ProtectedUnit addresses for the given page.
-     * @return idsList List of corresponding pair IDs for the deployed ProtectedUnits.
+     * @notice Gets a list of Protected Unit contracts created by this factory
+     * @param _page Which page of results to view (starts at 0)
+     * @param _limit How many results to show per page
+     * @return protectedUnitsList List of Protected Unit contract addresses
+     * @return idsList List of unique IDs for each Protected Unit
+     * @dev Use pagination to handle large numbers of Protected Units
      */
     function getDeployedProtectedUnits(uint8 _page, uint8 _limit)
         external
@@ -81,12 +84,14 @@ contract ProtectedUnitFactory is IProtectedUnitFactory {
     }
 
     /**
-     * @notice Deploys a new ProtectedUnit contract for a specific asset pair.
-     * @param _id Id of the pair to be managed by the ProtectedUnit contract.
-     * @param _pa Address of the PA token.
-     * @param _pairName Name of the ProtectedUnit pair.
-     * @param _mintCap Initial mint cap for the ProtectedUnit tokens.
-     * @return newUnit of the newly deployed ProtectedUnit contract.
+     * @notice Creates a new Protected Unit contract
+     * @param _id Unique identifier for the new Protected Unit
+     * @param _pa Address of the Protected Asset token
+     * @param _ra Address of the Return Asset token
+     * @param _pairName Human-readable name for the token pair
+     * @param _mintCap Maximum number of tokens that can be created
+     * @return newUnit Address of the newly created Protected Unit contract
+     * @dev Only callable by the configuration contract
      */
     function deployProtectedUnit(Id _id, address _pa, address _ra, string calldata _pairName, uint256 _mintCap)
         external
@@ -112,18 +117,18 @@ contract ProtectedUnitFactory is IProtectedUnitFactory {
     }
 
     /**
-     * @notice Returns the address of the deployed ProtectedUnit contract for a given pair.
-     * @param _id The unique identifier of the pair.
-     * @return Address of the ProtectedUnit contract.
+     * @notice Finds the address of an existing Protected Unit contract
+     * @param _id The unique identifier of the Protected Unit to look up
+     * @return The contract address of the Protected Unit (zero address if not found)
      */
     function getProtectedUnitAddress(Id _id) external view returns (address) {
         return protectedUnitContracts[_id];
     }
 
     /**
-     * @notice Deregisters a protected unit by its ID.
-     * @dev This function can only be called by the configuration contract.
-     * @param _id The ID of the protected unit to deregister.
+     * @notice Removes a Protected Unit from the factory's registry
+     * @param _id The unique identifier of the Protected Unit to remove
+     * @dev Only callable by the configuration contract
      */
     function deRegisterProtectedUnit(Id _id) external onlyConfig {
         delete protectedUnitContracts[_id];

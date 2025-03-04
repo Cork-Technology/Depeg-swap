@@ -12,10 +12,31 @@ import {Id} from "../../../libraries/Pair.sol";
 
 // all contracts are here, since it wont work when we separated it. keep going into preceding imports issue
 
+/**
+ * @title Child Liquidator Base Contract
+ * @notice Base contract for handling individual liquidation orders
+ * @dev Abstract contract that provides common functionality for vault and Protected Unit liquidations
+ */
 abstract contract ChildLiquidatorBase is OwnableUpgradeable {
+    /**
+     * @notice Details about the current liquidation order
+     * @dev Stores information about which tokens are being traded
+     */
     Liquidator.Details public order;
+
+    /**
+     * @notice The unique identifier for the CoW Protocol order
+     */
     bytes public orderUid;
+
+    /**
+     * @notice The address that will receive the liquidation proceeds
+     */
     address public receiver;
+
+    /**
+     * @notice Internal reference ID to track this liquidation
+     */
     bytes32 public refId;
 
     error NotImplemented();
@@ -32,6 +53,15 @@ abstract contract ChildLiquidatorBase is OwnableUpgradeable {
         _;
     }
 
+    /**
+     * @notice Sets up the child liquidator with necessary information
+     * @param _liquidator Address of the main liquidator contract
+     * @param _order Details about the tokens being traded
+     * @param _orderUid CoW Protocol order identifier
+     * @param _receiver Address that will receive the liquidation proceeds
+     * @param _refId Internal reference ID for tracking
+     * @dev Initializes the contract and approves token transfers
+     */
     function initialize(
         Liquidator _liquidator,
         Liquidator.Details calldata _order,
@@ -51,6 +81,10 @@ abstract contract ChildLiquidatorBase is OwnableUpgradeable {
         _approveSettlement();
     }
 
+    /**
+     * @notice Approves the CoW Protocol settlement contract to use tokens
+     * @dev Sets up permissions for the settlement contract to execute trades
+     */
     function _approveSettlement() internal {
         IGPv2SettlementContract settlement = Liquidator(address(owner())).SETTLEMENT();
 
@@ -60,12 +94,17 @@ abstract contract ChildLiquidatorBase is OwnableUpgradeable {
     }
 }
 
+/**
+ * @title Protected Unit Child Liquidator
+ * @notice Handles individual liquidation orders for Protected Units
+ * @dev Manages the movement of funds during Protected Unit liquidations
+ */
 contract ProtectedUnitChildLiquidator is ChildLiquidatorBase {
     /**
-     * @notice Moves the funds from this contract to the vault.
-     * @dev This function transfers the buy token and sell token balances of this contract to the vault by approving the vault to transfer the funds.
-     * @return funds The amount of buy token funds moved to the vault.
-     * @return leftover The amount of sell token leftover moved to the vault.
+     * @notice Transfers liquidation proceeds to the Protected Unit
+     * @dev Moves both bought tokens and any leftover sell tokens
+     * @return funds Amount of buy tokens transferred
+     * @return leftover Amount of sell tokens that weren't used
      */
     function moveFunds() external onlyLiquidator returns (uint256 funds, uint256 leftover) {
         // move buy token balance of this contract to vault, by approving the vault to transfer the funds
@@ -82,12 +121,16 @@ contract ProtectedUnitChildLiquidator is ChildLiquidatorBase {
     }
 }
 
+/**
+ * @title Vault Child Liquidator
+ * @notice Handles individual liquidation orders for vaults
+ * @dev Manages the movement of funds during vault liquidations
+ */
 contract VaultChildLiquidator is ChildLiquidatorBase {
     /**
-     * @notice Moves the funds associated with a given order ID to the vault.
-     * @dev This function transfers the buy token and leftover sell token balances of this contract to the vault.
-     * It approves the vault to transfer the funds before calling the vault's functions to receive the funds.
-     * @param id The ID of the order whose funds are being moved.
+     * @notice Transfers liquidation proceeds to the vault
+     * @param id The ID of the vault receiving the funds
+     * @dev Moves both bought tokens and any leftover sell tokens
      */
     function moveFunds(Id id) external onlyLiquidator {
         // move buy token balance of this contract to vault, by approving the vault to transfer the funds
