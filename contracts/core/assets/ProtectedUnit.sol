@@ -21,6 +21,11 @@ import {Signature, MinimalSignatureHelper} from "./../../libraries/SignatureHelp
 import {TransferHelper} from "./../../libraries/TransferHelper.sol";
 import {PermitChecker} from "../../libraries/PermitChecker.sol";
 
+/**
+ * @notice Data structure for tracking DS token information
+ * @param dsAddress The address of the DS token
+ * @param totalDeposited The total amount of tokens deposited for this DS
+ */
 struct DSData {
     address dsAddress;
     uint256 totalDeposited;
@@ -28,7 +33,7 @@ struct DSData {
 
 /**
  * @title Protected Unit Token
- * @notice A token that represents a bundled position of multiple assets (DS, PA, and RA tokens)
+ * @notice A token that represents a bundled position of multiple assets DS + PA tokens
  * @dev This contract allows users to create (mint) and redeem (burn) Protected Unit tokens
  * by depositing or withdrawing the underlying assets in the correct proportions
  */
@@ -49,31 +54,44 @@ contract ProtectedUnit is
     IDsFlashSwapCore public immutable FLASHSWAP_ROUTER;
     ModuleCore public immutable MODULE_CORE;
 
-    /// @notice The ERC20 token representing the PA asset.
+    /**
+     * @notice The ERC20 token representing the Pegged Asset (PA)
+     * @dev One of the underlying assets in the Protected Unit bundle
+     */
     ERC20 public immutable PA;
+
+    /// @notice The ERC20 token representing the Redemption Asset (RA)
     ERC20 public immutable RA;
 
     uint256 public dsReserve;
     uint256 public paReserve;
     uint256 public raReserve;
 
+    /**
+     * @notice Unique PSM/Vault identifier for RA:PA markets in modulecore
+     * @dev Used to match with corresponding market in modulecore
+     */
     Id public id;
 
     /// @notice The ERC20 token representing the ds asset.
     Asset internal ds;
 
-    /// @notice Maximum supply cap for minting ProtectedUnit tokens.
+    /// @notice Maximum supply cap for minting ProtectedUnit tokens
     uint256 public mintCap;
 
+    /// @notice Historical record of all DS tokens used by this contract
+    /// @dev Used to track deposits across DS token rotations
     DSData[] public dsHistory;
+
+    /// @notice Mapping from DS token address to its index in dsHistory array
     mapping(address => uint256) private dsIndexMap;
 
     /**
      * @notice Creates a new Protected Unit token contract
      * @param _moduleCore Address of the core module that manages this token
-     * @param _id Unique identifier for this Protected Unit
-     * @param _pa Address of the Protected Asset token
-     * @param _ra Address of the Return Asset token
+     * @param _id Unique identifier for RA:PA market in modulecore
+     * @param _pa Address of the Pegged Asset token
+     * @param _ra Address of the Redemption Asset token
      * @param _pairName Human-readable name for this token pair
      * @param _mintCap Maximum number of tokens that can be created
      * @param _config Address of the configuration contract
@@ -102,11 +120,19 @@ contract ProtectedUnit is
         CONFIG = CorkConfig(_config);
     }
 
+    /**
+     * @notice Ensures the latest DS token is fetched before executing the function
+     * @dev Updates the internal ds token reference if necessary
+     */
     modifier autoUpdateDS() {
         _getLastDS();
         _;
     }
 
+    /**
+     * @notice Restricts function access to whitelisted liquidation contracts
+     * @custom:reverts OnlyLiquidator if caller is not whitelisted
+     */
     modifier onlyLiquidationContract() {
         if (!CONFIG.isLiquidationWhitelisted(msg.sender)) {
             revert OnlyLiquidator();
@@ -114,6 +140,11 @@ contract ProtectedUnit is
         _;
     }
 
+    /**
+     * @notice Validates that the provided token is either PA or RA
+     * @param token The token address to validate
+     * @custom:reverts InvalidToken if token is neither PA nor RA
+     */
     modifier onlyValidToken(address token) {
         if (token != address(PA) && token != address(RA)) {
             revert InvalidToken();
@@ -121,6 +152,10 @@ contract ProtectedUnit is
         _;
     }
 
+    /**
+     * @notice Restricts function access to contract owner or liquidation contracts
+     * @custom:reverts OnlyLiquidatorOrOwner if caller is not authorized
+     */
     modifier onlyOwnerOrLiquidator() {
         if (msg.sender != owner() && !CONFIG.isLiquidationWhitelisted(msg.sender)) {
             revert OnlyLiquidatorOrOwner();
@@ -128,21 +163,33 @@ contract ProtectedUnit is
         _;
     }
 
+    /// @notice Automatically synchronizes token reserves after function execution
     modifier autoSync() {
         _;
         _sync();
     }
 
+    /**
+     * @notice Updates the contract's internal record of token reserves
+     * @dev Fetches the latest DS token if needed and updates all reserves
+     */
     function _sync() internal autoUpdateDS {
         dsReserve = ds.balanceOf(address(this));
         paReserve = PA.balanceOf(address(this));
         raReserve = RA.balanceOf(address(this));
     }
 
+    /// @notice Synchronizes the contract's internal record of token reserves
     function sync() external autoUpdateDS {
         _sync();
     }
 
+    /**
+     * @notice Fetches the latest valid DS token from ModuleCore
+     * @dev Checks if the current DS is expired and retrieves a new one if needed
+     * @return The latest valid DS Asset
+     * @custom:reverts NoValidDSExist if no valid DS token exists
+     */
     function _fetchLatestDS() internal view returns (Asset) {
         uint256 dsId = MODULE_CORE.lastDsId(id);
         (, address dsAdd) = MODULE_CORE.swapAsset(id, dsId);
@@ -154,6 +201,11 @@ contract ProtectedUnit is
         return Asset(dsAdd);
     }
 
+    /**
+     * @notice Returns the address of the latest valid DS token
+     * @return Address of the latest valid DS token
+     * @custom:reverts NoValidDSExist if no valid DS token exists
+     */
     function latestDs() external view returns (address) {
         return address(_fetchLatestDS());
     }
@@ -174,6 +226,10 @@ contract ProtectedUnit is
      * @notice Allows the liquidator to request funds for liquidation
      * @param amount How many tokens to request
      * @param token Which token to request (must be PA or RA)
+     * @custom:reverts InsufficientFunds if the contract has insufficient tokens
+     * @custom:reverts OnlyLiquidator if caller is not whitelisted
+     * @custom:reverts InvalidToken if token is neither PA nor RA
+     * @custom:emits LiquidationFundsRequested when funds are successfully transferred
      */
     function requestLiquidationFunds(uint256 amount, address token)
         external
@@ -194,10 +250,11 @@ contract ProtectedUnit is
 
     /**
      * @notice Accepts incoming funds from liquidation or other operations
-     * @dev Transfers the specified amount of the token from the sender to this contract.
-     * Emits a {FundsReceived} event upon successful transfer.
+     * @dev Transfers the specified amount of the token from the sender to this contract
      * @param amount How many tokens are being received
      * @param token Which token is being received (must be PA or RA)
+     * @custom:reverts InvalidToken if token is neither PA nor RA
+     * @custom:emits FundsReceived when funds are successfully transferred
      */
     function receiveFunds(uint256 amount, address token) external onlyValidToken(token) autoSync {
         IERC20(token).safeTransferFrom(msg.sender, address(this), amount);
@@ -207,12 +264,14 @@ contract ProtectedUnit is
 
     /**
      * @notice Uses funds to perform a flash swap.
-     * @dev This function increases the allowance for the flash swap router, performs the swap, and emits an event.
+     * @dev Increases allowance for the flash swap router and performs the swap.
      * @param amount The amount of RA tokens to be swapped.
      * @param amountOutMin The minimum amount of DS tokens expected from the swap.
      * @param params The parameters for the flash swap.
      * @param offchainGuess The offchain guess parameters for the swap.
      * @return amountOut The amount of DS tokens received from the swap.
+     * @custom:reverts If the flash swap fails or returns less than amountOutMin
+     * @custom:emits FundsUsed when the swap is successfully completed
      */
     function useFunds(
         uint256 amount,
@@ -237,6 +296,8 @@ contract ProtectedUnit is
      * It automatically updates DS, syncs the state, and pauses the contract after redemption.
      * @param amountPa The amount of PA tokens to be used for redemption.
      * @param amountDs The amount of DS tokens to be used for redemption.
+     * @custom:reverts If redeeming fails in the module core
+     * @custom:emits RaRedeemed when redemption is successful
      */
     function redeemRaWithDsPa(uint256 amountPa, uint256 amountDs) external autoUpdateDS onlyOwner autoSync {
         uint256 dsId = MODULE_CORE.lastDsId(id);
@@ -257,14 +318,15 @@ contract ProtectedUnit is
      * @dev This function checks the balance of the specified token in the contract.
      * @param token The address of the token to check the balance of.
      * @return The balance of the specified token in the contract.
+     * @custom:reverts InvalidToken if token is neither PA nor RA
      */
     function fundsAvailable(address token) external view onlyValidToken(token) returns (uint256) {
         return IERC20(token).balanceOf(address(this));
     }
 
     /**
-     * @dev Internal function to get the latest DS address.
-     * Calls moduleCore to get the latest DS id and retrieves the associated DS address.
+     * @notice Internal function to get the latest DS address
+     * @dev Calls moduleCore to get the latest DS id and retrieves the associated DS address.
      * The reason we don't update the reserve is to avoid DDoS manipulation where user
      * could frontrun and send just 1 wei more to skew the reserve. resulting in failing transaction.
      * But since we need the address of the new DS if it's expired to transfer it correctly, we only update
@@ -292,26 +354,33 @@ contract ProtectedUnit is
         }
     }
 
+    /// @notice Returns the PA reserve in normalized fixed point representation
     function _selfPaReserve() internal view returns (uint256) {
         return TransferHelper.tokenNativeDecimalsToFixed(paReserve, PA);
     }
 
+    /// @notice Returns the RA reserve in normalized fixed point representation
     function _selfRaReserve() internal view returns (uint256) {
         return TransferHelper.tokenNativeDecimalsToFixed(raReserve, RA);
     }
 
+    /// @notice Returns the DS reserve
     function _selfDsReserve() internal view returns (uint256) {
         return dsReserve;
     }
 
+    /// @notice Transfers DS tokens to the specified address
     function _transferDs(address _to, uint256 _amount) internal {
         IERC20(ds).safeTransfer(_to, _amount);
     }
 
     /**
-     * @notice Returns the dsAmount and paAmount required to mint the specified amount of ProtectedUnit tokens.
-     * @return dsAmount The amount of DS tokens required to mint the specified amount of ProtectedUnit tokens.
-     * @return paAmount The amount of pa tokens required to mint the specified amount of ProtectedUnit tokens.
+     * @notice Returns the DS and PA amounts required to mint the specified amount of ProtectedUnit tokens
+     * @param amount The amount of ProtectedUnit tokens to mint
+     * @return dsAmount The amount of DS tokens required
+     * @return paAmount The amount of PA tokens required
+     * @custom:reverts InvalidAmount if amount is zero
+     * @custom:reverts MintCapExceeded if the mint cap would be exceeded
      */
     function previewMint(uint256 amount) public view returns (uint256 dsAmount, uint256 paAmount) {
         if (amount == 0) {
@@ -328,13 +397,15 @@ contract ProtectedUnit is
     }
 
     /**
-     * @notice Mints ProtectedUnit tokens by transferring the equivalent amount of DS and pa tokens.
+     * @notice Mints ProtectedUnit tokens by transferring the equivalent amount of DS and PA tokens
      * @dev The function checks for the paused state and mint cap before minting.
-     * @param amount The amount of ProtectedUnit tokens to mint.
-     * @custom:reverts EnforcedPause if minting is currently paused.
-     * @custom:reverts MintCapExceeded if the mint cap is exceeded.
-     * @return dsAmount The amount of DS tokens used to mint ProtectedUnit tokens.
-     * @return paAmount The amount of pa tokens used to mint ProtectedUnit tokens.
+     * @param amount The amount of ProtectedUnit tokens to mint
+     * @return dsAmount The amount of DS tokens used
+     * @return paAmount The amount of PA tokens used
+     * @custom:reverts EnforcedPause if minting is currently paused
+     * @custom:reverts MintCapExceeded if the mint cap is exceeded
+     * @custom:reverts InvalidAmount if amount is zero
+     * @custom:emits Mint when tokens are successfully minted
      */
     function mint(uint256 amount)
         external
@@ -347,6 +418,10 @@ contract ProtectedUnit is
         (dsAmount, paAmount) = __mint(msg.sender, amount);
     }
 
+    /**
+     * @notice Internal implementation of mint functionality
+     * @dev Handles the token transfers and minting logic
+     */
     function __mint(address minter, uint256 amount) internal returns (uint256 dsAmount, uint256 paAmount) {
         if (amount == 0) {
             revert InvalidAmount();
@@ -377,16 +452,19 @@ contract ProtectedUnit is
 
     // if pa do not support permit, then user can still use this function with only ds permit and manual approval on the PA side
     /**
-     * @notice Mints new tokens to the specified minter address.
-     * @dev This function requires valid signatures for DS and optionally PA permits.
+     * @notice Mints new tokens using permit signatures for gasless approvals
+     * @dev Requires valid signatures for DS and optionally PA permits.
      *      It also ensures the contract is not paused and prevents reentrancy.
      * @param minter The address to which the minted tokens will be sent.
      * @param amount The amount of tokens to be minted.
      * @param rawDsPermitSig The raw signature for the DS permit.
      * @param rawPaPermitSig The raw signature for the PA permit (optional).
      * @param deadline The deadline timestamp by which the permit signatures must be valid.
-     * @return dsAmount The amount of DS tokens minted.
-     * @return paAmount The amount of PA tokens minted.
+     * @return dsAmount The amount of DS tokens used
+     * @return paAmount The amount of PA tokens used
+     * @custom:reverts InvalidSignature if DS signature is invalid
+     * @custom:reverts EnforcedPause if minting is paused
+     * @custom:emits Mint when tokens are successfully minted
      */
     function mint(
         address minter,
@@ -416,10 +494,14 @@ contract ProtectedUnit is
     }
 
     /**
-     * @notice Returns the dsAmount, paAmount and raAmount received for dissolving the specified amount of ProtectedUnit tokens.
-     * @return dsAmount The amount of DS tokens received for dissolving the specified amount of ProtectedUnit tokens.
-     * @return paAmount The amount of PA tokens received for dissolving the specified amount of ProtectedUnit tokens.
-     * @return raAmount The amount of RA tokens received for dissolving the specified amount of ProtectedUnit tokens.
+     * @notice Returns the token amounts received for burning the specified amount of ProtectedUnit tokens
+     * @dev Calculates proportional amounts based on current reserves and total supply
+     * @param dissolver The address that will burn the tokens
+     * @param amount The amount of ProtectedUnit tokens to burn
+     * @return dsAmount The amount of DS tokens to receive
+     * @return paAmount The amount of PA tokens to receive
+     * @return raAmount The amount of RA tokens to receive
+     * @custom:reverts InvalidAmount if amount is zero or exceeds balance
      */
     function previewBurn(address dissolver, uint256 amount)
         public
@@ -439,10 +521,13 @@ contract ProtectedUnit is
     }
 
     /**
-     * @notice Burns ProtectedUnit tokens and returns the equivalent amount of DS and pa tokens.
-     * @param amount The amount of ProtectedUnit tokens to burn.
-     * @custom:reverts EnforcedPause if minting is currently paused.
-     * @custom:reverts InvalidAmount if the user has insufficient ProtectedUnit balance.
+     * @notice Burns ProtectedUnit tokens from a specific account and returns the underlying assets
+     * @dev Requires approval if caller isn't the token owner
+     * @param account The address from which to burn tokens
+     * @param amount The amount of ProtectedUnit tokens to burn
+     * @custom:reverts EnforcedPause if burning is paused
+     * @custom:reverts InvalidAmount if amount is invalid
+     * @custom:emits Burn when tokens are successfully burned
      */
     function burnFrom(address account, uint256 amount)
         public
@@ -455,10 +540,21 @@ contract ProtectedUnit is
         _burnHU(account, amount);
     }
 
+    /**
+     * @notice Burns ProtectedUnit tokens from the caller and returns the underlying assets
+     * @param amount The amount of ProtectedUnit tokens to burn
+     * @custom:reverts EnforcedPause if burning is paused
+     * @custom:reverts InvalidAmount if amount is invalid
+     * @custom:emits Burn when tokens are successfully burned
+     */
     function burn(uint256 amount) public override whenNotPaused nonReentrant autoUpdateDS autoSync {
         _burnHU(msg.sender, amount);
     }
 
+    /**
+     * @notice Internal implementation of burn functionality
+     * @dev Calculates token amounts, burns ProtectedUnit tokens, and transfers underlying assets
+     */
     function _burnHU(address dissolver, uint256 amount)
         internal
         returns (uint256 dsAmount, uint256 paAmount, uint256 raAmount)
@@ -474,6 +570,7 @@ contract ProtectedUnit is
         emit Burn(dissolver, amount, dsAmount, paAmount);
     }
 
+    /// @notice Internal function to burn tokens from an account
     function _burnFrom(address account, uint256 value) internal {
         if (account != msg.sender) {
             _spendAllowance(account, msg.sender, value);
@@ -483,9 +580,11 @@ contract ProtectedUnit is
     }
 
     /**
-     * @notice Updates the mint cap.
-     * @param _newMintCap The new mint cap value.
-     * @custom:reverts InvalidValue if the mint cap is not changed.
+     * @notice Updates the cap for minting new tokens
+     * @param _newMintCap The new minting cap
+     * @custom:reverts InvalidValue if the mint cap isn't changed
+     * @custom:reverts OnlyOwner if caller is not the owner
+     * @custom:emits MintCapUpdated when the cap is successfully updated
      */
     function updateMintCap(uint256 _newMintCap) external onlyOwner {
         if (_newMintCap == mintCap) {
@@ -496,14 +595,18 @@ contract ProtectedUnit is
     }
 
     /**
-     * @notice Pause this contract
+     * @notice Pauses mint and burn operations
+     * @dev Can only be called by the contract owner
+     * @custom:emits Paused event (from Pausable)
      */
     function pause() external onlyOwner {
         _pause();
     }
 
     /**
-     * @notice Unpause this contract
+     * @notice Unpauses mint and burn operations
+     * @dev Can only be called by the contract owner
+     * @custom:emits Unpaused event (from Pausable)
      */
     function unpause() external onlyOwner {
         _unpause();
@@ -516,10 +619,9 @@ contract ProtectedUnit is
     //  Make reserves in sync with the actual balance of the contract
     /**
      * @notice Transfers excess tokens from the contract to the specified address.
-     * @dev This function is protected against reentrancy attacks by the `nonReentrant` modifier.
-     *      It checks the balance of PA, RA, and ds tokens in the contract and transfers any amount
-     *      exceeding the respective reserves to the specified address.
+     * @dev Compares actual balances with recorded reserves and transfers the difference
      * @param to The address to which the excess tokens will be transferred.
+     * @custom:reverts If any token transfer fails
      */
     function skim(address to) external nonReentrant {
         if (PA.balanceOf(address(this)) - paReserve > 0) {
