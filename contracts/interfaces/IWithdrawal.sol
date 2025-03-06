@@ -11,7 +11,19 @@ interface IWithdrawal is IErrors {
 
     function claimRouted(bytes32 withdrawalId, address router, bytes calldata routerData) external;
 
+    /**
+     * @notice Events emitted during withdrawals
+     * @dev These will show up in transaction logs
+     */
+
+    /// @notice Emitted when someone requests a withdrawal
+    /// @param withdrawalId Unique ID for tracking your withdrawal
+    /// @param owner Who can claim this withdrawal
+    /// @param claimableAt When the withdrawal becomes available
     event WithdrawalRequested(bytes32 indexed withdrawalId, address indexed owner, uint256 claimableAt);
 
+    /// @notice Emitted when someone claims their withdrawal
+    /// @param withdrawalId Which withdrawal was claimed
+    /// @param owner Who claimed the withdrawal
     event WithdrawalClaimed(bytes32 indexed withdrawalId, address indexed owner);
 }
