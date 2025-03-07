@@ -14,38 +14,38 @@ import {Id} from "../../../libraries/Pair.sol";
 
 /**
  * @title Child Liquidator Base Contract
- * @notice Base contract for handling individual liquidation orders
- * @dev Abstract contract that provides common functionality for vault and Protected Unit liquidations
+ * @notice Abstract base contract for managing individual liquidation orders
+ * @dev Provides common functionality for vault and Protected Unit liquidations.
+ *      Designed to be deployed as minimal proxies (clones) to reduce gas costs.
+ * @author Cork Protocol Team
  */
 abstract contract ChildLiquidatorBase is OwnableUpgradeable {
     /**
      * @notice Details about the current liquidation order
-     * @dev Stores information about which tokens are being traded
+     * @dev Stores information about which tokens are being traded and their amounts
      */
     Liquidator.Details public order;
 
-    /**
-     * @notice The unique identifier for the CoW Protocol order
-     */
+    /// @notice The unique identifier for the CoW Protocol order
     bytes public orderUid;
 
-    /**
-     * @notice The address that will receive the liquidation proceeds
-     */
+    /// @notice The address that will receive the liquidation proceeds
     address public receiver;
 
-    /**
-     * @notice Internal reference ID to track this liquidation
-     */
+    /// @notice Internal reference ID to track this liquidation
     bytes32 public refId;
 
-    error NotImplemented();
+    /// @notice Error thrown when a zero address is provided where an address is required
     error ZeroAddress();
 
     constructor() {
         _disableInitializers();
     }
 
+    /**
+     * @notice Ensures accessible by the main Liquidator contract only
+     * @custom:reverts OnlyLiquidator if the caller is not the owner
+     */
     modifier onlyLiquidator() {
         if (msg.sender != owner()) {
             revert IErrors.OnlyLiquidator();
@@ -55,12 +55,13 @@ abstract contract ChildLiquidatorBase is OwnableUpgradeable {
 
     /**
      * @notice Sets up the child liquidator with necessary information
+     * @dev Initializes the contract and approves token transfers to the settlement contract
      * @param _liquidator Address of the main liquidator contract
      * @param _order Details about the tokens being traded
      * @param _orderUid CoW Protocol order identifier
      * @param _receiver Address that will receive the liquidation proceeds
      * @param _refId Internal reference ID for tracking
-     * @dev Initializes the contract and approves token transfers
+     * @custom:reverts ZeroAddress if _liquidator or _receiver is the zero address
      */
     function initialize(
         Liquidator _liquidator,
@@ -96,15 +97,19 @@ abstract contract ChildLiquidatorBase is OwnableUpgradeable {
 
 /**
  * @title Protected Unit Child Liquidator
- * @notice Handles individual liquidation orders for Protected Units
- * @dev Manages the movement of funds during Protected Unit liquidations
+ * @notice Specialized child liquidator for Protected Unit liquidations
+ * @dev Manages the transfer of funds between the settlement contract and Protected Unit.
+ *      Deployed as a minimal proxy (clone) by the main Liquidator contract.
  */
 contract ProtectedUnitChildLiquidator is ChildLiquidatorBase {
     /**
      * @notice Transfers liquidation proceeds to the Protected Unit
-     * @dev Moves both bought tokens and any leftover sell tokens
-     * @return funds Amount of buy tokens transferred
-     * @return leftover Amount of sell tokens that weren't used
+     * @dev Moves both bought tokens and any leftover sell tokens by:
+     *      1. Approving the Protected Unit to transfer the tokens
+     *      2. Calling the Protected Unit's receiveFunds function
+     * @return funds Amount of buy tokens transferred to the Protected Unit
+     * @return leftover Amount of sell tokens that weren't used in the trade
+     * @custom:reverts OnlyLiquidator if caller is not the main Liquidator contract
      */
     function moveFunds() external onlyLiquidator returns (uint256 funds, uint256 leftover) {
         // move buy token balance of this contract to vault, by approving the vault to transfer the funds
@@ -123,14 +128,18 @@ contract ProtectedUnitChildLiquidator is ChildLiquidatorBase {
 
 /**
  * @title Vault Child Liquidator
- * @notice Handles individual liquidation orders for vaults
- * @dev Manages the movement of funds during vault liquidations
+ * @notice Specialized child liquidator for vault liquidations
+ * @dev Manages the transfer of funds between the settlement contract and vault.
+ *      Deployed as a minimal proxy (clone) by the main Liquidator contract.
  */
 contract VaultChildLiquidator is ChildLiquidatorBase {
     /**
      * @notice Transfers liquidation proceeds to the vault
+     * @dev Moves both bought tokens and any leftover sell tokens by:
+     *      1. Approving the vault to transfer the tokens
+     *      2. Calling the appropriate vault functions for each token type
      * @param id The ID of the vault receiving the funds
-     * @dev Moves both bought tokens and any leftover sell tokens
+     * @custom:reverts OnlyLiquidator if caller is not the main Liquidator contract
      */
     function moveFunds(Id id) external onlyLiquidator {
         // move buy token balance of this contract to vault, by approving the vault to transfer the funds
