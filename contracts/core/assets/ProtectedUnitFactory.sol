@@ -8,11 +8,17 @@ import {IProtectedUnitFactory} from "../../interfaces/IProtectedUnitFactory.sol"
 /**
  * @title Protected Unit Factory
  * @notice A factory contract that creates and manages Protected Unit tokens
- * @dev Creates new Protected Unit contracts and keeps track of all deployed instances
+ * @dev Creates new Protected Unit contracts and keeps track of all deployed instances.
+ *      Implements access control through modifiers to restrict sensitive operations.
+ * @author Cork Protocol Team
  */
 contract ProtectedUnitFactory is IProtectedUnitFactory {
     using PairLibrary for Pair;
 
+    /**
+     * @notice Counter for tracking the number of deployed Protected Unit contracts
+     * @dev Used for pagination in getDeployedProtectedUnits function
+     */
     uint256 internal idx;
 
     // Addresses needed for the construction of new ProtectedUnit contracts
@@ -20,10 +26,22 @@ contract ProtectedUnitFactory is IProtectedUnitFactory {
     address public immutable CONFIG;
     address public immutable ROUTER;
 
-    // Mapping to keep track of ProtectedUnit contracts by a unique pair identifier
+    /**
+     * @notice Mapping of pair IDs to their corresponding Protected Unit contract addresses
+     * @dev Used for direct lookup of Protected Unit contracts by their unique identifier
+     */
     mapping(Id => address) public protectedUnitContracts;
+
+    /**
+     * @notice Mapping of indices to pair IDs for deployed Protected Units
+     * @dev Used for pagination in getDeployedProtectedUnits function
+     */
     mapping(uint256 => Id) internal protectedUnits;
 
+    /**
+     * @notice Restricts function access to the configuration contract only
+     * @custom:reverts NotConfig if msg.sender is not the CONFIG address
+     */
     modifier onlyConfig() {
         if (msg.sender != CONFIG) {
             revert NotConfig();
@@ -33,10 +51,10 @@ contract ProtectedUnitFactory is IProtectedUnitFactory {
 
     /**
      * @notice Sets up the factory with required contract addresses
-     * @param _moduleCore Address of the core module that manages Protected Units
-     * @param _config Address of the configuration contract
-     * @param _flashSwapRouter Address of the router for flash swaps
-     * @dev All addresses must be non-zero
+     * @param _moduleCore Address of the ModuleCore contract
+     * @param _config Address of the CorkConfig contract
+     * @param _flashSwapRouter Address of the router contract for flash swaps
+     * @custom:reverts ZeroAddress if any of the input addresses is the zero address
      */
     constructor(address _moduleCore, address _config, address _flashSwapRouter) {
         if (_moduleCore == address(0) || _config == address(0) || _flashSwapRouter == address(0)) {
@@ -49,11 +67,11 @@ contract ProtectedUnitFactory is IProtectedUnitFactory {
 
     /**
      * @notice Gets a list of Protected Unit contracts created by this factory
+     * @dev Uses pagination to handle large numbers of Protected Units efficiently
      * @param _page Which page of results to view (starts at 0)
      * @param _limit How many results to show per page
-     * @return protectedUnitsList List of Protected Unit contract addresses
-     * @return idsList List of unique IDs for each Protected Unit
-     * @dev Use pagination to handle large numbers of Protected Units
+     * @return protectedUnitsList List of Protected Unit contract addresses for the requested page
+     * @return idsList List of unique IDs for each Protected Unit in the response
      */
     function getDeployedProtectedUnits(uint8 _page, uint8 _limit)
         external
@@ -85,13 +103,16 @@ contract ProtectedUnitFactory is IProtectedUnitFactory {
 
     /**
      * @notice Creates a new Protected Unit contract
-     * @param _id Unique identifier for the new Protected Unit
+     * @dev Deploys a new ProtectedUnit and registers it in the factory's mappings
+     * @param _id Unique Market/PSM/Vault ID from the ModuleCore contract
      * @param _pa Address of the Protected Asset token
      * @param _ra Address of the Return Asset token
      * @param _pairName Human-readable name for the token pair
      * @param _mintCap Maximum number of tokens that can be created
-     * @return newUnit Address of the newly created Protected Unit contract
-     * @dev Only callable by the configuration contract
+     * @return newUnit Address of the newly deployed Protected Unit contract
+     * @custom:reverts ProtectedUnitExists if a Protected Unit with this ID already exists
+     * @custom:reverts NotConfig if caller is not the CONFIG contract address
+     * @custom:emits ProtectedUnitDeployed when a new contract is successfully deployed
      */
     function deployProtectedUnit(Id _id, address _pa, address _ra, string calldata _pairName, uint256 _mintCap)
         external
@@ -118,6 +139,7 @@ contract ProtectedUnitFactory is IProtectedUnitFactory {
 
     /**
      * @notice Finds the address of an existing Protected Unit contract
+     * @dev Simple lookup function to retrieve a Protected Unit contract by ID
      * @param _id The unique identifier of the Protected Unit to look up
      * @return The contract address of the Protected Unit (zero address if not found)
      */
@@ -127,8 +149,9 @@ contract ProtectedUnitFactory is IProtectedUnitFactory {
 
     /**
      * @notice Removes a Protected Unit from the factory's registry
+     * @dev Deletes the mapping entry for a Protected Unit by its ID
      * @param _id The unique identifier of the Protected Unit to remove
-     * @dev Only callable by the configuration contract
+     * @custom:reverts NotConfig if caller is not the CONFIG address
      */
     function deRegisterProtectedUnit(Id _id) external onlyConfig {
         delete protectedUnitContracts[_id];

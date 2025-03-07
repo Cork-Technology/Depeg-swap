@@ -36,6 +36,7 @@ struct DSData {
  * @notice A token that represents a bundled position of multiple assets DS + PA tokens
  * @dev This contract allows users to create (mint) and redeem (burn) Protected Unit tokens
  * by depositing or withdrawing the underlying assets in the correct proportions
+ * @author Cork Protocol Team
  */
 contract ProtectedUnit is
     ERC20Permit,
