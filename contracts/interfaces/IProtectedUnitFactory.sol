@@ -8,6 +8,7 @@ import {IErrors} from "./IErrors.sol";
  * @title Protected Unit Factory Interface
  * @notice Defines functions for creating and managing Protected Unit contracts
  * @dev Interface for deploying and tracking Protected Unit tokens
+ * @author Cork Protocol Team
  */
 interface IProtectedUnitFactory is IErrors {
     /**
@@ -20,14 +21,17 @@ interface IProtectedUnitFactory is IErrors {
     event ProtectedUnitDeployed(Id indexed pairId, address pa, address ra, address indexed protectedUnitAddress);
 
     /**
-     * @notice Creates a new Protected Unit contract for a given token pair
-     * @param _id Unique identifier for the new token pair
+     * @notice Creates a new Protected Unit contract
+     * @dev Deploys a new ProtectedUnit and registers it in the factory's mappings
+     * @param _id Unique Market/PSM/Vault ID from the ModuleCore contract
      * @param _pa Address of the Protected Asset token
      * @param _ra Address of the Return Asset token
-     * @param _pairName Human-readable name for this token pair
+     * @param _pairName Human-readable name for the token pair
      * @param _mintCap Maximum number of tokens that can be created
-     * @return Address of the newly created Protected Unit contract
-     * @dev Only callable by authorized addresses
+     * @return newUnit Address of the newly deployed Protected Unit contract
+     * @custom:reverts ProtectedUnitExists if a Protected Unit with this ID already exists
+     * @custom:reverts NotConfig if caller is not the CONFIG contract address
+     * @custom:emits ProtectedUnitDeployed when a new contract is successfully deployed
      */
     function deployProtectedUnit(Id _id, address _pa, address _ra, string calldata _pairName, uint256 _mintCap)
         external
@@ -35,18 +39,19 @@ interface IProtectedUnitFactory is IErrors {
 
     /**
      * @notice Finds the address of an existing Protected Unit contract
-     * @param _id Unique identifier for the token pair
-     * @return Address of the Protected Unit contract (returns zero address if not found)
+     * @dev Simple lookup function to retrieve a Protected Unit contract by ID
+     * @param _id The unique identifier of the Protected Unit to look up
+     * @return The contract address of the Protected Unit (zero address if not found)
      */
     function getProtectedUnitAddress(Id _id) external view returns (address);
 
     /**
-     * @notice Gets a paginated list of all deployed Protected Unit contracts
+     * @notice Gets a list of Protected Unit contracts created by this factory
+     * @dev Uses pagination to handle large numbers of Protected Units efficiently
      * @param _page Which page of results to view (starts at 0)
      * @param _limit How many results to show per page
-     * @return protectedUnitsList List of Protected Unit contract addresses
-     * @return idsList List of corresponding token pair IDs
-     * @dev Use pagination to handle large numbers of Protected Units
+     * @return protectedUnitsList List of Protected Unit contract addresses for the requested page
+     * @return idsList List of unique IDs for each Protected Unit in the response
      */
     function getDeployedProtectedUnits(uint8 _page, uint8 _limit)
         external
@@ -55,8 +60,9 @@ interface IProtectedUnitFactory is IErrors {
 
     /**
      * @notice Removes a Protected Unit from the factory's registry
-     * @param _id Unique identifier for the token pair to remove
-     * @dev Only callable by authorized addresses
+     * @dev Deletes the mapping entry for a Protected Unit by its ID
+     * @param _id The unique identifier of the Protected Unit to remove
+     * @custom:reverts NotConfig if caller is not the CONFIG address
      */
     function deRegisterProtectedUnit(Id _id) external;
 }
