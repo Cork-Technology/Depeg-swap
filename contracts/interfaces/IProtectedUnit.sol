@@ -3,62 +3,71 @@ pragma solidity ^0.8.24;
 
 import {IErrors} from "./IErrors.sol";
 
+/**
+ * @title Protected Unit Interface
+ * @notice Defines the standard functions and events for Protected Unit tokens
+ * @dev Interface for creating, managing, and redeeming Protected Unit tokens
+ */
 interface IProtectedUnit is IErrors {
-    // Events
     /**
-     * @notice Emitted when a user mints new ProtectedUnit tokens.
-     * @param minter The address of the user minting the tokens.
-     * @param amount The amount of ProtectedUnit tokens minted.
+     * @notice Emmits when new Protected Unit tokens are created
+     * @param minter The wallet address that created the tokens
+     * @param amount How many tokens were created
      */
     event Mint(address indexed minter, uint256 amount);
 
     /**
-     * @notice Emitted when a user burns ProtectedUnit tokens.
-     * @param dissolver The address of the user dissolving the tokens.
-     * @param amount The amount of ProtectedUnit tokens burned.
-     * @param dsAmount The amount of DS tokens received.
-     * @param paAmount The amount of PA tokens received.
+     * @notice Emmits when Protected Unit tokens are redeemed
+     * @param dissolver The wallet address that redeemed the tokens
+     * @param amount How many tokens were redeemed
+     * @param dsAmount How many DS tokens were received
+     * @param paAmount How many PA tokens were received
      */
     event Burn(address indexed dissolver, uint256 amount, uint256 dsAmount, uint256 paAmount);
 
     /**
-     * @notice Emitted when the mint cap is updated.
-     * @param newMintCap The new mint cap value.
+     * @notice Emmits when the maximum supply limit changes
+     * @param newMintCap The new maximum supply limit
      */
     event MintCapUpdated(uint256 newMintCap);
 
+    /**
+     * @notice Emmits when RA tokens are redeemed
+     * @param redeemer The wallet address that performed the redemption
+     * @param dsId The identifier of the DS token used
+     * @param amount How many tokens were redeemed
+     */
     event RaRedeemed(address indexed redeemer, uint256 dsId, uint256 amount);
 
-    // Read functions
     /**
-     * @notice Returns the current mint cap.
-     * @return mintCap The maximum supply cap for minting ProtectedUnit tokens.
+     * @notice Gets the maximum number of tokens that can be created
+     * @return The current maximum supply limit
      */
     function mintCap() external view returns (uint256);
 
     /**
-     * @notice Returns the dsAmount and paAmount required to mint the specified amount of ProtectedUnit tokens.
-     * @return dsAmount The amount of DS tokens required to mint the specified amount of ProtectedUnit tokens.
-     * @return paAmount The amount of PA tokens required to mint the specified amount of ProtectedUnit tokens.
+     * @notice Calculates how many DS and PA tokens you need to create Protected Unit tokens
+     * @param amount How many Protected Unit tokens you want to create
+     * @return dsAmount How many DS tokens you need
+     * @return paAmount How many PA tokens you need
      */
     function previewMint(uint256 amount) external view returns (uint256 dsAmount, uint256 paAmount);
 
-    //functions
     /**
-     * @notice Mints ProtectedUnit tokens by transferring the equivalent amount of DS and PA tokens.
-     * @param amount The amount of ProtectedUnit tokens to mint.
-     * @custom:reverts MintingPaused if minting is currently paused.
-     * @custom:reverts MintCapExceeded if the mint cap is exceeded.
-     * @return dsAmount The amount of DS tokens used to mint ProtectedUnit tokens.
-     * @return paAmount The amount of PA tokens used to mint ProtectedUnit tokens.
+     * @notice Creates new Protected Unit tokens by depositing DS and PA tokens
+     * @param amount How many Protected Unit tokens you want to create
+     * @return dsAmount How many DS tokens were used
+     * @return paAmount How many PA tokens were used
      */
     function mint(uint256 amount) external returns (uint256 dsAmount, uint256 paAmount);
 
     /**
-     * @notice Returns the dsAmount, paAmount and raAmount received for dissolving the specified amount of ProtectedUnit tokens.
-     * @return dsAmount The amount of DS tokens received for dissolving the specified amount of ProtectedUnit tokens.
-     * @return paAmount The amount of PA tokens received for dissolving the specified amount of ProtectedUnit tokens.
-     * @return raAmount The amount of RA tokens received for dissolving the specified amount of ProtectedUnit tokens.
+     * @notice Calculates how many tokens you'll receive for redeeming Protected Unit tokens
+     * @param dissolver The wallet address that will redeem the tokens
+     * @param amount How many Protected Unit tokens you want to redeem
+     * @return dsAmount How many DS tokens you'll receive
+     * @return paAmount How many PA tokens you'll receive
+     * @return raAmount How many RA tokens you'll receive
      */
     function previewBurn(address dissolver, uint256 amount)
         external
@@ -66,16 +75,23 @@ interface IProtectedUnit is IErrors {
         returns (uint256 dsAmount, uint256 paAmount, uint256 raAmount);
 
     /**
-     * @notice Updates the mint cap.
-     * @param _newMintCap The new mint cap value.
-     * @custom:reverts InvalidValue if the mint cap is not changed.
+     * @notice Changes the maximum number of tokens that can be created
+     * @param _newMintCap The new maximum supply limit
+     * @dev Only callable by the contract owner
      */
     function updateMintCap(uint256 _newMintCap) external;
 
+    /**
+     * @notice Gets the current balance of all tokens held by the contract
+     * @return dsReserves How many DS tokens are in the contract
+     * @return paReserves How many PA tokens are in the contract
+     * @return raReserves How many RA tokens are in the contract
+     */
     function getReserves() external view returns (uint256 dsReserves, uint256 paReserves, uint256 raReserves);
 
     /**
-     * @notice automatically sync reserve balance
+     * @notice Updates the contract's internal record of token balances
+     * @dev Call this to ensure the contract has accurate balance information
      */
     function sync() external;
 }
