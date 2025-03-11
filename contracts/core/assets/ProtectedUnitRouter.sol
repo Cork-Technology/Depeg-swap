@@ -147,22 +147,24 @@ contract ProtectedUnitRouter is IProtectedUnitRouter, ReentrancyGuardTransient {
     }
 
     /**
-     * @notice Burns multiple protected units in a batch process.
-     * @dev This function allows the caller to burn multiple protected units by providing the necessary permits.
-     * @param protectedUnits An array of addresses of the protected units to be burned.
-     * @param amounts An array of amounts corresponding to each protected unit to be burned.
-     * @param permits An array of permit parameters required for the batch burn operation.
-     * @return dsAdds An array of addresses for the destination addresses.
-     * @return paAdds An array of addresses for the protected asset addresses.
-     * @return raAdds An array of addresses for the reserve asset addresses.
-     * @return dsAmounts An array of amounts for the destination amounts.
-     * @return paAmounts An array of amounts for the protected asset amounts.
-     * @return raAmounts An array of amounts for the reserve asset amounts.
+     * @notice Burns multiple Protected Unit tokens using signed permissions
+     * @param protectedUnits List of Protected Unit contracts to burn from
+     * @param amounts How many tokens to burn from respective Protected Unit contract
+     * @param permits List of permission parameters for respective Protected Unit token burning
+     * @return dsAdds List of DS token addresses for DS token received from respective Protected Unit token burning
+     * @return paAdds List of PA token addresses for PA token received from respective Protected Unit token burning
+     * @return raAdds List of RA token addresses for RA token received from respective Protected Unit token burning
+     * @return dsAmounts List of DS token amounts received from each burn
+     * @return paAmounts List of PA token amounts received from each burn
+     * @return raAmounts List of RA token amounts received from each burn
+     * @custom:reverts InvalidInput if input array lengths don't match
+     * @custom:reverts If any permit signature is invalid
+     * @custom:reverts If any of the individual burn operations fail
      */
     function batchBurn(
         address[] calldata protectedUnits,
         uint256[] calldata amounts,
-        IProtectedUnitRouter.BatchBurnPermitParams[] calldata permits
+        BatchBurnPermitParams[] calldata permits
     )
         external
         nonReentrant
@@ -178,7 +180,7 @@ contract ProtectedUnitRouter is IProtectedUnitRouter, ReentrancyGuardTransient {
         uint256 length = permits.length;
         for (uint256 i = 0; i < length; ++i) {
             ProtectedUnit protectedUnit = ProtectedUnit(protectedUnits[i]);
-            IProtectedUnitRouter.BatchBurnPermitParams calldata permit = permits[i];
+            BatchBurnPermitParams calldata permit = permits[i];
 
             Signature memory signature = MinimalSignatureHelper.split(permit.rawProtectedUnitPermitSig);
 

@@ -10,14 +10,14 @@ import {IErrors} from "./IErrors.sol";
  */
 interface IProtectedUnit is IErrors {
     /**
-     * @notice Records when new Protected Unit tokens are created
+     * @notice Emmits when new Protected Unit tokens are created
      * @param minter The wallet address that created the tokens
      * @param amount How many tokens were created
      */
     event Mint(address indexed minter, uint256 amount);
 
     /**
-     * @notice Records when Protected Unit tokens are redeemed
+     * @notice Emmits when Protected Unit tokens are redeemed
      * @param dissolver The wallet address that redeemed the tokens
      * @param amount How many tokens were redeemed
      * @param dsAmount How many DS tokens were received
@@ -26,13 +26,13 @@ interface IProtectedUnit is IErrors {
     event Burn(address indexed dissolver, uint256 amount, uint256 dsAmount, uint256 paAmount);
 
     /**
-     * @notice Records when the maximum supply limit changes
+     * @notice Emmits when the maximum supply limit changes
      * @param newMintCap The new maximum supply limit
      */
     event MintCapUpdated(uint256 newMintCap);
 
     /**
-     * @notice Records when RA tokens are redeemed
+     * @notice Emmits when RA tokens are redeemed
      * @param redeemer The wallet address that performed the redemption
      * @param dsId The identifier of the DS token used
      * @param amount How many tokens were redeemed

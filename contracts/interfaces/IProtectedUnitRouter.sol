@@ -43,13 +43,13 @@ interface IProtectedUnitRouter is IErrors {
     }
 
     /**
-     * @notice Records when a new Protected Unit is added to the router
+     * @notice Emmits when a new Protected Unit is added to the router
      * @param protectedUnit Address of the Protected Unit contract that was added
      */
     event ProtectedUnitSet(address protectedUnit);
 
     /**
-     * @notice Records when a Protected Unit is removed from the router
+     * @notice Emmits when a Protected Unit is removed from the router
      * @param protectedUnit Address of the Protected Unit contract that was removed
      */
     event ProtectedUnitRemoved(address protectedUnit);

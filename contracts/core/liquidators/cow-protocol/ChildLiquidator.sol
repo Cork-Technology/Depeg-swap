@@ -37,7 +37,6 @@ abstract contract ChildLiquidatorBase is OwnableUpgradeable {
 
     /// @notice Error thrown when a zero address is provided where an address is required
     error ZeroAddress();
-    error NotImplemented();
 
     constructor() {
         _disableInitializers();
