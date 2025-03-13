@@ -177,8 +177,10 @@ contract RouterState is
         _grantRole(MODULE_CORE, moduleCore);
     }
 
+    /// @notice IMPORTANT : REPURPOSED TO THRESHOLD. THE PERCENTAGE WILL BE CALCULATED DYNAMICALLY
+    /// we can't really change the signature of this since the configuration contract is not upgradeable and depends on this signature
     function updateReserveSellPressurePercentage(Id id, uint256 newPercentage) external override onlyConfig {
-        reserves[id].updateReserveSellPressurePercentage(newPercentage);
+        reserves[id].updateReserveSellPressurePercentageThreshold(newPercentage);
 
         emit ReserveSellPressurePercentageUpdated(id, newPercentage);
     }
@@ -438,8 +440,11 @@ contract RouterState is
         internal
         returns (uint256 amountLeft)
     {
+        // TODO calculate dynamically
         uint256 fee = SwapperMathLibrary.calculateDsExtraFee(
-            amount, self.reserveSellPressurePercentage, self.dsExtraFeePercentage
+            amount,
+            self.reserveSellPressurePercentageThreshold,
+            self.dsExtraFeePercentage // TODO -> tmp fix, should not be using the threshold
         );
 
         if (fee == 0) {
@@ -474,7 +479,7 @@ contract RouterState is
         // TODO : dynamically determine pressure
 
         uint256 amountSellFromReserve =
-            amountOut - MathHelper.calculatePercentageFee(self.reserveSellPressurePercentage, amountOut);
+            amountOut - MathHelper.calculatePercentageFee(self.reserveSellPressurePercentageThreshold, amountOut); // TODO -> tmp fix, should not be using the threshold
 
         uint256 lvReserve = assetPair.lvReserve;
         uint256 totalReserve = lvReserve + assetPair.psmReserve;
@@ -566,7 +571,7 @@ contract RouterState is
                 result.ctRefunded,
                 result.fee,
                 feePercentage,
-                self.reserveSellPressurePercentage
+                self.reserveSellPressurePercentageThreshold // TODO this will calculated dynamically and should be retrieved via transient slot
             );
         }
     }
@@ -611,7 +616,7 @@ contract RouterState is
             result.ctRefunded,
             result.fee,
             feePercentage,
-            self.reserveSellPressurePercentage
+            self.reserveSellPressurePercentageThreshold // TODO this will calculated dynamically and should be retrieved via transient slot
         );
     }
 

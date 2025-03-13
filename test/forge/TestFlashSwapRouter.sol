@@ -11,8 +11,8 @@ contract TestFlashSwapRouter is RouterState {
         return reserves[id].ds[dsId];
     }
 
-    function getReserveSellPressurePercentage(Id id) external view returns (uint256) {
-        return reserves[id].reserveSellPressurePercentage;
+    function getReserveSellPressurePercentageThresold(Id id) external view returns (uint256) {
+        return reserves[id].reserveSellPressurePercentageThreshold;
     }
 
     function getHiyaCumulated(Id id) external view returns (uint256) {

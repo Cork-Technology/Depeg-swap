@@ -32,7 +32,8 @@ struct AssetPair {
 struct ReserveState {
     /// @dev dsId => [RA, CT, DS]
     mapping(uint256 => AssetPair) ds;
-    uint256 reserveSellPressurePercentage;
+    /// IMPORTANT : REPURPOSED TO THRESHOLD. THE PERCENTAGE WILL BE CALCULATED DYNAMICALLY
+    uint256 reserveSellPressurePercentageThreshold;
     uint256 hiyaCumulated;
     uint256 vhiyaCumulated;
     uint256 decayDiscountRateInDays;
@@ -72,13 +73,14 @@ library DsFlashSwaplibrary {
         return block.number <= self.rolloverEndInBlockNumber;
     }
 
-    function updateReserveSellPressurePercentage(ReserveState storage self, uint256 newPercentage) external {
+    function updateReserveSellPressurePercentageThreshold(ReserveState storage self, uint256 newPercentage) external {
         // must be between 0.01 and 100
         if (newPercentage < 1e16 || newPercentage > 1e20) {
             revert IErrors.InvalidParams();
         }
+        /// IMPORTANT : REPURPOSED TO THRESHOLD. THE PERCENTAGE WILL BE CALCULATED DYNAMICALLY
 
-        self.reserveSellPressurePercentage = newPercentage;
+        self.reserveSellPressurePercentageThreshold = newPercentage;
     }
 
     function emptyReserveLv(ReserveState storage self, uint256 dsId, address to) external returns (uint256 emptied) {
