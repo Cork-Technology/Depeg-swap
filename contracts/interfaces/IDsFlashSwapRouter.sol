@@ -11,11 +11,11 @@ import {IErrors} from "./IErrors.sol";
  */
 interface IDsFlashSwapUtility is IErrors {
     /**
-     * @notice returns the current price ratio of the pair
-     * @param id the id of the pair
-     * @param dsId the ds id of the pair
-     * @return raPriceRatio ratio of RA
-     * @return ctPriceRatio ratio of CT
+     * @notice Get current price information for a trading pair
+     * @param id Which trading pair to check
+     * @param dsId Which DS series to check
+     * @return raPriceRatio Current price ratio for the redemption asset
+     * @return ctPriceRatio Current price ratio for CT tokens
      */
     function getCurrentPriceRatio(Id id, uint256 dsId)
         external
@@ -23,11 +23,11 @@ interface IDsFlashSwapUtility is IErrors {
         returns (uint256 raPriceRatio, uint256 ctPriceRatio);
 
     /**
-     * @notice returns the current reserve of the pair
-     * @param id the id of the pair
-     * @param dsId the ds id of the pair
-     * @return raReserve reserve of RA
-     * @return ctReserve reserve of CT
+     * @notice Get current trading pool reserves
+     * @param id Which trading pair to check
+     * @param dsId Which DS series to check
+     * @return raReserve How much redemption asset is available
+     * @return ctReserve How many CT tokens are available
      */
     function getAmmReserve(Id id, uint256 dsId) external view returns (uint256 raReserve, uint256 ctReserve);
 

@@ -8,9 +8,9 @@ import {IWithdrawal} from "./IWithdrawal.sol";
 import {IErrors} from "./IErrors.sol";
 
 /**
- * @title IVault Interface
+ * @title Vault Interface
  * @author Cork Team
- * @notice IVault interface for VaultCore contract
+ * @notice Interface for the main Vault contract that handles deposits and early redemptions
  */
 interface IVault is IErrors {
     struct ProtocolContracts {
@@ -46,13 +46,25 @@ interface IVault is IErrors {
         bytes32 withdrawalId;
     }
 
-    /// @notice Emitted when a user deposits assets into a given Vault
-    /// @param id The Module id that is used to reference both psm and lv of a given pair
-    /// @param depositor The address of the depositor
-    /// @param received The amount of lv asset received
-    /// @param deposited The amount of the asset deposited
+    /// @notice Emitted when you deposit assets into the Vault
+    /// @param id Which vault you deposited into
+    /// @param depositor Your address
+    /// @param received How many vault tokens you received
+    /// @param deposited How much you deposited
     event LvDeposited(Id indexed id, address indexed depositor, uint256 received, uint256 deposited);
 
+    /// @notice Emitted when you redeem your vault tokens early
+    /// @param id Which vault you redeemed from
+    /// @param redeemer Who initiated the redemption
+    /// @param receiver Who received the assets
+    /// @param lvBurned How many vault tokens were burned
+    /// @param ctReceivedFromAmm How many CT tokens you got from the trading pool
+    /// @param ctReceivedFromVault How many CT tokens you got directly from the vault
+    /// @param dsReceived How many DS tokens you received
+    /// @param paReceived How much pegged asset you received
+    /// @param raReceivedFromAmm How much redemption asset you got from the trading pool
+    /// @param raIdleReceived How much redemption asset you got directly from the vault
+    /// @param withdrawalId Your withdrawal request ID
     event LvRedeemEarly(
         Id indexed id,
         address indexed redeemer,
@@ -67,78 +79,107 @@ interface IVault is IErrors {
         bytes32 withdrawalId
     );
 
-    /// @notice Emitted when the nav circuit breaker reference value is updated
-    /// @param snapshotIndex The index of the snapshot that was updated(0 or 1)
+    /// @notice Emitted when the vault's value reference is updated
+    /// @param snapshotIndex Which snapshot was updated (0 or 1)
     /// @param newValue The new value of the snapshot
     event SnapshotUpdated(uint256 snapshotIndex, uint256 newValue);
 
-    /// @notice Emitted when a Admin updates status of Deposit in the LV
-    /// @param id The LV id
-    /// @param isLVDepositPaused The new value saying if Deposit allowed in LV or not
+    /// @notice Emitted when deposits are paused or unpaused
+    /// @param id Which vault was affected
+    /// @param isLVDepositPaused True if deposits are now paused, false if enabled
     event LvDepositsStatusUpdated(Id indexed id, bool isLVDepositPaused);
 
-    /// @notice Emitted when a Admin updates status of Withdrawal in the LV
-    /// @param id The LV id
-    /// @param isLVWithdrawalPaused The new value saying if Withdrawal allowed in LV or not
+    /// @notice Emitted when withdrawals are paused or unpaused
+    /// @param id Which vault was affected
+    /// @param isLVWithdrawalPaused True if withdrawals are now paused, false if enabled
     event LvWithdrawalsStatusUpdated(Id indexed id, bool isLVWithdrawalPaused);
 
-    /// @notice Emitted when the protocol receive sales profit from the router
-    /// @param router The address of the router
-    /// @param amount The amount of RA tokens transferred.
+    /// @notice Emitted when the protocol receives profit from trading
+    /// @param router The router that sent the profit
+    /// @param amount How much profit was received
     event ProfitReceived(address indexed router, uint256 amount);
 
+    /// @notice Emitted when the vault's safety threshold is updated
+    /// @param id Which vault was updated
+    /// @param navThreshold The new threshold value
     event VaultNavThresholdUpdated(Id indexed id, uint256 navThreshold);
 
     /**
-     * @notice Deposit a wrapped asset into a given vault
-     * @param id The Module id that is used to reference both psm and lv of a given pair
-     * @param amount The amount of the redemption asset(ra) deposited
+     * @notice Deposit your assets into the vault
+     * @param id Which vault you want to deposit into
+     * @param amount How much you want to deposit
+     * @param raTolerance Your acceptable price slippage for redemption assets
+     * @param ctTolerance Your acceptable price slippage for CT tokens
+     * @return received How many vault tokens you'll get
      */
     function depositLv(Id id, uint256 amount, uint256 raTolerance, uint256 ctTolerance)
         external
         returns (uint256 received);
 
     /**
-     * @notice Redeem lv before expiry
-     * @param redeemParams The object with details like id, reciever, amount, amountOutMin, ammDeadline
-     * @param permitParams The object with details for permit like rawLvPermitSig(Raw signature for LV approval permit) and deadline for signature
+     * @notice Redeem your vault tokens before expiry (with permit)
+     * @param redeemParams Details about your redemption (amount, minimum outputs, etc.)
+     * @param permitParams Your permission signature to use the vault tokens
+     * @return result Details about what you received from the redemption
      */
     function redeemEarlyLv(RedeemEarlyParams memory redeemParams, PermitParams memory permitParams)
         external
         returns (RedeemEarlyResult memory result);
 
     /**
-     * @notice Redeem lv before expiry
-     * @param redeemParams The object with details like id, reciever, amount, amountOutMin, ammDeadline
+     * @notice Redeem your vault tokens before expiry
+     * @param redeemParams Details about your redemption (amount, minimum outputs, etc.)
+     * @return result Details about what you received from the redemption
      */
     function redeemEarlyLv(RedeemEarlyParams memory redeemParams) external returns (RedeemEarlyResult memory result);
 
     /**
-     * This will accure value for LV holders by providing liquidity to the AMM using the RA received from selling DS when a users buys DS
-     * @param id the id of the pair
-     * @param amount the amount of RA received from selling DS
+     * @notice Add liquidity to the trading pool using fees from DS sales
+     * @param id Which vault to add liquidity for
+     * @param amount How much to add
      */
     function provideLiquidityWithFlashSwapFee(Id id, uint256 amount) external;
 
     /**
-     * Returns the amount of AMM LP tokens that the vault holds
-     * @param id The Module id that is used to reference both psm and lv of a given pair
+     * @notice Check how many trading pool tokens the vault holds
+     * @param id Which vault to check
+     * @return The amount of LP tokens held
      */
     function vaultLp(Id id) external view returns (uint256);
 
+    /**
+     * @notice Accept profit from rollover operations
+     * @param id Which vault receives the profit
+     * @param amount How much profit to accept
+     */
     function lvAcceptRolloverProfit(Id id, uint256 amount) external;
 
+    /**
+     * @notice Update the percentage of CT tokens held by the vault
+     * @param id Which vault to update
+     * @param ctHeldPercentage The new percentage to hold
+     */
     function updateCtHeldPercentage(Id id, uint256 ctHeldPercentage) external;
 
+    /**
+     * @notice Get the address of the vault token
+     * @param id Which vault to check
+     * @return lv The address of the vault token
+     */
     function lvAsset(Id id) external view returns (address lv);
 
     /**
-     * Returns the total RA tokens that the vault at a given time, will be updated on every new issuance.(e.g total ra of dsId of 1 will be updated when Ds with dsId of 2 is issued)
-     * Cork's team will use this snapshot value + internal tolerance(likelky would be 0.01%)to determine when the vault should resume deposits
-     * @param id The Module id that is used to reference both psm and lv of a given pair
-     * @param dsId The DsId
+     * @notice Get the total redemption assets in the vault at a specific time
+     * @param id Which vault to check
+     * @param dsId Which DS series to check
+     * @return The total amount of redemption assets
      */
     function totalRaAt(Id id, uint256 dsId) external view returns (uint256);
 
+    /**
+     * @notice Update the safety threshold for the vault
+     * @param id Which vault to update
+     * @param newNavThreshold The new threshold value
+     */
     function updateVaultNavThreshold(Id id, uint256 newNavThreshold) external;
 }

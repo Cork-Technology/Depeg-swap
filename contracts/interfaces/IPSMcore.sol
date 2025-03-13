@@ -255,6 +255,18 @@ interface IPSMcore is IRepurchase {
 
     function psmAcceptFlashSwapProfit(Id id, uint256 profit) external;
 
+    /**
+     * @notice Roll over your expired CT tokens into a new series
+     * @param id Which PSM you're using
+     * @param owner Who owns the CT tokens
+     * @param amount How many CT tokens you want to roll over
+     * @param prevDsId The previous DS series ID
+     * @param rawCtPermitSig Permission signature to use your CT tokens
+     * @param ctDeadline When this permission expires
+     * @return ctReceived How many new CT tokens you'll get
+     * @return dsReceived How many DS tokens you'll get (0 if auto-sell is enabled)
+     * @return paReceived How much pegged asset you'll get
+     */
     function rolloverExpiredCt(
         Id id,
         address owner,
@@ -264,6 +276,14 @@ interface IPSMcore is IRepurchase {
         uint256 ctDeadline
     ) external returns (uint256 ctReceived, uint256 dsReceived, uint256 paReceived);
 
+    /**
+     * @notice Claim profits from your auto-sold DS tokens
+     * @param id Which PSM you're claiming from
+     * @param prevDsId The DS series ID you rolled over from
+     * @param amount How much you want to claim
+     * @return profit How much profit you'll receive
+     * @return dsReceived Any remaining DS tokens you'll get
+     */
     function claimAutoSellProfit(Id id, uint256 prevDsId, uint256 amount)
         external
         returns (uint256 profit, uint256 dsReceived);
@@ -274,7 +294,18 @@ interface IPSMcore is IRepurchase {
 
     function updatePsmAutoSellStatus(Id id, bool status) external;
 
+    /**
+     * @notice Check how much profit is still available to claim from your rollover
+     * @param id Which PSM to check
+     * @param dsId Which DS series to check
+     * @return The amount of profit you can still claim
+     */
     function rolloverProfitRemaining(Id id, uint256 dsId) external view returns (uint256);
 
+    /**
+     * @notice Check if auto-selling DS tokens is enabled for this PSM
+     * @param id Which PSM to check
+     * @return True if auto-sell is enabled, false otherwise
+     */
     function psmAutoSellStatus(Id id) external view returns (bool);
 }

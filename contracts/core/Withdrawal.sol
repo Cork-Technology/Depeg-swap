@@ -57,6 +57,13 @@ contract Withdrawal is ReentrancyGuardTransient, IWithdrawal {
     }
 
     // the token is expected to be transferred to this contract before calling this function
+    /**
+     * @notice Adds a new withdrawal request for the specified owner and tokens.
+     * @dev This function can only be called by the vault.
+     * @param owner The address of the owner requesting the withdrawal.
+     * @param tokens An array of tokens to be withdrawn.
+     * @return withdrawalId The unique identifier for the created withdrawal request.
+     */
     function add(address owner, IWithdrawalRouter.Tokens[] calldata tokens)
         external
         onlyVault
@@ -83,6 +90,12 @@ contract Withdrawal is ReentrancyGuardTransient, IWithdrawal {
         emit WithdrawalRequested(withdrawalId, owner, claimableAt);
     }
 
+    /**
+     * @notice Claims the withdrawal to the caller's address.
+     * @dev This function can only be called by the owner of the withdrawal and only when the withdrawal is claimable.
+     * It transfers all tokens associated with the withdrawal to the owner's address.
+     * @param withdrawalId The unique identifier of the withdrawal to be claimed.
+     */
     function claimToSelf(bytes32 withdrawalId)
         external
         nonReentrant
@@ -101,6 +114,14 @@ contract Withdrawal is ReentrancyGuardTransient, IWithdrawal {
         emit WithdrawalClaimed(withdrawalId, msg.sender);
     }
 
+    /**
+     * @notice Claims the routed withdrawal by transferring the specified tokens to the router.
+     * @dev This function can only be called by the owner of the withdrawal and only when the withdrawal is claimable.
+     * It uses the nonReentrant modifier to prevent reentrancy attacks.
+     * @param withdrawalId The unique identifier of the withdrawal.
+     * @param router The address of the router to which the funds will be transferred.
+     * @param routerData Additional data required by the router.
+     */
     function claimRouted(bytes32 withdrawalId, address router, bytes calldata routerData)
         external
         nonReentrant

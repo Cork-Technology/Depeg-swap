@@ -38,6 +38,11 @@ abstract contract Expiry is IExpiry {
     uint256 internal immutable EXPIRY;
     uint256 internal immutable ISSUED_AT;
 
+    /**
+     * @dev Constructor for the Asset contract.
+     * @param _expiry The expiry timestamp for the asset. If set to 0, the asset does not expire.
+     * @notice Initializes the asset with the given expiry timestamp. If the expiry timestamp is not 0 and is in the past, the transaction will revert with an Expired error.
+     */
     constructor(uint256 _expiry) {
         if (_expiry != 0 && _expiry < block.timestamp) {
             revert Expired();
@@ -80,6 +85,14 @@ contract Asset is ERC20Burnable, CustomERC20Permit, Ownable, Expiry, ExchangeRat
 
     string public pairName;
 
+    /**
+     * @notice Constructor for the Asset contract
+     * @param _pairName The name of the asset pair
+     * @param _owner The address of the owner of the contract
+     * @param _expiry The expiry time of the asset
+     * @param _rate The exchange rate of the asset
+     * @param _dsId The ID of the Depeg Swap
+     */
     constructor(string memory _pairName, address _owner, uint256 _expiry, uint256 _rate, uint256 _dsId)
         ExchangeRate(_rate)
         ERC20(_pairName, _pairName)
@@ -107,6 +120,11 @@ contract Asset is ERC20Burnable, CustomERC20Permit, Ownable, Expiry, ExchangeRat
         return DS_ID;
     }
 
+    /**
+     * @notice Updates the rate of the asset.
+     * @dev This function can only be called by the owner of the contract.
+     * @param newRate The new rate to be set for the asset.
+     */
     function updateRate(uint256 newRate) external override onlyOwner {
         rate = newRate;
     }

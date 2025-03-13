@@ -130,17 +130,35 @@ abstract contract VaultCore is ModuleState, Context, IVault, IVaultLiquidation {
         return states[id].vaultLp(getAmmRouter());
     }
 
+    /**
+     * @notice Accepts rollover profit for a given ID and allocates the fees to the vault.
+     * @dev This function can only be called by the FlashSwapRouter.
+     * @param id The identifier for the state.
+     * @param amount The amount of profit to be allocated to the vault.
+     */
     function lvAcceptRolloverProfit(Id id, uint256 amount) external {
         onlyFlashSwapRouter();
         State storage state = states[id];
         state.allocateFeesToVault(amount);
     }
 
+    /**
+     * @notice Updates the collateral held percentage for a given ID.
+     * @dev This function can only be called by the configuration contract.
+     * @param id The identifier for which the collateral held percentage is being updated.
+     * @param ctHeldPercentage The new collateral held percentage to be set.
+     */
     function updateCtHeldPercentage(Id id, uint256 ctHeldPercentage) external {
         onlyConfig();
         states[id].updateCtHeldPercentage(ctHeldPercentage);
     }
 
+    /**
+     * @notice Requests liquidation funds for a given ID.
+     * @dev This function can only be called by whitelisted liquidation contracts.
+     * @param id The identifier for which liquidation funds are requested.
+     * @param amount The amount of funds requested for liquidation.
+     */
     function requestLiquidationFunds(Id id, uint256 amount) external override {
         onlyWhiteListedLiquidationContract();
         State storage state = states[id];
@@ -148,12 +166,23 @@ abstract contract VaultCore is ModuleState, Context, IVault, IVaultLiquidation {
         emit LiquidationFundsRequested(id, msg.sender, amount);
     }
 
+    /**
+     * @notice Receives the result funds from a trade execution.
+     * @dev This function is called to update the state with the funds received from a trade execution.
+     * @param id The identifier of the trade.
+     * @param amount The amount of funds received from the trade execution.
+     */
     function receiveTradeExecuctionResultFunds(Id id, uint256 amount) external override {
         State storage state = states[id];
         state.receiveTradeExecuctionResultFunds(amount, msg.sender);
         emit TradeExecutionResultFundsReceived(id, msg.sender, amount);
     }
 
+    /**
+     * @notice Uses the trade execution result funds for a given trade identified by `id`.
+     * @dev This function can only be called by the contract configuration.
+     * @param id The identifier of the trade whose execution result funds are to be used.
+     */
     function useTradeExecutionResultFunds(Id id) external override {
         onlyConfig();
         State storage state = states[id];
@@ -181,6 +210,12 @@ abstract contract VaultCore is ModuleState, Context, IVault, IVaultLiquidation {
         states[id].receiveLeftoverFunds(amount, _msgSender());
     }
 
+    /**
+     * @notice Updates the NAV (Net Asset Value) threshold for a specific vault.
+     * @dev This function can only be called by an authorized configuration role and for an initialized vault.
+     * @param id The identifier of the vault whose NAV threshold is to be updated.
+     * @param newNavThreshold The new NAV threshold value to be set for the vault.
+     */
     function updateVaultNavThreshold(Id id, uint256 newNavThreshold) external override {
         onlyConfig();
         onlyInitialized(id);
@@ -190,6 +225,11 @@ abstract contract VaultCore is ModuleState, Context, IVault, IVaultLiquidation {
         emit VaultNavThresholdUpdated(id, newNavThreshold);
     }
 
+    /**
+     * @notice Forces an update to the NAV circuit breaker reference value for a given ID.
+     * @dev This function can only be called by the configuration contract and for an initialized ID.
+     * @param id The identifier for which the NAV circuit breaker reference value needs to be updated.
+     */
     function forceUpdateNavCircuitBreakerReferenceValue(Id id) external {
         onlyConfig();
         onlyInitialized(id);

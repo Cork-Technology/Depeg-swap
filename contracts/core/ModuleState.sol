@@ -70,18 +70,26 @@ abstract contract ModuleState is IErrors, ReentrancyGuardTransient {
         WITHDRAWAL_CONTRACT = _withdrawalContract;
     }
 
+    /// @notice Returns the router core contract instance
+    /// @return RouterState The router core contract
     function getRouterCore() public view returns (RouterState) {
         return RouterState(DS_FLASHSWAP_ROUTER);
     }
 
+    /// @notice Returns the AMM router (UniV4) hook contract instance
+    /// @return ICorkHook The AMM router hook contract
     function getAmmRouter() public view returns (ICorkHook) {
         return ICorkHook(AMM_HOOK);
     }
 
+    /// @notice Returns the withdrawal contract instance
+    /// @return Withdrawal The withdrawal contract
     function getWithdrawalContract() public view returns (Withdrawal) {
         return Withdrawal(WITHDRAWAL_CONTRACT);
     }
 
+    /// @notice Returns the treasury address from the config contract
+    /// @return address The treasury address
     function getTreasuryAddress() public view returns (address) {
         return CorkConfig(CONFIG).treasury();
     }
