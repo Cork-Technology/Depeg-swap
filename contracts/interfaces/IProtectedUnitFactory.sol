@@ -12,7 +12,7 @@ import {IErrors} from "./IErrors.sol";
  */
 interface IProtectedUnitFactory is IErrors {
     /**
-     * @notice Records when a new Protected Unit contract is created
+     * @notice Emmits when a new Protected Unit contract is created
      * @param pairId Unique identifier for the token pair
      * @param pa Address of the Protected Asset (PA) token
      * @param ra Address of the Return Asset (RA) token
