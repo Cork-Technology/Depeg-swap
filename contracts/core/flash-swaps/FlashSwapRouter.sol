@@ -471,6 +471,7 @@ contract RouterState is
         returns (uint256 amount)
     {
         AssetPair storage assetPair = self.ds[dsId];
+        // TODO : dynamically determine pressure
 
         uint256 amountSellFromReserve =
             amountOut - MathHelper.calculatePercentageFee(self.reserveSellPressurePercentage, amountOut);

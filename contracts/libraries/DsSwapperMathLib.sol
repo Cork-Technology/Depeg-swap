@@ -395,6 +395,30 @@ library SwapperMathLibrary {
         return sub(convertUd(1), effectiveDsPrice);
     }
 
+    /// @notice s = x / y  * 100
+    /// where :
+    /// - x = current trade risk premium(100% = 1e18) -> this is because internally risk premium is represented as 0-1 where 1 is 100%
+    /// - y = risk premium threshold(100% = 100e18)
+    /// - s = pressure percentage
+    function calculateOptimalSellPressure(uint256 currentRiskPremium, uint256 threshold)
+        internal
+        pure
+        returns (uint256 pressurePercentage)
+    {
+        UD60x18 x = ud(currentRiskPremium);
+        UD60x18 y = ud(threshold);
+
+        // solhint-disable-next-line var-name-mixedcase
+        UD60x18 ONE_HUNDRED = convertUd(100);
+
+        // normalize y from 0-100 to 0-1
+        y = div(y, ONE_HUNDRED);
+
+        UD60x18 s = mul(div(x, y), ONE_HUNDRED);
+
+        pressurePercentage = unwrap(s);
+    }
+
     /// @notice ptConstFixed = f / (rate +1)^t
     /// where f = 1, and t = 1
     /// we expect that the rate is in 1e18 precision BEFORE passing it to this function
