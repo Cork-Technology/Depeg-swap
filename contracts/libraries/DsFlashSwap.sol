@@ -110,6 +110,26 @@ library DsFlashSwaplibrary {
         self.vhiyaCumulated += SwapperMathLibrary.calcVHIYAaccumulated(start, current, decayDiscount, ds);
     }
 
+    function determineSellPressure(ReserveState storage self, uint256 dsId, uint256 raProvided, uint256 dsOut)
+        external
+        view
+        returns (uint256 pressurePercentage)
+    {
+        uint256 threshold = self.reserveSellPressurePercentageThreshold;
+
+        if (threshold == 0) {
+            return 0;
+        }
+
+        uint256 start = self.ds[dsId].ds.issuedAt();
+        uint256 end = self.ds[dsId].ds.expiry();
+        uint256 current = block.timestamp;
+
+        pressurePercentage = SwapperMathLibrary.calculateOptimalSellPressure(
+            start, end, current, dsOut, raProvided, self.reserveSellPressurePercentageThreshold
+        );
+    }
+
     function emptyReservePartialLv(ReserveState storage self, uint256 dsId, uint256 amount, address to)
         public
         returns (uint256 emptied)
