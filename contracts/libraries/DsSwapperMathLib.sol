@@ -204,7 +204,7 @@ library SwapperMathLibrary {
         uint256 startTime,
         uint256 maturityTime,
         uint256 currentTime,
-        uint256 amount,
+        uint256 dsAmountOut,
         uint256 raProvided,
         uint256 decayDiscountInDays
     ) external pure returns (uint256) {
@@ -213,22 +213,42 @@ library SwapperMathLibrary {
                 convert(int256(startTime)), convert(int256(maturityTime)), convert(int256(currentTime))
             )
         );
-        UD60x18 effectiveDsPrice = calculateEffectiveDsPrice(ud(amount), ud(raProvided));
+        UD60x18 effectiveDsPrice = calculateEffectiveDsPrice(ud(dsAmountOut), ud(raProvided));
         UD60x18 rateI = calcSpotArp(t, effectiveDsPrice);
         UD60x18 decay = calculateDecayDiscount(ud(decayDiscountInDays), ud(startTime), ud(currentTime));
 
-        return unwrap(calculatePercentage(calculatePercentage(ud(amount), rateI), decay));
+        return unwrap(calculatePercentage(calculatePercentage(ud(dsAmountOut), rateI), decay));
+    }
+
+    function calculateOptimalSellPressure(
+        uint256 startTime,
+        uint256 maturityTime,
+        uint256 currentTime,
+        uint256 dsAmountOut,
+        uint256 raProvided,
+        uint256 threshold
+    ) external pure returns (uint256) {
+        UD60x18 t = intoUD60x18(
+            BuyMathBisectionSolver.computeT(
+                convert(int256(startTime)), convert(int256(maturityTime)), convert(int256(currentTime))
+            )
+        );
+        UD60x18 effectiveDsPrice = calculateEffectiveDsPrice(ud(dsAmountOut), ud(raProvided));
+        UD60x18 currentRiskPremium = calcSpotArp(t, effectiveDsPrice);
+
+        return calculateOptimalSellPressureWithRiskPremium(currentRiskPremium, ud(threshold));
     }
 
     /// @notice VHIYA_acc =  Volume_i  - ((Discount / 86400) * (currentTime - issuanceTime))
-    function calcVHIYAaccumulated(uint256 startTime, uint256 currentTime, uint256 decayDiscountInDays, uint256 amount)
-        external
-        pure
-        returns (uint256)
-    {
+    function calcVHIYAaccumulated(
+        uint256 startTime,
+        uint256 currentTime,
+        uint256 decayDiscountInDays,
+        uint256 dsAmountOut
+    ) external pure returns (uint256) {
         UD60x18 decay = calculateDecayDiscount(ud(decayDiscountInDays), ud(startTime), ud(currentTime));
 
-        return convertUd(calculatePercentage(convertUd(amount), decay));
+        return convertUd(calculatePercentage(convertUd(dsAmountOut), decay));
     }
 
     function calculateEffectiveDsPrice(UD60x18 dsAmount, UD60x18 raProvided)
@@ -400,13 +420,14 @@ library SwapperMathLibrary {
     /// - x = current trade risk premium(100% = 1e18) -> this is because internally risk premium is represented as 0-1 where 1 is 100%
     /// - y = risk premium threshold(100% = 100e18)
     /// - s = pressure percentage
-    function calculateOptimalSellPressure(uint256 currentRiskPremium, uint256 threshold)
+    function calculateOptimalSellPressureWithRiskPremium(UD60x18 currentRiskPremium, UD60x18 threshold)
         internal
         pure
         returns (uint256 pressurePercentage)
     {
-        UD60x18 x = ud(currentRiskPremium);
-        UD60x18 y = ud(threshold);
+        // for readibility
+        UD60x18 x = currentRiskPremium;
+        UD60x18 y = threshold;
 
         // solhint-disable-next-line var-name-mixedcase
         UD60x18 ONE_HUNDRED = convertUd(100);
