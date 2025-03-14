@@ -113,8 +113,7 @@ abstract contract Helper is SigUtils, TestHelper {
 
     function defaultOffchainGuessParams() internal pure returns (IDsFlashSwapCore.OffchainGuess memory params) {
         // we return 0 since in most cases, we want to actually test the on-chain calculation logic
-        params.initialBorrowAmount = 0;
-        params.afterSoldBorrowAmount = 0;
+        params.borrow = 0;
     }
 
     function initializeNewModuleCore(
