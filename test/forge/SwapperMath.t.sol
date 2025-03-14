@@ -105,7 +105,8 @@ contract SwapMathTest is Test {
         // 3% threshold where 100 = 100%
         uint256 threshold = 3 ether;
 
-        uint256 percentage = SwapperMathLibrary.calculateOptimalSellPressure(currentRiskPremium, threshold);
+        uint256 percentage =
+            SwapperMathLibrary.calculateOptimalSellPressureWithRiskPremium(ud(currentRiskPremium), ud(threshold));
         // should be 50%
         vm.assertEq(percentage, 50 ether);
     }
