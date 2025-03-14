@@ -114,7 +114,8 @@ contract RouterState is
 
     modifier autoClearReturnData() {
         _;
-        ReturnDataSlotLib.clear(ReturnDataSlotLib.RETURN_SLOT);
+        ReturnDataSlotLib.clear(ReturnDataSlotLib.RETURN_SLOT_BUY);
+        ReturnDataSlotLib.clear(ReturnDataSlotLib.RETURN_SLOT_SELL);
         ReturnDataSlotLib.clear(ReturnDataSlotLib.REFUNDED_SLOT);
         ReturnDataSlotLib.clear(ReturnDataSlotLib.DS_FEE_AMOUNT);
     }
@@ -338,7 +339,6 @@ contract RouterState is
         Id reserveId,
         uint256 dsId,
         uint256 amount,
-        uint256 amountOutMin,
         address user,
         IDsFlashSwapCore.BuyAprroxParams memory approxParams,
         IDsFlashSwapCore.OffchainGuess memory offchainGuess
@@ -347,11 +347,11 @@ contract RouterState is
         // try to swap the RA for DS via rollover, this will noop if the condition for rollover is not met
         (amount, dsReceived) = _swapRaForDsViaRollover(reserveId, dsId, user, amount);
 
+        // increase the return data slot value with DS that the user got from rollover sale
+        ReturnDataSlotLib.increase(ReturnDataSlotLib.RETURN_SLOT_BUY, dsReceived);
+
         // short circuit if all the swap is filled using rollover
         if (amount == 0) {
-            // we directly increase the return data slot value with DS that the user got from rollover sale here since,
-            // there's no possibility of selling the reserve, hence no chance of mix-up of return value
-            ReturnDataSlotLib.increase(ReturnDataSlotLib.RETURN_SLOT, dsReceived);
             return (0, 0);
         }
 
@@ -377,12 +377,6 @@ contract RouterState is
                 )
             );
         }
-        // increase the return data slot value with DS that the user got from rollover sale
-        // the reason we do this after selling the DS reserve is to prevent mix-up of return value
-        // basically, the return value is increased when the reserve sell DS, but that value is meant for thr vault/psm
-        // so we clear them and start with a clean transient storage slot
-        ReturnDataSlotLib.clear(ReturnDataSlotLib.RETURN_SLOT);
-        ReturnDataSlotLib.increase(ReturnDataSlotLib.RETURN_SLOT, dsReceived);
 
         // trigger flash swaps and send the attributed DS tokens to the user
         __flashSwap(assetPair, finalBorrowedAmount, 0, dsId, reserveId, true, user, amount);
@@ -544,9 +538,9 @@ contract RouterState is
         IERC20(assetPair.ra).safeTransferFrom(msg.sender, address(this), amount);
 
         (result.initialBorrow, result.afterSoldBorrow) =
-            _swapRaforDs(self, assetPair, reserveId, dsId, amount, amountOutMin, msg.sender, params, offchainGuess);
+            _swapRaforDs(self, assetPair, reserveId, dsId, amount, msg.sender, params, offchainGuess);
 
-        result.amountOut = ReturnDataSlotLib.get(ReturnDataSlotLib.RETURN_SLOT);
+        result.amountOut = ReturnDataSlotLib.get(ReturnDataSlotLib.RETURN_SLOT_BUY);
 
         // slippage protection, revert if the amount of DS tokens received is less than the minimum amount
         if (result.amountOut < amountOutMin) {
@@ -590,9 +584,9 @@ contract RouterState is
         IERC20(assetPair.ra).safeTransferFrom(msg.sender, address(this), amount);
 
         (result.initialBorrow, result.afterSoldBorrow) =
-            _swapRaforDs(self, assetPair, reserveId, dsId, amount, amountOutMin, msg.sender, params, offchainGuess);
+            _swapRaforDs(self, assetPair, reserveId, dsId, amount, msg.sender, params, offchainGuess);
 
-        result.amountOut = ReturnDataSlotLib.get(ReturnDataSlotLib.RETURN_SLOT);
+        result.amountOut = ReturnDataSlotLib.get(ReturnDataSlotLib.RETURN_SLOT_BUY);
 
         // slippage protection, revert if the amount of DS tokens received is less than the minimum amount
         if (result.amountOut < amountOutMin) {
@@ -649,7 +643,7 @@ contract RouterState is
             revert IErrors.InsufficientLiquidityForSwap();
         }
 
-        amountOut = ReturnDataSlotLib.get(ReturnDataSlotLib.RETURN_SLOT);
+        amountOut = ReturnDataSlotLib.get(ReturnDataSlotLib.RETURN_SLOT_SELL);
 
         self.recalculateHIYA(dsId, TransferHelper.tokenNativeDecimalsToFixed(amountOut, assetPair.ra), amount);
 
@@ -680,7 +674,7 @@ contract RouterState is
             revert IErrors.InsufficientLiquidityForSwap();
         }
 
-        amountOut = ReturnDataSlotLib.get(ReturnDataSlotLib.RETURN_SLOT);
+        amountOut = ReturnDataSlotLib.get(ReturnDataSlotLib.RETURN_SLOT_SELL);
 
         self.recalculateHIYA(dsId, TransferHelper.tokenNativeDecimalsToFixed(amountOut, assetPair.ra), amount);
 
@@ -825,7 +819,7 @@ contract RouterState is
         assetPair.ct.transfer(poolManager, repaymentAmount);
 
         // set the return data slot
-        ReturnDataSlotLib.increase(ReturnDataSlotLib.RETURN_SLOT, received);
+        ReturnDataSlotLib.increase(ReturnDataSlotLib.RETURN_SLOT_BUY, received);
     }
 
     function __afterFlashswapSell(
@@ -859,6 +853,6 @@ contract RouterState is
         // repay flash loan
         IERC20(ra).safeTransfer(poolManager, actualRepaymentAmount);
 
-        ReturnDataSlotLib.increase(ReturnDataSlotLib.RETURN_SLOT, received);
+        ReturnDataSlotLib.increase(ReturnDataSlotLib.RETURN_SLOT_SELL, received);
     }
 }

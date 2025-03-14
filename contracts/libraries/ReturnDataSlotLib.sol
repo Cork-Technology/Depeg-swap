@@ -2,8 +2,11 @@
 pragma solidity ^0.8.24;
 
 library ReturnDataSlotLib {
-    // keccak256("RETURN")
-    bytes32 public constant RETURN_SLOT = 0xb28124349b5a89ededaa96175a0b225363cf060aaa28ecb54f00fe1cc09eb9de;
+    // keccak256("SELL")
+    bytes32 public constant RETURN_SLOT_SELL = 0x46e2aa85b4ea4837644e46fe22acb44743da12e349006c0093a61f6bf0967602;
+
+    // keccak256("BUY")
+    bytes32 public constant RETURN_SLOT_BUY = 0x8e9b148654316179bd45e9ec5f0b575ae8288e79df16d7be748ec9a9bdca8b4c;
 
     // keccak256("REFUNDED")
     bytes32 public constant REFUNDED_SLOT = 0x0ae202c5d1ff9dcd4329d24acbf3bddff6279ad182d19d899440adb36d927795;
