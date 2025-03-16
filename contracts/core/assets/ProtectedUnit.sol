@@ -19,9 +19,7 @@ import {ModuleCore} from "./../ModuleCore.sol";
 import {ERC20Permit} from "@openzeppelin/contracts/token/ERC20/extensions/ERC20Permit.sol";
 import {Signature, MinimalSignatureHelper} from "./../../libraries/SignatureHelperLib.sol";
 import {TransferHelper} from "./../../libraries/TransferHelper.sol";
-import {PermitChecker} from "../../libraries/PermitChecker.sol";
-import {IPermit2} from "../../interfaces/uniswap-v2/Permit2.sol";
-import {ISignatureTransfer} from "../../interfaces/uniswap-v2/SignatureTransfer.sol";
+import {IPermit2} from "permit2/src/interfaces/IPermit2.sol";
 
 /**
  * @notice Data structure for tracking DS token information
@@ -57,6 +55,9 @@ contract ProtectedUnit is
     IDsFlashSwapCore public immutable FLASHSWAP_ROUTER;
     ModuleCore public immutable MODULE_CORE;
 
+    /// @notice Permit2 contract address
+    IPermit2 public immutable PERMIT2;
+
     /**
      * @notice The ERC20 token representing the Pegged Asset (PA)
      * @dev One of the underlying assets in the Protected Unit bundle
@@ -71,8 +72,6 @@ contract ProtectedUnit is
     uint256 public raReserve;
     uint256 public dsNonce;
     uint256 public paNonce;
-    // should be passed in constructor
-    IPermit2 public immutable PERMIT2 = IPermit2(0x000000000022D473030F116dDEE9F6B43aC78BA3); // hardcoded for ethereum
 
     /**
      * @notice Unique PSM/Vault identifier for RA:PA markets in modulecore
@@ -103,6 +102,7 @@ contract ProtectedUnit is
      * @param _mintCap Maximum number of tokens that can be created
      * @param _config Address of the configuration contract
      * @param _flashSwapRouter Address of the flash swap router
+     * @param _permit2 Address of the Permit2 contract
      */
     constructor(
         address _moduleCore,
@@ -112,7 +112,8 @@ contract ProtectedUnit is
         string memory _pairName,
         uint256 _mintCap,
         address _config,
-        address _flashSwapRouter
+        address _flashSwapRouter,
+        address _permit2
     )
         ERC20(string(abi.encodePacked("Protected Unit - ", _pairName)), string(abi.encodePacked("PU - ", _pairName)))
         ERC20Permit(string(abi.encodePacked("Protected Unit - ", _pairName)))
@@ -125,8 +126,7 @@ contract ProtectedUnit is
         mintCap = _mintCap;
         FLASHSWAP_ROUTER = IDsFlashSwapCore(_flashSwapRouter);
         CONFIG = CorkConfig(_config);
-        dsNonce = 0;
-        paNonce = 0;
+        PERMIT2 = IPermit2(_permit2);
     }
 
     /**
@@ -461,64 +461,38 @@ contract ProtectedUnit is
 
     // if pa do not support permit, then user can still use this function with only ds permit and manual approval on the PA side
     /**
-     * @notice Mints new tokens using permit signatures for gasless approvals
-     * @dev Requires valid signatures for DS and optionally PA permits.
-     *      It also ensures the contract is not paused and prevents reentrancy.
-     * @param minter The address to which the minted tokens will be sent.
-     * @param amount The amount of tokens to be minted.
-     * @param rawDsPermitSig The raw signature for the DS permit.
-     * @param rawPaPermitSig The raw signature for the PA permit (optional).
-     * @param deadline The deadline timestamp by which the permit signatures must be valid.
+     * @notice Mints new tokens using Permit2 for gasless batch approvals
+     * @dev Uses Uniswap's Permit2 protocol to approve both DS and PA tokens in a single signature
+     * @param amount The amount of tokens to be minted
+     * @param permitBatchData The Permit2 batch permit data for token approvals
+     * @param signature The signature authorizing the permits
      * @return dsAmount The amount of DS tokens used
      * @return paAmount The amount of PA tokens used
-     * @custom:reverts InvalidSignature if DS signature is invalid
+     * @custom:reverts InvalidSignature if signature data is invalid
      * @custom:reverts EnforcedPause if minting is paused
      * @custom:emits Mint when tokens are successfully minted
      */
     function mint(
-        address minter,
         uint256 amount,
-        bytes calldata rawDsPermitSig, // EIP 712 compliant
-        bytes calldata rawPaPermitSig, // EIP 712 compliant
-        uint256 deadline
+        IPermit2.PermitBatchTransferFrom calldata permitBatchData,
+        IPermit2.SignatureTransferDetails[] calldata transferDetails,
+        bytes calldata signature
     ) external whenNotPaused nonReentrant autoUpdateDS autoSync returns (uint256 dsAmount, uint256 paAmount) {
-        if (rawDsPermitSig.length == 0 || deadline == 0) {
+        if (signature.length == 0 || permitBatchData.permitted.length != 2 || transferDetails.length != 2) {
             revert InvalidSignature();
         }
 
+        // Calculate token amounts needed for minting
         (dsAmount, paAmount) = previewMint(amount);
+        if (transferDetails[0].requestedAmount < dsAmount || transferDetails[1].requestedAmount < paAmount) {
+            revert InvalidSignature();
+        }
 
-        ISignatureTransfer.TokenPermissions memory dsPermitted =
-            ISignatureTransfer.TokenPermissions({token: address(ds), amount: dsAmount});
+        // Batch transfer tokens from user to this contract using Permit2
+        PERMIT2.permitTransferFrom(permitBatchData, transferDetails, msg.sender, signature);
 
-        ISignatureTransfer.PermitTransferFrom memory dsPermit =
-            ISignatureTransfer.PermitTransferFrom({permitted: dsPermitted, nonce: dsNonce, deadline: deadline});
-
-        ISignatureTransfer.TokenPermissions memory paPermitted =
-            ISignatureTransfer.TokenPermissions({token: address(PA), amount: paAmount});
-
-        ISignatureTransfer.PermitTransferFrom memory paPermit =
-            ISignatureTransfer.PermitTransferFrom({permitted: paPermitted, nonce: paNonce, deadline: deadline});
-
-        ISignatureTransfer.SignatureTransferDetails memory dsTransferDetails =
-            ISignatureTransfer.SignatureTransferDetails({to: address(this), requestedAmount: dsAmount});
-
-        ISignatureTransfer.SignatureTransferDetails memory paTransferDetails =
-            ISignatureTransfer.SignatureTransferDetails({to: address(this), requestedAmount: paAmount});
-
-        PERMIT2.permitTransferFrom(dsPermit, dsTransferDetails, minter, rawDsPermitSig);
-
-        PERMIT2.permitTransferFrom(paPermit, paTransferDetails, minter, rawPaPermitSig);
-
-        // Signature memory sig = MinimalSignatureHelper.split(rawDsPermitSig);
-        // ds.permit(minter, address(this), dsAmount, deadline, sig.v, sig.r, sig.s, DS_PERMIT_MINT_TYPEHASH);
-
-        // if (rawPaPermitSig.length != 0) {
-        //     sig = MinimalSignatureHelper.split(rawPaPermitSig);
-        //     IERC20Permit(address(PA)).permit(minter, address(this), paAmount, deadline, sig.v, sig.r, sig.s);
-        // }
-
-        (uint256 _actualDs, uint256 _actualPa) = __mint(minter, amount);
+        // Mint the tokens to the owner
+        (uint256 _actualDs, uint256 _actualPa) = __mint(msg.sender, amount);
 
         assert(_actualDs == dsAmount);
         assert(_actualPa == paAmount);

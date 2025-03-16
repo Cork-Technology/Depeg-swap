@@ -5,6 +5,7 @@ import {ReentrancyGuardTransient} from "@openzeppelin/contracts/utils/Reentrancy
 import {ProtectedUnit} from "./ProtectedUnit.sol";
 import {IProtectedUnitRouter} from "../../interfaces/IProtectedUnitRouter.sol";
 import {MinimalSignatureHelper, Signature} from "./../../libraries/SignatureHelperLib.sol";
+import {IPermit2} from "permit2/src/interfaces/IPermit2.sol";
 
 /**
  * @title Protected Unit Router
@@ -15,6 +16,13 @@ import {MinimalSignatureHelper, Signature} from "./../../libraries/SignatureHelp
  * @author Cork Protocol Team
  */
 contract ProtectedUnitRouter is IProtectedUnitRouter, ReentrancyGuardTransient {
+    // Permit2 contract address
+    IPermit2 public immutable permit2;
+
+    constructor(address _permit2) {
+        permit2 = IPermit2(_permit2);
+    }
+
     /**
      * @notice Calculates the tokens needed for minting multiple Protected Units in single function call
      * @dev Iterates through each Protected Unit to calculate the required token amounts.
@@ -50,11 +58,11 @@ contract ProtectedUnitRouter is IProtectedUnitRouter, ReentrancyGuardTransient {
      * @dev Iterates through each Protected Unit to mint tokens using permit signatures.
      *      Recommended to keep the number of Protected Units under 10 to avoid gas issues
      * @param params All parameters needed for batch minting:
-     *        - deadline: Time until which the transaction is valid
      *        - protectedUnits: List of Protected Unit contract addresses to mint from
      *        - amounts: How many tokens to mint from respective Protected Unit contract
-     *        - rawDsPermitSigs: Permission signatures for DS tokens
-     *        - rawPaPermitSigs: Permission signatures for PA tokens
+     *        - permitBatchData: The Permit2 batch permit data covering all tokens
+     *        - transferDetails: Details for each token transfer
+     *        - signature: The signature authorizing the permits
      * @return dsAmounts List of DS token amounts used for respective Protected Unit token minting
      * @return paAmounts List of PA token amounts used for respective Protected Unit token minting
      * @custom:reverts InvalidInput if input array lengths don't match
@@ -65,20 +73,26 @@ contract ProtectedUnitRouter is IProtectedUnitRouter, ReentrancyGuardTransient {
         nonReentrant
         returns (uint256[] memory dsAmounts, uint256[] memory paAmounts)
     {
-        if (params.protectedUnits.length != params.amounts.length) {
+        if (
+            params.protectedUnits.length != params.amounts.length
+                || params.permitBatchData.permitted.length != params.transferDetails.length
+        ) {
             revert InvalidInput();
         }
+
         uint256 length = params.protectedUnits.length;
 
         dsAmounts = new uint256[](length);
         paAmounts = new uint256[](length);
 
-        // If large number of ProtectedUnits are passed, this function will revert due to gas limit.
-        // So we will keep the limit to 10 ProtectedUnits(or even less if needed) from frontend.
+        // Execute the permitTransferFrom to approve all tokens in one transaction
+        permit2.permitTransferFrom(params.permitBatchData, params.transferDetails, msg.sender, params.signature);
+
+        // Now mint from each ProtectedUnit
         for (uint256 i = 0; i < length; ++i) {
-            (dsAmounts[i], paAmounts[i]) = ProtectedUnit(params.protectedUnits[i]).mint(
-                msg.sender, params.amounts[i], params.rawDsPermitSigs[i], params.rawPaPermitSigs[i], params.deadline
-            );
+            ProtectedUnit protectedUnit = ProtectedUnit(params.protectedUnits[i]);
+            // Use the standard mint function since tokens are already approved via Permit2
+            (dsAmounts[i], paAmounts[i]) = protectedUnit.mint(params.amounts[i]);
         }
     }
 
