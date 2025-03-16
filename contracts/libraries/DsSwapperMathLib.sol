@@ -128,10 +128,9 @@ library BuyMathBisectionSolver {
 library SwapperMathLibrary {
     using MarketSnapshotLib for MarketSnapshot;
 
-    // needed since, if it's near expiry and the value goes higher than this,
+    // needed since, if it's expiry and the value goes higher than this,
     // the math would fail, since near expiry it would behave similar to CSM curve,
-    // it's fine if the actual value go higher since that means we would only overestimate on how much we actually need to repay
-    int256 internal constant ONE_MINUS_T_CAP = 99e17;
+    int256 internal constant ONE_MINUS_T_CAP = 1e18;
 
     // Calculate price ratio of two tokens in AMM, will return ratio on 18 decimals precision
     function getPriceRatio(uint256 raReserve, uint256 ctReserve)
@@ -167,21 +166,27 @@ library SwapperMathLibrary {
         uint256 epsilon,
         uint256 maxIter
     ) external pure returns (uint256 s) {
-        if (e > x && x < y) {
-            revert IErrors.InsufficientLiquidityForSwap();
-        }
+        // we don't enforce that x > y, since that means the price of the DS is negative
+        // if that happens, then the user would receive the excess RA in form of DS
+        // e.g if the excess RA is 10, then the user would receive 10 DS
 
         SD59x18 oneMinusT = BuyMathBisectionSolver.computeOneMinusT(
             convert(int256(start)), convert(int256(end)), convert(int256(current))
         );
 
-        if (unwrap(oneMinusT) > ONE_MINUS_T_CAP) {
-            oneMinusT = sd(ONE_MINUS_T_CAP);
+        if (unwrap(oneMinusT) >= ONE_MINUS_T_CAP) {
+            revert IErrors.Expired();
         }
 
-        SD59x18 root = BuyMathBisectionSolver.findRoot(
+        SD59x18 root;
+
+        try BuyMathBisectionSolver.findRoot(
             convert(int256(x)), convert(int256(y)), convert(int256(e)), oneMinusT, sd(int256(epsilon)), maxIter
-        );
+        ) returns (SD59x18 result) {
+            root = result;
+        } catch {
+            revert IErrors.InvalidPoolStateOrNearExpired();
+        }
 
         return uint256(convert(root));
     }
@@ -442,7 +447,7 @@ library SwapperMathLibrary {
         // we skip bounds check if the max lower bound is bigger than the initial borrowed amount
         // since it's guranteed to have enough liquidity if we never borrow
         if (repaymentAmountUd > amountOutUd && lowerBound != convertUd(0)) {
-            revert IErrors.NoLowerBound();
+            revert IErrors.InvalidPoolStateOrNearExpired();
         }
 
         UD60x18 upperBound = initialBorrowedAmountUd;
@@ -482,7 +487,7 @@ library SwapperMathLibrary {
 
         // this means that there's no suitable borrowed amount that satisfies the fee constraints
         if (result.borrowedAmount == 0) {
-            revert IErrors.NoConverge();
+            revert IErrors.InvalidPoolStateOrNearExpired();
         }
     }
 }

@@ -78,6 +78,19 @@ contract ModuleCore is OwnableUpgradeable, UUPSUpgradeable, PsmCore, Initialize,
         return PairLibrary.initalize(pa, ra, initialArp, expiry, exchangeRateProvider).toId();
     }
 
+    function markets(Id id)
+        external
+        view
+        returns (address pa, address ra, uint256 initialArp, uint256 expiryInterval, address exchangeRateProvider)
+    {
+        Pair storage pair = states[id].info;
+        pa = pair.pa;
+        ra = pair.ra;
+        initialArp = pair.initialArp;
+        expiryInterval = pair.expiryInterval;
+        exchangeRateProvider = pair.exchangeRateProvider;
+    }
+
     function initializeModuleCore(
         address pa,
         address ra,
@@ -105,7 +118,7 @@ contract ModuleCore is OwnableUpgradeable, UUPSUpgradeable, PsmCore, Initialize,
         PsmLibrary.initialize(state, key);
         VaultLibrary.initialize(state.vault, lv, ra, initialArp);
 
-        emit InitializedModuleCore(id, pa, ra, lv, expiryInterval);
+        emit InitializedModuleCore(id, pa, ra, lv, expiryInterval, initialArp, exchangeRateProvider);
     }
 
     function issueNewDs(
@@ -121,10 +134,9 @@ contract ModuleCore is OwnableUpgradeable, UUPSUpgradeable, PsmCore, Initialize,
 
         Pair storage info = state.info;
 
-        // we update the rate, if this is a yield bearing PA then the rate should go up
-        // this works since if the market uses our rate provider, then when updating the rate and the rate goes up
-        // the function would revert, but catched on the config contract, resulting in the provider also updating the rate accordingly that's used here
-        uint256 exchangeRates = _getRate(id, info);
+        // we update the rate, if this is a yield bearing PA then the rate should go up.
+        // that's why there's no check that prevents the rate from going up.
+        uint256 exchangeRates = PsmLibrary._getLatestRate(state);
 
         (address ct, address ds) = IAssetFactory(SWAP_ASSET_FACTORY).deploySwapAssets(
             IAssetFactory.DeployParams(

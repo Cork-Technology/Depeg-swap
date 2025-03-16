@@ -68,6 +68,7 @@ struct Balances {
 struct VaultBalances {
     RedemptionAssetManager ra;
     uint256 ctBalance;
+    uint256 lpBalance;
 }
 
 /**
@@ -93,6 +94,8 @@ struct VaultWithdrawalPool {
 
 /**
  * @dev VaultAmmLiquidityPool structure for providing AMM pools in Vault(Liquidity Pool)
+ * This should only be used at the end of each epoch(dsId) lifecyle(e.g at expiry) to pool all RA to be used
+ * as liquidity for initiating AMM in the next epoch
  */
 struct VaultAmmLiquidityPool {
     uint256 balance;
@@ -107,7 +110,6 @@ struct VaultState {
     LvAsset lv;
     BitMaps.BitMap lpLiquidated;
     VaultPool pool;
-    uint256 initialArp;
     // will be set to true after first deposit to LV.
     // to prevent manipulative behavior when depositing to Lv since we depend on preview redeem early to get
     // the correct exchange rate of LV
@@ -126,4 +128,13 @@ struct VaultState {
 struct VaultConfig {
     bool isDepositPaused;
     bool isWithdrawalPaused;
+    NavCircuitBreaker navCircuitBreaker;
+}
+
+struct NavCircuitBreaker {
+    uint256 snapshot0;
+    uint256 lastUpdate0;
+    uint256 snapshot1;
+    uint256 lastUpdate1;
+    uint256 navThreshold;
 }

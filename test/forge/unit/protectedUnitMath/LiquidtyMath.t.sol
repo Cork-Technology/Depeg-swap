@@ -53,6 +53,7 @@ contract LiquidityMathTest is Test {
         vm.assertEq(liquidityMinted, 1000 ether);
     }
 
+    /// forge-config: default.allow_internal_expect_revert = true
     function testRevert_WhenaddLiquidityFirstNoProportional() external {
         uint256 reservePa = 0;
         uint256 reserveDs = 0;
@@ -102,6 +103,7 @@ contract LiquidityMathTest is Test {
         vm.assertEq(amountRa, 100 ether);
     }
 
+    /// forge-config: default.allow_internal_expect_revert = true
     function testRevert_removeLiquidityInvalidLiquidity() external {
         uint256 reservePa = 2000 ether;
         uint256 reserveDs = 1800 ether;
@@ -115,6 +117,7 @@ contract LiquidityMathTest is Test {
         ProtectedUnitMath.withdraw(reservePa, reserveDs, reserveRa, totalLiquidity, liquidityAmount);
     }
 
+    /// forge-config: default.allow_internal_expect_revert = true
     function testRevert_removeLiquidityNoLiquidity() external {
         uint256 reservePa = 2000 ether;
         uint256 reserveDs = 1800 ether;

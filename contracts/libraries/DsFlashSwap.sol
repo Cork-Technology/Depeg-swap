@@ -236,7 +236,6 @@ library DsFlashSwaplibrary {
         SwapperMathLibrary.OptimalBorrowResult memory result =
             SwapperMathLibrary.findOptimalBorrowedAmount(optimalParams);
 
-        // result.amountOut = TransferHelper.fixedToTokenNativeDecimals(result.amountOut, assetPair.ra);
         result.borrowedAmount = TransferHelper.fixedToTokenNativeDecimals(result.borrowedAmount, assetPair.ra);
 
         amountOut = result.amountOut;

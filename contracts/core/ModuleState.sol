@@ -11,6 +11,7 @@ import {ILiquidatorRegistry} from "./../interfaces/ILiquidatorRegistry.sol";
 import {ReentrancyGuardTransient} from "@openzeppelin/contracts/utils/ReentrancyGuardTransient.sol";
 import {Withdrawal} from "./Withdrawal.sol";
 import {CorkConfig} from "./CorkConfig.sol";
+import {Pair} from "../libraries/Pair.sol";
 
 /**
  * @title ModuleState Abstract Contract
@@ -69,19 +70,19 @@ abstract contract ModuleState is IErrors, ReentrancyGuardTransient {
         WITHDRAWAL_CONTRACT = _withdrawalContract;
     }
 
-    function getRouterCore() internal view returns (RouterState) {
+    function getRouterCore() public view returns (RouterState) {
         return RouterState(DS_FLASHSWAP_ROUTER);
     }
 
-    function getAmmRouter() internal view returns (ICorkHook) {
+    function getAmmRouter() public view returns (ICorkHook) {
         return ICorkHook(AMM_HOOK);
     }
 
-    function getWithdrawalContract() internal view returns (Withdrawal) {
+    function getWithdrawalContract() public view returns (Withdrawal) {
         return Withdrawal(WITHDRAWAL_CONTRACT);
     }
 
-    function getTreasuryAddress() internal view returns (address) {
+    function getTreasuryAddress() public view returns (address) {
         return CorkConfig(CONFIG).treasury();
     }
 

@@ -4,23 +4,23 @@ import {IUniswapV2Router02} from "v2-periphery/interfaces/IUniswapV2Router02.sol
 
 import {Script, console} from "forge-std/Script.sol";
 import {ERC1967Proxy} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
-import {AssetFactory} from "../../contracts/core/assets/AssetFactory.sol";
-import {CorkConfig} from "../../contracts/core/CorkConfig.sol";
-import {RouterState} from "../../contracts/core/flash-swaps/FlashSwapRouter.sol";
-import {ModuleCore} from "../../contracts/core/ModuleCore.sol";
-import {Liquidator} from "../../contracts/core/liquidators/cow-protocol/Liquidator.sol";
-import {ProtectedUnit} from "../../contracts/core/assets/ProtectedUnit.sol";
-import {ProtectedUnitFactory} from "../../contracts/core/assets/ProtectedUnitFactory.sol";
-import {ProtectedUnitRouter} from "../../contracts/core/assets/ProtectedUnitRouter.sol";
-import {CETH} from "../../contracts/tokens/CETH.sol";
-import {CUSD} from "../../contracts/tokens/CUSD.sol";
-import {CST} from "../../contracts/tokens/CST.sol";
-import {Id} from "../../contracts/libraries/Pair.sol";
+import {AssetFactory} from "contracts/core/assets/AssetFactory.sol";
+import {CorkConfig} from "contracts/core/CorkConfig.sol";
+import {RouterState} from "contracts/core/flash-swaps/FlashSwapRouter.sol";
+import {ModuleCore} from "contracts/core/ModuleCore.sol";
+import {Liquidator} from "contracts/core/liquidators/cow-protocol/Liquidator.sol";
+import {ProtectedUnit} from "contracts/core/assets/ProtectedUnit.sol";
+import {ProtectedUnitFactory} from "contracts/core/assets/ProtectedUnitFactory.sol";
+import {ProtectedUnitRouter} from "contracts/core/assets/ProtectedUnitRouter.sol";
+import {CETH} from "contracts/tokens/CETH.sol";
+import {CUSD} from "contracts/tokens/CUSD.sol";
+import {CST} from "contracts/tokens/CST.sol";
+import {Id} from "contracts/libraries/Pair.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import {PoolManager} from "v4-core/PoolManager.sol";
-import {HookMiner} from "./Utils/HookMiner.sol";
+import {HookMiner} from "../Utils/HookMiner.sol";
 import {PoolKey, Currency, CorkHook, LiquidityToken, Hooks} from "Cork-Hook/CorkHook.sol";
-import {Withdrawal} from "../../contracts/core/Withdrawal.sol";
+import {Withdrawal} from "contracts/core/Withdrawal.sol";
 
 contract DeployScript is Script {
     IUniswapV2Router02 public univ2Router;
@@ -221,7 +221,6 @@ contract DeployScript is Script {
 
         withdrawal = new Withdrawal(address(moduleCore));
         console.log("Withdrawal                      : ", address(withdrawal));
-        console.log("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-");
 
         exchangeRateProvider = address(config.defaultExchangeRateProvider());
         console.log("Exchange Rate Provider          : ", exchangeRateProvider);
@@ -339,12 +338,12 @@ contract DeployScript is Script {
         );
 
         // Add liquidity for given pairs to AMM
-        // AddAMMLiquidity(wamuETH, ceth, 200_000 ether);
-        // AddAMMLiquidity(bsETH, ceth, 200_000 ether);
-        // AddAMMLiquidity(mlETH, ceth, 200_000 ether);
-        // AddAMMLiquidity(svbUSD, cusd, 500_000_000 ether);
-        // AddAMMLiquidity(fedUSD, cusd, 500_000_000 ether);
-        // AddAMMLiquidity(omgUSD, cusd, 500_000_000 ether);
+        AddAMMLiquidity(wamuETH, ceth, 200_000 ether);
+        AddAMMLiquidity(bsETH, ceth, 200_000 ether);
+        AddAMMLiquidity(mlETH, ceth, 200_000 ether);
+        AddAMMLiquidity(svbUSD, cusd, 500_000_000 ether);
+        AddAMMLiquidity(fedUSD, cusd, 500_000_000 ether);
+        AddAMMLiquidity(omgUSD, cusd, 500_000_000 ether);
         console.log("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-");
         vm.stopBroadcast();
     }
@@ -363,13 +362,7 @@ contract DeployScript is Script {
         Id id = moduleCore.getId(paToken, raToken, dsPrice, expiryPeriod, exchangeRateProvider);
         config.updatePsmRate(id, 1 ether);
 
-        config.issueNewDs(
-            id,
-            // 1 ether, // exchange rate = 1:1
-            // 6 ether, // 6% per day TODO
-            // block.timestamp + 6600, // 1 block per 12 second and 22 hours rollover during TC = 6600 // TODO
-            block.timestamp + 10 minutes
-        );
+        config.issueNewDs(id, block.timestamp + 10 minutes);
         console.log("New DS issued");
 
         config.updatePsmBaseRedemptionFeePercentage(id, redmptionFee);
@@ -380,10 +373,6 @@ contract DeployScript is Script {
         CETH(raToken).approve(address(moduleCore), depositLVAmt);
         moduleCore.depositLv(id, depositLVAmt, 0, 0);
         console.log("LV Deposited");
-
-        // moduleCore.redeemEarlyLv(id, deployer, 10 ether);
-        // uint256 result = flashswapRouter.previewSwapRaforDs(id, 1, 100 ether);
-        // console.log(result);
         console.log("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-");
     }
 

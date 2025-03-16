@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.24;
 
-import {Id} from "../libraries/Pair.sol";
+import {Id, Pair} from "../libraries/Pair.sol";
 
 /**
  * @title Initialize Interface
@@ -122,13 +122,26 @@ interface Initialize {
         pure
         returns (Id);
 
+    function markets(Id id)
+        external
+        view
+        returns (address pa, address ra, uint256 initialArp, uint256 expiryInterval, address exchangeRateProvider);
+
     /// @notice Emitted when a new LV and PSM is initialized with a given pair
     /// @param id The PSM id
     /// @param pa The address of the pegged asset
     /// @param ra The address of the redemption asset
     /// @param lv The address of the LV
     /// @param expiry The expiry interval of the DS
-    event InitializedModuleCore(Id indexed id, address indexed pa, address indexed ra, address lv, uint256 expiry);
+    event InitializedModuleCore(
+        Id indexed id,
+        address indexed pa,
+        address indexed ra,
+        address lv,
+        uint256 expiry,
+        uint256 initialArp,
+        address exchangeRateProvider
+    );
 
     /// @notice Emitted when a new DS is issued for a given PSM
     /// @param id The PSM id

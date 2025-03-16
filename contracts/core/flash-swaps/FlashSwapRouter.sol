@@ -357,7 +357,7 @@ contract RouterState is
             uint256 amountOut;
             if (offchainGuess.initialBorrowAmount == 0) {
                 // calculate the amount of DS tokens attributed
-                (amountOut, finalBorrowedAmount) = assetPair.getAmountOutBuyDS(amount, hook, approxParams);
+                (amountOut, finalBorrowedAmount) = getAmountOutBuyDs(assetPair, hook, approxParams, amount);
                 initialBorrowedAmount = finalBorrowedAmount;
             } else {
                 // we convert the amount to fixed point 18 decimals since, the amount out will be DS, and DS is always 18 decimals.
@@ -386,6 +386,22 @@ contract RouterState is
         __flashSwap(assetPair, finalBorrowedAmount, 0, dsId, reserveId, true, user, amount);
     }
 
+    function getAmountOutBuyDs(
+        AssetPair storage assetPair,
+        ICorkHook hook,
+        BuyAprroxParams memory approxParams,
+        uint256 amount
+    ) internal view returns (uint256 amountOut, uint256 borrowedAmount) {
+        try assetPair.getAmountOutBuyDS(amount, hook, approxParams) returns (
+            uint256 _amountOut, uint256 _borrowedAmount
+        ) {
+            amountOut = _amountOut;
+            borrowedAmount = _borrowedAmount;
+        } catch {
+            revert IErrors.InvalidPoolStateOrNearExpired();
+        }
+    }
+
     function calculateAndSellDsReserve(
         ReserveState storage self,
         AssetPair storage assetPair,
@@ -412,7 +428,7 @@ contract RouterState is
 
         // we calculate the borrowed amount if user doesn't supply offchain guess
         if (params.offchainGuess.afterSoldBorrowAmount == 0) {
-            (, borrowedAmount) = assetPair.getAmountOutBuyDS(amount, hook, params.approxParams);
+            (, borrowedAmount) = getAmountOutBuyDs(assetPair, hook, params.approxParams, amount);
         } else {
             borrowedAmount = params.offchainGuess.afterSoldBorrowAmount;
         }
@@ -442,11 +458,11 @@ contract RouterState is
         assert(attributedToTreasury + attributedToVault == fee);
 
         // we calculate it in native decimals, should go through
-        pair.ra.transfer(_moduleCore, attributedToVault);
+        IERC20(address(pair.ra)).safeTransfer(_moduleCore, attributedToVault);
         IVault(_moduleCore).provideLiquidityWithFlashSwapFee(reserveId, attributedToVault);
 
         address treasury = config.treasury();
-        pair.ra.transfer(treasury, attributedToTreasury);
+        IERC20(address(pair.ra)).safeTransfer(treasury, attributedToTreasury);
     }
 
     function calculateSellFromReserve(ReserveState storage self, uint256 amountOut, uint256 dsId)
@@ -503,7 +519,6 @@ contract RouterState is
         uint256 dsId,
         uint256 amount,
         uint256 amountOutMin,
-        address user,
         bytes calldata rawRaPermitSig,
         uint256 deadline,
         BuyAprroxParams calldata params,
@@ -519,11 +534,11 @@ contract RouterState is
             revert PermitNotSupported();
         }
 
-        DepegSwapLibrary.permitForRA(address(assetPair.ra), rawRaPermitSig, user, address(this), amount, deadline);
-        IERC20(assetPair.ra).safeTransferFrom(user, address(this), amount);
+        DepegSwapLibrary.permitForRA(address(assetPair.ra), rawRaPermitSig, msg.sender, address(this), amount, deadline);
+        IERC20(assetPair.ra).safeTransferFrom(msg.sender, address(this), amount);
 
         (result.initialBorrow, result.afterSoldBorrow) =
-            _swapRaforDs(self, assetPair, reserveId, dsId, amount, amountOutMin, user, params, offchainGuess);
+            _swapRaforDs(self, assetPair, reserveId, dsId, amount, amountOutMin, msg.sender, params, offchainGuess);
 
         result.amountOut = ReturnDataSlotLib.get(ReturnDataSlotLib.RETURN_SLOT);
 
@@ -544,7 +559,7 @@ contract RouterState is
             emit RaSwapped(
                 reserveId,
                 dsId,
-                user,
+                msg.sender,
                 amount,
                 result.amountOut,
                 result.ctRefunded,
@@ -674,7 +689,12 @@ contract RouterState is
         uint256 amountOutMin,
         address caller
     ) internal returns (uint256 amountOut, bool success) {
-        (amountOut,, success) = assetPair.getAmountOutSellDS(amount, hook);
+        try assetPair.getAmountOutSellDS(amount, hook) returns (uint256 _amountOut, uint256, bool _success) {
+            amountOut = _amountOut;
+            success = _success;
+        } catch {
+            return (0, false);
+        }
 
         if (!success) {
             return (amountOut, success);

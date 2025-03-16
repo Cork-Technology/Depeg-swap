@@ -650,7 +650,7 @@ describe("PSM core", function () {
         { rates: parseEther("0.5") }
       );
 
-      const raAmount = await fixture.moduleCore.read.previewRedeemRaWithCtDs([
+      const raAmount = await fixture.moduleCore.read.previewReturnRaWithCtDs([
         fixture.Id,
         parseEther("2"),
       ]);

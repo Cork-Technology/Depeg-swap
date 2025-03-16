@@ -246,6 +246,8 @@ interface IPSMcore is IRepurchase {
      */
     function valueLocked(Id id, bool ra) external view returns (uint256);
 
+    function valueLocked(Id id, uint256 dsId, bool ra) external view returns (uint256);
+
     /**
      * @notice returns base redemption fees (1e18 = 1%)
      */
@@ -275,6 +277,4 @@ interface IPSMcore is IRepurchase {
     function rolloverProfitRemaining(Id id, uint256 dsId) external view returns (uint256);
 
     function psmAutoSellStatus(Id id) external view returns (bool);
-
-    function updateRate(Id id, uint256 newRate) external;
 }

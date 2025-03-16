@@ -58,7 +58,7 @@ contract PsmTest is Helper {
 
         (ra, pa, defaultCurrencyId) = initializeAndIssueNewDs(EXPIRY, raDecimals, paDecimals);
 
-        (address _ds, address _ct) = moduleCore.swapAsset(defaultCurrencyId, 1);
+        (address _ct, address _ds) = moduleCore.swapAsset(defaultCurrencyId, 1);
         ds = Asset(_ds);
         ct = Asset(_ct);
 

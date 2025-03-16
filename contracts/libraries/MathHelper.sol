@@ -1,4 +1,3 @@
-// TODO : change math related contract license to MIT/GPL
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.24;
 
@@ -17,7 +16,7 @@ library MathHelper {
 
     // this is used to calculate tolerance level when adding liqudity to AMM pair
     /// @dev 1e18 == 1%.
-    uint256 internal constant UNI_STATIC_TOLERANCE = 5e18;
+    uint256 internal constant UNI_STATIC_TOLERANCE = 95e18;
 
     /**
      * @dev calculate the amount of ra and ct needed to provide AMM with liquidity in respect to the price ratio
@@ -208,8 +207,7 @@ library MathHelper {
         lpLiquidated = ((redeemedLv * rateRaPerLv) * 1e18) / rateRaPerLp / 1e18;
     }
 
-    struct DepositParams {
-        uint256 depositAmount;
+    struct NavParams {
         uint256 reserveRa;
         uint256 reserveCt;
         uint256 oneMinusT;
@@ -221,15 +219,21 @@ library MathHelper {
         uint256 vaultIdleRa;
     }
 
-    function calculateDepositLv(DepositParams calldata params) external pure returns (uint256 lvMinted) {
+    function calculateDepositLv(uint256 nav, uint256 depositAmount, uint256 lvSupply)
+        external
+        pure
+        returns (uint256 lvMinted)
+    {
+        UD60x18 navPerShare = div(ud(nav), ud(lvSupply));
+
+        return unwrap(div(ud(depositAmount), navPerShare));
+    }
+
+    function calculateNav(NavParams calldata params) external pure returns (uint256 nav) {
         (UD60x18 navLp, UD60x18 navCt, UD60x18 navDs, UD60x18 navIdleRas) = calculateNavCombined(params);
 
-        UD60x18 nav = add(navCt, add(navDs, navLp));
-        nav = add(nav, navIdleRas);
-
-        UD60x18 navPerShare = div(nav, ud(params.lvSupply));
-
-        return unwrap(div(ud(params.depositAmount), navPerShare));
+        nav = unwrap(add(navCt, add(navDs, navLp)));
+        nav = unwrap(add(ud(nav), navIdleRas));
     }
 
     struct InternalPrices {
@@ -238,17 +242,19 @@ library MathHelper {
         UD60x18 raPrice;
     }
 
-    function calculateInternalPrice(DepositParams memory params) internal pure returns (InternalPrices memory) {
+    function calculateInternalPrice(NavParams memory params) internal pure returns (InternalPrices memory) {
         UD60x18 t = sub(convert(1), ud(params.oneMinusT));
         UD60x18 ctPrice = calculatePriceQuote(ud(params.reserveRa), ud(params.reserveCt), t);
-        UD60x18 dsPrice = sub(convert(1), ctPrice);
+        // we set the default ds price to 0 if for some reason the ct price is worth above 1 RA
+        // if not, this'll trigger an underflow error
+        UD60x18 dsPrice = ctPrice > convert(1) ? ud(0) : sub(convert(1), ctPrice);
         // we're pricing RA in term of itself
         UD60x18 raPrice = convert(1);
 
         return InternalPrices(ctPrice, dsPrice, raPrice);
     }
 
-    function calculateNavCombined(DepositParams memory params)
+    function calculateNavCombined(NavParams memory params)
         internal
         pure
         returns (UD60x18 navLp, UD60x18 navCt, UD60x18 navDs, UD60x18 navIdleRa)
@@ -258,10 +264,10 @@ library MathHelper {
         navCt = calculateNav(prices.ctPrice, ud(params.vaultCt));
         navDs = calculateNav(prices.dsPrice, ud(params.vaultDs));
 
-        UD60x18 raPerLp = div(ud(params.lpSupply), ud(params.reserveRa));
+        UD60x18 raPerLp = div(ud(params.reserveRa), ud(params.lpSupply));
         UD60x18 navRaLp = calculateNav(prices.raPrice, mul(ud(params.vaultLp), raPerLp));
 
-        UD60x18 ctPerLp = div(ud(params.lpSupply), ud(params.reserveCt));
+        UD60x18 ctPerLp = div(ud(params.reserveCt), ud(params.lpSupply));
         UD60x18 navCtLp = calculateNav(prices.ctPrice, mul(ud(params.vaultLp), ctPerLp));
 
         navIdleRa = calculateNav(prices.raPrice, ud(params.vaultIdleRa));

@@ -18,26 +18,6 @@ abstract contract PsmCore is IPSMcore, ModuleState, Context {
     using PsmLibrary for State;
     using PairLibrary for Pair;
 
-    function updateRate(Id id, uint256 newRate) external {
-        onlyConfig();
-        State storage state = states[id];
-        uint256 previousRate = state.exchangeRate();
-
-        state.updateExchangeRate(newRate);
-
-        emit RateUpdated(id, newRate, previousRate);
-    }
-
-    function _getRate(Id id, Pair storage info) internal view returns (uint256) {
-        uint256 exchangeRates = IExchangeRateProvider(info.exchangeRateProvider).rate();
-
-        if (exchangeRates == 0) {
-            exchangeRates = IExchangeRateProvider(info.exchangeRateProvider).rate(id);
-        }
-
-        return exchangeRates;
-    }
-
     /**
      * @notice returns the fee percentage for repurchasing(1e18 = 1%)
      * @param id the id of PSM
@@ -218,6 +198,11 @@ abstract contract PsmCore is IPSMcore, ModuleState, Context {
     function valueLocked(Id id, bool ra) external view override returns (uint256) {
         State storage state = states[id];
         return state.valueLocked(ra);
+    }
+
+    function valueLocked(Id id, uint256 dsId, bool ra) external view override returns (uint256) {
+        State storage state = states[id];
+        return state.valueLocked(dsId, ra);
     }
 
     /**

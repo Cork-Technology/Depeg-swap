@@ -27,25 +27,26 @@ abstract contract VaultCore is ModuleState, Context, IVault, IVaultLiquidation {
     function depositLv(Id id, uint256 amount, uint256 raTolerance, uint256 ctTolerance)
         external
         override
+        nonReentrant
         returns (uint256 received)
     {
         LVDepositNotPaused(id);
         State storage state = states[id];
         received = state.deposit(_msgSender(), amount, getRouterCore(), getAmmRouter(), raTolerance, ctTolerance);
-        emit LvDeposited(id, _msgSender(), received);
+        emit LvDeposited(id, _msgSender(), received, amount);
     }
 
     /**
      * @notice Redeem lv before expiry
      * @param redeemParams The object with details like id, reciever, amount, amountOutMin, ammDeadline
-     * @param redeemer The address of the redeemer
      * @param permitParams The object with details for permit like rawLvPermitSig(Raw signature for LV approval permit) and deadline for signature
      */
-    function redeemEarlyLv(
-        RedeemEarlyParams calldata redeemParams,
-        address redeemer,
-        PermitParams calldata permitParams
-    ) external override nonReentrant returns (IVault.RedeemEarlyResult memory result) {
+    function redeemEarlyLv(RedeemEarlyParams calldata redeemParams, PermitParams calldata permitParams)
+        external
+        override
+        nonReentrant
+        returns (IVault.RedeemEarlyResult memory result)
+    {
         LVWithdrawalNotPaused(redeemParams.id);
         if (permitParams.rawLvPermitSig.length == 0 || permitParams.deadline == 0) {
             revert InvalidSignature();
@@ -56,7 +57,7 @@ abstract contract VaultCore is ModuleState, Context, IVault, IVaultLiquidation {
             withdrawalContract: getWithdrawalContract()
         });
 
-        result = states[redeemParams.id].redeemEarly(redeemer, redeemParams, routers, permitParams);
+        result = states[redeemParams.id].redeemEarly(msg.sender, redeemParams, routers, permitParams);
 
         emit LvRedeemEarly(
             redeemParams.id,
@@ -176,7 +177,24 @@ abstract contract VaultCore is ModuleState, Context, IVault, IVaultLiquidation {
         return states[id].vault.totalRaSnapshot[dsId];
     }
 
-    function receiveLeftoverFunds(Id id, uint256 amount) external {
+    function receiveLeftoverFunds(Id id, uint256 amount) external override {
         states[id].receiveLeftoverFunds(amount, _msgSender());
+    }
+
+    function updateVaultNavThreshold(Id id, uint256 newNavThreshold) external override {
+        onlyConfig();
+        onlyInitialized(id);
+
+        State storage state = states[id];
+        VaultLibrary.updateNavThreshold(state, newNavThreshold);
+        emit VaultNavThresholdUpdated(id, newNavThreshold);
+    }
+
+    function forceUpdateNavCircuitBreakerReferenceValue(Id id) external {
+        onlyConfig();
+        onlyInitialized(id);
+
+        State storage state = states[id];
+        state.forceUpdateNavCircuitBreakerReferenceValue(getRouterCore(), getAmmRouter(), state.globalAssetIdx);
     }
 }

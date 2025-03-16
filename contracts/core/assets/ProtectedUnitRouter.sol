@@ -7,11 +7,24 @@ import {IProtectedUnitRouter} from "../../interfaces/IProtectedUnitRouter.sol";
 import {MinimalSignatureHelper, Signature} from "./../../libraries/SignatureHelperLib.sol";
 
 /**
- * @title ProtectedUnitRouter
- * @notice This contract is used to execute batch mint and batch burn functions for multiple ProtectedUnit contracts.
+ * @title Protected Unit Router
+ * @notice A contract that helps users interact with multiple Protected Units at once
+ * @dev Provides batch operations for minting and burning Protected Unit tokens.
+ *      Serves as a convenience layer to reduce gas costs and improve UX when
+ *      interacting with multiple Protected Unit contracts in a single transaction.
+ * @author Cork Protocol Team
  */
 contract ProtectedUnitRouter is IProtectedUnitRouter, ReentrancyGuardTransient {
-    // This function is used to preview batch mint for multiple ProtectedUnits in single transaction.
+    /**
+     * @notice Calculates the tokens needed for minting multiple Protected Units in single function call
+     * @dev Iterates through each Protected Unit to calculate the required token amounts.
+     *      So Recommended to keep the number of Protected Units under 10 to avoid gas issues
+     * @param protectedUnits List of Protected Unit contract addresses to mint from
+     * @param amounts How many tokens to mint from those respective Protected Unit contract
+     * @return dsAmounts List of DS token amounts needed for respective Protected Unit token minting
+     * @return paAmounts List of PA token amounts needed for respective Protected Unit token minting
+     * @custom:reverts InvalidInput if input array lengths don't match
+     */
     function previewBatchMint(address[] calldata protectedUnits, uint256[] calldata amounts)
         external
         view
@@ -32,7 +45,21 @@ contract ProtectedUnitRouter is IProtectedUnitRouter, ReentrancyGuardTransient {
         }
     }
 
-    // This function is used to batch mint multiple ProtectedUnits in single transaction.
+    /**
+     * @notice Creates multiple Protected Unit tokens in one transaction
+     * @dev Iterates through each Protected Unit to mint tokens using permit signatures.
+     *      Recommended to keep the number of Protected Units under 10 to avoid gas issues
+     * @param params All parameters needed for batch minting:
+     *        - deadline: Time until which the transaction is valid
+     *        - protectedUnits: List of Protected Unit contract addresses to mint from
+     *        - amounts: How many tokens to mint from respective Protected Unit contract
+     *        - rawDsPermitSigs: Permission signatures for DS tokens
+     *        - rawPaPermitSigs: Permission signatures for PA tokens
+     * @return dsAmounts List of DS token amounts used for respective Protected Unit token minting
+     * @return paAmounts List of PA token amounts used for respective Protected Unit token minting
+     * @custom:reverts InvalidInput if input array lengths don't match
+     * @custom:reverts If any of the individual mint operations fail
+     */
     function batchMint(BatchMintParams calldata params)
         external
         nonReentrant
@@ -55,7 +82,18 @@ contract ProtectedUnitRouter is IProtectedUnitRouter, ReentrancyGuardTransient {
         }
     }
 
-    // This function is used to preview batch burn for multiple ProtectedUnits in single transaction.
+    /**
+     * @notice Calculates the tokens user will receive for burning multiple Protected Units
+     * @dev Iterates through each Protected Unit to calculate the returned token amounts.
+     *      Recommended to keep the number of Protected Units under 10 to avoid gas issues
+     * @param protectedUnits List of Protected Unit contract addresses to burn tokens from
+     * @param amounts How many tokens to burn from respective Protected Unit contract
+     * @return dsAmounts List of DS token amounts user will receive from respective Protected Unit token burning
+     * @return paAmounts List of PA token amounts user will receive from respective Protected Unit token burning
+     * @return raAmounts List of RA token amounts user will receive from respective Protected Unit token burning
+     * @custom:reverts InvalidInput if input array lengths don't match
+     * @custom:reverts If any of the individual burn operations fail
+     */
     function previewBatchBurn(address[] calldata protectedUnits, uint256[] calldata amounts)
         external
         view
@@ -78,7 +116,21 @@ contract ProtectedUnitRouter is IProtectedUnitRouter, ReentrancyGuardTransient {
         }
     }
 
-    // This function is used to burn multiple ProtectedUnits in single transaction.
+    /**
+     * @notice Burns multiple Protected Unit tokens in one transaction
+     * @dev Iterates through respective Protected Unit to burn tokens.
+     *      Recommended to keep the number of Protected Units under 10 to avoid gas issues
+     * @param protectedUnits List of Protected Unit contract addresses to burn from
+     * @param amounts How many tokens to burn from respective Protected Unit contract
+     * @return dsAdds List of DS token addresses for DS token received from respective Protected Unit token burning
+     * @return paAdds List of PA token addresses for PA token received from respective Protected Unit token burning
+     * @return raAdds List of RA token addresses for RA token received from respective Protected Unit token burning
+     * @return dsAmounts List of DS token amounts received from respective Protected Unit token burning
+     * @return paAmounts List of PA token amounts received from respective Protected Unit token burning
+     * @return raAmounts List of RA token amounts received from respective Protected Unit token burning
+     * @custom:reverts InvalidInput if input array lengths don't match
+     * @custom:reverts If any of the individual burn operations fail
+     */
     function batchBurn(address[] calldata protectedUnits, uint256[] calldata amounts)
         external
         nonReentrant
@@ -94,11 +146,25 @@ contract ProtectedUnitRouter is IProtectedUnitRouter, ReentrancyGuardTransient {
         (paAdds, dsAdds, raAdds, dsAmounts, paAmounts, raAmounts) = _batchBurn(protectedUnits, amounts);
     }
 
-    // This function is used to burn multiple ProtectedUnits in single transaction with permits
+    /**
+     * @notice Burns multiple Protected Unit tokens using signed permissions
+     * @param protectedUnits List of Protected Unit contracts to burn from
+     * @param amounts How many tokens to burn from respective Protected Unit contract
+     * @param permits List of permission parameters for respective Protected Unit token burning
+     * @return dsAdds List of DS token addresses for DS token received from respective Protected Unit token burning
+     * @return paAdds List of PA token addresses for PA token received from respective Protected Unit token burning
+     * @return raAdds List of RA token addresses for RA token received from respective Protected Unit token burning
+     * @return dsAmounts List of DS token amounts received from each burn
+     * @return paAmounts List of PA token amounts received from each burn
+     * @return raAmounts List of RA token amounts received from each burn
+     * @custom:reverts InvalidInput if input array lengths don't match
+     * @custom:reverts If any permit signature is invalid
+     * @custom:reverts If any of the individual burn operations fail
+     */
     function batchBurn(
         address[] calldata protectedUnits,
         uint256[] calldata amounts,
-        IProtectedUnitRouter.BatchBurnPermitParams[] calldata permits
+        BatchBurnPermitParams[] calldata permits
     )
         external
         nonReentrant
@@ -114,7 +180,7 @@ contract ProtectedUnitRouter is IProtectedUnitRouter, ReentrancyGuardTransient {
         uint256 length = permits.length;
         for (uint256 i = 0; i < length; ++i) {
             ProtectedUnit protectedUnit = ProtectedUnit(protectedUnits[i]);
-            IProtectedUnitRouter.BatchBurnPermitParams calldata permit = permits[i];
+            BatchBurnPermitParams calldata permit = permits[i];
 
             Signature memory signature = MinimalSignatureHelper.split(permit.rawProtectedUnitPermitSig);
 
@@ -126,6 +192,7 @@ contract ProtectedUnitRouter is IProtectedUnitRouter, ReentrancyGuardTransient {
         (paAdds, dsAdds, raAdds, dsAmounts, paAmounts, raAmounts) = _batchBurn(protectedUnits, amounts);
     }
 
+    /// @notice Internal function to handle the batch burning logic
     function _batchBurn(address[] calldata protectedUnits, uint256[] calldata amounts)
         internal
         returns (
