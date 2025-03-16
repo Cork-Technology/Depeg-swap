@@ -10,6 +10,9 @@ import {Id} from "./../../../../contracts/libraries/Pair.sol";
 import {PausableUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/PausableUpgradeable.sol";
 import {Asset} from "../../../../contracts/core/assets/Asset.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import {SigUtils} from "../../SigUtils.sol";
+import {IPermit2} from "permit2/src/interfaces/IPermit2.sol";
+import {ISignatureTransfer} from "permit2/src/interfaces/ISignatureTransfer.sol";
 
 contract ProtectedUnitTest is Helper {
     Liquidator public liquidator;
@@ -120,43 +123,78 @@ contract ProtectedUnitTest is Helper {
     }
 
     function test_MintingTokensWithPermit() public {
-        // Test_ minting by the user
+        // Test minting by the user
         vm.startPrank(user);
+
+        // Approve tokens for Permit2
+        dsToken.approve(address(permit2), USER_BALANCE);
+        pa.approve(address(permit2), USER_BALANCE);
 
         // Mint 100 ProtectedUnit tokens
         uint256 mintAmount = 100 * 1e18;
 
-        // Permit token approvals to ProtectedUnit contract
+        // Calculate token amounts needed for minting
         (uint256 dsAmount, uint256 paAmount) = protectedUnit.previewMint(mintAmount);
-        bytes32 domain_separator = Asset(address(dsToken)).DOMAIN_SEPARATOR();
-        uint256 deadline = block.timestamp + 10 days;
 
-        bytes memory dsPermit = getCustomPermit(
-            user,
-            address(protectedUnit),
-            dsAmount,
-            Asset(address(dsToken)).nonces(user),
-            deadline,
-            USER_PK,
-            domain_separator,
-            protectedUnit.DS_PERMIT_MINT_TYPEHASH()
+        // Create the tokens array
+        address[] memory tokens = new address[](2);
+        tokens[0] = address(dsToken);
+        tokens[1] = address(pa);
+
+        // Set up nonce and deadline
+        uint256 nonce = 0;
+        uint256 deadline = block.timestamp + 1 hours;
+
+        ISignatureTransfer.PermitBatchTransferFrom memory permitBatchData;
+        {
+            // Create the Permit2 PermitBatchTransferFrom struct
+            ISignatureTransfer.TokenPermissions[] memory permitted = new ISignatureTransfer.TokenPermissions[](2);
+            permitted[0] = ISignatureTransfer.TokenPermissions({token: address(dsToken), amount: dsAmount});
+            permitted[1] = ISignatureTransfer.TokenPermissions({token: address(pa), amount: paAmount});
+
+            permitBatchData =
+                ISignatureTransfer.PermitBatchTransferFrom({permitted: permitted, nonce: nonce, deadline: deadline});
+        }
+        // Generate the batch permit signature
+        bytes memory signature = getPermitBatchTransferSignature(
+            permitBatchData, USER_PK, IPermit2(permit2).DOMAIN_SEPARATOR(), address(protectedUnit)
         );
 
-        domain_separator = Asset(address(pa)).DOMAIN_SEPARATOR();
+        // Create transfer details for the Permit2 call
+        ISignatureTransfer.SignatureTransferDetails[] memory transferDetails =
+            new ISignatureTransfer.SignatureTransferDetails[](2);
+        transferDetails[0] =
+            ISignatureTransfer.SignatureTransferDetails({to: address(protectedUnit), requestedAmount: dsAmount});
+        transferDetails[1] =
+            ISignatureTransfer.SignatureTransferDetails({to: address(protectedUnit), requestedAmount: paAmount});
 
-        bytes memory paPermit = getPermit(
-            user, address(protectedUnit), paAmount, Asset(address(pa)).nonces(user), deadline, USER_PK, domain_separator
-        );
+        dsToken.allowance(user, address(permit2));
+        pa.allowance(user, address(permit2));
 
-        protectedUnit.mint(user, mintAmount, dsPermit, paPermit, deadline);
+        // Record initial balances
+        uint256 startBalanceDS = dsToken.balanceOf(user);
+        uint256 startBalancePA = pa.balanceOf(user);
+        uint256 startBalancePU = protectedUnit.balanceOf(user);
+
+        // Call the mint function with Permit2 data
+        (uint256 actualDsAmount, uint256 actualPaAmount) =
+            protectedUnit.mint(mintAmount, permitBatchData, transferDetails, signature);
+
+        // Check amounts returned
+        assertEq(actualDsAmount, dsAmount);
+        assertEq(actualPaAmount, paAmount);
 
         // Check balances and total supply
-        assertEq(protectedUnit.balanceOf(user), mintAmount);
+        assertEq(protectedUnit.balanceOf(user), startBalancePU + mintAmount);
         assertEq(protectedUnit.totalSupply(), mintAmount);
 
+        // Check user token balances decreased correctly
+        assertEq(dsToken.balanceOf(user), startBalanceDS - dsAmount);
+        assertEq(pa.balanceOf(user), startBalancePA - paAmount);
+
         // Check token balances in the contract
-        assertEq(dsToken.balanceOf(address(protectedUnit)), mintAmount);
-        assertEq(pa.balanceOf(address(protectedUnit)), mintAmount);
+        assertEq(dsToken.balanceOf(address(protectedUnit)), dsAmount);
+        assertEq(pa.balanceOf(address(protectedUnit)), paAmount);
 
         vm.stopPrank();
     }

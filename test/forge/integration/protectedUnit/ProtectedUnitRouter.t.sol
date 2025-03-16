@@ -8,6 +8,8 @@ import {DummyERCWithPermit} from "../../../../contracts/dummy/DummyERCWithPermit
 import {Id} from "../../../../contracts/libraries/Pair.sol";
 import {IProtectedUnitRouter} from "../../../../contracts/interfaces/IProtectedUnitRouter.sol";
 import {Asset} from "../../../../contracts/core/assets/Asset.sol";
+import {ISignatureTransfer} from "permit2/src/interfaces/ISignatureTransfer.sol";
+import {IPermit2} from "permit2/src/interfaces/IPermit2.sol";
 
 contract ProtectedUnitRouterTest is Helper {
     Liquidator public liquidator;
@@ -121,55 +123,98 @@ contract ProtectedUnitRouterTest is Helper {
     }
 
     function test_BatchMint() public {
-        // Test_ minting by the user
+        // Test minting by the user
         vm.startPrank(user);
+
+        // Approve tokens for Permit2
+        dsToken.approve(address(permit2), USER_BALANCE);
+        pa.approve(address(permit2), USER_BALANCE);
 
         // Mint 100 ProtectedUnit tokens
         uint256 mintAmount = 100 * 1e18;
 
-        // Permit token approvals to ProtectedUnit contract
-        (uint256 dsAmount, uint256 paAmount) = protectedUnit.previewMint(mintAmount);
-        bytes32 domain_separator = Asset(address(dsToken)).DOMAIN_SEPARATOR();
-        uint256 deadline = block.timestamp + 10 days;
+        // Setup the Protected Units array with just one unit for this test
+        address[] memory protectedUnits = new address[](1);
+        uint256[] memory amounts = new uint256[](1);
+        protectedUnits[0] = address(protectedUnit);
+        amounts[0] = mintAmount;
 
-        bytes memory dsPermit = getCustomPermit(
-            user,
-            address(protectedUnit),
-            dsAmount,
-            Asset(address(dsToken)).nonces(user),
-            deadline,
-            USER_PK,
-            domain_separator,
-            protectedUnit.DS_PERMIT_MINT_TYPEHASH()
+        // Calculate token amounts needed for minting
+        (uint256[] memory dsAmounts, uint256[] memory paAmounts) =
+            protectedUnitRouter.previewBatchMint(protectedUnits, amounts);
+
+        // Set up nonce and deadline
+        uint256 nonce = 0;
+        uint256 deadline = block.timestamp + 10 minutes;
+
+        ISignatureTransfer.PermitBatchTransferFrom memory permitBatchData;
+        {
+            // Create the Permit2 PermitBatchTransferFrom struct
+            // We need to create 2 token permissions (one for DS and one for PA)
+            ISignatureTransfer.TokenPermissions[] memory permitted = new ISignatureTransfer.TokenPermissions[](2);
+            permitted[0] = ISignatureTransfer.TokenPermissions({token: address(dsToken), amount: dsAmounts[0]});
+            permitted[1] = ISignatureTransfer.TokenPermissions({token: address(pa), amount: paAmounts[0]});
+
+            permitBatchData =
+                ISignatureTransfer.PermitBatchTransferFrom({permitted: permitted, nonce: nonce, deadline: deadline});
+        }
+
+        // Generate the batch permit signature
+        bytes memory signature = getPermitBatchTransferSignature(
+            permitBatchData, USER_PK, IPermit2(permit2).DOMAIN_SEPARATOR(), address(protectedUnitRouter)
         );
 
-        domain_separator = Asset(address(pa)).DOMAIN_SEPARATOR();
+        IProtectedUnitRouter.BatchMintParams memory param;
+        // Record initial balances
+        uint256 startBalanceDS = dsToken.balanceOf(user);
+        uint256 startBalancePA = pa.balanceOf(user);
+        uint256 startBalancePU = protectedUnit.balanceOf(user);
+        {
+            // Create transfer details for the Permit2 call
+            ISignatureTransfer.SignatureTransferDetails[] memory transferDetails =
+                new ISignatureTransfer.SignatureTransferDetails[](2);
+            transferDetails[0] = ISignatureTransfer.SignatureTransferDetails({
+                to: address(protectedUnitRouter), // Transfer DS to the router
+                requestedAmount: dsAmounts[0]
+            });
+            transferDetails[1] = ISignatureTransfer.SignatureTransferDetails({
+                to: address(protectedUnitRouter), // Transfer PA to the router
+                requestedAmount: paAmounts[0]
+            });
 
-        bytes memory paPermit = getPermit(
-            user, address(protectedUnit), paAmount, Asset(address(pa)).nonces(user), deadline, USER_PK, domain_separator
-        );
+            // Create the BatchMintParams struct
+            param = IProtectedUnitRouter.BatchMintParams({
+                protectedUnits: protectedUnits,
+                amounts: amounts,
+                permitBatchData: permitBatchData,
+                transferDetails: transferDetails,
+                signature: signature
+            });
+        }
 
-        IProtectedUnitRouter.BatchMintParams memory param = IProtectedUnitRouter.BatchMintParams({
-            protectedUnits: new address[](1),
-            amounts: new uint256[](1),
-            rawDsPermitSigs: new bytes[](1),
-            rawPaPermitSigs: new bytes[](1),
-            deadline: deadline
-        });
+        {
+            // Call the batchMint function
+            (uint256[] memory actualDsAmounts, uint256[] memory actualPaAmounts) = protectedUnitRouter.batchMint(param);
 
-        param.protectedUnits[0] = address(protectedUnit);
-        param.amounts[0] = mintAmount;
-        param.rawDsPermitSigs[0] = dsPermit;
-        param.rawPaPermitSigs[0] = paPermit;
-        protectedUnitRouter.batchMint(param);
-
+            // Check amounts returned
+            assertEq(actualDsAmounts[0], dsAmounts[0]);
+            assertEq(actualPaAmounts[0], paAmounts[0]);
+        }
         // Check balances and total supply
-        assertEq(protectedUnit.balanceOf(user), mintAmount);
+        assertEq(protectedUnit.balanceOf(user), startBalancePU + mintAmount);
         assertEq(protectedUnit.totalSupply(), mintAmount);
 
-        // Check token balances in the contract
-        assertEq(dsToken.balanceOf(address(protectedUnit)), mintAmount);
-        assertEq(pa.balanceOf(address(protectedUnit)), mintAmount);
+        // Check user token balances decreased correctly
+        assertEq(dsToken.balanceOf(user), startBalanceDS - dsAmounts[0]);
+        assertEq(pa.balanceOf(user), startBalancePA - paAmounts[0]);
+
+        // Check token balances in the ProtectedUnit contract
+        assertEq(dsToken.balanceOf(address(protectedUnit)), dsAmounts[0]);
+        assertEq(pa.balanceOf(address(protectedUnit)), paAmounts[0]);
+
+        // Check router has no remaining tokens (all were transferred to ProtectedUnit or user
+        assertEq(dsToken.balanceOf(address(protectedUnitRouter)), 0);
+        assertEq(pa.balanceOf(address(protectedUnitRouter)), 0);
 
         vm.stopPrank();
     }

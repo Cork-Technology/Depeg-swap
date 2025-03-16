@@ -424,14 +424,17 @@ contract ProtectedUnit is
         autoSync
         returns (uint256 dsAmount, uint256 paAmount)
     {
-        (dsAmount, paAmount) = __mint(msg.sender, amount);
+        (dsAmount, paAmount) = __mint(msg.sender, amount, false);
     }
 
     /**
      * @notice Internal implementation of mint functionality
      * @dev Handles the token transfers and minting logic
      */
-    function __mint(address minter, uint256 amount) internal returns (uint256 dsAmount, uint256 paAmount) {
+    function __mint(address minter, uint256 amount, bool isPermit)
+        internal
+        returns (uint256 dsAmount, uint256 paAmount)
+    {
         if (amount == 0) {
             revert InvalidAmount();
         }
@@ -443,15 +446,15 @@ contract ProtectedUnit is
         {
             (dsAmount, paAmount) =
                 ProtectedUnitMath.previewMint(amount, _selfPaReserve(), _selfDsReserve(), totalSupply());
-
             paAmount = TransferHelper.fixedToTokenNativeDecimals(paAmount, PA);
         }
 
-        TransferHelper.transferFromNormalize(ds, minter, dsAmount);
-
         // this calculation is based on the assumption that the DS token has 18 decimals but pa can have different decimals
+        if (!isPermit) {
+            TransferHelper.transferFromNormalize(ds, minter, dsAmount);
+            TransferHelper.transferFromNormalize(PA, minter, paAmount);
+        }
 
-        TransferHelper.transferFromNormalize(PA, minter, paAmount);
         dsHistory[dsIndexMap[address(ds)]].totalDeposited += amount;
 
         _mint(minter, amount);
@@ -492,7 +495,7 @@ contract ProtectedUnit is
         PERMIT2.permitTransferFrom(permitBatchData, transferDetails, msg.sender, signature);
 
         // Mint the tokens to the owner
-        (uint256 _actualDs, uint256 _actualPa) = __mint(msg.sender, amount);
+        (uint256 _actualDs, uint256 _actualPa) = __mint(msg.sender, amount, true);
 
         assert(_actualDs == dsAmount);
         assert(_actualPa == paAmount);

@@ -6,6 +6,8 @@ import {ProtectedUnit} from "./ProtectedUnit.sol";
 import {IProtectedUnitRouter} from "../../interfaces/IProtectedUnitRouter.sol";
 import {MinimalSignatureHelper, Signature} from "./../../libraries/SignatureHelperLib.sol";
 import {IPermit2} from "permit2/src/interfaces/IPermit2.sol";
+import {IERC20} from "@openzeppelin/contracts/interfaces/IERC20.sol";
+import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 /**
  * @title Protected Unit Router
@@ -16,6 +18,8 @@ import {IPermit2} from "permit2/src/interfaces/IPermit2.sol";
  * @author Cork Protocol Team
  */
 contract ProtectedUnitRouter is IProtectedUnitRouter, ReentrancyGuardTransient {
+    using SafeERC20 for IERC20;
+
     // Permit2 contract address
     IPermit2 public immutable permit2;
 
@@ -81,7 +85,6 @@ contract ProtectedUnitRouter is IProtectedUnitRouter, ReentrancyGuardTransient {
         }
 
         uint256 length = params.protectedUnits.length;
-
         dsAmounts = new uint256[](length);
         paAmounts = new uint256[](length);
 
@@ -91,8 +94,33 @@ contract ProtectedUnitRouter is IProtectedUnitRouter, ReentrancyGuardTransient {
         // Now mint from each ProtectedUnit
         for (uint256 i = 0; i < length; ++i) {
             ProtectedUnit protectedUnit = ProtectedUnit(params.protectedUnits[i]);
-            // Use the standard mint function since tokens are already approved via Permit2
+
+            // Calculate indices for this ProtectedUnit's DS and PA tokens
+            uint256 dsIndex = i * 2;
+            uint256 paIndex = dsIndex + 1;
+
+            // Approve the tokens for the ProtectedUnit
+            IERC20(params.permitBatchData.permitted[dsIndex].token).safeIncreaseAllowance(
+                address(protectedUnit), params.transferDetails[dsIndex].requestedAmount
+            );
+            IERC20(params.permitBatchData.permitted[paIndex].token).safeIncreaseAllowance(
+                address(protectedUnit), params.transferDetails[paIndex].requestedAmount
+            );
+
+            // Mint the tokens
             (dsAmounts[i], paAmounts[i]) = protectedUnit.mint(params.amounts[i]);
+
+            // Send back the remaining tokens to the user
+            if (dsAmounts[i] < params.transferDetails[dsIndex].requestedAmount) {
+                IERC20(params.permitBatchData.permitted[dsIndex].token).safeTransfer(
+                    msg.sender, params.transferDetails[dsIndex].requestedAmount - dsAmounts[i]
+                );
+            }
+            if (paAmounts[i] < params.transferDetails[paIndex].requestedAmount) {
+                IERC20(params.permitBatchData.permitted[paIndex].token).safeTransfer(
+                    msg.sender, params.transferDetails[paIndex].requestedAmount - paAmounts[i]
+                );
+            }
         }
     }
 
