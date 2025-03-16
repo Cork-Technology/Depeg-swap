@@ -70,8 +70,6 @@ contract ProtectedUnit is
     uint256 public dsReserve;
     uint256 public paReserve;
     uint256 public raReserve;
-    uint256 public dsNonce;
-    uint256 public paNonce;
 
     /**
      * @notice Unique PSM/Vault identifier for RA:PA markets in modulecore
@@ -499,8 +497,6 @@ contract ProtectedUnit is
 
         assert(_actualDs == dsAmount);
         assert(_actualPa == paAmount);
-        dsNonce++;
-        paNonce++;
     }
 
     /**
