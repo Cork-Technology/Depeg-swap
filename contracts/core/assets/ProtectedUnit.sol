@@ -23,7 +23,6 @@ import {PermitChecker} from "../../libraries/PermitChecker.sol";
 import {IPermit2} from "../../interfaces/uniswap-v2/Permit2.sol";
 import {ISignatureTransfer} from "../../interfaces/uniswap-v2/SignatureTransfer.sol";
 
-
 /**
  * @notice Data structure for tracking DS token information
  * @param dsAddress The address of the DS token
@@ -73,7 +72,7 @@ contract ProtectedUnit is
     uint256 public dsNonce;
     uint256 public paNonce;
     // should be passed in constructor
-    IPermit2 public immutable PERMIT2 = IPermit2(0x000000000022d473030f116ddee9f6b43ac78ba3); // hardcoded for ethereum 
+    IPermit2 public immutable PERMIT2 = IPermit2(0x000000000022D473030F116dDEE9F6B43aC78BA3); // hardcoded for ethereum
 
     /**
      * @notice Unique PSM/Vault identifier for RA:PA markets in modulecore
@@ -126,9 +125,8 @@ contract ProtectedUnit is
         mintCap = _mintCap;
         FLASHSWAP_ROUTER = IDsFlashSwapCore(_flashSwapRouter);
         CONFIG = CorkConfig(_config);
-        dsNonce=0;
-        paNonce=0;
-
+        dsNonce = 0;
+        paNonce = 0;
     }
 
     /**
@@ -480,8 +478,8 @@ contract ProtectedUnit is
     function mint(
         address minter,
         uint256 amount,
-        bytes calldata rawDsPermitSig,  // EIP 712 compliant
-        bytes calldata rawPaPermitSig,  // EIP 712 compliant
+        bytes calldata rawDsPermitSig, // EIP 712 compliant
+        bytes calldata rawPaPermitSig, // EIP 712 compliant
         uint256 deadline
     ) external whenNotPaused nonReentrant autoUpdateDS autoSync returns (uint256 dsAmount, uint256 paAmount) {
         if (rawDsPermitSig.length == 0 || deadline == 0) {
@@ -490,52 +488,27 @@ contract ProtectedUnit is
 
         (dsAmount, paAmount) = previewMint(amount);
 
-        ISignatureTransfer.TokenPermissions memory dsPermitted = ISignatureTransfer.TokenPermissions({
-            token: address(ds),
-            amount: dsAmount
-        });
+        ISignatureTransfer.TokenPermissions memory dsPermitted =
+            ISignatureTransfer.TokenPermissions({token: address(ds), amount: dsAmount});
 
-        ISignatureTransfer.PermitTransferFrom memory dsPermit = ISignatureTransfer.PermitTransferFrom({
-            permitted: dsPermitted,
-            nonce: dsNonce,
-            deadline: deadline
-        });
+        ISignatureTransfer.PermitTransferFrom memory dsPermit =
+            ISignatureTransfer.PermitTransferFrom({permitted: dsPermitted, nonce: dsNonce, deadline: deadline});
 
-        ISignatureTransfer.TokenPermissions memory paPermitted = ISignatureTransfer.TokenPermissions({
-            token: address(PA),
-            amount: paAmount
-        });
+        ISignatureTransfer.TokenPermissions memory paPermitted =
+            ISignatureTransfer.TokenPermissions({token: address(PA), amount: paAmount});
 
-        ISignatureTransfer.PermitTransferFrom memory paPermit = ISignatureTransfer.PermitTransferFrom({
-            permitted: paPermitted,
-            nonce: paNonce,
-            deadline: deadline
-        });
+        ISignatureTransfer.PermitTransferFrom memory paPermit =
+            ISignatureTransfer.PermitTransferFrom({permitted: paPermitted, nonce: paNonce, deadline: deadline});
 
-        ISignatureTransfer.SignatureTransferDetails memory dsTransferDetails = ISignatureTransfer.SignatureTransferDetails({
-            to: address(this),
-            requestedAmount: dsAmount
-        });
+        ISignatureTransfer.SignatureTransferDetails memory dsTransferDetails =
+            ISignatureTransfer.SignatureTransferDetails({to: address(this), requestedAmount: dsAmount});
 
-        ISignatureTransfer.SignatureTransferDetails memory paTransferDetails = ISignatureTransfer.SignatureTransferDetails({
-            to: address(this),
-            requestedAmount: paAmount
-        });
+        ISignatureTransfer.SignatureTransferDetails memory paTransferDetails =
+            ISignatureTransfer.SignatureTransferDetails({to: address(this), requestedAmount: paAmount});
 
-         
-        PERMIT2.permitTransferFrom(
-            dsPermit,
-            dsTransferDetails,
-            minter,
-            rawDsPermitSig
-        );
+        PERMIT2.permitTransferFrom(dsPermit, dsTransferDetails, minter, rawDsPermitSig);
 
-        PERMIT2.permitTransferFrom(
-            paPermit,
-            paTransferDetails,
-            minter,
-            rawPaPermitSig
-        );
+        PERMIT2.permitTransferFrom(paPermit, paTransferDetails, minter, rawPaPermitSig);
 
         // Signature memory sig = MinimalSignatureHelper.split(rawDsPermitSig);
         // ds.permit(minter, address(this), dsAmount, deadline, sig.v, sig.r, sig.s, DS_PERMIT_MINT_TYPEHASH);
