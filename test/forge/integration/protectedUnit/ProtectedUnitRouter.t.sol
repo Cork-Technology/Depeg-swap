@@ -270,4 +270,89 @@ contract ProtectedUnitRouterTest is Helper {
 
         vm.stopPrank();
     }
+
+    function test_BatchBurnWithPermit() public {
+        // Mint tokens first
+        mintTokens();
+
+        vm.startPrank(user);
+
+        // Approve ProtectedUnit for permit2
+        protectedUnit.approve(address(permit2), type(uint256).max);
+
+        uint256 burnAmount = 50 * 1e18;
+
+        address[] memory protectedUnits = new address[](1);
+        uint256[] memory amounts = new uint256[](1);
+
+        protectedUnits[0] = address(protectedUnit);
+        amounts[0] = burnAmount;
+
+        // Calculate token amounts to be received from burning
+        (uint256[] memory dsAmounts, uint256[] memory paAmounts, uint256[] memory raAmounts) =
+            protectedUnitRouter.previewBatchBurn(protectedUnits, amounts);
+
+        // Set up nonce and deadline for Permit2
+        uint256 nonce = 0;
+        uint256 deadline = block.timestamp + 10 minutes;
+
+        // Record initial balances
+        uint256 startBalanceDS = dsToken.balanceOf(user);
+        uint256 startBalancePA = pa.balanceOf(user);
+        uint256 startBalancePU = protectedUnit.balanceOf(user);
+
+        ISignatureTransfer.PermitBatchTransferFrom memory permitBatchData;
+        {
+            // Create the Permit2 PermitBatchTransferFrom struct
+            ISignatureTransfer.TokenPermissions[] memory permitted = new ISignatureTransfer.TokenPermissions[](1);
+            permitted[0] = ISignatureTransfer.TokenPermissions({token: address(protectedUnit), amount: burnAmount});
+
+            permitBatchData =
+                ISignatureTransfer.PermitBatchTransferFrom({permitted: permitted, nonce: nonce, deadline: deadline});
+        }
+
+        IProtectedUnitRouter.BatchBurnPermitParams memory param;
+        {
+            // Create transfer details for the Permit2 call
+            ISignatureTransfer.SignatureTransferDetails[] memory transferDetails =
+                new ISignatureTransfer.SignatureTransferDetails[](1);
+            transferDetails[0] = ISignatureTransfer.SignatureTransferDetails({
+                to: address(protectedUnitRouter),
+                requestedAmount: burnAmount
+            });
+
+            // Generate the batch permit signature
+            bytes memory signature = getPermitBatchTransferSignature(
+                permitBatchData, USER_PK, IPermit2(permit2).DOMAIN_SEPARATOR(), address(protectedUnitRouter)
+            );
+
+            param = IProtectedUnitRouter.BatchBurnPermitParams({
+                protectedUnits: protectedUnits,
+                amounts: amounts,
+                permitBatchData: permitBatchData,
+                transferDetails: transferDetails,
+                signature: signature
+            });
+        }
+
+        {
+            // Call the batchBurn function with permit
+            (,,, uint256[] memory actualDsAmounts, uint256[] memory actualPaAmounts, uint256[] memory actualRaAmounts) =
+                protectedUnitRouter.batchBurn(param);
+
+            // Verify returned amounts match expected amounts
+            assertEq(actualDsAmounts[0], dsAmounts[0]);
+            assertEq(actualPaAmounts[0], paAmounts[0]);
+            assertEq(actualRaAmounts[0], raAmounts[0]);
+        }
+
+        // Check that the user's ProtectedUnit balance decreased
+        assertEq(protectedUnit.balanceOf(user), startBalancePU - burnAmount);
+
+        // Check that user received the underlying tokens
+        assertEq(dsToken.balanceOf(user), startBalanceDS + dsAmounts[0]);
+        assertEq(pa.balanceOf(user), startBalancePA + paAmounts[0]);
+
+        vm.stopPrank();
+    }
 }

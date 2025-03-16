@@ -110,6 +110,9 @@ contract ProtectedUnitRouter is IProtectedUnitRouter, ReentrancyGuardTransient {
             // Mint the tokens
             (dsAmounts[i], paAmounts[i]) = protectedUnit.mint(params.amounts[i]);
 
+            // Send back users ProtectedUnit tokens
+            IERC20(address(protectedUnit)).safeTransfer(msg.sender, params.amounts[i]);
+
             // Send back the remaining tokens to the user
             if (dsAmounts[i] < params.transferDetails[dsIndex].requestedAmount) {
                 IERC20(params.permitBatchData.permitted[dsIndex].token).safeTransfer(
@@ -185,14 +188,18 @@ contract ProtectedUnitRouter is IProtectedUnitRouter, ReentrancyGuardTransient {
             uint256[] memory raAmounts
         )
     {
-        (paAdds, dsAdds, raAdds, dsAmounts, paAmounts, raAmounts) = _batchBurn(protectedUnits, amounts);
+        (paAdds, dsAdds, raAdds, dsAmounts, paAmounts, raAmounts) = _batchBurn(protectedUnits, amounts, msg.sender);
     }
 
     /**
      * @notice Burns multiple Protected Unit tokens using signed permissions
-     * @param protectedUnits List of Protected Unit contracts to burn from
-     * @param amounts How many tokens to burn from respective Protected Unit contract
-     * @param permits List of permission parameters for respective Protected Unit token burning
+     * @dev Recommended to keep the number of Protected Units under 10 to avoid gas issues
+     * @param params All parameters needed for batch burning with permit2:
+     *        - protectedUnits: List of Protected Unit contract addresses to burn from
+     *        - amounts: How many tokens to burn from each Protected Unit contract
+     *        - permitBatchData: The Permit2 batch permit data covering all tokens
+     *        - transferDetails: Details for each token transfer
+     *        - signature: The signature authorizing the permits
      * @return dsAdds List of DS token addresses for DS token received from respective Protected Unit token burning
      * @return paAdds List of PA token addresses for PA token received from respective Protected Unit token burning
      * @return raAdds List of RA token addresses for RA token received from respective Protected Unit token burning
@@ -203,11 +210,7 @@ contract ProtectedUnitRouter is IProtectedUnitRouter, ReentrancyGuardTransient {
      * @custom:reverts If any permit signature is invalid
      * @custom:reverts If any of the individual burn operations fail
      */
-    function batchBurn(
-        address[] calldata protectedUnits,
-        uint256[] calldata amounts,
-        BatchBurnPermitParams[] calldata permits
-    )
+    function batchBurn(BatchBurnPermitParams calldata params)
         external
         nonReentrant
         returns (
@@ -219,23 +222,21 @@ contract ProtectedUnitRouter is IProtectedUnitRouter, ReentrancyGuardTransient {
             uint256[] memory raAmounts
         )
     {
-        uint256 length = permits.length;
-        for (uint256 i = 0; i < length; ++i) {
-            ProtectedUnit protectedUnit = ProtectedUnit(protectedUnits[i]);
-            BatchBurnPermitParams calldata permit = permits[i];
-
-            Signature memory signature = MinimalSignatureHelper.split(permit.rawProtectedUnitPermitSig);
-
-            protectedUnit.permit(
-                permit.owner, permit.spender, permit.value, permit.deadline, signature.v, signature.r, signature.s
-            );
+        if (
+            params.protectedUnits.length != params.amounts.length
+                || params.permitBatchData.permitted.length != params.transferDetails.length
+        ) {
+            revert InvalidInput();
         }
+        // Execute the permitTransferFrom to transfer all Protected Unit tokens to this contract
+        permit2.permitTransferFrom(params.permitBatchData, params.transferDetails, msg.sender, params.signature);
 
-        (paAdds, dsAdds, raAdds, dsAmounts, paAmounts, raAmounts) = _batchBurn(protectedUnits, amounts);
+        (dsAdds, paAdds, raAdds, dsAmounts, paAmounts, raAmounts) =
+            _batchBurn(params.protectedUnits, params.amounts, address(this));
     }
 
     /// @notice Internal function to handle the batch burning logic
-    function _batchBurn(address[] calldata protectedUnits, uint256[] calldata amounts)
+    function _batchBurn(address[] calldata protectedUnits, uint256[] calldata amounts, address caller)
         internal
         returns (
             address[] memory dsAdds,
@@ -246,11 +247,7 @@ contract ProtectedUnitRouter is IProtectedUnitRouter, ReentrancyGuardTransient {
             uint256[] memory raAmounts
         )
     {
-        if (protectedUnits.length != amounts.length) {
-            revert InvalidInput();
-        }
         uint256 length = protectedUnits.length;
-
         dsAmounts = new uint256[](length);
         paAmounts = new uint256[](length);
         raAmounts = new uint256[](length);
@@ -258,6 +255,7 @@ contract ProtectedUnitRouter is IProtectedUnitRouter, ReentrancyGuardTransient {
         paAdds = new address[](length);
         raAdds = new address[](length);
 
+        // Now process each burn operation
         // If large number of ProtectedUnits are passed, this function will revert due to gas limit.
         // So we will keep the limit to 10 ProtectedUnits(or even less if needed) from frontend.
         for (uint256 i = 0; i < length; ++i) {
@@ -267,9 +265,18 @@ contract ProtectedUnitRouter is IProtectedUnitRouter, ReentrancyGuardTransient {
             paAdds[i] = address(protectedUnit.PA());
             raAdds[i] = address(protectedUnit.RA());
 
-            (dsAmounts[i], paAmounts[i], raAmounts[i]) = protectedUnit.previewBurn(msg.sender, amounts[i]);
+            // Calculate tokens to be received
+            (dsAmounts[i], paAmounts[i], raAmounts[i]) = protectedUnit.previewBurn(caller, amounts[i]);
 
-            ProtectedUnit(protectedUnits[i]).burnFrom(msg.sender, amounts[i]);
+            // Burn tokens
+            protectedUnit.burnFrom(caller, amounts[i]);
+
+            if (caller == address(this)) {
+                // Transfer the underlying tokens to the user
+                IERC20(dsAdds[i]).safeTransfer(msg.sender, dsAmounts[i]);
+                IERC20(paAdds[i]).safeTransfer(msg.sender, paAmounts[i]);
+                IERC20(raAdds[i]).safeTransfer(msg.sender, raAmounts[i]);
+            }
         }
     }
 }

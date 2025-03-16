@@ -547,7 +547,7 @@ contract ProtectedUnit is
         autoUpdateDS
         autoSync
     {
-        _burnHU(account, amount);
+        _burnPU(account, amount);
     }
 
     /**
@@ -558,14 +558,14 @@ contract ProtectedUnit is
      * @custom:emits Burn when tokens are successfully burned
      */
     function burn(uint256 amount) public override whenNotPaused nonReentrant autoUpdateDS autoSync {
-        _burnHU(msg.sender, amount);
+        _burnPU(msg.sender, amount);
     }
 
     /**
      * @notice Internal implementation of burn functionality
      * @dev Calculates token amounts, burns ProtectedUnit tokens, and transfers underlying assets
      */
-    function _burnHU(address dissolver, uint256 amount)
+    function _burnPU(address dissolver, uint256 amount)
         internal
         returns (uint256 dsAmount, uint256 paAmount, uint256 raAmount)
     {
