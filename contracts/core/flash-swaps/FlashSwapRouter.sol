@@ -398,40 +398,6 @@ contract RouterState is
         _sellDsReserve(assetPair, SellDsParams(params.reserveId, params.dsId, amountSellFromReserve));
     }
 
-    function takeDsFee(ReserveState storage self, AssetPair storage pair, Id reserveId, uint256 amount)
-        internal
-        returns (uint256 amountLeft)
-    {
-        // TODO calculate dynamically
-        uint256 fee = SwapperMathLibrary.calculateDsExtraFee(
-            amount,
-            self.reserveSellPressurePercentageThreshold,
-            self.dsExtraFeePercentage // TODO -> tmp fix, should not be using the threshold
-        );
-
-        if (fee == 0) {
-            return amount;
-        }
-
-        amountLeft = amount - fee;
-
-        // increase the fee amount in transient slot
-        ReturnDataSlotLib.increase(ReturnDataSlotLib.DS_FEE_AMOUNT, fee);
-
-        uint256 attributedToTreasury =
-            SwapperMathLibrary.calculatePercentage(fee, self.dsExtraFeeTreasurySplitPercentage);
-        uint256 attributedToVault = fee - attributedToTreasury;
-
-        assert(attributedToTreasury + attributedToVault == fee);
-
-        // we calculate it in native decimals, should go through
-        IERC20(address(pair.ra)).safeTransfer(_moduleCore, attributedToVault);
-        IVault(_moduleCore).provideLiquidityWithFlashSwapFee(reserveId, attributedToVault);
-
-        address treasury = config.treasury();
-        IERC20(address(pair.ra)).safeTransfer(treasury, attributedToTreasury);
-    }
-
     function calculateSellFromReserve(ReserveState storage self, uint256 amountOut, uint256 dsId, uint256 raProvided)
         internal
         view
