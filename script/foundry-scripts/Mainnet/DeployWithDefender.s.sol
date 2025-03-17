@@ -59,7 +59,6 @@ contract DeployProtectedUnit is Script {
         address protectedUnitRouter = DefenderDeploy.deploy("ProtectedUnitRouter.sol", "", defenderOpts);
         console.log("Deployed ProtectedUnitRouter : ", protectedUnitRouter);
 
-        // Assuming CorkConfig has a setProtectedUnitFactory function
         CorkConfig(config).setProtectedUnitFactory(protectedUnitFactory);
         console.log("ProtectedUnitFactory configured in Config");
 
