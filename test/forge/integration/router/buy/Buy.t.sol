@@ -144,6 +144,53 @@ contract BuyDsTest is Helper {
         flashSwapRouter.swapRaforDs(currencyId, dsId, 0.01 ether, 0, params, defaultOffchainGuessParams());
     }
 
+    function test_buyDsSellReserve() public virtual {
+        ra.approve(address(flashSwapRouter), type(uint256).max);
+
+        (uint256 raReserve, uint256 ctReserve) = hook.getReserves(address(ra), address(ct));
+
+        // will generate approximately 6% risk premium
+        uint256 amount = 0.01 ether;
+
+        Asset(ds).approve(address(flashSwapRouter), amount);
+
+        uint256 balanceRaBefore = Asset(ds).balanceOf(DEFAULT_ADDRESS);
+        vm.warp(current);
+
+        vm.pauseGasMetering();
+
+        corkConfig.updateAmmBaseFeePercentage(defaultCurrencyId, 1 ether);
+
+        // enable ds sale
+        corkConfig.updateRouterGradualSaleStatus(currencyId, false);
+
+        // 12% threshold, we want to find 50% sell pressure
+        corkConfig.updateReserveSellPressurePercentage(defaultCurrencyId, 12 ether);
+
+        IDsFlashSwapCore.SwapRaForDsReturn memory result = flashSwapRouter.swapRaforDs(
+            currencyId, dsId, amount, 0, defaultBuyApproxParams(), defaultOffchainGuessParams()
+        );
+
+        // won't be exact
+        vm.assertApproxEqAbs(result.reserveSellPressure, 50 ether, 4 ether);
+
+        uint256 amountOut = result.amountOut;
+
+        uint256 balanceRaAfter = Asset(address(ds)).balanceOf(DEFAULT_ADDRESS);
+
+        vm.assertEq(balanceRaAfter - balanceRaBefore, amountOut);
+
+        // 1% threshold, we want to find 100% sell pressure
+        corkConfig.updateReserveSellPressurePercentage(defaultCurrencyId, 1 ether);
+
+        result = flashSwapRouter.swapRaforDs(
+            currencyId, dsId, amount, 0, defaultBuyApproxParams(), defaultOffchainGuessParams()
+        );
+
+        // won't be exact
+        vm.assertEq(result.reserveSellPressure, 95 ether);
+    }
+
     function testFuzz_buyDS(uint256 amount, uint8 raDecimals, uint8 paDecimals) public {
         (raDecimals, paDecimals) = setupDifferentDecimals(raDecimals, paDecimals);
 
