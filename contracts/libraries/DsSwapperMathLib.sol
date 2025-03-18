@@ -432,6 +432,10 @@ library SwapperMathLibrary {
         UD60x18 x = currentRiskPremium;
         UD60x18 y = threshold;
 
+        if (y == ud(0)) {
+            return 0;
+        }
+
         // solhint-disable-next-line var-name-mixedcase
         UD60x18 ONE_HUNDRED = convertUd(100);
 
