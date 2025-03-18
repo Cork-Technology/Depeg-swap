@@ -132,6 +132,9 @@ library SwapperMathLibrary {
     // the math would fail, since near expiry it would behave similar to CSM curve,
     int256 internal constant ONE_MINUS_T_CAP = 1e18;
 
+    // ds reserve sell pressure cap, set to 95% to still allow price impact being made
+    uint256 internal constant SELL_PRESSURE_CAP = 95e18;
+
     // Calculate price ratio of two tokens in AMM, will return ratio on 18 decimals precision
     function getPriceRatio(uint256 raReserve, uint256 ctReserve)
         public
@@ -438,6 +441,8 @@ library SwapperMathLibrary {
         UD60x18 s = mul(div(x, y), ONE_HUNDRED);
 
         pressurePercentage = unwrap(s);
+        // use the cap if it goes above
+        pressurePercentage = pressurePercentage > SELL_PRESSURE_CAP ? SELL_PRESSURE_CAP : pressurePercentage;
     }
 
     /// @notice ptConstFixed = f / (rate +1)^t
