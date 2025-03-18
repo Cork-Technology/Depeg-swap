@@ -500,14 +500,22 @@ contract RouterState is
 
         uint256 raInFixed = TransferHelper.tokenNativeDecimalsToFixed(amount, assetPair.ra);
 
-        uint256 pressurePercentage = calculateAndSellDsReserve(
+        result.reserveSellPressure = calculateAndSellDsReserve(
             self, assetPair, CalculateAndSellDsParams(reserveId, dsId, raInFixed, result.amountOut)
         );
 
         self.recalculateHIYA(dsId, raInFixed, result.amountOut);
 
         emit RaSwapped(
-            reserveId, dsId, msg.sender, amount, result.amountOut, result.ctRefunded, result.fee, 0, pressurePercentage
+            reserveId,
+            dsId,
+            msg.sender,
+            amount,
+            result.amountOut,
+            result.ctRefunded,
+            result.fee,
+            0,
+            result.reserveSellPressure
         );
     }
 

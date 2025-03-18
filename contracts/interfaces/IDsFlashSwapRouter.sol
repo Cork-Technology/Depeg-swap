@@ -105,6 +105,7 @@ interface IDsFlashSwapCore is IDsFlashSwapUtility {
         /// if the swap is fully fullfilled by the rollover sale, borrow
         uint256 borrow;
         uint256 fee;
+        uint256 reserveSellPressure;
     }
 
     /**
