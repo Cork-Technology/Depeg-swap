@@ -5,7 +5,7 @@ pragma solidity ^0.8.24;
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {Pausable} from "@openzeppelin/contracts/utils/Pausable.sol";
 import {ERC20Burnable} from "@openzeppelin/contracts/token/ERC20/extensions/ERC20Burnable.sol";
-import {ERC20, IERC20Permit} from "@openzeppelin/contracts/token/ERC20/extensions/ERC20Permit.sol";
+import {ERC20} from "@openzeppelin/contracts/token/ERC20/extensions/ERC20Permit.sol";
 import {ReentrancyGuardTransient} from "@openzeppelin/contracts/utils/ReentrancyGuardTransient.sol";
 import {SafeERC20, IERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {IProtectedUnit} from "../../interfaces/IProtectedUnit.sol";
@@ -17,7 +17,6 @@ import {IProtectedUnitLiquidation} from "./../../interfaces/IProtectedUnitLiquid
 import {IDsFlashSwapCore} from "./../../interfaces/IDsFlashSwapRouter.sol";
 import {ModuleCore} from "./../ModuleCore.sol";
 import {ERC20Permit} from "@openzeppelin/contracts/token/ERC20/extensions/ERC20Permit.sol";
-import {Signature, MinimalSignatureHelper} from "./../../libraries/SignatureHelperLib.sol";
 import {TransferHelper} from "./../../libraries/TransferHelper.sol";
 import {IPermit2} from "permit2/src/interfaces/IPermit2.sol";
 
@@ -309,7 +308,7 @@ contract ProtectedUnit is
     function redeemRaWithDsPa(uint256 amountPa, uint256 amountDs) external autoUpdateDS onlyOwner autoSync {
         uint256 dsId = MODULE_CORE.lastDsId(id);
 
-        ds.approve(address(MODULE_CORE), amountDs);
+        IERC20(ds).safeIncreaseAllowance(address(MODULE_CORE), amountDs);
         IERC20(PA).safeIncreaseAllowance(address(MODULE_CORE), amountPa);
 
         MODULE_CORE.redeemRaWithDsPa(id, dsId, amountPa);
@@ -630,13 +629,13 @@ contract ProtectedUnit is
      */
     function skim(address to) external nonReentrant {
         if (PA.balanceOf(address(this)) - paReserve > 0) {
-            PA.transfer(to, PA.balanceOf(address(this)) - paReserve);
+            IERC20(PA).safeTransfer(to, PA.balanceOf(address(this)) - paReserve);
         }
         if (RA.balanceOf(address(this)) - raReserve > 0) {
-            RA.transfer(to, RA.balanceOf(address(this)) - raReserve);
+            IERC20(RA).safeTransfer(to, RA.balanceOf(address(this)) - raReserve);
         }
         if (ds.balanceOf(address(this)) - dsReserve > 0) {
-            ds.transfer(to, ds.balanceOf(address(this)) - dsReserve);
+            IERC20(ds).safeTransfer(to, ds.balanceOf(address(this)) - dsReserve);
         }
     }
 }

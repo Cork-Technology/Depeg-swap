@@ -4,7 +4,6 @@ pragma solidity ^0.8.24;
 import {ReentrancyGuardTransient} from "@openzeppelin/contracts/utils/ReentrancyGuardTransient.sol";
 import {ProtectedUnit} from "./ProtectedUnit.sol";
 import {IProtectedUnitRouter} from "../../interfaces/IProtectedUnitRouter.sol";
-import {MinimalSignatureHelper, Signature} from "./../../libraries/SignatureHelperLib.sol";
 import {IPermit2} from "permit2/src/interfaces/IPermit2.sol";
 import {IERC20} from "@openzeppelin/contracts/interfaces/IERC20.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
@@ -242,7 +241,7 @@ contract ProtectedUnitRouter is IProtectedUnitRouter, ReentrancyGuardTransient {
         uint256[] memory usedAmounts = new uint256[](params.permitBatchData.permitted.length);
 
         // Track the token usage for Protected Unit tokens
-        for (uint256 i = 0; i < length; i++) {
+        for (uint256 i = 0; i < length; ++i) {
             _trackTokenUsage(usedTokens, usedAmounts, params.protectedUnits[i], params.amounts[i]);
         }
 
@@ -312,7 +311,8 @@ contract ProtectedUnitRouter is IProtectedUnitRouter, ReentrancyGuardTransient {
         pure
     {
         // Look for the token in the existing array
-        for (uint256 i = 0; i < usedTokens.length; i++) {
+        uint256 length = usedTokens.length;
+        for (uint256 i = 0; i < length; ++i) {
             if (usedTokens[i] == token) {
                 // Token already being tracked, add to the amount
                 usedAmounts[i] += amount;
@@ -343,13 +343,14 @@ contract ProtectedUnitRouter is IProtectedUnitRouter, ReentrancyGuardTransient {
         uint256[] memory usedAmounts
     ) internal {
         uint256 length = permitBatchData.permitted.length;
-        for (uint256 i = 0; i < length; i++) {
+        for (uint256 i = 0; i < length; ++i) {
             address token = permitBatchData.permitted[i].token;
             uint256 requestedAmount = transferDetails[i].requestedAmount;
 
             // Find if this token was used
             uint256 usedAmount = 0;
-            for (uint256 j = 0; j < usedTokens.length; j++) {
+            uint256 usedTokensLength = usedTokens.length;
+            for (uint256 j = 0; j < usedTokensLength; ++j) {
                 if (usedTokens[j] == token) {
                     usedAmount = usedAmounts[j];
                     break;
