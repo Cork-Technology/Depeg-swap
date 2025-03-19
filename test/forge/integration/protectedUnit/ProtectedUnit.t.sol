@@ -255,6 +255,7 @@ contract ProtectedUnitTest is Helper {
 
         vm.startPrank(user);
         (dsAmount, paAmount) = pu.mint(99e18);
+        vm.stopPrank();
     }
 
     function test_MintNotProportional() external {
@@ -284,6 +285,7 @@ contract ProtectedUnitTest is Helper {
 
         vm.assertEq(dsToken.balanceOf(user), dsBalanceBefore - dsAmount);
         vm.assertEq(pa.balanceOf(user), paBalanceBefore - paAmount);
+        vm.stopPrank();
     }
 
     function test_RedeemRaWithDs() external {
@@ -314,6 +316,8 @@ contract ProtectedUnitTest is Helper {
 
         bool paused = protectedUnit.paused();
         vm.assertEq(paused, true);
+
+        vm.stopPrank();
     }
 
     function test_MintCapExceeded() public {
@@ -416,6 +420,8 @@ contract ProtectedUnitTest is Helper {
         vm.assertEq(raBalanceAfter, raBalanceBefore + raAmount);
         vm.assertEq(paBalanceAfter, paBalanceBefore + paAmount);
         vm.assertEq(dsBalanceAfter, dsBalanceBefore + dsAmount);
+
+        vm.stopPrank();
     }
 
     function test_MintingPaused() public {
