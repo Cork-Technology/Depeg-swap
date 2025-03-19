@@ -21,10 +21,10 @@ contract ProtectedUnitRouter is IProtectedUnitRouter, ReentrancyGuardTransient {
     using SafeERC20 for IERC20;
 
     // Permit2 contract address
-    IPermit2 public immutable permit2;
+    IPermit2 public immutable PERMIT2;
 
     constructor(address _permit2) {
-        permit2 = IPermit2(_permit2);
+        PERMIT2 = IPermit2(_permit2);
     }
 
     /**
@@ -64,8 +64,8 @@ contract ProtectedUnitRouter is IProtectedUnitRouter, ReentrancyGuardTransient {
      * @param params All parameters needed for batch minting:
      *        - protectedUnits: List of Protected Unit contract addresses to mint from
      *        - amounts: How many tokens to mint from respective Protected Unit contract
-     *        - permitBatchData: The Permit2 batch permit data covering all tokens
-     *        - transferDetails: Details for each token transfer
+     *        - permitBatchData: The Permit2 batch permit data covering all tokens - Assumes that Array contains DS and PA one after the other as per protectedUnits array
+     *        - transferDetails: Details for each token transfer - Assumes that Array contains DS and PA one after the other as per protectedUnits array
      *        - signature: The signature authorizing the permits
      * @return dsAmounts List of DS token amounts used for respective Protected Unit token minting
      * @return paAmounts List of PA token amounts used for respective Protected Unit token minting
@@ -77,33 +77,42 @@ contract ProtectedUnitRouter is IProtectedUnitRouter, ReentrancyGuardTransient {
         nonReentrant
         returns (uint256[] memory dsAmounts, uint256[] memory paAmounts)
     {
+        uint256 length = params.protectedUnits.length;
         if (
-            params.protectedUnits.length != params.amounts.length
+            length != params.amounts.length || length * 2 != params.permitBatchData.permitted.length
                 || params.permitBatchData.permitted.length != params.transferDetails.length
         ) {
             revert InvalidInput();
         }
 
-        uint256 length = params.protectedUnits.length;
         dsAmounts = new uint256[](length);
         paAmounts = new uint256[](length);
 
         // Execute the permitTransferFrom to approve all tokens in one transaction
-        permit2.permitTransferFrom(params.permitBatchData, params.transferDetails, msg.sender, params.signature);
+        PERMIT2.permitTransferFrom(params.permitBatchData, params.transferDetails, msg.sender, params.signature);
+
+        // Track which tokens have been used for minting and how much used
+        address[] memory usedTokens = new address[](params.permitBatchData.permitted.length);
+        uint256[] memory usedAmounts = new uint256[](params.permitBatchData.permitted.length);
 
         // Now mint from each ProtectedUnit
         for (uint256 i = 0; i < length; ++i) {
             ProtectedUnit protectedUnit = ProtectedUnit(params.protectedUnits[i]);
 
             // Calculate indices for this ProtectedUnit's DS and PA tokens
+            // Assumes that Array contains DS and PA one after the other and in same order as per protectedUnits array
             uint256 dsIndex = i * 2;
             uint256 paIndex = dsIndex + 1;
 
+            // Get token addresses
+            address dsToken = params.permitBatchData.permitted[dsIndex].token;
+            address paToken = params.permitBatchData.permitted[paIndex].token;
+
             // Approve the tokens for the ProtectedUnit
-            IERC20(params.permitBatchData.permitted[dsIndex].token).safeIncreaseAllowance(
+            IERC20(dsToken).safeIncreaseAllowance(
                 address(protectedUnit), params.transferDetails[dsIndex].requestedAmount
             );
-            IERC20(params.permitBatchData.permitted[paIndex].token).safeIncreaseAllowance(
+            IERC20(paToken).safeIncreaseAllowance(
                 address(protectedUnit), params.transferDetails[paIndex].requestedAmount
             );
 
@@ -113,18 +122,13 @@ contract ProtectedUnitRouter is IProtectedUnitRouter, ReentrancyGuardTransient {
             // Send back users ProtectedUnit tokens
             IERC20(address(protectedUnit)).safeTransfer(msg.sender, params.amounts[i]);
 
-            // Send back the remaining tokens to the user
-            if (dsAmounts[i] < params.transferDetails[dsIndex].requestedAmount) {
-                IERC20(params.permitBatchData.permitted[dsIndex].token).safeTransfer(
-                    msg.sender, params.transferDetails[dsIndex].requestedAmount - dsAmounts[i]
-                );
-            }
-            if (paAmounts[i] < params.transferDetails[paIndex].requestedAmount) {
-                IERC20(params.permitBatchData.permitted[paIndex].token).safeTransfer(
-                    msg.sender, params.transferDetails[paIndex].requestedAmount - paAmounts[i]
-                );
-            }
+            // Track the token usage for DS and PA
+            _trackTokenUsage(usedTokens, usedAmounts, dsToken, dsAmounts[i]);
+            _trackTokenUsage(usedTokens, usedAmounts, paToken, paAmounts[i]);
         }
+
+        // Return any unused permitted tokens back to the user
+        _returnExcessTokens(params.permitBatchData, params.transferDetails, usedTokens, usedAmounts);
     }
 
     /**
@@ -196,7 +200,7 @@ contract ProtectedUnitRouter is IProtectedUnitRouter, ReentrancyGuardTransient {
      * @dev Recommended to keep the number of Protected Units under 10 to avoid gas issues
      * @param params All parameters needed for batch burning with permit2:
      *        - protectedUnits: List of Protected Unit contract addresses to burn from
-     *        - amounts: How many tokens to burn from each Protected Unit contract
+     *        - amounts: How many tokens to burn from respective Protected Unit contract
      *        - permitBatchData: The Permit2 batch permit data covering all tokens
      *        - transferDetails: Details for each token transfer
      *        - signature: The signature authorizing the permits
@@ -222,17 +226,32 @@ contract ProtectedUnitRouter is IProtectedUnitRouter, ReentrancyGuardTransient {
             uint256[] memory raAmounts
         )
     {
+        uint256 length = params.protectedUnits.length;
         if (
-            params.protectedUnits.length != params.amounts.length
-                || params.permitBatchData.permitted.length != params.transferDetails.length
+            length != params.amounts.length || length != params.transferDetails.length
+                || length != params.permitBatchData.permitted.length
         ) {
             revert InvalidInput();
         }
-        // Execute the permitTransferFrom to transfer all Protected Unit tokens to this contract
-        permit2.permitTransferFrom(params.permitBatchData, params.transferDetails, msg.sender, params.signature);
 
+        // Execute the permitTransferFrom to transfer all Protected Unit tokens to this contract
+        PERMIT2.permitTransferFrom(params.permitBatchData, params.transferDetails, msg.sender, params.signature);
+
+        // Track which tokens have been used and how much
+        address[] memory usedTokens = new address[](params.permitBatchData.permitted.length);
+        uint256[] memory usedAmounts = new uint256[](params.permitBatchData.permitted.length);
+
+        // Track the token usage for Protected Unit tokens
+        for (uint256 i = 0; i < length; i++) {
+            _trackTokenUsage(usedTokens, usedAmounts, params.protectedUnits[i], params.amounts[i]);
+        }
+
+        // Process the batch burn
         (dsAdds, paAdds, raAdds, dsAmounts, paAmounts, raAmounts) =
             _batchBurn(params.protectedUnits, params.amounts, address(this));
+
+        // Return any excess tokens that were permitted but not needed for the burn
+        _returnExcessTokens(params.permitBatchData, params.transferDetails, usedTokens, usedAmounts);
     }
 
     /// @notice Internal function to handle the batch burning logic
@@ -276,6 +295,73 @@ contract ProtectedUnitRouter is IProtectedUnitRouter, ReentrancyGuardTransient {
                 IERC20(dsAdds[i]).safeTransfer(msg.sender, dsAmounts[i]);
                 IERC20(paAdds[i]).safeTransfer(msg.sender, paAmounts[i]);
                 IERC20(raAdds[i]).safeTransfer(msg.sender, raAmounts[i]);
+            }
+        }
+    }
+
+    /**
+     * @notice Helper function to track token usage
+     * @dev Adds or updates a token's usage amount in the tracking arrays
+     * @param usedTokens Array of token addresses being tracked
+     * @param usedAmounts Array of amounts used for each token
+     * @param token Address of the token to track
+     * @param amount Amount of the token used
+     */
+    function _trackTokenUsage(address[] memory usedTokens, uint256[] memory usedAmounts, address token, uint256 amount)
+        internal
+        pure
+    {
+        // Look for the token in the existing array
+        for (uint256 i = 0; i < usedTokens.length; i++) {
+            if (usedTokens[i] == token) {
+                // Token already being tracked, add to the amount
+                usedAmounts[i] += amount;
+                return;
+            } else if (usedTokens[i] == address(0)) {
+                // Found an empty slot, use it to track this token
+                usedTokens[i] = token;
+                usedAmounts[i] = amount;
+                return;
+            }
+        }
+        // If we get here, the arrays are full which shouldn't happen
+        // as we initialize them with the correct size
+    }
+
+    /**
+     * @notice Helper function to return excess tokens to the user
+     * @dev Compares requested amounts with actual usage and returns any excess
+     * @param permitBatchData The Permit2 batch permit data
+     * @param transferDetails The transfer details for each token
+     * @param usedTokens Array of token addresses that were used
+     * @param usedAmounts Array of amounts used for each token
+     */
+    function _returnExcessTokens(
+        IPermit2.PermitBatchTransferFrom calldata permitBatchData,
+        IPermit2.SignatureTransferDetails[] calldata transferDetails,
+        address[] memory usedTokens,
+        uint256[] memory usedAmounts
+    ) internal {
+        uint256 length = permitBatchData.permitted.length;
+        for (uint256 i = 0; i < length; i++) {
+            address token = permitBatchData.permitted[i].token;
+            uint256 requestedAmount = transferDetails[i].requestedAmount;
+
+            // Find if this token was used
+            uint256 usedAmount = 0;
+            for (uint256 j = 0; j < usedTokens.length; j++) {
+                if (usedTokens[j] == token) {
+                    usedAmount = usedAmounts[j];
+                    break;
+                }
+            }
+
+            // Return any excess
+            if (requestedAmount > usedAmount) {
+                uint256 excessAmount = requestedAmount - usedAmount;
+                if (excessAmount > 0) {
+                    IERC20(token).safeTransfer(msg.sender, excessAmount);
+                }
             }
         }
     }

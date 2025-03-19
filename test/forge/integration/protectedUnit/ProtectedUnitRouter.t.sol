@@ -355,4 +355,179 @@ contract ProtectedUnitRouterTest is Helper {
 
         vm.stopPrank();
     }
+
+    function test_BatchMintExcessTokensReturn() public {
+        // Test minting by the user with excess tokens permitted
+        vm.startPrank(user);
+
+        // Approve tokens for Permit2
+        dsToken.approve(address(permit2), USER_BALANCE);
+        pa.approve(address(permit2), USER_BALANCE);
+
+        // Mint 100 ProtectedUnit tokens
+        uint256 mintAmount = 100 * 1e18;
+
+        // Setup the Protected Units array
+        address[] memory protectedUnits = new address[](1);
+        uint256[] memory amounts = new uint256[](1);
+        protectedUnits[0] = address(protectedUnit);
+        amounts[0] = mintAmount;
+
+        // Calculate token amounts needed for minting
+        (uint256[] memory dsAmounts, uint256[] memory paAmounts) =
+            protectedUnitRouter.previewBatchMint(protectedUnits, amounts);
+
+        // Intentionally increase the request amount to test excess return
+        uint256 requestedDs = dsAmounts[0] + 10 * 1e18; // 10 Additional DS tokens for approval
+        uint256 requestedPa = paAmounts[0] + 15 * 1e18; // 15 Additional PA tokens for approval
+
+        ISignatureTransfer.PermitBatchTransferFrom memory permitBatchData;
+        {
+            // Set up nonce and deadline
+            uint256 nonce = 0;
+            uint256 deadline = block.timestamp + 10 minutes;
+
+            // Create the Permit2 PermitBatchTransferFrom struct with excess amounts
+            ISignatureTransfer.TokenPermissions[] memory permitted = new ISignatureTransfer.TokenPermissions[](2);
+            permitted[0] = ISignatureTransfer.TokenPermissions({token: address(dsToken), amount: requestedDs});
+            permitted[1] = ISignatureTransfer.TokenPermissions({token: address(pa), amount: requestedPa});
+
+            permitBatchData =
+                ISignatureTransfer.PermitBatchTransferFrom({permitted: permitted, nonce: nonce, deadline: deadline});
+        }
+
+        // Generate the batch permit signature
+        bytes memory signature = getPermitBatchTransferSignature(
+            permitBatchData, USER_PK, IPermit2(permit2).DOMAIN_SEPARATOR(), address(protectedUnitRouter)
+        );
+
+        // Record initial balances
+        uint256 startBalanceDS = dsToken.balanceOf(user);
+        uint256 startBalancePA = pa.balanceOf(user);
+        uint256 startBalancePU = protectedUnit.balanceOf(user);
+
+        IProtectedUnitRouter.BatchMintParams memory param;
+        {
+            // Create transfer details with excess amounts
+            ISignatureTransfer.SignatureTransferDetails[] memory transferDetails =
+                new ISignatureTransfer.SignatureTransferDetails[](2);
+            transferDetails[0] = ISignatureTransfer.SignatureTransferDetails({
+                to: address(protectedUnitRouter),
+                requestedAmount: requestedDs
+            });
+            transferDetails[1] = ISignatureTransfer.SignatureTransferDetails({
+                to: address(protectedUnitRouter),
+                requestedAmount: requestedPa
+            });
+
+            param = IProtectedUnitRouter.BatchMintParams({
+                protectedUnits: protectedUnits,
+                amounts: amounts,
+                permitBatchData: permitBatchData,
+                transferDetails: transferDetails,
+                signature: signature
+            });
+        }
+
+        {
+            // Call the batchMint function
+            (uint256[] memory actualDsAmounts, uint256[] memory actualPaAmounts) = protectedUnitRouter.batchMint(param);
+
+            // Double check that the exact excess was returned
+            assertEq(startBalanceDS - dsToken.balanceOf(user), dsAmounts[0]);
+            assertEq(startBalancePA - pa.balanceOf(user), paAmounts[0]);
+
+            // Verify excess tokens were returned (user should have lost only the actual amounts needed)
+            assertEq(dsToken.balanceOf(user), startBalanceDS - actualDsAmounts[0]);
+            assertEq(pa.balanceOf(user), startBalancePA - actualPaAmounts[0]);
+        }
+
+        // Check ProtectedUnit balances
+        assertEq(protectedUnit.balanceOf(user), startBalancePU + mintAmount);
+        assertEq(protectedUnit.totalSupply(), mintAmount);
+        vm.stopPrank();
+    }
+
+    function test_BatchBurnExcessTokensReturn() public {
+        // Mint tokens first
+        mintTokens();
+
+        vm.startPrank(user);
+
+        // Approve ProtectedUnit for permit2
+        protectedUnit.approve(address(permit2), type(uint256).max);
+
+        uint256 burnAmount = 50 * 1e18;
+        uint256 totalPermitAmount = burnAmount + 20 * 1e18; // 20 excess PU to permit
+
+        address[] memory protectedUnits = new address[](1);
+        uint256[] memory amounts = new uint256[](1);
+
+        protectedUnits[0] = address(protectedUnit);
+        amounts[0] = burnAmount;
+
+        ISignatureTransfer.PermitBatchTransferFrom memory permitBatchData;
+        {
+            // Set up nonce and deadline for Permit2
+            uint256 nonce = 0;
+            uint256 deadline = block.timestamp + 10 minutes;
+
+            // Create the Permit2 PermitBatchTransferFrom struct with excess amount
+            ISignatureTransfer.TokenPermissions[] memory permitted = new ISignatureTransfer.TokenPermissions[](1);
+            permitted[0] =
+                ISignatureTransfer.TokenPermissions({token: address(protectedUnit), amount: totalPermitAmount});
+
+            permitBatchData =
+                ISignatureTransfer.PermitBatchTransferFrom({permitted: permitted, nonce: nonce, deadline: deadline});
+        }
+
+        IProtectedUnitRouter.BatchBurnPermitParams memory param;
+        {
+            // Create transfer details with excess amount
+            ISignatureTransfer.SignatureTransferDetails[] memory transferDetails =
+                new ISignatureTransfer.SignatureTransferDetails[](1);
+            transferDetails[0] = ISignatureTransfer.SignatureTransferDetails({
+                to: address(protectedUnitRouter),
+                requestedAmount: totalPermitAmount
+            });
+
+            // Generate the batch permit signature
+            bytes memory signature = getPermitBatchTransferSignature(
+                permitBatchData, USER_PK, IPermit2(permit2).DOMAIN_SEPARATOR(), address(protectedUnitRouter)
+            );
+
+            param = IProtectedUnitRouter.BatchBurnPermitParams({
+                protectedUnits: protectedUnits,
+                amounts: amounts,
+                permitBatchData: permitBatchData,
+                transferDetails: transferDetails,
+                signature: signature
+            });
+        }
+
+        {
+            // Record initial balances
+            uint256 startBalanceDS = dsToken.balanceOf(user);
+            uint256 startBalancePA = pa.balanceOf(user);
+            uint256 startBalanceRA = ra.balanceOf(user);
+            uint256 startBalancePU = protectedUnit.balanceOf(user);
+
+            // Call the batchBurn function with permit
+            (,,, uint256[] memory actualDsAmounts, uint256[] memory actualPaAmounts, uint256[] memory actualRaAmounts) =
+                protectedUnitRouter.batchBurn(param);
+
+            // Check that only the specified amount was burned and the excess tokens were returned to user
+            assertEq(protectedUnit.balanceOf(user), startBalancePU - burnAmount);
+
+            // Check that user received the underlying tokens from burning
+            assertEq(dsToken.balanceOf(user), startBalanceDS + actualDsAmounts[0]);
+            assertEq(pa.balanceOf(user), startBalancePA + actualPaAmounts[0]);
+            assertEq(ra.balanceOf(user), startBalanceRA + actualRaAmounts[0]);
+        }
+
+        // Verify no tokens are stuck in the router
+        assertEq(protectedUnit.balanceOf(address(protectedUnitRouter)), 0);
+
+        vm.stopPrank();
+    }
 }
