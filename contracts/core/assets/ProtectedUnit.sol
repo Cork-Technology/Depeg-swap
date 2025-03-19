@@ -465,8 +465,9 @@ contract ProtectedUnit is
      * @notice Mints new tokens using Permit2 for gasless batch approvals
      * @dev Uses Uniswap's Permit2 protocol to approve both DS and PA tokens in a single signature
      * @param amount The amount of tokens to be minted
-     * @param permitBatchData The Permit2 batch permit data for token approvals
-     * @param signature The signature authorizing the permits
+     * @param permitBatchData The Permit2 batch permit data for DS and PA token approvals - DS will be the first token and PA will be the second token in the permitted array
+     * @param transferDetails The details of the DS and PA token transfers - DS will be the first token and PA will be the second token in the transfer details array
+     * @param signature The signature authorizing the permits and transfers
      * @return dsAmount The amount of DS tokens used
      * @return paAmount The amount of PA tokens used
      * @custom:reverts InvalidSignature if signature data is invalid
@@ -479,12 +480,20 @@ contract ProtectedUnit is
         IPermit2.SignatureTransferDetails[] calldata transferDetails,
         bytes calldata signature
     ) external whenNotPaused nonReentrant autoUpdateDS autoSync returns (uint256 dsAmount, uint256 paAmount) {
-        if (signature.length == 0 || permitBatchData.permitted.length != 2 || transferDetails.length != 2) {
+        // checks that DS and PA are in the permitted array and that the transfer details are for the correct tokens
+        // Assumes that DS is the first token and PA is the second token in the permitted array
+        if (
+            signature.length == 0 || permitBatchData.permitted.length != 2 || transferDetails.length != 2
+                || permitBatchData.permitted[0].token != address(ds) || permitBatchData.permitted[1].token != address(PA)
+        ) {
             revert InvalidSignature();
         }
 
         // Calculate token amounts needed for minting
         (dsAmount, paAmount) = previewMint(amount);
+
+        // checks that the requested amounts are sufficient
+        // Assumes that DS is the first token and PA is the second token in the transfer details array
         if (transferDetails[0].requestedAmount < dsAmount || transferDetails[1].requestedAmount < paAmount) {
             revert InvalidSignature();
         }
@@ -497,6 +506,14 @@ contract ProtectedUnit is
 
         assert(_actualDs == dsAmount);
         assert(_actualPa == paAmount);
+
+        // Send back the remaining DS and PA tokens to the user
+        if (transferDetails[0].requestedAmount > _actualDs) {
+            IERC20(ds).safeTransfer(msg.sender, transferDetails[0].requestedAmount - _actualDs);
+        }
+        if (transferDetails[1].requestedAmount > _actualPa) {
+            IERC20(PA).safeTransfer(msg.sender, transferDetails[1].requestedAmount - _actualPa);
+        }
     }
 
     /**
