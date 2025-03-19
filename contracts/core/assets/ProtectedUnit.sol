@@ -422,31 +422,16 @@ contract ProtectedUnit is
         autoSync
         returns (uint256 dsAmount, uint256 paAmount)
     {
-        (dsAmount, paAmount) = __mint(msg.sender, amount, false);
+        // Calculate token amounts needed for minting
+        (dsAmount, paAmount) = previewMint(amount);
+        __mint(msg.sender, amount, false, dsAmount, paAmount);
     }
 
     /**
      * @notice Internal implementation of mint functionality
      * @dev Handles the token transfers and minting logic
      */
-    function __mint(address minter, uint256 amount, bool isPermit)
-        internal
-        returns (uint256 dsAmount, uint256 paAmount)
-    {
-        if (amount == 0) {
-            revert InvalidAmount();
-        }
-
-        if (totalSupply() + amount > mintCap) {
-            revert MintCapExceeded();
-        }
-
-        {
-            (dsAmount, paAmount) =
-                ProtectedUnitMath.previewMint(amount, _selfPaReserve(), _selfDsReserve(), totalSupply());
-            paAmount = TransferHelper.fixedToTokenNativeDecimals(paAmount, PA);
-        }
-
+    function __mint(address minter, uint256 amount, bool isPermit, uint256 dsAmount, uint256 paAmount) internal {
         // this calculation is based on the assumption that the DS token has 18 decimals but pa can have different decimals
         if (!isPermit) {
             TransferHelper.transferFromNormalize(ds, minter, dsAmount);
@@ -502,17 +487,14 @@ contract ProtectedUnit is
         PERMIT2.permitTransferFrom(permitBatchData, transferDetails, msg.sender, signature);
 
         // Mint the tokens to the owner
-        (uint256 _actualDs, uint256 _actualPa) = __mint(msg.sender, amount, true);
-
-        assert(_actualDs == dsAmount);
-        assert(_actualPa == paAmount);
+        __mint(msg.sender, amount, true, dsAmount, paAmount);
 
         // Send back the remaining DS and PA tokens to the user
-        if (transferDetails[0].requestedAmount > _actualDs) {
-            IERC20(ds).safeTransfer(msg.sender, transferDetails[0].requestedAmount - _actualDs);
+        if (transferDetails[0].requestedAmount > dsAmount) {
+            IERC20(ds).safeTransfer(msg.sender, transferDetails[0].requestedAmount - dsAmount);
         }
-        if (transferDetails[1].requestedAmount > _actualPa) {
-            IERC20(PA).safeTransfer(msg.sender, transferDetails[1].requestedAmount - _actualPa);
+        if (transferDetails[1].requestedAmount > paAmount) {
+            IERC20(PA).safeTransfer(msg.sender, transferDetails[1].requestedAmount - paAmount);
         }
     }
 
