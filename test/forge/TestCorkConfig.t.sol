@@ -2,10 +2,10 @@
 pragma solidity ^0.8.24;
 
 import {Test} from "forge-std/Test.sol";
-import {CorkConfig} from "../../contracts/core/CorkConfig.sol";
-import {ModuleCore} from "../../contracts/core/ModuleCore.sol";
+import {CorkConfig} from "contracts/core/CorkConfig.sol";
+import {ModuleCore} from "contracts/core/ModuleCore.sol";
 import {CorkHook} from "Cork-Hook/CorkHook.sol";
-import {IDsFlashSwapCore} from "../../contracts/interfaces/IDsFlashSwapRouter.sol";
+import {IDsFlashSwapCore} from "contracts/interfaces/IDsFlashSwapRouter.sol";
 
 contract CorkConfigTest is Test {
     CorkConfig private config;

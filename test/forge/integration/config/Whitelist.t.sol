@@ -1,6 +1,6 @@
 pragma solidity ^0.8.24;
 
-import "./../../Helper.sol";
+import {Helper} from "test/forge/Helper.sol";
 
 contract whitelistTest is Helper {
     uint256 amount = 1 ether;

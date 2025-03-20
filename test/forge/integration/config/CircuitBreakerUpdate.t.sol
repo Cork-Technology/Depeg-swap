@@ -1,8 +1,8 @@
 pragma solidity ^0.8.24;
 
-import "./../../Helper.sol";
-import "./../../../../contracts/libraries/State.sol";
-import "./../../../../contracts/dummy/DummyWETH.sol";
+import {Helper} from "test/forge/Helper.sol";
+import {VaultConfig} from "contracts/libraries/State.sol";
+import {DummyWETH} from "test/utils/dummy/DummyWETH.sol";
 
 contract CircuiBreakerUpdate is Helper {
     DummyWETH ra;

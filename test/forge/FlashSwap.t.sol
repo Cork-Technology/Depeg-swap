@@ -1,14 +1,14 @@
 pragma solidity ^0.8.24;
 
-import "./../../contracts/core/flash-swaps/FlashSwapRouter.sol";
-import {Helper} from "./Helper.sol";
-import {DummyERCWithPermit} from "./../../contracts/dummy/DummyERCWithPermit.sol";
-import "./../../contracts/core/assets/Asset.sol";
-import {Id, Pair, PairLibrary} from "./../../contracts/libraries/Pair.sol";
-import "./../../contracts/interfaces/IPSMcore.sol";
-import "./../../contracts/interfaces/IDsFlashSwapRouter.sol";
-import "forge-std/console.sol";
-import {ERC20Permit} from "@openzeppelin/contracts/token/ERC20/extensions/ERC20Permit.sol";
+import {RouterState} from "contracts/core/flash-swaps/FlashSwapRouter.sol";
+import {Helper} from "test/forge/Helper.sol";
+import {DummyERCWithPermit} from "test/utils/dummy/DummyERCWithPermit.sol";
+import {Asset} from "contracts/core/assets/Asset.sol";
+import {Id, Pair, PairLibrary} from "contracts/libraries/Pair.sol";
+import {IPSMcore} from "contracts/interfaces/IPSMcore.sol";
+import {IVault} from "contracts/interfaces/IVault.sol";
+import {IDsFlashSwapCore} from "contracts/interfaces/IDsFlashSwapRouter.sol";
+import {ERC20Permit, ERC20} from "@openzeppelin/contracts/token/ERC20/extensions/ERC20Permit.sol";
 
 contract FlashSwapTest is Helper {
     DummyERCWithPermit internal ra;

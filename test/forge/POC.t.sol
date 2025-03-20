@@ -1,14 +1,13 @@
 pragma solidity ^0.8.24;
 
-import "./../../contracts/core/flash-swaps/FlashSwapRouter.sol";
-import {Helper} from "./Helper.sol";
-import {DummyWETH} from "./../../contracts/dummy/DummyWETH.sol";
-import "./../../contracts/core/assets/Asset.sol";
-import {Id, Pair, PairLibrary} from "./../../contracts/libraries/Pair.sol";
-import "./../../contracts/interfaces/IPSMcore.sol";
-import "forge-std/console.sol";
-import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "./../../contracts/libraries/MathHelper.sol";
+import {RouterState} from "contracts/core/flash-swaps/FlashSwapRouter.sol";
+import {Helper} from "test/forge/Helper.sol";
+import {DummyWETH} from "test/utils/dummy/DummyWETH.sol";
+import {Asset} from "contracts/core/assets/Asset.sol";
+import {Id, Pair, PairLibrary} from "contracts/libraries/Pair.sol";
+import {IPSMcore} from "contracts/interfaces/IPSMcore.sol";
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {MathHelper} from "contracts/libraries/MathHelper.sol";
 
 contract POCTest is Helper {
     DummyWETH internal ra;

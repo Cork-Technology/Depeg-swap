@@ -1,9 +1,8 @@
 pragma solidity ^0.8.24;
 
-import {SwapperMathLibrary} from "./../../contracts/libraries/DsSwapperMathLib.sol";
-import "forge-std/Test.sol";
-import "forge-std/console.sol";
-import "./../../contracts/libraries/uni-v2/UniswapV2Library.sol";
+import {SwapperMathLibrary} from "contracts/libraries/DsSwapperMathLib.sol";
+import {Test} from "forge-std/Test.sol";
+import {MinimalUniswapV2Library} from "contracts/libraries/uni-v2/UniswapV2Library.sol";
 import {UD60x18, convert, add, mul, pow, sub, div, unwrap, ud} from "@prb/math/src/UD60x18.sol";
 
 // TODO : adjust tests

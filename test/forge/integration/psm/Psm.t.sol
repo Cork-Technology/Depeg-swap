@@ -1,13 +1,12 @@
 pragma solidity ^0.8.24;
 
-import {Helper} from "./../../Helper.sol";
-import {DummyWETH} from "./../../../../contracts/dummy/DummyWETH.sol";
-import {Id, Pair, PairLibrary} from "./../../../../contracts/libraries/Pair.sol";
-import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "./../../../../contracts/libraries/TransferHelper.sol";
-import "./../../../../contracts/core/assets/Asset.sol";
-import "forge-std/console.sol";
-import "./../../../../contracts/interfaces/IErrors.sol";
+import {Helper} from "test/forge/Helper.sol";
+import {DummyWETH} from "test/utils/dummy/DummyWETH.sol";
+import {Id, Pair, PairLibrary} from "contracts/libraries/Pair.sol";
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {TransferHelper} from "contracts/libraries/TransferHelper.sol";
+import {Asset} from "contracts/core/assets/Asset.sol";
+import {IErrors} from "contracts/interfaces/IErrors.sol";
 
 contract PsmTest is Helper {
     DummyWETH internal ra;

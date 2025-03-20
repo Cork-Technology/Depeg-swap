@@ -1,7 +1,7 @@
 pragma solidity ^0.8.0;
 
-import "./../../../../contracts/libraries/MathHelper.sol";
-import "./../../Helper.sol";
+import {MathHelper} from "contracts/libraries/MathHelper.sol";
+import {Helper} from "test/forge/Helper.sol";
 
 contract MathHelperTest is Helper {
     function testFuzz_shouldCalculateProvideLiquidityAmountCorrectly11(uint256 amountRa) external {
