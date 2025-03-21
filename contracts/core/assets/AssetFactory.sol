@@ -38,6 +38,7 @@ contract AssetFactory is IAssetFactory, OwnableUpgradeable, UUPSUpgradeable {
     mapping(bytes32 => uint256) internal variantIndex;
     mapping(Id => uint256) internal variantIndexPair;
 
+    // TODO : reduce gaps and add whitelist contract
     /// @notice __gap variable to prevent storage collisions
     // slither-disable-next-line unused-state
     uint256[49] private __gap;

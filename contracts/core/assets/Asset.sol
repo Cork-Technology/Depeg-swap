@@ -10,6 +10,7 @@ import {CustomERC20Permit} from "../../libraries/ERC/CustomERC20Permit.sol";
 import {ModuleCore} from "./../ModuleCore.sol";
 import {IReserve} from "./../../interfaces/IReserve.sol";
 import {Id} from "./../../libraries/Pair.sol";
+import {AccessControl} from "@openzeppelin/contracts/access/AccessControl.sol";
 /**
  * @title Contract for Adding Exchange Rate functionality
  * @author Cork Team
@@ -73,6 +74,53 @@ abstract contract Expiry is IExpiry {
     }
 }
 
+// TODO  finish this
+contract PermissionedMarketWhitelist is AccessControl {
+    address public assetFactory;
+    address public moduleCore;
+    address public router;
+    address public hook;
+
+    mapping(Id => bool) public isPermissioned;
+
+    bytes32 public constant admin = keccak256("admin");
+    bytes32 public constant member = keccak256("member");
+
+    function _computeRole(Id id, bytes32 role) internal returns (bytes32) {
+        return keccak256(abi.encodePacked(id, role));
+    }
+
+    function _computeMarketAdminRole(Id id) external returns (bytes32) {
+        _computeRole(id, admin);
+    }
+
+    function _computeMarketMemberRole(Id id) external returns (bytes32) {
+        _computeRole(id, member);
+    }
+
+    modifier onlyAdminAndPermissioned(Id id) {
+        address caller = msg.sender;
+
+        if (!hasRole(id, admin, caller) && isPermissioned[id]) {
+            revert AccessControlUnauthorizedAccount(caller, admin);
+        }
+
+        _;
+    }
+
+    function isMember(address who) external view returns (bool) {
+        bytes32 role = _;
+    }
+
+    function hasRole(Id id, bytes32 role, address account) public view override returns (bool) {
+        if (!isPermissioned[id]) {
+            return true;
+        } else {
+            return super.hasRole(role, account);
+        }
+    }
+}
+
 /**
  * @title Assets Contract
  * @author Cork Team
@@ -88,6 +136,8 @@ contract Asset is ERC20Burnable, CustomERC20Permit, Ownable, Expiry, ExchangeRat
     ModuleCore public moduleCore;
 
     address public factory;
+
+    PermissionedMarketWhitelist whitelist;
 
     modifier onlyFactory() {
         if (_msgSender() != factory) {
@@ -153,4 +203,7 @@ contract Asset is ERC20Burnable, CustomERC20Permit, Ownable, Expiry, ExchangeRat
     function updateRate(uint256 newRate) external override onlyOwner {
         rate = newRate;
     }
+
+    // TODO : override transfer
+    function transfer(address to, uint256 value) public virtual returns (bool) {}
 }
