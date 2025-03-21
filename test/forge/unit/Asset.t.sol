@@ -20,7 +20,7 @@ contract AssetTest is Helper {
 
         deployModuleCore();
 
-        (ra, pa, ) = initializeAndIssueNewDs(block.timestamp + 1 days);
+        (ra, pa,) = initializeAndIssueNewDs(block.timestamp + 1 days);
         vm.deal(DEFAULT_ADDRESS, 100_000_000_000 ether);
         ra.deposit{value: 1_000_000_000 ether}();
         pa.deposit{value: 1_000_000_000 ether}();
@@ -34,7 +34,6 @@ contract AssetTest is Helper {
         ct = Asset(_ct);
         ds = Asset(_ds);
         lv = Asset(moduleCore.lvAsset(defaultCurrencyId));
-
     }
 
     function fetchProtocolGeneralInfo() internal {
@@ -42,8 +41,7 @@ contract AssetTest is Helper {
         (address _ct, address _ds) = moduleCore.swapAsset(defaultCurrencyId, dsId);
         ct = Asset(_ct);
         ds = Asset(_ds);
-                ds.approve(address(moduleCore), 100_000_000_000 ether);
-
+        ds.approve(address(moduleCore), 100_000_000_000 ether);
     }
 
     function assertReserve(Asset token, uint256 expectedRa, uint256 expectedPa) internal {
@@ -59,7 +57,7 @@ contract AssetTest is Helper {
 
         // ds, should return current reserve
         assertReserve(ds, depositAmount, 0);
-        
+
         assertReserve(lv, depositAmount, 0);
 
         // fast forward to expiry
@@ -71,7 +69,7 @@ contract AssetTest is Helper {
         assertReserve(ct, depositAmount, 0);
         assertReserve(ds, depositAmount, 0);
         assertReserve(lv, 0, 0);
-        
+
         Asset(ct).approve(address(moduleCore), type(uint128).max);
         moduleCore.rolloverExpiredCt(defaultCurrencyId, depositAmount, 1);
 
@@ -90,7 +88,5 @@ contract AssetTest is Helper {
         assertReserve(ct, redeemAmount, redeemAmount);
         assertReserve(ds, redeemAmount, redeemAmount);
         assertReserve(lv, redeemAmount, redeemAmount);
-        
-
     }
 }
