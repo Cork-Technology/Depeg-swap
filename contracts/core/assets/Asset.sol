@@ -9,7 +9,7 @@ import {IRates} from "../../interfaces/IRates.sol";
 import {CustomERC20Permit} from "../../libraries/ERC/CustomERC20Permit.sol";
 import {ModuleCore} from "./../ModuleCore.sol";
 import {IReserve} from "./../../interfaces/IReserve.sol";
-import {Id}from "./../../libraries/Pair.sol";
+import {Id} from "./../../libraries/Pair.sol";
 /**
  * @title Contract for Adding Exchange Rate functionality
  * @author Cork Team
@@ -90,7 +90,7 @@ contract Asset is ERC20Burnable, CustomERC20Permit, Ownable, Expiry, ExchangeRat
     address public factory;
 
     modifier onlyFactory() {
-        if(_msgSender() != factory){
+        if (_msgSender() != factory) {
             revert OwnableUnauthorizedAccount(_msgSender());
         }
 
@@ -107,9 +107,8 @@ contract Asset is ERC20Burnable, CustomERC20Permit, Ownable, Expiry, ExchangeRat
         pairName = _pairName;
         DS_ID = _dsId;
 
-        factory =  _msgSender();
+        factory = _msgSender();
     }
-
 
     function setMarketId(Id _marketId) external onlyFactory {
         marketId = _marketId;
