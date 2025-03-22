@@ -1,9 +1,8 @@
 pragma solidity ^0.8.24;
 
-import "forge-std/Test.sol";
+import {Test} from "forge-std/Test.sol";
 import {UD60x18, convert, add, mul, pow, sub, div, unwrap, ud} from "@prb/math/src/UD60x18.sol";
-import {SwapperMathLibrary} from "./../../../../contracts/libraries/DsSwapperMathLib.sol";
-import "forge-std/console.sol";
+import {SwapperMathLibrary} from "contracts/libraries/DsSwapperMathLib.sol";
 
 contract ArpMath is Test {
     function test_fixedCtPrice() external {

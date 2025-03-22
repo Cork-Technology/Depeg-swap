@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.24;
 
-import "forge-std/Test.sol";
-import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
-import "./../Helper.sol";
-import "./../../../contracts/libraries/TransferHelper.sol";
+import {Test} from "forge-std/Test.sol";
+import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import {Helper} from "test/forge/Helper.sol";
+import {TransferHelper} from "contracts/libraries/TransferHelper.sol";
 
 contract MockERC20 is ERC20 {
     uint8 private _decimals;

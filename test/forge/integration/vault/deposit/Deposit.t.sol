@@ -1,12 +1,16 @@
 pragma solidity ^0.8.0;
 
-import "./../../../Helper.sol";
-import "./../../../../../contracts/dummy/DummyWETH.sol";
-import "./../../../../../contracts/core/assets/Asset.sol";
-import "./../../../../../contracts/interfaces/IVault.sol";
-import "./../../../../../contracts/interfaces/IErrors.sol";
-import "./../../../../../contracts/libraries/State.sol";
-import "./../../../../../contracts/libraries/TransferHelper.sol";
+import {Helper} from "test/forge/Helper.sol";
+import {DummyWETH} from "test/utils/dummy/DummyWETH.sol";
+import {Asset} from "contracts/core/assets/Asset.sol";
+import {IVault} from "contracts/interfaces/IVault.sol";
+import {IErrors} from "contracts/interfaces/IErrors.sol";
+import {State, VaultBalances, VaultWithdrawalPool} from "contracts/libraries/State.sol";
+import {TransferHelper} from "contracts/libraries/TransferHelper.sol";
+import {Id} from "contracts/libraries/Pair.sol";
+import {Withdrawal} from "contracts/core/Withdrawal.sol";
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {ICorkHook} from "contracts/interfaces/UniV4/IMinimalHook.sol";
 
 contract DepositTest is Helper {
     uint256 amount = 1 ether;

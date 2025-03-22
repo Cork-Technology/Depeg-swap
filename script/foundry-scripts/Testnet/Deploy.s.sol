@@ -12,9 +12,9 @@ import {Liquidator} from "contracts/core/liquidators/cow-protocol/Liquidator.sol
 import {ProtectedUnit} from "contracts/core/assets/ProtectedUnit.sol";
 import {ProtectedUnitFactory} from "contracts/core/assets/ProtectedUnitFactory.sol";
 import {ProtectedUnitRouter} from "contracts/core/assets/ProtectedUnitRouter.sol";
-import {CETH} from "contracts/tokens/CETH.sol";
-import {CUSD} from "contracts/tokens/CUSD.sol";
-import {CST} from "contracts/tokens/CST.sol";
+import {CETH} from "test/utils/tokens/CETH.sol";
+import {CUSD} from "test/utils//tokens/CUSD.sol";
+import {CST} from "test/utils//tokens/CST.sol";
 import {Id} from "contracts/libraries/Pair.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import {PoolManager} from "v4-core/PoolManager.sol";

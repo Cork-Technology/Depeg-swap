@@ -1,24 +1,23 @@
 pragma solidity ^0.8.24;
 
 import {ERC1967Proxy} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
-import {ModuleCore} from "./../../contracts/core/ModuleCore.sol";
-import {AssetFactory} from "./../../contracts/core/assets/AssetFactory.sol";
-import "forge-std/Test.sol";
-import "forge-std/console.sol";
-import {IUniswapV2Factory} from "./../../contracts/interfaces/uniswap-v2/factory.sol";
-import {IUniswapV2Router02} from "./../../contracts/interfaces/uniswap-v2/RouterV2.sol";
-import {Id, Pair, PairLibrary} from "./../../contracts/libraries/Pair.sol";
-import {CorkConfig} from "./../../contracts/core/CorkConfig.sol";
-import {RouterState} from "./../../contracts/core/flash-swaps/FlashSwapRouter.sol";
-import {DummyERCWithPermit} from "./../../contracts/dummy/DummyERCWithPermit.sol";
-import {DummyWETH} from "./../../contracts/dummy/DummyWETH.sol";
+import {ModuleCore} from "../../contracts/core/ModuleCore.sol";
+import {AssetFactory} from "../../contracts/core/assets/AssetFactory.sol";
+import {Test} from "forge-std/Test.sol";
+import {IUniswapV2Factory} from "../../contracts/interfaces/uniswap-v2/factory.sol";
+import {IUniswapV2Router02} from "../../contracts/interfaces/uniswap-v2/RouterV2.sol";
+import {Id, Pair, PairLibrary} from "../../contracts/libraries/Pair.sol";
+import {CorkConfig} from "../../contracts/core/CorkConfig.sol";
+import {RouterState} from "../../contracts/core/flash-swaps/FlashSwapRouter.sol";
+import {DummyERCWithPermit} from "../utils/dummy/DummyERCWithPermit.sol";
+import {DummyWETH} from "../utils/dummy/DummyWETH.sol";
 import {TestModuleCore} from "./TestModuleCore.sol";
 import {TestFlashSwapRouter} from "./TestFlashSwapRouter.sol";
 import {SigUtils} from "./SigUtils.sol";
 import {TestHelper} from "Cork-Hook/../test/Helper.sol";
-import {IDsFlashSwapCore} from "./../../contracts/interfaces/IDsFlashSwapRouter.sol";
-import "./../../contracts/core/Withdrawal.sol";
-import "./../../contracts/core/assets/ProtectedUnitFactory.sol";
+import {IDsFlashSwapCore} from "../../contracts/interfaces/IDsFlashSwapRouter.sol";
+import {Withdrawal} from "../../contracts/core/Withdrawal.sol";
+import {ProtectedUnitFactory} from "../../contracts/core/assets/ProtectedUnitFactory.sol";
 import {ProtectedUnitRouter} from "../../contracts/core/assets/ProtectedUnitRouter.sol";
 
 contract CustomErc20 is DummyWETH {

@@ -1,8 +1,8 @@
 pragma solidity ^0.8.24;
 
-import "./Helper.sol";
-import "./../../contracts/tokens/CST.sol";
-import "./../../contracts/tokens/CETH.sol";
+import {Helper} from "test/forge/Helper.sol";
+import {CST} from "test/utils/tokens/CST.sol";
+import {CETH} from "test/utils/tokens/CETH.sol";
 
 contract CSTTEST is Helper {
     CST public cst;

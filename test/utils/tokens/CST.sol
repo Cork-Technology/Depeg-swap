@@ -3,7 +3,7 @@ pragma solidity ^0.8.24;
 
 import {ERC20, IERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
-import {CETH} from "./CETH.sol";
+import {CETH} from "test/utils/tokens/CETH.sol";
 
 /**
  * @title CST Contract

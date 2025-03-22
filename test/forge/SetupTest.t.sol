@@ -1,6 +1,6 @@
 pragma solidity ^0.8.24;
 
-import {Helper} from "./Helper.sol";
+import {Helper} from "test/forge/Helper.sol";
 
 contract SetupTest is Helper {
     function test_setupModuleCore() public {

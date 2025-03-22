@@ -1,7 +1,7 @@
 pragma solidity ^0.8.24;
 
-import "./../../Helper.sol";
-import "@openzeppelin/contracts/interfaces/IERC20Metadata.sol";
+import {Helper} from "test/forge/Helper.sol";
+import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 
 contract TokenName is Helper {
     function setUp() external {

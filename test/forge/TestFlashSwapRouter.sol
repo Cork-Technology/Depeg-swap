@@ -1,8 +1,10 @@
 pragma solidity ^0.8.24;
 
-import "./../../contracts/core/flash-swaps/FlashSwapRouter.sol";
-
+import {RouterState} from "../../contracts/core/flash-swaps/FlashSwapRouter.sol";
+import {Id} from "../../contracts/libraries/Pair.sol";
+import {AssetPair} from "../../contracts/libraries/DsFlashSwap.sol";
 /// @title TestFlashSwapRouter Contract, used for testing FlashSwapRouter contract, mostly here for getter functions
+
 contract TestFlashSwapRouter is RouterState {
     constructor() RouterState() {}
 

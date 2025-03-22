@@ -1,13 +1,13 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.24;
 
-import {Helper} from "./../../Helper.sol";
-import {ProtectedUnit} from "../../../../contracts/core/assets/ProtectedUnit.sol";
-import {Liquidator} from "../../../../contracts/core/liquidators/cow-protocol/Liquidator.sol";
-import {DummyERCWithPermit} from "../../../../contracts/dummy/DummyERCWithPermit.sol";
-import {Id} from "../../../../contracts/libraries/Pair.sol";
-import {IProtectedUnitRouter} from "../../../../contracts/interfaces/IProtectedUnitRouter.sol";
-import {Asset} from "../../../../contracts/core/assets/Asset.sol";
+import {Helper} from "test/forge/Helper.sol";
+import {ProtectedUnit} from "contracts/core/assets/ProtectedUnit.sol";
+import {Liquidator} from "contracts/core/liquidators/cow-protocol/Liquidator.sol";
+import {DummyERCWithPermit} from "test/utils/dummy/DummyERCWithPermit.sol";
+import {Id} from "contracts/libraries/Pair.sol";
+import {IProtectedUnitRouter} from "contracts/interfaces/IProtectedUnitRouter.sol";
+import {Asset} from "contracts/core/assets/Asset.sol";
 
 contract ProtectedUnitRouterTest is Helper {
     Liquidator public liquidator;

@@ -1,14 +1,13 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.24;
 
-import {Helper} from "./../../Helper.sol";
-import {ProtectedUnit} from "../../../../contracts/core/assets/ProtectedUnit.sol";
-import {Liquidator} from "../../../../contracts/core/liquidators/cow-protocol/Liquidator.sol";
-import {IProtectedUnit} from "../../../../contracts/interfaces/IProtectedUnit.sol";
-import {DummyWETH} from "../../../../contracts/dummy/DummyWETH.sol";
-import {Id} from "./../../../../contracts/libraries/Pair.sol";
-import {PausableUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/PausableUpgradeable.sol";
-import "./../../../../contracts/core/liquidators/cow-protocol/Liquidator.sol";
+import {Helper} from "test/forge/Helper.sol";
+import {ProtectedUnit} from "contracts/core/assets/ProtectedUnit.sol";
+import {Liquidator} from "contracts/core/liquidators/cow-protocol/Liquidator.sol";
+import {IProtectedUnit} from "contracts/interfaces/IProtectedUnit.sol";
+import {DummyWETH} from "test/utils/dummy/DummyWETH.sol";
+import {Id} from "contracts/libraries/Pair.sol";
+import {ILiquidator} from "contracts/interfaces/ILiquidator.sol";
 
 contract ProtectedUnitTest is Helper {
     ProtectedUnit public protectedUnit;

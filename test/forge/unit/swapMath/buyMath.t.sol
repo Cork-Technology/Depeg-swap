@@ -1,11 +1,9 @@
 pragma solidity ^0.8.24;
 
-import "forge-std/Test.sol";
+import {Test} from "forge-std/Test.sol";
 import {SD59x18, convert, sd, add, mul, pow, sub, div, abs, unwrap} from "@prb/math/src/SD59x18.sol";
-import "./../../../../contracts/libraries/DsSwapperMathLib.sol";
-import {SwapMath} from "Cork-Hook/lib/SwapMath.sol";
-import "forge-std/console.sol";
-import "./../../../../contracts/interfaces/IErrors.sol";
+import {SwapperMathLibrary, BuyMathBisectionSolver} from "contracts/libraries/DsSwapperMathLib.sol";
+import {IErrors} from "contracts/interfaces/IErrors.sol";
 
 contract BuyMathTest is Test {
     int256 internal constant START = 0 days;

@@ -1,8 +1,8 @@
 pragma solidity ^0.8.24;
 
-import "./../../Helper.sol";
-import "@openzeppelin/contracts/interfaces/IERC20Metadata.sol";
-import "./../../../../contracts/core/assets/Asset.sol";
+import {Helper} from "test/forge/Helper.sol";
+import {IERC20Metadata} from "@openzeppelin/contracts/interfaces/IERC20Metadata.sol";
+import {Asset} from "contracts/core/assets/Asset.sol";
 
 contract RateUpdateTest is Helper {
     function setUp() external {

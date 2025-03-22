@@ -1,16 +1,15 @@
 pragma solidity ^0.8.24;
 
-import "./../../../../contracts/core/flash-swaps/FlashSwapRouter.sol";
-import {Helper} from "./../../Helper.sol";
-import {DummyWETH} from "./../../../../contracts/dummy/DummyWETH.sol";
-import "./../../../../contracts/core/assets/Asset.sol";
-import {Id, Pair, PairLibrary} from "./../../../../contracts/libraries/Pair.sol";
-import "./../../../../contracts/interfaces/IPSMcore.sol";
-import "forge-std/console.sol";
-import "./../../../../contracts/interfaces/IVault.sol";
-import "./../../../../contracts/interfaces/IErrors.sol";
-import "./../../../../contracts/interfaces/ILiquidator.sol";
-import "./../../../../contracts/core/liquidators/cow-protocol/Liquidator.sol";
+import {RouterState} from "contracts/core/flash-swaps/FlashSwapRouter.sol";
+import {Helper} from "test/forge/Helper.sol";
+import {DummyWETH} from "test/utils/dummy/DummyWETH.sol";
+import {Asset} from "contracts/core/assets/Asset.sol";
+import {Id} from "contracts/libraries/Pair.sol";
+import {IPSMcore} from "contracts/interfaces/IPSMcore.sol";
+import {IVault} from "contracts/interfaces/IVault.sol";
+import {IErrors} from "contracts/interfaces/IErrors.sol";
+import {ILiquidator} from "contracts/interfaces/ILiquidator.sol";
+import {Liquidator} from "contracts/core/liquidators/cow-protocol/Liquidator.sol";
 
 contract VaultLiquidationTest is Helper {
     DummyWETH internal ra;
