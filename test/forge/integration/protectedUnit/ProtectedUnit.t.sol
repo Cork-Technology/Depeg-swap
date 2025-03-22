@@ -12,7 +12,7 @@ import {Asset} from "../../../../contracts/core/assets/Asset.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import {SigUtils} from "../../SigUtils.sol";
 import {IPermit2} from "permit2/src/interfaces/IPermit2.sol";
-import {ISignatureTransfer} from "permit2/src/interfaces/ISignatureTransfer.sol";
+import {IAllowanceTransfer} from "permit2/src/interfaces/IAllowanceTransfer.sol";
 
 contract ProtectedUnitTest is Helper {
     Liquidator public liquidator;
@@ -141,32 +141,35 @@ contract ProtectedUnitTest is Helper {
         tokens[0] = address(dsToken);
         tokens[1] = address(pa);
 
-        // Set up nonce and deadline
-        uint256 nonce = 0;
-        uint256 deadline = block.timestamp + 1 hours;
-
-        ISignatureTransfer.PermitBatchTransferFrom memory permitBatchData;
+        IAllowanceTransfer.PermitBatch memory permitBatchData;
         {
-            // Create the Permit2 PermitBatchTransferFrom struct
-            ISignatureTransfer.TokenPermissions[] memory permitted = new ISignatureTransfer.TokenPermissions[](2);
-            permitted[0] = ISignatureTransfer.TokenPermissions({token: address(dsToken), amount: dsAmount});
-            permitted[1] = ISignatureTransfer.TokenPermissions({token: address(pa), amount: paAmount});
+            // Set up nonce and deadline
+            uint48 nonce = uint48(0);
+            uint48 deadline = uint48(block.timestamp + 1 hours);
 
-            permitBatchData =
-                ISignatureTransfer.PermitBatchTransferFrom({permitted: permitted, nonce: nonce, deadline: deadline});
+            // Create the Permit2 PermitBatchTransferFrom struct
+            IAllowanceTransfer.PermitDetails[] memory permitted = new IAllowanceTransfer.PermitDetails[](2);
+            permitted[0] = IAllowanceTransfer.PermitDetails({
+                token: address(dsToken),
+                amount: uint160(dsAmount),
+                expiration: deadline,
+                nonce: nonce
+            });
+            permitted[1] = IAllowanceTransfer.PermitDetails({
+                token: address(pa),
+                amount: uint160(paAmount),
+                expiration: deadline,
+                nonce: nonce
+            });
+
+            permitBatchData = IAllowanceTransfer.PermitBatch({
+                details: permitted,
+                spender: address(protectedUnit),
+                sigDeadline: deadline
+            });
         }
         // Generate the batch permit signature
-        bytes memory signature = getPermitBatchTransferSignature(
-            permitBatchData, USER_PK, IPermit2(permit2).DOMAIN_SEPARATOR(), address(protectedUnit)
-        );
-
-        // Create transfer details for the Permit2 call
-        ISignatureTransfer.SignatureTransferDetails[] memory transferDetails =
-            new ISignatureTransfer.SignatureTransferDetails[](2);
-        transferDetails[0] =
-            ISignatureTransfer.SignatureTransferDetails({to: address(protectedUnit), requestedAmount: dsAmount});
-        transferDetails[1] =
-            ISignatureTransfer.SignatureTransferDetails({to: address(protectedUnit), requestedAmount: paAmount});
+        bytes memory signature = getPermitBatchSignature(permitBatchData, USER_PK, IPermit2(permit2).DOMAIN_SEPARATOR());
 
         dsToken.allowance(user, address(permit2));
         pa.allowance(user, address(permit2));
@@ -177,8 +180,7 @@ contract ProtectedUnitTest is Helper {
         uint256 startBalancePU = protectedUnit.balanceOf(user);
 
         // Call the mint function with Permit2 data
-        (uint256 actualDsAmount, uint256 actualPaAmount) =
-            protectedUnit.mint(mintAmount, permitBatchData, transferDetails, signature);
+        (uint256 actualDsAmount, uint256 actualPaAmount) = protectedUnit.mint(mintAmount, permitBatchData, signature);
 
         // Check amounts returned
         assertEq(actualDsAmount, dsAmount);

@@ -423,34 +423,35 @@ contract ProtectedUnit is
     {
         // Calculate token amounts needed for minting
         (dsAmount, paAmount) = previewMint(amount);
-        __mint(msg.sender, amount, false, dsAmount, paAmount);
+        __mint(amount, dsAmount, paAmount, false);
     }
 
     /**
      * @notice Internal implementation of mint functionality
      * @dev Handles the token transfers and minting logic
      */
-    function __mint(address minter, uint256 amount, bool isPermit, uint256 dsAmount, uint256 paAmount) internal {
+    function __mint(uint256 amount, uint256 dsAmount, uint256 paAmount, bool isPermit) internal {
         // this calculation is based on the assumption that the DS token has 18 decimals but pa can have different decimals
-        if (!isPermit) {
-            TransferHelper.transferFromNormalize(ds, minter, dsAmount);
-            TransferHelper.transferFromNormalize(PA, minter, paAmount);
+        if (isPermit) {
+            TransferHelper.transferFromPermitNormalize(PERMIT2, ds, msg.sender, dsAmount);
+            TransferHelper.transferFromPermitNormalize(PERMIT2, PA, msg.sender, paAmount);
+        } else {
+            TransferHelper.transferFromNormalize(ds, msg.sender, dsAmount);
+            TransferHelper.transferFromNormalize(PA, msg.sender, paAmount);
         }
 
         dsHistory[dsIndexMap[address(ds)]].totalDeposited += amount;
 
-        _mint(minter, amount);
+        _mint(msg.sender, amount);
 
-        emit Mint(minter, amount);
+        emit Mint(msg.sender, amount);
     }
 
-    // if pa do not support permit, then user can still use this function with only ds permit and manual approval on the PA side
     /**
      * @notice Mints new tokens using Permit2 for gasless batch approvals
      * @dev Uses Uniswap's Permit2 protocol to approve both DS and PA tokens in a single signature
      * @param amount The amount of tokens to be minted
-     * @param permitBatchData The Permit2 batch permit data for DS and PA token approvals - DS will be the first token and PA will be the second token in the permitted array
-     * @param transferDetails The details of the DS and PA token transfers - DS will be the first token and PA will be the second token in the transfer details array
+     * @param permit The Permit2 batch permit data for DS and PA token approvals - DS will be the first token and PA will be the second token in the permitted array
      * @param signature The signature authorizing the permits and transfers
      * @return dsAmount The amount of DS tokens used
      * @return paAmount The amount of PA tokens used
@@ -458,17 +459,19 @@ contract ProtectedUnit is
      * @custom:reverts EnforcedPause if minting is paused
      * @custom:emits Mint when tokens are successfully minted
      */
-    function mint(
-        uint256 amount,
-        IPermit2.PermitBatchTransferFrom calldata permitBatchData,
-        IPermit2.SignatureTransferDetails[] calldata transferDetails,
-        bytes calldata signature
-    ) external whenNotPaused nonReentrant autoUpdateDS autoSync returns (uint256 dsAmount, uint256 paAmount) {
+    function mint(uint256 amount, IPermit2.PermitBatch calldata permit, bytes calldata signature)
+        external
+        whenNotPaused
+        nonReentrant
+        autoUpdateDS
+        autoSync
+        returns (uint256 dsAmount, uint256 paAmount)
+    {
         // checks that DS and PA are in the permitted array and that the transfer details are for the correct tokens
         // Assumes that DS is the first token and PA is the second token in the permitted array
         if (
-            signature.length == 0 || permitBatchData.permitted.length != 2 || transferDetails.length != 2
-                || permitBatchData.permitted[0].token != address(ds) || permitBatchData.permitted[1].token != address(PA)
+            signature.length == 0 || permit.details.length != 2 || permit.details[0].token != address(ds)
+                || permit.details[1].token != address(PA)
         ) {
             revert InvalidSignature();
         }
@@ -478,23 +481,15 @@ contract ProtectedUnit is
 
         // checks that the requested amounts are sufficient
         // Assumes that DS is the first token and PA is the second token in the transfer details array
-        if (transferDetails[0].requestedAmount < dsAmount || transferDetails[1].requestedAmount < paAmount) {
+        if (permit.details[0].amount < dsAmount || permit.details[1].amount < paAmount) {
             revert InvalidSignature();
         }
 
         // Batch transfer tokens from user to this contract using Permit2
-        PERMIT2.permitTransferFrom(permitBatchData, transferDetails, msg.sender, signature);
+        PERMIT2.permit(msg.sender, permit, signature);
 
         // Mint the tokens to the owner
-        __mint(msg.sender, amount, true, dsAmount, paAmount);
-
-        // Send back the remaining DS and PA tokens to the user
-        if (transferDetails[0].requestedAmount > dsAmount) {
-            IERC20(ds).safeTransfer(msg.sender, transferDetails[0].requestedAmount - dsAmount);
-        }
-        if (transferDetails[1].requestedAmount > paAmount) {
-            IERC20(PA).safeTransfer(msg.sender, transferDetails[1].requestedAmount - paAmount);
-        }
+        __mint(amount, dsAmount, paAmount, true);
     }
 
     /**

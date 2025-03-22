@@ -5,6 +5,8 @@ import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IER
 import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {ERC20Burnable} from "@openzeppelin/contracts/token/ERC20/extensions/ERC20Burnable.sol";
+import {IPermit2} from "permit2/src/interfaces/IPermit2.sol";
+import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 
 library TransferHelper {
     uint8 internal constant TARGET_DECIMALS = 18;
@@ -70,5 +72,20 @@ library TransferHelper {
 
     function burnNormalize(address token, uint256 _amount) internal returns (uint256 amount) {
         return burnNormalize(ERC20Burnable(token), _amount);
+    }
+
+    function transferFromPermitNormalize(IPermit2 permit2, ERC20 token, address _from, uint256 _amount)
+        internal
+        returns (uint256 amount)
+    {
+        amount = fixedToTokenNativeDecimals(_amount, token);
+        permit2.transferFrom(_from, address(this), SafeCast.toUint160(amount), address(token));
+    }
+
+    function transferFromPermitNormalize(IPermit2 permit2, address token, address _from, uint256 _amount)
+        internal
+        returns (uint256 amount)
+    {
+        return transferFromPermitNormalize(permit2, ERC20(token), _from, _amount);
     }
 }

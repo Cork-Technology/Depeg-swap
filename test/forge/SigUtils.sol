@@ -3,6 +3,7 @@ pragma solidity ^0.8.24;
 
 import "forge-std/Test.sol";
 import {ISignatureTransfer} from "permit2/src/interfaces/ISignatureTransfer.sol";
+import {IAllowanceTransfer} from "permit2/src/interfaces/IAllowanceTransfer.sol";
 
 contract SigUtils is Test {
     // keccak256("Permit(address owner,address spender,uint256 value,uint256 nonce,uint256 deadline,bytes32 functionHash)");
@@ -16,6 +17,13 @@ contract SigUtils is Test {
     bytes32 public constant PERMIT_BATCH_TRANSFER_FROM_TYPEHASH = keccak256(
         "PermitBatchTransferFrom(TokenPermissions[] permitted,address spender,uint256 nonce,uint256 deadline)TokenPermissions(address token,uint256 amount)"
     );
+
+    bytes32 internal constant PERMIT_BATCH_TYPEHASH = keccak256(
+        "PermitBatch(PermitDetails[] details,address spender,uint256 sigDeadline)PermitDetails(address token,uint160 amount,uint48 expiration,uint48 nonce)"
+    );
+
+    bytes32 internal constant PERMIT_DETAILS_TYPEHASH =
+        keccak256("PermitDetails(address token,uint160 amount,uint48 expiration,uint48 nonce)");
 
     struct CustomPermit {
         address owner;
@@ -143,5 +151,33 @@ contract SigUtils is Test {
 
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(privateKey, msgHash);
         return bytes.concat(r, s, bytes1(v));
+    }
+
+    function getPermitBatchSignature(
+        IAllowanceTransfer.PermitBatch memory permit,
+        uint256 privateKey,
+        bytes32 domainSeparator
+    ) internal view returns (bytes memory sig) {
+        bytes32[] memory permitDetailsHashes = new bytes32[](permit.details.length);
+        for (uint256 i = 0; i < permit.details.length; ++i) {
+            permitDetailsHashes[i] = keccak256(abi.encode(PERMIT_DETAILS_TYPEHASH, permit.details[i]));
+        }
+        bytes32 msgHash = keccak256(
+            abi.encodePacked(
+                "\x19\x01",
+                domainSeparator,
+                keccak256(
+                    abi.encode(
+                        PERMIT_BATCH_TYPEHASH,
+                        keccak256(abi.encodePacked(permitDetailsHashes)),
+                        permit.spender,
+                        permit.sigDeadline
+                    )
+                )
+            )
+        );
+
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(privateKey, msgHash);
+        return abi.encodePacked(r, s, v);
     }
 }
