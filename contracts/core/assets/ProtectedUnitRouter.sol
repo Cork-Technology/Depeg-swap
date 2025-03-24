@@ -7,6 +7,7 @@ import {IProtectedUnitRouter} from "../../interfaces/IProtectedUnitRouter.sol";
 import {IPermit2} from "permit2/src/interfaces/IPermit2.sol";
 import {IERC20} from "@openzeppelin/contracts/interfaces/IERC20.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 
 /**
  * @title Protected Unit Router
@@ -100,19 +101,26 @@ contract ProtectedUnitRouter is IProtectedUnitRouter, ReentrancyGuardTransient {
 
             // Calculate indices for this ProtectedUnit's DS and PA tokens
             // Assumes that Array contains DS and PA one after the other and in same order as per protectedUnits array
+            // paIndex = dsIndex + 1
             uint256 dsIndex = i * 2;
-            uint256 paIndex = dsIndex + 1;
 
             // Get token addresses
             address dsToken = params.permitBatchData.permitted[dsIndex].token;
-            address paToken = params.permitBatchData.permitted[paIndex].token;
+            address paToken = params.permitBatchData.permitted[dsIndex + 1].token;
 
-            // Approve the tokens for the ProtectedUnit
-            IERC20(dsToken).safeIncreaseAllowance(
-                address(protectedUnit), params.transferDetails[dsIndex].requestedAmount
+            // Approve the tokens to Permit2
+            IERC20(dsToken).approve(address(PERMIT2), params.transferDetails[dsIndex].requestedAmount);
+            IERC20(paToken).approve(address(PERMIT2), params.transferDetails[dsIndex + 1].requestedAmount);
+
+            // Approve the tokens to the ProtectedUnit in Permit2
+            PERMIT2.approve(
+                dsToken, address(protectedUnit), SafeCast.toUint160(params.transferDetails[dsIndex].requestedAmount), 0
             );
-            IERC20(paToken).safeIncreaseAllowance(
-                address(protectedUnit), params.transferDetails[paIndex].requestedAmount
+            PERMIT2.approve(
+                paToken,
+                address(protectedUnit),
+                SafeCast.toUint160(params.transferDetails[dsIndex + 1].requestedAmount),
+                0
             );
 
             // Mint the tokens

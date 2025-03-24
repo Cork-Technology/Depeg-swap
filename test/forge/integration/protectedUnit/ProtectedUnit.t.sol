@@ -102,10 +102,16 @@ contract ProtectedUnitTest is Helper {
     function test_MintingTokens() public {
         // Test_ minting by the user
         vm.startPrank(user);
+        pa.approve(permit2, USER_BALANCE);
+        dsToken.approve(permit2, USER_BALANCE);
 
         // Approve tokens for ProtectedUnit contract
-        dsToken.approve(address(protectedUnit), USER_BALANCE);
-        pa.approve(address(protectedUnit), USER_BALANCE);
+        IPermit2(permit2).approve(
+            address(pa), address(protectedUnit), uint160(USER_BALANCE), uint48(block.timestamp + 1 hours)
+        );
+        IPermit2(permit2).approve(
+            address(dsToken), address(protectedUnit), uint160(USER_BALANCE), uint48(block.timestamp + 1 hours)
+        );
 
         // Mint 100 ProtectedUnit tokens
         uint256 mintAmount = 100 * 1e18;
@@ -239,8 +245,11 @@ contract ProtectedUnitTest is Helper {
         uint256 paBalanceBefore = pa.balanceOf(user);
 
         (uint256 requiredDsAmt, uint256 requiredPUAmt) = pu.previewMint(1e18);
-        IERC20(ds).approve(address(pu), 1e18);
-        pa.approve(address(pu), requiredPUAmt);
+        pa.approve(permit2, type(uint256).max);
+        dsToken.approve(permit2, type(uint256).max);
+        IPermit2(permit2).approve(address(pa), address(pu), uint160(requiredPUAmt), uint48(block.timestamp + 1 hours));
+        IPermit2(permit2).approve(address(dsToken), address(pu), uint160(1e18), uint48(block.timestamp + 1 hours));
+
         (uint256 dsAmount, uint256 paAmount) = pu.mint(1e18);
 
         vm.assertEq(IERC20(ds).balanceOf(user), dsBalanceBefore - requiredDsAmt);
@@ -248,8 +257,10 @@ contract ProtectedUnitTest is Helper {
 
         vm.startPrank(user);
         (requiredDsAmt, requiredPUAmt) = pu.previewMint(99e18);
-        IERC20(ds).approve(address(pu), requiredDsAmt);
-        pa.approve(address(pu), requiredPUAmt);
+        IPermit2(permit2).approve(address(pa), address(pu), uint160(requiredPUAmt), uint48(block.timestamp + 1 hours));
+        IPermit2(permit2).approve(
+            address(dsToken), address(pu), uint160(requiredDsAmt), uint48(block.timestamp + 1 hours)
+        );
 
         // frontrunner directly transfers 100 ether to the protected unit
         vm.startPrank(frontrunner);
@@ -263,11 +274,17 @@ contract ProtectedUnitTest is Helper {
     function test_MintNotProportional() external {
         // Test_ minting by the user
         vm.startPrank(user);
+        pa.approve(permit2, type(uint256).max);
+        dsToken.approve(permit2, type(uint256).max);
 
         uint256 initialAmount = 10 ether;
         // Approve tokens for ProtectedUnit contract
-        dsToken.approve(address(protectedUnit), initialAmount);
-        pa.approve(address(protectedUnit), initialAmount);
+        IPermit2(permit2).approve(
+            address(pa), address(protectedUnit), uint160(initialAmount), uint48(block.timestamp + 1 hours)
+        );
+        IPermit2(permit2).approve(
+            address(dsToken), address(protectedUnit), uint160(initialAmount), uint48(block.timestamp + 1 hours)
+        );
 
         // Mint 10 ProtectedUnit tokens
         uint256 mintAmount = initialAmount;
@@ -277,8 +294,12 @@ contract ProtectedUnitTest is Helper {
         pa.transfer(address(protectedUnit), initialAmount);
 
         (uint256 dsAmount, uint256 paAmount) = protectedUnit.previewMint(mintAmount);
-        dsToken.approve(address(protectedUnit), dsAmount);
-        pa.approve(address(protectedUnit), paAmount);
+        IPermit2(permit2).approve(
+            address(pa), address(protectedUnit), uint160(paAmount), uint48(block.timestamp + 1 hours)
+        );
+        IPermit2(permit2).approve(
+            address(dsToken), address(protectedUnit), uint160(dsAmount), uint48(block.timestamp + 1 hours)
+        );
 
         uint256 dsBalanceBefore = dsToken.balanceOf(user);
         uint256 paBalanceBefore = pa.balanceOf(user);
@@ -296,8 +317,14 @@ contract ProtectedUnitTest is Helper {
 
         uint256 initialAmount = 10 ether;
         // Approve tokens for ProtectedUnit contract
-        dsToken.approve(address(protectedUnit), initialAmount);
-        pa.approve(address(protectedUnit), initialAmount);
+        pa.approve(permit2, type(uint256).max);
+        dsToken.approve(permit2, type(uint256).max);
+        IPermit2(permit2).approve(
+            address(pa), address(protectedUnit), uint160(initialAmount), uint48(block.timestamp + 1 hours)
+        );
+        IPermit2(permit2).approve(
+            address(dsToken), address(protectedUnit), uint160(initialAmount), uint48(block.timestamp + 1 hours)
+        );
 
         // Mint 10 ProtectedUnit tokens
         uint256 mintAmount = initialAmount;
@@ -326,8 +353,14 @@ contract ProtectedUnitTest is Helper {
         vm.startPrank(user);
 
         // Approve tokens for ProtectedUnit contract
-        dsToken.approve(address(protectedUnit), USER_BALANCE);
-        pa.approve(address(protectedUnit), USER_BALANCE);
+        pa.approve(permit2, type(uint256).max);
+        dsToken.approve(permit2, type(uint256).max);
+        IPermit2(permit2).approve(
+            address(pa), address(protectedUnit), uint160(USER_BALANCE), uint48(block.timestamp + 1 hours)
+        );
+        IPermit2(permit2).approve(
+            address(dsToken), address(protectedUnit), uint160(USER_BALANCE), uint48(block.timestamp + 1 hours)
+        );
 
         // Try minting more than the mint cap
         uint256 mintAmount = 2000 * 1e18; // Exceed the mint cap
@@ -341,8 +374,15 @@ contract ProtectedUnitTest is Helper {
         vm.startPrank(user);
 
         // Mint tokens first
-        dsToken.approve(address(protectedUnit), USER_BALANCE);
-        pa.approve(address(protectedUnit), USER_BALANCE);
+        pa.approve(permit2, type(uint256).max);
+        dsToken.approve(permit2, type(uint256).max);
+        IPermit2(permit2).approve(
+            address(pa), address(protectedUnit), uint160(USER_BALANCE), uint48(block.timestamp + 1 hours)
+        );
+        IPermit2(permit2).approve(
+            address(dsToken), address(protectedUnit), uint160(USER_BALANCE), uint48(block.timestamp + 1 hours)
+        );
+
         uint256 mintAmount = 100 * 1e18;
         protectedUnit.mint(mintAmount);
 
@@ -361,8 +401,15 @@ contract ProtectedUnitTest is Helper {
         vm.expectRevert(IErrors.InvalidAmount.selector);
         protectedUnit.previewBurn(user, 1000 * 1e18);
 
-        dsToken.approve(address(protectedUnit), USER_BALANCE);
-        pa.approve(address(protectedUnit), USER_BALANCE);
+        pa.approve(permit2, type(uint256).max);
+        dsToken.approve(permit2, type(uint256).max);
+        IPermit2(permit2).approve(
+            address(pa), address(protectedUnit), uint160(USER_BALANCE), uint48(block.timestamp + 1 hours)
+        );
+        IPermit2(permit2).approve(
+            address(dsToken), address(protectedUnit), uint160(USER_BALANCE), uint48(block.timestamp + 1 hours)
+        );
+
         uint256 mintAmount = 100 * 1e18;
         protectedUnit.mint(mintAmount);
 
@@ -395,8 +442,14 @@ contract ProtectedUnitTest is Helper {
 
         uint256 initialAmount = 100 ether;
         // Approve tokens for ProtectedUnit contract
-        dsToken.approve(address(protectedUnit), initialAmount);
-        pa.approve(address(protectedUnit), initialAmount);
+        pa.approve(permit2, type(uint256).max);
+        dsToken.approve(permit2, type(uint256).max);
+        IPermit2(permit2).approve(
+            address(pa), address(protectedUnit), uint160(initialAmount), uint48(block.timestamp + 1 hours)
+        );
+        IPermit2(permit2).approve(
+            address(dsToken), address(protectedUnit), uint160(initialAmount), uint48(block.timestamp + 1 hours)
+        );
 
         // Mint 10 ProtectedUnit tokens
         uint256 mintAmount = initialAmount;
@@ -432,8 +485,14 @@ contract ProtectedUnitTest is Helper {
 
         // Expect revert when minting while paused
         vm.startPrank(user);
-        dsToken.approve(address(protectedUnit), USER_BALANCE);
-        pa.approve(address(protectedUnit), USER_BALANCE);
+        dsToken.approve(permit2, type(uint256).max);
+        pa.approve(permit2, type(uint256).max);
+        IPermit2(permit2).approve(
+            address(dsToken), address(protectedUnit), uint160(USER_BALANCE), uint48(block.timestamp + 1 hours)
+        );
+        IPermit2(permit2).approve(
+            address(pa), address(protectedUnit), uint160(USER_BALANCE), uint48(block.timestamp + 1 hours)
+        );
         vm.expectRevert(PausableUpgradeable.EnforcedPause.selector);
         protectedUnit.mint(100 * 1e18);
         vm.stopPrank();

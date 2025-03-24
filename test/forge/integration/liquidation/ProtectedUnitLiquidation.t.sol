@@ -9,6 +9,7 @@ import {DummyWETH} from "../../../../contracts/dummy/DummyWETH.sol";
 import {Id} from "./../../../../contracts/libraries/Pair.sol";
 import {PausableUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/PausableUpgradeable.sol";
 import "./../../../../contracts/core/liquidators/cow-protocol/Liquidator.sol";
+import {IPermit2} from "permit2/src/interfaces/IPermit2.sol";
 
 contract ProtectedUnitTest is Helper {
     ProtectedUnit public protectedUnit;
@@ -76,9 +77,15 @@ contract ProtectedUnitTest is Helper {
         vm.warp(block.timestamp + 10 days);
 
         uint256 amount = 100 ether;
-        pa.approve(address(protectedUnit), amount);
-        dsToken.approve(address(protectedUnit), amount);
+        pa.approve(permit2, amount);
+        dsToken.approve(permit2, amount);
 
+        IPermit2(permit2).approve(
+            address(pa), address(protectedUnit), uint160(amount), uint48(block.timestamp + 10 days)
+        );
+        IPermit2(permit2).approve(
+            address(dsToken), address(protectedUnit), uint160(amount), uint48(block.timestamp + 10 days)
+        );
         protectedUnit.mint(amount);
     }
 

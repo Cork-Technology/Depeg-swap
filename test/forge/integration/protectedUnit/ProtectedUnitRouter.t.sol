@@ -104,8 +104,14 @@ contract ProtectedUnitRouterTest is Helper {
         vm.startPrank(user);
 
         // Approve tokens for ProtectedUnit contract
-        dsToken.approve(address(protectedUnit), USER_BALANCE);
-        pa.approve(address(protectedUnit), USER_BALANCE);
+        dsToken.approve(permit2, type(uint256).max);
+        pa.approve(permit2, type(uint256).max);
+        IPermit2(permit2).approve(
+            address(dsToken), address(protectedUnit), uint160(USER_BALANCE), uint48(block.timestamp + 1 hours)
+        );
+        IPermit2(permit2).approve(
+            address(pa), address(protectedUnit), uint160(USER_BALANCE), uint48(block.timestamp + 1 hours)
+        );
 
         // Mint 100 ProtectedUnit tokens
         uint256 mintAmount = 100 * 1e18;
@@ -127,8 +133,8 @@ contract ProtectedUnitRouterTest is Helper {
         vm.startPrank(user);
 
         // Approve tokens for Permit2
-        dsToken.approve(address(permit2), USER_BALANCE);
-        pa.approve(address(permit2), USER_BALANCE);
+        dsToken.approve(permit2, type(uint256).max);
+        pa.approve(permit2, type(uint256).max);
 
         // Mint 100 ProtectedUnit tokens
         uint256 mintAmount = 100 * 1e18;
@@ -221,8 +227,14 @@ contract ProtectedUnitRouterTest is Helper {
 
     function test_PreviewBatchBurn() public {
         // Mint tokens first
-        dsToken.approve(address(protectedUnit), USER_BALANCE);
-        pa.approve(address(protectedUnit), USER_BALANCE);
+        pa.approve(permit2, type(uint256).max);
+        dsToken.approve(permit2, type(uint256).max);
+        IPermit2(permit2).approve(
+            address(pa), address(protectedUnit), uint160(USER_BALANCE), uint48(block.timestamp + 1 hours)
+        );
+        IPermit2(permit2).approve(
+            address(dsToken), address(protectedUnit), uint160(USER_BALANCE), uint48(block.timestamp + 1 hours)
+        );
 
         uint256 mintAmount = 100 * 1e18;
         protectedUnit.mint(mintAmount);

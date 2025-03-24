@@ -19,6 +19,7 @@ import {ModuleCore} from "./../ModuleCore.sol";
 import {ERC20Permit} from "@openzeppelin/contracts/token/ERC20/extensions/ERC20Permit.sol";
 import {TransferHelper} from "./../../libraries/TransferHelper.sol";
 import {IPermit2} from "permit2/src/interfaces/IPermit2.sol";
+import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 
 /**
  * @notice Data structure for tracking DS token information
@@ -423,22 +424,20 @@ contract ProtectedUnit is
     {
         // Calculate token amounts needed for minting
         (dsAmount, paAmount) = previewMint(amount);
-        __mint(amount, dsAmount, paAmount, false);
+        __mint(amount, dsAmount, paAmount);
     }
 
     /**
      * @notice Internal implementation of mint functionality
      * @dev Handles the token transfers and minting logic
      */
-    function __mint(uint256 amount, uint256 dsAmount, uint256 paAmount, bool isPermit) internal {
+    function __mint(uint256 amount, uint256 dsAmount, uint256 paAmount) internal {
         // this calculation is based on the assumption that the DS token has 18 decimals but pa can have different decimals
-        if (isPermit) {
-            TransferHelper.transferFromPermitNormalize(PERMIT2, ds, msg.sender, dsAmount);
-            TransferHelper.transferFromPermitNormalize(PERMIT2, PA, msg.sender, paAmount);
-        } else {
-            TransferHelper.transferFromNormalize(ds, msg.sender, dsAmount);
-            TransferHelper.transferFromNormalize(PA, msg.sender, paAmount);
-        }
+        dsAmount = TransferHelper.fixedToTokenNativeDecimals(dsAmount, ds);
+        paAmount = TransferHelper.fixedToTokenNativeDecimals(paAmount, PA);
+
+        PERMIT2.transferFrom(msg.sender, address(this), SafeCast.toUint160(amount), address(ds));
+        PERMIT2.transferFrom(msg.sender, address(this), SafeCast.toUint160(dsAmount), address(PA));
 
         dsHistory[dsIndexMap[address(ds)]].totalDeposited += amount;
 
@@ -489,7 +488,7 @@ contract ProtectedUnit is
         PERMIT2.permit(msg.sender, permit, signature);
 
         // Mint the tokens to the owner
-        __mint(amount, dsAmount, paAmount, true);
+        __mint(amount, dsAmount, paAmount);
     }
 
     /**
