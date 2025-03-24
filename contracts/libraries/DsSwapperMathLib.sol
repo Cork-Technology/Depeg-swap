@@ -237,6 +237,12 @@ library SwapperMathLibrary {
             )
         );
         UD60x18 effectiveDsPrice = calculateEffectiveDsPrice(ud(dsAmountOut), ud(raProvided));
+
+        // ds price is 0, will fail to sell so we return 0
+        if (effectiveDsPrice >= ud(1 ether)) {
+            return 0;
+        }
+
         UD60x18 currentRiskPremium = calcSpotArp(t, effectiveDsPrice);
 
         return calculateOptimalSellPressureWithRiskPremium(currentRiskPremium, ud(threshold));
