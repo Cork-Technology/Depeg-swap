@@ -46,6 +46,12 @@ contract AssetFactory is IAssetFactory, OwnableUpgradeable, UUPSUpgradeable {
         _disableInitializers();
     }
 
+    /**
+     *
+     * @param baseSymbol The base symbol to which the variant number will be appended.
+     * @param id The unique identifier used to determine the variant number.
+     * @return variant The generated variant string.
+     */
     function _generateVariant(string memory baseSymbol, Id id) internal returns (string memory variant) {
         bytes32 hash = keccak256(abi.encodePacked(baseSymbol));
 
@@ -57,7 +63,14 @@ contract AssetFactory is IAssetFactory, OwnableUpgradeable, UUPSUpgradeable {
         variant = string.concat(baseSymbol, "-", Strings.toString(variantUint));
     }
 
-    // will generate symbol such as wstETH03CT-1
+    /**
+     * @dev will generate symbol such as wstETH03CT-1.
+     * @param pa The address of the ERC20 token.
+     * @param expiry The expiry date in Unix timestamp format. If 0, a special separator is used.
+     * @param prefix The prefix to be added to the symbol.
+     * @param id The identifier used to generate the variant.
+     * @return symbol The generated symbol with the variant.
+     */
     function _generateSymbolWithVariant(address pa, uint256 expiry, string memory prefix, Id id)
         internal
         returns (string memory symbol)
@@ -92,6 +105,15 @@ contract AssetFactory is IAssetFactory, OwnableUpgradeable, UUPSUpgradeable {
         _;
     }
 
+    /**
+     * @notice Retrieves the address of the liquidity vault (LV) for a given pair and parameters.
+     * @param _ra The address of the reserve asset.
+     * @param _pa The address of the paired asset.
+     * @param initialArp The initial annualized return percentage.
+     * @param expiryInterval The expiry interval for the liquidity vault.
+     * @param exchangeRateProvider The address of the exchange rate provider.
+     * @return The address of the liquidity vault corresponding to the given parameters.
+     */
     function getLv(address _ra, address _pa, uint256 initialArp, uint256 expiryInterval, address exchangeRateProvider)
         external
         view
@@ -189,6 +211,13 @@ contract AssetFactory is IAssetFactory, OwnableUpgradeable, UUPSUpgradeable {
         }
     }
 
+    /**
+     * @notice Deploys new swap assets based on the provided parameters.
+     * @dev This function deploys two new Asset contracts and registers them as a swap pair.
+     * @param params The parameters required to deploy the swap assets.
+     * @return ct The address of the first deployed Asset contract.
+     * @return ds The address of the second deployed Asset contract.
+     */
     function deploySwapAssets(DeployParams calldata params)
         external
         override
@@ -273,6 +302,12 @@ contract AssetFactory is IAssetFactory, OwnableUpgradeable, UUPSUpgradeable {
     // solhint-disable-next-line no-empty-blocks
     function _authorizeUpgrade(address newImplementation) internal override onlyOwner {}
 
+    /**
+     * @notice Sets the address of the module core.
+     * @dev This function can only be called by the owner of the contract.
+     *      It reverts if the provided address is the zero address.
+     * @param _moduleCore The address of the new module core.
+     */
     function setModuleCore(address _moduleCore) external onlyOwner {
         if (_moduleCore == address(0)) {
             revert ZeroAddress();
