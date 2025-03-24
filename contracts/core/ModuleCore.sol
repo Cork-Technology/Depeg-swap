@@ -98,7 +98,10 @@ contract ModuleCore is OwnableUpgradeable, UUPSUpgradeable, PsmCore, Initialize,
         uint256 expiryInterval,
         address exchangeRateProvider
     ) external override {
-        onlyConfig();
+        // we enable initializing module core from outside since we're transitioning
+        // into permissionless market creation with possibilities of creating new private markets
+        // onlyConfig();
+
         if (expiryInterval == 0) {
             revert InvalidExpiry();
         }

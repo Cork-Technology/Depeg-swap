@@ -11,6 +11,7 @@ import {ModuleCore} from "./../ModuleCore.sol";
 import {IReserve} from "./../../interfaces/IReserve.sol";
 import {Id} from "./../../libraries/Pair.sol";
 import {AccessControl} from "@openzeppelin/contracts/access/AccessControl.sol";
+import {IErrors} from "./../../interfaces/IErrors.sol";
 /**
  * @title Contract for Adding Exchange Rate functionality
  * @author Cork Team
@@ -74,8 +75,7 @@ abstract contract Expiry is IExpiry {
     }
 }
 
-// TODO  finish this
-contract PermissionedMarketWhitelist is AccessControl {
+contract PermissionedMarketWhitelist is AccessControl, IErrors {
     address public assetFactory;
     address public moduleCore;
     address public router;
@@ -83,41 +83,123 @@ contract PermissionedMarketWhitelist is AccessControl {
 
     mapping(Id => bool) public isPermissioned;
 
-    bytes32 public constant admin = keccak256("admin");
-    bytes32 public constant member = keccak256("member");
+    bytes32 public constant ADMIN = keccak256("ADMIN");
+    bytes32 public constant MEMBER = keccak256("MEMBER");
+
+    constructor(address _assetFactory, address _moduleCore, address _router, address _hook) {
+        assetFactory = _assetFactory;
+        moduleCore = _moduleCore;
+        router = _router;
+        hook = _hook;
+    }
 
     function _computeRole(Id id, bytes32 role) internal returns (bytes32) {
         return keccak256(abi.encodePacked(id, role));
     }
 
-    function _computeMarketAdminRole(Id id) external returns (bytes32) {
-        _computeRole(id, admin);
-    }
-
-    function _computeMarketMemberRole(Id id) external returns (bytes32) {
-        _computeRole(id, member);
-    }
-
     modifier onlyAdminAndPermissioned(Id id) {
-        address caller = msg.sender;
-
-        if (!hasRole(id, admin, caller) && isPermissioned[id]) {
-            revert AccessControlUnauthorizedAccount(caller, admin);
+        if (!hasRole(id, ADMIN, msg.sender) && isPermissioned[id]) {
+            revert AccessControlUnauthorizedAccount(caller, ADMIN);
         }
 
         _;
     }
 
-    function isMember(address who) external view returns (bool) {
-        bytes32 role = _;
+    modifier onlyModuleCore() {
+        if (msg.sender != moduleCore) {
+            revert NotModuleCore();
+        }
+
+        _;
     }
 
-    function hasRole(Id id, bytes32 role, address account) public view override returns (bool) {
+    function onPermissionedMarketCreation(Id id, address admin) external onlyModuleCore {
+        if (isPermissioned[id]) {
+            revert AlreadyInitialized();
+        }
+    }
+
+    function isMember(Id id, address who) external view returns (bool) {
+        return hasRole(id, MEMBER, who);
+    }
+
+    function isAdmin(Id id, address who) external view returns (bool) {
+        return hasRole(id, ADMIN, who);
+    }
+
+    function isParticipant(Id id, address who) external view returns (bool) {
+        return hasRole(id, MEMBER, who) || hasRole(id, ADMIN, who);
+    }
+
+    function hasRole(Id id, bytes32 role, address account) public view returns (bool) {
         if (!isPermissioned[id]) {
             return true;
         } else {
+            role = _computeRole(id, role);
             return super.hasRole(role, account);
         }
+    }
+
+    function addMember(Id id, address member) external onlyAdminAndPermissioned(id) {
+        bytes32 memberRole = _computeRole(id, MEMBER);
+
+        _grantRole(memberRole, member);
+    }
+
+    function addAdmin(Id id, address newAdmin) external onlyAdminAndPermissioned(id) {
+        bytes32 adminRole = _computeRole(id, ADMIN);
+
+        _grantRole(adminRole, newAdmin);
+    }
+
+    /**
+     * @notice Revokes member access for a specific market
+     * @param id The market ID
+     * @param member The address to remove membership from
+     */
+    function revokeMember(Id id, address member) external onlyAdminAndPermissioned(id) {
+        bytes32 memberRole = _computeRole(id, MEMBER);
+
+        _revokeRole(memberRole, member);
+    }
+
+    /**
+     * @notice Revokes admin access for a specific market
+     * @param id The market ID
+     * @param admin The address to remove admin rights from
+     * @dev Admin cannot revoke their own admin rights
+     */
+    function revokeAdmin(Id id, address admin) external onlyAdminAndPermissioned(id) {
+        // Prevent admins from revoking their own access to avoid accidental lockouts
+        if (admin == msg.sender) {
+            revert("Cannot revoke your own admin rights");
+        }
+
+        bytes32 adminRole = _computeRole(id, ADMIN);
+
+        _revokeRole(adminRole, admin);
+    }
+
+    /**
+     * @notice Allows an admin to renounce their own admin rights
+     * @param id The market ID
+     * @dev Use with caution
+     */
+    function renounceAdmin(Id id) external onlyAdminAndPermissioned(id) {
+        bytes32 role = _computeRole(id, ADMIN);
+
+        _revokeRole(role, msg.sender);
+    }
+
+    /**
+     * @notice Allows a member to renounce their member rights
+     * @param id The market ID
+     * @dev Use with caution
+     */
+    function renounceMember(Id id) external {
+        bytes32 role = _computeRole(id, MEMBER);
+
+        _revokeRole(role, msg.sender);
     }
 }
 
@@ -126,7 +208,7 @@ contract PermissionedMarketWhitelist is AccessControl {
  * @author Cork Team
  * @notice Contract for implementing assets like DS/CT etc
  */
-contract Asset is ERC20Burnable, CustomERC20Permit, Ownable, Expiry, ExchangeRate, IReserve {
+contract Asset is ERC20Burnable, IErrors, CustomERC20Permit, Ownable, Expiry, ExchangeRate, IReserve {
     uint256 internal immutable DS_ID;
 
     string public pairName;
@@ -142,6 +224,14 @@ contract Asset is ERC20Burnable, CustomERC20Permit, Ownable, Expiry, ExchangeRat
     modifier onlyFactory() {
         if (_msgSender() != factory) {
             revert OwnableUnauthorizedAccount(_msgSender());
+        }
+
+        _;
+    }
+
+    modifier onlyParticipant(address who) {
+        if (!whitelist.isParticipant(who)) {
+            revert OnlyMember();
         }
 
         _;
@@ -188,8 +278,9 @@ contract Asset is ERC20Burnable, CustomERC20Permit, Ownable, Expiry, ExchangeRat
      * @notice mints `amount` number of tokens to `to` address
      * @param to address of receiver
      * @param amount number of tokens to be minted
+     *  @dev receipient must be a member or an admin
      */
-    function mint(address to, uint256 amount) public onlyOwner {
+    function mint(address to, uint256 amount) public onlyOwner onlyParticipant(to) {
         _mint(to, amount);
     }
 
@@ -204,6 +295,8 @@ contract Asset is ERC20Burnable, CustomERC20Permit, Ownable, Expiry, ExchangeRat
         rate = newRate;
     }
 
-    // TODO : override transfer
-    function transfer(address to, uint256 value) public virtual returns (bool) {}
+    // receipient must be a member or an admin
+    function transfer(address to, uint256 value) public virtual onlyParticipant(to) returns (bool) {
+        super.transfer(to, value);
+    }
 }

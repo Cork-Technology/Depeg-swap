@@ -209,4 +209,7 @@ interface IErrors {
     /// but the RA:CT pool is in massive imbalance
     /// or it's verrrry close to expiry
     error InvalidPoolStateOrNearExpired();
+
+    /// @notice trying to interact with permissioned markets while not having the right
+    error OnlyMember();
 }
