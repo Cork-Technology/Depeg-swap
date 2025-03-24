@@ -132,6 +132,9 @@ library SwapperMathLibrary {
     // the math would fail, since near expiry it would behave similar to CSM curve,
     int256 internal constant ONE_MINUS_T_CAP = 1e18;
 
+    // ds reserve sell pressure cap, set to 95% to still allow price impact being made
+    uint256 internal constant SELL_PRESSURE_CAP = 95e18;
+
     // Calculate price ratio of two tokens in AMM, will return ratio on 18 decimals precision
     function getPriceRatio(uint256 raReserve, uint256 ctReserve)
         public
@@ -204,7 +207,7 @@ library SwapperMathLibrary {
         uint256 startTime,
         uint256 maturityTime,
         uint256 currentTime,
-        uint256 amount,
+        uint256 dsAmountOut,
         uint256 raProvided,
         uint256 decayDiscountInDays
     ) external pure returns (uint256) {
@@ -213,22 +216,48 @@ library SwapperMathLibrary {
                 convert(int256(startTime)), convert(int256(maturityTime)), convert(int256(currentTime))
             )
         );
-        UD60x18 effectiveDsPrice = calculateEffectiveDsPrice(ud(amount), ud(raProvided));
+        UD60x18 effectiveDsPrice = calculateEffectiveDsPrice(ud(dsAmountOut), ud(raProvided));
         UD60x18 rateI = calcSpotArp(t, effectiveDsPrice);
         UD60x18 decay = calculateDecayDiscount(ud(decayDiscountInDays), ud(startTime), ud(currentTime));
 
-        return unwrap(calculatePercentage(calculatePercentage(ud(amount), rateI), decay));
+        return unwrap(calculatePercentage(calculatePercentage(ud(dsAmountOut), rateI), decay));
+    }
+
+    function calculateOptimalSellPressure(
+        uint256 startTime,
+        uint256 maturityTime,
+        uint256 currentTime,
+        uint256 dsAmountOut,
+        uint256 raProvided,
+        uint256 threshold
+    ) external pure returns (uint256) {
+        UD60x18 t = intoUD60x18(
+            BuyMathBisectionSolver.computeT(
+                convert(int256(startTime)), convert(int256(maturityTime)), convert(int256(currentTime))
+            )
+        );
+        UD60x18 effectiveDsPrice = calculateEffectiveDsPrice(ud(dsAmountOut), ud(raProvided));
+
+        // ds price is 0, will fail to sell so we return 0
+        if (effectiveDsPrice >= ud(1 ether)) {
+            return 0;
+        }
+
+        UD60x18 currentRiskPremium = calcSpotArp(t, effectiveDsPrice);
+
+        return calculateOptimalSellPressureWithRiskPremium(currentRiskPremium, ud(threshold));
     }
 
     /// @notice VHIYA_acc =  Volume_i  - ((Discount / 86400) * (currentTime - issuanceTime))
-    function calcVHIYAaccumulated(uint256 startTime, uint256 currentTime, uint256 decayDiscountInDays, uint256 amount)
-        external
-        pure
-        returns (uint256)
-    {
+    function calcVHIYAaccumulated(
+        uint256 startTime,
+        uint256 currentTime,
+        uint256 decayDiscountInDays,
+        uint256 dsAmountOut
+    ) external pure returns (uint256) {
         UD60x18 decay = calculateDecayDiscount(ud(decayDiscountInDays), ud(startTime), ud(currentTime));
 
-        return convertUd(calculatePercentage(convertUd(amount), decay));
+        return convertUd(calculatePercentage(convertUd(dsAmountOut), decay));
     }
 
     function calculateEffectiveDsPrice(UD60x18 dsAmount, UD60x18 raProvided)
@@ -393,6 +422,37 @@ library SwapperMathLibrary {
     /// @notice pt = 1 - effectiveDsPrice
     function calcPt(UD60x18 effectiveDsPrice) internal pure returns (UD60x18) {
         return sub(convertUd(1), effectiveDsPrice);
+    }
+
+    /// @notice s = x / y  * 100
+    /// where :
+    /// - x = current trade risk premium(100% = 1e18) -> this is because internally risk premium is represented as 0-1 where 1 is 100%
+    /// - y = risk premium threshold(100% = 100e18)
+    /// - s = pressure percentage
+    function calculateOptimalSellPressureWithRiskPremium(UD60x18 currentRiskPremium, UD60x18 threshold)
+        internal
+        pure
+        returns (uint256 pressurePercentage)
+    {
+        // for readibility
+        UD60x18 x = currentRiskPremium;
+        UD60x18 y = threshold;
+
+        if (y == ud(0)) {
+            return 0;
+        }
+
+        // solhint-disable-next-line var-name-mixedcase
+        UD60x18 ONE_HUNDRED = convertUd(100);
+
+        // normalize y from 0-100 to 0-1
+        y = div(y, ONE_HUNDRED);
+
+        UD60x18 s = mul(div(x, y), ONE_HUNDRED);
+
+        pressurePercentage = unwrap(s);
+        // use the cap if it goes above
+        pressurePercentage = pressurePercentage > SELL_PRESSURE_CAP ? SELL_PRESSURE_CAP : pressurePercentage;
     }
 
     /// @notice ptConstFixed = f / (rate +1)^t

@@ -32,7 +32,8 @@ struct AssetPair {
 struct ReserveState {
     /// @dev dsId => [RA, CT, DS]
     mapping(uint256 => AssetPair) ds;
-    uint256 reserveSellPressurePercentage;
+    /// IMPORTANT : REPURPOSED TO THRESHOLD. THE PERCENTAGE WILL BE CALCULATED DYNAMICALLY
+    uint256 reserveSellPressurePercentageThreshold;
     uint256 hiyaCumulated;
     uint256 vhiyaCumulated;
     uint256 decayDiscountRateInDays;
@@ -72,13 +73,14 @@ library DsFlashSwaplibrary {
         return block.number <= self.rolloverEndInBlockNumber;
     }
 
-    function updateReserveSellPressurePercentage(ReserveState storage self, uint256 newPercentage) external {
+    function updateReserveSellPressurePercentageThreshold(ReserveState storage self, uint256 newPercentage) external {
         // must be between 0.01 and 100
         if (newPercentage < 1e16 || newPercentage > 1e20) {
             revert IErrors.InvalidParams();
         }
+        /// IMPORTANT : REPURPOSED TO THRESHOLD. THE PERCENTAGE WILL BE CALCULATED DYNAMICALLY
 
-        self.reserveSellPressurePercentage = newPercentage;
+        self.reserveSellPressurePercentageThreshold = newPercentage;
     }
 
     function emptyReserveLv(ReserveState storage self, uint256 dsId, address to) external returns (uint256 emptied) {
@@ -106,6 +108,26 @@ library DsFlashSwaplibrary {
 
         self.hiyaCumulated += SwapperMathLibrary.calcHIYAaccumulated(start, end, current, ds, ra, decayDiscount);
         self.vhiyaCumulated += SwapperMathLibrary.calcVHIYAaccumulated(start, current, decayDiscount, ds);
+    }
+
+    function determineSellPressure(ReserveState storage self, uint256 dsId, uint256 raProvided, uint256 dsOut)
+        external
+        view
+        returns (uint256 pressurePercentage)
+    {
+        uint256 threshold = self.reserveSellPressurePercentageThreshold;
+
+        if (threshold == 0) {
+            return 0;
+        }
+
+        uint256 start = self.ds[dsId].ds.issuedAt();
+        uint256 end = self.ds[dsId].ds.expiry();
+        uint256 current = block.timestamp;
+
+        pressurePercentage = SwapperMathLibrary.calculateOptimalSellPressure(
+            start, end, current, dsOut, raProvided, self.reserveSellPressurePercentageThreshold
+        );
     }
 
     function emptyReservePartialLv(ReserveState storage self, uint256 dsId, uint256 amount, address to)

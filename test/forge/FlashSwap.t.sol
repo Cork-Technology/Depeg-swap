@@ -67,36 +67,14 @@ contract FlashSwapTest is Helper {
         vm.expectRevert();
         flashSwapRouter.swapDsforRa(currencyId, dsId, 50 ether, 0);
 
-        // should work, even though there's insfuicient liquidity to sell the LV reserves
         uint256 lvReserveBefore = flashSwapRouter.getLvReserve(currencyId, dsId);
-
-        result = flashSwapRouter.swapRaforDs(
-            currencyId, dsId, 100 ether, 0, defaultBuyApproxParams(), defaultOffchainGuessParams()
-        );
-        amountOut = result.amountOut;
-
-        uint256 lvReserveAfter = flashSwapRouter.getLvReserve(currencyId, dsId);
-
-        vm.assertEq(lvReserveBefore, lvReserveAfter);
-
-        uint256 raBalanceBefore = ra.balanceOf(DEFAULT_ADDRESS);
-        Asset(ds).approve(address(flashSwapRouter), 1000 ether);
-        uint256 amountOutSell = flashSwapRouter.swapDsforRa(currencyId, dsId, 50 ether, 0);
-        uint256 raBalanceAfter = ra.balanceOf(DEFAULT_ADDRESS);
-
-        vm.assertEq(raBalanceAfter, raBalanceBefore + amountOutSell);
-
-        // add more liquidity to the router and AMM
-        moduleCore.depositLv(currencyId, 10_000 ether, 0, 0);
-
-        // now if buy, it should sell from reserves
-        lvReserveBefore = flashSwapRouter.getLvReserve(currencyId, dsId);
+        // since now the reserve sell is made after the user trades go through, we should always be able to sell the reserve
         result = flashSwapRouter.swapRaforDs(
             currencyId, dsId, 10 ether, 0, defaultBuyApproxParams(), defaultOffchainGuessParams()
         );
         amountOut = result.amountOut;
 
-        lvReserveAfter = flashSwapRouter.getLvReserve(currencyId, dsId);
+        uint256 lvReserveAfter = flashSwapRouter.getLvReserve(currencyId, dsId);
 
         vm.assertTrue(lvReserveAfter < lvReserveBefore);
     }

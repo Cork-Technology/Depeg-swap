@@ -92,8 +92,7 @@ interface IDsFlashSwapCore is IDsFlashSwapUtility {
     /// using this will greatly reduce the gas cost.
     /// will be the default way to swap RA for DS
     struct OffchainGuess {
-        uint256 initialBorrowAmount;
-        uint256 afterSoldBorrowAmount;
+        uint256 borrow;
     }
 
     struct SwapRaForDsReturn {
@@ -103,11 +102,10 @@ interface IDsFlashSwapCore is IDsFlashSwapUtility {
         /// will be sold from the reserve unless it doesn't met the minimum amount, the DS reserve is empty,
         /// or the DS reserve sale is disabled. in such cases, this will be the final amount of RA that's borrowed
         /// and the "afterSoldBorrow" will be 0.
-        /// if the swap is fully fullfilled by the rollover sale, both initialBorrow and afterSoldBorrow will be 0
-        uint256 initialBorrow;
-        /// @dev the final amount of RA that's borrowed after selling DS reserve
-        uint256 afterSoldBorrow;
+        /// if the swap is fully fullfilled by the rollover sale, borrow
+        uint256 borrow;
         uint256 fee;
+        uint256 reserveSellPressure;
     }
 
     /**

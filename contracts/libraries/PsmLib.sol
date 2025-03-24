@@ -13,6 +13,7 @@ import {MathHelper} from "./MathHelper.sol";
 import {IRepurchase} from "../interfaces/IRepurchase.sol";
 import {IErrors} from "../interfaces/IErrors.sol";
 import {IDsFlashSwapCore} from "../interfaces/IDsFlashSwapRouter.sol";
+import {IPSMcore} from "../interfaces/IPSMcore.sol";
 import {VaultLibrary} from "./VaultLib.sol";
 import {SafeERC20, IERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {TransferHelper} from "./TransferHelper.sol";
@@ -365,7 +366,11 @@ library PsmLibrary {
         // we convert it 18 fixed decimals, since that's what the DS uses
         received = TransferHelper.tokenNativeDecimalsToFixed(amount, self.info.ra);
 
+        uint256 exchangeRate = _getLatestApplicableRateAndUpdate(self);
+
         ds.issue(address(this), received);
+
+        emit IPSMcore.PsmDeposited(self.info.toId(), self.globalAssetIdx, msg.sender, amount, received, exchangeRate);
     }
 
     function lvRedeemRaPaWithCt(State storage self, uint256 amount, uint256 dsId)
@@ -531,6 +536,8 @@ library PsmLibrary {
 
         DepegSwap storage ds;
 
+        _getLatestApplicableRateAndUpdate(self);
+
         (dsId, receivedPa, receivedDs, feePercentage, fee, exchangeRates, ds) = previewRepurchase(self, amount);
 
         // decrease PSM balance
@@ -653,6 +660,8 @@ library PsmLibrary {
 
         DepegSwap storage ds = self.ds[dsId];
         Guard.safeBeforeExpired(ds);
+
+        _getLatestApplicableRateAndUpdate(self);
 
         (received, dsProvided, fee, _exchangeRate) = previewRedeemWithDs(self, dsId, amount);
 

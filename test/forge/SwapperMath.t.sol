@@ -97,4 +97,17 @@ contract SwapMathTest is Test {
 
         vm.assertEq(result, 1.5 ether);
     }
+
+    function test_calculateDynamicSellPressure() external {
+        //  1.5 % risk premium where 1 = 100%
+        uint256 currentRiskPremium = 0.015 ether;
+
+        // 3% threshold where 100 = 100%
+        uint256 threshold = 3 ether;
+
+        uint256 percentage =
+            SwapperMathLibrary.calculateOptimalSellPressureWithRiskPremium(ud(currentRiskPremium), ud(threshold));
+        // should be 50%
+        vm.assertEq(percentage, 50 ether);
+    }
 }

@@ -82,10 +82,10 @@ interface IVault is IErrors {
     /// @param isLVWithdrawalPaused The new value saying if Withdrawal allowed in LV or not
     event LvWithdrawalsStatusUpdated(Id indexed id, bool isLVWithdrawalPaused);
 
-    /// @notice Emitted when the protocol receive sales profit from the router
+    /// @notice Emitted when the vault receive sales profit from the router
     /// @param router The address of the router
     /// @param amount The amount of RA tokens transferred.
-    event ProfitReceived(address indexed router, uint256 amount);
+    event VaultDsSaleProfitReceived(address indexed router, Id indexed id, uint256 amount);
 
     event VaultNavThresholdUpdated(Id indexed id, uint256 navThreshold);
 
