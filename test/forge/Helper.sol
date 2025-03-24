@@ -20,6 +20,7 @@ import {IDsFlashSwapCore} from "./../../contracts/interfaces/IDsFlashSwapRouter.
 import "./../../contracts/core/Withdrawal.sol";
 import "./../../contracts/core/assets/ProtectedUnitFactory.sol";
 import {ProtectedUnitRouter} from "../../contracts/core/assets/ProtectedUnitRouter.sol";
+import {Permit2} from "./../../script/foundry-scripts/Utils/Permit2Mock.sol";
 
 contract CustomErc20 is DummyWETH {
     uint8 internal __decimals;
@@ -44,6 +45,7 @@ abstract contract Helper is SigUtils, TestHelper {
     Withdrawal internal withdrawalContract;
     ProtectedUnitFactory internal protectedUnitFactory;
     ProtectedUnitRouter internal protectedUnitRouter;
+    address internal permit2;
     EnvGetters internal env = new EnvGetters();
 
     Id defaultCurrencyId;
@@ -381,13 +383,18 @@ abstract contract Helper is SigUtils, TestHelper {
         setupConfig();
         setupFlashSwapRouter();
         initializeWithdrawalContract();
+        initializePermit2();
         initializeProtectedUnitFactory();
     }
 
+    function initializePermit2() internal {
+        permit2 = address(new Permit2());
+    }
+
     function initializeProtectedUnitFactory() internal {
-        protectedUnitRouter = new ProtectedUnitRouter();
+        protectedUnitRouter = new ProtectedUnitRouter(permit2);
         protectedUnitFactory =
-            new ProtectedUnitFactory(address(moduleCore), address(corkConfig), address(flashSwapRouter));
+            new ProtectedUnitFactory(address(moduleCore), address(corkConfig), address(flashSwapRouter), permit2);
         corkConfig.setProtectedUnitFactory(address(protectedUnitFactory));
     }
 

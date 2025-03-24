@@ -5,7 +5,7 @@ pragma solidity ^0.8.24;
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {Pausable} from "@openzeppelin/contracts/utils/Pausable.sol";
 import {ERC20Burnable} from "@openzeppelin/contracts/token/ERC20/extensions/ERC20Burnable.sol";
-import {ERC20, IERC20Permit} from "@openzeppelin/contracts/token/ERC20/extensions/ERC20Permit.sol";
+import {ERC20} from "@openzeppelin/contracts/token/ERC20/extensions/ERC20Permit.sol";
 import {ReentrancyGuardTransient} from "@openzeppelin/contracts/utils/ReentrancyGuardTransient.sol";
 import {SafeERC20, IERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {IProtectedUnit} from "../../interfaces/IProtectedUnit.sol";
@@ -17,9 +17,9 @@ import {IProtectedUnitLiquidation} from "./../../interfaces/IProtectedUnitLiquid
 import {IDsFlashSwapCore} from "./../../interfaces/IDsFlashSwapRouter.sol";
 import {ModuleCore} from "./../ModuleCore.sol";
 import {ERC20Permit} from "@openzeppelin/contracts/token/ERC20/extensions/ERC20Permit.sol";
-import {Signature, MinimalSignatureHelper} from "./../../libraries/SignatureHelperLib.sol";
 import {TransferHelper} from "./../../libraries/TransferHelper.sol";
-import {PermitChecker} from "../../libraries/PermitChecker.sol";
+import {IPermit2} from "permit2/src/interfaces/IPermit2.sol";
+import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 
 /**
  * @notice Data structure for tracking DS token information
@@ -54,6 +54,9 @@ contract ProtectedUnit is
     CorkConfig public immutable CONFIG;
     IDsFlashSwapCore public immutable FLASHSWAP_ROUTER;
     ModuleCore public immutable MODULE_CORE;
+
+    /// @notice Permit2 contract address
+    IPermit2 public immutable PERMIT2;
 
     /**
      * @notice The ERC20 token representing the Pegged Asset (PA)
@@ -97,6 +100,7 @@ contract ProtectedUnit is
      * @param _mintCap Maximum number of tokens that can be created
      * @param _config Address of the configuration contract
      * @param _flashSwapRouter Address of the flash swap router
+     * @param _permit2 Address of the Permit2 contract
      */
     constructor(
         address _moduleCore,
@@ -106,7 +110,8 @@ contract ProtectedUnit is
         string memory _pairName,
         uint256 _mintCap,
         address _config,
-        address _flashSwapRouter
+        address _flashSwapRouter,
+        address _permit2
     )
         ERC20(string(abi.encodePacked("Protected Unit - ", _pairName)), string(abi.encodePacked("PU - ", _pairName)))
         ERC20Permit(string(abi.encodePacked("Protected Unit - ", _pairName)))
@@ -119,6 +124,7 @@ contract ProtectedUnit is
         mintCap = _mintCap;
         FLASHSWAP_ROUTER = IDsFlashSwapCore(_flashSwapRouter);
         CONFIG = CorkConfig(_config);
+        PERMIT2 = IPermit2(_permit2);
     }
 
     /**
@@ -303,7 +309,7 @@ contract ProtectedUnit is
     function redeemRaWithDsPa(uint256 amountPa, uint256 amountDs) external autoUpdateDS onlyOwner autoSync {
         uint256 dsId = MODULE_CORE.lastDsId(id);
 
-        ds.approve(address(MODULE_CORE), amountDs);
+        IERC20(ds).safeIncreaseAllowance(address(MODULE_CORE), amountDs);
         IERC20(PA).safeIncreaseAllowance(address(MODULE_CORE), amountPa);
 
         MODULE_CORE.redeemRaWithDsPa(id, dsId, amountPa);
@@ -416,82 +422,73 @@ contract ProtectedUnit is
         autoSync
         returns (uint256 dsAmount, uint256 paAmount)
     {
-        (dsAmount, paAmount) = __mint(msg.sender, amount);
+        // Calculate token amounts needed for minting
+        (dsAmount, paAmount) = previewMint(amount);
+        __mint(amount, dsAmount, paAmount);
     }
 
     /**
      * @notice Internal implementation of mint functionality
      * @dev Handles the token transfers and minting logic
      */
-    function __mint(address minter, uint256 amount) internal returns (uint256 dsAmount, uint256 paAmount) {
-        if (amount == 0) {
-            revert InvalidAmount();
-        }
-
-        if (totalSupply() + amount > mintCap) {
-            revert MintCapExceeded();
-        }
-
-        {
-            (dsAmount, paAmount) =
-                ProtectedUnitMath.previewMint(amount, _selfPaReserve(), _selfDsReserve(), totalSupply());
-
-            paAmount = TransferHelper.fixedToTokenNativeDecimals(paAmount, PA);
-        }
-
-        TransferHelper.transferFromNormalize(ds, minter, dsAmount);
-
+    function __mint(uint256 amount, uint256 dsAmount, uint256 paAmount) internal {
         // this calculation is based on the assumption that the DS token has 18 decimals but pa can have different decimals
+        dsAmount = TransferHelper.fixedToTokenNativeDecimals(dsAmount, ds);
+        paAmount = TransferHelper.fixedToTokenNativeDecimals(paAmount, PA);
 
-        TransferHelper.transferFromNormalize(PA, minter, paAmount);
+        PERMIT2.transferFrom(msg.sender, address(this), SafeCast.toUint160(amount), address(ds));
+        PERMIT2.transferFrom(msg.sender, address(this), SafeCast.toUint160(dsAmount), address(PA));
+
         dsHistory[dsIndexMap[address(ds)]].totalDeposited += amount;
 
-        _mint(minter, amount);
+        _mint(msg.sender, amount);
 
-        emit Mint(minter, amount);
+        emit Mint(msg.sender, amount);
     }
 
-    // if pa do not support permit, then user can still use this function with only ds permit and manual approval on the PA side
     /**
-     * @notice Mints new tokens using permit signatures for gasless approvals
-     * @dev Requires valid signatures for DS and optionally PA permits.
-     *      It also ensures the contract is not paused and prevents reentrancy.
-     * @param minter The address to which the minted tokens will be sent.
-     * @param amount The amount of tokens to be minted.
-     * @param rawDsPermitSig The raw signature for the DS permit.
-     * @param rawPaPermitSig The raw signature for the PA permit (optional).
-     * @param deadline The deadline timestamp by which the permit signatures must be valid.
+     * @notice Mints new tokens using Permit2 for gasless batch approvals
+     * @dev Uses Uniswap's Permit2 protocol to approve both DS and PA tokens in a single signature
+     * @param amount The amount of tokens to be minted
+     * @param permit The Permit2 batch permit data for DS and PA token approvals - DS will be the first token and PA will be the second token in the permitted array
+     * @param signature The signature authorizing the permits and transfers
      * @return dsAmount The amount of DS tokens used
      * @return paAmount The amount of PA tokens used
-     * @custom:reverts InvalidSignature if DS signature is invalid
+     * @custom:reverts InvalidSignature if signature data is invalid
      * @custom:reverts EnforcedPause if minting is paused
      * @custom:emits Mint when tokens are successfully minted
      */
-    function mint(
-        address minter,
-        uint256 amount,
-        bytes calldata rawDsPermitSig,
-        bytes calldata rawPaPermitSig,
-        uint256 deadline
-    ) external whenNotPaused nonReentrant autoUpdateDS autoSync returns (uint256 dsAmount, uint256 paAmount) {
-        if (rawDsPermitSig.length == 0 || deadline == 0) {
+    function mint(uint256 amount, IPermit2.PermitBatch calldata permit, bytes calldata signature)
+        external
+        whenNotPaused
+        nonReentrant
+        autoUpdateDS
+        autoSync
+        returns (uint256 dsAmount, uint256 paAmount)
+    {
+        // checks that DS and PA are in the permitted array and that the transfer details are for the correct tokens
+        // Assumes that DS is the first token and PA is the second token in the permitted array
+        if (
+            signature.length == 0 || permit.details.length != 2 || permit.details[0].token != address(ds)
+                || permit.details[1].token != address(PA)
+        ) {
             revert InvalidSignature();
         }
 
+        // Calculate token amounts needed for minting
         (dsAmount, paAmount) = previewMint(amount);
 
-        Signature memory sig = MinimalSignatureHelper.split(rawDsPermitSig);
-        ds.permit(minter, address(this), dsAmount, deadline, sig.v, sig.r, sig.s, DS_PERMIT_MINT_TYPEHASH);
-
-        if (rawPaPermitSig.length != 0) {
-            sig = MinimalSignatureHelper.split(rawPaPermitSig);
-            IERC20Permit(address(PA)).permit(minter, address(this), paAmount, deadline, sig.v, sig.r, sig.s);
+        // checks that the requested amounts are sufficient
+        // Assumes that DS is the first token and PA is the second token in the transfer details array
+        if (permit.details[0].amount < dsAmount || permit.details[1].amount < paAmount) {
+            revert InvalidSignature();
         }
 
-        (uint256 _actualDs, uint256 _actualPa) = __mint(minter, amount);
+        // Batch transfer tokens from user to this contract using Permit2
+        PERMIT2.permit(msg.sender, permit, signature);
 
-        assert(_actualDs == dsAmount);
-        assert(_actualPa == paAmount);
+        // Mint the tokens to the owner
+        __mint(amount, dsAmount, paAmount);
     }
 
     /**
@@ -538,7 +535,7 @@ contract ProtectedUnit is
         autoUpdateDS
         autoSync
     {
-        _burnHU(account, amount);
+        _burnPU(account, amount);
     }
 
     /**
@@ -549,14 +546,14 @@ contract ProtectedUnit is
      * @custom:emits Burn when tokens are successfully burned
      */
     function burn(uint256 amount) public override whenNotPaused nonReentrant autoUpdateDS autoSync {
-        _burnHU(msg.sender, amount);
+        _burnPU(msg.sender, amount);
     }
 
     /**
      * @notice Internal implementation of burn functionality
      * @dev Calculates token amounts, burns ProtectedUnit tokens, and transfers underlying assets
      */
-    function _burnHU(address dissolver, uint256 amount)
+    function _burnPU(address dissolver, uint256 amount)
         internal
         returns (uint256 dsAmount, uint256 paAmount, uint256 raAmount)
     {
@@ -626,13 +623,13 @@ contract ProtectedUnit is
      */
     function skim(address to) external nonReentrant {
         if (PA.balanceOf(address(this)) - paReserve > 0) {
-            PA.transfer(to, PA.balanceOf(address(this)) - paReserve);
+            IERC20(PA).safeTransfer(to, PA.balanceOf(address(this)) - paReserve);
         }
         if (RA.balanceOf(address(this)) - raReserve > 0) {
-            RA.transfer(to, RA.balanceOf(address(this)) - raReserve);
+            IERC20(RA).safeTransfer(to, RA.balanceOf(address(this)) - raReserve);
         }
         if (ds.balanceOf(address(this)) - dsReserve > 0) {
-            ds.transfer(to, ds.balanceOf(address(this)) - dsReserve);
+            IERC20(ds).safeTransfer(to, ds.balanceOf(address(this)) - dsReserve);
         }
     }
 }

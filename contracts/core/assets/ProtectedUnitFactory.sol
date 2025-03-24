@@ -25,6 +25,7 @@ contract ProtectedUnitFactory is IProtectedUnitFactory {
     address public immutable MODULE_CORE;
     address public immutable CONFIG;
     address public immutable ROUTER;
+    address public immutable PERMIT2;
 
     /**
      * @notice Mapping of pair IDs to their corresponding Protected Unit contract addresses
@@ -54,15 +55,20 @@ contract ProtectedUnitFactory is IProtectedUnitFactory {
      * @param _moduleCore Address of the ModuleCore contract
      * @param _config Address of the CorkConfig contract
      * @param _flashSwapRouter Address of the router contract for flash swaps
+     * @param _permit2 Address of the Permit2 contract
      * @custom:reverts ZeroAddress if any of the input addresses is the zero address
      */
-    constructor(address _moduleCore, address _config, address _flashSwapRouter) {
-        if (_moduleCore == address(0) || _config == address(0) || _flashSwapRouter == address(0)) {
+    constructor(address _moduleCore, address _config, address _flashSwapRouter, address _permit2) {
+        if (
+            _moduleCore == address(0) || _config == address(0) || _flashSwapRouter == address(0)
+                || _permit2 == address(0)
+        ) {
             revert ZeroAddress();
         }
         MODULE_CORE = _moduleCore;
         CONFIG = _config;
         ROUTER = _flashSwapRouter;
+        PERMIT2 = _permit2;
     }
 
     /**
@@ -125,7 +131,7 @@ contract ProtectedUnitFactory is IProtectedUnitFactory {
 
         // Deploy a new ProtectedUnit contract
         ProtectedUnit newProtectedUnit =
-            new ProtectedUnit(MODULE_CORE, _id, _pa, _ra, _pairName, _mintCap, CONFIG, ROUTER);
+            new ProtectedUnit(MODULE_CORE, _id, _pa, _ra, _pairName, _mintCap, CONFIG, ROUTER, PERMIT2);
         newUnit = address(newProtectedUnit);
 
         // Store the address of the new contract

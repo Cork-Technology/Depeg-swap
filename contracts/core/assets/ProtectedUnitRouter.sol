@@ -4,7 +4,10 @@ pragma solidity ^0.8.24;
 import {ReentrancyGuardTransient} from "@openzeppelin/contracts/utils/ReentrancyGuardTransient.sol";
 import {ProtectedUnit} from "./ProtectedUnit.sol";
 import {IProtectedUnitRouter} from "../../interfaces/IProtectedUnitRouter.sol";
-import {MinimalSignatureHelper, Signature} from "./../../libraries/SignatureHelperLib.sol";
+import {IPermit2} from "permit2/src/interfaces/IPermit2.sol";
+import {IERC20} from "@openzeppelin/contracts/interfaces/IERC20.sol";
+import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 
 /**
  * @title Protected Unit Router
@@ -15,6 +18,15 @@ import {MinimalSignatureHelper, Signature} from "./../../libraries/SignatureHelp
  * @author Cork Protocol Team
  */
 contract ProtectedUnitRouter is IProtectedUnitRouter, ReentrancyGuardTransient {
+    using SafeERC20 for IERC20;
+
+    // Permit2 contract address
+    IPermit2 public immutable PERMIT2;
+
+    constructor(address _permit2) {
+        PERMIT2 = IPermit2(_permit2);
+    }
+
     /**
      * @notice Calculates the tokens needed for minting multiple Protected Units in single function call
      * @dev Iterates through each Protected Unit to calculate the required token amounts.
@@ -50,11 +62,11 @@ contract ProtectedUnitRouter is IProtectedUnitRouter, ReentrancyGuardTransient {
      * @dev Iterates through each Protected Unit to mint tokens using permit signatures.
      *      Recommended to keep the number of Protected Units under 10 to avoid gas issues
      * @param params All parameters needed for batch minting:
-     *        - deadline: Time until which the transaction is valid
      *        - protectedUnits: List of Protected Unit contract addresses to mint from
      *        - amounts: How many tokens to mint from respective Protected Unit contract
-     *        - rawDsPermitSigs: Permission signatures for DS tokens
-     *        - rawPaPermitSigs: Permission signatures for PA tokens
+     *        - permitBatchData: The Permit2 batch permit data covering all tokens - Assumes that Array contains DS and PA one after the other as per protectedUnits array
+     *        - transferDetails: Details for each token transfer - Assumes that Array contains DS and PA one after the other as per protectedUnits array
+     *        - signature: The signature authorizing the permits
      * @return dsAmounts List of DS token amounts used for respective Protected Unit token minting
      * @return paAmounts List of PA token amounts used for respective Protected Unit token minting
      * @custom:reverts InvalidInput if input array lengths don't match
@@ -65,21 +77,65 @@ contract ProtectedUnitRouter is IProtectedUnitRouter, ReentrancyGuardTransient {
         nonReentrant
         returns (uint256[] memory dsAmounts, uint256[] memory paAmounts)
     {
-        if (params.protectedUnits.length != params.amounts.length) {
+        uint256 length = params.protectedUnits.length;
+        if (
+            length != params.amounts.length || length * 2 != params.permitBatchData.permitted.length
+                || params.permitBatchData.permitted.length != params.transferDetails.length
+        ) {
             revert InvalidInput();
         }
-        uint256 length = params.protectedUnits.length;
 
         dsAmounts = new uint256[](length);
         paAmounts = new uint256[](length);
 
-        // If large number of ProtectedUnits are passed, this function will revert due to gas limit.
-        // So we will keep the limit to 10 ProtectedUnits(or even less if needed) from frontend.
+        // Execute the permitTransferFrom to approve all tokens in one transaction
+        PERMIT2.permitTransferFrom(params.permitBatchData, params.transferDetails, msg.sender, params.signature);
+
+        // Track which tokens have been used for minting and how much used
+        address[] memory usedTokens = new address[](params.permitBatchData.permitted.length);
+        uint256[] memory usedAmounts = new uint256[](params.permitBatchData.permitted.length);
+
+        // Now mint from each ProtectedUnit
         for (uint256 i = 0; i < length; ++i) {
-            (dsAmounts[i], paAmounts[i]) = ProtectedUnit(params.protectedUnits[i]).mint(
-                msg.sender, params.amounts[i], params.rawDsPermitSigs[i], params.rawPaPermitSigs[i], params.deadline
+            ProtectedUnit protectedUnit = ProtectedUnit(params.protectedUnits[i]);
+
+            // Calculate indices for this ProtectedUnit's DS and PA tokens
+            // Assumes that Array contains DS and PA one after the other and in same order as per protectedUnits array
+            // paIndex = dsIndex + 1
+            uint256 dsIndex = i * 2;
+
+            // Get token addresses
+            address dsToken = params.permitBatchData.permitted[dsIndex].token;
+            address paToken = params.permitBatchData.permitted[dsIndex + 1].token;
+
+            // Approve the tokens to Permit2
+            IERC20(dsToken).approve(address(PERMIT2), params.transferDetails[dsIndex].requestedAmount);
+            IERC20(paToken).approve(address(PERMIT2), params.transferDetails[dsIndex + 1].requestedAmount);
+
+            // Approve the tokens to the ProtectedUnit in Permit2
+            PERMIT2.approve(
+                dsToken, address(protectedUnit), SafeCast.toUint160(params.transferDetails[dsIndex].requestedAmount), 0
             );
+            PERMIT2.approve(
+                paToken,
+                address(protectedUnit),
+                SafeCast.toUint160(params.transferDetails[dsIndex + 1].requestedAmount),
+                0
+            );
+
+            // Mint the tokens
+            (dsAmounts[i], paAmounts[i]) = protectedUnit.mint(params.amounts[i]);
+
+            // Send back users ProtectedUnit tokens
+            IERC20(address(protectedUnit)).safeTransfer(msg.sender, params.amounts[i]);
+
+            // Track the token usage for DS and PA
+            _trackTokenUsage(usedTokens, usedAmounts, dsToken, dsAmounts[i]);
+            _trackTokenUsage(usedTokens, usedAmounts, paToken, paAmounts[i]);
         }
+
+        // Return any unused permitted tokens back to the user
+        _returnExcessTokens(params.permitBatchData, params.transferDetails, usedTokens, usedAmounts);
     }
 
     /**
@@ -143,14 +199,18 @@ contract ProtectedUnitRouter is IProtectedUnitRouter, ReentrancyGuardTransient {
             uint256[] memory raAmounts
         )
     {
-        (paAdds, dsAdds, raAdds, dsAmounts, paAmounts, raAmounts) = _batchBurn(protectedUnits, amounts);
+        (paAdds, dsAdds, raAdds, dsAmounts, paAmounts, raAmounts) = _batchBurn(protectedUnits, amounts, msg.sender);
     }
 
     /**
      * @notice Burns multiple Protected Unit tokens using signed permissions
-     * @param protectedUnits List of Protected Unit contracts to burn from
-     * @param amounts How many tokens to burn from respective Protected Unit contract
-     * @param permits List of permission parameters for respective Protected Unit token burning
+     * @dev Recommended to keep the number of Protected Units under 10 to avoid gas issues
+     * @param params All parameters needed for batch burning with permit2:
+     *        - protectedUnits: List of Protected Unit contract addresses to burn from
+     *        - amounts: How many tokens to burn from respective Protected Unit contract
+     *        - permitBatchData: The Permit2 batch permit data covering all tokens
+     *        - transferDetails: Details for each token transfer
+     *        - signature: The signature authorizing the permits
      * @return dsAdds List of DS token addresses for DS token received from respective Protected Unit token burning
      * @return paAdds List of PA token addresses for PA token received from respective Protected Unit token burning
      * @return raAdds List of RA token addresses for RA token received from respective Protected Unit token burning
@@ -161,11 +221,7 @@ contract ProtectedUnitRouter is IProtectedUnitRouter, ReentrancyGuardTransient {
      * @custom:reverts If any permit signature is invalid
      * @custom:reverts If any of the individual burn operations fail
      */
-    function batchBurn(
-        address[] calldata protectedUnits,
-        uint256[] calldata amounts,
-        BatchBurnPermitParams[] calldata permits
-    )
+    function batchBurn(BatchBurnPermitParams calldata params)
         external
         nonReentrant
         returns (
@@ -177,23 +233,36 @@ contract ProtectedUnitRouter is IProtectedUnitRouter, ReentrancyGuardTransient {
             uint256[] memory raAmounts
         )
     {
-        uint256 length = permits.length;
-        for (uint256 i = 0; i < length; ++i) {
-            ProtectedUnit protectedUnit = ProtectedUnit(protectedUnits[i]);
-            BatchBurnPermitParams calldata permit = permits[i];
-
-            Signature memory signature = MinimalSignatureHelper.split(permit.rawProtectedUnitPermitSig);
-
-            protectedUnit.permit(
-                permit.owner, permit.spender, permit.value, permit.deadline, signature.v, signature.r, signature.s
-            );
+        uint256 length = params.protectedUnits.length;
+        if (
+            length != params.amounts.length || length != params.transferDetails.length
+                || length != params.permitBatchData.permitted.length
+        ) {
+            revert InvalidInput();
         }
 
-        (paAdds, dsAdds, raAdds, dsAmounts, paAmounts, raAmounts) = _batchBurn(protectedUnits, amounts);
+        // Execute the permitTransferFrom to transfer all Protected Unit tokens to this contract
+        PERMIT2.permitTransferFrom(params.permitBatchData, params.transferDetails, msg.sender, params.signature);
+
+        // Track which tokens have been used and how much
+        address[] memory usedTokens = new address[](params.permitBatchData.permitted.length);
+        uint256[] memory usedAmounts = new uint256[](params.permitBatchData.permitted.length);
+
+        // Track the token usage for Protected Unit tokens
+        for (uint256 i = 0; i < length; ++i) {
+            _trackTokenUsage(usedTokens, usedAmounts, params.protectedUnits[i], params.amounts[i]);
+        }
+
+        // Process the batch burn
+        (dsAdds, paAdds, raAdds, dsAmounts, paAmounts, raAmounts) =
+            _batchBurn(params.protectedUnits, params.amounts, address(this));
+
+        // Return any excess tokens that were permitted but not needed for the burn
+        _returnExcessTokens(params.permitBatchData, params.transferDetails, usedTokens, usedAmounts);
     }
 
     /// @notice Internal function to handle the batch burning logic
-    function _batchBurn(address[] calldata protectedUnits, uint256[] calldata amounts)
+    function _batchBurn(address[] calldata protectedUnits, uint256[] calldata amounts, address caller)
         internal
         returns (
             address[] memory dsAdds,
@@ -204,11 +273,7 @@ contract ProtectedUnitRouter is IProtectedUnitRouter, ReentrancyGuardTransient {
             uint256[] memory raAmounts
         )
     {
-        if (protectedUnits.length != amounts.length) {
-            revert InvalidInput();
-        }
         uint256 length = protectedUnits.length;
-
         dsAmounts = new uint256[](length);
         paAmounts = new uint256[](length);
         raAmounts = new uint256[](length);
@@ -216,6 +281,7 @@ contract ProtectedUnitRouter is IProtectedUnitRouter, ReentrancyGuardTransient {
         paAdds = new address[](length);
         raAdds = new address[](length);
 
+        // Now process each burn operation
         // If large number of ProtectedUnits are passed, this function will revert due to gas limit.
         // So we will keep the limit to 10 ProtectedUnits(or even less if needed) from frontend.
         for (uint256 i = 0; i < length; ++i) {
@@ -225,9 +291,87 @@ contract ProtectedUnitRouter is IProtectedUnitRouter, ReentrancyGuardTransient {
             paAdds[i] = address(protectedUnit.PA());
             raAdds[i] = address(protectedUnit.RA());
 
-            (dsAmounts[i], paAmounts[i], raAmounts[i]) = protectedUnit.previewBurn(msg.sender, amounts[i]);
+            // Calculate tokens to be received
+            (dsAmounts[i], paAmounts[i], raAmounts[i]) = protectedUnit.previewBurn(caller, amounts[i]);
 
-            ProtectedUnit(protectedUnits[i]).burnFrom(msg.sender, amounts[i]);
+            // Burn tokens
+            protectedUnit.burnFrom(caller, amounts[i]);
+
+            if (caller == address(this)) {
+                // Transfer the underlying tokens to the user
+                IERC20(dsAdds[i]).safeTransfer(msg.sender, dsAmounts[i]);
+                IERC20(paAdds[i]).safeTransfer(msg.sender, paAmounts[i]);
+                IERC20(raAdds[i]).safeTransfer(msg.sender, raAmounts[i]);
+            }
+        }
+    }
+
+    /**
+     * @notice Helper function to track token usage
+     * @dev Adds or updates a token's usage amount in the tracking arrays
+     * @param usedTokens Array of token addresses being tracked
+     * @param usedAmounts Array of amounts used for each token
+     * @param token Address of the token to track
+     * @param amount Amount of the token used
+     */
+    function _trackTokenUsage(address[] memory usedTokens, uint256[] memory usedAmounts, address token, uint256 amount)
+        internal
+        pure
+    {
+        // Look for the token in the existing array
+        uint256 length = usedTokens.length;
+        for (uint256 i = 0; i < length; ++i) {
+            if (usedTokens[i] == token) {
+                // Token already being tracked, add to the amount
+                usedAmounts[i] += amount;
+                return;
+            } else if (usedTokens[i] == address(0)) {
+                // Found an empty slot, use it to track this token
+                usedTokens[i] = token;
+                usedAmounts[i] = amount;
+                return;
+            }
+        }
+        // If we get here, the arrays are full which shouldn't happen
+        // as we initialize them with the correct size
+    }
+
+    /**
+     * @notice Helper function to return excess tokens to the user
+     * @dev Compares requested amounts with actual usage and returns any excess
+     * @param permitBatchData The Permit2 batch permit data
+     * @param transferDetails The transfer details for each token
+     * @param usedTokens Array of token addresses that were used
+     * @param usedAmounts Array of amounts used for each token
+     */
+    function _returnExcessTokens(
+        IPermit2.PermitBatchTransferFrom calldata permitBatchData,
+        IPermit2.SignatureTransferDetails[] calldata transferDetails,
+        address[] memory usedTokens,
+        uint256[] memory usedAmounts
+    ) internal {
+        uint256 length = permitBatchData.permitted.length;
+        for (uint256 i = 0; i < length; ++i) {
+            address token = permitBatchData.permitted[i].token;
+            uint256 requestedAmount = transferDetails[i].requestedAmount;
+
+            // Find if this token was used
+            uint256 usedAmount = 0;
+            uint256 usedTokensLength = usedTokens.length;
+            for (uint256 j = 0; j < usedTokensLength; ++j) {
+                if (usedTokens[j] == token) {
+                    usedAmount = usedAmounts[j];
+                    break;
+                }
+            }
+
+            // Return any excess
+            if (requestedAmount > usedAmount) {
+                uint256 excessAmount = requestedAmount - usedAmount;
+                if (excessAmount > 0) {
+                    IERC20(token).safeTransfer(msg.sender, excessAmount);
+                }
+            }
         }
     }
 }
