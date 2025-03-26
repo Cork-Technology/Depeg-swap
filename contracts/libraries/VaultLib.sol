@@ -287,7 +287,7 @@ library VaultLibrary {
             __addLiquidityToAmmUnchecked(raAmount, ctAmount, ra, ctAddress, ammRouter, tolerance.ra, tolerance.ct);
         _addFlashSwapReserveLv(self, flashSwapRouter, self.ds[dsId], ctAmount);
 
-        self.addLpBalance(lp);
+        self.sync(ammRouter);
     }
 
     function __provideAmmLiquidityFromPool(
@@ -338,8 +338,8 @@ library VaultLibrary {
 
         // we mint 1:1 if it's the first deposit, else we mint based on current vault NAV
         if (!self.vault.initialized) {
-            // we don't allow depositing less than 1e10 normalized to ensure good initialization
-            if (amount < TransferHelper.fixedToTokenNativeDecimals(1e10, self.info.ra)) {
+            // we don't allow depositing less than 1e15 normalized to ensure good initialization
+            if (amount < TransferHelper.fixedToTokenNativeDecimals(1e15, self.info.ra)) {
                 revert IErrors.InvalidAmount();
             }
 
@@ -374,6 +374,11 @@ library VaultLibrary {
         __provideLiquidityWithRatioGetLP(
             self, remaining, flashSwapRouter, ct, ammRouter, Tolerance(raTolerance, ctTolerance)
         );
+
+        // protecting against inflation attack
+        if (received < 1e16) {
+            revert IErrors.InsufficientOutputAmount(1e16, received);
+        }
 
         self.vault.lv.issue(from, received);
     }
@@ -487,7 +492,7 @@ library VaultLibrary {
         // amountAMin & amountBMin = 0 for 100% tolerence
         (raReceived, ctReceived) = ammRouter.removeLiquidity(raAddress, ctAddress, lp, 0, 0, deadline);
 
-        self.subtractLpBalance(lp);
+        self.sync(ammRouter);
     }
 
     function _liquidatedLp(State storage self, uint256 dsId, ICorkHook ammRouter, uint256 deadline) internal {

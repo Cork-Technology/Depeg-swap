@@ -559,7 +559,7 @@ contract DepositTest is Helper {
     }
 
     function test_depositInflation() external {
-        uint256 depositAmount = 1e10;
+        uint256 depositAmount = 1e15;
 
         uint256 adjustedDepositAmount = depositAmount;
 
@@ -584,12 +584,18 @@ contract DepositTest is Helper {
         (received,) = moduleCore.depositPsm(defaultCurrencyId, 1 ether);
 
         ICorkHook ammRouter = moduleCore.getAmmRouter();
-        ra.approve(address(ammRouter), 1 ether);
-        IERC20(ct).approve(address(ammRouter), 1 ether);
-        (,, uint256 minted) = ammRouter.addLiquidity(address(ra), ct, 1 ether, 1 ether, 0, 0, block.timestamp);
 
+        IERC20 lpToken = IERC20(ammRouter.getLiquidityToken(address(ra), ct));
+
+        ra.approve(address(ammRouter), 1 ether);
+
+        IERC20(ct).approve(address(ammRouter), 1 ether);
+        // the returned minted amount is higher than what actually minted, so we use the balance
+        ammRouter.addLiquidity(address(ra), ct, 1 ether, 1 ether, 0, 0, block.timestamp);
+
+        uint256 minted = lpToken.balanceOf(DEFAULT_ADDRESS);
         vm.assertGe(minted, 1e9);
-        IERC20(ammRouter.getLiquidityToken(address(ra), ct)).transfer(address(moduleCore), minted);
+        lpToken.transfer(address(moduleCore), minted);
 
         received = moduleCore.depositLv(defaultCurrencyId, 1 ether, 0, 0);
         vm.assertGe(received, 100);
