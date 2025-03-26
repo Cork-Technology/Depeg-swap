@@ -16,6 +16,7 @@ import {ContextUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/Cont
 import {AmmId, toAmmId} from "Cork-Hook/lib/State.sol";
 
 // TODO : integrate extsload for analytics purposes
+// TODO : add minimum output amount for deposit vault
 
 /**
  * @title ModuleCore Contract
