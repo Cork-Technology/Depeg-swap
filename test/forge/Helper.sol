@@ -391,9 +391,19 @@ abstract contract Helper is SigUtils, TestHelper {
     }
 
     function initializeProtectedUnitFactory() internal {
+        ERC1967Proxy protectedUnitProxy = new ERC1967Proxy(
+            address(new ProtectedUnitFactory()),
+            abi.encodeWithSignature(
+                "initialize(address,address,address,address)",
+                address(moduleCore),
+                address(corkConfig),
+                address(flashSwapRouter),
+                permit2
+            )
+        );
+        protectedUnitFactory = ProtectedUnitFactory(address(protectedUnitProxy));
+
         protectedUnitRouter = new ProtectedUnitRouter(permit2);
-        protectedUnitFactory =
-            new ProtectedUnitFactory(address(moduleCore), address(corkConfig), address(flashSwapRouter), permit2);
         corkConfig.setProtectedUnitFactory(address(protectedUnitFactory));
     }
 
