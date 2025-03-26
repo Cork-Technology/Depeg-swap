@@ -253,6 +253,14 @@ library VaultLibrary {
         }
     }
 
+    // so for some unknown reason, the compiler just outright refused to compile
+    // if we inline the sync call inside __provideLiquidity function
+    modifier syncLp(State storage self, ICorkHook ammRouter) {
+        _;
+        self.sync(ammRouter);
+    }
+
+    // TODO : solve this compiler shinanegans
     function __provideLiquidity(
         State storage self,
         uint256 raAmount,
@@ -262,11 +270,31 @@ library VaultLibrary {
         ICorkHook ammRouter,
         Tolerance memory tolerance,
         uint256 amountRaOriginal
-    ) internal returns (uint256 lp, uint256 dust) {
-        uint256 dsId = self.globalAssetIdx;
+    ) internal syncLp(self, ammRouter) returns (uint256 lp, uint256 dust) {
+        {
+            address ra = self.info.ra;
+            // no need to provide liquidity if the amount is 0
+            if (_handleZeroLiquidity(raAmount, ctAmount, ra, ctAddress)) {
+                return (0, 0);
+            }
+        }
 
-        address ra = self.info.ra;
-        // no need to provide liquidity if the amount is 0
+        {
+            // we use the returned value here since the amount is already normalized
+            ctAmount =
+                PsmLibrary.unsafeIssueToLv(self, MathHelper.calculateProvideLiquidityAmount(amountRaOriginal, raAmount));
+
+            (lp, dust) = __addLiquidityToAmmUnchecked(
+                raAmount, ctAmount, self.info.ra, ctAddress, ammRouter, tolerance.ra, tolerance.ct
+            );
+        }
+        _addFlashSwapReserveLv(self, flashSwapRouter, self.ds[self.globalAssetIdx], ctAmount);
+    }
+
+    function _handleZeroLiquidity(uint256 raAmount, uint256 ctAmount, address ra, address ctAddress)
+        internal
+        returns (bool)
+    {
         if (raAmount == 0 || ctAmount == 0) {
             if (raAmount != 0) {
                 SafeERC20.safeTransfer(IERC20(ra), msg.sender, raAmount);
@@ -276,18 +304,9 @@ library VaultLibrary {
                 SafeERC20.safeTransfer(IERC20(ctAddress), msg.sender, ctAmount);
             }
 
-            return (0, 0);
+            return true;
         }
-
-        // we use the returned value here since the amount is already normalized
-        ctAmount =
-            PsmLibrary.unsafeIssueToLv(self, MathHelper.calculateProvideLiquidityAmount(amountRaOriginal, raAmount));
-
-        (lp, dust) =
-            __addLiquidityToAmmUnchecked(raAmount, ctAmount, ra, ctAddress, ammRouter, tolerance.ra, tolerance.ct);
-        _addFlashSwapReserveLv(self, flashSwapRouter, self.ds[dsId], ctAmount);
-
-        self.sync(ammRouter);
+        return false;
     }
 
     function __provideAmmLiquidityFromPool(
@@ -486,13 +505,11 @@ library VaultLibrary {
         ICorkHook ammRouter,
         uint256 lp,
         uint256 deadline
-    ) internal returns (uint256 raReceived, uint256 ctReceived) {
+    ) internal syncLp(self, ammRouter) returns (uint256 raReceived, uint256 ctReceived) {
         IERC20(ammRouter.getLiquidityToken(raAddress, ctAddress)).approve(address(ammRouter), lp);
 
         // amountAMin & amountBMin = 0 for 100% tolerence
         (raReceived, ctReceived) = ammRouter.removeLiquidity(raAddress, ctAddress, lp, 0, 0, deadline);
-
-        self.sync(ammRouter);
     }
 
     function _liquidatedLp(State storage self, uint256 dsId, ICorkHook ammRouter, uint256 deadline) internal {
@@ -749,11 +766,11 @@ library VaultLibrary {
         self.vault.pool.withdrawalPool.paBalance -= result.paReceived;
     }
 
-    function vaultLp(State storage self, ICorkHook ammRotuer) internal view returns (uint256) {
+    function vaultLp(State storage self) external view returns (uint256) {
         return self.lpBalance();
     }
 
-    function requestLiquidationFunds(State storage self, uint256 amount, address to) internal {
+    function requestLiquidationFunds(State storage self, uint256 amount, address to) external {
         if (amount > self.vault.pool.withdrawalPool.paBalance) {
             revert IErrors.InsufficientFunds();
         }
@@ -762,12 +779,12 @@ library VaultLibrary {
         SafeERC20.safeTransfer(IERC20(self.info.pa), to, amount);
     }
 
-    function receiveTradeExecuctionResultFunds(State storage self, uint256 amount, address from) internal {
+    function receiveTradeExecuctionResultFunds(State storage self, uint256 amount, address from) external {
         self.vault.balances.ra.lockFrom(amount, from);
     }
 
     function useTradeExecutionResultFunds(State storage self, IDsFlashSwapCore flashSwapRouter, ICorkHook ammRouter)
-        internal
+        external
         returns (uint256 raFunds)
     {
         // convert to free and reset ra balance

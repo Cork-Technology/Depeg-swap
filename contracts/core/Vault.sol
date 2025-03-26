@@ -127,7 +127,7 @@ abstract contract VaultCore is ModuleState, Context, IVault, IVaultLiquidation {
      * @param id The Module id that is used to reference both psm and lv of a given pair
      */
     function vaultLp(Id id) external view returns (uint256) {
-        return states[id].vaultLp(getAmmRouter());
+        return states[id].vaultLp();
     }
 
     function lvAcceptRolloverProfit(Id id, uint256 amount) external {
