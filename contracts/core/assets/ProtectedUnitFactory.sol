@@ -78,15 +78,21 @@ contract ProtectedUnitFactory is IProtectedUnitFactory, OwnableUpgradeable, UUPS
         ) {
             revert ZeroAddress();
         }
+
+        __Ownable_init(msg.sender);
+        __UUPSUpgradeable_init();
+
         moduleCore = _moduleCore;
         config = _config;
         router = _flashSwapRouter;
         permit2 = _permit2;
-
-        __Ownable_init(msg.sender);
-        __UUPSUpgradeable_init();
     }
 
+    /**
+     * @notice Authorizes an upgrade to a new implementation
+     * @dev Only the owner can authorize upgrades
+     * @param newImplementation Address of the new implementation
+     */
     // solhint-disable-next-line no-empty-blocks
     function _authorizeUpgrade(address newImplementation) internal override onlyOwner {}
 
