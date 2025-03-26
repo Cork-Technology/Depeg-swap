@@ -8,6 +8,7 @@ import {ProtectedUnitFactory} from "../../../../contracts/core/assets/ProtectedU
 import {ERC1967Proxy} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 import {Initializable} from "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
+import {ProtectedUnit} from "../../../../contracts/core/assets/ProtectedUnit.sol";
 
 contract ProtectedUnitFactoryTest is Helper {
     address public owner;
@@ -36,7 +37,8 @@ contract ProtectedUnitFactoryTest is Helper {
                 address(moduleCore),
                 address(corkConfig),
                 address(flashSwapRouter),
-                address(permit2)
+                address(permit2),
+                protectedUnitImpl
             )
         );
         ProtectedUnitFactory factory = ProtectedUnitFactory(address(proxy));
@@ -60,7 +62,8 @@ contract ProtectedUnitFactoryTest is Helper {
             address(0),
             address(corkConfig),
             address(flashSwapRouter),
-            address(permit2)
+            address(permit2),
+            protectedUnitImpl
         );
 
         vm.expectRevert(IErrors.ZeroAddress.selector);
@@ -72,7 +75,8 @@ contract ProtectedUnitFactoryTest is Helper {
             address(moduleCore),
             address(0),
             address(flashSwapRouter),
-            address(permit2)
+            address(permit2),
+            protectedUnitImpl
         );
 
         vm.expectRevert(IErrors.ZeroAddress.selector);
@@ -80,7 +84,12 @@ contract ProtectedUnitFactoryTest is Helper {
 
         // Try with zero address for router
         initData = abi.encodeWithSelector(
-            implementation.initialize.selector, address(moduleCore), address(corkConfig), address(0), address(permit2)
+            implementation.initialize.selector,
+            address(moduleCore),
+            address(corkConfig),
+            address(0),
+            address(permit2),
+            protectedUnitImpl
         );
 
         vm.expectRevert(IErrors.ZeroAddress.selector);
@@ -92,7 +101,8 @@ contract ProtectedUnitFactoryTest is Helper {
             address(moduleCore),
             address(corkConfig),
             address(flashSwapRouter),
-            address(0)
+            address(0),
+            protectedUnitImpl
         );
 
         vm.expectRevert(IErrors.ZeroAddress.selector);
@@ -103,7 +113,7 @@ contract ProtectedUnitFactoryTest is Helper {
         // Get the existing factory instance that was deployed in setUp()
         vm.expectRevert(Initializable.InvalidInitialization.selector);
         protectedUnitFactory.initialize(
-            address(moduleCore), address(corkConfig), address(flashSwapRouter), address(permit2)
+            address(moduleCore), address(corkConfig), address(flashSwapRouter), address(permit2), protectedUnitImpl
         );
     }
 
