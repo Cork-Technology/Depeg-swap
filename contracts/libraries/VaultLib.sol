@@ -253,14 +253,6 @@ library VaultLibrary {
         }
     }
 
-    // so for some unknown reason, the compiler just outright refused to compile
-    // if we inline the sync call inside __provideLiquidity function
-    modifier syncLp(State storage self, ICorkHook ammRouter) {
-        _;
-        self.sync(ammRouter);
-    }
-
-    // TODO : solve this compiler shinanegans
     function __provideLiquidity(
         State storage self,
         uint256 raAmount,
@@ -270,7 +262,7 @@ library VaultLibrary {
         ICorkHook ammRouter,
         Tolerance memory tolerance,
         uint256 amountRaOriginal
-    ) internal syncLp(self, ammRouter) returns (uint256 lp, uint256 dust) {
+    ) internal returns (uint256 lp, uint256 dust) {
         {
             address ra = self.info.ra;
             // no need to provide liquidity if the amount is 0
@@ -289,6 +281,8 @@ library VaultLibrary {
             );
         }
         _addFlashSwapReserveLv(self, flashSwapRouter, self.ds[self.globalAssetIdx], ctAmount);
+
+        self.sync(ammRouter);
     }
 
     function _handleZeroLiquidity(uint256 raAmount, uint256 ctAmount, address ra, address ctAddress)
@@ -505,11 +499,12 @@ library VaultLibrary {
         ICorkHook ammRouter,
         uint256 lp,
         uint256 deadline
-    ) internal syncLp(self, ammRouter) returns (uint256 raReceived, uint256 ctReceived) {
+    ) internal returns (uint256 raReceived, uint256 ctReceived) {
         IERC20(ammRouter.getLiquidityToken(raAddress, ctAddress)).approve(address(ammRouter), lp);
 
         // amountAMin & amountBMin = 0 for 100% tolerence
         (raReceived, ctReceived) = ammRouter.removeLiquidity(raAddress, ctAddress, lp, 0, 0, deadline);
+        self.sync(ammRouter);
     }
 
     function _liquidatedLp(State storage self, uint256 dsId, ICorkHook ammRouter, uint256 deadline) internal {
@@ -627,7 +622,7 @@ library VaultLibrary {
         IDsFlashSwapCore flashSwapRouter,
         ICorkHook ammRouter,
         uint256 dsId
-    ) internal {
+    ) public {
         uint256 nav = _calculateSpotNav(self, flashSwapRouter, ammRouter, dsId);
         self.vault.config.navCircuitBreaker.forceUpdateSnapshot(nav);
     }
@@ -794,15 +789,15 @@ library VaultLibrary {
         __provideLiquidityWithRatio(self, raFunds, flashSwapRouter, self.ds[self.globalAssetIdx].ct, ammRouter);
     }
 
-    function liquidationFundsAvailable(State storage self) internal view returns (uint256) {
+    function liquidationFundsAvailable(State storage self) external view returns (uint256) {
         return self.vault.pool.withdrawalPool.paBalance;
     }
 
-    function tradeExecutionFundsAvailable(State storage self) internal view returns (uint256) {
+    function tradeExecutionFundsAvailable(State storage self) external view returns (uint256) {
         return self.vault.balances.ra.locked;
     }
 
-    function receiveLeftoverFunds(State storage self, uint256 amount, address from) internal {
+    function receiveLeftoverFunds(State storage self, uint256 amount, address from) external {
         // transfer PA to the vault
         SafeERC20.safeTransferFrom(IERC20(self.info.pa), from, address(this), amount);
         self.vault.pool.withdrawalPool.paBalance += amount;
