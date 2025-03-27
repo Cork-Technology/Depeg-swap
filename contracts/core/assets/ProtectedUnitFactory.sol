@@ -6,6 +6,7 @@ import {UUPSUpgradeable} from "@openzeppelin/contracts-upgradeable/proxy/utils/U
 import {ProtectedUnit} from "./ProtectedUnit.sol";
 import {Id, Pair, PairLibrary} from "../../libraries/Pair.sol";
 import {IProtectedUnitFactory} from "../../interfaces/IProtectedUnitFactory.sol";
+import {ERC1967Proxy} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 
 /**
  * @title Protected Unit Factory
@@ -28,6 +29,9 @@ contract ProtectedUnitFactory is IProtectedUnitFactory, OwnableUpgradeable, UUPS
     address public config;
     address public router;
     address public permit2;
+
+    /// @notice The implementation contract address for ProtectedUnit
+    address public protectedUnitImpl;
 
     /**
      * @notice Mapping of pair IDs to their corresponding Protected Unit contract addresses
@@ -66,15 +70,19 @@ contract ProtectedUnitFactory is IProtectedUnitFactory, OwnableUpgradeable, UUPS
      * @param _config Address of the CorkConfig contract
      * @param _flashSwapRouter Address of the router contract for flash swaps
      * @param _permit2 Address of the Permit2 contract
+     * @param _protectedUnitImpl Address of the ProtectedUnit implementation
      * @custom:reverts ZeroAddress if any of the input addresses is the zero address
      */
-    function initialize(address _moduleCore, address _config, address _flashSwapRouter, address _permit2)
-        external
-        initializer
-    {
+    function initialize(
+        address _moduleCore,
+        address _config,
+        address _flashSwapRouter,
+        address _permit2,
+        address _protectedUnitImpl
+    ) external initializer {
         if (
             _moduleCore == address(0) || _config == address(0) || _flashSwapRouter == address(0)
-                || _permit2 == address(0)
+                || _permit2 == address(0) || _protectedUnitImpl == address(0)
         ) {
             revert ZeroAddress();
         }
@@ -86,6 +94,7 @@ contract ProtectedUnitFactory is IProtectedUnitFactory, OwnableUpgradeable, UUPS
         config = _config;
         router = _flashSwapRouter;
         permit2 = _permit2;
+        protectedUnitImpl = _protectedUnitImpl;
     }
 
     /**
@@ -134,7 +143,7 @@ contract ProtectedUnitFactory is IProtectedUnitFactory, OwnableUpgradeable, UUPS
 
     /**
      * @notice Creates a new Protected Unit contract
-     * @dev Deploys a new ProtectedUnit and registers it in the factory's mappings
+     * @dev Deploys a new ProtectedUnit proxy and initializes it
      * @param _id Unique Market/PSM/Vault ID from the ModuleCore contract
      * @param _pa Address of the Protected Asset token
      * @param _ra Address of the Return Asset token
@@ -154,12 +163,14 @@ contract ProtectedUnitFactory is IProtectedUnitFactory, OwnableUpgradeable, UUPS
             revert ProtectedUnitExists();
         }
 
-        // Deploy a new ProtectedUnit contract
-        ProtectedUnit newProtectedUnit =
-            new ProtectedUnit(moduleCore, _id, _pa, _ra, _pairName, _mintCap, config, router, permit2);
-        newUnit = address(newProtectedUnit);
+        bytes memory initData = abi.encodeWithSelector(
+            ProtectedUnit.initialize.selector, moduleCore, _id, _pa, _ra, _pairName, _mintCap, config, router, permit2
+        );
 
-        // Store the address of the new contract
+        // Deploy a new ERC1967 proxy pointing to the ProtectedUnit implementation
+        newUnit = address(new ERC1967Proxy(protectedUnitImpl, initData));
+
+        // Store the address of the new protected unit proxy contract
         protectedUnitContracts[_id] = newUnit;
 
         // solhint-disable-next-line gas-increment-by-one
@@ -186,5 +197,47 @@ contract ProtectedUnitFactory is IProtectedUnitFactory, OwnableUpgradeable, UUPS
      */
     function deRegisterProtectedUnit(Id _id) external onlyConfig {
         delete protectedUnitContracts[_id];
+    }
+
+    /**
+     * @notice Updates the implementation contract for new ProtectedUnit instances
+     * @dev Only the owner can update the implementation
+     * @param _newImplementation Address of the new implementation
+     * @custom:emits ProtectedUnitImplUpdated when the implementation is updated
+     * @custom:reverts ZeroAddress if the new implementation is the zero address
+     * @custom:reverts OnlyOwner if the caller is not the owner
+     */
+    function updateProtectedUnitImpl(address _newImplementation) external onlyOwner {
+        if (_newImplementation == address(0)) {
+            revert ZeroAddress();
+        }
+        address oldImpl = protectedUnitImpl;
+        protectedUnitImpl = _newImplementation;
+        emit ProtectedUnitImplUpdated(oldImpl, _newImplementation);
+    }
+
+    /**
+     * @notice Upgrades a Protected Unit contract to a latest implementation
+     * @dev Only the owner can upgrade a Protected Unit contract
+     * @param protectedUnitAdd Address of the Protected Unit contract to upgrade
+     * @custom:emits ProtectedUnitUpgraded when the Protected Unit is upgraded
+     * @custom:reverts OnlyOwner if the caller is not the owner
+     */
+    function upgradeProtectedUnit(address protectedUnitAdd) external onlyOwner {
+        UUPSUpgradeable(protectedUnitAdd).upgradeToAndCall(protectedUnitImpl, bytes(""));
+        emit ProtectedUnitUpgraded(protectedUnitAdd);
+    }
+
+    /**
+     * @notice Renounces upgradeability of a Protected Unit contract
+     * @dev Only the owner can renounce upgradeability
+     * @param protectedUnitAdd Address of the Protected Unit contract to renounce upgradeability
+     * @custom:emits RenouncedUpgradeability when upgradeability is renounced
+     * @custom:reverts OnlyOwner if the caller is not the owner
+     * @custom:reverts AlreadyRenounced if upgradeability is already renounced
+     */
+    function renounceUpgradeability(address protectedUnitAdd) external onlyOwner {
+        ProtectedUnit(protectedUnitAdd).renounceUpgradeability();
+        emit RenouncedUpgradeability(protectedUnitAdd);
     }
 }

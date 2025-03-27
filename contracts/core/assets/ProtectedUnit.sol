@@ -1,12 +1,16 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.24;
 
-// TODO : support permit
-import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
-import {Pausable} from "@openzeppelin/contracts/utils/Pausable.sol";
-import {ERC20Burnable} from "@openzeppelin/contracts/token/ERC20/extensions/ERC20Burnable.sol";
-import {ERC20} from "@openzeppelin/contracts/token/ERC20/extensions/ERC20Permit.sol";
-import {ReentrancyGuardTransient} from "@openzeppelin/contracts/utils/ReentrancyGuardTransient.sol";
+import {UUPSUpgradeable} from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
+import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
+import {PausableUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/PausableUpgradeable.sol";
+import {ERC20BurnableUpgradeable} from
+    "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/ERC20BurnableUpgradeable.sol";
+import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import {ReentrancyGuardTransientUpgradeable} from
+    "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardTransientUpgradeable.sol";
+import {ERC20PermitUpgradeable} from
+    "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/ERC20PermitUpgradeable.sol";
 import {SafeERC20, IERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {IProtectedUnit} from "../../interfaces/IProtectedUnit.sol";
 import {Id} from "../../libraries/Pair.sol";
@@ -16,7 +20,6 @@ import {CorkConfig} from "./../CorkConfig.sol";
 import {IProtectedUnitLiquidation} from "./../../interfaces/IProtectedUnitLiquidation.sol";
 import {IDsFlashSwapCore} from "./../../interfaces/IDsFlashSwapRouter.sol";
 import {ModuleCore} from "./../ModuleCore.sol";
-import {ERC20Permit} from "@openzeppelin/contracts/token/ERC20/extensions/ERC20Permit.sol";
 import {TransferHelper} from "./../../libraries/TransferHelper.sol";
 import {IPermit2} from "permit2/src/interfaces/IPermit2.sol";
 import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
@@ -39,33 +42,36 @@ struct DSData {
  * @author Cork Protocol Team
  */
 contract ProtectedUnit is
-    ERC20Permit,
-    ReentrancyGuardTransient,
-    Ownable,
-    Pausable,
+    UUPSUpgradeable,
+    ERC20PermitUpgradeable,
+    ReentrancyGuardTransientUpgradeable,
+    OwnableUpgradeable,
+    PausableUpgradeable,
     IProtectedUnit,
     IProtectedUnitLiquidation,
-    ERC20Burnable
+    ERC20BurnableUpgradeable
 {
     string public constant DS_PERMIT_MINT_TYPEHASH = "mint(uint256 amount)";
 
     using SafeERC20 for IERC20;
 
-    CorkConfig public immutable CONFIG;
-    IDsFlashSwapCore public immutable FLASHSWAP_ROUTER;
-    ModuleCore public immutable MODULE_CORE;
+    CorkConfig public config;
+    IDsFlashSwapCore public flashswapRouter;
+    ModuleCore public moduleCore;
 
     /// @notice Permit2 contract address
-    IPermit2 public immutable PERMIT2;
+    IPermit2 public permit2;
+
+    address public factory;
 
     /**
      * @notice The ERC20 token representing the Pegged Asset (PA)
      * @dev One of the underlying assets in the Protected Unit bundle
      */
-    ERC20 public immutable PA;
+    ERC20 public pa;
 
     /// @notice The ERC20 token representing the Redemption Asset (RA)
-    ERC20 public immutable RA;
+    ERC20 public ra;
 
     uint256 public dsReserve;
     uint256 public paReserve;
@@ -90,41 +96,12 @@ contract ProtectedUnit is
     /// @notice Mapping from DS token address to its index in dsHistory array
     mapping(address => uint256) private dsIndexMap;
 
-    /**
-     * @notice Creates a new Protected Unit token contract
-     * @param _moduleCore Address of the core module that manages this token
-     * @param _id Unique identifier for RA:PA market in modulecore
-     * @param _pa Address of the Pegged Asset token
-     * @param _ra Address of the Redemption Asset token
-     * @param _pairName Human-readable name for this token pair
-     * @param _mintCap Maximum number of tokens that can be created
-     * @param _config Address of the configuration contract
-     * @param _flashSwapRouter Address of the flash swap router
-     * @param _permit2 Address of the Permit2 contract
-     */
-    constructor(
-        address _moduleCore,
-        Id _id,
-        address _pa,
-        address _ra,
-        string memory _pairName,
-        uint256 _mintCap,
-        address _config,
-        address _flashSwapRouter,
-        address _permit2
-    )
-        ERC20(string(abi.encodePacked("Protected Unit - ", _pairName)), string(abi.encodePacked("PU - ", _pairName)))
-        ERC20Permit(string(abi.encodePacked("Protected Unit - ", _pairName)))
-        Ownable(_config)
-    {
-        MODULE_CORE = ModuleCore(_moduleCore);
-        id = _id;
-        PA = ERC20(_pa);
-        RA = ERC20(_ra);
-        mintCap = _mintCap;
-        FLASHSWAP_ROUTER = IDsFlashSwapCore(_flashSwapRouter);
-        CONFIG = CorkConfig(_config);
-        PERMIT2 = IPermit2(_permit2);
+    /// @notice __gap variable to prevent storage collisions
+    // slither-disable-next-line unused-state
+    uint256[49] private __gap;
+
+    constructor() {
+        _disableInitializers();
     }
 
     /**
@@ -141,7 +118,7 @@ contract ProtectedUnit is
      * @custom:reverts OnlyLiquidator if caller is not whitelisted
      */
     modifier onlyLiquidationContract() {
-        if (!CONFIG.isLiquidationWhitelisted(msg.sender)) {
+        if (!config.isLiquidationWhitelisted(msg.sender)) {
             revert OnlyLiquidator();
         }
         _;
@@ -153,7 +130,7 @@ contract ProtectedUnit is
      * @custom:reverts InvalidToken if token is neither PA nor RA
      */
     modifier onlyValidToken(address token) {
-        if (token != address(PA) && token != address(RA)) {
+        if (token != address(pa) && token != address(ra)) {
             revert InvalidToken();
         }
         _;
@@ -164,8 +141,19 @@ contract ProtectedUnit is
      * @custom:reverts OnlyLiquidatorOrOwner if caller is not authorized
      */
     modifier onlyOwnerOrLiquidator() {
-        if (msg.sender != owner() && !CONFIG.isLiquidationWhitelisted(msg.sender)) {
+        if (msg.sender != owner() && !config.isLiquidationWhitelisted(msg.sender)) {
             revert OnlyLiquidatorOrOwner();
+        }
+        _;
+    }
+
+    /**
+     * @notice Restricts function access to the factory contract
+     * @custom:reverts OnlyFactory if caller is not the factory
+     */
+    modifier onlyFactory() {
+        if (msg.sender != factory) {
+            revert OnlyFactory();
         }
         _;
     }
@@ -177,13 +165,78 @@ contract ProtectedUnit is
     }
 
     /**
+     * @notice Initializes the ProtectedUnit contract
+     * @param _moduleCore Address of the core module that manages this token
+     * @param _id Unique identifier for RA:PA market in modulecore
+     * @param _pa Address of the Pegged Asset token
+     * @param _ra Address of the Redemption Asset token
+     * @param _pairName Human-readable name for this token pair
+     * @param _mintCap Maximum number of tokens that can be created
+     * @param _config Address of the configuration contract
+     * @param _flashSwapRouter Address of the flash swap router
+     * @param _permit2 Address of the Permit2 contract
+     */
+    function initialize(
+        address _moduleCore,
+        Id _id,
+        address _pa,
+        address _ra,
+        string memory _pairName,
+        uint256 _mintCap,
+        address _config,
+        address _flashSwapRouter,
+        address _permit2
+    ) external initializer {
+        __Ownable_init(_config);
+        __UUPSUpgradeable_init();
+        __ERC20_init(
+            string(abi.encodePacked("Protected Unit - ", _pairName)), string(abi.encodePacked("PU - ", _pairName))
+        );
+        __ERC20Permit_init(string(abi.encodePacked("Protected Unit - ", _pairName)));
+        __ERC20Burnable_init();
+        __Pausable_init();
+        __ReentrancyGuardTransient_init();
+
+        moduleCore = ModuleCore(_moduleCore);
+        id = _id;
+        pa = ERC20(_pa);
+        ra = ERC20(_ra);
+        mintCap = _mintCap;
+        flashswapRouter = IDsFlashSwapCore(_flashSwapRouter);
+        config = CorkConfig(_config);
+        permit2 = IPermit2(_permit2);
+        factory = msg.sender;
+    }
+
+    /**
+     * @notice Authorizes an upgrade to a new implementation
+     * @dev Only the factory can authorize upgrades
+     * @param newImplementation Address of the new implementation
+     */
+    // solhint-disable-next-line no-empty-blocks
+    function _authorizeUpgrade(address newImplementation) internal override onlyFactory {}
+
+    /**
+     * @notice Renounces upgradeability of this contract
+     * @dev Only the factory can renounce upgradeability
+     * @custom:reverts OnlyFactory if caller is not the factory
+     * @custom:reverts AlreadyRenounced if upgradeability is already renounced
+     */
+    function renounceUpgradeability() external onlyFactory {
+        if (factory == address(0)) {
+            revert AlreadyRenounced();
+        }
+        factory = address(0);
+    }
+
+    /**
      * @notice Updates the contract's internal record of token reserves
      * @dev Fetches the latest DS token if needed and updates all reserves
      */
     function _sync() internal autoUpdateDS {
         dsReserve = ds.balanceOf(address(this));
-        paReserve = PA.balanceOf(address(this));
-        raReserve = RA.balanceOf(address(this));
+        paReserve = pa.balanceOf(address(this));
+        raReserve = ra.balanceOf(address(this));
     }
 
     /// @notice Synchronizes the contract's internal record of token reserves
@@ -198,8 +251,8 @@ contract ProtectedUnit is
      * @custom:reverts NoValidDSExist if no valid DS token exists
      */
     function _fetchLatestDS() internal view returns (Asset) {
-        uint256 dsId = MODULE_CORE.lastDsId(id);
-        (, address dsAdd) = MODULE_CORE.swapAsset(id, dsId);
+        uint256 dsId = moduleCore.lastDsId(id);
+        (, address dsAdd) = moduleCore.swapAsset(id, dsId);
 
         if (dsAdd == address(0) || Asset(dsAdd).isExpired()) {
             revert NoValidDSExist();
@@ -286,11 +339,11 @@ contract ProtectedUnit is
         IDsFlashSwapCore.BuyAprroxParams calldata params,
         IDsFlashSwapCore.OffchainGuess calldata offchainGuess
     ) external autoUpdateDS onlyOwnerOrLiquidator autoSync returns (uint256 amountOut) {
-        uint256 dsId = MODULE_CORE.lastDsId(id);
-        IERC20(RA).safeIncreaseAllowance(address(FLASHSWAP_ROUTER), amount);
+        uint256 dsId = moduleCore.lastDsId(id);
+        IERC20(ra).safeIncreaseAllowance(address(flashswapRouter), amount);
 
         IDsFlashSwapCore.SwapRaForDsReturn memory result =
-            FLASHSWAP_ROUTER.swapRaforDs(id, dsId, amount, amountOutMin, params, offchainGuess);
+            flashswapRouter.swapRaforDs(id, dsId, amount, amountOutMin, params, offchainGuess);
 
         amountOut = result.amountOut;
 
@@ -307,12 +360,12 @@ contract ProtectedUnit is
      * @custom:emits RaRedeemed when redemption is successful
      */
     function redeemRaWithDsPa(uint256 amountPa, uint256 amountDs) external autoUpdateDS onlyOwner autoSync {
-        uint256 dsId = MODULE_CORE.lastDsId(id);
+        uint256 dsId = moduleCore.lastDsId(id);
 
-        IERC20(ds).safeIncreaseAllowance(address(MODULE_CORE), amountDs);
-        IERC20(PA).safeIncreaseAllowance(address(MODULE_CORE), amountPa);
+        IERC20(ds).safeIncreaseAllowance(address(moduleCore), amountDs);
+        IERC20(pa).safeIncreaseAllowance(address(moduleCore), amountPa);
 
-        MODULE_CORE.redeemRaWithDsPa(id, dsId, amountPa);
+        moduleCore.redeemRaWithDsPa(id, dsId, amountPa);
 
         // auto pause
         _pause();
@@ -363,12 +416,12 @@ contract ProtectedUnit is
 
     /// @notice Returns the PA reserve in normalized fixed point representation
     function _selfPaReserve() internal view returns (uint256) {
-        return TransferHelper.tokenNativeDecimalsToFixed(paReserve, PA);
+        return TransferHelper.tokenNativeDecimalsToFixed(paReserve, pa);
     }
 
     /// @notice Returns the RA reserve in normalized fixed point representation
     function _selfRaReserve() internal view returns (uint256) {
-        return TransferHelper.tokenNativeDecimalsToFixed(raReserve, RA);
+        return TransferHelper.tokenNativeDecimalsToFixed(raReserve, ra);
     }
 
     /// @notice Returns the DS reserve
@@ -400,7 +453,7 @@ contract ProtectedUnit is
 
         (dsAmount, paAmount) = ProtectedUnitMath.previewMint(amount, _selfPaReserve(), _selfDsReserve(), totalSupply());
 
-        paAmount = TransferHelper.fixedToTokenNativeDecimals(paAmount, PA);
+        paAmount = TransferHelper.fixedToTokenNativeDecimals(paAmount, pa);
     }
 
     /**
@@ -434,10 +487,10 @@ contract ProtectedUnit is
     function __mint(uint256 amount, uint256 dsAmount, uint256 paAmount) internal {
         // this calculation is based on the assumption that the DS token has 18 decimals but pa can have different decimals
         dsAmount = TransferHelper.fixedToTokenNativeDecimals(dsAmount, ds);
-        paAmount = TransferHelper.fixedToTokenNativeDecimals(paAmount, PA);
+        paAmount = TransferHelper.fixedToTokenNativeDecimals(paAmount, pa);
 
-        PERMIT2.transferFrom(msg.sender, address(this), SafeCast.toUint160(amount), address(ds));
-        PERMIT2.transferFrom(msg.sender, address(this), SafeCast.toUint160(dsAmount), address(PA));
+        permit2.transferFrom(msg.sender, address(this), SafeCast.toUint160(amount), address(ds));
+        permit2.transferFrom(msg.sender, address(this), SafeCast.toUint160(dsAmount), address(pa));
 
         dsHistory[dsIndexMap[address(ds)]].totalDeposited += amount;
 
@@ -470,7 +523,7 @@ contract ProtectedUnit is
         // Assumes that DS is the first token and PA is the second token in the permitted array
         if (
             signature.length == 0 || permit.details.length != 2 || permit.details[0].token != address(ds)
-                || permit.details[1].token != address(PA)
+                || permit.details[1].token != address(pa)
         ) {
             revert InvalidSignature();
         }
@@ -485,7 +538,7 @@ contract ProtectedUnit is
         }
 
         // Batch transfer tokens from user to this contract using Permit2
-        PERMIT2.permit(msg.sender, permit, signature);
+        permit2.permit(msg.sender, permit, signature);
 
         // Mint the tokens to the owner
         __mint(amount, dsAmount, paAmount);
@@ -561,9 +614,9 @@ contract ProtectedUnit is
 
         _burnFrom(dissolver, amount);
 
-        TransferHelper.transferNormalize(PA, dissolver, paAmount);
+        TransferHelper.transferNormalize(pa, dissolver, paAmount);
         _transferDs(dissolver, dsAmount);
-        TransferHelper.transferNormalize(RA, dissolver, raAmount);
+        TransferHelper.transferNormalize(ra, dissolver, raAmount);
 
         emit Burn(dissolver, amount, dsAmount, paAmount);
     }
@@ -622,11 +675,11 @@ contract ProtectedUnit is
      * @custom:reverts If any token transfer fails
      */
     function skim(address to) external nonReentrant {
-        if (PA.balanceOf(address(this)) - paReserve > 0) {
-            IERC20(PA).safeTransfer(to, PA.balanceOf(address(this)) - paReserve);
+        if (pa.balanceOf(address(this)) - paReserve > 0) {
+            IERC20(pa).safeTransfer(to, pa.balanceOf(address(this)) - paReserve);
         }
-        if (RA.balanceOf(address(this)) - raReserve > 0) {
-            IERC20(RA).safeTransfer(to, RA.balanceOf(address(this)) - raReserve);
+        if (ra.balanceOf(address(this)) - raReserve > 0) {
+            IERC20(ra).safeTransfer(to, ra.balanceOf(address(this)) - raReserve);
         }
         if (ds.balanceOf(address(this)) - dsReserve > 0) {
             IERC20(ds).safeTransfer(to, ds.balanceOf(address(this)) - dsReserve);
