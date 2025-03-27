@@ -125,9 +125,8 @@ library DsFlashSwaplibrary {
         uint256 end = self.ds[dsId].ds.expiry();
         uint256 current = block.timestamp;
 
-        pressurePercentage = SwapperMathLibrary.calculateOptimalSellPressure(
-            start, end, current, dsOut, raProvided, self.reserveSellPressurePercentageThreshold
-        );
+        pressurePercentage =
+            SwapperMathLibrary.calculateOptimalSellPressure(start, end, current, dsOut, raProvided, threshold);
     }
 
     function emptyReservePartialLv(ReserveState storage self, uint256 dsId, uint256 amount, address to)
