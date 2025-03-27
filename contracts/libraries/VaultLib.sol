@@ -23,6 +23,7 @@ import {IWithdrawalRouter} from "./../interfaces/IWithdrawalRouter.sol";
 import {TransferHelper} from "./TransferHelper.sol";
 import {NavCircuitBreakerLibrary} from "./NavCircuitBreaker.sol";
 import {VaultBalanceLibrary} from "./VaultBalancesLib.sol";
+import "forge-std/console.sol";
 
 /**
  * @title Vault Library Contract
@@ -52,6 +53,32 @@ library VaultLibrary {
         self.balances.ra = RedemptionAssetManagerLibrary.initialize(ra);
     }
 
+    struct BalanceChange {
+        uint256 beforeRa;
+        uint256 beforeCt;
+        uint256 afterRa;
+        uint256 afterCt;
+    }
+
+    function _addLiquidity(
+        address raAddress,
+        address ctAddress,
+        uint256 raAmount,
+        uint256 ctAmount,
+        uint256 raTolerance,
+        uint256 ctTolerance,
+        ICorkHook ammRouter
+    ) internal returns (uint256 lp, BalanceChange memory balanceChange) {
+        balanceChange.beforeRa = IERC20(raAddress).balanceOf(address(this));
+        balanceChange.beforeCt = IERC20(ctAddress).balanceOf(address(this));
+
+        (,, lp) =
+            ammRouter.addLiquidity(raAddress, ctAddress, raAmount, ctAmount, raTolerance, ctTolerance, block.timestamp);
+
+        balanceChange.afterRa = IERC20(raAddress).balanceOf(address(this));
+        balanceChange.afterCt = IERC20(ctAddress).balanceOf(address(this));
+    }
+
     function __addLiquidityToAmmUnchecked(
         uint256 raAmount,
         uint256 ctAmount,
@@ -64,19 +91,18 @@ library VaultLibrary {
         IERC20(raAddress).safeIncreaseAllowance(address(ammRouter), raAmount);
         IERC20(ctAddress).safeIncreaseAllowance(address(ammRouter), ctAmount);
 
-        uint256 raAdded;
-        uint256 ctAdded;
+        BalanceChange memory balanceChange;
 
-        (raAdded, ctAdded, lp) =
-            ammRouter.addLiquidity(raAddress, ctAddress, raAmount, ctAmount, raTolerance, ctTolerance, block.timestamp);
+        (lp, balanceChange) =
+            _addLiquidity(raAddress, ctAddress, raAmount, ctAmount, raTolerance, ctTolerance, ammRouter);
 
-        uint256 dustCt = ctAmount - ctAdded;
+        uint256 dustCt = ctAmount - (balanceChange.beforeCt - balanceChange.afterCt);
 
         if (dustCt > 0) {
             SafeERC20.safeTransfer(IERC20(ctAddress), msg.sender, dustCt);
         }
 
-        uint256 dustRa = raAmount - raAdded;
+        uint256 dustRa = raAmount - (balanceChange.beforeRa - balanceChange.afterRa);
 
         if (dustRa > 0) {
             SafeERC20.safeTransfer(IERC20(raAddress), msg.sender, dustRa);
