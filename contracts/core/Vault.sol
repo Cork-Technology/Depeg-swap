@@ -24,7 +24,7 @@ abstract contract VaultCore is ModuleState, Context, IVault, IVaultLiquidation {
      * @param amount The amount of the redemption asset(ra) deposited
      * @return received The amount of lv received
      */
-    function depositLv(Id id, uint256 amount, uint256 raTolerance, uint256 ctTolerance)
+    function depositLv(Id id, uint256 amount, uint256 raTolerance, uint256 ctTolerance, uint256 minimumLvAmountOut)
         external
         override
         nonReentrant
@@ -33,6 +33,9 @@ abstract contract VaultCore is ModuleState, Context, IVault, IVaultLiquidation {
         LVDepositNotPaused(id);
         State storage state = states[id];
         received = state.deposit(_msgSender(), amount, getRouterCore(), getAmmRouter(), raTolerance, ctTolerance);
+
+        if (received < minimumLvAmountOut) revert InsufficientOutputAmount(minimumLvAmountOut, received);
+
         emit LvDeposited(id, _msgSender(), received, amount);
     }
 
