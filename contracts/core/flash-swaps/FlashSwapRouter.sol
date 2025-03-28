@@ -395,9 +395,11 @@ contract RouterState is
         if (amountSellFromReserve < RESERVE_MINIMUM_SELL_AMOUNT || self.gradualSaleDisabled) {
             return (0);
         }
-        console.log("before sellDsReserve");
-        _sellDsReserve(assetPair, SellDsParams(params.reserveId, params.dsId, amountSellFromReserve));
-        console.log("after sellDsReserve");
+
+        bool success = _sellDsReserve(assetPair, SellDsParams(params.reserveId, params.dsId, amountSellFromReserve));
+
+        // we return 0 in case it fails
+        pressurePercentage = success ? pressurePercentage : 0;
     }
 
     function calculateSellFromReserve(ReserveState storage self, uint256 amountOut, uint256 dsId, uint256 raProvided)
