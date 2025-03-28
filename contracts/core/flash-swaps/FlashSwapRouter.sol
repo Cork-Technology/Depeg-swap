@@ -395,7 +395,10 @@ contract RouterState is
             return (0);
         }
 
-        _sellDsReserve(assetPair, SellDsParams(params.reserveId, params.dsId, amountSellFromReserve));
+        bool success = _sellDsReserve(assetPair, SellDsParams(params.reserveId, params.dsId, amountSellFromReserve));
+
+        // we return 0 in case it fails
+        pressurePercentage = success ? pressurePercentage : 0;
     }
 
     function calculateSellFromReserve(ReserveState storage self, uint256 amountOut, uint256 dsId, uint256 raProvided)
