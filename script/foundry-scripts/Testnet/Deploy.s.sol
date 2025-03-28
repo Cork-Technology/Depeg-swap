@@ -53,6 +53,7 @@ contract DeployScript is Script {
     address public deployer = vm.addr(pk);
 
     address internal constant CREATE_2_PROXY = 0x4e59b44847b379578588920cA78FbF26c0B4956C;
+    address internal constant PERMIT2 = 0x000000000022D473030F116dDEE9F6B43aC78BA3;
 
     address wamuETH = 0x22222228802B45325E0b8D0152C633449Ab06913;
     address bsETH = 0x33333335a697843FDd47D599680Ccb91837F59aF;
@@ -211,14 +212,30 @@ contract DeployScript is Script {
         console.log("Liquidator                      : ", address(liquidator));
         console.log("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-");
 
-        // Deploy the ProtectedUnitFactry contract
-        protectedUnitRouter = new ProtectedUnitRouter();
+        // Deploy the ProtectedUnitRouter contract
+        protectedUnitRouter = new ProtectedUnitRouter(PERMIT2);
         console.log("ProtectedUnit Router            : ", address(protectedUnitRouter));
 
-        protectedUnitFactory = new ProtectedUnitFactory(address(moduleCore), address(config), address(flashswapRouter));
-        config.setProtectedUnitFactory(address(protectedUnitFactory));
+        // Deploy the ProtectedUnitFactory implementation (logic) contract
+        ProtectedUnitFactory protectedUnitFactoryImpl = new ProtectedUnitFactory();
+        console.log("ProtectedUnitFactory Implementation: ", address(protectedUnitFactoryImpl));
+
+        data = abi.encodeWithSelector(
+            protectedUnitFactoryImpl.initialize.selector,
+            address(moduleCore),
+            address(config),
+            address(flashswapRouter),
+            address(PERMIT2)
+        );
+        ERC1967Proxy protectedUnitFactoryProxy = new ERC1967Proxy(address(protectedUnitFactoryImpl), data);
+        protectedUnitFactory = ProtectedUnitFactory(address(protectedUnitFactoryProxy));
         console.log("ProtectedUnit Factory           : ", address(protectedUnitFactory));
 
+        config.setProtectedUnitFactory(address(protectedUnitFactory));
+        console.log("ProtectedUnit Factory configured in Config contract");
+        console.log("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-");
+
+        // Deploy the Withdrawal contract
         withdrawal = new Withdrawal(address(moduleCore));
         console.log("Withdrawal                      : ", address(withdrawal));
 

@@ -220,6 +220,10 @@ contract AssetFactory is IAssetFactory, OwnableUpgradeable, UUPSUpgradeable {
                     params.dsId
                 )
             );
+
+            Asset(ct).setMarketId(id);
+            Asset(ct).setModuleCore(moduleCore);
+
             ds = address(
                 new Asset(
                     _generateSymbolWithVariant(asset.pa, expiry, DS_PREFIX, id),
@@ -229,6 +233,9 @@ contract AssetFactory is IAssetFactory, OwnableUpgradeable, UUPSUpgradeable {
                     params.dsId
                 )
             );
+
+            Asset(ds).setMarketId(id);
+            Asset(ds).setModuleCore(moduleCore);
         }
 
         swapAssets[id].push(SwapPair(ct, ds));
@@ -256,16 +263,20 @@ contract AssetFactory is IAssetFactory, OwnableUpgradeable, UUPSUpgradeable {
     ) external override onlyModuleCore returns (address lv) {
         // signal that a pair actually exists. Only after this it's possible to deploy a swap asset for this pair
         Pair memory pair = Pair(_pa, _ra, _initialArp, _expiryInterval, _exchangeRateProvider);
+        Id marketId = pair.toId();
 
         {
             string memory pairname = _generateSymbolWithVariant(_pa, 0, LV_PREFIX, pair.toId());
             lv = address(new Asset(pairname, _owner, 0, 0, 0));
+
+            Asset(lv).setMarketId(marketId);
+            Asset(lv).setModuleCore(moduleCore);
         }
 
         // solhint-disable-next-line gas-increment-by-one
         pairs[idx++] = pair;
 
-        lvs[pair.toId()] = lv;
+        lvs[marketId] = lv;
 
         emit LvAssetDeployed(_ra, _pa, lv);
     }

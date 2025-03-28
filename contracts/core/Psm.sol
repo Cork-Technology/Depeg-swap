@@ -262,6 +262,8 @@ abstract contract PsmCore is IPSMcore, ModuleState, Context {
         onlyFlashSwapRouter();
         State storage state = states[id];
         state.acceptRolloverProfit(profit);
+
+        emit PsmDsSaleProfitReceived(msg.sender, id, profit);
     }
 
     function rolloverExpiredCt(

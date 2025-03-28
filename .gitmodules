@@ -25,3 +25,6 @@
 [submodule "lib/Cork-Hook"]
 	path = lib/Cork-Hook
 	url = https://github.com/Cork-Technology/Cork-Hook
+[submodule "lib/permit2"]
+	path = lib/permit2
+	url = https://github.com/Uniswap/permit2

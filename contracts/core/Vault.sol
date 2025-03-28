@@ -119,7 +119,7 @@ abstract contract VaultCore is ModuleState, Context, IVault, IVaultLiquidation {
         onlyFlashSwapRouter();
         State storage state = states[id];
         state.allocateFeesToVault(amount);
-        emit ProfitReceived(msg.sender, amount);
+        emit VaultDsSaleProfitReceived(msg.sender, id, amount);
     }
 
     /**

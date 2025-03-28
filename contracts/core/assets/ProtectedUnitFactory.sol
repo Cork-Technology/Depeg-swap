@@ -1,9 +1,12 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.24;
 
+import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
+import {UUPSUpgradeable} from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import {ProtectedUnit} from "./ProtectedUnit.sol";
 import {Id, Pair, PairLibrary} from "../../libraries/Pair.sol";
 import {IProtectedUnitFactory} from "../../interfaces/IProtectedUnitFactory.sol";
+import {ERC1967Proxy} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
 
 /**
  * @title Protected Unit Factory
@@ -12,7 +15,7 @@ import {IProtectedUnitFactory} from "../../interfaces/IProtectedUnitFactory.sol"
  *      Implements access control through modifiers to restrict sensitive operations.
  * @author Cork Protocol Team
  */
-contract ProtectedUnitFactory is IProtectedUnitFactory {
+contract ProtectedUnitFactory is IProtectedUnitFactory, OwnableUpgradeable, UUPSUpgradeable {
     using PairLibrary for Pair;
 
     /**
@@ -22,9 +25,13 @@ contract ProtectedUnitFactory is IProtectedUnitFactory {
     uint256 internal idx;
 
     // Addresses needed for the construction of new ProtectedUnit contracts
-    address public immutable MODULE_CORE;
-    address public immutable CONFIG;
-    address public immutable ROUTER;
+    address public moduleCore;
+    address public config;
+    address public router;
+    address public permit2;
+
+    /// @notice The implementation contract address for ProtectedUnit
+    address public protectedUnitImpl;
 
     /**
      * @notice Mapping of pair IDs to their corresponding Protected Unit contract addresses
@@ -43,27 +50,60 @@ contract ProtectedUnitFactory is IProtectedUnitFactory {
      * @custom:reverts NotConfig if msg.sender is not the CONFIG address
      */
     modifier onlyConfig() {
-        if (msg.sender != CONFIG) {
+        if (msg.sender != config) {
             revert NotConfig();
         }
         _;
     }
 
+    /// @notice __gap variable to prevent storage collisions
+    // slither-disable-next-line unused-state
+    uint256[49] private __gap;
+
+    constructor() {
+        _disableInitializers();
+    }
+
     /**
-     * @notice Sets up the factory with required contract addresses
+     * @notice initializes protected unit factory with required contract addresses
      * @param _moduleCore Address of the ModuleCore contract
      * @param _config Address of the CorkConfig contract
      * @param _flashSwapRouter Address of the router contract for flash swaps
+     * @param _permit2 Address of the Permit2 contract
+     * @param _protectedUnitImpl Address of the ProtectedUnit implementation
      * @custom:reverts ZeroAddress if any of the input addresses is the zero address
      */
-    constructor(address _moduleCore, address _config, address _flashSwapRouter) {
-        if (_moduleCore == address(0) || _config == address(0) || _flashSwapRouter == address(0)) {
+    function initialize(
+        address _moduleCore,
+        address _config,
+        address _flashSwapRouter,
+        address _permit2,
+        address _protectedUnitImpl
+    ) external initializer {
+        if (
+            _moduleCore == address(0) || _config == address(0) || _flashSwapRouter == address(0)
+                || _permit2 == address(0) || _protectedUnitImpl == address(0)
+        ) {
             revert ZeroAddress();
         }
-        MODULE_CORE = _moduleCore;
-        CONFIG = _config;
-        ROUTER = _flashSwapRouter;
+
+        __Ownable_init(msg.sender);
+        __UUPSUpgradeable_init();
+
+        moduleCore = _moduleCore;
+        config = _config;
+        router = _flashSwapRouter;
+        permit2 = _permit2;
+        protectedUnitImpl = _protectedUnitImpl;
     }
+
+    /**
+     * @notice Authorizes an upgrade to a new implementation
+     * @dev Only the owner can authorize upgrades
+     * @param newImplementation Address of the new implementation
+     */
+    // solhint-disable-next-line no-empty-blocks
+    function _authorizeUpgrade(address newImplementation) internal override onlyOwner {}
 
     /**
      * @notice Gets a list of Protected Unit contracts created by this factory
@@ -103,7 +143,7 @@ contract ProtectedUnitFactory is IProtectedUnitFactory {
 
     /**
      * @notice Creates a new Protected Unit contract
-     * @dev Deploys a new ProtectedUnit and registers it in the factory's mappings
+     * @dev Deploys a new ProtectedUnit proxy and initializes it
      * @param _id Unique Market/PSM/Vault ID from the ModuleCore contract
      * @param _pa Address of the Protected Asset token
      * @param _ra Address of the Return Asset token
@@ -123,12 +163,14 @@ contract ProtectedUnitFactory is IProtectedUnitFactory {
             revert ProtectedUnitExists();
         }
 
-        // Deploy a new ProtectedUnit contract
-        ProtectedUnit newProtectedUnit =
-            new ProtectedUnit(MODULE_CORE, _id, _pa, _ra, _pairName, _mintCap, CONFIG, ROUTER);
-        newUnit = address(newProtectedUnit);
+        bytes memory initData = abi.encodeWithSelector(
+            ProtectedUnit.initialize.selector, moduleCore, _id, _pa, _ra, _pairName, _mintCap, config, router, permit2
+        );
 
-        // Store the address of the new contract
+        // Deploy a new ERC1967 proxy pointing to the ProtectedUnit implementation
+        newUnit = address(new ERC1967Proxy(protectedUnitImpl, initData));
+
+        // Store the address of the new protected unit proxy contract
         protectedUnitContracts[_id] = newUnit;
 
         // solhint-disable-next-line gas-increment-by-one
@@ -155,5 +197,47 @@ contract ProtectedUnitFactory is IProtectedUnitFactory {
      */
     function deRegisterProtectedUnit(Id _id) external onlyConfig {
         delete protectedUnitContracts[_id];
+    }
+
+    /**
+     * @notice Updates the implementation contract for new ProtectedUnit instances
+     * @dev Only the owner can update the implementation
+     * @param _newImplementation Address of the new implementation
+     * @custom:emits ProtectedUnitImplUpdated when the implementation is updated
+     * @custom:reverts ZeroAddress if the new implementation is the zero address
+     * @custom:reverts OnlyOwner if the caller is not the owner
+     */
+    function updateProtectedUnitImpl(address _newImplementation) external onlyOwner {
+        if (_newImplementation == address(0)) {
+            revert ZeroAddress();
+        }
+        address oldImpl = protectedUnitImpl;
+        protectedUnitImpl = _newImplementation;
+        emit ProtectedUnitImplUpdated(oldImpl, _newImplementation);
+    }
+
+    /**
+     * @notice Upgrades a Protected Unit contract to a latest implementation
+     * @dev Only the owner can upgrade a Protected Unit contract
+     * @param protectedUnitAdd Address of the Protected Unit contract to upgrade
+     * @custom:emits ProtectedUnitUpgraded when the Protected Unit is upgraded
+     * @custom:reverts OnlyOwner if the caller is not the owner
+     */
+    function upgradeProtectedUnit(address protectedUnitAdd) external onlyOwner {
+        UUPSUpgradeable(protectedUnitAdd).upgradeToAndCall(protectedUnitImpl, bytes(""));
+        emit ProtectedUnitUpgraded(protectedUnitAdd);
+    }
+
+    /**
+     * @notice Renounces upgradeability of a Protected Unit contract
+     * @dev Only the owner can renounce upgradeability
+     * @param protectedUnitAdd Address of the Protected Unit contract to renounce upgradeability
+     * @custom:emits RenouncedUpgradeability when upgradeability is renounced
+     * @custom:reverts OnlyOwner if the caller is not the owner
+     * @custom:reverts AlreadyRenounced if upgradeability is already renounced
+     */
+    function renounceUpgradeability(address protectedUnitAdd) external onlyOwner {
+        ProtectedUnit(protectedUnitAdd).renounceUpgradeability();
+        emit RenouncedUpgradeability(protectedUnitAdd);
     }
 }

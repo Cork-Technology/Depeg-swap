@@ -136,6 +136,11 @@ interface IPSMcore is IRepurchase {
     /// @param psmBaseRedemptionFeePercentage the new psmBaseRedemptionFeePercentage
     event PsmBaseRedemptionFeePercentageUpdated(Id indexed id, uint256 indexed psmBaseRedemptionFeePercentage);
 
+    /// @notice Emitted when the PSM receive sales profit from the router
+    /// @param router The address of the router
+    /// @param amount The amount of RA tokens transferred.
+    event PsmDsSaleProfitReceived(address indexed router, Id indexed id, uint256 amount);
+
     /**
      * @notice returns the amount of CT and DS tokens that will be received after deposit
      * @param id the id of PSM

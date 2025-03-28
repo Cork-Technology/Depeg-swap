@@ -9,6 +9,12 @@ import {IErrors} from "./IErrors.sol";
  * @dev Interface for creating, managing, and redeeming Protected Unit tokens
  */
 interface IProtectedUnit is IErrors {
+    /// @notice Thrown when the caller is not the factory
+    error OnlyFactory();
+
+    /// @notice Thrown when upgradeability is already renounced
+    error AlreadyRenounced();
+
     /**
      * @notice Emmits when new Protected Unit tokens are created
      * @param minter The wallet address that created the tokens

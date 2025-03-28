@@ -539,6 +539,8 @@ library PsmLibrary {
 
         DepegSwap storage ds;
 
+        _getLatestApplicableRateAndUpdate(self);
+
         (dsId, receivedPa, receivedDs, feePercentage, fee, exchangeRates, ds) = previewRepurchase(self, amount);
 
         // decrease PSM balance
@@ -661,6 +663,8 @@ library PsmLibrary {
 
         DepegSwap storage ds = self.ds[dsId];
         Guard.safeBeforeExpired(ds);
+
+        _getLatestApplicableRateAndUpdate(self);
 
         (received, dsProvided, fee, _exchangeRate) = previewRedeemWithDs(self, dsId, amount);
 
