@@ -11,7 +11,6 @@ import {IErrors} from "../../../../contracts/interfaces/IErrors.sol";
 import {RouterState} from "../../../../contracts/core/flash-swaps/FlashSwapRouter.sol";
 import {IVault} from "../../../../contracts/interfaces/IVault.sol";
 import {TransferHelper} from "../../../../contracts/libraries/TransferHelper.sol";
-import {console} from "forge-std/console.sol";
 
 contract DsReserveSellTest is Helper {
     DummyWETH internal ra;
@@ -131,7 +130,7 @@ contract DsReserveSellTest is Helper {
 
         // Verify the swap worked and returned the expected DS tokens
         assertGt(result.amountOut, 0, "Swap should return DS tokens");
-        // assertEq(result.reserveSellPressure, 0, "Sell pressure should be less than 95 ether");
+        assertEq(result.reserveSellPressure, 0, "Sell pressure should be zero");
 
         // Check if LV reserve decreased (reserve sell succeeded)
         uint256 reserveAfter = flashSwapRouter.getLvReserve(currencyId, dsId);
@@ -327,25 +326,20 @@ contract DsReserveSellTest is Helper {
         // Get price ratios after swap
         (uint256 raPriceRatioAfter, uint256 ctPriceRatioAfter) = flashSwapRouter.getCurrentPriceRatio(currencyId, dsId);
 
-        console.log("RA reserve before:", raReserveBefore);
-        console.log("RA reserve after:", raReserveAfter);
-        console.log("CT reserve before:", ctReserveBefore);
-        console.log("CT reserve after:", ctReserveAfter);
-
         // With larger swaps, price impact should be more significant
         assertGt(raReserveBefore - raReserveAfter, amount * 95 / 100, "RA reserve should decrease significantly");
-        assertLt(ctReserveAfter, ctReserveBefore, "CT reserve should decrease");
+        // CT reserve should increase as buying DS will decrease the price of CT
+        assertGt(ctReserveAfter, ctReserveBefore, "CT reserve should increase");
 
-        // // Price impact should be larger with bigger swaps
-        // assertLt(raPriceRatioAfter, raPriceRatioBefore, "RA/CT price ratio should decrease more significantly");
-        // assertGt(ctPriceRatioAfter, ctPriceRatioBefore, "CT/RA price ratio should increase more significantly");
+        // Price impact should be larger with bigger swaps
+        assertGt(raPriceRatioAfter, raPriceRatioBefore, "RA/CT price ratio should increase more significantly");
+        assertLt(ctPriceRatioAfter, ctPriceRatioBefore, "CT/RA price ratio should decrease more significantly");
 
-        // // Get the price impact percentage
-        // uint256 priceRatioChange = (raPriceRatioBefore - raPriceRatioAfter) * 100 / raPriceRatioBefore;
-        // console.log("Price impact percentage:", priceRatioChange, "%");
+        // Get the price impact percentage
+        uint256 priceRatioChange = (raPriceRatioAfter - raPriceRatioBefore) * 100 / raPriceRatioBefore;
 
-        // // Larger swaps should have meaningful price impact
-        // assertGt(priceRatioChange, 5, "Large swap should have meaningful price impact");
+        // Larger swaps should have meaningful price impact
+        assertGt(priceRatioChange, 5, "Large swap should have meaningful price impact");
 
         vm.stopPrank();
     }

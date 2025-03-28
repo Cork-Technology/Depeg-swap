@@ -20,7 +20,6 @@ import {IErrors} from "./../../interfaces/IErrors.sol";
 import {TransferHelper} from "./../../libraries/TransferHelper.sol";
 import {ReturnDataSlotLib} from "./../../libraries/ReturnDataSlotLib.sol";
 import {CorkConfig} from "../CorkConfig.sol";
-import {console} from "forge-std/console.sol";
 
 /**
  * @title Router contract for Flashswap
@@ -450,8 +449,6 @@ contract RouterState is
             // send profit to the PSM
             IPSMcore(_moduleCore).psmAcceptFlashSwapProfit(params.reserveId, profitRa - vaultProfit);
         }
-        console.log(profitRa);
-        console.log("success", success);
     }
 
     function swapRaforDs(
