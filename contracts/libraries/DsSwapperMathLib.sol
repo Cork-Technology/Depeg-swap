@@ -133,7 +133,7 @@ library SwapperMathLibrary {
     int256 internal constant ONE_MINUS_T_CAP = 1e18;
 
     // ds reserve sell pressure cap, set to 95% to still allow price impact being made
-    uint256 internal constant SELL_PRESSURE_CAP = 95e18;
+    uint256 internal constant SELL_PRESSURE_CAP = 97.5 ether; // same as 97.5 x 1e18
 
     // Calculate price ratio of two tokens in AMM, will return ratio on 18 decimals precision
     function getPriceRatio(uint256 raReserve, uint256 ctReserve)
