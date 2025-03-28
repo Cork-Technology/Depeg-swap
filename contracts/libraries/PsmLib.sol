@@ -365,7 +365,7 @@ library PsmLibrary {
         // we convert it 18 fixed decimals, since that's what the DS uses
         received = TransferHelper.tokenNativeDecimalsToFixed(amount, self.info.ra);
 
-        ds.issue(address(this), received);
+        if (received != 0) ds.issue(address(this), received);
     }
 
     function lvRedeemRaPaWithCt(State storage self, uint256 amount, uint256 dsId)
