@@ -11,7 +11,7 @@ import {IErrors} from "../../../../contracts/interfaces/IErrors.sol";
 import {RouterState} from "../../../../contracts/core/flash-swaps/FlashSwapRouter.sol";
 import {IVault} from "../../../../contracts/interfaces/IVault.sol";
 import {TransferHelper} from "../../../../contracts/libraries/TransferHelper.sol";
-import "forge-std/console.sol";
+import {console} from "forge-std/console.sol";
 
 contract DsReserveSellTest is Helper {
     DummyWETH internal ra;
@@ -93,6 +93,50 @@ contract DsReserveSellTest is Helper {
         uint256 reserveAfter = flashSwapRouter.getLvReserve(currencyId, dsId);
         bool sellSucceeded = reserveAfter < reserveAmount;
         assertEq(sellSucceeded, true, "Sell should be succeeded");
+        vm.stopPrank();
+    }
+
+    // Test that the reserve sell works when the DS reserve sell fails
+    // We increased price of CT so that DS reserve sell fails
+    function test_SellFromReserveWorkWhenDsReserveSellFails() public {
+        vm.startPrank(DEFAULT_ADDRESS);
+
+        // Setup the test to trigger a reserve sell
+        ra.approve(address(flashSwapRouter), type(uint256).max);
+        Asset(ds).approve(address(moduleCore), type(uint256).max);
+        uint256 reserveAmount = flashSwapRouter.getLvReserve(currencyId, dsId);
+
+        // Set reserve pressure threshold to 100% to ensure sell pressure
+        corkConfig.updateReserveSellPressurePercentage(currencyId, 100 ether);
+
+        // Buy maximum CT and increase CT prices to the moon
+        ra.approve(address(hook), type(uint256).max);
+        uint256 amountIn = hook.getAmountIn(address(ra), address(ct), false, 510 ether);
+        uint256 amountOut = hook.getAmountOut(address(ra), address(ct), false, amountIn);
+        hook.swap(address(ra), address(ct), 0, amountOut / 2, "");
+        hook.swap(address(ra), address(ct), 0, amountOut / 2, "");
+        hook.swap(address(ra), address(ct), 0, 2.1 ether, "");
+        hook.swap(address(ra), address(ct), 0, 0.2 ether, "");
+        hook.swap(address(ra), address(ct), 0, 0.1 ether, "");
+        hook.swap(address(ra), address(ct), 0, 0.1 ether, "");
+        hook.swap(address(ra), address(ct), 0, 0.1 ether, "");
+
+        uint256 ctPrice = hook.getAmountOut(address(ra), address(ct), false, 1 ether);
+        assertGt(ctPrice, 1 ether, "CT price should be greater than 1 ether");
+
+        uint256 amount = 100 ether;
+        IDsFlashSwapCore.SwapRaForDsReturn memory result = flashSwapRouter.swapRaforDs(
+            currencyId, dsId, amount, 0, defaultBuyApproxParams(), defaultOffchainGuessParams()
+        );
+
+        // Verify the swap worked and returned the expected DS tokens
+        assertGt(result.amountOut, 0, "Swap should return DS tokens");
+        // assertEq(result.reserveSellPressure, 0, "Sell pressure should be less than 95 ether");
+
+        // Check if LV reserve decreased (reserve sell succeeded)
+        uint256 reserveAfter = flashSwapRouter.getLvReserve(currencyId, dsId);
+        bool sellSucceeded = reserveAfter < reserveAmount;
+        assertEq(sellSucceeded, false, "Sell should be failed");
         vm.stopPrank();
     }
 

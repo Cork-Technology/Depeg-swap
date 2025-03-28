@@ -20,6 +20,7 @@ import {IErrors} from "./../../interfaces/IErrors.sol";
 import {TransferHelper} from "./../../libraries/TransferHelper.sol";
 import {ReturnDataSlotLib} from "./../../libraries/ReturnDataSlotLib.sol";
 import {CorkConfig} from "../CorkConfig.sol";
+import {console} from "forge-std/console.sol";
 
 /**
  * @title Router contract for Flashswap
@@ -394,8 +395,9 @@ contract RouterState is
         if (amountSellFromReserve < RESERVE_MINIMUM_SELL_AMOUNT || self.gradualSaleDisabled) {
             return (0);
         }
-
+        console.log("before sellDsReserve");
         _sellDsReserve(assetPair, SellDsParams(params.reserveId, params.dsId, amountSellFromReserve));
+        console.log("after sellDsReserve");
     }
 
     function calculateSellFromReserve(ReserveState storage self, uint256 amountOut, uint256 dsId, uint256 raProvided)
@@ -446,6 +448,8 @@ contract RouterState is
             // send profit to the PSM
             IPSMcore(_moduleCore).psmAcceptFlashSwapProfit(params.reserveId, profitRa - vaultProfit);
         }
+        console.log(profitRa);
+        console.log("success", success);
     }
 
     function swapRaforDs(
