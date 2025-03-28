@@ -12,13 +12,14 @@ import {ReentrancyGuardTransient} from "@openzeppelin/contracts/utils/Reentrancy
 import {Withdrawal} from "./Withdrawal.sol";
 import {CorkConfig} from "./CorkConfig.sol";
 import {Pair} from "../libraries/Pair.sol";
+import {Extsload} from "v4-core/Extsload.sol";
 
 /**
  * @title ModuleState Abstract Contract
  * @author Cork Team
  * @notice Abstract ModuleState contract for providing base for Modulecore contract
  */
-abstract contract ModuleState is IErrors, ReentrancyGuardTransient {
+abstract contract ModuleState is IErrors, ReentrancyGuardTransient, Extsload {
     using PsmLibrary for State;
 
     mapping(Id => State) internal states;

@@ -39,7 +39,7 @@ contract VaultLiquidityFundsTest is Helper {
         corkConfig.updateLvStrategyCtSplitPercentage(currencyId, 50 ether);
 
         moduleCore.depositPsm(currencyId, DEFAULT_DEPOSIT_AMOUNT);
-        moduleCore.depositLv(currencyId, DEFAULT_DEPOSIT_AMOUNT, 0, 0);
+        moduleCore.depositLv(currencyId, DEFAULT_DEPOSIT_AMOUNT, 0, 0, 0);
 
         corkConfig.whitelist(DEFAULT_ADDRESS);
         vm.warp(block.timestamp + 10 days);
