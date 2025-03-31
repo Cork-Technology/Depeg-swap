@@ -28,7 +28,7 @@ contract ReserveSellPressureTest is Helper {
     address public nonManager = makeAddr("nonManager");
 
     // Constants for sell pressure calculation
-    uint256 internal constant SELL_PRESSURE_CAP = 95e18;
+    uint256 internal constant SELL_PRESSURE_CAP = 97.5 ether;
 
     function defaultInitialArp() internal pure virtual override returns (uint256) {
         return 5 ether;
@@ -134,7 +134,7 @@ contract ReserveSellPressureTest is Helper {
             currencyId, dsId, amount, 0, defaultBuyApproxParams(), defaultOffchainGuessParams()
         );
 
-        // Should be very high sell pressure (95%)
+        // Should be very high sell pressure (97.5%)
         assertEq(result1.reserveSellPressure, SELL_PRESSURE_CAP);
 
         // Test with very high threshold
