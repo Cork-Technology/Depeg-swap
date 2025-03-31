@@ -130,6 +130,7 @@ contract RouterState is
     // solhint-disable-next-line no-empty-blocks
     function _authorizeUpgrade(address newImplementation) internal override onlyDefaultAdmin {}
 
+    /// @inheritdoc IDsFlashSwapCore
     function updateDiscountRateInDdays(Id id, uint256 discountRateInDays) external override onlyConfig {
         reserves[id].decayDiscountRateInDays = discountRateInDays;
 
@@ -170,6 +171,11 @@ contract RouterState is
         hpa = reserves[id].getEffectiveHIYA();
     }
 
+    /**
+     * @notice Sets the module core address.
+     * @dev This function can only be called by the default admin.
+     * @param moduleCore The new module core address.
+     */
     function setModuleCore(address moduleCore) external onlyDefaultAdmin {
         if (moduleCore == address(0)) {
             revert ZeroAddress();
@@ -180,16 +186,23 @@ contract RouterState is
 
     /// @notice IMPORTANT : REPURPOSED TO THRESHOLD. THE PERCENTAGE WILL BE CALCULATED DYNAMICALLY
     /// we can't really change the signature of this since the configuration contract is not upgradeable and depends on this signature
+    /// @inheritdoc IDsFlashSwapCore
     function updateReserveSellPressurePercentage(Id id, uint256 newPercentage) external override onlyConfig {
         reserves[id].updateReserveSellPressurePercentageThreshold(newPercentage);
 
         emit ReserveSellPressurePercentageUpdated(id, newPercentage);
     }
 
+    /**
+     * @notice Sets the hook address.
+     * @dev This function can only be called by the default admin.
+     * @param _hook The new hook address.
+     */
     function setHook(address _hook) external onlyDefaultAdmin {
         hook = ICorkHook(_hook);
     }
 
+    /// @inheritdoc IDsFlashSwapCore
     function onNewIssuance(Id reserveId, uint256 dsId, address ds, address ra, address ct)
         external
         override
@@ -200,8 +213,7 @@ contract RouterState is
         emit NewIssuance(reserveId, dsId, ds, AmmId.unwrap(toAmmId(ra, ct)));
     }
 
-    /// @notice set the discount rate rate and rollover for the new issuance
-    /// @dev needed to avoid stack to deep errors. MUST be called after onNewIssuance and only by moduleCore at new issuance
+    /// @inheritdoc IDsFlashSwapCore
     function setDecayDiscountAndRolloverPeriodOnNewIssuance(
         Id reserveId,
         uint256 decayDiscountRateInDays,
@@ -212,23 +224,28 @@ contract RouterState is
         self.rolloverEndInBlockNumber = block.number + rolloverPeriodInblocks;
     }
 
+    /// @inheritdoc IDsFlashSwapUtility
     function getAmmReserve(Id id, uint256 dsId) external view override returns (uint256 raReserve, uint256 ctReserve) {
         (raReserve, ctReserve) = reserves[id].getReserve(dsId, hook);
     }
 
+    /// @inheritdoc IDsFlashSwapUtility
     function getLvReserve(Id id, uint256 dsId) external view override returns (uint256 lvReserve) {
         return reserves[id].ds[dsId].lvReserve;
     }
 
+    /// @inheritdoc IDsFlashSwapUtility
     function getPsmReserve(Id id, uint256 dsId) external view override returns (uint256 psmReserve) {
         return reserves[id].ds[dsId].psmReserve;
     }
 
+    /// @inheritdoc IDsFlashSwapCore
     function emptyReserveLv(Id reserveId, uint256 dsId) external override onlyModuleCore returns (uint256 amount) {
         amount = reserves[reserveId].emptyReserveLv(dsId, _moduleCore);
         emit ReserveEmptied(reserveId, dsId, amount);
     }
 
+    /// @inheritdoc IDsFlashSwapCore
     function emptyReservePartialLv(Id reserveId, uint256 dsId, uint256 amount)
         external
         override
@@ -239,11 +256,13 @@ contract RouterState is
         emit ReserveEmptied(reserveId, dsId, amount);
     }
 
+    /// @inheritdoc IDsFlashSwapCore
     function emptyReservePsm(Id reserveId, uint256 dsId) external override onlyModuleCore returns (uint256 amount) {
         amount = reserves[reserveId].emptyReservePsm(dsId, _moduleCore);
         emit ReserveEmptied(reserveId, dsId, amount);
     }
 
+    /// @inheritdoc IDsFlashSwapCore
     function emptyReservePartialPsm(Id reserveId, uint256 dsId, uint256 amount)
         external
         override
@@ -254,6 +273,7 @@ contract RouterState is
         emit ReserveEmptied(reserveId, dsId, amount);
     }
 
+    /// @inheritdoc IDsFlashSwapUtility
     function getCurrentPriceRatio(Id id, uint256 dsId)
         external
         view
@@ -263,11 +283,13 @@ contract RouterState is
         (raPriceRatio, ctPriceRatio) = reserves[id].getPriceRatio(dsId, hook);
     }
 
+    /// @inheritdoc IDsFlashSwapCore
     function addReserveLv(Id id, uint256 dsId, uint256 amount) external override onlyModuleCore {
         reserves[id].addReserveLv(dsId, amount, _moduleCore);
         emit ReserveAdded(id, dsId, amount);
     }
 
+    /// @inheritdoc IDsFlashSwapCore
     function addReservePsm(Id id, uint256 dsId, uint256 amount) external override onlyModuleCore {
         reserves[id].addReservePsm(dsId, amount, _moduleCore);
         emit ReserveAdded(id, dsId, amount);

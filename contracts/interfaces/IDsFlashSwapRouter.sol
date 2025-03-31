@@ -23,11 +23,11 @@ interface IDsFlashSwapUtility is IErrors {
         returns (uint256 raPriceRatio, uint256 ctPriceRatio);
 
     /**
-     * @notice returns the current reserve of the pair
-     * @param id the id of the pair
-     * @param dsId the ds id of the pair
-     * @return raReserve reserve of RA
-     * @return ctReserve reserve of CT
+     * @notice Gets the AMM reserve for a specific reserve and DS.
+     * @param id The id of the given pair in modulecore.
+     * @param dsId The dsId of the pair in moduelcore.
+     * @return raReserve The RA reserve amount.
+     * @return ctReserve The CT reserve amount.
      */
     function getAmmReserve(Id id, uint256 dsId) external view returns (uint256 raReserve, uint256 ctReserve);
 
@@ -35,7 +35,7 @@ interface IDsFlashSwapUtility is IErrors {
      * @notice returns the current DS reserve that is owned by liquidity vault
      * @param id the id of the pair
      * @param dsId the ds id of the pair
-     * @return lvReserve reserve of DS
+     * @return lvReserve the LV reserve amount
      */
     function getLvReserve(Id id, uint256 dsId) external view returns (uint256 lvReserve);
 
@@ -43,7 +43,7 @@ interface IDsFlashSwapUtility is IErrors {
      * @notice returns the current DS reserve that is owned by PSM
      * @param id the id of the pair
      * @param dsId the ds id of the pair
-     * @return psmReserve reserve of DS
+     * @return psmReserve the PSM reserve amount
      */
     function getPsmReserve(Id id, uint256 dsId) external view returns (uint256 psmReserve);
 
@@ -182,7 +182,8 @@ interface IDsFlashSwapCore is IDsFlashSwapUtility {
     );
 
     /**
-     * @notice trigger new issuance logic, can only be called my moduleCore
+     * @notice trigger new issuance logic for a specific pair
+     * @dev can only be called by the moduleCore
      * @param reserveId the pair id
      * @param dsId the ds id of the pair
      * @param ds the address of the new issued DS
@@ -221,31 +222,51 @@ interface IDsFlashSwapCore is IDsFlashSwapUtility {
     function updateDsExtraFeeTreasurySplitPercentage(Id id, uint256 newPercentage) external;
 
     /**
-     * @notice add more DS reserve from liquidity vault, can only be called by moduleCore
+     * @notice add more DS reserve from liquidity vault,
+     * @dev can only be called by moduleCore
      * @param id the pair id
      * @param dsId the ds id of the pair
-     * @param amount the amount of DS to add
+     * @param amount the amount of DS to add to the LV reserve
      */
     function addReserveLv(Id id, uint256 dsId, uint256 amount) external;
 
+    /**
+     * @notice Adds an amount to the PSM reserve for a specific reserve and DS.
+     * @dev This function can only be called by the module core.
+     * @param id The identifier of the reserve.
+     * @param dsId The identifier of the DS.
+     * @param amount The amount to add to the PSM reserve.
+     */
     function addReservePsm(Id id, uint256 dsId, uint256 amount) external;
 
     /**
      * @notice empty all DS reserve to liquidity vault, can only be called by moduleCore
+     * @dev this can only be called by the moduleCore
      * @param reserveId the pair id
      * @param dsId the ds id of the pair
-     * @return amount the amount of DS that's emptied
+     * @return amount the amount that's emptied from Vault reserve
      */
     function emptyReserveLv(Id reserveId, uint256 dsId) external returns (uint256 amount);
 
+    /**
+     * @notice empty all DS reserve to PSM, can only be called by moduleCore
+     * @dev this can only be called by the moduleCore
+     * @param reserveId the pair id
+     * @param dsId the ds id of the pair
+     * @return amount the amount that's emptied from PSM reserve
+     */
     function emptyReservePsm(Id reserveId, uint256 dsId) external returns (uint256 amount);
 
+    /**
+     * @notice empty some or all DS reserve to PSM, can only be called by moduleCore
+     * @param reserveId the pair id
+     * @param dsId the ds id of the pair
+     * @param amount the amount of DS to empty
+     * @return emptied emptied amount of DS that's emptied
+     */
     function emptyReservePartialPsm(Id reserveId, uint256 dsId, uint256 amount) external returns (uint256 emptied);
 
     /**
-     * @notice empty some or all DS reserve to liquidity vault, can only be called by moduleCore
-     * @param reserveId the pair id
-     * @param dsId the ds id of the pair
      * @notice empty some or all DS reserve to liquidity vault, can only be called by moduleCore
      * @param reserveId the pair id
      * @param dsId the ds id of the pair
@@ -333,6 +354,7 @@ interface IDsFlashSwapCore is IDsFlashSwapUtility {
      * @notice Updates the discount rate in D days for the pair
      * @param id the pair id
      * @param discountRateInDays the new discount rate in D days
+     * @dev only callable by the config contract
      */
     function updateDiscountRateInDdays(Id id, uint256 discountRateInDays) external;
 
@@ -351,6 +373,12 @@ interface IDsFlashSwapCore is IDsFlashSwapUtility {
      */
     function isRolloverSale(Id id) external view returns (bool);
 
+    /**
+     * @notice Updates the reserve sell pressure percentage for a specific reserve identified by `id`.
+     * @dev This function can only be called by the config contract.
+     * @param id The identifier of the reserve to update.
+     * @param newPercentage The new reserve sell pressure percentage to be applied.
+     */
     function updateReserveSellPressurePercentage(Id id, uint256 newPercentage) external;
 
     event DiscountRateUpdated(Id indexed id, uint256 discountRateInDays);
