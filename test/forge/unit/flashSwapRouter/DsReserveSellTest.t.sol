@@ -61,7 +61,7 @@ contract DsReserveSellTest is Helper {
         vm.revertTo(stateId);
     }
 
-    // Test that the reserve sell works when the AMM liquidity is reduced with 95% sell pressure
+    // Test that the reserve sell works when the AMM liquidity is reduced with 97.5% sell pressure
     function test_SellFromReserveWorkWhenAMMLiquidityIsReduced() public {
         vm.startPrank(DEFAULT_ADDRESS);
 
@@ -86,7 +86,7 @@ contract DsReserveSellTest is Helper {
 
         // Verify the swap worked and returned the expected DS tokens
         assertGt(result.amountOut, 0, "Swap should return DS tokens");
-        assertEq(result.reserveSellPressure, 95 ether, "Sell pressure should be less than 95 ether");
+        assertEq(result.reserveSellPressure, 97.5 ether, "Sell pressure should be less than 97.5 ether");
 
         // Check if LV reserve decreased (reserve sell succeeded)
         uint256 reserveAfter = flashSwapRouter.getLvReserve(currencyId, dsId);
