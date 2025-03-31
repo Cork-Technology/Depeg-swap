@@ -204,8 +204,20 @@ interface IDsFlashSwapCore is IDsFlashSwapUtility {
         uint256 rolloverPeriodInblocks
     ) external;
 
+    /**
+     * @notice Updates the DS extra fee percentage for a specific reserve identified by `id`.
+     * @dev This function can only be called by the config contract.
+     * @param id The identifier of the reserve to update.
+     * @param newPercentage The new DS extra fee percentage to be applied.
+     */
     function updateDsExtraFeePercentage(Id id, uint256 newPercentage) external;
 
+    /**
+     * @notice Updates the DS extra fee treasury split percentage for a specific reserve identified by `id`.
+     * @dev This function can only be called by the config contract.
+     * @param id The identifier of the reserve to update.
+     * @param newPercentage The new DS extra fee treasury split percentage to be applied.
+     */
     function updateDsExtraFeeTreasurySplitPercentage(Id id, uint256 newPercentage) external;
 
     /**
@@ -243,13 +255,15 @@ interface IDsFlashSwapCore is IDsFlashSwapUtility {
     function emptyReservePartialLv(Id reserveId, uint256 dsId, uint256 amount) external returns (uint256 emptied);
 
     /**
-     * @notice Swaps RA for DS
-     * @param reserveId the reserve id same as the id on PSM and LV
-     * @param dsId the ds id of the pair, the same as the DS id on PSM and LV
-     * @param amount the amount of RA to swap
-     * @param amountOutMin the minimum amount of DS to receive, will revert if the actual amount is less than this.
-     * @param params the buy approximation params(math stuff)
-     * @param params the buy approximation params(math stuff)
+     * @notice Executes a swap from RA to DS tokens.
+     * @dev This function performs a flash swap, requiring a valid signature and deadline.
+     * @param reserveId The ID of the reserve for RA:PA market in modulecore.
+     * @param dsId The ID of the DS token to receive.
+     * @param amount The amount of RA tokens to swap.
+     * @param amountOutMin The minimum amount of DS tokens to receive.
+     * @param params Additional parameters for the swap.
+     * @param offchainGuess Offchain data used for the swap.
+     * @return result The result of the swap, including amounts and other details.
      */
     function swapRaforDs(
         Id reserveId,
@@ -261,13 +275,17 @@ interface IDsFlashSwapCore is IDsFlashSwapUtility {
     ) external returns (SwapRaForDsReturn memory result);
 
     /**
-     * @notice Swaps RA for DS
-     * @param reserveId the reserve id same as the id on PSM and LV
-     * @param dsId the ds id of the pair, the same as the DS id on PSM and LV
-     * @param amount the amount of RA to swap
-     * @param amountOutMin the minimum amount of DS to receive, will revert if the actual amount is less than this. should be inserted with value from previewSwapRaforDs
-     * @param rawRaPermitSig the raw permit signature of RA
-     * @param deadline the deadline for the swap
+     * @notice Executes a swap from RA to DS tokens.
+     * @dev This function performs a flash swap, requiring a valid signature and deadline.
+     * @param reserveId The ID of the reserve for RA:PA market in modulecore.
+     * @param dsId The ID of the DS token to receive.
+     * @param amount The amount of RA tokens to swap.
+     * @param amountOutMin The minimum amount of DS tokens to receive.
+     * @param rawRaPermitSig The raw signature for the RA permit.
+     * @param deadline The deadline by which the swap must be completed.
+     * @param params Additional parameters for the swap.
+     * @param offchainGuess Offchain data used for the swap.
+     * @return result The result of the swap, including amounts and other details.
      */
     function swapRaforDs(
         Id reserveId,
@@ -281,24 +299,26 @@ interface IDsFlashSwapCore is IDsFlashSwapUtility {
     ) external returns (SwapRaForDsReturn memory result);
 
     /**
-     * @notice Swaps DS for RA
+     * @notice Swaps specified amount of DS tokens for RA tokens
      * @param reserveId the reserve id same as the id on PSM and LV
      * @param dsId the ds id of the pair, the same as the DS id on PSM and LV
      * @param amount the amount of DS to swap
      * @param amountOutMin the minimum amount of RA to receive, will revert if the actual amount is less than this.
      * @return amountOut amount of RA that's received
+     * @dev Reverts if the actual amount is less than `amountOutMin`
      */
     function swapDsforRa(Id reserveId, uint256 dsId, uint256 amount, uint256 amountOutMin)
         external
         returns (uint256 amountOut);
 
     /**
-     * @notice Swaps DS for RA
+     * @notice Swaps specified amount of DS tokens for RA tokens
      * @param reserveId the reserve id same as the id on PSM and LV
      * @param dsId the ds id of the pair, the same as the DS id on PSM and LV
      * @param amount the amount of DS to swap
-     * @param amountOutMin the minimum amount of RA to receive, will revert if the actual amount is less than this. should be inserted with value from previewSwapDsforRa
+     * @param amountOutMin the minimum amount of RA to receive, will revert if the actual amount is less than this.
      * @return amountOut amount of RA that's received
+     * @dev Reverts if the actual amount is less than `amountOutMin`
      */
     function swapDsforRa(
         Id reserveId,
@@ -317,10 +337,18 @@ interface IDsFlashSwapCore is IDsFlashSwapUtility {
     function updateDiscountRateInDdays(Id id, uint256 discountRateInDays) external;
 
     /**
-     * @notice update the gradual sale status, if true, will try to sell DS tokens from the reserve gradually
+     * @notice Updates the gradual sale status for a given reserve ID.
+     * @dev This function can only be called by the contract configuration. If true, the reserve will try to sell DS tokens from the reserve gradually.
+     * @param id The ID of the reserve to update.
+     * @param status The new status to set for the gradual sale (true to disable, false to enable).
      */
     function updateGradualSaleStatus(Id id, bool status) external;
 
+    /**
+     * @notice Checks if the given reserve ID is in a rollover sale state.
+     * @param id The ID of the reserve to check.
+     * @return bool True if the reserve is in a rollover sale state, false otherwise.
+     */
     function isRolloverSale(Id id) external view returns (bool);
 
     function updateReserveSellPressurePercentage(Id id, uint256 newPercentage) external;

@@ -136,12 +136,14 @@ contract RouterState is
         emit DiscountRateUpdated(id, discountRateInDays);
     }
 
+    /// @inheritdoc IDsFlashSwapCore
     function updateGradualSaleStatus(Id id, bool status) external override onlyConfig {
         reserves[id].gradualSaleDisabled = status;
 
         emit GradualSaleStatusUpdated(id, status);
     }
 
+    /// @inheritdoc IDsFlashSwapCore
     function updateDsExtraFeePercentage(Id id, uint256 newPercentage) external onlyConfig {
         if (newPercentage > MAX_DS_FEE) {
             revert InvalidFee();
@@ -151,16 +153,19 @@ contract RouterState is
         emit DsFeeUpdated(id, newPercentage);
     }
 
+    /// @inheritdoc IDsFlashSwapCore
     function updateDsExtraFeeTreasurySplitPercentage(Id id, uint256 newPercentage) external onlyConfig {
         reserves[id].dsExtraFeeTreasurySplitPercentage = newPercentage;
 
         emit DsFeeTreasuryPercentageUpdated(id, newPercentage);
     }
 
+    /// @inheritdoc IDsFlashSwapUtility
     function getCurrentCumulativeHIYA(Id id) external view returns (uint256 hpaCummulative) {
         hpaCummulative = reserves[id].getCurrentCumulativeHIYA();
     }
 
+    /// @inheritdoc IDsFlashSwapUtility
     function getCurrentEffectiveHIYA(Id id) external view returns (uint256 hpa) {
         hpa = reserves[id].getEffectiveHIYA();
     }
@@ -324,6 +329,11 @@ contract RouterState is
         }
     }
 
+    /**
+     * @notice Returns the block number when the rollover sale ends for a given reserve.
+     * @param reserveId The identifier of the reserve.
+     * @return endInBlockNumber The block number when the rollover sale ends.
+     */
     function rolloverSaleEnds(Id reserveId) external view returns (uint256 endInBlockNumber) {
         return reserves[reserveId].rolloverEndInBlockNumber;
     }
@@ -451,6 +461,19 @@ contract RouterState is
         }
     }
 
+    /**
+     * @notice Executes a swap from RA to DS tokens.
+     * @dev This function performs a flash swap, requiring a valid signature and deadline.
+     * @param reserveId The ID of the reserve for RA:PA market in modulecore.
+     * @param dsId The ID of the DS token to receive.
+     * @param amount The amount of RA tokens to swap.
+     * @param amountOutMin The minimum amount of DS tokens to receive.
+     * @param rawRaPermitSig The raw signature for the RA permit.
+     * @param deadline The deadline by which the swap must be completed.
+     * @param params Additional parameters for the swap.
+     * @param offchainGuess Offchain data used for the swap.
+     * @return result The result of the swap, including amounts and other details.
+     */
     function swapRaforDs(
         Id reserveId,
         uint256 dsId,
@@ -522,6 +545,17 @@ contract RouterState is
         );
     }
 
+    /**
+     * @notice Executes a swap from RA to DS tokens.
+     * @dev This function performs a flash swap, requiring a valid signature and deadline.
+     * @param reserveId The ID of the reserve for RA:PA market in modulecore.
+     * @param dsId The ID of the DS token to receive.
+     * @param amount The amount of RA tokens to swap.
+     * @param amountOutMin The minimum amount of DS tokens to receive.
+     * @param params Additional parameters for the swap.
+     * @param offchainGuess Offchain data used for the swap.
+     * @return result The result of the swap, including amounts and other details.
+     */
     function swapRaforDs(
         Id reserveId,
         uint256 dsId,
@@ -533,10 +567,22 @@ contract RouterState is
         result = _swapRaForDsTopLevel(reserveId, dsId, amount, amountOutMin, params, offchainGuess);
     }
 
+    /// @inheritdoc IDsFlashSwapCore
     function isRolloverSale(Id id) external view returns (bool) {
         return reserves[id].rolloverSale();
     }
 
+    /**
+     * @notice Swaps specified amount of DS tokens for RA tokens
+     * @param reserveId the reserve id same as the id on PSM and LV
+     * @param dsId the ds id of the pair, the same as the DS id on PSM and LV
+     * @param amount the amount of DS to swap
+     * @param amountOutMin the minimum amount of RA to receive, will revert if the actual amount is less than this.
+     * @param rawDsPermitSig the permit signature for DS token
+     * @param deadline the deadline for the permit signature
+     * @return amountOut amount of RA that's received
+     * @dev Reverts if the actual amount is less than `amountOutMin`
+     */
     function swapDsforRa(
         Id reserveId,
         uint256 dsId,
@@ -581,12 +627,13 @@ contract RouterState is
     }
 
     /**
-     * @notice Swaps DS for RA
+     * @notice Swaps specified amount of DS tokens for RA tokens
      * @param reserveId the reserve id same as the id on PSM and LV
      * @param dsId the ds id of the pair, the same as the DS id on PSM and LV
      * @param amount the amount of DS to swap
-     * @param amountOutMin the minimum amount of RA to receive, will revert if the actual amount is less than this. should be inserted with value from previewSwapDsforRa
+     * @param amountOutMin the minimum amount of RA to receive, will revert if the actual amount is less than this.
      * @return amountOut amount of RA that's received
+     * @dev Reverts if the actual amount is less than `amountOutMin`
      */
     function swapDsforRa(Id reserveId, uint256 dsId, uint256 amount, uint256 amountOutMin)
         external
@@ -641,6 +688,15 @@ contract RouterState is
         hook.swap(address(assetPair.ra), address(assetPair.ct), raAmount, ctAmount, data);
     }
 
+    /**
+     * @notice Executes a callback function during a flash swap.
+     * @dev This function is called by the pool manager during a flash swap to handle the callback logic.
+     * @param sender The address of the entity initiating the flash swap.
+     * @param data Encoded data containing callback information.
+     * @param paymentAmount The amount of tokens to be paid back to the pool.
+     * @param paymentToken The address of the token to be paid back.
+     * @param poolManager The address of the pool manager handling the flash swap.
+     */
     function CorkCall(
         address sender,
         bytes calldata data,
