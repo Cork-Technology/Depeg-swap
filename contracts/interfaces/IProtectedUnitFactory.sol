@@ -11,6 +11,15 @@ import {IErrors} from "./IErrors.sol";
  * @author Cork Protocol Team
  */
 interface IProtectedUnitFactory is IErrors {
+    /// @notice Emmits when the implementation contract address is updated
+    event ProtectedUnitImplUpdated(address indexed oldImpl, address indexed newImpl);
+
+    /// @notice Emmits when a Protected Unit contract is upgraded
+    event ProtectedUnitUpgraded(address indexed protectedUnit);
+
+    /// @notice Emmits when a Protected Unit contract's upgradeability is renounced
+    event RenouncedUpgradeability(address indexed protectedUnit);
+
     /**
      * @notice Emmits when a new Protected Unit contract is created
      * @param pairId Unique identifier for the token pair
