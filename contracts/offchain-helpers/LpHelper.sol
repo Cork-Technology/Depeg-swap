@@ -8,6 +8,7 @@ import {LpParser} from "./../libraries/LpSymbolParser.sol";
 import {IErrors} from "./../interfaces/IErrors.sol";
 import {ModuleCore} from "./../core/ModuleCore.sol";
 import {ILpHelper} from "./../interfaces/offchain-helpers/ILpHelper.sol";
+import {Asset} from "./../core/assets/Asset.sol";
 
 contract LpHelper is ILpHelper {
     ICorkHook public hook;
@@ -25,16 +26,24 @@ contract LpHelper is ILpHelper {
 
         (address ra, address ct) = LpParser.parse(token.symbol());
 
+        // sort them correctly
+        try Asset(ct).expiry() returns (uint256) {
+            // do nothing, already sorted
+        } catch {
+            // means that the ra here is the actual ct
+            (ra, ct) = (ct, ra);
+        }
+
         (raReserve, ctReserve) = hook.getReserves(ra, ct);
     }
 
     function getReserve(Id id) external view returns (uint256 raReserve, uint256 ctReserve) {
         uint256 epoch = moduleCore.lastDsId(id);
-        _getReserve(id, epoch);
+        ( raReserve,  ctReserve)=_getReserve(id, epoch);
     }
 
     function getReserve(Id id, uint256 dsId) external view returns (uint256 raReserve, uint256 ctReserve) {
-        _getReserve(id, dsId);
+        ( raReserve,  ctReserve)=_getReserve(id, dsId);
     }
 
     function _getReserve(Id id, uint256 epoch) internal view returns (uint256 raReserve, uint256 ctReserve) {
@@ -43,9 +52,9 @@ contract LpHelper is ILpHelper {
     }
 
     function _getRaCt(Id id, uint256 epoch) internal view returns (address ra, address ct) {
-        (, address ra,,,) = moduleCore.markets(id);
+        (,  ra,,,) = moduleCore.markets(id);
 
-        (address ct,) = moduleCore.swapAsset(id, epoch);
+        ( ct,) = moduleCore.swapAsset(id, epoch);
     }
 
     function getLpToken(Id id) external view returns (address liquidityToken) {
