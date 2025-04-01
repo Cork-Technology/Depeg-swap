@@ -7,7 +7,7 @@ import {LiquidityToken} from "Cork-Hook/LiquidityToken.sol";
 import {LpParser} from "./../libraries/LpSymbolParser.sol";
 import {IErrors} from "./../interfaces/IErrors.sol";
 import {ModuleCore} from "./../core/ModuleCore.sol";
-import {ILpHelper}from "./../interfaces/offchain-helpers/ILpHelper.sol";
+import {ILpHelper} from "./../interfaces/offchain-helpers/ILpHelper.sol";
 
 contract LpHelper is ILpHelper {
     ICorkHook public hook;
