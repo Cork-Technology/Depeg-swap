@@ -6,7 +6,7 @@ import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
 library LpParser {
     /// @notice parses cork AMM liquidity token symbol to get the underlying pair
     /// @dev the LP token symbol is always on the format of
-    /// LP-<RA address>-<CT address> that's ASCII encoded and address is a hex string that has the standard length of 42
+    /// LP-<RA address>-<CT address> that's ASCII encoded and address is a hex string(potentially isn't at the standard 42 bytes. 40 + 2(0x))
     function parse(string memory symbol) internal pure returns (address ra, address ct) {
         (ra, ct) = bytes(symbol).length == 88 ? _parseUnchecked(symbol) : _parseIterate(symbol);
     }
