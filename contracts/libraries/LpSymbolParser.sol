@@ -34,7 +34,7 @@ library LpParser {
 
     /// @notice dynamically parses RA and CT by searching the separator(-)
     /// @dev this is needed since the hook uses toHexString not toChecksumHexString.
-    /// this has an effect where the length of the string does not conform to eip-55 length + 2(0x). see https://github.com/ethereum/ercs/blob/master/ERCS/erc-55.md
+    /// this has the possibility where the length of the string does not conform to eip-55 length + 2(0x). see https://github.com/ethereum/ercs/blob/master/ERCS/erc-55.md
     /// in that case we must manually searches the separator. less efficient than its counterpart since we have to do O(n) operation to searche the separator
     function _parseIterate(string memory symbol) internal pure returns (address ra, address ct) {
         uint256 len = bytes(symbol).length;
