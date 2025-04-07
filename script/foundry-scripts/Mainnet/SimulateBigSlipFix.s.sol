@@ -139,7 +139,7 @@ contract SimulateScript is Script {
                 market.peggedAsset, market.redemptionAsset, market.arp, market.expiryInterval, exchangeProvider
             );
 
-            config.updateReserveSellPressurePercentage(marketId, 50 ether);
+            config.updateReserveSellPressurePercentage(marketId, 5 ether);
 
             uint256 dsId = moduleCore.lastDsId(marketId);
             (address ct, address ds) = moduleCore.swapAsset(marketId, dsId);
