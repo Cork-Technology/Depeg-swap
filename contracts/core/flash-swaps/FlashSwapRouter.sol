@@ -442,7 +442,7 @@ contract RouterState is
 
         sellPressure = self.determineSellPressure(dsId, raProvided, amountOut);
 
-        uint256 amountSellFromReserve = amountOut - MathHelper.calculatePercentageFee(sellPressure, amountOut);
+        uint256 amountSellFromReserve = MathHelper.calculatePercentageFee(sellPressure, amountOut);
 
         uint256 lvReserve = assetPair.lvReserve;
         uint256 totalReserve = lvReserve + assetPair.psmReserve;
