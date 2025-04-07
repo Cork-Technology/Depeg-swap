@@ -196,7 +196,7 @@ contract SimulateScript is Script {
         ERC20(market.redemptionAsset).approve(address(routerState), swapAmt);
         IDsFlashSwapCore.BuyAprroxParams memory buyApprox =
             IDsFlashSwapCore.BuyAprroxParams(108, 108, 1 ether, 1 gwei, 1 gwei, 0.01 ether);
-        IDsFlashSwapCore.OffchainGuess memory offchainguess = IDsFlashSwapCore.OffchainGuess({borrow: swapAmt});
+        IDsFlashSwapCore.OffchainGuess memory offchainguess = IDsFlashSwapCore.OffchainGuess({borrow: 0});
         IDsFlashSwapCore.SwapRaForDsReturn memory result =
             routerState.swapRaforDs(marketId, dsId, swapAmt, 0, buyApprox, offchainguess);
 
