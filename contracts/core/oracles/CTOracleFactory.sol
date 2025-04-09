@@ -49,6 +49,7 @@ contract CTOracleFactory is OwnableUpgradeable, UUPSUpgradeable, ICTOracleFactor
             revert ZeroAddress();
         }
 
+        // TODO not sure if this is needed, need to confirm with heri wheter only 1 oracle is allowed to exist
         // Check if oracle for this CT token already exists
         if (ctToOracle[_ctToken] != address(0)) {
             revert OracleAlreadyExists();
