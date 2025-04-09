@@ -35,7 +35,7 @@ contract LpHelperTest is Helper {
         assertEq(raReserve, expectedRaReserve);
         assertEq(ctReserve, expectedCtReserve);
     }
-   
+
     function testGetReserveFromId() external {
         (address ct,) = moduleCore.swapAsset(defaultCurrencyId, 1);
 
@@ -46,7 +46,7 @@ contract LpHelperTest is Helper {
         assertEq(raReserve, expectedRaReserve);
         assertEq(ctReserve, expectedCtReserve);
     }
-    
+
     function testGetReserveWithEpoch() external {
         (address ct,) = moduleCore.swapAsset(defaultCurrencyId, 1);
 
@@ -58,7 +58,7 @@ contract LpHelperTest is Helper {
         assertEq(ctReserve, expectedCtReserve);
     }
 
-      function testGetLpToken() external {
+    function testGetLpToken() external {
         (address ct,) = moduleCore.swapAsset(defaultCurrencyId, 1);
 
         (uint256 expectedRaReserve, uint256 expectedCtReserve) = hook.getReserves(address(ra), ct);
@@ -67,7 +67,6 @@ contract LpHelperTest is Helper {
         address lp = lpHelper.getLpToken(defaultCurrencyId);
 
         assertEq(lp, expectedLp);
-
     }
 
     function testGetLpTokenWithEpoch() external {
@@ -76,9 +75,8 @@ contract LpHelperTest is Helper {
         (uint256 expectedRaReserve, uint256 expectedCtReserve) = hook.getReserves(address(ra), ct);
         address expectedLp = hook.getLiquidityToken(address(ra), ct);
 
-        address lp = lpHelper.getLpToken(defaultCurrencyId,1);
+        address lp = lpHelper.getLpToken(defaultCurrencyId, 1);
 
         assertEq(lp, expectedLp);
-
     }
 }

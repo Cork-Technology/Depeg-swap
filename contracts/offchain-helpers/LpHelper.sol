@@ -39,11 +39,11 @@ contract LpHelper is ILpHelper {
 
     function getReserve(Id id) external view returns (uint256 raReserve, uint256 ctReserve) {
         uint256 epoch = moduleCore.lastDsId(id);
-        ( raReserve,  ctReserve)=_getReserve(id, epoch);
+        (raReserve, ctReserve) = _getReserve(id, epoch);
     }
 
     function getReserve(Id id, uint256 dsId) external view returns (uint256 raReserve, uint256 ctReserve) {
-        ( raReserve,  ctReserve)=_getReserve(id, dsId);
+        (raReserve, ctReserve) = _getReserve(id, dsId);
     }
 
     function _getReserve(Id id, uint256 epoch) internal view returns (uint256 raReserve, uint256 ctReserve) {
@@ -52,9 +52,9 @@ contract LpHelper is ILpHelper {
     }
 
     function _getRaCt(Id id, uint256 epoch) internal view returns (address ra, address ct) {
-        (,  ra,,,) = moduleCore.markets(id);
+        (, ra,,,) = moduleCore.markets(id);
 
-        ( ct,) = moduleCore.swapAsset(id, epoch);
+        (ct,) = moduleCore.swapAsset(id, epoch);
     }
 
     function getLpToken(Id id) external view returns (address liquidityToken) {
