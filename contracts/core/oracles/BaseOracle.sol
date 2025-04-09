@@ -6,6 +6,7 @@ import {AggregatorV3Interface} from "./../../interfaces/IAggregatorV3.sol";
 import {ModuleCore} from "./../ModuleCore.sol";
 import {IErrors} from "./../../interfaces/IErrors.sol";
 import {Asset} from "./../assets/Asset.sol";
+import {Id} from "./../../libraries/Pair.sol";
 
 /**
  * @title Base CT Oracle contract
@@ -14,12 +15,23 @@ import {Asset} from "./../assets/Asset.sol";
  */
 abstract contract BaseOracle is AggregatorV3Interface, IErrors {
     ModuleCore public moduleCore;
-
+    Id public marketId;
     Asset public ct;
 
-    constructor(address _moduleCore, address _ct) {
+    constructor(address _moduleCore, address _ct, Id _marketId) {
+        marketId = _marketId;
         moduleCore = ModuleCore(_moduleCore);
         ct = Asset(_ct);
+
+        _verifyMarketId();
+    }
+
+    function _verifyMarketId() internal {
+        uint256 ctEpoch = ct.dsId();
+
+        (address _ct,) = moduleCore.swapAsset(marketId, ctEpoch);
+
+        if (_ct != address(ct)) revert InvalidToken();
     }
 
     function decimals() external view returns (uint8) {
