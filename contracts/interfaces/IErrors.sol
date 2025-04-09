@@ -210,6 +210,5 @@ interface IErrors {
     /// or it's verrrry close to expiry
     error InvalidPoolStateOrNearExpired();
 
-        error NotSupported();
-
+    error NotSupported();
 }

@@ -5,20 +5,21 @@ import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {AggregatorV3Interface} from "./../../interfaces/IAggregatorV3.sol";
 import {ModuleCore} from "./../ModuleCore.sol";
 import {IErrors} from "./../../interfaces/IErrors.sol";
+import {Asset} from "./../assets/Asset.sol";
 
 /**
- * @title CT Oracle contract
+ * @title Base CT Oracle contract
  * @author Cork Team
- * @notice CT Oracle contract for providing CT price
+ * @notice Base implementation CT Oracle contract for providing CT price
  */
 abstract contract BaseOracle is AggregatorV3Interface, IErrors {
-    address public moduleCore;
+    ModuleCore public moduleCore;
 
-    address public ct;
+    Asset public ct;
 
     constructor(address _moduleCore, address _ct) {
-        moduleCore = _moduleCore;
-        ct = _ct;
+        moduleCore = ModuleCore(_moduleCore);
+        ct = Asset(_ct);
     }
 
     function decimals() external view returns (uint8) {
