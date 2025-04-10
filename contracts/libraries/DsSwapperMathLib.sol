@@ -292,7 +292,7 @@ library SwapperMathLibrary {
         decay = sub(convertUd(100), discount);
     }
 
-    function _calculateRolloverSale(UD60x18 lvDsReserve, UD60x18 psmDsReserve, UD60x18 raProvided, UD60x18 hpa)
+    function _calculateReserveSale(UD60x18 lvDsReserve, UD60x18 psmDsReserve, UD60x18 raProvided, UD60x18 hpa)
         public
         view
         returns (
@@ -349,7 +349,7 @@ library SwapperMathLibrary {
         psmProfit = mul(psmReserveUsed, hpa);
     }
 
-    function calculateRolloverSale(uint256 lvDsReserve, uint256 psmDsReserve, uint256 raProvided, uint256 hiya)
+    function calculateReserveSale(uint256 lvDsReserve, uint256 psmDsReserve, uint256 raProvided, uint256 hiya)
         external
         view
         returns (
@@ -373,7 +373,7 @@ library SwapperMathLibrary {
             UD60x18 _dsReceived,
             UD60x18 _lvReserveUsed,
             UD60x18 _psmReserveUsed
-        ) = _calculateRolloverSale(_lvDsReserve, _psmDsReserve, _raProvided, _hpa);
+        ) = _calculateReserveSale(_lvDsReserve, _psmDsReserve, _raProvided, _hpa);
 
         lvProfit = unwrap(_lvProfit);
         psmProfit = unwrap(_psmProfit);

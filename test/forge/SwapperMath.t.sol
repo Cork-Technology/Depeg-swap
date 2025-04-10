@@ -22,7 +22,7 @@ contract SwapMathTest is Test {
         vm.assertApproxEqAbs(unwrap(discount), 99e18, 0.0000001 ether);
     }
 
-    function test_calculateRolloverSale() external {
+    function test_calculateReserveSale() external {
         uint256 lvReserve = 100 ether;
         uint256 psmReserve = 100 ether;
         uint256 raProvided = 1 ether;
@@ -35,7 +35,7 @@ contract SwapMathTest is Test {
             uint256 dsReceived,
             uint256 lvReserveUsed,
             uint256 psmReserveUsed
-        ) = SwapperMathLibrary.calculateRolloverSale(lvReserve, psmReserve, raProvided, hiya);
+        ) = SwapperMathLibrary.calculateReserveSale(lvReserve, psmReserve, raProvided, hiya);
 
         vm.assertApproxEqAbs(lvProfit, 0.5 ether, 0.0001 ether);
         vm.assertApproxEqAbs(psmProfit, 0.5 ether, 0.0001 ether);
@@ -50,7 +50,7 @@ contract SwapMathTest is Test {
         psmReserve = 150 ether;
 
         (lvProfit, psmProfit, raLeft, dsReceived, lvReserveUsed, psmReserveUsed) =
-            SwapperMathLibrary.calculateRolloverSale(lvReserve, psmReserve, raProvided, hiya);
+            SwapperMathLibrary.calculateReserveSale(lvReserve, psmReserve, raProvided, hiya);
 
         vm.assertApproxEqAbs(lvProfit, 0.25 ether, 0.0001 ether);
         vm.assertApproxEqAbs(psmProfit, 0.75 ether, 0.0001 ether);

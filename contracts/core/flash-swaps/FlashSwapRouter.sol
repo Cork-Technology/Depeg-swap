@@ -325,7 +325,7 @@ contract RouterState is
         uint256 psmReserveUsed;
 
         (lvProfit, psmProfit, raLeft, dsReceived, lvReserveUsed, psmReserveUsed) =
-            SwapperMathLibrary.calculateRolloverSale(assetPair.lvReserve, assetPair.psmReserve, amountRa, self.hiya);
+            SwapperMathLibrary.calculateReserveSale(assetPair.lvReserve, assetPair.psmReserve, amountRa, self.hiya);
 
         amountRa = TransferHelper.fixedToTokenNativeDecimals(amountRa, assetPair.ra);
         raLeft = TransferHelper.fixedToTokenNativeDecimals(raLeft, assetPair.ra);
