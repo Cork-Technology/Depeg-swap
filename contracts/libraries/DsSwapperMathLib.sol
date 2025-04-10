@@ -292,7 +292,7 @@ library SwapperMathLibrary {
         decay = sub(convertUd(100), discount);
     }
 
-    function _calculateReserveSale(UD60x18 lvDsReserve, UD60x18 psmDsReserve, UD60x18 raProvided, UD60x18 hpa)
+    function _calculateReserveSale(UD60x18 lvDsReserve, UD60x18 psmDsReserve, UD60x18 raProvided, UD60x18 dsPrice)
         public
         view
         returns (
@@ -307,7 +307,7 @@ library SwapperMathLibrary {
         UD60x18 totalDsReserve = add(lvDsReserve, psmDsReserve);
 
         // calculate the amount of DS user will receive
-        dsReceived = div(raProvided, hpa);
+        dsReceived = div(raProvided, dsPrice);
 
         // returns the RA if, the total reserve cannot cover the DS that user will receive. this Ra left must subject to the AMM rates
         if (totalDsReserve >= dsReceived) {
@@ -317,7 +317,7 @@ library SwapperMathLibrary {
             dsReceived = totalDsReserve;
 
             // Recalculate raLeft to account for the dust
-            raLeft = sub(raProvided, mul(dsReceived, hpa));
+            raLeft = sub(raProvided, mul(dsReceived, dsPrice));
         }
 
         // recalculate the DS user will receive, after the RA left is deducted
@@ -345,11 +345,11 @@ library SwapperMathLibrary {
         assert(totalDsReserve >= lvReserveUsed + psmReserveUsed);
 
         // calculate the RA profit of LV and PSM
-        lvProfit = mul(lvReserveUsed, hpa);
-        psmProfit = mul(psmReserveUsed, hpa);
+        lvProfit = mul(lvReserveUsed, dsPrice);
+        psmProfit = mul(psmReserveUsed, dsPrice);
     }
 
-    function calculateReserveSale(uint256 lvDsReserve, uint256 psmDsReserve, uint256 raProvided, uint256 hiya)
+    function calculateReserveSale(uint256 lvDsReserve, uint256 psmDsReserve, uint256 raProvided, uint256 price)
         external
         view
         returns (
@@ -364,7 +364,7 @@ library SwapperMathLibrary {
         UD60x18 _lvDsReserve = ud(lvDsReserve);
         UD60x18 _psmDsReserve = ud(psmDsReserve);
         UD60x18 _raProvided = ud(raProvided);
-        UD60x18 _hpa = sub(convertUd(1), calcPtConstFixed(ud(hiya)));
+        UD60x18 dsPrice = ud(price);
 
         (
             UD60x18 _lvProfit,
@@ -373,7 +373,7 @@ library SwapperMathLibrary {
             UD60x18 _dsReceived,
             UD60x18 _lvReserveUsed,
             UD60x18 _psmReserveUsed
-        ) = _calculateReserveSale(_lvDsReserve, _psmDsReserve, _raProvided, _hpa);
+        ) = _calculateReserveSale(_lvDsReserve, _psmDsReserve, _raProvided, dsPrice);
 
         lvProfit = unwrap(_lvProfit);
         psmProfit = unwrap(_psmProfit);
@@ -381,6 +381,20 @@ library SwapperMathLibrary {
         dsReceived = unwrap(_dsReceived);
         lvReserveUsed = unwrap(_lvReserveUsed);
         psmReserveUsed = unwrap(_psmReserveUsed);
+    }
+
+    function calculateDsSpotPrice(uint256 raReserve, uint256 ctReserve, uint256 _t)
+        internal
+        pure
+        returns (uint256 spot)
+    {
+        UD60x18 t = ud(_t);
+
+        UD60x18 ctSpotPrice = pow(ud(raReserve) / ud(ctReserve), t) ;
+
+        UD60x18 dsSpotPrice = convertUd(1) - ctSpotPrice;
+
+        spot = unwrap(dsSpotPrice);
     }
 
     /**
