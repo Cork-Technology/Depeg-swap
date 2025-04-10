@@ -317,6 +317,8 @@ contract RouterState is
             return (amountRa, 0);
         }
 
+        // TODO if rollver period use current hiya, else use market ds spot price
+
         amountRa = TransferHelper.tokenNativeDecimalsToFixed(amountRa, reserves[reserveId].ds[dsId].ra);
 
         uint256 lvProfit;
@@ -370,6 +372,8 @@ contract RouterState is
         IDsFlashSwapCore.OffchainGuess memory offchainGuess
     ) internal returns (uint256 borrow) {
         uint256 dsReceived;
+        // TODO  move this to top level
+
         // try to swap the RA for DS via rollover, this will noop if the condition for rollover is not met
         (amount, dsReceived) = _swapRaForDsViaRollover(reserveId, dsId, user, amount);
 
