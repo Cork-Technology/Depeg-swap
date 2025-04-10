@@ -9,6 +9,7 @@ import {MarketSnapshot, MarketSnapshotLib} from "Cork-Hook/lib/MarketSnapshot.so
 import {IDsFlashSwapCore} from "./../interfaces/IDsFlashSwapRouter.sol";
 import {TransferHelper} from "./TransferHelper.sol";
 import {IErrors} from "./../interfaces/IErrors.sol";
+import {UD60x18, convert, ud, unwrap} from "@prb/math/src/UD60x18.sol";
 
 /**
  * @dev AssetPair structure for Asset Pairs
@@ -69,7 +70,7 @@ library DsFlashSwaplibrary {
         }
     }
 
-    function rolloverSale(ReserveState storage self) external view returns (bool) {
+    function rolloverSale(ReserveState storage self) public view returns (bool) {
         return block.number <= self.rolloverEndInBlockNumber;
     }
 
@@ -287,5 +288,25 @@ library DsFlashSwaplibrary {
 
     function isRAsupportsPermit(address token) external view returns (bool) {
         return PermitChecker.supportsPermit(token);
+    }
+
+    /// @dev will return an implied yield average price if rollover
+    /// else it will just return the spot ds price that's derived from the spot price of CT
+    function getCurrentDsPrice(ReserveState storage self, AssetPair storage pair, ICorkHook router)
+        external
+        view
+        returns (uint256 price)
+    {
+        if (rolloverSale(self)) {
+            return unwrap(convert(1) - SwapperMathLibrary.calcPtConstFixed(ud(self.hiya)));
+        } else {
+            MarketSnapshot memory market = router.getMarketSnapshot(address(pair.ra), address(pair.ct));
+            market.reserveRa = TransferHelper.tokenNativeDecimalsToFixed(market.reserveRa, assetPair.ra);
+
+            /// @dev t is 18 decimals so we do this
+            uint256 t = 1e18 - market.oneMinusT;
+            
+            return SwapperMathLibrary.calculateDsSpotPrice(market.reserveRa, market.reserveCt, t);
+        }
     }
 }
