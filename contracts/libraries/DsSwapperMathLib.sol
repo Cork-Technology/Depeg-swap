@@ -390,7 +390,7 @@ library SwapperMathLibrary {
     {
         UD60x18 t = ud(_t);
 
-        UD60x18 ctSpotPrice = pow(ud(raReserve) / ud(ctReserve), t) ;
+        UD60x18 ctSpotPrice = pow(ud(raReserve) / ud(ctReserve), t);
 
         UD60x18 dsSpotPrice = convertUd(1) - ctSpotPrice;
 

@@ -305,7 +305,7 @@ library DsFlashSwaplibrary {
 
             /// @dev t is 18 decimals so we do this
             uint256 t = 1e18 - market.oneMinusT;
-            
+
             return SwapperMathLibrary.calculateDsSpotPrice(market.reserveRa, market.reserveCt, t);
         }
     }
