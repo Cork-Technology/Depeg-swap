@@ -3,8 +3,7 @@ pragma solidity ^0.8.24;
 
 import {Id, Pair, PairLibrary} from "../../libraries/Pair.sol";
 import {IErrors} from "../../interfaces/IErrors.sol";
-import {MathHelper} from "../../libraries/MathHelper.sol";
-import {IExchangeRateProvider} from "../../interfaces/IExchangeRateProvider.sol";
+import {IExchangeRateProvider} from "../../interfaces/exchangeRateProvider/IExchangeRateProvider.sol";
 
 /**
  * @title ExchangeRateProvider Contract
