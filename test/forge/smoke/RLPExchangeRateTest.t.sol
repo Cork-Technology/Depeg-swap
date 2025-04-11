@@ -41,7 +41,7 @@ contract RLPExchangeRateTest is Test {
         try env.envString(key) returns (string memory value) {
             return value;
         } catch {
-            return "";
+            return "https://eth.llamarpc.com";
         }
     }
 
@@ -49,7 +49,7 @@ contract RLPExchangeRateTest is Test {
         try env.envUint(key) returns (uint256 value) {
             return value;
         } catch {
-            return 0;
+            return 21839525;
         }
     }
 
