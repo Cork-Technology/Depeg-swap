@@ -25,41 +25,50 @@ contract SetupMarketScript is Script {
     address constant USDe = 0x4c9EDD5852cd905f086C759E8383e09bff1E68B3;
     address constant sUSDe = 0x9D39A5DE30e57443BfF2A8307A4256c8797A3497;
     address constant USDT = 0xdAC17F958D2ee523a2206206994597C13D831ec7;
+    address constant wstUSR = 0x1202F5C7b4B9E47a1A484E8B270be34dbbC75055;
+    address constant resolv = 0x4956b52aE2fF65D74CA2d61207523288e4528f96;
 
     uint256 constant weth_wstETH_Expiry = 90 days + 1;
     uint256 constant wstETH_weETH_Expiry = 90 days + 1;
     uint256 constant sUSDS_USDe_Expiry = 90 days + 1;
     uint256 constant sUSDe_USDT_Expiry = 90 days + 1;
+    uint256 constant wstUSR_resolv_Expiry = 60 days;
 
     uint256 constant weth_wstETH_ARP = 0.3698630135 ether;
     uint256 constant wstETH_weETH_ARP = 0.4931506847 ether;
     uint256 constant sUSDS_USDe_ARP = 0.9863013697 ether;
     uint256 constant sUSDe_USDT_ARP = 0.4931506847 ether;
+    uint256 constant wstUSR_resolv_ARP = 0.8219178082 ether;
 
     uint256 constant weth_wstETH_ExchangeRate = 1.192057609 ether;
     uint256 constant wstETH_weETH_ExchangeRate = 0.8881993472 ether;
     uint256 constant sUSDS_USDe_ExchangeRate = 0.9689922481 ether;
     uint256 constant sUSDe_USDT_ExchangeRate = 0.8680142355 ether;
+    uint256 constant wstUSR_resolv_ExchangeRate = 1.092925197 ether;
 
     uint256 constant weth_wstETH_RedemptionFee = 0.2 ether;
     uint256 constant wstETH_weETH_RedemptionFee = 0.2 ether;
     uint256 constant sUSDS_USDe_RedemptionFee = 0.2 ether;
     uint256 constant sUSDe_USDT_RedemptionFee = 0.2 ether;
+    uint256 constant wstUSR_resolv_RedemptionFee = 0.2 ether;
 
     uint256 constant weth_wstETH_RepurchaseFee = 0.23 ether;
     uint256 constant wstETH_weETH_RepurchaseFee = 0.3 ether;
     uint256 constant sUSDS_USDe_RepurchaseFee = 0.61 ether;
     uint256 constant sUSDe_USDT_RepurchaseFee = 0.3 ether;
+    uint256 constant wstUSR_resolv_RepurchaseFee = 0.76 ether;
 
     uint256 constant weth_wstETH_AmmBaseFee = 0.018 ether;
     uint256 constant wstETH_weETH_AmmBaseFee = 0.025 ether;
     uint256 constant sUSDS_USDe_AmmBaseFee = 0.049 ether;
     uint256 constant sUSDe_USDT_AmmBaseFee = 0.025 ether;
+    uint256 constant wstUSR_resolv_AmmBaseFee = 0.041 ether;
 
     uint256 constant weth_wstETH_FeesSplit = 0 ether;
     uint256 constant wstETH_weETH_FeesSplit = 10 ether;
     uint256 constant sUSDS_USDe_FeesSplit = 10 ether;
     uint256 constant sUSDe_USDT_FeesSplit = 10 ether;
+    uint256 constant wstUSR_resolv_FeesSplit = 10 ether;
 
     uint256 public pk = vm.envUint("PRIVATE_KEY");
     address public deployer = vm.addr(pk);
@@ -117,6 +126,19 @@ contract SetupMarketScript is Script {
             sUSDe_USDT_AmmBaseFee,
             sUSDe_USDT_FeesSplit
         );
+
+        setupMarket(resolv, wstUSR, wstUSR_resolv_Expiry, wstUSR_resolv_ARP, wstUSR_resolv_ExchangeRate);
+        configureFees(
+            resolv,
+            wstUSR,
+            wstUSR_resolv_ARP,
+            wstUSR_resolv_Expiry,
+            wstUSR_resolv_RedemptionFee,
+            wstUSR_resolv_RepurchaseFee,
+            wstUSR_resolv_AmmBaseFee,
+            wstUSR_resolv_FeesSplit
+        );
+
         console.log("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-");
         vm.stopBroadcast();
     }
@@ -137,7 +159,7 @@ contract SetupMarketScript is Script {
         config.updatePsmRate(id, exchangeRate);
         console.log("Updated Exchange Rate");
 
-        config.issueNewDs(id, block.timestamp + 30 minutes);
+        config.issueNewDs(id, block.timestamp + 3 hours);
         console.log("New DS issued for pair");
 
         uint8 raDecimals = ERC20(raToken).decimals();
@@ -153,10 +175,12 @@ contract SetupMarketScript is Script {
         console.log("Rollover period         : ", block.timestamp + 7200, "timestamp");
         console.log("AMM liquidation deadline: ", block.timestamp + 30 minutes, "timestamp");
 
+        // vm.startPrank(0xc7Bfd896cc6A8BF1D09486Dd08f590691b20C2Ff);
         uint256 depositAmount = TransferHelper.normalizeDecimals(0.1 ether, 18, raDecimals);
         ERC20(raToken).approve(address(moduleCore), depositAmount);
         moduleCore.depositLv(id, depositAmount, 0, 0);
 
+        // vm.startPrank(deployer);
         (address ct,) = moduleCore.swapAsset(id, 1);
         (uint256 raReserve, uint256 ctReserve) = hook.getReserves(raToken, ct);
 
