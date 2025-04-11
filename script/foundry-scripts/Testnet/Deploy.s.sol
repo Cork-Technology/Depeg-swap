@@ -402,14 +402,7 @@ contract DeployScript is Script {
         CETH(raToken).approve(uniswapV2RouterSepolia, liquidityAmt);
         IERC20(paToken).approve(uniswapV2RouterSepolia, liquidityAmt);
         univ2Router.addLiquidity(
-            raToken,
-            paToken,
-            liquidityAmt,
-            liquidityAmt,
-            0,
-            0,
-            deployer,
-            block.timestamp + 10000 minutes
+            raToken, paToken, liquidityAmt, liquidityAmt, 0, 0, deployer, block.timestamp + 10000 minutes
         );
         console.log("Liquidity Added to AMM");
     }
