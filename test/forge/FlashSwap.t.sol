@@ -76,7 +76,7 @@ contract FlashSwapTest is Helper {
 
         uint256 lvReserveAfter = flashSwapRouter.getLvReserve(currencyId, dsId);
 
-        vm.assertTrue(lvReserveAfter < lvReserveBefore);
+        vm.assertLt(lvReserveAfter, lvReserveBefore);
     }
 
     function test_swapRaForDsShouldHandlePermitCorrectly() public virtual {

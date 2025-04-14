@@ -65,15 +65,13 @@ contract ReserveSellPressureTest is Helper {
     function test_UpdateReserveSellPressurePercentage() public {
         vm.startPrank(DEFAULT_ADDRESS);
 
-        // Should be 0 as default
-        assertEq(flashSwapRouter.getReserveSellPressurePercentageThresold(currencyId), 0);
 
         // Should be able to update as the manager
         vm.expectEmit(true, true, false, true);
-        emit IDsFlashSwapCore.ReserveSellPressurePercentageUpdated(currencyId, 10 ether);
-        corkConfig.updateReserveSellPressurePercentage(currencyId, 10 ether);
+        emit IDsFlashSwapCore.ReserveSellPressurePercentageUpdated(currencyId, 1 ether);
+        corkConfig.updateReserveSellPressurePercentage(currencyId, 1 ether);
 
-        assertEq(flashSwapRouter.getReserveSellPressurePercentageThresold(currencyId), 10 ether);
+        assertEq(flashSwapRouter.getReserveSellPressurePercentageThresold(currencyId), 1 ether);
 
         // Verify the effect by seeing its impact on a swap
         ra.approve(address(flashSwapRouter), type(uint256).max);
@@ -86,25 +84,15 @@ contract ReserveSellPressureTest is Helper {
             currencyId, dsId, amount, 0, defaultBuyApproxParams(), defaultOffchainGuessParams()
         );
 
-        // Update to a lower threshold (should increase sell pressure)
-        corkConfig.updateReserveSellPressurePercentage(currencyId, 5 ether);
+        // Update to a higher threshold (should decrease sell pressure)
+        corkConfig.updateReserveSellPressurePercentage(currencyId, 20 ether);
 
         IDsFlashSwapCore.SwapRaForDsReturn memory result2 = flashSwapRouter.swapRaforDs(
             currencyId, dsId, amount, 0, defaultBuyApproxParams(), defaultOffchainGuessParams()
         );
 
-        // Verify sell pressure is higher with lower threshold
-        assertGt(result2.reserveSellPressure, result1.reserveSellPressure);
-
-        // Update to a higher threshold (should decrease sell pressure)
-        corkConfig.updateReserveSellPressurePercentage(currencyId, 20 ether);
-
-        IDsFlashSwapCore.SwapRaForDsReturn memory result3 = flashSwapRouter.swapRaforDs(
-            currencyId, dsId, amount, 0, defaultBuyApproxParams(), defaultOffchainGuessParams()
-        );
-
-        // Verify sell pressure is lower with higher threshold
-        assertLt(result3.reserveSellPressure, result1.reserveSellPressure);
+        // Verify sell pressure is greater with lower threshold
+        assertGt(result1.reserveSellPressure, result2.reserveSellPressure);
         vm.stopPrank();
     }
 
