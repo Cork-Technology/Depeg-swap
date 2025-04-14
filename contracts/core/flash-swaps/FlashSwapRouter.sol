@@ -20,6 +20,7 @@ import {IErrors} from "./../../interfaces/IErrors.sol";
 import {TransferHelper} from "./../../libraries/TransferHelper.sol";
 import {ReturnDataSlotLib} from "./../../libraries/ReturnDataSlotLib.sol";
 import {CorkConfig} from "../CorkConfig.sol";
+import {MarketSnapshot} from "Cork-Hook/lib/MarketSnapshot.sol";
 
 /**
  * @title Router contract for Flashswap
@@ -296,28 +297,17 @@ contract RouterState is
     }
 
     /// will return that can't be filled from the reserve, this happens when the total reserve is less than the amount requested
-    function _swapRaForDsViaRollover(Id reserveId, uint256 dsId, address user, uint256 amountRa)
+    function _fillFromReserve(Id reserveId, uint256 dsId, address user, uint256 amountRa)
         internal
         returns (uint256 raLeft, uint256 dsReceived)
     {
-        // this means that we ignore and don't do rollover sale when it's first issuance or it's not rollover time, or no hiya(means no trade, unlikely but edge case)
-        if (
-            dsId == DsFlashSwaplibrary.FIRST_ISSUANCE || !reserves[reserveId].rolloverSale()
-                || reserves[reserveId].hiya == 0
-        ) {
-            // noop and return back the full amountRa
-            return (amountRa, 0);
-        }
-
         ReserveState storage self = reserves[reserveId];
         AssetPair storage assetPair = self.ds[dsId];
 
-        // If there's no reserve, we will proceed without using rollover
+        // If there's no reserve, we will proceed without filling from reserve
         if (assetPair.lvReserve == 0 && assetPair.psmReserve == 0) {
             return (amountRa, 0);
         }
-
-        // TODO if rollver period use current hiya, else use market ds spot price
 
         amountRa = TransferHelper.tokenNativeDecimalsToFixed(amountRa, reserves[reserveId].ds[dsId].ra);
 
@@ -326,8 +316,10 @@ contract RouterState is
         uint256 lvReserveUsed;
         uint256 psmReserveUsed;
 
-        (lvProfit, psmProfit, raLeft, dsReceived, lvReserveUsed, psmReserveUsed) =
-            SwapperMathLibrary.calculateReserveSale(assetPair.lvReserve, assetPair.psmReserve, amountRa, self.hiya);
+        (lvProfit, psmProfit, raLeft, dsReceived, lvReserveUsed, psmReserveUsed) = SwapperMathLibrary
+            .calculateReserveSale(
+            assetPair.lvReserve, assetPair.psmReserve, amountRa, self.getCurrentDsPrice(assetPair, hook)
+        );
 
         amountRa = TransferHelper.fixedToTokenNativeDecimals(amountRa, assetPair.ra);
         raLeft = TransferHelper.fixedToTokenNativeDecimals(raLeft, assetPair.ra);
@@ -343,14 +335,17 @@ contract RouterState is
 
         // then use the profit
         IPSMcore(_moduleCore).psmAcceptFlashSwapProfit(reserveId, psmProfit);
-        IVault(_moduleCore).lvAcceptRolloverProfit(reserveId, lvProfit);
+        IVault(_moduleCore).provideLiquidityWithFlashSwapFee(reserveId, lvProfit);
 
         IERC20(assetPair.ds).safeTransfer(user, dsReceived);
 
         {
             uint256 raLeftNormalized = TransferHelper.fixedToTokenNativeDecimals(raLeft, assetPair.ra);
-            emit RolloverSold(reserveId, dsId, user, dsReceived, raLeftNormalized);
+            emit Filled(reserveId, dsId, user, dsReceived, raLeftNormalized);
         }
+
+        // increase the slot value with DS that the user got from reserve
+        ReturnDataSlotLib.increase(ReturnDataSlotLib.RETURN_SLOT_BUY, dsReceived);
     }
 
     /**
@@ -362,6 +357,108 @@ contract RouterState is
         return reserves[reserveId].rolloverEndInBlockNumber;
     }
 
+    function _fillFromReserveRollover(Id reserveId, uint256 dsId, address user, uint256 amountRa)
+        internal
+        returns (uint256 raLeft, uint256 dsReceived)
+    {
+        return _fillFromReserve(reserveId, dsId, user, amountRa);
+    }
+
+    function _isRolloverSaleEligible(Id reserveId, uint256 dsId) internal returns (bool) {
+        // this means that we ignore and don't do rollover sale when it's first issuance or it's not rollover time, or no hiya(means no trade, unlikely but edge case)
+        return !(
+            dsId == DsFlashSwaplibrary.FIRST_ISSUANCE || !reserves[reserveId].rolloverSale()
+                || reserves[reserveId].hiya == 0
+        );
+    }
+
+    function _fillFromReserveSpotMarketPrice(
+        AssetPair storage assetPair,
+        Id reserveId,
+        uint256 dsId,
+        uint256 amount,
+        address user,
+        IDsFlashSwapCore.BuyAprroxParams memory approxParams,
+        IDsFlashSwapCore.OffchainGuess memory offchainGuess
+    ) internal returns (uint256 raLeft, uint256 dsReceived, uint256 borrowOnSold, uint256 pressurePercentage) {
+        raLeft = amount;
+
+        /// --- start emulate ---
+
+        // verify borrow and get the correct amount out
+        uint256 amountOut;
+        (amountOut, borrowOnSold) = _verifyBorrow(assetPair, amount, approxParams, offchainGuess);
+
+        // calculate the amount of DS tokens that will be sold from reserve
+
+        ReserveState storage self = reserves[reserveId];
+
+        (, pressurePercentage) = calculateSellFromReserve(self, amountOut, dsId, amount);
+        /// --- end emulate ---
+
+        // noop if we can't sell anything
+        if (pressurePercentage == 0) return (raLeft, 0, borrowOnSold, 0);
+
+        // take the actual RA that we actually want to fill
+        amount = MathHelper.calculatePercentageFee(pressurePercentage, amount);
+        raLeft -= amount;
+
+        (amount,,) = _applyFees(reserveId, assetPair, amount);
+
+        uint256 unused;
+        (unused, dsReceived) = _fillFromReserve(reserveId, dsId, user, amount);
+        raLeft += unused;
+    }
+
+    function _verifyBorrow(
+        AssetPair storage pair,
+        uint256 amount,
+        IDsFlashSwapCore.BuyAprroxParams memory approxParams,
+        IDsFlashSwapCore.OffchainGuess memory offchainGuess
+    ) internal view returns (uint256 amountOut, uint256 borrow) {
+        uint256 repayment;
+
+        if (offchainGuess.borrowOnFill != 0) {
+            borrow = offchainGuess.borrowOnFill;
+            amountOut = borrow + amount;
+        } else {
+            // TODO handle if error -> add price cap
+            // TODO proper event when it's filled
+            (amountOut, borrow) = getAmountOutBuyDs(pair, hook, approxParams, amount);
+        }
+
+        // TODO  handle if error
+        repayment = hook.getAmountIn(address(pair.ra), address(pair.ct), false, borrow);
+
+        // to make sure user doesn't abuse the mechanism we actually verify that this will normally go through the normal buying flash swap process
+        if (repayment > amountOut) revert InvalidPoolStateOrNearExpired();
+    }
+
+    function _applyFees(Id reserveId, AssetPair storage pair, uint256 amount)
+        internal
+        returns (uint256 left, uint256 vaultFee, uint256 treasuryFee)
+    {
+        MarketSnapshot memory info = hook.getMarketSnapshot(address(pair.ra), address(pair.ct));
+
+        (, uint256 timeDecayFee) = hook.getFee(address(pair.ra), address(pair.ct));
+        left = amount;
+
+        uint256 fees = MathHelper.calculatePercentageFee(timeDecayFee, amount);
+        left -= fees;
+
+        treasuryFee = MathHelper.calculatePercentageFee(info.treasuryFeePercentage, fees);
+        vaultFee = fees - treasuryFee;
+
+        assert(treasuryFee + vaultFee == fees);
+
+        address treasury = config.treasury();
+
+        IERC20(pair.ra).safeTransfer(treasury, treasuryFee);
+
+        IERC20(pair.ra).safeTransfer(_moduleCore, vaultFee);
+        IVault(_moduleCore).provideLiquidityWithFlashSwapFee(reserveId, vaultFee);
+    }
+
     function _swapRaforDs(
         AssetPair storage assetPair,
         Id reserveId,
@@ -371,29 +468,10 @@ contract RouterState is
         IDsFlashSwapCore.BuyAprroxParams memory approxParams,
         IDsFlashSwapCore.OffchainGuess memory offchainGuess
     ) internal returns (uint256 borrow) {
-        uint256 dsReceived;
-        // TODO  move this to top level
-
-        // try to swap the RA for DS via rollover, this will noop if the condition for rollover is not met
-        (amount, dsReceived) = _swapRaForDsViaRollover(reserveId, dsId, user, amount);
-
-        // increase the return data slot value with DS that the user got from rollover sale
-        ReturnDataSlotLib.increase(ReturnDataSlotLib.RETURN_SLOT_BUY, dsReceived);
-
-        // short circuit if all the swap is filled using rollover
-        if (amount == 0) {
-            return (0);
-        }
-
-        uint256 amountOut;
-
-        if (offchainGuess.borrow == 0) {
-            // calculate the amount of DS tokens attributed
-            (amountOut, borrow) = getAmountOutBuyDs(assetPair, hook, approxParams, amount);
+        if (offchainGuess.borrowOnBuy == 0) {
+            (, borrow) = getAmountOutBuyDs(assetPair, hook, approxParams, amount);
         } else {
-            // we convert the amount to fixed point 18 decimals since, the amount out will be DS, and DS is always 18 decimals.
-            amountOut = TransferHelper.tokenNativeDecimalsToFixed(offchainGuess.borrow + amount, assetPair.ra);
-            borrow = offchainGuess.borrow;
+            borrow = offchainGuess.borrowOnBuy;
         }
 
         // trigger flash swaps and send the attributed DS tokens to the user
@@ -414,27 +492,6 @@ contract RouterState is
         } catch {
             revert IErrors.InvalidPoolStateOrNearExpired();
         }
-    }
-
-    function calculateAndSellDsReserve(
-        ReserveState storage self,
-        AssetPair storage assetPair,
-        CalculateAndSellDsParams memory params
-    ) internal returns (uint256 pressurePercentage) {
-        uint256 amountSellFromReserve;
-
-        // calculate the amount of DS tokens that will be sold from reserve
-        (amountSellFromReserve, pressurePercentage) =
-            calculateSellFromReserve(self, params.dsOut, params.dsId, params.raIn);
-
-        if (amountSellFromReserve < RESERVE_MINIMUM_SELL_AMOUNT || self.gradualSaleDisabled) {
-            return (0);
-        }
-
-        bool success = _sellDsReserve(assetPair, SellDsParams(params.reserveId, params.dsId, amountSellFromReserve));
-
-        // we return 0 in case it fails
-        pressurePercentage = success ? pressurePercentage : 0;
     }
 
     function calculateSellFromReserve(ReserveState storage self, uint256 amountOut, uint256 dsId, uint256 raProvided)
@@ -538,7 +595,23 @@ contract RouterState is
 
         IERC20(assetPair.ra).safeTransferFrom(msg.sender, address(this), amount);
 
-        result.borrow = _swapRaforDs(assetPair, reserveId, dsId, amount, msg.sender, params, offchainGuess);
+        // for HIYA calculation, we do it here since later down the line it'll be overidded by various function
+        uint256 raInFixed = TransferHelper.tokenNativeDecimalsToFixed(amount, assetPair.ra);
+
+        // TODO  fill from reserve here directly checking if currently the router is on a rollover sale or not
+        if (_isRolloverSaleEligible(reserveId, dsId)) {
+            // try to swap the RA for DS via rollover, this will noop if the condition for rollover is not met
+            (amount,) = _fillFromReserveRollover(reserveId, dsId, msg.sender, amount);
+        } else {
+            // make we only do the fill when the price of DS is positive to prevent undefined behaviour
+            (amount,, result.borrowOnFill, result.reserveSellPressure) = self.getCurrentDsPrice(assetPair, hook) != 0
+                ? _fillFromReserveSpotMarketPrice(assetPair, reserveId, dsId, amount, msg.sender, params, offchainGuess)
+                : (amount, 0, 0, 0);
+        }
+
+        // short circuit if all the swap is filled using the reserve
+        result.borrowOnBuy =
+            amount != 0 ? _swapRaforDs(assetPair, reserveId, dsId, amount, msg.sender, params, offchainGuess) : 0;
 
         result.amountOut = ReturnDataSlotLib.get(ReturnDataSlotLib.RETURN_SLOT_BUY);
 
@@ -550,19 +623,13 @@ contract RouterState is
         result.ctRefunded = ReturnDataSlotLib.get(ReturnDataSlotLib.REFUNDED_SLOT);
         result.fee = ReturnDataSlotLib.get(ReturnDataSlotLib.DS_FEE_AMOUNT);
 
-        uint256 raInFixed = TransferHelper.tokenNativeDecimalsToFixed(amount, assetPair.ra);
-
-        result.reserveSellPressure = calculateAndSellDsReserve(
-            self, assetPair, CalculateAndSellDsParams(reserveId, dsId, raInFixed, result.amountOut)
-        );
-
         self.recalculateHIYA(dsId, raInFixed, result.amountOut);
 
         emit RaSwapped(
             reserveId,
             dsId,
             msg.sender,
-            amount,
+            TransferHelper.fixedToTokenNativeDecimals(raInFixed, assetPair.ra),
             result.amountOut,
             result.ctRefunded,
             result.fee,
