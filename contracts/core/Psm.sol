@@ -7,7 +7,7 @@ import {IPSMcore} from "../interfaces/IPSMcore.sol";
 import {State} from "../libraries/State.sol";
 import {ModuleState} from "./ModuleState.sol";
 import {Context} from "@openzeppelin/contracts/utils/Context.sol";
-import {IExchangeRateProvider} from "./../interfaces/IExchangeRateProvider.sol";
+import {IExchangeRateProvider} from "./../interfaces/exchangeRateProvider/IExchangeRateProvider.sol";
 
 /**
  * @title PsmCore Abstract Contract

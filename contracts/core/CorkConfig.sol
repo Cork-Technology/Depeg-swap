@@ -11,7 +11,7 @@ import {CorkHook} from "Cork-Hook/CorkHook.sol";
 import {MarketSnapshot} from "Cork-Hook/lib/MarketSnapshot.sol";
 import {ProtectedUnitFactory} from "./assets/ProtectedUnitFactory.sol";
 import {ProtectedUnit} from "./assets/ProtectedUnit.sol";
-import {ExchangeRateProvider} from "./ExchangeRateProvider.sol";
+import {ExchangeRateProvider} from "./exchangeRateProviders/ExchangeRateProvider.sol";
 
 /**
  * @title Config Contract
