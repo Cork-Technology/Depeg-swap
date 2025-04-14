@@ -62,8 +62,8 @@ contract RLPExchangeRateTest is Test {
         (uint256 usrUSDPrice,,,) = IUSRPriceOracle(USR_PRICE_ORACLE).lastPrice();
         (uint256 rlpUSDPrice,) = IRLPPriceOracle(RLP_PRICE_ORACLE).lastPrice();
 
-        // exchange rate = (wstUsrPrice * usrUSDPrice) / rlpUSDPrice
-        uint256 expectedExchangeRate = (wstUsrPrice * usrUSDPrice) / rlpUSDPrice;
+        // exchange rate = rlpUSDPrice / (wstUsrPrice * usrUSDPrice)
+        uint256 expectedExchangeRate = (rlpUSDPrice * 1e36 / (wstUsrPrice * usrUSDPrice));
         assertEq(exchangeRate, expectedExchangeRate);
 
         // Mock market id

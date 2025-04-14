@@ -53,8 +53,8 @@ contract RLPExchangeRateProvider is IErrors, IRLPExchangeRateProvider {
     }
 
     function _calculateExchangeRate() internal view returns (uint256) {
-        // Convert 1 wstUSR to USR amount
-        uint256 usrAmount = IERC4626(WST_USR).convertToAssets(1 ether);
+        // Convert wstUSR to USR
+        uint256 wstUSRInUSR = IERC4626(WST_USR).convertToAssets(1 ether);
 
         // Get USR price
         (uint256 usrPrice,,,) = IUSRPriceOracle(USR_PRICE_ORACLE).lastPrice();
@@ -62,7 +62,8 @@ contract RLPExchangeRateProvider is IErrors, IRLPExchangeRateProvider {
         // Get RLP price
         (uint256 rlpPrice,) = IRLPPriceOracle(RLP_PRICE_ORACLE).lastPrice();
 
-        // exchange rate = (usrAmount * usrPrice) / rlpPrice
-        return (usrAmount * usrPrice) / rlpPrice;
+        // exchange rate = PA_Price / RA_Price
+        // exchange rate = rlpPriceInUSD / (wstUSRInUSR * usrPriceInUSD)
+        return (rlpPrice * 1e36 / (wstUSRInUSR * usrPrice));
     }
 }
