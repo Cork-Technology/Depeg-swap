@@ -297,16 +297,22 @@ library DsFlashSwaplibrary {
         view
         returns (uint256 price)
     {
-        if (rolloverSale(self)) {
+        if (rolloverSale(self) && self.hiya != 0) {
             return unwrap(convert(1) - SwapperMathLibrary.calcPtConstFixed(ud(self.hiya)));
         } else {
             MarketSnapshot memory market = router.getMarketSnapshot(address(pair.ra), address(pair.ct));
-            market.reserveRa = TransferHelper.tokenNativeDecimalsToFixed(market.reserveRa, assetPair.ra);
+            market.reserveRa = TransferHelper.tokenNativeDecimalsToFixed(market.reserveRa, pair.ra);
 
             /// @dev t is 18 decimals so we do this
             uint256 t = 1e18 - market.oneMinusT;
 
-            return SwapperMathLibrary.calculateDsSpotPrice(market.reserveRa, market.reserveCt, t);
+            // if for some reason this fails. e.g reserve is 0 or t is 0. we return 0. unlikely to happen but just in case
+            try SwapperMathLibrary.calculateDsSpotPrice(market.reserveRa, market.reserveCt, t) returns (uint256 _price)
+            {
+                price = _price;
+            } catch {
+                return 0;
+            }
         }
     }
 }
