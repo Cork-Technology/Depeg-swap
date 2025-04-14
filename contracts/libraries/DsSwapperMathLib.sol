@@ -384,15 +384,17 @@ library SwapperMathLibrary {
     }
 
     function calculateDsSpotPrice(uint256 raReserve, uint256 ctReserve, uint256 _t)
-        internal
+        external
         pure
         returns (uint256 spot)
     {
         UD60x18 t = ud(_t);
+        UD60x18 one = convertUd(1);
 
         UD60x18 ctSpotPrice = pow(ud(raReserve) / ud(ctReserve), t);
 
-        UD60x18 dsSpotPrice = convertUd(1) - ctSpotPrice;
+        // prevent underflow
+        UD60x18 dsSpotPrice = ctSpotPrice > one ? ud(0) : one - ctSpotPrice;
 
         spot = unwrap(dsSpotPrice);
     }
