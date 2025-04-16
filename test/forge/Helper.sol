@@ -82,7 +82,7 @@ abstract contract Helper is SigUtils, TestHelper {
 
     // 10% sell pressure threshold for the router
     uint256 internal DEFAULT_SELLPRESSURE_THRESHOLD = 10 ether;
-    
+
     function overridePrank(address _as) public {
         (, address currentCaller,) = vm.readCallers();
         overridenAddress = currentCaller;
@@ -163,7 +163,6 @@ abstract contract Helper is SigUtils, TestHelper {
         corkConfig.updateRolloverPeriodInBlocks(rolloverPeriodInblocks);
         corkConfig.updateRepurchaseFeeRate(id, repurchaseFeePercentage);
         corkConfig.updateReserveSellPressurePercentage(id, DEFAULT_SELLPRESSURE_THRESHOLD);
-
     }
 
     function issueNewDs(Id id) internal {

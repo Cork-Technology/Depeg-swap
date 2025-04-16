@@ -65,7 +65,6 @@ contract ReserveSellPressureTest is Helper {
     function test_UpdateReserveSellPressurePercentage() public {
         vm.startPrank(DEFAULT_ADDRESS);
 
-
         // Should be able to update as the manager
         vm.expectEmit(true, true, false, true);
         emit IDsFlashSwapCore.ReserveSellPressurePercentageUpdated(currencyId, 1 ether);
