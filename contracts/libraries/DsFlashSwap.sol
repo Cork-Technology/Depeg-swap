@@ -311,8 +311,15 @@ library DsFlashSwaplibrary {
             {
                 price = _price;
             } catch {
-                return 0;
+                price = 0;
             }
+
+            /// @dev we basically cap the price of the DS to half of the threshold. we treat that cap as a risk premium and derive the spot DS price
+            /// using 1 - (f/ (rate+1)^t) where the latter part is just pT or CT price and f is hardcoded to 1 since CT + DS will always converge to 1 RA
+            uint256 priceFloor = self.reserveSellPressurePercentageThreshold / 2;
+            priceFloor = SwapperMathLibrary.calculateDsSpotPriceWithRiskPremium(priceFloor, t);
+
+            price = price < priceFloor ? priceFloor : price;
         }
     }
 }
