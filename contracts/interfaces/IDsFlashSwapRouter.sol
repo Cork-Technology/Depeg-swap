@@ -177,9 +177,11 @@ interface IDsFlashSwapCore is IDsFlashSwapUtility {
      * @param dsId the ds id of the pair, the same as the DS id on PSM and LV
      * @param user the user that's swapping
      * @param dsReceived the amount of DS that's received
-     * @param raLeft the amount of RA that's left
+     * @param raFilled the amount of RA that's filled
      */
-    event Filled(Id indexed reserveId, uint256 indexed dsId, address indexed user, uint256 dsReceived, uint256 raLeft);
+    event Filled(
+        Id indexed reserveId, uint256 indexed dsId, address indexed user, uint256 dsReceived, uint256 raFilled
+    );
 
     /**
      * @notice trigger new issuance logic for a specific pair
@@ -380,6 +382,8 @@ interface IDsFlashSwapCore is IDsFlashSwapUtility {
      * @param newPercentage The new reserve sell pressure percentage to be applied.
      */
     function updateReserveSellPressurePercentage(Id id, uint256 newPercentage) external;
+
+    function sellPressureThreshold(Id id) external view returns (uint256);
 
     event DiscountRateUpdated(Id indexed id, uint256 discountRateInDays);
 
