@@ -339,10 +339,7 @@ contract RouterState is
 
         IERC20(assetPair.ds).safeTransfer(user, dsReceived);
 
-        {
-            uint256 raLeftNormalized = TransferHelper.fixedToTokenNativeDecimals(raLeft, assetPair.ra);
-            emit Filled(reserveId, dsId, user, dsReceived, raLeftNormalized);
-        }
+        emit Filled(reserveId, dsId, user, dsReceived, amountRa);
 
         // increase the slot value with DS that the user got from reserve
         ReturnDataSlotLib.increase(ReturnDataSlotLib.RETURN_SLOT_BUY, dsReceived);
@@ -405,9 +402,9 @@ contract RouterState is
 
         (amount,,) = _applyFees(reserveId, assetPair, amount);
 
-        uint256 unused;
-        (unused, dsReceived) = _fillFromReserve(reserveId, dsId, user, amount);
-        raLeft += unused;
+        (amount, dsReceived) = _fillFromReserve(reserveId, dsId, user, amount);
+        // we add back unused amount to ra left
+        raLeft += amount;
     }
 
     function _verifyBorrow(
@@ -422,12 +419,9 @@ contract RouterState is
             borrow = offchainGuess.borrowOnFill;
             amountOut = borrow + amount;
         } else {
-            // TODO handle if error -> add price cap
-            // TODO proper event when it's filled
             (amountOut, borrow) = getAmountOutBuyDs(pair, hook, approxParams, amount);
         }
 
-        // TODO  handle if error
         repayment = hook.getAmountIn(address(pair.ra), address(pair.ct), false, borrow);
 
         // to make sure user doesn't abuse the mechanism we actually verify that this will normally go through the normal buying flash swap process
@@ -443,6 +437,8 @@ contract RouterState is
         (, uint256 timeDecayFee) = hook.getFee(address(pair.ra), address(pair.ct));
         left = amount;
 
+        ReturnDataSlotLib.increase(ReturnDataSlotLib.DS_FEE_PERCENTAGE, timeDecayFee);
+
         uint256 fees = MathHelper.calculatePercentageFee(timeDecayFee, amount);
         left -= fees;
 
@@ -450,6 +446,8 @@ contract RouterState is
         vaultFee = fees - treasuryFee;
 
         assert(treasuryFee + vaultFee == fees);
+
+        ReturnDataSlotLib.increase(ReturnDataSlotLib.DS_FEE_AMOUNT, fees);
 
         address treasury = config.treasury();
 
@@ -510,38 +508,6 @@ contract RouterState is
 
         // sell all tokens if the sell amount is higher than the available reserve
         amount = totalReserve < amountSellFromReserve ? totalReserve : amountSellFromReserve;
-    }
-
-    function _sellDsReserve(AssetPair storage assetPair, SellDsParams memory params) internal returns (bool success) {
-        uint256 profitRa;
-
-        // sell the DS tokens from the reserve and accrue value to LV holders
-        // it's safe to transfer all profit to the module core since the profit for each PSM and LV is calculated separately and we invoke
-        // the profit acceptance function for each of them
-        //
-        // this function can fail, if there's not enough CT liquidity to sell the DS tokens, in that case, we skip the selling part and let user buy the DS tokens
-        (profitRa, success) =
-            __swapDsforRa(assetPair, params.reserveId, params.dsId, params.amountSellFromReserve, 0, _moduleCore);
-
-        if (success) {
-            uint256 lvReserve = assetPair.lvReserve;
-            uint256 totalReserve = lvReserve + assetPair.psmReserve;
-
-            // calculate the amount of DS tokens that will be sold from both reserve
-            uint256 lvReserveUsed = lvReserve * params.amountSellFromReserve * 1e18 / (totalReserve) / 1e18;
-
-            // decrement reserve
-            assetPair.lvReserve -= lvReserveUsed;
-            assetPair.psmReserve -= params.amountSellFromReserve - lvReserveUsed;
-
-            // calculate the profit of the liquidity vault
-            uint256 vaultProfit = profitRa * lvReserveUsed / params.amountSellFromReserve;
-
-            // send profit to the vault
-            IVault(_moduleCore).provideLiquidityWithFlashSwapFee(params.reserveId, vaultProfit);
-            // send profit to the PSM
-            IPSMcore(_moduleCore).psmAcceptFlashSwapProfit(params.reserveId, profitRa - vaultProfit);
-        }
     }
 
     /**
@@ -633,9 +599,13 @@ contract RouterState is
             result.amountOut,
             result.ctRefunded,
             result.fee,
-            0,
+            ReturnDataSlotLib.get(ReturnDataSlotLib.DS_FEE_PERCENTAGE),
             result.reserveSellPressure
         );
+    }
+
+    function sellPressureThreshold(Id id) external view returns (uint256) {
+        return reserves[id].reserveSellPressurePercentageThreshold;
     }
 
     /**
