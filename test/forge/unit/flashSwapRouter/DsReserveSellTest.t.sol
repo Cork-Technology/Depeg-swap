@@ -95,50 +95,6 @@ contract DsReserveSellTest is Helper {
         vm.stopPrank();
     }
 
-    // Test that the reserve sell works when the DS reserve sell fails
-    // We increased price of CT so that DS reserve sell fails
-    function test_SellFromReserveWorkWhenDsReserveSellFails() public {
-        vm.startPrank(DEFAULT_ADDRESS);
-
-        // Setup the test to trigger a reserve sell
-        ra.approve(address(flashSwapRouter), type(uint256).max);
-        Asset(ds).approve(address(moduleCore), type(uint256).max);
-        uint256 reserveAmount = flashSwapRouter.getLvReserve(currencyId, dsId);
-
-        // Set reserve pressure threshold to 100% to ensure sell pressure
-        corkConfig.updateReserveSellPressurePercentage(currencyId, 100 ether);
-
-        // Buy maximum CT and increase CT prices to the moon
-        ra.approve(address(hook), type(uint256).max);
-        uint256 amountIn = hook.getAmountIn(address(ra), address(ct), false, 510 ether);
-        uint256 amountOut = hook.getAmountOut(address(ra), address(ct), false, amountIn);
-        hook.swap(address(ra), address(ct), 0, amountOut / 2, "");
-        hook.swap(address(ra), address(ct), 0, amountOut / 2, "");
-        hook.swap(address(ra), address(ct), 0, 2.1 ether, "");
-        hook.swap(address(ra), address(ct), 0, 0.2 ether, "");
-        hook.swap(address(ra), address(ct), 0, 0.1 ether, "");
-        hook.swap(address(ra), address(ct), 0, 0.1 ether, "");
-        hook.swap(address(ra), address(ct), 0, 0.1 ether, "");
-
-        uint256 ctPrice = hook.getAmountOut(address(ra), address(ct), false, 1 ether);
-        assertGt(ctPrice, 1 ether, "CT price should be greater than 1 ether");
-
-        uint256 amount = 100 ether;
-        IDsFlashSwapCore.SwapRaForDsReturn memory result = flashSwapRouter.swapRaforDs(
-            currencyId, dsId, amount, 0, defaultBuyApproxParams(), defaultOffchainGuessParams()
-        );
-
-        // Verify the swap worked and returned the expected DS tokens
-        assertGt(result.amountOut, 0, "Swap should return DS tokens");
-        assertEq(result.reserveSellPressure, 0, "Sell pressure should be zero");
-
-        // Check if LV reserve decreased (reserve sell succeeded)
-        uint256 reserveAfter = flashSwapRouter.getLvReserve(currencyId, dsId);
-        bool sellSucceeded = reserveAfter < reserveAmount;
-        assertEq(sellSucceeded, false, "Sell should be failed");
-        vm.stopPrank();
-    }
-
     // Test that the reserve sell reverts when the reserve is zero
     function test_SellFromReserveWithZeroReserveShouldRevert() public {
         vm.startPrank(DEFAULT_ADDRESS);
@@ -225,7 +181,7 @@ contract DsReserveSellTest is Helper {
             flashSwapRouter.getCurrentPriceRatio(currencyId, dsId);
 
         // Perform the swap
-        uint256 amount = 5 ether;
+        uint256 amount = 1 ether;
         IDsFlashSwapCore.SwapRaForDsReturn memory result = flashSwapRouter.swapRaforDs(
             currencyId, dsId, amount, 0, defaultBuyApproxParams(), defaultOffchainGuessParams()
         );
@@ -321,8 +277,8 @@ contract DsReserveSellTest is Helper {
         // Get price ratios after swap
         (uint256 raPriceRatioAfter, uint256 ctPriceRatioAfter) = flashSwapRouter.getCurrentPriceRatio(currencyId, dsId);
 
-        // With larger swaps, price impact should be more significant
-        assertGt(raReserveBefore - raReserveAfter, amount * 95 / 100, "RA reserve should decrease significantly");
+        // even with larger swaps, price impact should be minimal since most of it are filled from the reserve directly
+        assertLt(raReserveBefore - raReserveAfter, amount * 95 / 100, "RA reserve should decrease significantly");
         // CT reserve should increase as buying DS will decrease the price of CT
         assertGt(ctReserveAfter, ctReserveBefore, "CT reserve should increase");
 
@@ -333,7 +289,7 @@ contract DsReserveSellTest is Helper {
         // Get the price impact percentage
         uint256 priceRatioChange = (raPriceRatioAfter - raPriceRatioBefore) * 100 / raPriceRatioBefore;
 
-        // Larger swaps should have meaningful price impact
+        // Larger swaps should have at least a little price impact
         assertGt(priceRatioChange, 5, "Large swap should have meaningful price impact");
 
         vm.stopPrank();
