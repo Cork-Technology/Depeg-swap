@@ -479,6 +479,25 @@ library SwapperMathLibrary {
         return div(convertUd(1), ratePlusOne);
     }
 
+    /// @dev this is basically just 1 - (f/ (rate+1)^t) where the latter part is just pT or CT price
+    /// since they're inversely related, we just do 1 -
+    /// f is always 1
+    function calculateDsSpotPriceWithRiskPremium(uint256 _riskPremiumPercentage, uint256 _t)
+        internal
+        pure
+        returns (uint256 spotPrice)
+    {
+        UD60x18 riskPremiumPercentage = ud(_riskPremiumPercentage);
+        // normalize from 0-100 to 0-1
+        riskPremiumPercentage = div(riskPremiumPercentage, convertUd(100));
+
+        UD60x18 t = ud(_t);
+
+        UD60x18 one = convertUd(1);
+
+        spotPrice = unwrap(sub(one, div(one, pow(add(riskPremiumPercentage, one), t))));
+    }
+
     struct OptimalBorrowParams {
         MarketSnapshot market;
         uint256 maxIter;
