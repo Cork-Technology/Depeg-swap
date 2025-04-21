@@ -94,7 +94,7 @@ interface IVault is IErrors {
      * @param id The Module id that is used to reference both psm and lv of a given pair
      * @param amount The amount of the redemption asset(ra) deposited
      */
-    function depositLv(Id id, uint256 amount, uint256 raTolerance, uint256 ctTolerance)
+    function depositLv(Id id, uint256 amount, uint256 raTolerance, uint256 ctTolerance, uint256 minimumLvAmountOut)
         external
         returns (uint256 received);
 

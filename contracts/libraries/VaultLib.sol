@@ -23,6 +23,7 @@ import {IWithdrawalRouter} from "./../interfaces/IWithdrawalRouter.sol";
 import {TransferHelper} from "./TransferHelper.sol";
 import {NavCircuitBreakerLibrary} from "./NavCircuitBreaker.sol";
 import {VaultBalanceLibrary} from "./VaultBalancesLib.sol";
+import "forge-std/console.sol";
 
 /**
  * @title Vault Library Contract
@@ -52,6 +53,32 @@ library VaultLibrary {
         self.balances.ra = RedemptionAssetManagerLibrary.initialize(ra);
     }
 
+    struct BalanceChange {
+        uint256 beforeRa;
+        uint256 beforeCt;
+        uint256 afterRa;
+        uint256 afterCt;
+    }
+
+    function _addLiquidity(
+        address raAddress,
+        address ctAddress,
+        uint256 raAmount,
+        uint256 ctAmount,
+        uint256 raTolerance,
+        uint256 ctTolerance,
+        ICorkHook ammRouter
+    ) internal returns (uint256 lp, BalanceChange memory balanceChange) {
+        balanceChange.beforeRa = IERC20(raAddress).balanceOf(address(this));
+        balanceChange.beforeCt = IERC20(ctAddress).balanceOf(address(this));
+
+        (,, lp) =
+            ammRouter.addLiquidity(raAddress, ctAddress, raAmount, ctAmount, raTolerance, ctTolerance, block.timestamp);
+
+        balanceChange.afterRa = IERC20(raAddress).balanceOf(address(this));
+        balanceChange.afterCt = IERC20(ctAddress).balanceOf(address(this));
+    }
+
     function __addLiquidityToAmmUnchecked(
         uint256 raAmount,
         uint256 ctAmount,
@@ -64,19 +91,18 @@ library VaultLibrary {
         IERC20(raAddress).safeIncreaseAllowance(address(ammRouter), raAmount);
         IERC20(ctAddress).safeIncreaseAllowance(address(ammRouter), ctAmount);
 
-        uint256 raAdded;
-        uint256 ctAdded;
+        BalanceChange memory balanceChange;
 
-        (raAdded, ctAdded, lp) =
-            ammRouter.addLiquidity(raAddress, ctAddress, raAmount, ctAmount, raTolerance, ctTolerance, block.timestamp);
+        (lp, balanceChange) =
+            _addLiquidity(raAddress, ctAddress, raAmount, ctAmount, raTolerance, ctTolerance, ammRouter);
 
-        uint256 dustCt = ctAmount - ctAdded;
+        uint256 dustCt = ctAmount - (balanceChange.beforeCt - balanceChange.afterCt);
 
         if (dustCt > 0) {
             SafeERC20.safeTransfer(IERC20(ctAddress), msg.sender, dustCt);
         }
 
-        uint256 dustRa = raAmount - raAdded;
+        uint256 dustRa = raAmount - (balanceChange.beforeRa - balanceChange.afterRa);
 
         if (dustRa > 0) {
             SafeERC20.safeTransfer(IERC20(raAddress), msg.sender, dustRa);
@@ -263,10 +289,32 @@ library VaultLibrary {
         Tolerance memory tolerance,
         uint256 amountRaOriginal
     ) internal returns (uint256 lp, uint256 dust) {
-        uint256 dsId = self.globalAssetIdx;
+        {
+            address ra = self.info.ra;
+            // no need to provide liquidity if the amount is 0
+            if (_handleZeroLiquidity(raAmount, ctAmount, ra, ctAddress)) {
+                return (0, 0);
+            }
+        }
 
-        address ra = self.info.ra;
-        // no need to provide liquidity if the amount is 0
+        {
+            // we use the returned value here since the amount is already normalized
+            ctAmount =
+                PsmLibrary.unsafeIssueToLv(self, MathHelper.calculateProvideLiquidityAmount(amountRaOriginal, raAmount));
+
+            (lp, dust) = __addLiquidityToAmmUnchecked(
+                raAmount, ctAmount, self.info.ra, ctAddress, ammRouter, tolerance.ra, tolerance.ct
+            );
+        }
+        _addFlashSwapReserveLv(self, flashSwapRouter, self.ds[self.globalAssetIdx], ctAmount);
+
+        self.sync(ammRouter);
+    }
+
+    function _handleZeroLiquidity(uint256 raAmount, uint256 ctAmount, address ra, address ctAddress)
+        internal
+        returns (bool)
+    {
         if (raAmount == 0 || ctAmount == 0) {
             if (raAmount != 0) {
                 SafeERC20.safeTransfer(IERC20(ra), msg.sender, raAmount);
@@ -276,18 +324,9 @@ library VaultLibrary {
                 SafeERC20.safeTransfer(IERC20(ctAddress), msg.sender, ctAmount);
             }
 
-            return (0, 0);
+            return true;
         }
-
-        // we use the returned value here since the amount is already normalized
-        ctAmount =
-            PsmLibrary.unsafeIssueToLv(self, MathHelper.calculateProvideLiquidityAmount(amountRaOriginal, raAmount));
-
-        (lp, dust) =
-            __addLiquidityToAmmUnchecked(raAmount, ctAmount, ra, ctAddress, ammRouter, tolerance.ra, tolerance.ct);
-        _addFlashSwapReserveLv(self, flashSwapRouter, self.ds[dsId], ctAmount);
-
-        self.addLpBalance(lp);
+        return false;
     }
 
     function __provideAmmLiquidityFromPool(
@@ -338,8 +377,8 @@ library VaultLibrary {
 
         // we mint 1:1 if it's the first deposit, else we mint based on current vault NAV
         if (!self.vault.initialized) {
-            // we don't allow depositing less than 1e10 normalized to ensure good initialization
-            if (amount < TransferHelper.fixedToTokenNativeDecimals(1e10, self.info.ra)) {
+            // we don't allow depositing less than 1e15 normalized to ensure good initialization
+            if (amount < TransferHelper.fixedToTokenNativeDecimals(1e15, self.info.ra)) {
                 revert IErrors.InvalidAmount();
             }
 
@@ -374,6 +413,11 @@ library VaultLibrary {
         __provideLiquidityWithRatioGetLP(
             self, remaining, flashSwapRouter, ct, ammRouter, Tolerance(raTolerance, ctTolerance)
         );
+
+        // protecting against inflation attack
+        if (received < 1e16) {
+            revert IErrors.InsufficientOutputAmount(1e16, received);
+        }
 
         self.vault.lv.issue(from, received);
     }
@@ -486,8 +530,7 @@ library VaultLibrary {
 
         // amountAMin & amountBMin = 0 for 100% tolerence
         (raReceived, ctReceived) = ammRouter.removeLiquidity(raAddress, ctAddress, lp, 0, 0, deadline);
-
-        self.subtractLpBalance(lp);
+        self.sync(ammRouter);
     }
 
     function _liquidatedLp(State storage self, uint256 dsId, ICorkHook ammRouter, uint256 deadline) internal {
@@ -605,7 +648,7 @@ library VaultLibrary {
         IDsFlashSwapCore flashSwapRouter,
         ICorkHook ammRouter,
         uint256 dsId
-    ) internal {
+    ) public {
         uint256 nav = _calculateSpotNav(self, flashSwapRouter, ammRouter, dsId);
         self.vault.config.navCircuitBreaker.forceUpdateSnapshot(nav);
     }
@@ -744,11 +787,11 @@ library VaultLibrary {
         self.vault.pool.withdrawalPool.paBalance -= result.paReceived;
     }
 
-    function vaultLp(State storage self, ICorkHook ammRotuer) internal view returns (uint256) {
+    function vaultLp(State storage self) external view returns (uint256) {
         return self.lpBalance();
     }
 
-    function requestLiquidationFunds(State storage self, uint256 amount, address to) internal {
+    function requestLiquidationFunds(State storage self, uint256 amount, address to) external {
         if (amount > self.vault.pool.withdrawalPool.paBalance) {
             revert IErrors.InsufficientFunds();
         }
@@ -757,12 +800,12 @@ library VaultLibrary {
         SafeERC20.safeTransfer(IERC20(self.info.pa), to, amount);
     }
 
-    function receiveTradeExecuctionResultFunds(State storage self, uint256 amount, address from) internal {
+    function receiveTradeExecuctionResultFunds(State storage self, uint256 amount, address from) external {
         self.vault.balances.ra.lockFrom(amount, from);
     }
 
     function useTradeExecutionResultFunds(State storage self, IDsFlashSwapCore flashSwapRouter, ICorkHook ammRouter)
-        internal
+        external
         returns (uint256 raFunds)
     {
         // convert to free and reset ra balance
@@ -772,15 +815,15 @@ library VaultLibrary {
         __provideLiquidityWithRatio(self, raFunds, flashSwapRouter, self.ds[self.globalAssetIdx].ct, ammRouter);
     }
 
-    function liquidationFundsAvailable(State storage self) internal view returns (uint256) {
+    function liquidationFundsAvailable(State storage self) external view returns (uint256) {
         return self.vault.pool.withdrawalPool.paBalance;
     }
 
-    function tradeExecutionFundsAvailable(State storage self) internal view returns (uint256) {
+    function tradeExecutionFundsAvailable(State storage self) external view returns (uint256) {
         return self.vault.balances.ra.locked;
     }
 
-    function receiveLeftoverFunds(State storage self, uint256 amount, address from) internal {
+    function receiveLeftoverFunds(State storage self, uint256 amount, address from) external {
         // transfer PA to the vault
         SafeERC20.safeTransferFrom(IERC20(self.info.pa), from, address(this), amount);
         self.vault.pool.withdrawalPool.paBalance += amount;
