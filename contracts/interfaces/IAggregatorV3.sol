@@ -2,7 +2,8 @@
 pragma solidity >=0.5.0;
 
 /// @dev From
-/// https://github.com/smartcontractkit/chainlink/blob/master/contracts/src/v0.8/shared/interfaces/AggregatorV3Interface.sol
+/// https://github.com/smartcontractkit/chainlink/blob/contracts-v1.3.0/contracts/src/v0.8/shared/interfaces/AggregatorV3Interface.sol
+/// https://docs.chain.link/data-feeds/api-reference/#aggregatorv3interface
 interface AggregatorV3Interface {
     function decimals() external view returns (uint8);
 
