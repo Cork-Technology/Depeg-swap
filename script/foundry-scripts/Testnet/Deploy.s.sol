@@ -212,15 +212,30 @@ contract DeployScript is Script {
         console.log("Liquidator                      : ", address(liquidator));
         console.log("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-");
 
-        // Deploy the ProtectedUnitFactry contract
+        // Deploy the ProtectedUnitRouter contract
         protectedUnitRouter = new ProtectedUnitRouter(PERMIT2);
         console.log("ProtectedUnit Router            : ", address(protectedUnitRouter));
 
-        protectedUnitFactory =
-            new ProtectedUnitFactory(address(moduleCore), address(config), address(flashswapRouter), PERMIT2);
-        config.setProtectedUnitFactory(address(protectedUnitFactory));
+        // Deploy the ProtectedUnitFactory implementation (logic) contract
+        ProtectedUnitFactory protectedUnitFactoryImpl = new ProtectedUnitFactory();
+        console.log("ProtectedUnitFactory Implementation: ", address(protectedUnitFactoryImpl));
+
+        data = abi.encodeWithSelector(
+            protectedUnitFactoryImpl.initialize.selector,
+            address(moduleCore),
+            address(config),
+            address(flashswapRouter),
+            address(PERMIT2)
+        );
+        ERC1967Proxy protectedUnitFactoryProxy = new ERC1967Proxy(address(protectedUnitFactoryImpl), data);
+        protectedUnitFactory = ProtectedUnitFactory(address(protectedUnitFactoryProxy));
         console.log("ProtectedUnit Factory           : ", address(protectedUnitFactory));
 
+        config.setProtectedUnitFactory(address(protectedUnitFactory));
+        console.log("ProtectedUnit Factory configured in Config contract");
+        console.log("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-");
+
+        // Deploy the Withdrawal contract
         withdrawal = new Withdrawal(address(moduleCore));
         console.log("Withdrawal                      : ", address(withdrawal));
 
