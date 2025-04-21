@@ -604,10 +604,6 @@ contract RouterState is
         );
     }
 
-    function sellPressureThreshold(Id id) external view returns (uint256) {
-        return reserves[id].reserveSellPressurePercentageThreshold;
-    }
-
     /**
      * @notice Executes a swap from RA to DS tokens.
      * @dev This function performs a flash swap, requiring a valid signature and deadline.
@@ -888,5 +884,9 @@ contract RouterState is
         IERC20(ra).safeTransfer(poolManager, actualRepaymentAmount);
 
         ReturnDataSlotLib.increase(ReturnDataSlotLib.RETURN_SLOT_SELL, received);
+    }
+
+    function sellPressureThreshold(Id id) external view returns (uint256) {
+        return reserves[id].reserveSellPressurePercentageThreshold;
     }
 }

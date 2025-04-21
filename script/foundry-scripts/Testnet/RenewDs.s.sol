@@ -95,8 +95,6 @@ contract SimulateScript is Script {
 
     function run() public {
         vm.startBroadcast(pk);
-        vm.pauseGasMetering();
-
         console.log("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-");
 
         Market[6] memory markets = [
@@ -107,115 +105,18 @@ contract SimulateScript is Script {
             cusd_fedUSD_market,
             svbUSD_omgUSD_market
         ];
-        // Market[1] memory markets = [ceth_wamuETH_market];
         for (uint256 i = 0; i < markets.length; i++) {
             Market memory market = markets[i];
             Id marketId = moduleCore.getId(
                 market.peggedAsset, market.redemptionAsset, market.arp, market.expiryInterval, exchangeProvider
             );
-            config.updateReserveSellPressurePercentage(marketId, 45 ether);
-
-            uint256 dsId = moduleCore.lastDsId(marketId);
-            (address ct, address ds) = moduleCore.swapAsset(marketId, dsId);
-            address lv = moduleCore.lvAsset(marketId);
-
-            uint256 lvDepositAmt = 5000;
-            depositLv(market, marketId, lvDepositAmt);
-
-            uint256 psmDepositAmt = 100;
-            depositPsm(market, marketId, psmDepositAmt);
-
-            uint256 redeemAmt = 5;
-            redeemRaWithDsPa(market, marketId, dsId, redeemAmt, ds);
-
-            returnRaWithCtDs(market, marketId, redeemAmt, ds, ct);
-
-            redeemLv(market, marketId, redeemAmt, lv);
-
-            uint256 swapAmt = 1;
-            swapDsForRa(market, marketId, dsId, swapAmt, ds);
-            uint256 amountOut = corkHook.getAmountOut(market.redemptionAsset, ct, false, 1 ether);
-            console.log("CT price Before : ", amountOut / 1 ether, ".", amountOut % 1 ether);
-
-            swapRaForDs(market, marketId, dsId, swapAmt);
-
-            amountOut = corkHook.getAmountOut(market.redemptionAsset, ct, false, 1 ether);
-            console.log("CT price After : ", amountOut / 1 ether, ".", amountOut % 1 ether);
-            swapRaCtTokens(market, marketId, swapAmt, ct);
+            uint256 expiry = moduleCore.expiry(marketId);
+            if (expiry < block.timestamp) {
+                config.issueNewDs(marketId, block.timestamp + 10 minutes);
+            }
         }
 
         console.log("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-");
         vm.stopBroadcast();
-    }
-
-    function depositPsm(Market memory market, Id marketId, uint256 depositAmt) public {
-        depositAmt = convertToDecimals(market.redemptionAsset, depositAmt);
-        ERC20(market.redemptionAsset).approve(address(moduleCore), depositAmt);
-        moduleCore.depositPsm(marketId, depositAmt);
-    }
-
-    function depositLv(Market memory market, Id marketId, uint256 depositAmt) public {
-        depositAmt = convertToDecimals(market.redemptionAsset, depositAmt);
-        ERC20(market.redemptionAsset).approve(address(moduleCore), depositAmt);
-        moduleCore.depositLv(marketId, depositAmt, 0, 0);
-    }
-
-    function redeemRaWithDsPa(Market memory market, Id marketId, uint256 dsId, uint256 redeemAmt, address ds) public {
-        redeemAmt = convertToDecimals(market.peggedAsset, redeemAmt);
-        IERC20(market.peggedAsset).safeIncreaseAllowance(address(moduleCore), redeemAmt);
-
-        uint256 decimals = ERC20(ds).decimals();
-        ERC20(ds).approve(address(moduleCore), redeemAmt * 10 ** decimals);
-
-        moduleCore.redeemRaWithDsPa(marketId, dsId, redeemAmt);
-    }
-
-    function returnRaWithCtDs(Market memory market, Id marketId, uint256 redeemAmt, address ds, address ct) public {
-        redeemAmt = convertToDecimals(ds, redeemAmt);
-        ERC20(ds).approve(address(moduleCore), redeemAmt);
-        ERC20(ct).approve(address(moduleCore), redeemAmt);
-        moduleCore.returnRaWithCtDs(marketId, redeemAmt);
-    }
-
-    function redeemLv(Market memory market, Id marketId, uint256 redeemAmt, address lv) public {
-        redeemAmt = convertToDecimals(lv, redeemAmt);
-        ERC20(lv).approve(address(moduleCore), redeemAmt);
-        moduleCore.redeemEarlyLv(IVault.RedeemEarlyParams(marketId, redeemAmt, 0, block.timestamp + 1 days, 0, 0, 0));
-    }
-
-    function swapDsForRa(Market memory market, Id marketId, uint256 dsId, uint256 swapAmt, address ds) public {
-        swapAmt = convertToDecimals(ds, swapAmt);
-        ERC20(ds).approve(address(routerState), swapAmt);
-        routerState.swapDsforRa(marketId, dsId, swapAmt, 0);
-    }
-
-    function swapRaForDs(Market memory market, Id marketId, uint256 dsId, uint256 swapAmt) public {
-        swapAmt = convertToDecimals(market.redemptionAsset, swapAmt);
-        ERC20(market.redemptionAsset).approve(address(routerState), swapAmt);
-        IDsFlashSwapCore.BuyAprroxParams memory buyApprox =
-            IDsFlashSwapCore.BuyAprroxParams(108, 108, 1 ether, 1 gwei, 1 gwei, 0.01 ether);
-        IDsFlashSwapCore.OffchainGuess memory offchainguess = IDsFlashSwapCore.OffchainGuess(0, 0);
-        routerState.swapRaforDs(marketId, dsId, swapAmt, 0, buyApprox, offchainguess);
-    }
-
-    function swapRaCtTokens(Market memory market, Id marketId, uint256 swapAmt, address ct) public {
-        uint256 inputAmt = convertToDecimals(market.redemptionAsset, swapAmt);
-        uint256 amountOut = corkHook.getAmountOut(market.redemptionAsset, ct, true, inputAmt);
-        uint256 inputOut = corkHook.getAmountIn(market.redemptionAsset, ct, true, amountOut);
-        ERC20(market.redemptionAsset).approve(address(corkHook), inputOut + inputOut / 100000);
-        corkHook.swap(market.redemptionAsset, ct, 0, amountOut, bytes(""));
-        console.log("Swapped RA with CT");
-
-        inputAmt = convertToDecimals(ct, swapAmt);
-        amountOut = corkHook.getAmountOut(market.redemptionAsset, ct, false, inputAmt);
-        inputOut = corkHook.getAmountIn(market.redemptionAsset, ct, false, amountOut);
-        ERC20(ct).approve(address(corkHook), inputOut + inputOut / 100000);
-        corkHook.swap(market.redemptionAsset, ct, amountOut, 0, bytes(""));
-        console.log("Swapped CT with RA");
-    }
-
-    function convertToDecimals(address token, uint256 value) public view returns (uint256) {
-        uint256 decimals = ERC20(token).decimals();
-        return value * 10 ** decimals;
     }
 }
