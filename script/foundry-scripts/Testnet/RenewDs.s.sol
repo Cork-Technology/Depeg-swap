@@ -10,6 +10,7 @@ import {ERC20, IERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import {IVault} from "../../../contracts/interfaces/IVault.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {IDsFlashSwapCore} from "../../../contracts/interfaces/IDsFlashSwapRouter.sol";
+import {Asset} from "../../../contracts/core/assets/Asset.sol";
 
 struct Market {
     address redemptionAsset;
@@ -110,8 +111,10 @@ contract SimulateScript is Script {
             Id marketId = moduleCore.getId(
                 market.peggedAsset, market.redemptionAsset, market.arp, market.expiryInterval, exchangeProvider
             );
-            uint256 expiry = moduleCore.expiry(marketId);
-            if (expiry < block.timestamp) {
+            uint256 dsId = moduleCore.lastDsId(marketId);
+            (address ct, address ds) = moduleCore.swapAsset(marketId, dsId);
+            Asset ctContract = Asset(ct);
+            if (ctContract.isExpired()) {
                 config.issueNewDs(marketId, block.timestamp + 10 minutes);
             }
         }
