@@ -1,22 +1,26 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 pragma solidity ^0.8.24;
 
-struct PriceFeedParams {
-    IERC4626 baseVault,
-    uint256 baseVaultConversionSample,
-    AggregatorV3Interface baseFeed1,
-    AggregatorV3Interface baseFeed2,
-    uint256 baseTokenDecimals,
-    IERC4626 quoteVaults,
-    uint256 quoteVaultConversionSamples,
-    AggregatorV3Interface quoteFeed1,
-    AggregatorV3Interface quoteFeed2,
-    uint256 quoteTokenDecimals,
-}
-
 import {IERC4626} from "./IERC4626.sol";
 import {AggregatorV3Interface} from "./AggregatorV3Interface.sol";
 import {MinimalAggregatorV3Interface} from "./MinimalAggregatorV3Interface.sol";
+
+struct PriceFeedParams {
+    IERC4626 baseVault;
+    uint256 baseVaultConversionSample;
+    AggregatorV3Interface baseFeed1;
+    AggregatorV3Interface baseFeed2;
+    uint256 baseTokenDecimals;
+    IERC4626 quoteVault;
+    uint256 quoteVaultConversionSamples;
+    AggregatorV3Interface quoteFeed1;
+    AggregatorV3Interface quoteFeed2;
+    uint256 quoteTokenDecimals;
+}
+
+interface IOracle {
+    function price() external view returns (uint256);
+}
 
 /// @title ICompositePriceFeed
 /// @author Cork Team
@@ -52,8 +56,4 @@ interface ICompositePriceFeed is IOracle, MinimalAggregatorV3Interface {
 
     /// @notice Returns the price scale factor, calculated at contract creation.
     function SCALE_FACTORS(uint256 i) external view returns (uint256);
-}
-
-interface IOracle {
-    function price() external view returns (uint256);
 }

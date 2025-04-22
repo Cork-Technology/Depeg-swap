@@ -5,8 +5,8 @@ import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/Own
 import {UUPSUpgradeable} from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import {CtOracle} from "./CTOracle.sol";
 import {LegacyCtOracle} from "./LegacyCTOracle.sol";
-import {ICTOracleFactory} from "./../../interfaces/ICTOracleFactory.sol";
-import {Id} from "./../../libraries/Pair.sol";
+import {ICTOracleFactory} from "../../interfaces/ICTOracleFactory.sol";
+import {Id} from "../../libraries/Pair.sol";
 
 /**
  * @title Factory contract for CT Oracles

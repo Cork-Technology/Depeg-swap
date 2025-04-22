@@ -3,8 +3,8 @@ pragma solidity ^0.8.24;
 
 import {Math} from "openzeppelin-contracts/contracts/utils/math/Math.sol";
 
-import {ICompositePriceFeed, PriceFeedParams} from "./interfaces/ICompositePriceFeed.sol";
-import {MinimalAggregatorV3Interface} from "./interfaces/MinimalAggregatorV3Interface.sol";
+import {ICompositePriceFeed, PriceFeedParams} from "../interfaces/ICompositePriceFeed.sol";
+import {MinimalAggregatorV3Interface} from "../interfaces/MinimalAggregatorV3Interface.sol";
 
 import {ErrorsLib} from "../libraries/oracles/ErrorsLib.sol";
 import {IERC4626, VaultLib} from "../libraries/oracles/VaultLib.sol";
@@ -56,13 +56,14 @@ contract CompositePriceFeed is ICompositePriceFeed {
 
     /* PRICE */
 
-    /// @inheritdoc IOracle
-    function price() external view returns (uint256 totalPrice) {
+    /// @inheritdoc ICompositePriceFeed
+    function price() public view returns (uint256 totalPrice) {
         for (uint256 i = 0; i < FEED_PARAMS.length; ++i) {
             PriceFeedParams memory p = FEED_PARAMS[i];
             totalPrice += SCALE_FACTORS[i].mulDiv(
                 p.baseVault.getAssets(BASE_VAULT_CONVERSION_SAMPLE) * p.baseFeed1.getPrice() * p.baseFeed2.getPrice(),
-                p.quoteVault.getAssets(QUOTE_VAULT_CONVERSION_SAMPLE) * p.quoteFeed1.getPrice() * p.quoteFeed2.getPrice()
+                p.quoteVault.getAssets(QUOTE_VAULT_CONVERSION_SAMPLE) * p.quoteFeed1.getPrice()
+                    * p.quoteFeed2.getPrice()
             );
         }
     }
@@ -97,13 +98,8 @@ contract CompositePriceFeed is ICompositePriceFeed {
         //                 = 1e(36 + dQ1 + fpQ1 + fpQ2 - dB1 - fpB1 - fpB2)
         return 10
             ** (
-                decimals() +
-                p.quoteTokenDecimals +
-                p.quoteFeed1.getDecimals() +
-                p.quoteFeed2.getDecimals() -
-                p.baseTokenDecimals -
-                p.baseFeed1.getDecimals() -
-                p.baseFeed2.getDecimals()
+                decimals() + p.quoteTokenDecimals + p.quoteFeed1.getDecimals() + p.quoteFeed2.getDecimals()
+                    - p.baseTokenDecimals - p.baseFeed1.getDecimals() - p.baseFeed2.getDecimals()
             ) * p.quoteVaultConversionSample / p.baseVaultConversionSample;
     }
 }

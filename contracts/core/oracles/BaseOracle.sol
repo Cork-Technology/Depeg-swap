@@ -1,8 +1,7 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity ^0.8.24;
 
-import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
-import {AggregatorV3Interface} from "./../../interfaces/IAggregatorV3.sol";
+import {AggregatorV3Interface} from "../../interfaces/AggregatorV3Interface.sol";
 import {ModuleCore} from "./../ModuleCore.sol";
 import {IErrors} from "./../../interfaces/IErrors.sol";
 import {Asset} from "./../assets/Asset.sol";

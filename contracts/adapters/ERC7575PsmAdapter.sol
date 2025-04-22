@@ -15,10 +15,10 @@ contract ERC7575PsmAdapter is IERC4626 {
     ModuleCore internal immutable moduleCore;
 
     /// @notice Constructs the asset adapter for a given share token
-    /// @param _shareToken The address of the share token
+    /// @param _share The address of the share token
     /// @param _asset The address of the underlying or backing asset
     constructor(CorkToken _share, address _asset, Id _marketId, ModuleCore _moduleCore) {
-        (address pa, address ra, ) = _moduleCore.markets(_marketId);
+        (address pa, address ra,) = _moduleCore.markets(_marketId);
         if (_asset != ra && _asset != pa) revert("Asset not found");
 
         isTokenRa = (_asset == ra);
@@ -34,16 +34,16 @@ contract ERC7575PsmAdapter is IERC4626 {
         uint256 marketEpoch = moduleCore.lastDsId(marketId);
         uint256 ctEpoch = share.dsId();
 
-        return (marketEpoch == ctEpoch) ?
-            moduleCore.valueLocked(marketId, isTokenRa) :
-            moduleCore.valueLocked(marketId, ctEpoch, isTokenRa);
+        return (marketEpoch == ctEpoch)
+            ? moduleCore.valueLocked(marketId, isTokenRa)
+            : moduleCore.valueLocked(marketId, ctEpoch, isTokenRa);
     }
 
     /// @notice Returns the amount of reserves proportional to the given shares
     /// @param shares The amount of share tokens
     /// @return assets The amount of reserves
-    function convertToAssets(uint256 shares) public view returns (uint256)
-        uint256 totalShares = shareToken.totalSupply();
+    function convertToAssets(uint256 shares) public view returns (uint256) {
+        uint256 totalShares = share.totalSupply();
         return totalShares == 0 ? 0 : totalAssets() * shares / totalShares; // floor division
     }
 }

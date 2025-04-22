@@ -4,17 +4,21 @@ pragma solidity ^0.8.24;
 import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
 import {UUPSUpgradeable} from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 
-import {ERC7575PsmAdapter} from "./adapters/ERC7575PsmAdapter.sol";
-import {ERC7575ReservesAdapter} from "./adapters/ERC7575ReservesAdapter.sol";
+import {ERC7575PsmAdapter} from "./ERC7575PsmAdapter.sol";
+import {ERC7575ReservesAdapter} from "./ERC7575ReservesAdapter.sol";
 import {Asset as CorkToken} from "../core/assets/Asset.sol";
 import {ModuleCore} from "../core/ModuleCore.sol";
 import {Id} from "../libraries/Pair.sol";
 import {IErrors} from "../interfaces/IErrors.sol";
 
-enum AdapterType { NONE, RESERVES, PSM }
+enum AdapterType {
+    NONE,
+    RESERVES,
+    PSM
+}
 
 struct AdapterParams {
-    AdapterType typ;
+    AdapterType adapterType;
     address share;
     address asset;
 }
@@ -33,6 +37,8 @@ contract CorkShareAdapterFactory is OwnableUpgradeable, UUPSUpgradeable, IErrors
     /// @notice __gap variable to prevent storage collisions
     // slither-disable-next-line unused-state
     uint256[49] private __gap;
+
+    event CorkAdapterCreated(address indexed adapter, AdapterType adapterType, address indexed share);
 
     constructor() {
         _disableInitializers();
@@ -61,22 +67,19 @@ contract CorkShareAdapterFactory is OwnableUpgradeable, UUPSUpgradeable, IErrors
 
     /// @notice Whether an adapter was created with the factory.
     function isCorkAdapter(address target) external view returns (bool) {
-        return adapters[target].typ != AdapterType.NONE;
+        return adapters[target].adapterType != AdapterType.NONE;
     }
 
     function _storeAndEmit(address adapter, AdapterParams memory params) internal {
         adapters[adapter] = params;
 
-        emit CorkAdapterCreated(adapter, params.typ, params.share);
+        emit CorkAdapterCreated(adapter, params.adapterType, params.share);
     }
 
-    /**
-     * @inheritdoc ICorkAdapterFactory
-     */
-    function createERC7575ReservesAdapters(
-        address _share,
-        address[] calldata _assets,
-    ) external returns (ERC7575ReservesAdapter[] memory _adapters) {
+    function createERC7575ReservesAdapters(address _share, address[] calldata _assets)
+        external
+        returns (ERC7575ReservesAdapter[] memory _adapters)
+    {
         _adapters = new ERC7575ReservesAdapter[](_assets.length);
 
         for (uint256 i = 0; i < _assets.length; ++i) {
@@ -84,24 +87,15 @@ contract CorkShareAdapterFactory is OwnableUpgradeable, UUPSUpgradeable, IErrors
             _adapters[i] = adapter;
 
             _storeAndEmit(
-                address(adapter),
-                AdapterParams({
-                    typ: AdapterType.RESERVES,
-                    share: _share,
-                    asset: assets[i],
-                })
+                address(adapter), AdapterParams({adapterType: AdapterType.RESERVES, share: _share, asset: _assets[i]})
             );
         }
     }
 
-    /**
-     * @inheritdoc ICorkAdapterFactory
-     */
-    function createERC7575PsmAdapters(
-        address _share,
-        address[] calldata _assets,
-        Id _marketId,
-    ) external returns (ERC7575PsmAdapter[] memory _adapters) {
+    function createERC7575PsmAdapters(address _share, address[] calldata _assets, Id _marketId)
+        external
+        returns (ERC7575PsmAdapter[] memory _adapters)
+    {
         _adapters = new ERC7575PsmAdapter[](_assets.length);
 
         uint256 ctEpoch = CorkToken(_share).dsId();
@@ -113,12 +107,8 @@ contract CorkShareAdapterFactory is OwnableUpgradeable, UUPSUpgradeable, IErrors
             _adapters[i] = adapter;
 
             _storeAndEmit(
-                address(adapter),
-                AdapterParams({
-                    typ: AdapterType.PSM,
-                    share: _share,
-                    asset: assets[i],
-                })
+                address(adapter), AdapterParams({adapterType: AdapterType.PSM, share: _share, asset: _assets[i]})
             );
         }
     }
+}
