@@ -41,6 +41,8 @@ contract SimulateScript is Script {
     address svbUSD = 0x5555555eBBf30a4b084078319Da2348fD7B9e470;
     address fedUSD = 0x666666685C211074C1b0cFed7e43E1e7D8749E43;
     address omgUSD = 0x7777777707136263F82775e7ED0Fc99Bbe6f5eB0;
+    address weth = 0xd0073Cc17aAf764a948c262f410B6957B369C0cd;
+    address wstETH = 0xBfEDFEc502CAd6D815Edc947Ba0Fd5A31D8ef5e1;
 
     uint256 constant wamuETHExpiry = 3.5 days;
     uint256 constant bsETHExpiry = 3.5 days;
@@ -48,6 +50,7 @@ contract SimulateScript is Script {
     uint256 constant svbUSDExpiry = 3.5 days;
     uint256 constant fedUSDExpiry = 3.5 days;
     uint256 constant omgUSDExpiry = 0.5 days;
+    uint256 constant weth_wstETHExpiry = 90 days + 1;
 
     uint256 constant wamuETH_ARP = 1.285 ether;
     uint256 constant bsETH_ARP = 6.428 ether;
@@ -55,6 +58,7 @@ contract SimulateScript is Script {
     uint256 constant svbUSD_ARP = 8.571 ether;
     uint256 constant fedUSD_ARP = 4.285 ether;
     uint256 constant omgUSD_ARP = 5.1 ether;
+    uint256 constant weth_wstETH_ARP = 0.3698630135 ether;
 
     uint256 constant wamuETH_RedemptionFee = 0.2 ether;
     uint256 constant bsETH_RedemptionFee = 0.2 ether;
@@ -62,6 +66,7 @@ contract SimulateScript is Script {
     uint256 constant svbUSD_RedemptionFee = 0.2 ether;
     uint256 constant fedUSD_RedemptionFee = 0.2 ether;
     uint256 constant omgUSD_RedemptionFee = 0.08 ether;
+    uint256 constant weth_wstETH_RedemptionFee = 0.2 ether;
 
     uint256 constant wamuETH_RepurchaseFee = 0.75 ether;
     uint256 constant bsETH_RepurchaseFee = 0.75 ether;
@@ -69,6 +74,7 @@ contract SimulateScript is Script {
     uint256 constant svbUSD_RepurchaseFee = 0.75 ether;
     uint256 constant fedUSD_RepurchaseFee = 0.75 ether;
     uint256 constant omgUSD_RepurchaseFee = 0.75 ether;
+    uint256 constant weth_wstETH_RepurchaseFee = 0.23 ether;
 
     uint256 constant wamuETH_AmmBaseFee = 0.15 ether;
     uint256 constant bsETH_AmmBaseFee = 0.3 ether;
@@ -76,6 +82,7 @@ contract SimulateScript is Script {
     uint256 constant svbUSD_AmmBaseFee = 0.3 ether;
     uint256 constant fedUSD_AmmBaseFee = 0.15 ether;
     uint256 constant omgUSD_AmmBaseFee = 0.3 ether;
+    uint256 constant weth_wstETH_AmmBaseFee = 0.018 ether;
 
     Market ceth_wamuETH_market = Market(
         ceth, wamuETH, wamuETHExpiry, wamuETH_ARP, wamuETH_RedemptionFee, wamuETH_RepurchaseFee, wamuETH_AmmBaseFee
@@ -90,6 +97,15 @@ contract SimulateScript is Script {
         Market(cusd, fedUSD, fedUSDExpiry, fedUSD_ARP, fedUSD_RedemptionFee, fedUSD_RepurchaseFee, fedUSD_AmmBaseFee);
     Market svbUSD_omgUSD_market =
         Market(svbUSD, omgUSD, omgUSDExpiry, omgUSD_ARP, omgUSD_RedemptionFee, omgUSD_RepurchaseFee, omgUSD_AmmBaseFee);
+    Market weth_wstETH_market = Market(
+        weth,
+        wstETH,
+        weth_wstETHExpiry,
+        weth_wstETH_ARP,
+        weth_wstETH_RedemptionFee,
+        weth_wstETH_RepurchaseFee,
+        weth_wstETH_AmmBaseFee
+    );
 
     function setUp() public {}
 
@@ -99,49 +115,52 @@ contract SimulateScript is Script {
 
         console.log("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-");
 
-        Market[6] memory markets = [
-            ceth_wamuETH_market,
-            wamuETH_bsETH_market,
-            bsETH_mlETH_market,
-            fedUSD_svbUSD_market,
-            cusd_fedUSD_market,
-            svbUSD_omgUSD_market
-        ];
-        // Market[1] memory markets = [ceth_wamuETH_market];
+        // Market[7] memory markets = [
+        //     ceth_wamuETH_market,
+        //     wamuETH_bsETH_market,
+        //     bsETH_mlETH_market,
+        //     fedUSD_svbUSD_market,
+        //     cusd_fedUSD_market,
+        //     svbUSD_omgUSD_market,
+        //     weth_wstETH_market
+        // ];
+        Market[1] memory markets = [weth_wstETH_market];
+
         for (uint256 i = 0; i < markets.length; i++) {
             Market memory market = markets[i];
             Id marketId = moduleCore.getId(
                 market.peggedAsset, market.redemptionAsset, market.arp, market.expiryInterval, exchangeProvider
             );
-            config.updateReserveSellPressurePercentage(marketId, 45 ether);
+            // config.updateReserveSellPressurePercentage(marketId, 2 ether);
 
             uint256 dsId = moduleCore.lastDsId(marketId);
             (address ct, address ds) = moduleCore.swapAsset(marketId, dsId);
             address lv = moduleCore.lvAsset(marketId);
 
-            uint256 lvDepositAmt = 5000;
-            depositLv(market, marketId, lvDepositAmt);
+            // uint256 lvDepositAmt = 5000;
+            // depositLv(market, marketId, lvDepositAmt);
 
             uint256 psmDepositAmt = 100;
-            depositPsm(market, marketId, psmDepositAmt);
+            // depositPsm(market, marketId, psmDepositAmt);
 
-            uint256 redeemAmt = 5;
-            redeemRaWithDsPa(market, marketId, dsId, redeemAmt, ds);
+            // uint256 redeemAmt = 5;
+            // redeemRaWithDsPa(market, marketId, dsId, redeemAmt, ds);
 
-            returnRaWithCtDs(market, marketId, redeemAmt, ds, ct);
+            // returnRaWithCtDs(market, marketId, redeemAmt, ds, ct);
 
-            redeemLv(market, marketId, redeemAmt, lv);
+            // redeemLv(market, marketId, redeemAmt, lv);
 
             uint256 swapAmt = 1;
+            swapRaForDs(market, marketId, dsId, swapAmt);
             swapDsForRa(market, marketId, dsId, swapAmt, ds);
-            uint256 amountOut = corkHook.getAmountOut(market.redemptionAsset, ct, false, 1 ether);
-            console.log("CT price Before : ", amountOut / 1 ether, ".", amountOut % 1 ether);
+            // uint256 amountOut = corkHook.getAmountOut(market.redemptionAsset, ct, false, 1 ether);
+            // console.log("CT price Before : ", amountOut / 1 ether, ".", amountOut % 1 ether);
 
             swapRaForDs(market, marketId, dsId, swapAmt);
 
-            amountOut = corkHook.getAmountOut(market.redemptionAsset, ct, false, 1 ether);
-            console.log("CT price After : ", amountOut / 1 ether, ".", amountOut % 1 ether);
-            swapRaCtTokens(market, marketId, swapAmt, ct);
+            // amountOut = corkHook.getAmountOut(market.redemptionAsset, ct, false, 1 ether);
+            // console.log("CT price After : ", amountOut / 1 ether, ".", amountOut % 1 ether);
+            // swapRaCtTokens(market, marketId, swapAmt, ct);
         }
 
         console.log("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-");
@@ -185,12 +204,14 @@ contract SimulateScript is Script {
 
     function swapDsForRa(Market memory market, Id marketId, uint256 dsId, uint256 swapAmt, address ds) public {
         swapAmt = convertToDecimals(ds, swapAmt);
+        swapAmt = 4 ether;
         ERC20(ds).approve(address(routerState), swapAmt);
         routerState.swapDsforRa(marketId, dsId, swapAmt, 0);
     }
 
     function swapRaForDs(Market memory market, Id marketId, uint256 dsId, uint256 swapAmt) public {
         swapAmt = convertToDecimals(market.redemptionAsset, swapAmt);
+        swapAmt = 0.1 ether;
         ERC20(market.redemptionAsset).approve(address(routerState), swapAmt);
         IDsFlashSwapCore.BuyAprroxParams memory buyApprox =
             IDsFlashSwapCore.BuyAprroxParams(108, 108, 1 ether, 1 gwei, 1 gwei, 0.01 ether);
