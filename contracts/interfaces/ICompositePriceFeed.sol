@@ -1,0 +1,59 @@
+// SPDX-License-Identifier: GPL-2.0-or-later
+pragma solidity ^0.8.24;
+
+struct PriceFeedParams {
+    IERC4626 baseVault,
+    uint256 baseVaultConversionSample,
+    AggregatorV3Interface baseFeed1,
+    AggregatorV3Interface baseFeed2,
+    uint256 baseTokenDecimals,
+    IERC4626 quoteVaults,
+    uint256 quoteVaultConversionSamples,
+    AggregatorV3Interface quoteFeed1,
+    AggregatorV3Interface quoteFeed2,
+    uint256 quoteTokenDecimals,
+}
+
+import {IERC4626} from "./IERC4626.sol";
+import {AggregatorV3Interface} from "./AggregatorV3Interface.sol";
+import {MinimalAggregatorV3Interface} from "./MinimalAggregatorV3Interface.sol";
+
+/// @title ICompositePriceFeed
+/// @author Cork Team
+/// @custom:contact security@cork.tech
+/// @notice Interface of CompositePriceFeed.
+interface ICompositePriceFeed is IOracle, MinimalAggregatorV3Interface {
+    // /// @notice Returns the address of the base ERC4626 vault.
+    // function BASE_VAULT() external view returns (IERC4626);
+
+    // /// @notice Returns the base vault conversion sample.
+    // function BASE_VAULT_CONVERSION_SAMPLE() external view returns (uint256);
+
+    // /// @notice Returns the address of the quote ERC4626 vault.
+    // function QUOTE_VAULT() external view returns (IERC4626);
+
+    // /// @notice Returns the quote vault conversion sample.
+    // function QUOTE_VAULT_CONVERSION_SAMPLE() external view returns (uint256);
+
+    // /// @notice Returns the address of the first base feed.
+    // function BASE_FEED_1() external view returns (AggregatorV3Interface);
+
+    // /// @notice Returns the address of the second base feed.
+    // function BASE_FEED_2() external view returns (AggregatorV3Interface);
+
+    // /// @notice Returns the address of the first quote feed.
+    // function QUOTE_FEED_1() external view returns (AggregatorV3Interface);
+
+    // /// @notice Returns the address of the second quote feed.
+    // function QUOTE_FEED_2() external view returns (AggregatorV3Interface);
+
+    /// @notice Returns the parameters used for price conversion.
+    function FEED_PARAMS(uint256 i) external view returns (PriceFeedParams memory);
+
+    /// @notice Returns the price scale factor, calculated at contract creation.
+    function SCALE_FACTORS(uint256 i) external view returns (uint256);
+}
+
+interface IOracle {
+    function price() external view returns (uint256);
+}

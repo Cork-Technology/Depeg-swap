@@ -28,7 +28,6 @@ contract CorkShareAdapterFactory is OwnableUpgradeable, UUPSUpgradeable, IErrors
     address public moduleCore;
     address public ammHook;
 
-    /// @inheritdoc IMorphoChainlinkOracleV2Factory
     mapping(address => AdapterParams) public adapters;
 
     /// @notice __gap variable to prevent storage collisions
