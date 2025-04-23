@@ -29,7 +29,7 @@ struct AdapterParams {
  * @author Cork Team
  * @notice Factory contract for deploying Cork Asset adapters
  */
-contract CorkShareAdapterFactory is OwnableUpgradeable, UUPSUpgradeable, IErrors {
+contract CorkAdapterFactory is OwnableUpgradeable, UUPSUpgradeable, IErrors {
     ModuleCore public moduleCore;
     address public ammHook;
 
@@ -48,6 +48,8 @@ contract CorkShareAdapterFactory is OwnableUpgradeable, UUPSUpgradeable, IErrors
     /**
      * @notice Initializes the factory contract
      * @param _owner The owner of the factory contract
+     * @param _moduleCore The address of the module core contract
+     * @param _ammHook The address of the AMM hook contract
      */
     function initialize(address _owner, address _moduleCore, address _ammHook) external initializer {
         if (_owner == address(0)) {

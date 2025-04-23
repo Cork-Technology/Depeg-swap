@@ -49,8 +49,8 @@ contract CompositePriceFeed is ICompositePriceFeed {
             require(p.baseVaultConversionSample != 0, ErrorsLib.VAULT_CONVERSION_SAMPLE_IS_ZERO);
             require(p.quoteVaultConversionSample != 0, ErrorsLib.VAULT_CONVERSION_SAMPLE_IS_ZERO);
 
-            priceFeedParams[i] = p;
-            scaleFactors[i] = _scaleFactor(p);
+            priceFeedParams.push(p);
+            scaleFactors.push(_scaleFactor(p));
         }
     }
 
