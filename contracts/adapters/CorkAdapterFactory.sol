@@ -64,6 +64,7 @@ contract CorkShareAdapterFactory is OwnableUpgradeable, UUPSUpgradeable, IErrors
      * @notice Upgrades the implementation of the factory contract
      * @param newImplementation The address of the new implementation contract
      */
+    // solhint-disable-next-line no-empty-blocks
     function _authorizeUpgrade(address newImplementation) internal override onlyOwner {}
 
     /// @notice Whether an adapter was created with the factory.
@@ -83,7 +84,8 @@ contract CorkShareAdapterFactory is OwnableUpgradeable, UUPSUpgradeable, IErrors
     {
         _adapters = new ERC7575ReservesAdapter[](_assets.length);
 
-        for (uint256 i = 0; i < _assets.length; ++i) {
+        uint256 length = _assets.length;
+        for (uint256 i = 0; i < length; ++i) {
             ERC7575ReservesAdapter adapter = new ERC7575ReservesAdapter(IUniswapV2Pair(_share), _assets[i]);
             _adapters[i] = adapter;
 
@@ -103,7 +105,8 @@ contract CorkShareAdapterFactory is OwnableUpgradeable, UUPSUpgradeable, IErrors
         (address coverToken,) = moduleCore.swapAsset(_marketId, ctEpoch);
         if (_share != coverToken) revert InvalidToken();
 
-        for (uint256 i = 0; i < _assets.length; ++i) {
+        uint256 length = _assets.length;
+        for (uint256 i = 0; i < length; ++i) {
             ERC7575PsmAdapter adapter = new ERC7575PsmAdapter(CorkToken(_share), _assets[i], _marketId, moduleCore);
             _adapters[i] = adapter;
 

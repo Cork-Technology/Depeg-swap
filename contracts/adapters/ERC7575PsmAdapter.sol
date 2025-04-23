@@ -7,43 +7,45 @@ import {Asset as CorkToken} from "../core/assets/Asset.sol";
 import {Id} from "../libraries/Pair.sol";
 
 contract ERC7575PsmAdapter is IERC4626 {
-    CorkToken public immutable share;
-    address public immutable asset;
+    CorkToken public immutable SHARE;
+    address public immutable ASSET;
+    bool internal immutable IS_TOKEN_RA;
+    Id internal immutable MARKET_ID;
+    ModuleCore internal immutable MODULE_CORE;
 
-    bool internal immutable isTokenRa;
-    Id internal immutable marketId;
-    ModuleCore internal immutable moduleCore;
+    /// @notice Error thrown when the asset is not found
+    error AssetNotFound();
 
     /// @notice Constructs the asset adapter for a given share token
     /// @param _share The address of the share token
     /// @param _asset The address of the underlying or backing asset
     constructor(CorkToken _share, address _asset, Id _marketId, ModuleCore _moduleCore) {
         (address pa, address ra,,,) = _moduleCore.markets(_marketId);
-        if (_asset != ra && _asset != pa) revert("Asset not found");
+        if (_asset != ra && _asset != pa) revert AssetNotFound();
 
-        isTokenRa = (_asset == ra);
-        marketId = _marketId;
-        moduleCore = _moduleCore;
-        share = _share;
-        asset = _asset;
+        IS_TOKEN_RA = (_asset == ra);
+        MARKET_ID = _marketId;
+        MODULE_CORE = _moduleCore;
+        SHARE = _share;
+        ASSET = _asset;
     }
 
     /// @notice Returns the total amount of reserves
     /// @return totalAssets The total amount of reserves
     function totalAssets() public view returns (uint256) {
-        uint256 marketEpoch = moduleCore.lastDsId(marketId);
-        uint256 ctEpoch = share.dsId();
+        uint256 marketEpoch = MODULE_CORE.lastDsId(MARKET_ID);
+        uint256 ctEpoch = SHARE.dsId();
 
         return (marketEpoch == ctEpoch)
-            ? moduleCore.valueLocked(marketId, isTokenRa)
-            : moduleCore.valueLocked(marketId, ctEpoch, isTokenRa);
+            ? MODULE_CORE.valueLocked(MARKET_ID, IS_TOKEN_RA)
+            : MODULE_CORE.valueLocked(MARKET_ID, ctEpoch, IS_TOKEN_RA);
     }
 
     /// @notice Returns the amount of reserves proportional to the given shares
     /// @param shares The amount of share tokens
     /// @return assets The amount of reserves
     function convertToAssets(uint256 shares) public view returns (uint256) {
-        uint256 totalShares = share.totalSupply();
+        uint256 totalShares = SHARE.totalSupply();
         return totalShares == 0 ? 0 : totalAssets() * shares / totalShares; // floor division
     }
 }
