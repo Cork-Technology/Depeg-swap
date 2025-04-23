@@ -10,6 +10,7 @@ import {Asset as CorkToken} from "../core/assets/Asset.sol";
 import {ModuleCore} from "../core/ModuleCore.sol";
 import {Id} from "../libraries/Pair.sol";
 import {IErrors} from "../interfaces/IErrors.sol";
+import {ModuleCore} from"./../core/ModuleCore.sol";
 
 enum AdapterType {
     NONE,
@@ -29,7 +30,7 @@ struct AdapterParams {
  * @notice Factory contract for deploying Cork Asset adapters
  */
 contract CorkShareAdapterFactory is OwnableUpgradeable, UUPSUpgradeable, IErrors {
-    address public moduleCore;
+    ModuleCore public moduleCore;
     address public ammHook;
 
     mapping(address => AdapterParams) public adapters;
@@ -55,7 +56,7 @@ contract CorkShareAdapterFactory is OwnableUpgradeable, UUPSUpgradeable, IErrors
         __Ownable_init(_owner);
         __UUPSUpgradeable_init();
 
-        moduleCore = _moduleCore;
+        moduleCore = ModuleCore(_moduleCore);
         ammHook = _ammHook;
     }
 

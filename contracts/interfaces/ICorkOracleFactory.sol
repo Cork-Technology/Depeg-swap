@@ -4,6 +4,7 @@ pragma solidity ^0.8.24;
 import {IERC4626} from "./IERC4626.sol";
 import {AggregatorV3Interface} from "./AggregatorV3Interface.sol";
 import {PriceFeedParams} from "./ICompositePriceFeed.sol";
+import {IErrors} from "./IErrors.sol";
 
 enum CorkOracleType {
     NONE,
@@ -16,7 +17,7 @@ enum CorkOracleType {
  * @author Cork Team
  * @notice Interface which provides common errors, events and functions for CT Oracle Factory contract
  */
-interface ICorkOracleFactory {
+interface ICorkOracleFactory is IErrors{
     /// @notice Emitted when a new Composite price feed oracle is created.
     /// @param oracle The address of the Composite price feed oracle.
     /// @param caller The caller of the function.
@@ -55,7 +56,8 @@ interface ICorkOracleFactory {
     /// quoteTokenDecimals Quote token decimals.
     /// @param salt The salt to use for the CREATE2.
     /// @dev The base asset should be the collateral token and the quote asset the loan token.
-    function createAggregatorV3PriceFeed(PriceFeedParams[] calldata params, bytes32 salt)
-        external
-        returns (AggregatorV3Interface oracle);
+    function createAggregatorV3PriceFeed(
+        PriceFeedParams[] calldata params,
+        bytes32 salt
+    ) external returns (AggregatorV3Interface oracle);
 }

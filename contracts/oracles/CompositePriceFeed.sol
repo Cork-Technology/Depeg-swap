@@ -22,14 +22,14 @@ contract CompositePriceFeed is ICompositePriceFeed {
     /* IMMUTABLES or STORAGE */
 
     /// @inheritdoc ICompositePriceFeed
-    PriceFeedParams[] public immutable FEED_PARAMS;
+    PriceFeedParams[] public immutable _FEED_PARAMS;
 
     /// @inheritdoc ICompositePriceFeed
     uint256[] public immutable SCALE_FACTORS;
 
     /* CONSTRUCTOR */
 
-    constructor(PriceFeedParams[] calldata _params) {
+    constructor(PriceFeedParams[] memory _params) {
         // The ERC4626 vault parameters are used to price their respective conversion samples of their respective
         // shares, so it requires multiplying by `QUOTE_VAULT_CONVERSION_SAMPLE` and dividing
         // by `BASE_VAULT_CONVERSION_SAMPLE` in the `SCALE_FACTOR` definition.
@@ -49,20 +49,25 @@ contract CompositePriceFeed is ICompositePriceFeed {
             require(p.baseVaultConversionSample != 0, ErrorsLib.VAULT_CONVERSION_SAMPLE_IS_ZERO);
             require(p.quoteVaultConversionSample != 0, ErrorsLib.VAULT_CONVERSION_SAMPLE_IS_ZERO);
 
-            FEED_PARAMS[i] = p;
+            _FEED_PARAMS[i] = p;
             SCALE_FACTORS[i] = _scaleFactor(p);
         }
+    }
+
+        /// @inheritdoc ICompositePriceFeed
+    function FEED_PARAMS(uint256 i) external view returns (PriceFeedParams memory){
+        return _FEED_PARAMS[i];
     }
 
     /* PRICE */
 
     /// @inheritdoc ICompositePriceFeed
     function price() public view returns (uint256 totalPrice) {
-        for (uint256 i = 0; i < FEED_PARAMS.length; ++i) {
-            PriceFeedParams memory p = FEED_PARAMS[i];
+        for (uint256 i = 0; i < _FEED_PARAMS.length; ++i) {
+            PriceFeedParams memory p = _FEED_PARAMS[i];
             totalPrice += SCALE_FACTORS[i].mulDiv(
-                p.baseVault.getAssets(BASE_VAULT_CONVERSION_SAMPLE) * p.baseFeed1.getPrice() * p.baseFeed2.getPrice(),
-                p.quoteVault.getAssets(QUOTE_VAULT_CONVERSION_SAMPLE) * p.quoteFeed1.getPrice()
+                p.baseVault.getAssets(p.baseVaultConversionSample) * p.baseFeed1.getPrice() * p.baseFeed2.getPrice(),
+                p.quoteVault.getAssets(p.quoteVaultConversionSamples) * p.quoteFeed1.getPrice()
                     * p.quoteFeed2.getPrice()
             );
         }

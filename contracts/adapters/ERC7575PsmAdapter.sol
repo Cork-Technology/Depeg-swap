@@ -18,7 +18,7 @@ contract ERC7575PsmAdapter is IERC4626 {
     /// @param _share The address of the share token
     /// @param _asset The address of the underlying or backing asset
     constructor(CorkToken _share, address _asset, Id _marketId, ModuleCore _moduleCore) {
-        (address pa, address ra,) = _moduleCore.markets(_marketId);
+        (address pa, address ra,,,) = _moduleCore.markets(_marketId);
         if (_asset != ra && _asset != pa) revert("Asset not found");
 
         isTokenRa = (_asset == ra);
