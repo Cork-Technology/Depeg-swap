@@ -10,7 +10,6 @@ import {Asset as CorkToken} from "../core/assets/Asset.sol";
 import {ModuleCore} from "../core/ModuleCore.sol";
 import {Id} from "../libraries/Pair.sol";
 import {IErrors} from "../interfaces/IErrors.sol";
-import {ModuleCore} from"./../core/ModuleCore.sol";
 import {IUniswapV2Pair} from "../interfaces/IUniswapV2Pair.sol";
 
 enum AdapterType {

@@ -53,8 +53,8 @@ contract CompositePriceFeed is ICompositePriceFeed {
         }
     }
 
-        /// @inheritdoc ICompositePriceFeed
-    function FEED_PARAMS(uint256 i) external view returns (PriceFeedParams memory){
+    /// @inheritdoc ICompositePriceFeed
+    function FEED_PARAMS(uint256 i) external view returns (PriceFeedParams memory) {
         return _FEED_PARAMS[i];
     }
 
@@ -65,8 +65,7 @@ contract CompositePriceFeed is ICompositePriceFeed {
             PriceFeedParams memory p = _FEED_PARAMS[i];
             totalPrice += SCALE_FACTORS[i].mulDiv(
                 p.baseVault.getAssets(p.baseVaultConversionSample) * p.baseFeed1.getPrice() * p.baseFeed2.getPrice(),
-                p.quoteVault.getAssets(p.quoteVaultConversionSample) * p.quoteFeed1.getPrice()
-                    * p.quoteFeed2.getPrice()
+                p.quoteVault.getAssets(p.quoteVaultConversionSample) * p.quoteFeed1.getPrice() * p.quoteFeed2.getPrice()
             );
         }
     }

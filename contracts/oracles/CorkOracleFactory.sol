@@ -11,7 +11,7 @@ import {LinearDiscountOracle} from "./LinearDiscountOracle.sol";
 import {Id} from "../libraries/Pair.sol";
 
 struct OracleMetadata {
-    CorkOracleType typ;
+    CorkOracleType oracleType;
 }
 
 /**
@@ -53,13 +53,13 @@ contract CorkOracleFactory is OwnableUpgradeable, UUPSUpgradeable, ICorkOracleFa
     /// @notice Whether an oracle was created with the factory.
     /// @inheritdoc ICorkOracleFactory
     function isCorkOracle(address target) external view returns (bool) {
-        return oracles[target].typ != CorkOracleType.NONE;
+        return oracles[target].oracleType != CorkOracleType.NONE;
     }
 
     /// @notice Whether a feed (push-based oracle) was created with the factory.
     /// @inheritdoc ICorkOracleFactory
     function isCorkPriceFeed(address target) external view returns (bool) {
-        return oracles[target].typ == CorkOracleType.PRICE_FEED;
+        return oracles[target].oracleType == CorkOracleType.PRICE_FEED;
     }
 
     /// @inheritdoc ICorkOracleFactory

@@ -17,7 +17,7 @@ enum CorkOracleType {
  * @author Cork Team
  * @notice Interface which provides common errors, events and functions for CT Oracle Factory contract
  */
-interface ICorkOracleFactory is IErrors{
+interface ICorkOracleFactory is IErrors {
     /// @notice Emitted when a new Composite price feed oracle is created.
     /// @param oracle The address of the Composite price feed oracle.
     /// @param caller The caller of the function.
@@ -56,8 +56,7 @@ interface ICorkOracleFactory is IErrors{
     /// quoteTokenDecimals Quote token decimals.
     /// @param salt The salt to use for the CREATE2.
     /// @dev The base asset should be the collateral token and the quote asset the loan token.
-    function createCompositePriceFeed(
-        PriceFeedParams[] calldata params,
-        bytes32 salt
-    ) external returns (CompositePriceFeed oracle);
+    function createCompositePriceFeed(PriceFeedParams[] calldata params, bytes32 salt)
+        external
+        returns (CompositePriceFeed oracle);
 }
