@@ -21,11 +21,10 @@ contract CompositePriceFeed is ICompositePriceFeed {
 
     /* IMMUTABLES or STORAGE */
 
-    /// @inheritdoc ICompositePriceFeed
-    PriceFeedParams[] public immutable _FEED_PARAMS;
+    PriceFeedParams[] internal _FEED_PARAMS;
 
     /// @inheritdoc ICompositePriceFeed
-    uint256[] public immutable SCALE_FACTORS;
+    uint256[] public SCALE_FACTORS;
 
     /* CONSTRUCTOR */
 
@@ -61,13 +60,12 @@ contract CompositePriceFeed is ICompositePriceFeed {
 
     /* PRICE */
 
-    /// @inheritdoc ICompositePriceFeed
     function price() public view returns (uint256 totalPrice) {
         for (uint256 i = 0; i < _FEED_PARAMS.length; ++i) {
             PriceFeedParams memory p = _FEED_PARAMS[i];
             totalPrice += SCALE_FACTORS[i].mulDiv(
                 p.baseVault.getAssets(p.baseVaultConversionSample) * p.baseFeed1.getPrice() * p.baseFeed2.getPrice(),
-                p.quoteVault.getAssets(p.quoteVaultConversionSamples) * p.quoteFeed1.getPrice()
+                p.quoteVault.getAssets(p.quoteVaultConversionSample) * p.quoteFeed1.getPrice()
                     * p.quoteFeed2.getPrice()
             );
         }
@@ -79,14 +77,14 @@ contract CompositePriceFeed is ICompositePriceFeed {
         view
         returns (uint80 roundId, int256 answer, uint256 startedAt, uint256 updatedAt, uint80 answeredInRound)
     {
-        answer = price();
+        answer = int256(price());
     }
 
     function decimals() public pure returns (uint8) {
         return 36;
     }
 
-    function _scaleFactor(PriceFeedParams calldata p) internal pure returns (uint256) {
+    function _scaleFactor(PriceFeedParams memory p) internal view returns (uint256) {
         // Expects `price()` to be the quantity of 1 asset Q1 that can be exchanged for 1 asset B1,
         // scaled by 1e36:
         // 1e36 * (pB1 * 1e(dB2 - dB1)) * (pB2 * 1e(dC - dB2)) / ((pQ1 * 1e(dQ2 - dQ1)) * (pQ2 * 1e(dC - dQ2)))

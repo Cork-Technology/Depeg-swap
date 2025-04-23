@@ -11,6 +11,7 @@ import {ModuleCore} from "../core/ModuleCore.sol";
 import {Id} from "../libraries/Pair.sol";
 import {IErrors} from "../interfaces/IErrors.sol";
 import {ModuleCore} from"./../core/ModuleCore.sol";
+import {IUniswapV2Pair} from "../interfaces/IUniswapV2Pair.sol";
 
 enum AdapterType {
     NONE,
@@ -84,7 +85,7 @@ contract CorkShareAdapterFactory is OwnableUpgradeable, UUPSUpgradeable, IErrors
         _adapters = new ERC7575ReservesAdapter[](_assets.length);
 
         for (uint256 i = 0; i < _assets.length; ++i) {
-            ERC7575ReservesAdapter adapter = new ERC7575ReservesAdapter(_share, _assets[i]);
+            ERC7575ReservesAdapter adapter = new ERC7575ReservesAdapter(IUniswapV2Pair(_share), _assets[i]);
             _adapters[i] = adapter;
 
             _storeAndEmit(
@@ -104,7 +105,7 @@ contract CorkShareAdapterFactory is OwnableUpgradeable, UUPSUpgradeable, IErrors
         if (_share != coverToken) revert InvalidToken();
 
         for (uint256 i = 0; i < _assets.length; ++i) {
-            ERC7575PsmAdapter adapter = new ERC7575PsmAdapter(_share, _assets[i], _marketId, moduleCore);
+            ERC7575PsmAdapter adapter = new ERC7575PsmAdapter(CorkToken(_share), _assets[i], _marketId, moduleCore);
             _adapters[i] = adapter;
 
             _storeAndEmit(

@@ -12,7 +12,7 @@ struct PriceFeedParams {
     AggregatorV3Interface baseFeed2;
     uint256 baseTokenDecimals;
     IERC4626 quoteVault;
-    uint256 quoteVaultConversionSamples;
+    uint256 quoteVaultConversionSample;
     AggregatorV3Interface quoteFeed1;
     AggregatorV3Interface quoteFeed2;
     uint256 quoteTokenDecimals;

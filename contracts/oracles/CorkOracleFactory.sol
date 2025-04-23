@@ -72,7 +72,6 @@ contract CorkOracleFactory is OwnableUpgradeable, UUPSUpgradeable, ICorkOracleFa
         emit CreateCompositePriceFeedV1(msg.sender, address(oracle));
     }
 
-    /// @inheritdoc ICorkOracleFactory
     function createLinearDiscountOracle(address ct, uint256 baseDiscountPerYear)
         external
         returns (LinearDiscountOracle oracle)
@@ -82,7 +81,6 @@ contract CorkOracleFactory is OwnableUpgradeable, UUPSUpgradeable, ICorkOracleFa
         emit CreateLinearDiscountOracleV1(msg.sender, address(oracle));
     }
 
-    /// @inheritdoc ICorkOracleFactory
     function createLinearDiscountOracleWithMarket(Id marketId, uint256 epoch, uint256 baseDiscountPerYear)
         external
         returns (LinearDiscountOracle oracle)
@@ -92,4 +90,8 @@ contract CorkOracleFactory is OwnableUpgradeable, UUPSUpgradeable, ICorkOracleFa
         oracles[address(oracle)] = OracleMetadata(CorkOracleType.LINEAR_DISCOUNT);
         emit CreateLinearDiscountOracleV1(msg.sender, address(oracle));
     }
+
+    /// @notice Authorization function for UUPS proxy upgrades
+    // solhint-disable-next-line no-empty-blocks
+    function _authorizeUpgrade(address newImplementation) internal override onlyOwner {}
 }

@@ -2,7 +2,7 @@
 pragma solidity ^0.8.24;
 
 import {IERC4626} from "./IERC4626.sol";
-import {AggregatorV3Interface} from "./AggregatorV3Interface.sol";
+import {CompositePriceFeed} from "../oracles/CompositePriceFeed.sol";
 import {PriceFeedParams} from "./ICompositePriceFeed.sol";
 import {IErrors} from "./IErrors.sol";
 
@@ -56,8 +56,8 @@ interface ICorkOracleFactory is IErrors{
     /// quoteTokenDecimals Quote token decimals.
     /// @param salt The salt to use for the CREATE2.
     /// @dev The base asset should be the collateral token and the quote asset the loan token.
-    function createAggregatorV3PriceFeed(
+    function createCompositePriceFeed(
         PriceFeedParams[] calldata params,
         bytes32 salt
-    ) external returns (AggregatorV3Interface oracle);
+    ) external returns (CompositePriceFeed oracle);
 }
