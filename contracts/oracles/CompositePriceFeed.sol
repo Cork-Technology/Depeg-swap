@@ -21,10 +21,10 @@ contract CompositePriceFeed is ICompositePriceFeed {
 
     /* IMMUTABLES or STORAGE */
 
-    PriceFeedParams[] internal _FEED_PARAMS;
+    PriceFeedParams[] internal priceFeedParams;
 
     /// @inheritdoc ICompositePriceFeed
-    uint256[] public SCALE_FACTORS;
+    uint256[] public scaleFactors;
 
     /* CONSTRUCTOR */
 
@@ -33,7 +33,8 @@ contract CompositePriceFeed is ICompositePriceFeed {
         // shares, so it requires multiplying by `QUOTE_VAULT_CONVERSION_SAMPLE` and dividing
         // by `BASE_VAULT_CONVERSION_SAMPLE` in the `SCALE_FACTOR` definition.
 
-        for (uint256 i = 0; i < _params.length; ++i) {
+        uint256 length = _params.length;
+        for (uint256 i = 0; i < length; ++i) {
             PriceFeedParams memory p = _params[i];
 
             // Verify that vault = address(0) => vaultConversionSample = 1 for each vault.
@@ -48,22 +49,23 @@ contract CompositePriceFeed is ICompositePriceFeed {
             require(p.baseVaultConversionSample != 0, ErrorsLib.VAULT_CONVERSION_SAMPLE_IS_ZERO);
             require(p.quoteVaultConversionSample != 0, ErrorsLib.VAULT_CONVERSION_SAMPLE_IS_ZERO);
 
-            _FEED_PARAMS[i] = p;
-            SCALE_FACTORS[i] = _scaleFactor(p);
+            priceFeedParams[i] = p;
+            scaleFactors[i] = _scaleFactor(p);
         }
     }
 
     /// @inheritdoc ICompositePriceFeed
-    function FEED_PARAMS(uint256 i) external view returns (PriceFeedParams memory) {
-        return _FEED_PARAMS[i];
+    function feedParams(uint256 i) external view returns (PriceFeedParams memory) {
+        return priceFeedParams[i];
     }
 
     /* PRICE */
 
     function price() public view returns (uint256 totalPrice) {
-        for (uint256 i = 0; i < _FEED_PARAMS.length; ++i) {
-            PriceFeedParams memory p = _FEED_PARAMS[i];
-            totalPrice += SCALE_FACTORS[i].mulDiv(
+        uint256 length = priceFeedParams.length;
+        for (uint256 i = 0; i < length; ++i) {
+            PriceFeedParams memory p = priceFeedParams[i];
+            totalPrice += scaleFactors[i].mulDiv(
                 p.baseVault.getAssets(p.baseVaultConversionSample) * p.baseFeed1.getPrice() * p.baseFeed2.getPrice(),
                 p.quoteVault.getAssets(p.quoteVaultConversionSample) * p.quoteFeed1.getPrice() * p.quoteFeed2.getPrice()
             );

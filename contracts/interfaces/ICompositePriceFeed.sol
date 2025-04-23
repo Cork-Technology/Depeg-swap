@@ -52,8 +52,8 @@ interface ICompositePriceFeed is IOracle, MinimalAggregatorV3Interface {
     // function QUOTE_FEED_2() external view returns (AggregatorV3Interface);
 
     /// @notice Returns the parameters used for price conversion.
-    function FEED_PARAMS(uint256 i) external view returns (PriceFeedParams memory);
+    function feedParams(uint256 i) external view returns (PriceFeedParams memory);
 
     /// @notice Returns the price scale factor, calculated at contract creation.
-    function SCALE_FACTORS(uint256 i) external view returns (uint256);
+    function scaleFactors(uint256 i) external view returns (uint256);
 }
