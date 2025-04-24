@@ -289,11 +289,8 @@ library VaultLibrary {
         uint256 amountRaOriginal
     ) internal returns (uint256 lp, uint256 dust) {
         {
-            address ra = self.info.ra;
             // no need to provide liquidity if the amount is 0
-            if (_handleZeroLiquidity(raAmount, ctAmount, ra, ctAddress)) {
-                return (0, 0);
-            }
+            _handleZeroLiquidity(raAmount, ctAmount)
         }
 
         {
@@ -310,22 +307,12 @@ library VaultLibrary {
         self.sync(ammRouter);
     }
 
-    function _handleZeroLiquidity(uint256 raAmount, uint256 ctAmount, address ra, address ctAddress)
+    function _handleZeroLiquidity(uint256 raAmount, uint256 ctAmount)
         internal
-        returns (bool)
     {
         if (raAmount == 0 || ctAmount == 0) {
-            if (raAmount != 0) {
-                SafeERC20.safeTransfer(IERC20(ra), msg.sender, raAmount);
-            }
-
-            if (ctAmount != 0) {
-                SafeERC20.safeTransfer(IERC20(ctAddress), msg.sender, ctAmount);
-            }
-
-            return true;
+            revert IErrors.InvalidPoolStateOrNearExpired();
         }
-        return false;
     }
 
     function __provideAmmLiquidityFromPool(
