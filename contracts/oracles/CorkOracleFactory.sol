@@ -10,10 +10,6 @@ import {CompositePriceFeed} from "./CompositePriceFeed.sol";
 import {LinearDiscountOracle} from "./LinearDiscountOracle.sol";
 import {Id} from "../libraries/Pair.sol";
 
-struct OracleMetadata {
-    CorkOracleType oracleType;
-}
-
 /**
  * @title Factory contract for Cork Oracles
  * @author Cork Team
@@ -36,16 +32,17 @@ contract CorkOracleFactory is OwnableUpgradeable, UUPSUpgradeable, ICorkOracleFa
 
     /**
      * @notice Initializes the factory contract
-     * @param _owner The owner of the factory contract
+     * @param ownerAdd The owner of the factory contract
+     * @param moduleCoreAdd The address of the module core contract
      */
-    function initialize(address _owner, address _moduleCore) external initializer {
-        if (_owner == address(0)) {
+    function initialize(address ownerAdd, address moduleCoreAdd) external initializer {
+        if (ownerAdd == address(0) || moduleCoreAdd == address(0)) {
             revert ZeroAddress();
         }
-        __Ownable_init(_owner);
+        __Ownable_init(ownerAdd);
         __UUPSUpgradeable_init();
 
-        moduleCore = Initialize(_moduleCore);
+        moduleCore = Initialize(moduleCoreAdd);
     }
 
     /* EXTERNAL */

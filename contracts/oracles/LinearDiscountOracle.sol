@@ -8,8 +8,11 @@ contract LinearDiscountOracle is MinimalAggregatorV3Interface {
     uint256 private constant SECONDS_PER_YEAR = 365 days;
     uint256 private constant ONE = 1e18;
 
+    /// @notice The CT token.
     address public immutable CT;
+    /// @notice The maturity timestamp of the CT token.
     uint256 public immutable MATURITY;
+    /// @notice The base discount per year. 1e18 = 100%
     uint256 public immutable BASE_DISCOUNT_PER_YEAR; // 100% = 1e18
 
     /// @notice Thrown when the discount is invalid.
@@ -19,13 +22,16 @@ contract LinearDiscountOracle is MinimalAggregatorV3Interface {
     /// @notice Thrown when the contract is initialized with a zero address.
     error ZeroAddress();
 
-    constructor(address _ct, uint256 _baseDiscountPerYear) {
-        if (_baseDiscountPerYear > ONE) revert InvalidDiscount();
-        if (_ct == address(0)) revert ZeroAddress();
+    /// @notice Constructs the Linear discount oracle.
+    /// @param ctAdd The address of the CT token.
+    /// @param baseDiscountPerYear The base discount per year.
+    constructor(address ctAdd, uint256 baseDiscountPerYear) {
+        if (baseDiscountPerYear > ONE) revert InvalidDiscount();
+        if (ctAdd == address(0)) revert ZeroAddress();
 
-        CT = _ct;
+        CT = ctAdd;
         MATURITY = IExpiry(CT).expiry();
-        BASE_DISCOUNT_PER_YEAR = _baseDiscountPerYear;
+        BASE_DISCOUNT_PER_YEAR = baseDiscountPerYear;
     }
 
     function latestRoundData()
@@ -41,11 +47,15 @@ contract LinearDiscountOracle is MinimalAggregatorV3Interface {
         return (0, int256(ONE - discount), 0, 0, 0);
     }
 
+    /// @notice Returns the number of decimals.
     function decimals() external pure returns (uint8) {
         return 18;
     }
 
-    function getDiscount(uint256 timeLeft) public view returns (uint256) {
-        return (timeLeft * BASE_DISCOUNT_PER_YEAR) / SECONDS_PER_YEAR;
+    /// @notice Returns the discount for the given time left.
+    /// @param timeLeft The time left for expiry in seconds.
+    /// @return discount The discount in 18 decimal places.
+    function getDiscount(uint256 timeLeft) public view returns (uint256 discount) {
+        discount = (timeLeft * BASE_DISCOUNT_PER_YEAR) / SECONDS_PER_YEAR;
     }
 }

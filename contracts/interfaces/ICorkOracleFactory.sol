@@ -18,6 +18,11 @@ enum CorkOracleType {
  * @notice Interface which provides common errors, events and functions for CT Oracle Factory contract
  */
 interface ICorkOracleFactory is IErrors {
+    /// @notice The metadata of the oracle.
+    struct OracleMetadata {
+        CorkOracleType oracleType;
+    }
+
     /// @notice Thrown when a oracle creation fails.
     error OracleCreationFailed();
 
