@@ -234,7 +234,7 @@ contract SimulateScript is Test {
     function depositLv(Market memory market, Id marketId, uint256 depositAmt) public returns (uint256) {
         depositAmt = convertToDecimals(market.redemptionAsset, depositAmt);
         ERC20(market.redemptionAsset).approve(address(moduleCore), depositAmt);
-        return moduleCore.depositLv(marketId, depositAmt, 0, 0, 0);
+        return moduleCore.depositLv(marketId, depositAmt, 0, 0, 0, block.timestamp);
     }
 
     function redeemRaWithDsPa(Market memory market, Id marketId, uint256 dsId, uint256 redeemAmt, address ds) public {

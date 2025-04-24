@@ -155,7 +155,7 @@ contract SetupMarketScript is Script {
 
         uint256 depositAmount = TransferHelper.normalizeDecimals(0.1 ether, 18, raDecimals);
         ERC20(raToken).approve(address(moduleCore), depositAmount);
-        moduleCore.depositLv(id, depositAmount, 0, 0, 0);
+        moduleCore.depositLv(id, depositAmount, 0, 0, 0, 0);
 
         (address ct,) = moduleCore.swapAsset(id, 1);
         (uint256 raReserve, uint256 ctReserve) = hook.getReserves(raToken, ct);
