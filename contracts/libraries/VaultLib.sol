@@ -23,7 +23,6 @@ import {IWithdrawalRouter} from "./../interfaces/IWithdrawalRouter.sol";
 import {TransferHelper} from "./TransferHelper.sol";
 import {NavCircuitBreakerLibrary} from "./NavCircuitBreaker.sol";
 import {VaultBalanceLibrary} from "./VaultBalancesLib.sol";
-import "forge-std/console.sol";
 
 /**
  * @title Vault Library Contract

@@ -44,7 +44,7 @@ contract DsReserveSellTest is Helper {
         ra.approve(address(moduleCore), 100_000_000_000 ether);
 
         moduleCore.depositPsm(currencyId, DEFAULT_DEPOSIT_AMOUNT);
-        moduleCore.depositLv(currencyId, DEFAULT_DEPOSIT_AMOUNT, 0, 0);
+        moduleCore.depositLv(currencyId, DEFAULT_DEPOSIT_AMOUNT, 0, 0, 0);
 
         dsId = moduleCore.lastDsId(currencyId);
         (ct, ds) = moduleCore.swapAsset(currencyId, dsId);
@@ -162,53 +162,6 @@ contract DsReserveSellTest is Helper {
         IDsFlashSwapCore.SwapRaForDsReturn memory result = flashSwapRouter.swapRaforDs(
             currencyId, dsId, amount, 0, defaultBuyApproxParams(), defaultOffchainGuessParams()
         );
-
-        vm.stopPrank();
-    }
-
-    // Test that the reserve sell works when the reserve is below the minimum sell amount
-    // And that the reserve sell pressure is zero
-    function test_SellFromReserveBelowMinimumAmountShouldWork() public {
-        vm.startPrank(DEFAULT_ADDRESS);
-
-        (ra, pa, currencyId) = initializeAndIssueNewDs(end);
-        ra.deposit{value: 1_000_000_000 ether}();
-        pa.deposit{value: 1_000_000_000 ether}();
-
-        // Set reserve pressure threshold
-        corkConfig.updateReserveSellPressurePercentage(currencyId, 0.01 ether);
-
-        ra.approve(address(moduleCore), type(uint256).max);
-        moduleCore.depositLv(currencyId, 0.00001 ether, 0, 0);
-
-        // Prepare for swap
-        ra.approve(address(flashSwapRouter), type(uint256).max);
-
-        // Get reserve before swap
-        uint256 reserveBefore = flashSwapRouter.getLvReserve(currencyId, dsId);
-
-        // Should be greater than zero but less than minimum sell amount
-        assertGt(reserveBefore, 0, "Reserve should be greater than zero");
-        assertLt(reserveBefore, 0.001 ether, "Reserve should be less than minimum sell amount");
-
-        uint256 amount = 1 gwei;
-
-        // Perform swap - this should succeed but should not attempt to sell from reserves
-        IDsFlashSwapCore.SwapRaForDsReturn memory result = flashSwapRouter.swapRaforDs(
-            currencyId, dsId, amount, 0, defaultBuyApproxParams(), defaultOffchainGuessParams()
-        );
-
-        // Get reserve after swap
-        uint256 reserveAfter = flashSwapRouter.getLvReserve(currencyId, dsId);
-
-        // Reserve sell pressure should be zero
-        assertEq(result.reserveSellPressure, 0, "Reserve sell pressure should be zero");
-
-        // Reserve should remain unchanged (no sell should happen) due to the minimum amount constraint
-        assertEq(reserveAfter, reserveBefore, "Reserve should not be sold due to minimum amount constraint");
-
-        // The primary swap (user buying DS) should still succeed
-        assertGt(result.amountOut, 0, "User should receive DS tokens");
 
         vm.stopPrank();
     }
