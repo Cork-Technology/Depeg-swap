@@ -47,9 +47,15 @@ library VaultLibrary {
         uint256 ct;
     }
 
-    function initialize(VaultState storage self, address lv, address ra, uint256 initialArp) external {
-        self.lv = LvAssetLibrary.initialize(lv);
-        self.balances.ra = RedemptionAssetManagerLibrary.initialize(ra);
+    struct AddLiquidityParams {
+        address raAddress;
+        address ctAddress;
+        uint256 raAmount;
+        uint256 ctAmount;
+        uint256 raTolerance;
+        uint256 ctTolerance;
+        ICorkHook ammRouter;
+        uint256 deadline;
     }
 
     struct BalanceChange {
@@ -59,23 +65,30 @@ library VaultLibrary {
         uint256 afterCt;
     }
 
-    function _addLiquidity(
-        address raAddress,
-        address ctAddress,
-        uint256 raAmount,
-        uint256 ctAmount,
-        uint256 raTolerance,
-        uint256 ctTolerance,
-        ICorkHook ammRouter
-    ) internal returns (uint256 lp, BalanceChange memory balanceChange) {
-        balanceChange.beforeRa = IERC20(raAddress).balanceOf(address(this));
-        balanceChange.beforeCt = IERC20(ctAddress).balanceOf(address(this));
+    function initialize(VaultState storage self, address lv, address ra) external {
+        self.lv = LvAssetLibrary.initialize(lv);
+        self.balances.ra = RedemptionAssetManagerLibrary.initialize(ra);
+    }
 
-        (,, lp) =
-            ammRouter.addLiquidity(raAddress, ctAddress, raAmount, ctAmount, raTolerance, ctTolerance, block.timestamp);
+    function _addLiquidity(AddLiquidityParams memory params)
+        internal
+        returns (uint256 lp, BalanceChange memory balanceChange)
+    {
+        balanceChange.beforeRa = IERC20(params.raAddress).balanceOf(address(this));
+        balanceChange.beforeCt = IERC20(params.ctAddress).balanceOf(address(this));
 
-        balanceChange.afterRa = IERC20(raAddress).balanceOf(address(this));
-        balanceChange.afterCt = IERC20(ctAddress).balanceOf(address(this));
+        (,, lp) = params.ammRouter.addLiquidity(
+            params.raAddress,
+            params.ctAddress,
+            params.raAmount,
+            params.ctAmount,
+            params.raTolerance,
+            params.ctTolerance,
+            params.deadline
+        );
+
+        balanceChange.afterRa = IERC20(params.raAddress).balanceOf(address(this));
+        balanceChange.afterCt = IERC20(params.ctAddress).balanceOf(address(this));
     }
 
     function __addLiquidityToAmmUnchecked(
@@ -85,15 +98,26 @@ library VaultLibrary {
         address ctAddress,
         ICorkHook ammRouter,
         uint256 raTolerance,
-        uint256 ctTolerance
+        uint256 ctTolerance,
+        uint256 deadline
     ) internal returns (uint256 lp, uint256 dust) {
         IERC20(raAddress).safeIncreaseAllowance(address(ammRouter), raAmount);
         IERC20(ctAddress).safeIncreaseAllowance(address(ammRouter), ctAmount);
 
         BalanceChange memory balanceChange;
 
-        (lp, balanceChange) =
-            _addLiquidity(raAddress, ctAddress, raAmount, ctAmount, raTolerance, ctTolerance, ammRouter);
+        AddLiquidityParams memory params = AddLiquidityParams({
+            raAddress: raAddress,
+            ctAddress: ctAddress,
+            raAmount: raAmount,
+            ctAmount: ctAmount,
+            raTolerance: raTolerance,
+            ctTolerance: ctTolerance,
+            ammRouter: ammRouter,
+            deadline: deadline
+        });
+
+        (lp, balanceChange) = _addLiquidity(params);
 
         uint256 dustCt = ctAmount - (balanceChange.beforeCt - balanceChange.afterCt);
 
@@ -139,7 +163,7 @@ library VaultLibrary {
 
         _liquidateIfExpired(self, prevDsId, ammRouter, deadline);
 
-        __provideAmmLiquidityFromPool(self, flashSwapRouter, self.ds[self.globalAssetIdx].ct, ammRouter);
+        __provideAmmLiquidityFromPool(self, flashSwapRouter, self.ds[self.globalAssetIdx].ct, ammRouter, deadline);
     }
 
     function _liquidateIfExpired(State storage self, uint256 dsId, ICorkHook ammRouter, uint256 deadline) internal {
@@ -179,33 +203,56 @@ library VaultLibrary {
         Guard.safeAfterExpired(ds);
     }
 
+    struct ProvideLiquidityParams {
+        uint256 amount;
+        IDsFlashSwapCore flashSwapRouter;
+        address ctAddress;
+        ICorkHook ammRouter;
+        uint256 deadline;
+    }
+
     function __provideLiquidityWithRatioGetLP(
         State storage self,
-        uint256 amount,
-        IDsFlashSwapCore flashSwapRouter,
-        address ctAddress,
-        ICorkHook ammRouter,
+        ProvideLiquidityParams memory params,
         Tolerance memory tolerance
     ) internal returns (uint256 ra, uint256 ct, uint256 lp) {
-        (ra, ct) = __calculateProvideLiquidityAmount(self, amount, flashSwapRouter);
-        (lp,) = __provideLiquidity(self, ra, ct, flashSwapRouter, ctAddress, ammRouter, tolerance, amount);
+        (ra, ct) = __calculateProvideLiquidityAmount(self, params.amount, params.flashSwapRouter);
+
+        (lp,) = __provideLiquidity(
+            self,
+            ra,
+            ct,
+            params.flashSwapRouter,
+            params.ctAddress,
+            params.ammRouter,
+            tolerance,
+            params.amount,
+            params.deadline
+        );
     }
 
     // Duplicate function of __provideLiquidityWithRatioGetLP to avoid stack too deep error
-    function __provideLiquidityWithRatioGetDust(
-        State storage self,
-        uint256 amount,
-        IDsFlashSwapCore flashSwapRouter,
-        address ctAddress,
-        ICorkHook ammRouter
-    ) internal returns (uint256 ra, uint256 ct, uint256 dust) {
+    function __provideLiquidityWithRatioGetDust(State storage self, ProvideLiquidityParams memory params)
+        internal
+        returns (uint256 ra, uint256 ct, uint256 dust)
+    {
         Tolerance memory tolerance;
 
-        (ra, ct) = __calculateProvideLiquidityAmount(self, amount, flashSwapRouter);
+        (ra, ct) = __calculateProvideLiquidityAmount(self, params.amount, params.flashSwapRouter);
 
         (tolerance.ra, tolerance.ct) = MathHelper.calculateWithTolerance(ra, ct, MathHelper.UNI_STATIC_TOLERANCE);
 
-        (, dust) = __provideLiquidity(self, ra, ct, flashSwapRouter, ctAddress, ammRouter, tolerance, amount);
+        (, dust) = __provideLiquidity(
+            self,
+            ra,
+            ct,
+            params.flashSwapRouter,
+            params.ctAddress,
+            params.ammRouter,
+            tolerance,
+            params.amount,
+            params.deadline
+        );
     }
 
     function __calculateProvideLiquidityAmount(State storage self, uint256 amount, IDsFlashSwapCore flashSwapRouter)
@@ -219,14 +266,11 @@ library VaultLibrary {
         (ra, ct) = MathHelper.calculateProvideLiquidityAmountBasedOnCtPrice(amount, ctRatio);
     }
 
-    function __provideLiquidityWithRatio(
-        State storage self,
-        uint256 amount,
-        IDsFlashSwapCore flashSwapRouter,
-        address ctAddress,
-        ICorkHook ammRouter
-    ) internal returns (uint256 ra, uint256 ct, uint256 dust) {
-        (ra, ct, dust) = __provideLiquidityWithRatioGetDust(self, amount, flashSwapRouter, ctAddress, ammRouter);
+    function __provideLiquidityWithRatio(State storage self, ProvideLiquidityParams memory params)
+        internal
+        returns (uint256 ra, uint256 ct, uint256 dust)
+    {
+        (ra, ct, dust) = __provideLiquidityWithRatioGetDust(self, params);
     }
 
     function __getAmmCtPriceRatio(State storage self, IDsFlashSwapCore flashSwapRouter, uint256 dsId)
@@ -286,12 +330,11 @@ library VaultLibrary {
         address ctAddress,
         ICorkHook ammRouter,
         Tolerance memory tolerance,
-        uint256 amountRaOriginal
+        uint256 amountRaOriginal,
+        uint256 deadline
     ) internal returns (uint256 lp, uint256 dust) {
-        {
-            // no need to provide liquidity if the amount is 0
-            _handleZeroLiquidity(raAmount, ctAmount)
-        }
+        // no need to provide liquidity if the amount is 0
+        _handleZeroLiquidity(raAmount, ctAmount);
 
         {
             // we use the returned value here since the amount is already normalized
@@ -299,7 +342,7 @@ library VaultLibrary {
                 PsmLibrary.unsafeIssueToLv(self, MathHelper.calculateProvideLiquidityAmount(amountRaOriginal, raAmount));
 
             (lp, dust) = __addLiquidityToAmmUnchecked(
-                raAmount, ctAmount, self.info.ra, ctAddress, ammRouter, tolerance.ra, tolerance.ct
+                raAmount, ctAmount, self.info.ra, ctAddress, ammRouter, tolerance.ra, tolerance.ct, deadline
             );
         }
         _addFlashSwapReserveLv(self, flashSwapRouter, self.ds[self.globalAssetIdx], ctAmount);
@@ -307,9 +350,7 @@ library VaultLibrary {
         self.sync(ammRouter);
     }
 
-    function _handleZeroLiquidity(uint256 raAmount, uint256 ctAmount)
-        internal
-    {
+    function _handleZeroLiquidity(uint256 raAmount, uint256 ctAmount) internal {
         if (raAmount == 0 || ctAmount == 0) {
             revert IErrors.InvalidPoolStateOrNearExpired();
         }
@@ -319,20 +360,30 @@ library VaultLibrary {
         State storage self,
         IDsFlashSwapCore flashSwapRouter,
         address ctAddress,
-        ICorkHook ammRouter
+        ICorkHook ammRouter,
+        uint256 deadline
     ) internal returns (uint256 dust) {
-        uint256 dsId = self.globalAssetIdx;
+        uint256 ra;
+        uint256 ct;
+        uint256 originalBalance;
+        {
+            uint256 dsId = self.globalAssetIdx;
 
-        uint256 ctRatio = __getAmmCtPriceRatio(self, flashSwapRouter, dsId);
+            uint256 ctRatio = __getAmmCtPriceRatio(self, flashSwapRouter, dsId);
 
-        (uint256 ra, uint256 ct, uint256 originalBalance) = self.vault.pool.rationedToAmm(ctRatio);
+            (ra, ct, originalBalance) = self.vault.pool.rationedToAmm(ctRatio);
+        }
 
+        Tolerance memory tolerance;
         // this doesn't really matter tbh, since the amm is fresh and we're the first one to add liquidity to it
-        (uint256 raTolerance, uint256 ctTolerance) =
-            MathHelper.calculateWithTolerance(ra, ct, MathHelper.UNI_STATIC_TOLERANCE);
+        {
+            (uint256 raTolerance, uint256 ctTolerance) =
+                MathHelper.calculateWithTolerance(ra, ct, MathHelper.UNI_STATIC_TOLERANCE);
+            tolerance = Tolerance(raTolerance, ctTolerance);
+        }
 
         (, dust) = __provideLiquidity(
-            self, ra, ct, flashSwapRouter, ctAddress, ammRouter, Tolerance(raTolerance, ctTolerance), originalBalance
+            self, ra, ct, flashSwapRouter, ctAddress, ammRouter, tolerance, originalBalance, deadline
         );
 
         self.vault.pool.resetAmmPool();
@@ -345,7 +396,8 @@ library VaultLibrary {
         IDsFlashSwapCore flashSwapRouter,
         ICorkHook ammRouter,
         uint256 raTolerance,
-        uint256 ctTolerance
+        uint256 ctTolerance,
+        uint256 deadline
     ) external returns (uint256 received) {
         if (amount == 0) {
             revert IErrors.ZeroDeposit();
@@ -374,9 +426,13 @@ library VaultLibrary {
             received = TransferHelper.tokenNativeDecimalsToFixed(amount, self.info.ra);
             self.vault.initialized = true;
 
-            __provideLiquidityWithRatioGetLP(
-                self, remaining, flashSwapRouter, ct, ammRouter, Tolerance(raTolerance, ctTolerance)
-            );
+            {
+                ProvideLiquidityParams memory params =
+                    ProvideLiquidityParams(remaining, flashSwapRouter, ct, ammRouter, deadline);
+
+                __provideLiquidityWithRatioGetLP(self, params, Tolerance(raTolerance, ctTolerance));
+            }
+
             self.vault.lv.issue(from, received);
 
             _updateNavCircuitBreakerOnFirstDeposit(self, flashSwapRouter, ammRouter, dsId);
@@ -396,9 +452,12 @@ library VaultLibrary {
             })
         );
 
-        __provideLiquidityWithRatioGetLP(
-            self, remaining, flashSwapRouter, ct, ammRouter, Tolerance(raTolerance, ctTolerance)
-        );
+        {
+            ProvideLiquidityParams memory params =
+                ProvideLiquidityParams(remaining, flashSwapRouter, ct, ammRouter, deadline);
+
+            __provideLiquidityWithRatioGetLP(self, params, Tolerance(raTolerance, ctTolerance));
+        }
 
         // protecting against inflation attack
         if (received < 1e16) {
@@ -790,15 +849,19 @@ library VaultLibrary {
         self.vault.balances.ra.lockFrom(amount, from);
     }
 
-    function useTradeExecutionResultFunds(State storage self, IDsFlashSwapCore flashSwapRouter, ICorkHook ammRouter)
-        external
-        returns (uint256 raFunds)
-    {
+    function useTradeExecutionResultFunds(
+        State storage self,
+        IDsFlashSwapCore flashSwapRouter,
+        ICorkHook ammRouter,
+        uint256 deadline
+    ) external returns (uint256 raFunds) {
         // convert to free and reset ra balance
         raFunds = self.vault.balances.ra.convertAllToFree();
         self.vault.balances.ra.reset();
 
-        __provideLiquidityWithRatio(self, raFunds, flashSwapRouter, self.ds[self.globalAssetIdx].ct, ammRouter);
+        ProvideLiquidityParams memory params =
+            ProvideLiquidityParams(raFunds, flashSwapRouter, self.ds[self.globalAssetIdx].ct, ammRouter, deadline);
+        __provideLiquidityWithRatio(self, params);
     }
 
     function liquidationFundsAvailable(State storage self) external view returns (uint256) {
