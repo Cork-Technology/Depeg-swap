@@ -15,8 +15,6 @@ import {Context} from "@openzeppelin/contracts/utils/Context.sol";
 import {ContextUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/ContextUpgradeable.sol";
 import {AmmId, toAmmId} from "Cork-Hook/lib/State.sol";
 
-// TODO : add minimum output amount for deposit vault
-
 /**
  * @title ModuleCore Contract
  * @author Cork Team
@@ -118,7 +116,7 @@ contract ModuleCore is OwnableUpgradeable, UUPSUpgradeable, PsmCore, Initialize,
         address lv = assetsFactory.deployLv(ra, pa, address(this), initialArp, expiryInterval, exchangeRateProvider);
 
         PsmLibrary.initialize(state, key);
-        VaultLibrary.initialize(state.vault, lv, ra, initialArp);
+        VaultLibrary.initialize(state.vault, lv, ra);
 
         emit InitializedModuleCore(id, pa, ra, lv, expiryInterval, initialArp, exchangeRateProvider);
     }
