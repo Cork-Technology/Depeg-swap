@@ -112,7 +112,7 @@ contract DeployCTOracle is Script {
 
             PriceFeedParams[] memory priceFeedParams = new PriceFeedParams[](2);
             priceFeedParams[0] = PriceFeedParams(
-                adapters[0],
+                IERC4626(address(adapters[0])),
                 1e18,
                 AggregatorV3Interface(address(linearDiscountOracle)),
                 AggregatorV3Interface(address(0)),
@@ -124,7 +124,7 @@ contract DeployCTOracle is Script {
                 18
             );
             priceFeedParams[1] = PriceFeedParams(
-                adapters[1],
+                IERC4626(address(adapters[1])),
                 1e18,
                 AggregatorV3Interface(address(linearDiscountOracle)),
                 AggregatorV3Interface(weETH_eth_feed),
