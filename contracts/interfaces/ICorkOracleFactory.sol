@@ -18,15 +18,20 @@ enum CorkOracleType {
  * @notice Interface which provides common errors, events and functions for CT Oracle Factory contract
  */
 interface ICorkOracleFactory is IErrors {
+    /// @notice Thrown when a oracle creation fails.
+    error OracleCreationFailed();
+
     /// @notice Emitted when a new Composite price feed oracle is created.
     /// @param oracle The address of the Composite price feed oracle.
     /// @param caller The caller of the function.
-    event CreateCompositePriceFeedV1(address caller, address oracle);
+    /// @param salt The salt used for the creation of the oracle.
+    event CreateCompositePriceFeedV1(address caller, address oracle, bytes32 salt);
 
     /// @notice Emitted when a new Linear discount oracle is created.
     /// @param oracle The address of the Linear discount oracle.
     /// @param caller The caller of the function.
-    event CreateLinearDiscountOracleV1(address caller, address oracle);
+    /// @param salt The salt used for the creation of the oracle.
+    event CreateLinearDiscountOracleV1(address caller, address oracle, bytes32 salt);
 
     /// @notice Whether an oracle was created with the factory.
     function isCorkOracle(address target) external view returns (bool);

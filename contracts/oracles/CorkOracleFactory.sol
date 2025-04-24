@@ -68,27 +68,36 @@ contract CorkOracleFactory is OwnableUpgradeable, UUPSUpgradeable, ICorkOracleFa
         returns (CompositePriceFeed oracle)
     {
         oracle = new CompositePriceFeed{salt: salt}(params);
+        if (address(oracle) == address(0)) {
+            revert OracleCreationFailed();
+        }
         oracles[address(oracle)] = OracleMetadata(CorkOracleType.PRICE_FEED);
-        emit CreateCompositePriceFeedV1(msg.sender, address(oracle));
+        emit CreateCompositePriceFeedV1(msg.sender, address(oracle), salt);
     }
 
-    function createLinearDiscountOracle(address ct, uint256 baseDiscountPerYear)
+    function createLinearDiscountOracle(address ct, uint256 baseDiscountPerYear, bytes32 salt)
         external
         returns (LinearDiscountOracle oracle)
     {
-        oracle = new LinearDiscountOracle(ct, baseDiscountPerYear);
+        oracle = new LinearDiscountOracle{salt: salt}(ct, baseDiscountPerYear);
+        if (address(oracle) == address(0)) {
+            revert OracleCreationFailed();
+        }
         oracles[address(oracle)] = OracleMetadata(CorkOracleType.LINEAR_DISCOUNT);
-        emit CreateLinearDiscountOracleV1(msg.sender, address(oracle));
+        emit CreateLinearDiscountOracleV1(msg.sender, address(oracle), salt);
     }
 
-    function createLinearDiscountOracleWithMarket(Id marketId, uint256 epoch, uint256 baseDiscountPerYear)
+    function createLinearDiscountOracleWithMarket(Id marketId, uint256 epoch, uint256 baseDiscountPerYear, bytes32 salt)
         external
         returns (LinearDiscountOracle oracle)
     {
         (address ct,) = moduleCore.swapAsset(marketId, epoch);
-        oracle = new LinearDiscountOracle(ct, baseDiscountPerYear);
+        oracle = new LinearDiscountOracle{salt: salt}(ct, baseDiscountPerYear);
+        if (address(oracle) == address(0)) {
+            revert OracleCreationFailed();
+        }
         oracles[address(oracle)] = OracleMetadata(CorkOracleType.LINEAR_DISCOUNT);
-        emit CreateLinearDiscountOracleV1(msg.sender, address(oracle));
+        emit CreateLinearDiscountOracleV1(msg.sender, address(oracle), salt);
     }
 
     /// @notice Authorization function for UUPS proxy upgrades

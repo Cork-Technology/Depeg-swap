@@ -106,7 +106,9 @@ contract DeployCTOracle is Script {
             assets[1] = market.peggedAsset;
             ERC7575PsmAdapter[] memory adapters = corkAdapterFactory.createERC7575PsmAdapters(ct, assets, marketId);
 
-            LinearDiscountOracle linearDiscountOracle = corkOracleFactory.createLinearDiscountOracle(ct, 0.02 ether);
+            LinearDiscountOracle linearDiscountOracle = corkOracleFactory.createLinearDiscountOracle(
+                ct, market.arp, keccak256(abi.encodePacked(ct, market.arp))
+            );
 
             PriceFeedParams[] memory priceFeedParams = new PriceFeedParams[](2);
             priceFeedParams[0] = PriceFeedParams(
