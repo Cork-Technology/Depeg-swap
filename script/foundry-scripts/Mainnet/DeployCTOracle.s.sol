@@ -48,7 +48,7 @@ contract DeployCTOracle is Script {
     uint256 constant wstETH_weETH_FeesSplit = 10 ether;
 
     address constant weETH_eth_feed = 0x5c9C449BbC9a6075A2c061dF312a35fd1E05fF22;
-    address constant stETH_eth_feed = 0x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca0;
+    address constant stETH_eth_feed = 0x86392dC19c0b719886221c78AB11eb8Cf5c52812;
     address constant wstETH_stETH_feed = 0x905b7dAbCD3Ce6B792D874e303D336424Cdb1421;
 
     Market wstETH_weETH_market = Market(
@@ -65,29 +65,29 @@ contract DeployCTOracle is Script {
     function run() public {
         vm.startBroadcast(pk);
         console.log("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-");
-        console.log("Deployer                        : ", deployer);
+        console.log("Deployer                                : ", deployer);
         console.log("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-");
 
         // Deploy the Cork Adapter Factory implementation (logic) contract
         CorkAdapterFactory corkAdapterFactoryImplementation = new CorkAdapterFactory();
-        console.log("Cork Adapter Factory Implementation    : ", address(corkAdapterFactoryImplementation));
+        console.log("Cork Adapter Factory Implementation     : ", address(corkAdapterFactoryImplementation));
 
         // Deploy the Cork Adapter Factory Proxy contract
         bytes memory data =
             abi.encodeWithSelector(corkAdapterFactoryImplementation.initialize.selector, deployer, moduleCore, corkHook);
         ERC1967Proxy corkAdapterFactoryProxy = new ERC1967Proxy(address(corkAdapterFactoryImplementation), data);
         corkAdapterFactory = CorkAdapterFactory(address(corkAdapterFactoryProxy));
-        console.log("Cork Adapter Factory                   : ", address(corkAdapterFactory));
+        console.log("Cork Adapter Factory                    : ", address(corkAdapterFactory));
 
         // Deploy the Cork Oracle Factory implementation (logic) contract
         CorkOracleFactory corkOracleFactoryImplementation = new CorkOracleFactory();
-        console.log("Cork Oracle Factory Implementation    : ", address(corkOracleFactoryImplementation));
+        console.log("Cork Oracle Factory Implementation      : ", address(corkOracleFactoryImplementation));
 
         // Deploy the Cork Oracle Factory Proxy contract
         data = abi.encodeWithSelector(corkOracleFactoryImplementation.initialize.selector, deployer, moduleCore);
         ERC1967Proxy corkOracleFactoryProxy = new ERC1967Proxy(address(corkOracleFactoryImplementation), data);
         corkOracleFactory = CorkOracleFactory(address(corkOracleFactoryProxy));
-        console.log("Cork Oracle Factory                   : ", address(corkOracleFactory));
+        console.log("Cork Oracle Factory                     : ", address(corkOracleFactory));
         console.log("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-");
 
         Market[1] memory markets = [wstETH_weETH_market];
@@ -106,7 +106,7 @@ contract DeployCTOracle is Script {
             assets[1] = market.peggedAsset;
             ERC7575PsmAdapter[] memory adapters = corkAdapterFactory.createERC7575PsmAdapters(ct, assets, marketId);
 
-            LinearDiscountOracle linearDiscountOracle = corkOracleFactory.createLinearDiscountOracle(ct, market.arp);
+            LinearDiscountOracle linearDiscountOracle = corkOracleFactory.createLinearDiscountOracle(ct, 0.02 ether);
 
             PriceFeedParams[] memory priceFeedParams = new PriceFeedParams[](2);
             priceFeedParams[0] = PriceFeedParams(
@@ -135,9 +135,12 @@ contract DeployCTOracle is Script {
             );
             CompositePriceFeed compositePriceFeed =
                 corkOracleFactory.createCompositePriceFeed(priceFeedParams, keccak256(abi.encodePacked(marketId)));
-            console.log("Composite Price Feed                  : ", address(compositePriceFeed));
-        }
+            console.log("Composite Price Feed                    : ", address(compositePriceFeed));
 
+            (, int256 price,,,) = compositePriceFeed.latestRoundData();
+            console.log("Price                                   : ", price);
+        }
+        console.log("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-");
         vm.stopBroadcast();
     }
 }

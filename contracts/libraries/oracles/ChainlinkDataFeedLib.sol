@@ -2,7 +2,6 @@
 pragma solidity ^0.8.0;
 
 import {AggregatorV3Interface} from "../../interfaces/AggregatorV3Interface.sol";
-
 import {ErrorsLib} from "./ErrorsLib.sol";
 
 /// @title ChainlinkDataFeedLib
