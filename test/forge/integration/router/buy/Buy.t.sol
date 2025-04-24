@@ -187,8 +187,7 @@ contract BuyDsTest is Helper {
             currencyId, dsId, amount, 0, defaultBuyApproxParams(), defaultOffchainGuessParams()
         );
 
-        // won't be exact
-        vm.assertEq(result.reserveSellPressure, 95 ether);
+        vm.assertEq(result.reserveSellPressure, 97.5 ether);
     }
 
     function testFuzz_buyDS(uint256 amount, uint8 raDecimals, uint8 paDecimals) public {

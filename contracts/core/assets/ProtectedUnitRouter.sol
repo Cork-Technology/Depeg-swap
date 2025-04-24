@@ -288,8 +288,8 @@ contract ProtectedUnitRouter is IProtectedUnitRouter, ReentrancyGuardTransient {
             ProtectedUnit protectedUnit = ProtectedUnit(protectedUnits[i]);
 
             dsAdds[i] = protectedUnit.latestDs();
-            paAdds[i] = address(protectedUnit.PA());
-            raAdds[i] = address(protectedUnit.RA());
+            paAdds[i] = address(protectedUnit.pa());
+            raAdds[i] = address(protectedUnit.ra());
 
             // Calculate tokens to be received
             (dsAmounts[i], paAmounts[i], raAmounts[i]) = protectedUnit.previewBurn(caller, amounts[i]);

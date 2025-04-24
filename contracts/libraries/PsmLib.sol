@@ -362,9 +362,12 @@ library PsmLibrary {
 
         uint256 exchangeRate = _getLatestApplicableRateAndUpdate(self);
 
-        ds.issue(address(this), received);
-
-        emit IPSMcore.PsmDeposited(self.info.toId(), self.globalAssetIdx, msg.sender, amount, received, exchangeRate);
+        if (received != 0) {
+            ds.issue(address(this), received);
+            emit IPSMcore.PsmDeposited(
+                self.info.toId(), self.globalAssetIdx, msg.sender, amount, received, exchangeRate
+            );
+        }
     }
 
     function lvRedeemRaPaWithCt(State storage self, uint256 amount, uint256 dsId)
