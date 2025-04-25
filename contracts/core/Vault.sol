@@ -24,15 +24,21 @@ abstract contract VaultCore is ModuleState, Context, IVault, IVaultLiquidation {
      * @param amount The amount of the redemption asset(ra) deposited
      * @return received The amount of lv received
      */
-    function depositLv(Id id, uint256 amount, uint256 raTolerance, uint256 ctTolerance)
-        external
-        override
-        nonReentrant
-        returns (uint256 received)
-    {
+    function depositLv(
+        Id id,
+        uint256 amount,
+        uint256 raTolerance,
+        uint256 ctTolerance,
+        uint256 minimumLvAmountOut,
+        uint256 deadline
+    ) external override nonReentrant returns (uint256 received) {
         LVDepositNotPaused(id);
         State storage state = states[id];
-        received = state.deposit(_msgSender(), amount, getRouterCore(), getAmmRouter(), raTolerance, ctTolerance);
+        received =
+            state.deposit(_msgSender(), amount, getRouterCore(), getAmmRouter(), raTolerance, ctTolerance, deadline);
+
+        if (received < minimumLvAmountOut) revert InsufficientOutputAmount(minimumLvAmountOut, received);
+
         emit LvDeposited(id, _msgSender(), received, amount);
     }
 
@@ -127,7 +133,7 @@ abstract contract VaultCore is ModuleState, Context, IVault, IVaultLiquidation {
      * @param id The Module id that is used to reference both psm and lv of a given pair
      */
     function vaultLp(Id id) external view returns (uint256) {
-        return states[id].vaultLp(getAmmRouter());
+        return states[id].vaultLp();
     }
 
     function lvAcceptRolloverProfit(Id id, uint256 amount) external {
@@ -157,7 +163,8 @@ abstract contract VaultCore is ModuleState, Context, IVault, IVaultLiquidation {
     function useTradeExecutionResultFunds(Id id) external override {
         onlyConfig();
         State storage state = states[id];
-        uint256 used = state.useTradeExecutionResultFunds(getRouterCore(), getAmmRouter());
+        // not ideal but since we can't change the function signature here we have no other option
+        uint256 used = state.useTradeExecutionResultFunds(getRouterCore(), getAmmRouter(), block.timestamp);
         emit TradeExecutionResultFundsUsed(id, msg.sender, used);
     }
 
