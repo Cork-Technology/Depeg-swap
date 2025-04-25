@@ -23,7 +23,8 @@ import {AmmId, toAmmId} from "Cork-Hook/lib/State.sol";
 contract ModuleCore is OwnableUpgradeable, UUPSUpgradeable, PsmCore, Initialize, VaultCore {
     /// @notice __gap variable to prevent storage collisions
     // slither-disable-next-line unused-state
-    uint256[49] private __gap;
+    // upgrade to add access control for pausing PA liquidation
+    uint256[48] private __gap;
 
     using PsmLibrary for State;
     using PairLibrary for Pair;
