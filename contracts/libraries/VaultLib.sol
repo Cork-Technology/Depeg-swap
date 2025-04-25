@@ -753,6 +753,10 @@ library VaultLibrary {
             revert IErrors.InsufficientFunds();
         }
 
+        /// @dev we pause withdrawal when the liquidation is happening
+        /// since if user withdraw when liquidation is happening, they won't receive their fair PA share since some of it now sits in the liquidator contract
+        self.vault.config.isWithdrawalPaused = true;
+
         self.vault.pool.withdrawalPool.paBalance -= amount;
         SafeERC20.safeTransfer(IERC20(self.info.pa), to, amount);
     }
@@ -784,6 +788,10 @@ library VaultLibrary {
         // transfer PA to the vault
         SafeERC20.safeTransferFrom(IERC20(self.info.pa), from, address(this), amount);
         self.vault.pool.withdrawalPool.paBalance += amount;
+
+        /// @dev we resume withdrawal
+        /// the reason we do this here is that the liquidator contract will and must call this function last when finishing order in the liquidator contract
+        self.vault.config.isWithdrawalPaused = false;
     }
 
     function updateLvDepositsStatus(State storage self, bool isLVDepositPaused) external {

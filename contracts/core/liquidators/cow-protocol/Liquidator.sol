@@ -172,7 +172,7 @@ contract Liquidator is ILiquidator {
     }
 
     function _moveVaultFunds(Details memory details, Id id, address liquidator) internal {
-        IVaultLiquidation(MODULE_CORE).requestLiquidationFunds(id, details.sellAmount);
+        IVaultLiquidation(MODULE_CORE).requestLiquidationFunds(id, details.sellAmount, liquidator);
 
         SafeERC20.safeTransfer(IERC20(details.sellToken), liquidator, details.sellAmount);
     }
