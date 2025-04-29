@@ -485,14 +485,10 @@ contract ProtectedUnit is
      * @dev Handles the token transfers and minting logic
      */
     function __mint(uint256 amount, uint256 dsAmount, uint256 paAmount) internal {
-        // this calculation is based on the assumption that the DS token has 18 decimals but pa can have different decimals
-        dsAmount = TransferHelper.fixedToTokenNativeDecimals(dsAmount, ds);
-        paAmount = TransferHelper.fixedToTokenNativeDecimals(paAmount, pa);
+        permit2.transferFrom(msg.sender, address(this), SafeCast.toUint160(dsAmount), address(ds));
+        permit2.transferFrom(msg.sender, address(this), SafeCast.toUint160(paAmount), address(pa));
 
-        permit2.transferFrom(msg.sender, address(this), SafeCast.toUint160(amount), address(ds));
-        permit2.transferFrom(msg.sender, address(this), SafeCast.toUint160(dsAmount), address(pa));
-
-        dsHistory[dsIndexMap[address(ds)]].totalDeposited += amount;
+        dsHistory[dsIndexMap[address(ds)]].totalDeposited += dsAmount;
 
         _mint(msg.sender, amount);
 
