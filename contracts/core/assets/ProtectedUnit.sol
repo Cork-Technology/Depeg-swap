@@ -489,10 +489,10 @@ contract ProtectedUnit is
         dsAmount = TransferHelper.fixedToTokenNativeDecimals(dsAmount, ds);
         paAmount = TransferHelper.fixedToTokenNativeDecimals(paAmount, pa);
 
-        permit2.transferFrom(msg.sender, address(this), SafeCast.toUint160(amount), address(ds));
-        permit2.transferFrom(msg.sender, address(this), SafeCast.toUint160(dsAmount), address(pa));
+        permit2.transferFrom(msg.sender, address(this), SafeCast.toUint160(dsAmount), address(ds));
+        permit2.transferFrom(msg.sender, address(this), SafeCast.toUint160(paAmount), address(pa));
 
-        dsHistory[dsIndexMap[address(ds)]].totalDeposited += amount;
+        dsHistory[dsIndexMap[address(ds)]].totalDeposited += dsAmount;
 
         _mint(msg.sender, amount);
 
