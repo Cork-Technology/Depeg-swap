@@ -80,6 +80,9 @@ abstract contract Helper is SigUtils, TestHelper {
 
     address private overridenAddress;
 
+    // 10% sell pressure threshold for the router
+    uint256 internal DEFAULT_SELLPRESSURE_THRESHOLD = 10 ether;
+
     function overridePrank(address _as) public {
         (, address currentCaller,) = vm.readCallers();
         overridenAddress = currentCaller;
@@ -117,7 +120,8 @@ abstract contract Helper is SigUtils, TestHelper {
 
     function defaultOffchainGuessParams() internal pure returns (IDsFlashSwapCore.OffchainGuess memory params) {
         // we return 0 since in most cases, we want to actually test the on-chain calculation logic
-        params.borrow = 0;
+        params.borrowOnBuy = 0;
+        params.borrowOnFill = 0;
     }
 
     function initializeNewModuleCore(
@@ -158,6 +162,7 @@ abstract contract Helper is SigUtils, TestHelper {
         corkConfig.updateDecayDiscountRateInDays(decayDiscountRateInDays);
         corkConfig.updateRolloverPeriodInBlocks(rolloverPeriodInblocks);
         corkConfig.updateRepurchaseFeeRate(id, repurchaseFeePercentage);
+        corkConfig.updateReserveSellPressurePercentage(id, DEFAULT_SELLPRESSURE_THRESHOLD);
     }
 
     function issueNewDs(Id id) internal {

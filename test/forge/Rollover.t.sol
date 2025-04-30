@@ -167,8 +167,8 @@ contract RolloverTest is Helper {
         vm.assertNotEq(vHiyaCummulated, 0);
         vm.assertNotEq(HiyaCummulated, 0);
 
-        // expected to be around 1% ARP
-        vm.assertApproxEqAbs(Hiya, 0.017895624717812529 ether, 0.01 ether);
+        // expected to be around 0.25% RP, with 10% threshold
+        vm.assertApproxEqAbs(Hiya, 0.0025 ether, 0.001 ether);
 
         IPSMcore(moduleCore).updatePsmAutoSellStatus(currencyId, true);
 
@@ -242,8 +242,8 @@ contract RolloverTest is Helper {
         vm.assertNotEq(vHiyaCummulated, 0);
         vm.assertNotEq(HiyaCummulated, 0);
 
-        // expected to be around 1% ARP
-        vm.assertApproxEqAbs(Hiya, 0.017895624717812529 ether, 0.01 ether);
+        // expected to be around 0.25% RP, with 10% threshold
+        vm.assertApproxEqAbs(Hiya, 0.0025 ether, 0.001 ether);
 
         IPSMcore(moduleCore).updatePsmAutoSellStatus(currencyId, true);
 
@@ -300,8 +300,8 @@ contract RolloverTest is Helper {
         vm.assertNotEq(vHiyaCummulated, 0);
         vm.assertNotEq(HiyaCummulated, 0);
 
-        // expected to be around 1% ARP
-        vm.assertApproxEqAbs(Hiya, 0.017895624717812529 ether, 0.01 ether);
+        // expected to be around 0.25% RP, with 10% threshold
+        vm.assertApproxEqAbs(Hiya, 0.0025 ether, 0.001 ether);
 
         IPSMcore(moduleCore).updatePsmAutoSellStatus(currencyId, true);
 
@@ -314,8 +314,8 @@ contract RolloverTest is Helper {
 
         vm.assertEq(true, flashSwapRouter.isRolloverSale(currencyId));
 
-        // based on the Hiya = 0.017895624717812529 (~1% ARP) and t = 1
-        uint256 expectedHPA = 0.017895624717812529 ether;
+        // based on the Hiya = 0.0025  (~0.25% RP) and t = 1
+        uint256 expectedHPA = 0.0025 ether;
 
         // we disable graduale sale to get an accurate representation
         disableDsGradualSale();
@@ -360,8 +360,8 @@ contract RolloverTest is Helper {
         vm.assertNotEq(vHiyaCummulated, 0);
         vm.assertNotEq(HiyaCummulated, 0);
 
-        // expected to be around 1% ARP
-        vm.assertApproxEqAbs(Hiya, 0.017895624717812529 ether, 0.01 ether);
+        // expected to be around 0.25% RP, with 10% threshold
+        vm.assertApproxEqAbs(Hiya, 0.0025 ether, 0.001 ether);
 
         IPSMcore(moduleCore).updatePsmAutoSellStatus(currencyId, true);
 
