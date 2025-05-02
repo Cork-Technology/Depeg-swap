@@ -21,6 +21,7 @@ import "./../../contracts/core/Withdrawal.sol";
 import "./../../contracts/core/assets/ProtectedUnitFactory.sol";
 import {ProtectedUnitRouter} from "../../contracts/core/assets/ProtectedUnitRouter.sol";
 import {Permit2} from "./../../script/foundry-scripts/Utils/Permit2Mock.sol";
+import {LpHelper} from "./../../contracts/offchain-helpers/LpHelper.sol";
 import {ProtectedUnit} from "./../../contracts/core/assets/ProtectedUnit.sol";
 
 contract CustomErc20 is DummyWETH {
@@ -49,6 +50,7 @@ abstract contract Helper is SigUtils, TestHelper {
     address internal permit2;
     address internal protectedUnitImpl;
     EnvGetters internal env = new EnvGetters();
+    LpHelper internal lpHelper;
 
     Id defaultCurrencyId;
 
@@ -386,6 +388,11 @@ abstract contract Helper is SigUtils, TestHelper {
         initializeWithdrawalContract();
         initializePermit2();
         initializeProtectedUnitFactory();
+        deployLpHelper();
+    }
+
+    function deployLpHelper() internal {
+        lpHelper = new LpHelper(address(hook), address(moduleCore));
     }
 
     function initializePermit2() internal {
