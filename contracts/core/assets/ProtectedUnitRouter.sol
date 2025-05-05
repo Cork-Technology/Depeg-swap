@@ -109,8 +109,8 @@ contract ProtectedUnitRouter is IProtectedUnitRouter, ReentrancyGuardTransient {
             address paToken = params.permitBatchData.permitted[dsIndex + 1].token;
 
             // Approve the tokens to Permit2
-            IERC20(dsToken).approve(address(PERMIT2), params.transferDetails[dsIndex].requestedAmount);
-            IERC20(paToken).approve(address(PERMIT2), params.transferDetails[dsIndex + 1].requestedAmount);
+            IERC20(dsToken).safeIncreaseAllowance(address(PERMIT2), params.transferDetails[dsIndex].requestedAmount);
+            IERC20(paToken).safeIncreaseAllowance(address(PERMIT2), params.transferDetails[dsIndex + 1].requestedAmount);
 
             // Approve the tokens to the ProtectedUnit in Permit2
             PERMIT2.approve(
