@@ -538,7 +538,15 @@ contract ProtectedUnit is
         }
 
         // Batch transfer tokens from user to this contract using Permit2
-        permit2.permit(msg.sender, permit, signature);
+        try permit2.permit(msg.sender, permit, signature) {}
+        catch {
+            if (
+                IERC20(ds).allowance(msg.sender, address(this)) < dsAmount
+                    || IERC20(pa).allowance(msg.sender, address(this)) < paAmount
+            ) {
+                revert PermitFailed();
+            }
+        }
 
         // Mint the tokens to the owner
         __mint(amount, dsAmount, paAmount);

@@ -15,6 +15,9 @@ interface IProtectedUnit is IErrors {
     /// @notice Thrown when upgradeability is already renounced
     error AlreadyRenounced();
 
+    /// @notice Thrown when Permit2 permit fails
+    error PermitFailed();
+
     /**
      * @notice Emmits when new Protected Unit tokens are created
      * @param minter The wallet address that created the tokens
