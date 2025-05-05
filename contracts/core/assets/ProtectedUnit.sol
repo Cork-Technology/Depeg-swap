@@ -109,7 +109,10 @@ contract ProtectedUnit is
      * @dev Updates the internal ds token reference if necessary
      */
     modifier autoUpdateDS() {
-        _getLastDS();
+        bool changed = _getLastDS();
+
+        if (changed) dsReserve = 0;
+
         _;
     }
 
@@ -233,7 +236,7 @@ contract ProtectedUnit is
      * @notice Updates the contract's internal record of token reserves
      * @dev Fetches the latest DS token if needed and updates all reserves
      */
-    function _sync() internal autoUpdateDS {
+    function _sync() internal {
         dsReserve = ds.balanceOf(address(this));
         paReserve = pa.balanceOf(address(this));
         raReserve = ra.balanceOf(address(this));
@@ -392,9 +395,11 @@ contract ProtectedUnit is
      * But since we need the address of the new DS if it's expired to transfer it correctly, we only update
      * the address here at the start of the function call, then finally update the balance after the function call
      */
-    function _getLastDS() internal {
+    function _getLastDS() internal returns (bool changed) {
         if (address(ds) == address(0) || ds.isExpired()) {
             Asset _ds = _fetchLatestDS();
+
+            changed = ds == _ds;
 
             // Check if the DS address already exists in history
             bool found = false;
@@ -451,7 +456,11 @@ contract ProtectedUnit is
             revert MintCapExceeded();
         }
 
-        (dsAmount, paAmount) = ProtectedUnitMath.previewMint(amount, _selfPaReserve(), _selfDsReserve(), totalSupply());
+        Asset currentDs = _fetchLatestDS();
+
+        uint256 reserveDs = currentDs == ds ? _selfDsReserve() : 0;
+
+        (dsAmount, paAmount) = ProtectedUnitMath.previewMint(amount, _selfPaReserve(), reserveDs, totalSupply());
 
         paAmount = TransferHelper.fixedToTokenNativeDecimals(paAmount, pa);
     }
@@ -564,7 +573,9 @@ contract ProtectedUnit is
         }
         uint256 totalLiquidity = totalSupply();
         uint256 reservePa = _selfPaReserve();
-        uint256 reserveDs = ds.balanceOf(address(this));
+        Asset currentDs = _fetchLatestDS();
+
+        uint256 reserveDs = currentDs == ds ? _selfDsReserve() : 0;
         uint256 reserveRa = _selfRaReserve();
 
         (paAmount, dsAmount, raAmount) =
