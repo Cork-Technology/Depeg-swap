@@ -91,10 +91,6 @@ contract ProtectedUnitRouter is IProtectedUnitRouter, ReentrancyGuardTransient {
         // Execute the permitTransferFrom to approve all tokens in one transaction
         PERMIT2.permitTransferFrom(params.permitBatchData, params.transferDetails, msg.sender, params.signature);
 
-        // Track which tokens have been used for minting and how much used
-        address[] memory usedTokens = new address[](params.permitBatchData.permitted.length);
-        uint256[] memory usedAmounts = new uint256[](params.permitBatchData.permitted.length);
-
         // Now mint from each ProtectedUnit
         for (uint256 i = 0; i < length; ++i) {
             ProtectedUnit protectedUnit = ProtectedUnit(params.protectedUnits[i]);
@@ -128,14 +124,10 @@ contract ProtectedUnitRouter is IProtectedUnitRouter, ReentrancyGuardTransient {
 
             // Send back users ProtectedUnit tokens
             IERC20(address(protectedUnit)).safeTransfer(msg.sender, params.amounts[i]);
-
-            // Track the token usage for DS and PA
-            _trackTokenUsage(usedTokens, usedAmounts, dsToken, dsAmounts[i]);
-            _trackTokenUsage(usedTokens, usedAmounts, paToken, paAmounts[i]);
         }
 
         // Return any unused permitted tokens back to the user
-        _returnExcessTokens(params.permitBatchData, params.transferDetails, usedTokens, usedAmounts);
+        _returnExcessTokens(params.permitBatchData);
     }
 
     /**
@@ -244,21 +236,12 @@ contract ProtectedUnitRouter is IProtectedUnitRouter, ReentrancyGuardTransient {
         // Execute the permitTransferFrom to transfer all Protected Unit tokens to this contract
         PERMIT2.permitTransferFrom(params.permitBatchData, params.transferDetails, msg.sender, params.signature);
 
-        // Track which tokens have been used and how much
-        address[] memory usedTokens = new address[](params.permitBatchData.permitted.length);
-        uint256[] memory usedAmounts = new uint256[](params.permitBatchData.permitted.length);
-
-        // Track the token usage for Protected Unit tokens
-        for (uint256 i = 0; i < length; ++i) {
-            _trackTokenUsage(usedTokens, usedAmounts, params.protectedUnits[i], params.amounts[i]);
-        }
-
         // Process the batch burn
         (dsAdds, paAdds, raAdds, dsAmounts, paAmounts, raAmounts) =
             _batchBurn(params.protectedUnits, params.amounts, address(this));
 
         // Return any excess tokens that were permitted but not needed for the burn
-        _returnExcessTokens(params.permitBatchData, params.transferDetails, usedTokens, usedAmounts);
+        _returnExcessTokens(params.permitBatchData);
     }
 
     /// @notice Internal function to handle the batch burning logic
@@ -340,38 +323,14 @@ contract ProtectedUnitRouter is IProtectedUnitRouter, ReentrancyGuardTransient {
      * @notice Helper function to return excess tokens to the user
      * @dev Compares requested amounts with actual usage and returns any excess
      * @param permitBatchData The Permit2 batch permit data
-     * @param transferDetails The transfer details for each token
-     * @param usedTokens Array of token addresses that were used
-     * @param usedAmounts Array of amounts used for each token
      */
-    function _returnExcessTokens(
-        IPermit2.PermitBatchTransferFrom calldata permitBatchData,
-        IPermit2.SignatureTransferDetails[] calldata transferDetails,
-        address[] memory usedTokens,
-        uint256[] memory usedAmounts
-    ) internal {
+    function _returnExcessTokens(IPermit2.PermitBatchTransferFrom calldata permitBatchData) internal {
         uint256 length = permitBatchData.permitted.length;
+
         for (uint256 i = 0; i < length; ++i) {
-            address token = permitBatchData.permitted[i].token;
-            uint256 requestedAmount = transferDetails[i].requestedAmount;
-
-            // Find if this token was used
-            uint256 usedAmount = 0;
-            uint256 usedTokensLength = usedTokens.length;
-            for (uint256 j = 0; j < usedTokensLength; ++j) {
-                if (usedTokens[j] == token) {
-                    usedAmount = usedAmounts[j];
-                    break;
-                }
-            }
-
-            // Return any excess
-            if (requestedAmount > usedAmount) {
-                uint256 excessAmount = requestedAmount - usedAmount;
-                if (excessAmount > 0) {
-                    IERC20(token).safeTransfer(msg.sender, excessAmount);
-                }
-            }
+            // since the router isn't supposed to hold funds, we just transfer what's left
+            IERC20 token = IERC20(permitBatchData.permitted[i].token);
+            token.safeTransfer(msg.sender, token.balanceOf(address(this)));
         }
     }
 }
