@@ -87,6 +87,12 @@ contract ProtectedUnitTest is Helper {
             address(dsToken), address(protectedUnit), uint160(amount), uint48(block.timestamp + 10 days)
         );
         protectedUnit.mint(amount);
+
+        (, address caller,) = vm.readCallers();
+        corkConfig.whitelist(caller);
+        corkConfig.whitelist(address(this));
+
+        vm.warp(block.timestamp + 7.1 days);
     }
 
     function fetchProtocolGeneralInfo() internal {
