@@ -178,7 +178,9 @@ contract Liquidator is ILiquidator {
     }
 
     function _moveProtectedUnitFunds(Details memory details, address protectedUnit, address liquidator) internal {
-        IProtectedUnitLiquidation(protectedUnit).requestLiquidationFunds(details.sellAmount, details.sellToken);
+        IProtectedUnitLiquidation(protectedUnit).requestLiquidationFunds(
+            details.sellAmount, details.sellToken, liquidator
+        );
 
         SafeERC20.safeTransfer(IERC20(details.sellToken), liquidator, details.sellAmount);
     }
