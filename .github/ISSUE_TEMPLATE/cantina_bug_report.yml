@@ -1,0 +1,11 @@
+name: "[Cantina]: bug_name"
+type: Bug
+description: "cantina bug report"
+body:
+  - type: input
+    attributes:
+      label: link
+      description: issue link  
+      placeholder: https://cantina.xyz/abdcdsef
+    validations:
+      required: true
