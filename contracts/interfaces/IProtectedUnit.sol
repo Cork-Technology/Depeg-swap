@@ -51,6 +51,18 @@ interface IProtectedUnit is IErrors {
      */
     function mintCap() external view returns (uint256);
 
+    function pa() external view returns (address);
+
+    function ra() external view returns (address);
+
+    function dsReserve() external view returns (uint256);
+
+    function paReserve() external view returns (uint256);
+
+    function raReserve() external view returns (uint256);
+
+    function latestDs() external view returns (address);
+
     /**
      * @notice Calculates how many DS and PA tokens you need to create Protected Unit tokens
      * @param amount How many Protected Unit tokens you want to create

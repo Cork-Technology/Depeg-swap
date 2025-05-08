@@ -201,6 +201,13 @@ contract ProtectedUnitFactory is IProtectedUnitFactory, OwnableUpgradeable, UUPS
      * @custom:reverts NotConfig if caller is not the CONFIG address
      */
     function deRegisterProtectedUnit(Id _id) external onlyConfig {
+        ProtectedUnit pu = ProtectedUnit(protectedUnitContracts[_id]);
+
+        if (address(pu) == address(0)) revert InvalidParam();
+
+        address ra = pu.ra();
+        address pa = pu.pa();
+
         delete protectedUnitContracts[_id];
 
         uint256 index = protectedUnitIndex[_id];
@@ -210,6 +217,8 @@ contract ProtectedUnitFactory is IProtectedUnitFactory, OwnableUpgradeable, UUPS
         // for some reason the compiler won't let us delete a user defined types
         // so we just set it to default value
         protectedUnits[index] = Id.wrap(bytes32(""));
+
+        emit ProtectedUnitDeregistered(_id, pa, ra, address(pu));
     }
 
     /**
