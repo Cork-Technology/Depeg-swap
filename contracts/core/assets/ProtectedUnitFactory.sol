@@ -204,7 +204,7 @@ contract ProtectedUnitFactory is IProtectedUnitFactory, OwnableUpgradeable, UUPS
         delete protectedUnitContracts[_id];
 
         uint256 index = protectedUnitIndex[_id];
-        
+
         delete protectedUnitIndex[_id];
 
         // for some reason the compiler won't let us delete a user defined types
