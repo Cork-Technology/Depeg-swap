@@ -39,6 +39,8 @@ contract ProtectedUnitFactory is IProtectedUnitFactory, OwnableUpgradeable, UUPS
      */
     mapping(Id => address) public protectedUnitContracts;
 
+    mapping(Id => uint256) public protectedUnitIndex;
+
     /**
      * @notice Mapping of indices to pair IDs for deployed Protected Units
      * @dev Used for pagination in getDeployedProtectedUnits function
@@ -173,8 +175,11 @@ contract ProtectedUnitFactory is IProtectedUnitFactory, OwnableUpgradeable, UUPS
         // Store the address of the new protected unit proxy contract
         protectedUnitContracts[_id] = newUnit;
 
+        uint256 index = ++idx;
+
         // solhint-disable-next-line gas-increment-by-one
-        protectedUnits[idx++] = _id;
+        protectedUnits[index] = _id;
+        protectedUnitIndex[_id] = index;
 
         emit ProtectedUnitDeployed(_id, _pa, _ra, newUnit);
     }
@@ -197,6 +202,14 @@ contract ProtectedUnitFactory is IProtectedUnitFactory, OwnableUpgradeable, UUPS
      */
     function deRegisterProtectedUnit(Id _id) external onlyConfig {
         delete protectedUnitContracts[_id];
+
+        uint256 index = protectedUnitIndex[_id];
+        
+        delete protectedUnitIndex[_id];
+
+        // for some reason the compiler won't let us delete a user defined types
+        // so we just set it to default value
+        protectedUnits[index] = Id.wrap(bytes32(""));
     }
 
     /**
