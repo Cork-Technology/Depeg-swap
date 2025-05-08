@@ -27,7 +27,13 @@ interface IProtectedUnitFactory is IErrors {
      * @param ra Address of the Return Asset (RA) token
      * @param protectedUnitAddress Address of the newly created Protected Unit contract
      */
-    event ProtectedUnitDeployed(Id indexed pairId, address pa, address ra, address indexed protectedUnitAddress);
+    event ProtectedUnitDeployed(
+        Id indexed pairId, address indexed pa, address indexed ra, address protectedUnitAddress
+    );
+
+    event ProtectedUnitDeregistered(
+        Id indexed pairId, address indexed pa, address indexed ra, address protectedUnitAddress
+    );
 
     /**
      * @notice Creates a new Protected Unit contract
