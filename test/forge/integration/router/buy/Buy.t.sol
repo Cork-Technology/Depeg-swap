@@ -57,7 +57,7 @@ contract BuyDsTest is Helper {
         ra.approve(address(moduleCore), 100_000_000_000 ether);
 
         moduleCore.depositPsm(currencyId, DEFAULT_DEPOSIT_AMOUNT);
-        moduleCore.depositLv(currencyId, DEFAULT_DEPOSIT_AMOUNT, 0, 0);
+        moduleCore.depositLv(currencyId, DEFAULT_DEPOSIT_AMOUNT, 0, 0, 0);
 
         dsId = moduleCore.lastDsId(currencyId);
         (ct, ds) = moduleCore.swapAsset(currencyId, dsId);
@@ -98,7 +98,7 @@ contract BuyDsTest is Helper {
         uint256 depositAmount = TransferHelper.normalizeDecimals(DEFAULT_DEPOSIT_AMOUNT, TARGET_DECIMALS, raDecimals);
 
         moduleCore.depositPsm(currencyId, depositAmount);
-        moduleCore.depositLv(currencyId, depositAmount, 0, 0);
+        moduleCore.depositLv(currencyId, depositAmount, 0, 0, 0);
 
         return (raDecimals, paDecimals);
     }
@@ -187,8 +187,7 @@ contract BuyDsTest is Helper {
             currencyId, dsId, amount, 0, defaultBuyApproxParams(), defaultOffchainGuessParams()
         );
 
-        // won't be exact
-        vm.assertEq(result.reserveSellPressure, 95 ether);
+        vm.assertEq(result.reserveSellPressure, 97.5 ether);
     }
 
     function testFuzz_buyDS(uint256 amount, uint8 raDecimals, uint8 paDecimals) public {
@@ -274,7 +273,7 @@ contract BuyDsTest is Helper {
         );
 
         IDsFlashSwapCore.OffchainGuess memory offchainGuess;
-        offchainGuess.borrow = result.borrow;
+        offchainGuess.borrowOnBuy = result.borrowOnBuy;
 
         revertRouterState();
 
@@ -300,7 +299,7 @@ contract BuyDsTest is Helper {
 
         result = flashSwapRouter.swapRaforDs(currencyId, dsId, amount, 0, params, defaultOffchainGuessParams());
 
-        offchainGuess.borrow = result.borrow;
+        offchainGuess.borrowOnBuy = result.borrowOnBuy;
 
         revertRouterState();
         result = flashSwapRouter.swapRaforDs(currencyId, dsId, amount, 0, params, offchainGuess);
@@ -315,7 +314,7 @@ contract BuyDsTest is Helper {
         snapshotRouterState();
         result = flashSwapRouter.swapRaforDs(currencyId, dsId, amount, 0, params, defaultOffchainGuessParams());
 
-        offchainGuess.borrow = result.borrow;
+        offchainGuess.borrowOnBuy = result.borrowOnBuy;
 
         revertRouterState();
 
