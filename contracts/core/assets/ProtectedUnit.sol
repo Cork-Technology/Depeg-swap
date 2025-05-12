@@ -158,12 +158,6 @@ contract ProtectedUnit is
         _;
     }
 
-    /// @notice Automatically synchronizes token reserves after function execution
-    modifier autoSync() {
-        _;
-        _sync();
-    }
-
     /**
      * @notice Initializes the ProtectedUnit contract
      * @param _moduleCore Address of the core module that manages this token
@@ -230,21 +224,6 @@ contract ProtectedUnit is
     }
 
     /**
-     * @notice Updates the contract's internal record of token reserves
-     * @dev Fetches the latest DS token if needed and updates all reserves
-     */
-    function _sync() internal autoUpdateDS {
-        dsReserve = ds.balanceOf(address(this));
-        paReserve = pa.balanceOf(address(this));
-        raReserve = ra.balanceOf(address(this));
-    }
-
-    /// @notice Synchronizes the contract's internal record of token reserves
-    function sync() external autoUpdateDS {
-        _sync();
-    }
-
-    /**
      * @notice Fetches the latest valid DS token from ModuleCore
      * @dev Checks if the current DS is expired and retrieves a new one if needed
      * @return The latest valid DS Asset
@@ -275,6 +254,7 @@ contract ProtectedUnit is
      * @return _dsReserves Amount of DS tokens in reserve
      * @return _paReserves Amount of PA tokens in reserve
      * @return _raReserves Amount of RA tokens in reserve
+     * @dev All amounts are in the token's native decimals
      */
     function getReserves() external view returns (uint256 _dsReserves, uint256 _paReserves, uint256 _raReserves) {
         _dsReserves = dsReserve;
@@ -295,7 +275,6 @@ contract ProtectedUnit is
         external
         onlyLiquidationContract
         onlyValidToken(token)
-        autoSync
     {
         uint256 balance = IERC20(token).balanceOf(address(this));
 
@@ -304,7 +283,11 @@ contract ProtectedUnit is
         }
 
         IERC20(token).safeTransfer(msg.sender, amount);
-
+        if (token == address(ra)) {
+            raReserve -= amount;
+        } else {
+            paReserve -= amount;
+        }
         emit LiquidationFundsRequested(msg.sender, token, amount);
     }
 
@@ -316,9 +299,14 @@ contract ProtectedUnit is
      * @custom:reverts InvalidToken if token is neither PA nor RA
      * @custom:emits FundsReceived when funds are successfully transferred
      */
-    function receiveFunds(uint256 amount, address token) external onlyValidToken(token) autoSync {
+    function receiveFunds(uint256 amount, address token) external onlyValidToken(token) {
         IERC20(token).safeTransferFrom(msg.sender, address(this), amount);
 
+        if (token == address(ra)) {
+            raReserve += amount;
+        } else {
+            paReserve += amount;
+        }
         emit FundsReceived(msg.sender, token, amount);
     }
 
@@ -338,7 +326,7 @@ contract ProtectedUnit is
         uint256 amountOutMin,
         IDsFlashSwapCore.BuyAprroxParams calldata params,
         IDsFlashSwapCore.OffchainGuess calldata offchainGuess
-    ) external autoUpdateDS onlyOwnerOrLiquidator autoSync returns (uint256 amountOut) {
+    ) external autoUpdateDS onlyOwnerOrLiquidator returns (uint256 amountOut) {
         uint256 dsId = moduleCore.lastDsId(id);
         IERC20(ra).safeIncreaseAllowance(address(flashswapRouter), amount);
 
@@ -346,6 +334,8 @@ contract ProtectedUnit is
             flashswapRouter.swapRaforDs(id, dsId, amount, amountOutMin, params, offchainGuess);
 
         amountOut = result.amountOut;
+        dsReserve += amountOut;
+        raReserve -= amount;
 
         emit FundsUsed(msg.sender, dsId, amount, result.amountOut);
     }
@@ -353,19 +343,23 @@ contract ProtectedUnit is
     /**
      * @notice Redeems RA tokens using DS and PA tokens.
      * @dev This function allows the owner to redeem RA tokens by providing DS and PA tokens.
-     * It automatically updates DS, syncs the state, and pauses the contract after redemption.
+     * It automatically updates DS, updates the reserves, and pauses the contract after redemption.
      * @param amountPa The amount of PA tokens to be used for redemption.
      * @param amountDs The amount of DS tokens to be used for redemption.
      * @custom:reverts If redeeming fails in the module core
      * @custom:emits RaRedeemed when redemption is successful
      */
-    function redeemRaWithDsPa(uint256 amountPa, uint256 amountDs) external autoUpdateDS onlyOwner autoSync {
+    function redeemRaWithDsPa(uint256 amountPa, uint256 amountDs) external autoUpdateDS onlyOwner {
         uint256 dsId = moduleCore.lastDsId(id);
 
         IERC20(ds).safeIncreaseAllowance(address(moduleCore), amountDs);
         IERC20(pa).safeIncreaseAllowance(address(moduleCore), amountPa);
 
-        moduleCore.redeemRaWithDsPa(id, dsId, amountPa);
+        (uint256 raAmt,,, uint256 dsAmt) = moduleCore.redeemRaWithDsPa(id, dsId, amountPa);
+
+        raReserve += raAmt;
+        dsReserve -= dsAmt;
+        paReserve -= amountPa;
 
         // auto pause
         _pause();
@@ -410,6 +404,7 @@ contract ProtectedUnit is
                 ds = _ds;
                 dsHistory.push(DSData({dsAddress: address(ds), totalDeposited: 0}));
                 dsIndexMap[address(ds)] = dsHistory.length - 1; // Store the index
+                dsReserve = 0;
             }
         }
     }
@@ -427,11 +422,6 @@ contract ProtectedUnit is
     /// @notice Returns the DS reserve
     function _selfDsReserve() internal view returns (uint256) {
         return dsReserve;
-    }
-
-    /// @notice Transfers DS tokens to the specified address
-    function _transferDs(address _to, uint256 _amount) internal {
-        IERC20(ds).safeTransfer(_to, _amount);
     }
 
     /**
@@ -472,7 +462,6 @@ contract ProtectedUnit is
         whenNotPaused
         nonReentrant
         autoUpdateDS
-        autoSync
         returns (uint256 dsAmount, uint256 paAmount)
     {
         // Calculate token amounts needed for minting
@@ -488,6 +477,9 @@ contract ProtectedUnit is
         // this calculation is based on the assumption that the DS token has 18 decimals but pa can have different decimals
         dsAmount = TransferHelper.fixedToTokenNativeDecimals(dsAmount, ds);
         paAmount = TransferHelper.fixedToTokenNativeDecimals(paAmount, pa);
+
+        dsReserve += dsAmount;
+        paReserve += paAmount;
 
         permit2.transferFrom(msg.sender, address(this), SafeCast.toUint160(amount), address(ds));
         permit2.transferFrom(msg.sender, address(this), SafeCast.toUint160(dsAmount), address(pa));
@@ -516,7 +508,6 @@ contract ProtectedUnit is
         whenNotPaused
         nonReentrant
         autoUpdateDS
-        autoSync
         returns (uint256 dsAmount, uint256 paAmount)
     {
         // checks that DS and PA are in the permitted array and that the transfer details are for the correct tokens
@@ -563,12 +554,9 @@ contract ProtectedUnit is
             revert InvalidAmount();
         }
         uint256 totalLiquidity = totalSupply();
-        uint256 reservePa = _selfPaReserve();
-        uint256 reserveDs = ds.balanceOf(address(this));
-        uint256 reserveRa = _selfRaReserve();
 
         (paAmount, dsAmount, raAmount) =
-            ProtectedUnitMath.withdraw(reservePa, reserveDs, reserveRa, totalLiquidity, amount);
+            ProtectedUnitMath.withdraw(_selfPaReserve(), dsReserve, _selfRaReserve(), totalLiquidity, amount);
     }
 
     /**
@@ -580,14 +568,7 @@ contract ProtectedUnit is
      * @custom:reverts InvalidAmount if amount is invalid
      * @custom:emits Burn when tokens are successfully burned
      */
-    function burnFrom(address account, uint256 amount)
-        public
-        override
-        whenNotPaused
-        nonReentrant
-        autoUpdateDS
-        autoSync
-    {
+    function burnFrom(address account, uint256 amount) public override whenNotPaused nonReentrant autoUpdateDS {
         _burnPU(account, amount);
     }
 
@@ -598,7 +579,7 @@ contract ProtectedUnit is
      * @custom:reverts InvalidAmount if amount is invalid
      * @custom:emits Burn when tokens are successfully burned
      */
-    function burn(uint256 amount) public override whenNotPaused nonReentrant autoUpdateDS autoSync {
+    function burn(uint256 amount) public override whenNotPaused nonReentrant autoUpdateDS {
         _burnPU(msg.sender, amount);
     }
 
@@ -612,11 +593,15 @@ contract ProtectedUnit is
     {
         (dsAmount, paAmount, raAmount) = previewBurn(dissolver, amount);
 
+        dsReserve -= dsAmount;
+        paReserve -= paAmount;
+        raReserve -= raAmount;
+
         _burnFrom(dissolver, amount);
 
         TransferHelper.transferNormalize(pa, dissolver, paAmount);
-        _transferDs(dissolver, dsAmount);
         TransferHelper.transferNormalize(ra, dissolver, raAmount);
+        IERC20(ds).safeTransfer(dissolver, dsAmount);
 
         emit Burn(dissolver, amount, dsAmount, paAmount);
     }

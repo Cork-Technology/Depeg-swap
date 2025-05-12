@@ -94,10 +94,4 @@ interface IProtectedUnit is IErrors {
      * @return raReserves How many RA tokens are in the contract
      */
     function getReserves() external view returns (uint256 dsReserves, uint256 paReserves, uint256 raReserves);
-
-    /**
-     * @notice Updates the contract's internal record of token balances
-     * @dev Call this to ensure the contract has accurate balance information
-     */
-    function sync() external;
 }
