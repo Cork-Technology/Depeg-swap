@@ -109,10 +109,7 @@ contract ProtectedUnit is
      * @dev Updates the internal ds token reference if necessary
      */
     modifier autoUpdateDS() {
-        bool changed = _getLastDS();
-
-        if (changed) dsReserve = 0;
-
+        _getLastDS();
         _;
     }
 
@@ -395,11 +392,9 @@ contract ProtectedUnit is
      * But since we need the address of the new DS if it's expired to transfer it correctly, we only update
      * the address here at the start of the function call, then finally update the balance after the function call
      */
-    function _getLastDS() internal returns (bool changed) {
+    function _getLastDS() internal {
         if (address(ds) == address(0) || ds.isExpired()) {
             Asset _ds = _fetchLatestDS();
-
-            changed = ds == _ds;
 
             // Check if the DS address already exists in history
             bool found = false;
@@ -415,6 +410,7 @@ contract ProtectedUnit is
                 ds = _ds;
                 dsHistory.push(DSData({dsAddress: address(ds), totalDeposited: 0}));
                 dsIndexMap[address(ds)] = dsHistory.length - 1; // Store the index
+                dsReserve = 0;
             }
         }
     }
