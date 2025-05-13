@@ -94,7 +94,7 @@ contract ProtectedUnit is
     DSData[] public dsHistory;
 
     /// @notice Mapping from DS token address to its index in dsHistory array
-    mapping(address => uint256) private dsIndexMap;
+    mapping(address => uint256) public dsIndexMap;
 
     /// @notice __gap variable to prevent storage collisions
     // slither-disable-next-line unused-state

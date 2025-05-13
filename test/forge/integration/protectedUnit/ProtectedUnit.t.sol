@@ -137,6 +137,11 @@ contract ProtectedUnitTest is Helper {
         assertEq(dsToken.balanceOf(user), dsBalanceBefore - mintAmount);
         assertEq(pa.balanceOf(user), paBalanceBefore - mintAmount);
 
+        (address dsAddress, uint256 totalDeposited) =
+            protectedUnit.dsHistory(protectedUnit.dsIndexMap(address(dsToken)));
+        assertEq(dsAddress, address(dsToken));
+        assertEq(totalDeposited, mintAmount);
+
         vm.stopPrank();
     }
 
@@ -221,6 +226,10 @@ contract ProtectedUnitTest is Helper {
         assertEq(dsToken.balanceOf(address(protectedUnit)), dsAmount);
         assertEq(pa.balanceOf(address(protectedUnit)), paAmount);
 
+        (address dsAddress, uint256 totalDeposited) =
+            protectedUnit.dsHistory(protectedUnit.dsIndexMap(address(dsToken)));
+        assertEq(dsAddress, address(dsToken));
+        assertEq(totalDeposited, mintAmount);
         vm.stopPrank();
     }
 
