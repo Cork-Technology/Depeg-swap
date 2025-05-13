@@ -157,4 +157,33 @@ contract VaultLiquidityFundsTest is Helper {
         tradeFundsAvailable = moduleCore.tradeExecutionFundsAvailable(currencyId);
         vm.assertEq(tradeFundsAvailable, 0);
     }
+
+    function test_redeemLvShouldPauseDuringLiquidation() external {
+        uint256 amount = 10 ether;
+        uint256 received = moduleCore.depositLv(currencyId, amount, 0, 0);
+
+        Asset(ds).approve(address(moduleCore), 1000 ether);
+        moduleCore.redeemRaWithDsPa(currencyId, dsId, 1000 ether);
+
+        ff_expired();
+
+        uint256 fundsAvailable = moduleCore.liquidationFundsAvailable(currencyId);
+        vm.assertTrue(fundsAvailable > 0);
+
+        moduleCore.requestLiquidationFunds(currencyId, fundsAvailable, caller());
+        Asset lv = Asset(moduleCore.lvAsset(currencyId));
+        lv.approve(address(moduleCore), received);
+
+        IVault.RedeemEarlyParams memory redeemParams =
+            IVault.RedeemEarlyParams(currencyId, received, 0, block.timestamp, 0, 0, 0);
+
+        vm.expectRevert(IErrors.LVWithdrawalPaused.selector);
+        moduleCore.redeemEarlyLv(redeemParams);
+
+        // resume withdrawal when liquidation is finished
+        moduleCore.receiveLeftoverFunds(currencyId, received);
+
+        // should work now as withdrawal is resumed
+        moduleCore.redeemEarlyLv(redeemParams);
+    }
 }
