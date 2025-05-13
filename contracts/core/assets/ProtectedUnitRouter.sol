@@ -290,36 +290,6 @@ contract ProtectedUnitRouter is IProtectedUnitRouter, ReentrancyGuardTransient {
     }
 
     /**
-     * @notice Helper function to track token usage
-     * @dev Adds or updates a token's usage amount in the tracking arrays
-     * @param usedTokens Array of token addresses being tracked
-     * @param usedAmounts Array of amounts used for each token
-     * @param token Address of the token to track
-     * @param amount Amount of the token used
-     */
-    function _trackTokenUsage(address[] memory usedTokens, uint256[] memory usedAmounts, address token, uint256 amount)
-        internal
-        pure
-    {
-        // Look for the token in the existing array
-        uint256 length = usedTokens.length;
-        for (uint256 i = 0; i < length; ++i) {
-            if (usedTokens[i] == token) {
-                // Token already being tracked, add to the amount
-                usedAmounts[i] += amount;
-                return;
-            } else if (usedTokens[i] == address(0)) {
-                // Found an empty slot, use it to track this token
-                usedTokens[i] = token;
-                usedAmounts[i] = amount;
-                return;
-            }
-        }
-        // If we get here, the arrays are full which shouldn't happen
-        // as we initialize them with the correct size
-    }
-
-    /**
      * @notice Helper function to return excess tokens to the user
      * @dev Compares requested amounts with actual usage and returns any excess
      * @param permitBatchData The Permit2 batch permit data
