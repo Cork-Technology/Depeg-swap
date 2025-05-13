@@ -34,6 +34,9 @@ abstract contract ModuleState is IErrors, ReentrancyGuardTransient {
 
     address internal WITHDRAWAL_CONTRACT;
 
+    /// @dev new storage variable
+    mapping(Id => address) public activeLiquidator;
+
     /**
      * @dev checks if caller is config contract or not
      */
