@@ -479,6 +479,52 @@ contract ProtectedUnitTest is Helper {
         vm.stopPrank();
     }
 
+    function test_DsReserveShouldSetToZeroAfterDsExpiry() public {
+        vm.assertEq(protectedUnit.dsReserve(), 0);
+
+        vm.startPrank(user);
+        pa.approve(permit2, USER_BALANCE);
+        dsToken.approve(permit2, USER_BALANCE);
+
+        // Approve tokens for ProtectedUnit contract
+        IPermit2(permit2).approve(
+            address(pa), address(protectedUnit), uint160(USER_BALANCE), uint48(block.timestamp + 4 days)
+        );
+        IPermit2(permit2).approve(
+            address(dsToken), address(protectedUnit), uint160(USER_BALANCE), uint48(block.timestamp + 4 days)
+        );
+
+        // Mint 100 ProtectedUnit tokens
+        uint256 mintAmount = 100 * 1e18;
+        protectedUnit.mint(mintAmount);
+        vm.assertEq(protectedUnit.dsReserve(), mintAmount);
+
+        vm.startPrank(DEFAULT_ADDRESS);
+        // Advance time to expire the DS
+        vm.warp(block.timestamp + 2 days);
+
+        // issue new DS
+        issueNewDs(currencyId);
+        fetchProtocolGeneralInfo();
+        moduleCore.depositPsm(currencyId, USER_BALANCE * 2);
+
+        // Transfer tokens to user for test_ing
+        dsToken.transfer(user, USER_BALANCE);
+
+        vm.startPrank(user);
+        // Approve New DS token for ProtectedUnit contract
+        dsToken.approve(permit2, USER_BALANCE);
+        IPermit2(permit2).approve(
+            address(dsToken), address(protectedUnit), uint160(USER_BALANCE), uint48(block.timestamp + 4 days)
+        );
+        // mint again the ProtectedUnit so here it will use the new DS instead of the expired DS
+        protectedUnit.mint(10);
+
+        // DS reserve should be 10(0+10) because the DS has expired
+        vm.assertEq(protectedUnit.dsReserve(), 10);
+        vm.stopPrank();
+    }
+
     function test_MintingPaused() public {
         // Pause minting
         corkConfig.pauseProtectedUnitMinting(address(protectedUnit));
