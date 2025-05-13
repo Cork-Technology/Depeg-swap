@@ -415,7 +415,7 @@ contract ProtectedUnitTest is Helper {
         vm.stopPrank();
     }
 
-    function test_DissolvingTokens() public {
+    function test_BurnPU() public {
         // Mint tokens first
         test_MintingTokens();
 

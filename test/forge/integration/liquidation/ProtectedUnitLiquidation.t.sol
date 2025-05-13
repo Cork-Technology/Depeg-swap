@@ -304,19 +304,7 @@ contract ProtectedUnitTest is Helper {
     }
 
     function test_MintWhileLiquidationIsInProgress() public {
-        uint256 amountToSell = 10 ether;
-        bytes32 randomRefId = keccak256("ref");
-        bytes memory randomOrderUid = bytes.concat(keccak256("orderUid"));
-        ILiquidator.CreateProtectedUnitOrderParams memory params = ILiquidator.CreateProtectedUnitOrderParams({
-            internalRefId: randomRefId,
-            orderUid: randomOrderUid,
-            sellToken: address(pa),
-            sellAmount: amountToSell,
-            buyToken: address(ra),
-            protectedUnit: address(protectedUnit)
-        });
-
-        liquidator.createOrderProtectedUnit(params);
+        startLiquidation();
 
         vm.startPrank(user);
         // Without Permit
@@ -368,6 +356,79 @@ contract ProtectedUnitTest is Helper {
         vm.expectRevert(PausableUpgradeable.EnforcedPause.selector);
         protectedUnit.mint(mintAmount, permitBatchData, signature);
 
+        vm.stopPrank();
+    }
+
+    function test_BurnPUWhileLiquidationIsInProgress() public {
+        vm.startPrank(user);
+        pa.approve(permit2, USER_BALANCE);
+        dsToken.approve(permit2, USER_BALANCE);
+
+        // Approve tokens for ProtectedUnit contract
+        IPermit2(permit2).approve(
+            address(pa), address(protectedUnit), uint160(USER_BALANCE), uint48(block.timestamp + 1 hours)
+        );
+        IPermit2(permit2).approve(
+            address(dsToken), address(protectedUnit), uint160(USER_BALANCE), uint48(block.timestamp + 1 hours)
+        );
+
+        // Mint 100 ProtectedUnit tokens
+        uint256 mintAmount = 100 * 1e18;
+        protectedUnit.mint(mintAmount);
+
+        // Started liquidation
+        startLiquidation();
+
+        vm.startPrank(user);
+        // burn 50 tokens
+        vm.expectRevert(PausableUpgradeable.EnforcedPause.selector);
+        protectedUnit.burn(50 * 1e18);
+
+        vm.stopPrank();
+    }
+
+    function test_BurnFromWhileLiquidationIsInProgress() public {
+        vm.startPrank(user);
+        pa.approve(permit2, USER_BALANCE);
+        dsToken.approve(permit2, USER_BALANCE);
+
+        // Approve tokens for ProtectedUnit contract
+        IPermit2(permit2).approve(
+            address(pa), address(protectedUnit), uint160(USER_BALANCE), uint48(block.timestamp + 1 hours)
+        );
+        IPermit2(permit2).approve(
+            address(dsToken), address(protectedUnit), uint160(USER_BALANCE), uint48(block.timestamp + 1 hours)
+        );
+
+        // Mint 100 ProtectedUnit tokens
+        uint256 mintAmount = 100 * 1e18;
+        protectedUnit.mint(mintAmount);
+
+        // Started liquidation
+        startLiquidation();
+
+        vm.startPrank(user);
+        // burn 50 tokens
+        vm.expectRevert(PausableUpgradeable.EnforcedPause.selector);
+        protectedUnit.burnFrom(user, 50 * 1e18);
+
+        vm.stopPrank();
+    }
+
+    function startLiquidation() internal {
+        vm.startPrank(DEFAULT_ADDRESS);
+        uint256 amountToSell = 10 ether;
+        bytes32 randomRefId = keccak256("ref");
+        bytes memory randomOrderUid = bytes.concat(keccak256("orderUid"));
+        ILiquidator.CreateProtectedUnitOrderParams memory params = ILiquidator.CreateProtectedUnitOrderParams({
+            internalRefId: randomRefId,
+            orderUid: randomOrderUid,
+            sellToken: address(pa),
+            sellAmount: amountToSell,
+            buyToken: address(ra),
+            protectedUnit: address(protectedUnit)
+        });
+        liquidator.createOrderProtectedUnit(params);
         vm.stopPrank();
     }
 }
