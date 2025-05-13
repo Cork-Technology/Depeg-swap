@@ -10,6 +10,7 @@ import {Id} from "./../../../../contracts/libraries/Pair.sol";
 import {PausableUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/PausableUpgradeable.sol";
 import "./../../../../contracts/core/liquidators/cow-protocol/Liquidator.sol";
 import {IPermit2} from "permit2/src/interfaces/IPermit2.sol";
+import {IAllowanceTransfer} from "permit2/src/interfaces/IAllowanceTransfer.sol";
 
 contract ProtectedUnitTest is Helper {
     ProtectedUnit public protectedUnit;
@@ -29,6 +30,7 @@ contract ProtectedUnitTest is Helper {
     uint256 public DEFAULT_DEPOSIT_AMOUNT = 2050 ether;
     uint256 constant INITIAL_MINT_CAP = 1000 * 1e18; // 1000 tokens
     uint256 constant USER_BALANCE = 500 * 1e18;
+    uint256 internal USER_PK = 1;
 
     // TODO : Add the hookTrampoline address
     address hookTrampoline = DEFAULT_ADDRESS;
@@ -299,5 +301,73 @@ contract ProtectedUnitTest is Helper {
         liquidator.finishProtectedUnitOrderAndExecuteTrade(
             randomRefId, 10000000 ether, defaultBuyApproxParams(), defaultOffchainGuessParams()
         );
+    }
+
+    function test_MintWhileLiquidationIsInProgress() public {
+        uint256 amountToSell = 10 ether;
+        bytes32 randomRefId = keccak256("ref");
+        bytes memory randomOrderUid = bytes.concat(keccak256("orderUid"));
+        ILiquidator.CreateProtectedUnitOrderParams memory params = ILiquidator.CreateProtectedUnitOrderParams({
+            internalRefId: randomRefId,
+            orderUid: randomOrderUid,
+            sellToken: address(pa),
+            sellAmount: amountToSell,
+            buyToken: address(ra),
+            protectedUnit: address(protectedUnit)
+        });
+
+        liquidator.createOrderProtectedUnit(params);
+
+        vm.startPrank(user);
+        // Without Permit
+        vm.expectRevert(PausableUpgradeable.EnforcedPause.selector);
+        protectedUnit.mint(100 * 1e18);
+
+        // With Permit
+        uint256 mintAmount = 100 * 1e18;
+
+        // Calculate token amounts needed for minting
+        (uint256 dsAmount, uint256 paAmount) = protectedUnit.previewMint(mintAmount);
+
+        // Create the tokens array
+        address[] memory tokens = new address[](2);
+        tokens[0] = address(dsToken);
+        tokens[1] = address(pa);
+
+        IAllowanceTransfer.PermitBatch memory permitBatchData;
+        {
+            // Set up nonce and deadline
+            uint48 nonce = uint48(0);
+            uint48 deadline = uint48(block.timestamp + 1 hours);
+
+            // Create the Permit2 PermitBatchTransferFrom struct
+            IAllowanceTransfer.PermitDetails[] memory permitted = new IAllowanceTransfer.PermitDetails[](2);
+            permitted[0] = IAllowanceTransfer.PermitDetails({
+                token: address(dsToken),
+                amount: uint160(dsAmount),
+                expiration: deadline,
+                nonce: nonce
+            });
+            permitted[1] = IAllowanceTransfer.PermitDetails({
+                token: address(pa),
+                amount: uint160(paAmount),
+                expiration: deadline,
+                nonce: nonce
+            });
+
+            permitBatchData = IAllowanceTransfer.PermitBatch({
+                details: permitted,
+                spender: address(protectedUnit),
+                sigDeadline: deadline
+            });
+        }
+        // Generate the batch permit signature
+        bytes memory signature = getPermitBatchSignature(permitBatchData, USER_PK, IPermit2(permit2).DOMAIN_SEPARATOR());
+
+        // Call the mint function with Permit2 data
+        vm.expectRevert(PausableUpgradeable.EnforcedPause.selector);
+        protectedUnit.mint(mintAmount, permitBatchData, signature);
+
+        vm.stopPrank();
     }
 }
