@@ -96,6 +96,8 @@ contract ProtectedUnit is
     /// @notice Mapping from DS token address to its index in dsHistory array
     mapping(address => uint256) private dsIndexMap;
 
+    address public activeLiquidators;
+
     /// @notice __gap variable to prevent storage collisions
     // slither-disable-next-line unused-state
     uint256[49] private __gap;
@@ -110,6 +112,17 @@ contract ProtectedUnit is
      */
     modifier autoUpdateDS() {
         _getLastDS();
+        _;
+    }
+
+    modifier onlyActiveLiquidators() {
+        if (activeLiquidators != msg.sender) revert OnlyLiquidator();
+
+        _;
+    }
+
+    modifier onlyNoLiquidation() {
+        if (activeLiquidators != address(0)) revert EnforcedPause();
         _;
     }
 
@@ -282,26 +295,23 @@ contract ProtectedUnit is
         _raReserves = raReserve;
     }
 
-    /**
-     * @notice Allows the liquidator to request funds for liquidation
-     * @param amount How many tokens to request
-     * @param token Which token to request (must be PA or RA)
-     * @custom:reverts InsufficientFunds if the contract has insufficient tokens
-     * @custom:reverts OnlyLiquidator if caller is not whitelisted
-     * @custom:reverts InvalidToken if token is neither PA nor RA
-     * @custom:emits LiquidationFundsRequested when funds are successfully transferred
-     */
-    function requestLiquidationFunds(uint256 amount, address token)
+    function requestLiquidationFunds(uint256 amount, address token, address executor)
         external
         onlyLiquidationContract
         onlyValidToken(token)
         autoSync
     {
-        uint256 balance = IERC20(token).balanceOf(address(this));
+        uint256 balance;
 
-        if (balance < amount) {
-            revert InsufficientFunds();
-        }
+        if (token == address(pa)) balance = _selfPaReserve();
+        else balance = _selfRaReserve();
+
+        if (balance < amount) revert InsufficientFunds();
+
+        activeLiquidators = executor;
+
+        // pause contract if liquidation occurs
+        _pause();
 
         IERC20(token).safeTransfer(msg.sender, amount);
 
@@ -309,17 +319,27 @@ contract ProtectedUnit is
     }
 
     /**
-     * @notice Accepts incoming funds from liquidation or other operations
+     * @notice Accepts incoming funds from liquidation
      * @dev Transfers the specified amount of the token from the sender to this contract
      * @param amount How many tokens are being received
      * @param token Which token is being received (must be PA or RA)
      * @custom:reverts InvalidToken if token is neither PA nor RA
      * @custom:emits FundsReceived when funds are successfully transferred
      */
-    function receiveFunds(uint256 amount, address token) external onlyValidToken(token) autoSync {
+    function receiveFunds(uint256 amount, address token)
+        external
+        onlyValidToken(token)
+        onlyActiveLiquidators
+        autoSync
+    {
+        // we won't pause since it's already paused on request liquidation
         IERC20(token).safeTransferFrom(msg.sender, address(this), amount);
 
         emit FundsReceived(msg.sender, token, amount);
+    }
+
+    function finishLiquidating() external onlyActiveLiquidators {
+        delete activeLiquidators;
     }
 
     /**
@@ -346,6 +366,8 @@ contract ProtectedUnit is
             flashswapRouter.swapRaforDs(id, dsId, amount, amountOutMin, params, offchainGuess);
 
         amountOut = result.amountOut;
+
+        if (raReserve == 0) _unpause();
 
         emit FundsUsed(msg.sender, dsId, amount, result.amountOut);
     }
@@ -473,6 +495,7 @@ contract ProtectedUnit is
         nonReentrant
         autoUpdateDS
         autoSync
+        onlyNoLiquidation
         returns (uint256 dsAmount, uint256 paAmount)
     {
         // Calculate token amounts needed for minting
@@ -517,6 +540,7 @@ contract ProtectedUnit is
         nonReentrant
         autoUpdateDS
         autoSync
+        onlyNoLiquidation
         returns (uint256 dsAmount, uint256 paAmount)
     {
         // checks that DS and PA are in the permitted array and that the transfer details are for the correct tokens
@@ -574,6 +598,8 @@ contract ProtectedUnit is
     /**
      * @notice Burns ProtectedUnit tokens from a specific account and returns the underlying assets
      * @dev Requires approval if caller isn't the token owner
+     * @dev since pausing would typically happens when PU is liquidating PA to RA AND if there's RA inside the PU(mint is paused in this case)
+     * we only enforce the pausing on burn only if there's liquidation happening
      * @param account The address from which to burn tokens
      * @param amount The amount of ProtectedUnit tokens to burn
      * @custom:reverts EnforcedPause if burning is paused
@@ -583,22 +609,24 @@ contract ProtectedUnit is
     function burnFrom(address account, uint256 amount)
         public
         override
-        whenNotPaused
         nonReentrant
         autoUpdateDS
         autoSync
+        onlyNoLiquidation
     {
         _burnPU(account, amount);
     }
 
     /**
      * @notice Burns ProtectedUnit tokens from the caller and returns the underlying assets
+     * @dev since pausing would  typically happens when PU is liquidating PA to RA AND if there's RA inside the PU(mint is paused in this case)
+     * we only enforce the pausing on burn only if there's liquidation happening
      * @param amount The amount of ProtectedUnit tokens to burn
      * @custom:reverts EnforcedPause if burning is paused
      * @custom:reverts InvalidAmount if amount is invalid
      * @custom:emits Burn when tokens are successfully burned
      */
-    function burn(uint256 amount) public override whenNotPaused nonReentrant autoUpdateDS autoSync {
+    function burn(uint256 amount) public override nonReentrant autoUpdateDS autoSync onlyNoLiquidation {
         _burnPU(msg.sender, amount);
     }
 

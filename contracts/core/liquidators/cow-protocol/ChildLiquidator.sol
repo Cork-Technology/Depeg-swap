@@ -123,6 +123,8 @@ contract ProtectedUnitChildLiquidator is ChildLiquidatorBase {
         SafeERC20.safeIncreaseAllowance(IERC20(order.sellToken), receiver, leftover);
 
         IProtectedUnitLiquidation(receiver).receiveFunds(leftover, order.sellToken);
+
+        IProtectedUnitLiquidation(receiver).finishLiquidating();
     }
 }
 
