@@ -345,10 +345,7 @@ contract RouterState is
 
         IERC20(assetPair.ds).safeTransfer(user, dsReceived);
 
-        {
-            uint256 raLeftNormalized = TransferHelper.fixedToTokenNativeDecimals(raLeft, assetPair.ra);
-            emit RolloverSold(reserveId, dsId, user, dsReceived, raLeftNormalized);
-        }
+        emit RolloverSold(reserveId, dsId, user, dsReceived, raLeft);
     }
 
     /**
