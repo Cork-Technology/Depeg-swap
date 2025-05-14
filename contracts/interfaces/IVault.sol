@@ -89,6 +89,11 @@ interface IVault is IErrors {
 
     event VaultNavThresholdUpdated(Id indexed id, uint256 navThreshold);
 
+    /// @notice Emitted when the withdrawal contract is updated
+    /// @param oldContract The old withdrawal contract address
+    /// @param newContract The new withdrawal contract address
+    event WithdrawalContractUpdated(address oldContract, address newContract);
+
     /**
      * @notice Deposit a wrapped asset into a given vault
      * @param id The Module id that is used to reference both psm and lv of a given pair

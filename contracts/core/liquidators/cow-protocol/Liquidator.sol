@@ -117,7 +117,7 @@ contract Liquidator is ILiquidator {
      * @param refId A unique reference ID for this liquidation
      * @return receiver The address where liquidated funds will be sent
      */
-    function fetchVaultReceiver(bytes32 refId) external returns (address receiver) {
+    function fetchVaultReceiver(bytes32 refId) external view returns (address receiver) {
         receiver = Clones.predictDeterministicAddress(VAULT_LIQUIDATOR_BASE, refId, address(this));
     }
 
@@ -127,7 +127,7 @@ contract Liquidator is ILiquidator {
      * @param refId A unique reference ID for this liquidation
      * @return receiver The address where liquidated funds will be sent
      */
-    function fetchProtectedUnitReceiver(bytes32 refId) external returns (address receiver) {
+    function fetchProtectedUnitReceiver(bytes32 refId) external view returns (address receiver) {
         receiver = Clones.predictDeterministicAddress(PROTECTED_UNIT_LIQUIDATOR_BASE, refId, address(this));
     }
 

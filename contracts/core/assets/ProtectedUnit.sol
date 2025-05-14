@@ -82,7 +82,7 @@ contract ProtectedUnit is
     Id public id;
 
     /// @notice The ERC20 token representing the ds asset.
-    Asset internal ds;
+    Asset public ds;
 
     /// @notice Maximum supply cap for minting ProtectedUnit tokens
     uint256 public mintCap;
