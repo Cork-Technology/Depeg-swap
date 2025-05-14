@@ -47,10 +47,10 @@ contract ProtectedUnitFactory is IProtectedUnitFactory, OwnableUpgradeable, UUPS
 
     /**
      * @notice Restricts function access to the configuration contract only
-     * @custom:reverts NotConfig if msg.sender is not the CONFIG address
+     * @custom:reverts NotConfig if _msgSender() is not the CONFIG address
      */
     modifier onlyConfig() {
-        if (msg.sender != config) {
+        if (_msgSender() != config) {
             revert NotConfig();
         }
         _;
@@ -87,7 +87,7 @@ contract ProtectedUnitFactory is IProtectedUnitFactory, OwnableUpgradeable, UUPS
             revert ZeroAddress();
         }
 
-        __Ownable_init(msg.sender);
+        __Ownable_init(_msgSender());
         __UUPSUpgradeable_init();
 
         moduleCore = _moduleCore;
