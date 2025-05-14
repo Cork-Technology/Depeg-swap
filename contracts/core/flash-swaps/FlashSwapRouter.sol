@@ -381,14 +381,12 @@ contract RouterState is
             return (0);
         }
 
-        uint256 amountOut;
-
         if (offchainGuess.borrow == 0) {
             // calculate the amount of DS tokens attributed
-            (amountOut, borrow) = getAmountOutBuyDs(assetPair, hook, approxParams, amount);
+            (, borrow) = getAmountOutBuyDs(assetPair, hook, approxParams, amount);
         } else {
             // we convert the amount to fixed point 18 decimals since, the amount out will be DS, and DS is always 18 decimals.
-            amountOut = TransferHelper.tokenNativeDecimalsToFixed(offchainGuess.borrow + amount, assetPair.ra);
+            TransferHelper.tokenNativeDecimalsToFixed(offchainGuess.borrow + amount, assetPair.ra);
             borrow = offchainGuess.borrow;
         }
 

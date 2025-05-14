@@ -614,11 +614,11 @@ contract ProtectedUnit is
 
         _burnFrom(dissolver, amount);
 
-        TransferHelper.transferNormalize(pa, dissolver, paAmount);
+        paAmount = TransferHelper.transferNormalize(pa, dissolver, paAmount);
         _transferDs(dissolver, dsAmount);
-        TransferHelper.transferNormalize(ra, dissolver, raAmount);
+        raAmount = TransferHelper.transferNormalize(ra, dissolver, raAmount);
 
-        emit Burn(dissolver, amount, dsAmount, paAmount);
+        emit Burn(dissolver, amount, dsAmount, paAmount, raAmount);
     }
 
     /// @notice Internal function to burn tokens from an account
@@ -661,10 +661,6 @@ contract ProtectedUnit is
      */
     function unpause() external onlyOwner {
         _unpause();
-    }
-
-    function _normalize(uint256 amount, uint8 decimalsBefore, uint8 decimalsAfter) public pure returns (uint256) {
-        return ProtectedUnitMath.normalizeDecimals(amount, decimalsBefore, decimalsAfter);
     }
 
     //  Make reserves in sync with the actual balance of the contract
