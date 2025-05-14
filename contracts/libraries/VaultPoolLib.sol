@@ -16,18 +16,13 @@ library VaultPoolLibrary {
 
         // RA
         uint256 totalRa = self.withdrawalPool.raBalance + addedRa;
-        (, uint256 attributedToAmm, uint256 ratePerLv) =
-            MathHelper.separateLiquidity(totalRa, totalLvIssued, totalLvWithdrawn);
 
-        self.ammLiquidityPool.balance = attributedToAmm;
-        self.withdrawalPool.raExchangeRate = ratePerLv;
+        self.ammLiquidityPool.balance = totalRa;
 
         // PA
         uint256 totalPa = self.withdrawalPool.paBalance + addedPa;
-        (, attributedToAmm, ratePerLv) = MathHelper.separateLiquidity(totalPa, totalLvIssued, 0);
 
-        self.withdrawalPool.paBalance = attributedToAmm;
-        self.withdrawalPool.paExchangeRate = ratePerLv;
+        self.withdrawalPool.paBalance = totalPa;
 
         assert(totalRa == self.withdrawalPool.raBalance + self.ammLiquidityPool.balance);
     }

@@ -22,7 +22,7 @@ library MathHelper {
      * @dev calculate the amount of ra and ct needed to provide AMM with liquidity in respect to the price ratio
      *
      * @param amountra the total amount of liquidity user provide(e.g 2 ra)
-     * @param priceRatio the price ratio of the pair, should be retrieved from the AMM as sqrtx96 and be converted to ratio
+     * @param priceRatio the price ratio of the pair
      * @return ra the amount of ra needed to provide AMM with liquidity
      * @return ct the amount of ct needed to provide AMM with liquidity, also the amount of how much ra should be converted to ct
      */

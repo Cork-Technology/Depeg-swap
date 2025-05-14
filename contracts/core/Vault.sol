@@ -148,9 +148,9 @@ abstract contract VaultCore is ModuleState, Context, IVault, IVaultLiquidation {
         emit LiquidationFundsRequested(id, msg.sender, amount);
     }
 
-    function receiveTradeExecuctionResultFunds(Id id, uint256 amount) external override {
+    function receiveTradeExecutionResultFunds(Id id, uint256 amount) external override {
         State storage state = states[id];
-        state.receiveTradeExecuctionResultFunds(amount, msg.sender);
+        state.receiveTradeExecutionResultFunds(amount, msg.sender);
         emit TradeExecutionResultFundsReceived(id, msg.sender, amount);
     }
 

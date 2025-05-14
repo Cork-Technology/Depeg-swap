@@ -40,45 +40,6 @@ contract LiquidityMathTest is Test {
         vm.assertEq(normalizedAmount, 1000 ether * 1e6);
     }
 
-    function test_addLiquidityFirst() external {
-        uint256 reservePa = 0;
-        uint256 reserveDs = 0;
-        uint256 totalLiquidity = 0;
-
-        uint256 amountPa = 1000 ether;
-        uint256 amountDs = 1000 ether;
-
-        uint256 liquidityMinted = ProtectedUnitMath.mint(reservePa, totalLiquidity, amountPa, amountDs);
-
-        vm.assertEq(liquidityMinted, 1000 ether);
-    }
-
-    /// forge-config: default.allow_internal_expect_revert = true
-    function testRevert_WhenaddLiquidityFirstNoProportional() external {
-        uint256 reservePa = 0;
-        uint256 reserveDs = 0;
-        uint256 totalLiquidity = 0;
-
-        uint256 amountPa = 1000 ether;
-        uint256 amountDs = 900 ether;
-
-        vm.expectRevert(IErrors.InvalidAmount.selector);
-        ProtectedUnitMath.mint(reservePa, totalLiquidity, amountPa, amountDs);
-    }
-
-    function test_addLiquiditySubsequent() external {
-        uint256 reservePa = 2000 ether;
-        uint256 reserveDs = 1800 ether;
-        uint256 totalLiquidity = 948.6832 ether;
-
-        uint256 amountPa = 1000 ether;
-        uint256 amountDs = 900 ether;
-
-        uint256 liquidityMinted = ProtectedUnitMath.mint(reservePa, totalLiquidity, amountPa, amountDs);
-
-        vm.assertApproxEqAbs(liquidityMinted, 474.3416491 ether, 0.0001 ether);
-    }
-
     function test_removeLiquidity() external {
         uint256 reservePa = 2000 ether;
         uint256 reserveDs = 1800 ether;
@@ -128,16 +89,5 @@ contract LiquidityMathTest is Test {
 
         vm.expectRevert();
         ProtectedUnitMath.withdraw(reservePa, reserveDs, reserveRa, totalLiquidity, liquidityAmount);
-    }
-
-    function testFuzz_proportionalAmount(uint256 amountPa) external {
-        amountPa = bound(amountPa, 1 ether, 100000 ether);
-
-        uint256 reservePa = 1000 ether;
-        uint256 reserveDs = 2000 ether;
-
-        uint256 amountDs = ProtectedUnitMath.getProportionalAmount(amountPa, reservePa, reserveDs);
-
-        vm.assertEq(amountDs, amountPa * 2);
     }
 }

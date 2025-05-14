@@ -28,8 +28,9 @@ interface IProtectedUnit is IErrors {
      * @param amount How many tokens were redeemed
      * @param dsAmount How many DS tokens were received
      * @param paAmount How many PA tokens were received
+     * @param raAmount How many RA tokens were received
      */
-    event Burn(address indexed dissolver, uint256 amount, uint256 dsAmount, uint256 paAmount);
+    event Burn(address indexed dissolver, uint256 amount, uint256 dsAmount, uint256 paAmount, uint256 raAmount);
 
     /**
      * @notice Emmits when the maximum supply limit changes
