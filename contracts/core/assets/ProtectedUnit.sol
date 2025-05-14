@@ -51,8 +51,6 @@ contract ProtectedUnit is
     IProtectedUnitLiquidation,
     ERC20BurnableUpgradeable
 {
-    string public constant DS_PERMIT_MINT_TYPEHASH = "mint(uint256 amount)";
-
     using SafeERC20 for IERC20;
 
     CorkConfig public config;
@@ -206,6 +204,8 @@ contract ProtectedUnit is
         config = CorkConfig(_config);
         permit2 = IPermit2(_permit2);
         factory = msg.sender;
+
+        emit MintCapUpdated(_mintCap);
     }
 
     /**
