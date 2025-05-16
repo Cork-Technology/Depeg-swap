@@ -61,7 +61,7 @@ abstract contract VaultCore is ModuleState, Context, IVault, IVaultLiquidation {
             withdrawalContract: getWithdrawalContract()
         });
 
-        result = states[redeemParams.id].redeemEarly(msg.sender, redeemParams, routers, permitParams);
+        result = states[redeemParams.id].redeemEarly(_msgSender(), redeemParams, routers, permitParams);
 
         emit LvRedeemEarly(
             redeemParams.id,
@@ -123,7 +123,7 @@ abstract contract VaultCore is ModuleState, Context, IVault, IVaultLiquidation {
         onlyFlashSwapRouter();
         State storage state = states[id];
         state.allocateFeesToVault(amount);
-        emit VaultDsSaleProfitReceived(msg.sender, id, amount);
+        emit VaultDsSaleProfitReceived(_msgSender(), id, amount);
     }
 
     /**
@@ -148,21 +148,21 @@ abstract contract VaultCore is ModuleState, Context, IVault, IVaultLiquidation {
     function requestLiquidationFunds(Id id, uint256 amount) external override {
         onlyWhiteListedLiquidationContract();
         State storage state = states[id];
-        state.requestLiquidationFunds(amount, msg.sender);
-        emit LiquidationFundsRequested(id, msg.sender, amount);
+        state.requestLiquidationFunds(amount, _msgSender());
+        emit LiquidationFundsRequested(id, _msgSender(), amount);
     }
 
     function receiveTradeExecuctionResultFunds(Id id, uint256 amount) external override {
         State storage state = states[id];
-        state.receiveTradeExecuctionResultFunds(amount, msg.sender);
-        emit TradeExecutionResultFundsReceived(id, msg.sender, amount);
+        state.receiveTradeExecuctionResultFunds(amount, _msgSender());
+        emit TradeExecutionResultFundsReceived(id, _msgSender(), amount);
     }
 
     function useTradeExecutionResultFunds(Id id) external override {
         onlyConfig();
         State storage state = states[id];
         uint256 used = state.useTradeExecutionResultFunds(getRouterCore(), getAmmRouter());
-        emit TradeExecutionResultFundsUsed(id, msg.sender, used);
+        emit TradeExecutionResultFundsUsed(id, _msgSender(), used);
     }
 
     function liquidationFundsAvailable(Id id) external view returns (uint256) {
