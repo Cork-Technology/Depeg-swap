@@ -233,7 +233,7 @@ contract ProtectedUnit is
      * @notice Updates the contract's internal record of token reserves
      * @dev Fetches the latest DS token if needed and updates all reserves
      */
-    function _sync() internal autoUpdateDS {
+    function _sync() internal {
         dsReserve = ds.balanceOf(address(this));
         paReserve = _pa.balanceOf(address(this));
         raReserve = _ra.balanceOf(address(this));
@@ -411,6 +411,7 @@ contract ProtectedUnit is
                 ds = _ds;
                 dsHistory.push(DSData({dsAddress: address(ds), totalDeposited: 0}));
                 dsIndexMap[address(ds)] = dsHistory.length - 1; // Store the index
+                dsReserve = 0;
             }
         }
     }
@@ -452,7 +453,11 @@ contract ProtectedUnit is
             revert MintCapExceeded();
         }
 
-        (dsAmount, paAmount) = ProtectedUnitMath.previewMint(amount, _selfPaReserve(), _selfDsReserve(), totalSupply());
+        Asset currentDs = _fetchLatestDS();
+
+        uint256 reserveDs = currentDs == ds ? _selfDsReserve() : 0;
+
+        (dsAmount, paAmount) = ProtectedUnitMath.previewMint(amount, _selfPaReserve(), reserveDs, totalSupply());
 
         paAmount = TransferHelper.fixedToTokenNativeDecimals(paAmount, _pa);
     }
@@ -577,7 +582,9 @@ contract ProtectedUnit is
         }
         uint256 totalLiquidity = totalSupply();
         uint256 reservePa = _selfPaReserve();
-        uint256 reserveDs = ds.balanceOf(address(this));
+        Asset currentDs = _fetchLatestDS();
+
+        uint256 reserveDs = currentDs == ds ? _selfDsReserve() : 0;
         uint256 reserveRa = _selfRaReserve();
 
         (paAmount, dsAmount, raAmount) =
