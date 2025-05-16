@@ -118,7 +118,7 @@ contract ProtectedUnit is
      * @custom:reverts OnlyLiquidator if caller is not whitelisted
      */
     modifier onlyLiquidationContract() {
-        if (!config.isLiquidationWhitelisted(msg.sender)) {
+        if (!config.isLiquidationWhitelisted(_msgSender())) {
             revert OnlyLiquidator();
         }
         _;
@@ -141,7 +141,7 @@ contract ProtectedUnit is
      * @custom:reverts OnlyLiquidatorOrOwner if caller is not authorized
      */
     modifier onlyOwnerOrLiquidator() {
-        if (msg.sender != owner() && !config.isLiquidationWhitelisted(msg.sender)) {
+        if (_msgSender() != owner() && !config.isLiquidationWhitelisted(_msgSender())) {
             revert OnlyLiquidatorOrOwner();
         }
         _;
@@ -152,7 +152,7 @@ contract ProtectedUnit is
      * @custom:reverts OnlyFactory if caller is not the factory
      */
     modifier onlyFactory() {
-        if (msg.sender != factory) {
+        if (_msgSender() != factory) {
             revert OnlyFactory();
         }
         _;
@@ -205,7 +205,7 @@ contract ProtectedUnit is
         flashswapRouter = IDsFlashSwapCore(_flashSwapRouter);
         config = CorkConfig(_config);
         permit2 = IPermit2(_permit2);
-        factory = msg.sender;
+        factory = _msgSender();
     }
 
     /**
@@ -303,9 +303,9 @@ contract ProtectedUnit is
             revert InsufficientFunds();
         }
 
-        IERC20(token).safeTransfer(msg.sender, amount);
+        IERC20(token).safeTransfer(_msgSender(), amount);
 
-        emit LiquidationFundsRequested(msg.sender, token, amount);
+        emit LiquidationFundsRequested(_msgSender(), token, amount);
     }
 
     /**
@@ -317,9 +317,9 @@ contract ProtectedUnit is
      * @custom:emits FundsReceived when funds are successfully transferred
      */
     function receiveFunds(uint256 amount, address token) external onlyValidToken(token) autoSync {
-        IERC20(token).safeTransferFrom(msg.sender, address(this), amount);
+        IERC20(token).safeTransferFrom(_msgSender(), address(this), amount);
 
-        emit FundsReceived(msg.sender, token, amount);
+        emit FundsReceived(_msgSender(), token, amount);
     }
 
     /**
@@ -342,12 +342,13 @@ contract ProtectedUnit is
         uint256 dsId = moduleCore.lastDsId(id);
         IERC20(ra).safeIncreaseAllowance(address(flashswapRouter), amount);
 
-        IDsFlashSwapCore.SwapRaForDsReturn memory result =
-            flashswapRouter.swapRaforDs(id, dsId, amount, amountOutMin, params, offchainGuess);
+        IDsFlashSwapCore.SwapRaForDsReturn memory result = flashswapRouter.swapRaforDs(
+            id, dsId, amount, amountOutMin, params, offchainGuess, block.timestamp + 30 minutes
+        );
 
         amountOut = result.amountOut;
 
-        emit FundsUsed(msg.sender, dsId, amount, result.amountOut);
+        emit FundsUsed(_msgSender(), dsId, amount, result.amountOut);
     }
 
     /**
@@ -370,7 +371,7 @@ contract ProtectedUnit is
         // auto pause
         _pause();
 
-        emit RaRedeemed(msg.sender, dsId, amountPa);
+        emit RaRedeemed(_msgSender(), dsId, amountPa);
     }
 
     /**
@@ -485,14 +486,14 @@ contract ProtectedUnit is
      * @dev Handles the token transfers and minting logic
      */
     function __mint(uint256 amount, uint256 dsAmount, uint256 paAmount) internal {
-        permit2.transferFrom(msg.sender, address(this), SafeCast.toUint160(dsAmount), address(ds));
-        permit2.transferFrom(msg.sender, address(this), SafeCast.toUint160(paAmount), address(pa));
+        permit2.transferFrom(_msgSender(), address(this), SafeCast.toUint160(dsAmount), address(ds));
+        permit2.transferFrom(_msgSender(), address(this), SafeCast.toUint160(paAmount), address(pa));
 
         dsHistory[dsIndexMap[address(ds)]].totalDeposited += dsAmount;
 
-        _mint(msg.sender, amount);
+        _mint(_msgSender(), amount);
 
-        emit Mint(msg.sender, amount);
+        emit Mint(_msgSender(), amount);
     }
 
     /**
@@ -534,7 +535,23 @@ contract ProtectedUnit is
         }
 
         // Batch transfer tokens from user to this contract using Permit2
-        permit2.permit(msg.sender, permit, signature);
+        try permit2.permit(_msgSender(), permit, signature) {}
+        catch {
+            if (
+                IERC20(ds).allowance(_msgSender(), address(this)) < dsAmount
+                    || IERC20(pa).allowance(_msgSender(), address(this)) < paAmount
+            ) {
+                revert PermitFailed();
+            }
+
+            for (uint256 i = 0; i < permit.details.length; i++) {
+                (, uint48 expiration, uint48 nonce) =
+                    permit2.allowance(_msgSender(), permit.details[i].token, permit.spender);
+                if (expiration < block.timestamp || nonce != permit.details[i].nonce) {
+                    revert PermitFailed();
+                }
+            }
+        }
 
         // Mint the tokens to the owner
         __mint(amount, dsAmount, paAmount);
@@ -595,7 +612,7 @@ contract ProtectedUnit is
      * @custom:emits Burn when tokens are successfully burned
      */
     function burn(uint256 amount) public override whenNotPaused nonReentrant autoUpdateDS autoSync {
-        _burnPU(msg.sender, amount);
+        _burnPU(_msgSender(), amount);
     }
 
     /**
@@ -619,8 +636,8 @@ contract ProtectedUnit is
 
     /// @notice Internal function to burn tokens from an account
     function _burnFrom(address account, uint256 value) internal {
-        if (account != msg.sender) {
-            _spendAllowance(account, msg.sender, value);
+        if (account != _msgSender()) {
+            _spendAllowance(account, _msgSender(), value);
         }
 
         _burn(account, value);
