@@ -706,4 +706,17 @@ contract ProtectedUnit is
             IERC20(ds).safeTransfer(to, ds.balanceOf(address(this)) - dsReserve);
         }
     }
+
+    /**
+     * @notice Rescue tokens from the contract to the owner (except for DS. PA and RA)
+     * @param tokens The addresses of the tokens to rescue
+     * @custom:reverts If any token transfer fails
+     */
+    function rescue(address[] calldata tokens) external onlyOwner {
+        for (uint256 i = 0; i < tokens.length; i++) {
+            if (tokens[i] != address(_pa) && tokens[i] != address(_ra) && tokens[i] != address(ds)) {
+                IERC20(tokens[i]).safeTransfer(_msgSender(), IERC20(tokens[i]).balanceOf(address(this)));
+            }
+        }
+    }
 }
