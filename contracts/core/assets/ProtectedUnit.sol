@@ -68,10 +68,10 @@ contract ProtectedUnit is
      * @notice The ERC20 token representing the Pegged Asset (PA)
      * @dev One of the underlying assets in the Protected Unit bundle
      */
-    ERC20 public pa;
+    ERC20 internal _pa;
 
     /// @notice The ERC20 token representing the Redemption Asset (RA)
-    ERC20 public ra;
+    ERC20 internal _ra;
 
     uint256 public dsReserve;
     uint256 public paReserve;
@@ -94,7 +94,7 @@ contract ProtectedUnit is
     DSData[] public dsHistory;
 
     /// @notice Mapping from DS token address to its index in dsHistory array
-    mapping(address => uint256) private dsIndexMap;
+    mapping(address => uint256) public dsIndexMap;
 
     /// @notice __gap variable to prevent storage collisions
     // slither-disable-next-line unused-state
@@ -118,7 +118,7 @@ contract ProtectedUnit is
      * @custom:reverts OnlyLiquidator if caller is not whitelisted
      */
     modifier onlyLiquidationContract() {
-        if (!config.isLiquidationWhitelisted(msg.sender)) {
+        if (!config.isLiquidationWhitelisted(_msgSender())) {
             revert OnlyLiquidator();
         }
         _;
@@ -130,7 +130,7 @@ contract ProtectedUnit is
      * @custom:reverts InvalidToken if token is neither PA nor RA
      */
     modifier onlyValidToken(address token) {
-        if (token != address(pa) && token != address(ra)) {
+        if (token != address(_pa) && token != address(_ra)) {
             revert InvalidToken();
         }
         _;
@@ -141,7 +141,7 @@ contract ProtectedUnit is
      * @custom:reverts OnlyLiquidatorOrOwner if caller is not authorized
      */
     modifier onlyOwnerOrLiquidator() {
-        if (msg.sender != owner() && !config.isLiquidationWhitelisted(msg.sender)) {
+        if (_msgSender() != owner() && !config.isLiquidationWhitelisted(_msgSender())) {
             revert OnlyLiquidatorOrOwner();
         }
         _;
@@ -152,24 +152,18 @@ contract ProtectedUnit is
      * @custom:reverts OnlyFactory if caller is not the factory
      */
     modifier onlyFactory() {
-        if (msg.sender != factory) {
+        if (_msgSender() != factory) {
             revert OnlyFactory();
         }
         _;
-    }
-
-    /// @notice Automatically synchronizes token reserves after function execution
-    modifier autoSync() {
-        _;
-        _sync();
     }
 
     /**
      * @notice Initializes the ProtectedUnit contract
      * @param _moduleCore Address of the core module that manages this token
      * @param _id Unique identifier for RA:PA market in modulecore
-     * @param _pa Address of the Pegged Asset token
-     * @param _ra Address of the Redemption Asset token
+     * @param __pa Address of the Pegged Asset token
+     * @param __ra Address of the Redemption Asset token
      * @param _pairName Human-readable name for this token pair
      * @param _mintCap Maximum number of tokens that can be created
      * @param _config Address of the configuration contract
@@ -179,8 +173,8 @@ contract ProtectedUnit is
     function initialize(
         address _moduleCore,
         Id _id,
-        address _pa,
-        address _ra,
+        address __pa,
+        address __ra,
         string memory _pairName,
         uint256 _mintCap,
         address _config,
@@ -199,13 +193,13 @@ contract ProtectedUnit is
 
         moduleCore = ModuleCore(_moduleCore);
         id = _id;
-        pa = ERC20(_pa);
-        ra = ERC20(_ra);
+        _pa = ERC20(__pa);
+        _ra = ERC20(__ra);
         mintCap = _mintCap;
         flashswapRouter = IDsFlashSwapCore(_flashSwapRouter);
         config = CorkConfig(_config);
         permit2 = IPermit2(_permit2);
-        factory = msg.sender;
+        factory = _msgSender();
     }
 
     /**
@@ -227,21 +221,6 @@ contract ProtectedUnit is
             revert AlreadyRenounced();
         }
         factory = address(0);
-    }
-
-    /**
-     * @notice Updates the contract's internal record of token reserves
-     * @dev Fetches the latest DS token if needed and updates all reserves
-     */
-    function _sync() internal autoUpdateDS {
-        dsReserve = ds.balanceOf(address(this));
-        paReserve = pa.balanceOf(address(this));
-        raReserve = ra.balanceOf(address(this));
-    }
-
-    /// @notice Synchronizes the contract's internal record of token reserves
-    function sync() external autoUpdateDS {
-        _sync();
     }
 
     /**
@@ -275,6 +254,7 @@ contract ProtectedUnit is
      * @return _dsReserves Amount of DS tokens in reserve
      * @return _paReserves Amount of PA tokens in reserve
      * @return _raReserves Amount of RA tokens in reserve
+     * @dev All amounts are in the token's native decimals
      */
     function getReserves() external view returns (uint256 _dsReserves, uint256 _paReserves, uint256 _raReserves) {
         _dsReserves = dsReserve;
@@ -295,7 +275,6 @@ contract ProtectedUnit is
         external
         onlyLiquidationContract
         onlyValidToken(token)
-        autoSync
     {
         uint256 balance = IERC20(token).balanceOf(address(this));
 
@@ -303,9 +282,13 @@ contract ProtectedUnit is
             revert InsufficientFunds();
         }
 
-        IERC20(token).safeTransfer(msg.sender, amount);
-
-        emit LiquidationFundsRequested(msg.sender, token, amount);
+        IERC20(token).safeTransfer(_msgSender(), amount);
+        if (token == address(_ra)) {
+            raReserve -= amount;
+        } else {
+            paReserve -= amount;
+        }
+        emit LiquidationFundsRequested(_msgSender(), token, amount);
     }
 
     /**
@@ -316,10 +299,15 @@ contract ProtectedUnit is
      * @custom:reverts InvalidToken if token is neither PA nor RA
      * @custom:emits FundsReceived when funds are successfully transferred
      */
-    function receiveFunds(uint256 amount, address token) external onlyValidToken(token) whenNotPaused autoSync {
-        IERC20(token).safeTransferFrom(msg.sender, address(this), amount);
+    function receiveFunds(uint256 amount, address token) external onlyValidToken(token) whenNotPaused {
+        IERC20(token).safeTransferFrom(_msgSender(), address(this), amount);
 
-        emit FundsReceived(msg.sender, token, amount);
+        if (token == address(_ra)) {
+            raReserve += amount;
+        } else {
+            paReserve += amount;
+        }
+        emit FundsReceived(_msgSender(), token, amount);
     }
 
     /**
@@ -338,39 +326,46 @@ contract ProtectedUnit is
         uint256 amountOutMin,
         IDsFlashSwapCore.BuyAprroxParams calldata params,
         IDsFlashSwapCore.OffchainGuess calldata offchainGuess
-    ) external autoUpdateDS onlyOwnerOrLiquidator autoSync returns (uint256 amountOut) {
+    ) external autoUpdateDS onlyOwnerOrLiquidator returns (uint256 amountOut) {
         uint256 dsId = moduleCore.lastDsId(id);
-        IERC20(ra).safeIncreaseAllowance(address(flashswapRouter), amount);
+        IERC20(_ra).safeIncreaseAllowance(address(flashswapRouter), amount);
 
-        IDsFlashSwapCore.SwapRaForDsReturn memory result =
-            flashswapRouter.swapRaforDs(id, dsId, amount, amountOutMin, params, offchainGuess);
+        IDsFlashSwapCore.SwapRaForDsReturn memory result = flashswapRouter.swapRaforDs(
+            id, dsId, amount, amountOutMin, params, offchainGuess, block.timestamp + 30 minutes
+        );
 
         amountOut = result.amountOut;
+        dsReserve += amountOut;
+        raReserve -= amount;
 
-        emit FundsUsed(msg.sender, dsId, amount, result.amountOut);
+        emit FundsUsed(_msgSender(), dsId, amount, result.amountOut);
     }
 
     /**
      * @notice Redeems RA tokens using DS and PA tokens.
      * @dev This function allows the owner to redeem RA tokens by providing DS and PA tokens.
-     * It automatically updates DS, syncs the state, and pauses the contract after redemption.
+     * It automatically updates DS, updates the reserves, and pauses the contract after redemption.
      * @param amountPa The amount of PA tokens to be used for redemption.
      * @param amountDs The amount of DS tokens to be used for redemption.
      * @custom:reverts If redeeming fails in the module core
      * @custom:emits RaRedeemed when redemption is successful
      */
-    function redeemRaWithDsPa(uint256 amountPa, uint256 amountDs) external autoUpdateDS onlyOwner autoSync {
+    function redeemRaWithDsPa(uint256 amountPa, uint256 amountDs) external autoUpdateDS onlyOwner {
         uint256 dsId = moduleCore.lastDsId(id);
 
         IERC20(ds).safeIncreaseAllowance(address(moduleCore), amountDs);
-        IERC20(pa).safeIncreaseAllowance(address(moduleCore), amountPa);
+        IERC20(_pa).safeIncreaseAllowance(address(moduleCore), amountPa);
 
-        moduleCore.redeemRaWithDsPa(id, dsId, amountPa);
+        (uint256 raAmt,,, uint256 dsAmt) = moduleCore.redeemRaWithDsPa(id, dsId, amountPa);
+
+        raReserve += raAmt;
+        dsReserve -= dsAmt;
+        paReserve -= amountPa;
 
         // auto pause
         _pause();
 
-        emit RaRedeemed(msg.sender, dsId, amountPa);
+        emit RaRedeemed(_msgSender(), dsId, amountPa);
     }
 
     /**
@@ -410,28 +405,24 @@ contract ProtectedUnit is
                 ds = _ds;
                 dsHistory.push(DSData({dsAddress: address(ds), totalDeposited: 0}));
                 dsIndexMap[address(ds)] = dsHistory.length - 1; // Store the index
+                dsReserve = 0;
             }
         }
     }
 
     /// @notice Returns the PA reserve in normalized fixed point representation
     function _selfPaReserve() internal view returns (uint256) {
-        return TransferHelper.tokenNativeDecimalsToFixed(paReserve, pa);
+        return TransferHelper.tokenNativeDecimalsToFixed(paReserve, _pa);
     }
 
     /// @notice Returns the RA reserve in normalized fixed point representation
     function _selfRaReserve() internal view returns (uint256) {
-        return TransferHelper.tokenNativeDecimalsToFixed(raReserve, ra);
+        return TransferHelper.tokenNativeDecimalsToFixed(raReserve, _ra);
     }
 
     /// @notice Returns the DS reserve
     function _selfDsReserve() internal view returns (uint256) {
         return dsReserve;
-    }
-
-    /// @notice Transfers DS tokens to the specified address
-    function _transferDs(address _to, uint256 _amount) internal {
-        IERC20(ds).safeTransfer(_to, _amount);
     }
 
     /**
@@ -451,9 +442,13 @@ contract ProtectedUnit is
             revert MintCapExceeded();
         }
 
-        (dsAmount, paAmount) = ProtectedUnitMath.previewMint(amount, _selfPaReserve(), _selfDsReserve(), totalSupply());
+        Asset currentDs = _fetchLatestDS();
 
-        paAmount = TransferHelper.fixedToTokenNativeDecimals(paAmount, pa);
+        uint256 reserveDs = currentDs == ds ? _selfDsReserve() : 0;
+
+        (dsAmount, paAmount) = ProtectedUnitMath.previewMint(amount, _selfPaReserve(), reserveDs, totalSupply());
+
+        paAmount = TransferHelper.fixedToTokenNativeDecimals(paAmount, _pa);
     }
 
     /**
@@ -472,7 +467,6 @@ contract ProtectedUnit is
         whenNotPaused
         nonReentrant
         autoUpdateDS
-        autoSync
         returns (uint256 dsAmount, uint256 paAmount)
     {
         // Calculate token amounts needed for minting
@@ -485,18 +479,17 @@ contract ProtectedUnit is
      * @dev Handles the token transfers and minting logic
      */
     function __mint(uint256 amount, uint256 dsAmount, uint256 paAmount) internal {
-        // this calculation is based on the assumption that the DS token has 18 decimals but pa can have different decimals
-        dsAmount = TransferHelper.fixedToTokenNativeDecimals(dsAmount, ds);
-        paAmount = TransferHelper.fixedToTokenNativeDecimals(paAmount, pa);
+        permit2.transferFrom(_msgSender(), address(this), SafeCast.toUint160(dsAmount), address(ds));
+        permit2.transferFrom(_msgSender(), address(this), SafeCast.toUint160(paAmount), address(_pa));
 
-        permit2.transferFrom(msg.sender, address(this), SafeCast.toUint160(amount), address(ds));
-        permit2.transferFrom(msg.sender, address(this), SafeCast.toUint160(dsAmount), address(pa));
+        dsReserve += dsAmount;
+        paReserve += paAmount;
 
-        dsHistory[dsIndexMap[address(ds)]].totalDeposited += amount;
+        dsHistory[dsIndexMap[address(ds)]].totalDeposited += dsAmount;
 
-        _mint(msg.sender, amount);
+        _mint(_msgSender(), amount);
 
-        emit Mint(msg.sender, amount);
+        emit Mint(_msgSender(), amount);
     }
 
     /**
@@ -516,14 +509,13 @@ contract ProtectedUnit is
         whenNotPaused
         nonReentrant
         autoUpdateDS
-        autoSync
         returns (uint256 dsAmount, uint256 paAmount)
     {
         // checks that DS and PA are in the permitted array and that the transfer details are for the correct tokens
         // Assumes that DS is the first token and PA is the second token in the permitted array
         if (
             signature.length == 0 || permit.details.length != 2 || permit.details[0].token != address(ds)
-                || permit.details[1].token != address(pa)
+                || permit.details[1].token != address(_pa)
         ) {
             revert InvalidSignature();
         }
@@ -538,7 +530,23 @@ contract ProtectedUnit is
         }
 
         // Batch transfer tokens from user to this contract using Permit2
-        permit2.permit(msg.sender, permit, signature);
+        try permit2.permit(_msgSender(), permit, signature) {}
+        catch {
+            if (
+                IERC20(ds).allowance(_msgSender(), address(this)) < dsAmount
+                    || IERC20(_pa).allowance(_msgSender(), address(this)) < paAmount
+            ) {
+                revert PermitFailed();
+            }
+
+            for (uint256 i = 0; i < permit.details.length; i++) {
+                (, uint48 expiration, uint48 nonce) =
+                    permit2.allowance(_msgSender(), permit.details[i].token, permit.spender);
+                if (expiration < block.timestamp || nonce != permit.details[i].nonce) {
+                    revert PermitFailed();
+                }
+            }
+        }
 
         // Mint the tokens to the owner
         __mint(amount, dsAmount, paAmount);
@@ -563,12 +571,12 @@ contract ProtectedUnit is
             revert InvalidAmount();
         }
         uint256 totalLiquidity = totalSupply();
-        uint256 reservePa = _selfPaReserve();
-        uint256 reserveDs = ds.balanceOf(address(this));
-        uint256 reserveRa = _selfRaReserve();
+        Asset currentDs = _fetchLatestDS();
+
+        uint256 reserveDs = currentDs == ds ? _selfDsReserve() : 0;
 
         (paAmount, dsAmount, raAmount) =
-            ProtectedUnitMath.withdraw(reservePa, reserveDs, reserveRa, totalLiquidity, amount);
+            ProtectedUnitMath.withdraw(_selfPaReserve(), reserveDs, _selfRaReserve(), totalLiquidity, amount);
     }
 
     /**
@@ -580,14 +588,7 @@ contract ProtectedUnit is
      * @custom:reverts InvalidAmount if amount is invalid
      * @custom:emits Burn when tokens are successfully burned
      */
-    function burnFrom(address account, uint256 amount)
-        public
-        override
-        whenNotPaused
-        nonReentrant
-        autoUpdateDS
-        autoSync
-    {
+    function burnFrom(address account, uint256 amount) public override whenNotPaused nonReentrant autoUpdateDS {
         _burnPU(account, amount);
     }
 
@@ -598,8 +599,8 @@ contract ProtectedUnit is
      * @custom:reverts InvalidAmount if amount is invalid
      * @custom:emits Burn when tokens are successfully burned
      */
-    function burn(uint256 amount) public override whenNotPaused nonReentrant autoUpdateDS autoSync {
-        _burnPU(msg.sender, amount);
+    function burn(uint256 amount) public override whenNotPaused nonReentrant autoUpdateDS {
+        _burnPU(_msgSender(), amount);
     }
 
     /**
@@ -612,19 +613,23 @@ contract ProtectedUnit is
     {
         (dsAmount, paAmount, raAmount) = previewBurn(dissolver, amount);
 
+        dsReserve -= dsAmount;
+        paReserve -= paAmount;
+        raReserve -= raAmount;
+
         _burnFrom(dissolver, amount);
 
-        TransferHelper.transferNormalize(pa, dissolver, paAmount);
-        _transferDs(dissolver, dsAmount);
-        TransferHelper.transferNormalize(ra, dissolver, raAmount);
+        TransferHelper.transferNormalize(_pa, dissolver, paAmount);
+        TransferHelper.transferNormalize(_ra, dissolver, raAmount);
+        IERC20(ds).safeTransfer(dissolver, dsAmount);
 
         emit Burn(dissolver, amount, dsAmount, paAmount);
     }
 
     /// @notice Internal function to burn tokens from an account
     function _burnFrom(address account, uint256 value) internal {
-        if (account != msg.sender) {
-            _spendAllowance(account, msg.sender, value);
+        if (account != _msgSender()) {
+            _spendAllowance(account, _msgSender(), value);
         }
 
         _burn(account, value);
@@ -643,6 +648,14 @@ contract ProtectedUnit is
         }
         mintCap = _newMintCap;
         emit MintCapUpdated(_newMintCap);
+    }
+
+    function pa() external view returns (address) {
+        return address(_pa);
+    }
+
+    function ra() external view returns (address) {
+        return address(_ra);
     }
 
     /**
@@ -675,14 +688,27 @@ contract ProtectedUnit is
      * @custom:reverts If any token transfer fails
      */
     function skim(address to) external nonReentrant whenNotPaused {
-        if (pa.balanceOf(address(this)) - paReserve > 0) {
-            IERC20(pa).safeTransfer(to, pa.balanceOf(address(this)) - paReserve);
+        if (_pa.balanceOf(address(this)) - paReserve > 0) {
+            IERC20(_pa).safeTransfer(to, _pa.balanceOf(address(this)) - paReserve);
         }
-        if (ra.balanceOf(address(this)) - raReserve > 0) {
-            IERC20(ra).safeTransfer(to, ra.balanceOf(address(this)) - raReserve);
+        if (_ra.balanceOf(address(this)) - raReserve > 0) {
+            IERC20(_ra).safeTransfer(to, _ra.balanceOf(address(this)) - raReserve);
         }
         if (ds.balanceOf(address(this)) - dsReserve > 0) {
             IERC20(ds).safeTransfer(to, ds.balanceOf(address(this)) - dsReserve);
+        }
+    }
+
+    /**
+     * @notice Rescue tokens from the contract to the owner (except for DS. PA and RA)
+     * @param tokens The addresses of the tokens to rescue
+     * @custom:reverts If any token transfer fails
+     */
+    function rescue(address[] calldata tokens) external onlyOwner {
+        for (uint256 i = 0; i < tokens.length; i++) {
+            if (tokens[i] != address(_pa) && tokens[i] != address(_ra) && tokens[i] != address(ds)) {
+                IERC20(tokens[i]).safeTransfer(_msgSender(), IERC20(tokens[i]).balanceOf(address(this)));
+            }
         }
     }
 }

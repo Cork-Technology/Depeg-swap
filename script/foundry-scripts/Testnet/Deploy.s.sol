@@ -388,7 +388,7 @@ contract DeployScript is Script {
         console.log("Updated fees");
 
         CETH(raToken).approve(address(moduleCore), depositLVAmt);
-        moduleCore.depositLv(id, depositLVAmt, 0, 0);
+        moduleCore.depositLv(id, depositLVAmt, 0, 0, block.timestamp + 30 minutes);
         console.log("LV Deposited");
         console.log("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-");
     }
