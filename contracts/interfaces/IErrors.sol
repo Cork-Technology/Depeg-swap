@@ -100,7 +100,7 @@ interface IErrors {
     /// @notice only config contract is allowed to call this function
     error OnlyConfigAllowed();
 
-    /// @notice Trying to issue an expired asset
+    /// @notice Asset is already expired
     error Expired();
 
     /// @notice invalid asset, thrown when trying to do something with an asset not deployed with asset factory
