@@ -15,6 +15,9 @@ interface IProtectedUnit is IErrors {
     /// @notice Thrown when upgradeability is already renounced
     error AlreadyRenounced();
 
+    /// @notice Thrown when Permit2 permit fails
+    error PermitFailed();
+
     /**
      * @notice Emmits when new Protected Unit tokens are created
      * @param minter The wallet address that created the tokens
@@ -50,6 +53,18 @@ interface IProtectedUnit is IErrors {
      * @return The current maximum supply limit
      */
     function mintCap() external view returns (uint256);
+
+    function pa() external view returns (address);
+
+    function ra() external view returns (address);
+
+    function dsReserve() external view returns (uint256);
+
+    function paReserve() external view returns (uint256);
+
+    function raReserve() external view returns (uint256);
+
+    function latestDs() external view returns (address);
 
     /**
      * @notice Calculates how many DS and PA tokens you need to create Protected Unit tokens
@@ -94,10 +109,4 @@ interface IProtectedUnit is IErrors {
      * @return raReserves How many RA tokens are in the contract
      */
     function getReserves() external view returns (uint256 dsReserves, uint256 paReserves, uint256 raReserves);
-
-    /**
-     * @notice Updates the contract's internal record of token balances
-     * @dev Call this to ensure the contract has accurate balance information
-     */
-    function sync() external;
 }
