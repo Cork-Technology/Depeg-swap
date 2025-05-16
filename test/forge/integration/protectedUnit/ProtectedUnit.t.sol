@@ -58,7 +58,7 @@ contract ProtectedUnitTest is Helper {
         ra.transfer(user, 1000 ether);
 
         moduleCore.depositPsm(currencyId, USER_BALANCE * 2);
-        moduleCore.depositLv(currencyId, USER_BALANCE * 2, 0, 0);
+        moduleCore.depositLv(currencyId, USER_BALANCE * 2, 0, 0, block.timestamp + 30 minutes);
 
         fetchProtocolGeneralInfo();
 
@@ -102,6 +102,14 @@ contract ProtectedUnitTest is Helper {
     function test_MintingTokens() public {
         // Test_ minting by the user
         vm.startPrank(user);
+        assertEq(protectedUnit.balanceOf(user), 0);
+        assertEq(protectedUnit.totalSupply(), 0);
+        assertEq(dsToken.balanceOf(address(protectedUnit)), 0);
+        assertEq(pa.balanceOf(address(protectedUnit)), 0);
+
+        uint256 dsBalanceBefore = dsToken.balanceOf(user);
+        uint256 paBalanceBefore = pa.balanceOf(user);
+
         pa.approve(permit2, USER_BALANCE);
         dsToken.approve(permit2, USER_BALANCE);
 
@@ -124,6 +132,15 @@ contract ProtectedUnitTest is Helper {
         // Check token balances in the contract
         assertEq(dsToken.balanceOf(address(protectedUnit)), mintAmount);
         assertEq(pa.balanceOf(address(protectedUnit)), mintAmount);
+
+        // Check user token balances decreased correctly
+        assertEq(dsToken.balanceOf(user), dsBalanceBefore - mintAmount);
+        assertEq(pa.balanceOf(user), paBalanceBefore - mintAmount);
+
+        (address dsAddress, uint256 totalDeposited) =
+            protectedUnit.dsHistory(protectedUnit.dsIndexMap(address(dsToken)));
+        assertEq(dsAddress, address(dsToken));
+        assertEq(totalDeposited, mintAmount);
 
         vm.stopPrank();
     }
@@ -185,6 +202,11 @@ contract ProtectedUnitTest is Helper {
         uint256 startBalancePA = pa.balanceOf(user);
         uint256 startBalancePU = protectedUnit.balanceOf(user);
 
+        assertEq(startBalancePU, 0);
+        assertEq(protectedUnit.totalSupply(), 0);
+        assertEq(dsToken.balanceOf(address(protectedUnit)), 0);
+        assertEq(pa.balanceOf(address(protectedUnit)), 0);
+
         // Call the mint function with Permit2 data
         (uint256 actualDsAmount, uint256 actualPaAmount) = protectedUnit.mint(mintAmount, permitBatchData, signature);
 
@@ -204,6 +226,10 @@ contract ProtectedUnitTest is Helper {
         assertEq(dsToken.balanceOf(address(protectedUnit)), dsAmount);
         assertEq(pa.balanceOf(address(protectedUnit)), paAmount);
 
+        (address dsAddress, uint256 totalDeposited) =
+            protectedUnit.dsHistory(protectedUnit.dsIndexMap(address(dsToken)));
+        assertEq(dsAddress, address(dsToken));
+        assertEq(totalDeposited, mintAmount);
         vm.stopPrank();
     }
 
@@ -232,7 +258,7 @@ contract ProtectedUnitTest is Helper {
         moduleCore.depositPsm(currencyId, 20000e18);
 
         ra.approve(address(moduleCore), 20000e18);
-        moduleCore.depositLv(currencyId, 2000e18, 0, 0);
+        moduleCore.depositLv(currencyId, 2000e18, 0, 0, block.timestamp + 30 minutes);
 
         (address ct, address ds) = moduleCore.swapAsset(currencyId, moduleCore.lastDsId(currencyId));
         ProtectedUnit pu = ProtectedUnit(protectedUnitFactory.getProtectedUnitAddress(currencyId));
