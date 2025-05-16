@@ -20,6 +20,7 @@ import {IErrors} from "./../../interfaces/IErrors.sol";
 import {TransferHelper} from "./../../libraries/TransferHelper.sol";
 import {ReturnDataSlotLib} from "./../../libraries/ReturnDataSlotLib.sol";
 import {CorkConfig} from "../CorkConfig.sol";
+import {Asset} from "../assets/Asset.sol";
 
 /**
  * @title Router contract for Flashswap
@@ -516,6 +517,8 @@ contract RouterState is
         if (rawRaPermitSig.length == 0 || deadline == 0) {
             revert InvalidSignature();
         }
+        dsNotExpired(reserveId, dsId);
+
         ReserveState storage self = reserves[reserveId];
         AssetPair storage assetPair = self.ds[dsId];
 
@@ -597,6 +600,7 @@ contract RouterState is
         OffchainGuess calldata offchainGuess,
         uint256 deadline
     ) external withinDeadline(deadline) autoClearReturnData returns (SwapRaForDsReturn memory result) {
+        dsNotExpired(reserveId, dsId);
         result = _swapRaForDsTopLevel(reserveId, dsId, amount, amountOutMin, params, offchainGuess);
     }
 
@@ -627,6 +631,7 @@ contract RouterState is
         if (rawDsPermitSig.length == 0 || deadline == 0) {
             revert InvalidSignature();
         }
+        dsNotExpired(reserveId, dsId);
         ReserveState storage self = reserves[reserveId];
         AssetPair storage assetPair = self.ds[dsId];
 
@@ -675,6 +680,7 @@ contract RouterState is
         withinDeadline(deadline)
         returns (uint256 amountOut)
     {
+        dsNotExpired(reserveId, dsId);
         amountOut = _swapDsforRaTopLevel(reserveId, dsId, amount, amountOutMin);
     }
 
@@ -860,5 +866,11 @@ contract RouterState is
         IERC20(ra).safeTransfer(poolManager, actualRepaymentAmount);
 
         ReturnDataSlotLib.increase(ReturnDataSlotLib.RETURN_SLOT_SELL, received);
+    }
+
+    function dsNotExpired(Id reserveId, uint256 dsId) internal {
+        if (Asset(reserves[reserveId].ds[dsId].ds).isExpired()) {
+            revert Expired();
+        }
     }
 }
