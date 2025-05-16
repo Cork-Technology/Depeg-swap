@@ -48,7 +48,7 @@ contract PsmTest is Helper {
 
         ra.approve(address(moduleCore), type(uint256).max);
 
-        moduleCore.depositLv(defaultCurrencyId, DEFAULT_DEPOSIT_AMOUNT, 0, 0);
+        moduleCore.depositLv(defaultCurrencyId, DEFAULT_DEPOSIT_AMOUNT, 0, 0, block.timestamp + 30 minutes);
     }
 
     function setupDifferentDecimals(uint8 raDecimals, uint8 paDecimals) internal returns (uint8, uint8) {

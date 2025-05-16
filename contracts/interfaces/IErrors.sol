@@ -209,4 +209,7 @@ interface IErrors {
     /// but the RA:CT pool is in massive imbalance
     /// or it's verrrry close to expiry
     error InvalidPoolStateOrNearExpired();
+
+    /// @notice thrown when the deadline is exceeded
+    error DeadlineExceeded();
 }

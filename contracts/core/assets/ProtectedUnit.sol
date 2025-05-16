@@ -342,8 +342,9 @@ contract ProtectedUnit is
         uint256 dsId = moduleCore.lastDsId(id);
         IERC20(ra).safeIncreaseAllowance(address(flashswapRouter), amount);
 
-        IDsFlashSwapCore.SwapRaForDsReturn memory result =
-            flashswapRouter.swapRaforDs(id, dsId, amount, amountOutMin, params, offchainGuess);
+        IDsFlashSwapCore.SwapRaForDsReturn memory result = flashswapRouter.swapRaforDs(
+            id, dsId, amount, amountOutMin, params, offchainGuess, block.timestamp + 30 minutes
+        );
 
         amountOut = result.amountOut;
 

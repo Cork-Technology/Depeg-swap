@@ -115,6 +115,13 @@ contract RouterState is
         ReturnDataSlotLib.clear(ReturnDataSlotLib.DS_FEE_AMOUNT);
     }
 
+    modifier withinDeadline(uint256 deadline) {
+        if (block.timestamp > deadline) {
+            revert IErrors.DeadlineExceeded();
+        }
+        _;
+    }
+
     constructor() {
         _disableInitializers();
     }
@@ -578,6 +585,7 @@ contract RouterState is
      * @param amountOutMin The minimum amount of DS tokens to receive.
      * @param params Additional parameters for the swap.
      * @param offchainGuess Offchain data used for the swap.
+     * @param deadline The deadline for the swap.
      * @return result The result of the swap, including amounts and other details.
      */
     function swapRaforDs(
@@ -586,8 +594,9 @@ contract RouterState is
         uint256 amount,
         uint256 amountOutMin,
         BuyAprroxParams calldata params,
-        OffchainGuess calldata offchainGuess
-    ) external autoClearReturnData returns (SwapRaForDsReturn memory result) {
+        OffchainGuess calldata offchainGuess,
+        uint256 deadline
+    ) external withinDeadline(deadline) autoClearReturnData returns (SwapRaForDsReturn memory result) {
         result = _swapRaForDsTopLevel(reserveId, dsId, amount, amountOutMin, params, offchainGuess);
     }
 
@@ -656,12 +665,14 @@ contract RouterState is
      * @param dsId the ds id of the pair, the same as the DS id on PSM and LV
      * @param amount the amount of DS to swap
      * @param amountOutMin the minimum amount of RA to receive, will revert if the actual amount is less than this.
+     * @param deadline The deadline for the swap.
      * @return amountOut amount of RA that's received
      * @dev Reverts if the actual amount is less than `amountOutMin`
      */
-    function swapDsforRa(Id reserveId, uint256 dsId, uint256 amount, uint256 amountOutMin)
+    function swapDsforRa(Id reserveId, uint256 dsId, uint256 amount, uint256 amountOutMin, uint256 deadline)
         external
         autoClearReturnData
+        withinDeadline(deadline)
         returns (uint256 amountOut)
     {
         amountOut = _swapDsforRaTopLevel(reserveId, dsId, amount, amountOutMin);
