@@ -631,6 +631,7 @@ contract RouterState is
         if (rawDsPermitSig.length == 0 || deadline == 0) {
             revert InvalidSignature();
         }
+        dsNotExpired(reserveId, dsId);
         ReserveState storage self = reserves[reserveId];
         AssetPair storage assetPair = self.ds[dsId];
 
@@ -679,6 +680,7 @@ contract RouterState is
         withinDeadline(deadline)
         returns (uint256 amountOut)
     {
+        dsNotExpired(reserveId, dsId);
         amountOut = _swapDsforRaTopLevel(reserveId, dsId, amount, amountOutMin);
     }
 
