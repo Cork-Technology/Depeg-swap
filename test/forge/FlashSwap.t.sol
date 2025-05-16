@@ -39,7 +39,7 @@ contract FlashSwapTest is Helper {
         ra.approve(address(moduleCore), 100_000_000_000 ether);
 
         moduleCore.depositPsm(currencyId, DEFAULT_DEPOSIT_AMOUNT);
-        moduleCore.depositLv(currencyId, DEFAULT_DEPOSIT_AMOUNT, 0, 0);
+        moduleCore.depositLv(currencyId, DEFAULT_DEPOSIT_AMOUNT, 0, 0, block.timestamp + 30 minutes);
 
         // save initial data
         fetchProtocolGeneralInfo();
@@ -151,7 +151,7 @@ contract FlashSwapTest is Helper {
         vm.startPrank(user);
         ra.approve(address(moduleCore), 100e18);
         // moduleCore.depositPsm(defaultCurrencyId, 1e18);
-        moduleCore.depositLv(defaultCurrencyId, 19e18, 0, 0);
+        moduleCore.depositLv(defaultCurrencyId, 19e18, 0, 0, block.timestamp + 30 minutes);
 
         (address ct, address ds) = moduleCore.swapAsset(defaultCurrencyId, moduleCore.lastDsId(defaultCurrencyId));
         ERC20(ds).approve(address(flashSwapRouter), 1e18);

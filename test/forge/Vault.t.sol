@@ -47,7 +47,7 @@ contract VaultRedeemTest is Helper {
         ra.approve(address(moduleCore), type(uint256).max);
 
         // moduleCore.depositPsm(currencyId, DEFAULT_DEPOSIT_AMOUNT);
-        moduleCore.depositLv(currencyId, DEFAULT_DEPOSIT_AMOUNT, 0, 0);
+        moduleCore.depositLv(currencyId, DEFAULT_DEPOSIT_AMOUNT, 0, 0, block.timestamp + 30 minutes);
 
         // save initial data
         address exchangeRateProvider = address(corkConfig.defaultExchangeRateProvider());

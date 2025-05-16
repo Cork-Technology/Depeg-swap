@@ -47,7 +47,7 @@ contract SellDsTest is Helper {
         ra.approve(address(moduleCore), 100_000_000_000 ether);
 
         moduleCore.depositPsm(currencyId, DEFAULT_DEPOSIT_AMOUNT);
-        moduleCore.depositLv(currencyId, DEFAULT_DEPOSIT_AMOUNT, 0, 0);
+        moduleCore.depositLv(currencyId, DEFAULT_DEPOSIT_AMOUNT, 0, 0, block.timestamp + 30 minutes);
 
         dsId = moduleCore.lastDsId(currencyId);
         (ct, ds) = moduleCore.swapAsset(currencyId, dsId);
