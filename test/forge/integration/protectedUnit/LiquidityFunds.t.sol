@@ -52,7 +52,7 @@ contract ProtectedUnitTest is Helper {
         ra.transfer(user, 1000 ether);
 
         moduleCore.depositPsm(currencyId, USER_BALANCE * 2);
-        moduleCore.depositLv(currencyId, USER_BALANCE * 2, 0, 0);
+        moduleCore.depositLv(currencyId, USER_BALANCE * 2, 0, 0, block.timestamp + 30 minutes);
 
         fetchProtocolGeneralInfo();
 

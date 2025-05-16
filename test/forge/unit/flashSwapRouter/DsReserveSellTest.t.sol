@@ -44,7 +44,7 @@ contract DsReserveSellTest is Helper {
         ra.approve(address(moduleCore), 100_000_000_000 ether);
 
         moduleCore.depositPsm(currencyId, DEFAULT_DEPOSIT_AMOUNT);
-        moduleCore.depositLv(currencyId, DEFAULT_DEPOSIT_AMOUNT, 0, 0);
+        moduleCore.depositLv(currencyId, DEFAULT_DEPOSIT_AMOUNT, 0, 0, block.timestamp + 30 minutes);
 
         dsId = moduleCore.lastDsId(currencyId);
         (ct, ds) = moduleCore.swapAsset(currencyId, dsId);
@@ -81,7 +81,13 @@ contract DsReserveSellTest is Helper {
 
         uint256 amount = 9 ether;
         IDsFlashSwapCore.SwapRaForDsReturn memory result = flashSwapRouter.swapRaforDs(
-            currencyId, dsId, amount, 0, defaultBuyApproxParams(), defaultOffchainGuessParams()
+            currencyId,
+            dsId,
+            amount,
+            0,
+            defaultBuyApproxParams(),
+            defaultOffchainGuessParams(),
+            block.timestamp + 30 minutes
         );
 
         // Verify the swap worked and returned the expected DS tokens
@@ -125,7 +131,13 @@ contract DsReserveSellTest is Helper {
 
         uint256 amount = 100 ether;
         IDsFlashSwapCore.SwapRaForDsReturn memory result = flashSwapRouter.swapRaforDs(
-            currencyId, dsId, amount, 0, defaultBuyApproxParams(), defaultOffchainGuessParams()
+            currencyId,
+            dsId,
+            amount,
+            0,
+            defaultBuyApproxParams(),
+            defaultOffchainGuessParams(),
+            block.timestamp + 30 minutes
         );
 
         // Verify the swap worked and returned the expected DS tokens
@@ -160,7 +172,13 @@ contract DsReserveSellTest is Helper {
         // Since there's no reserve, swapRaforDs should essentially revert with InvalidPoolStateOrNearExpired
         vm.expectRevert(IErrors.InvalidPoolStateOrNearExpired.selector);
         IDsFlashSwapCore.SwapRaForDsReturn memory result = flashSwapRouter.swapRaforDs(
-            currencyId, dsId, amount, 0, defaultBuyApproxParams(), defaultOffchainGuessParams()
+            currencyId,
+            dsId,
+            amount,
+            0,
+            defaultBuyApproxParams(),
+            defaultOffchainGuessParams(),
+            block.timestamp + 30 minutes
         );
 
         vm.stopPrank();
@@ -179,7 +197,7 @@ contract DsReserveSellTest is Helper {
         corkConfig.updateReserveSellPressurePercentage(currencyId, 0.01 ether);
 
         ra.approve(address(moduleCore), type(uint256).max);
-        moduleCore.depositLv(currencyId, 0.00001 ether, 0, 0);
+        moduleCore.depositLv(currencyId, 0.00001 ether, 0, 0, block.timestamp + 30 minutes);
 
         // Prepare for swap
         ra.approve(address(flashSwapRouter), type(uint256).max);
@@ -195,7 +213,13 @@ contract DsReserveSellTest is Helper {
 
         // Perform swap - this should succeed but should not attempt to sell from reserves
         IDsFlashSwapCore.SwapRaForDsReturn memory result = flashSwapRouter.swapRaforDs(
-            currencyId, dsId, amount, 0, defaultBuyApproxParams(), defaultOffchainGuessParams()
+            currencyId,
+            dsId,
+            amount,
+            0,
+            defaultBuyApproxParams(),
+            defaultOffchainGuessParams(),
+            block.timestamp + 30 minutes
         );
 
         // Get reserve after swap
@@ -231,7 +255,13 @@ contract DsReserveSellTest is Helper {
         // Perform the swap
         uint256 amount = 5 ether;
         IDsFlashSwapCore.SwapRaForDsReturn memory result = flashSwapRouter.swapRaforDs(
-            currencyId, dsId, amount, 0, defaultBuyApproxParams(), defaultOffchainGuessParams()
+            currencyId,
+            dsId,
+            amount,
+            0,
+            defaultBuyApproxParams(),
+            defaultOffchainGuessParams(),
+            block.timestamp + 30 minutes
         );
 
         // Get reserves after swap
@@ -275,7 +305,13 @@ contract DsReserveSellTest is Helper {
         // Perform the swap
         uint256 amount = 5 ether;
         IDsFlashSwapCore.SwapRaForDsReturn memory result = flashSwapRouter.swapRaforDs(
-            currencyId, dsId, amount, 0, defaultBuyApproxParams(), defaultOffchainGuessParams()
+            currencyId,
+            dsId,
+            amount,
+            0,
+            defaultBuyApproxParams(),
+            defaultOffchainGuessParams(),
+            block.timestamp + 30 minutes
         );
 
         // Get reserves after swap
@@ -317,7 +353,13 @@ contract DsReserveSellTest is Helper {
         // Large swap (50x the previous test and 10% of the total reserve)
         uint256 amount = 250 ether;
         IDsFlashSwapCore.SwapRaForDsReturn memory result = flashSwapRouter.swapRaforDs(
-            currencyId, dsId, amount, 0, defaultBuyApproxParams(), defaultOffchainGuessParams()
+            currencyId,
+            dsId,
+            amount,
+            0,
+            defaultBuyApproxParams(),
+            defaultOffchainGuessParams(),
+            block.timestamp + 30 minutes
         );
 
         // Get reserves after swap
