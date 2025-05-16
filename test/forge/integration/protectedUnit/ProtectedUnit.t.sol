@@ -58,7 +58,7 @@ contract ProtectedUnitTest is Helper {
         ra.transfer(user, 1000 ether);
 
         moduleCore.depositPsm(currencyId, USER_BALANCE * 2);
-        moduleCore.depositLv(currencyId, USER_BALANCE * 2, 0, 0);
+        moduleCore.depositLv(currencyId, USER_BALANCE * 2, 0, 0, block.timestamp + 30 minutes);
 
         fetchProtocolGeneralInfo();
 
@@ -232,7 +232,7 @@ contract ProtectedUnitTest is Helper {
         moduleCore.depositPsm(currencyId, 20000e18);
 
         ra.approve(address(moduleCore), 20000e18);
-        moduleCore.depositLv(currencyId, 2000e18, 0, 0);
+        moduleCore.depositLv(currencyId, 2000e18, 0, 0, block.timestamp + 30 minutes);
 
         (address ct, address ds) = moduleCore.swapAsset(currencyId, moduleCore.lastDsId(currencyId));
         ProtectedUnit pu = ProtectedUnit(protectedUnitFactory.getProtectedUnitAddress(currencyId));

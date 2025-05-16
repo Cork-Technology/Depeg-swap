@@ -22,15 +22,19 @@ abstract contract VaultCore is ModuleState, Context, IVault, IVaultLiquidation {
      * @notice Deposit a wrapped asset into a given vault
      * @param id The Module id that is used to reference both psm and lv of a given pair
      * @param amount The amount of the redemption asset(ra) deposited
+     * @param raTolerance The tolerance for the RA
+     * @param ctTolerance The tolerance for the CT
+     * @param deadline The deadline for the deposit
      * @return received The amount of lv received
      */
-    function depositLv(Id id, uint256 amount, uint256 raTolerance, uint256 ctTolerance)
+    function depositLv(Id id, uint256 amount, uint256 raTolerance, uint256 ctTolerance, uint256 deadline)
         external
         override
         nonReentrant
         returns (uint256 received)
     {
         LVDepositNotPaused(id);
+        withinDeadline(deadline);
         State storage state = states[id];
         received = state.deposit(_msgSender(), amount, getRouterCore(), getAmmRouter(), raTolerance, ctTolerance);
         emit LvDeposited(id, _msgSender(), received, amount);
@@ -57,7 +61,7 @@ abstract contract VaultCore is ModuleState, Context, IVault, IVaultLiquidation {
             withdrawalContract: getWithdrawalContract()
         });
 
-        result = states[redeemParams.id].redeemEarly(msg.sender, redeemParams, routers, permitParams);
+        result = states[redeemParams.id].redeemEarly(_msgSender(), redeemParams, routers, permitParams);
 
         emit LvRedeemEarly(
             redeemParams.id,
@@ -119,7 +123,7 @@ abstract contract VaultCore is ModuleState, Context, IVault, IVaultLiquidation {
         onlyFlashSwapRouter();
         State storage state = states[id];
         state.allocateFeesToVault(amount);
-        emit VaultDsSaleProfitReceived(msg.sender, id, amount);
+        emit VaultDsSaleProfitReceived(_msgSender(), id, amount);
     }
 
     /**
@@ -144,21 +148,21 @@ abstract contract VaultCore is ModuleState, Context, IVault, IVaultLiquidation {
     function requestLiquidationFunds(Id id, uint256 amount) external override {
         onlyWhiteListedLiquidationContract();
         State storage state = states[id];
-        state.requestLiquidationFunds(amount, msg.sender);
-        emit LiquidationFundsRequested(id, msg.sender, amount);
+        state.requestLiquidationFunds(amount, _msgSender());
+        emit LiquidationFundsRequested(id, _msgSender(), amount);
     }
 
     function receiveTradeExecuctionResultFunds(Id id, uint256 amount) external override {
         State storage state = states[id];
-        state.receiveTradeExecuctionResultFunds(amount, msg.sender);
-        emit TradeExecutionResultFundsReceived(id, msg.sender, amount);
+        state.receiveTradeExecuctionResultFunds(amount, _msgSender());
+        emit TradeExecutionResultFundsReceived(id, _msgSender(), amount);
     }
 
     function useTradeExecutionResultFunds(Id id) external override {
         onlyConfig();
         State storage state = states[id];
         uint256 used = state.useTradeExecutionResultFunds(getRouterCore(), getAmmRouter());
-        emit TradeExecutionResultFundsUsed(id, msg.sender, used);
+        emit TradeExecutionResultFundsUsed(id, _msgSender(), used);
     }
 
     function liquidationFundsAvailable(Id id) external view returns (uint256) {
