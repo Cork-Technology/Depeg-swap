@@ -83,14 +83,26 @@ contract ReserveSellPressureTest is Helper {
 
         // With 10% threshold, we expect a moderate sell pressure
         IDsFlashSwapCore.SwapRaForDsReturn memory result1 = flashSwapRouter.swapRaforDs(
-            currencyId, dsId, amount, 0, defaultBuyApproxParams(), defaultOffchainGuessParams()
+            currencyId,
+            dsId,
+            amount,
+            0,
+            defaultBuyApproxParams(),
+            defaultOffchainGuessParams(),
+            block.timestamp + 30 minutes
         );
 
         // Update to a lower threshold (should increase sell pressure)
         corkConfig.updateReserveSellPressurePercentage(currencyId, 5 ether);
 
         IDsFlashSwapCore.SwapRaForDsReturn memory result2 = flashSwapRouter.swapRaforDs(
-            currencyId, dsId, amount, 0, defaultBuyApproxParams(), defaultOffchainGuessParams()
+            currencyId,
+            dsId,
+            amount,
+            0,
+            defaultBuyApproxParams(),
+            defaultOffchainGuessParams(),
+            block.timestamp + 30 minutes
         );
 
         // Verify sell pressure is higher with lower threshold
@@ -100,7 +112,13 @@ contract ReserveSellPressureTest is Helper {
         corkConfig.updateReserveSellPressurePercentage(currencyId, 20 ether);
 
         IDsFlashSwapCore.SwapRaForDsReturn memory result3 = flashSwapRouter.swapRaforDs(
-            currencyId, dsId, amount, 0, defaultBuyApproxParams(), defaultOffchainGuessParams()
+            currencyId,
+            dsId,
+            amount,
+            0,
+            defaultBuyApproxParams(),
+            defaultOffchainGuessParams(),
+            block.timestamp + 30 minutes
         );
 
         // Verify sell pressure is lower with higher threshold
@@ -131,7 +149,13 @@ contract ReserveSellPressureTest is Helper {
         vm.warp(current);
 
         IDsFlashSwapCore.SwapRaForDsReturn memory result1 = flashSwapRouter.swapRaforDs(
-            currencyId, dsId, amount, 0, defaultBuyApproxParams(), defaultOffchainGuessParams()
+            currencyId,
+            dsId,
+            amount,
+            0,
+            defaultBuyApproxParams(),
+            defaultOffchainGuessParams(),
+            block.timestamp + 30 minutes
         );
 
         // Should be very high sell pressure (97.5%)
@@ -141,7 +165,13 @@ contract ReserveSellPressureTest is Helper {
         corkConfig.updateReserveSellPressurePercentage(currencyId, 100 ether);
 
         IDsFlashSwapCore.SwapRaForDsReturn memory result2 = flashSwapRouter.swapRaforDs(
-            currencyId, dsId, amount, 0, defaultBuyApproxParams(), defaultOffchainGuessParams()
+            currencyId,
+            dsId,
+            amount,
+            0,
+            defaultBuyApproxParams(),
+            defaultOffchainGuessParams(),
+            block.timestamp + 30 minutes
         );
 
         // For verification, should be less than 5.5%
@@ -160,7 +190,13 @@ contract ReserveSellPressureTest is Helper {
 
         // Should still work, with maximum sell pressure
         IDsFlashSwapCore.SwapRaForDsReturn memory result = flashSwapRouter.swapRaforDs(
-            currencyId, dsId, amount, 0, defaultBuyApproxParams(), defaultOffchainGuessParams()
+            currencyId,
+            dsId,
+            amount,
+            0,
+            defaultBuyApproxParams(),
+            defaultOffchainGuessParams(),
+            block.timestamp + 30 minutes
         );
 
         // Should be maximum sell pressure
