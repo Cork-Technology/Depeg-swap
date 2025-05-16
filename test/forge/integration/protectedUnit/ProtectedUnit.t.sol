@@ -546,8 +546,13 @@ contract ProtectedUnitTest is Helper {
         // mint again the ProtectedUnit so here it will use the new DS instead of the expired DS
         protectedUnit.mint(10);
 
-        // DS reserve should be 10(0+10) because the DS has expired
-        vm.assertEq(protectedUnit.dsReserve(), 10);
+        // DS reserve should be 0 because the DS has expired and expired DS value is 0 so it will not be counted
+        vm.assertEq(protectedUnit.dsReserve(), 0);
+
+        (address dsAddress, uint256 totalDeposited) =
+            protectedUnit.dsHistory(protectedUnit.dsIndexMap(address(dsToken)));
+        assertEq(dsAddress, address(dsToken));
+        assertEq(totalDeposited, 0);
         vm.stopPrank();
     }
 
