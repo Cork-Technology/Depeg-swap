@@ -47,7 +47,7 @@ abstract contract ChildLiquidatorBase is OwnableUpgradeable {
      * @custom:reverts OnlyLiquidator if the caller is not the owner
      */
     modifier onlyLiquidator() {
-        if (msg.sender != owner()) {
+        if (_msgSender() != owner()) {
             revert IErrors.OnlyLiquidator();
         }
         _;

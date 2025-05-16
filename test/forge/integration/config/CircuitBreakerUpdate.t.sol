@@ -26,7 +26,7 @@ contract CircuiBreakerUpdate is Helper {
 
     function test_shouldUpdateCircuitBreaker() external {
         // dummy deposit to get nav
-        moduleCore.depositLv(defaultCurrencyId, 100 ether, 0, 0);
+        moduleCore.depositLv(defaultCurrencyId, 100 ether, 0, 0, block.timestamp + 30 minutes);
 
         VaultConfig memory config = moduleCore.getVaultConfig(defaultCurrencyId);
 
