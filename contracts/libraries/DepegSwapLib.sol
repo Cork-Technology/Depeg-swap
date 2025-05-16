@@ -62,7 +62,7 @@ library DepegSwapLibrary {
         // Call the underlying ERC-20 contract's permit function
         try IERC20Permit(contract_).permit(owner, spender, value, deadline, sig.v, sig.r, sig.s) {}
         catch {
-            if (IERC20(contract_).allowance(owner, spender) < value) {
+            if (IERC20(contract_).allowance(owner, spender) < value || block.timestamp > deadline) {
                 revert PermitFailed();
             }
         }
@@ -83,7 +83,7 @@ library DepegSwapLibrary {
         // Call the underlying ERC-20 contract's permit function
         try Asset(contract_).permit(owner, spender, value, deadline, sig.v, sig.r, sig.s, functionName) {}
         catch {
-            if (Asset(contract_).allowance(owner, spender) < value) {
+            if (Asset(contract_).allowance(owner, spender) < value || block.timestamp > deadline) {
                 revert PermitFailed();
             }
         }

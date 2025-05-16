@@ -547,6 +547,14 @@ contract ProtectedUnit is
             ) {
                 revert PermitFailed();
             }
+
+            for (uint256 i = 0; i < permit.details.length; i++) {
+                (, uint48 expiration, uint48 nonce) =
+                    permit2.allowance(_msgSender(), permit.details[i].token, permit.spender);
+                if (expiration < block.timestamp || nonce != permit.details[i].nonce) {
+                    revert PermitFailed();
+                }
+            }
         }
 
         // Mint the tokens to the owner
