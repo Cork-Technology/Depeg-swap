@@ -94,7 +94,7 @@ contract ProtectedUnit is
     DSData[] public dsHistory;
 
     /// @notice Mapping from DS token address to its index in dsHistory array
-    mapping(address => uint256) private dsIndexMap;
+    mapping(address => uint256) public dsIndexMap;
 
     /// @notice __gap variable to prevent storage collisions
     // slither-disable-next-line unused-state
@@ -486,14 +486,10 @@ contract ProtectedUnit is
      * @dev Handles the token transfers and minting logic
      */
     function __mint(uint256 amount, uint256 dsAmount, uint256 paAmount) internal {
-        // this calculation is based on the assumption that the DS token has 18 decimals but pa can have different decimals
-        dsAmount = TransferHelper.fixedToTokenNativeDecimals(dsAmount, ds);
-        paAmount = TransferHelper.fixedToTokenNativeDecimals(paAmount, pa);
+        permit2.transferFrom(_msgSender(), address(this), SafeCast.toUint160(dsAmount), address(ds));
+        permit2.transferFrom(_msgSender(), address(this), SafeCast.toUint160(paAmount), address(pa));
 
-        permit2.transferFrom(_msgSender(), address(this), SafeCast.toUint160(amount), address(ds));
-        permit2.transferFrom(_msgSender(), address(this), SafeCast.toUint160(dsAmount), address(pa));
-
-        dsHistory[dsIndexMap[address(ds)]].totalDeposited += amount;
+        dsHistory[dsIndexMap[address(ds)]].totalDeposited += dsAmount;
 
         _mint(_msgSender(), amount);
 
