@@ -44,7 +44,7 @@ contract ModuleCore is OwnableUpgradeable, UUPSUpgradeable, PsmCore, Initialize,
             revert ZeroAddress();
         }
 
-        __Ownable_init(msg.sender);
+        __Ownable_init(_msgSender());
         __UUPSUpgradeable_init();
         initializeModuleState(_swapAssetFactory, _ammHook, _flashSwapRouter, _config);
     }

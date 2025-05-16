@@ -693,10 +693,8 @@ library VaultLibrary {
             revert IErrors.InsufficientOutputAmount(redeemParams.amountOutMin, result.raReceivedFromAmm);
         }
 
-        if (result.ctReceivedFromAmm + result.ctReceivedFromVault < redeemParams.ctAmountOutMin) {
-            revert IErrors.InsufficientOutputAmount(
-                redeemParams.ctAmountOutMin, result.ctReceivedFromAmm + result.ctReceivedFromVault
-            );
+        if (result.ctReceivedFromAmm < redeemParams.ctAmountOutMin) {
+            revert IErrors.InsufficientOutputAmount(redeemParams.ctAmountOutMin, result.ctReceivedFromAmm);
         }
 
         if (result.dsReceived < redeemParams.dsAmountOutMin) {
