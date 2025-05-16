@@ -299,7 +299,7 @@ contract ProtectedUnit is
      * @custom:reverts InvalidToken if token is neither PA nor RA
      * @custom:emits FundsReceived when funds are successfully transferred
      */
-    function receiveFunds(uint256 amount, address token) external onlyValidToken(token) {
+    function receiveFunds(uint256 amount, address token) external onlyValidToken(token) whenNotPaused {
         IERC20(token).safeTransferFrom(_msgSender(), address(this), amount);
 
         if (token == address(_ra)) {
@@ -687,7 +687,7 @@ contract ProtectedUnit is
      * @param to The address to which the excess tokens will be transferred.
      * @custom:reverts If any token transfer fails
      */
-    function skim(address to) external nonReentrant {
+    function skim(address to) external nonReentrant whenNotPaused {
         if (_pa.balanceOf(address(this)) - paReserve > 0) {
             IERC20(_pa).safeTransfer(to, _pa.balanceOf(address(this)) - paReserve);
         }
