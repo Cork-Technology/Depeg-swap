@@ -67,7 +67,7 @@ contract SellDsTest is Helper {
         vm.pauseGasMetering();
         corkConfig.updateAmmBaseFeePercentage(defaultCurrencyId, 1 ether);
 
-        uint256 amountOut = flashSwapRouter.swapDsforRa(currencyId, dsId, amount, 0);
+        uint256 amountOut = flashSwapRouter.swapDsforRa(currencyId, dsId, amount, 0, block.timestamp + 30 minutes);
 
         uint256 balanceRaAfter = ra.balanceOf(DEFAULT_ADDRESS);
 
@@ -86,7 +86,7 @@ contract SellDsTest is Helper {
         // TODO : figure out the out of whack gas consumption
         vm.pauseGasMetering();
 
-        uint256 amountOut = flashSwapRouter.swapDsforRa(currencyId, dsId, amount, 0);
+        uint256 amountOut = flashSwapRouter.swapDsforRa(currencyId, dsId, amount, 0, block.timestamp + 30 minutes);
 
         uint256 balanceRaAfter = ra.balanceOf(DEFAULT_ADDRESS);
 

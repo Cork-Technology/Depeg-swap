@@ -35,6 +35,9 @@ abstract contract ModuleState is IErrors, ReentrancyGuardTransient, Extsload {
 
     address internal WITHDRAWAL_CONTRACT;
 
+    /// @dev new storage variable
+    mapping(Id => address) public activeLiquidator;
+
     /**
      * @dev checks if caller is config contract or not
      */
@@ -132,6 +135,12 @@ abstract contract ModuleState is IErrors, ReentrancyGuardTransient, Extsload {
     function onlyWhiteListedLiquidationContract() internal view {
         if (!ILiquidatorRegistry(CONFIG).isLiquidationWhitelisted(msg.sender)) {
             revert OnlyWhiteListed();
+        }
+    }
+
+    function withinDeadline(uint256 deadline) internal view {
+        if (block.timestamp > deadline) {
+            revert DeadlineExceeded();
         }
     }
 }
