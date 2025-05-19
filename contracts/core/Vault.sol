@@ -145,14 +145,24 @@ abstract contract VaultCore is ModuleState, Context, IVault, IVaultLiquidation {
         states[id].updateCtHeldPercentage(ctHeldPercentage);
     }
 
-    function requestLiquidationFunds(Id id, uint256 amount) external override {
+    function requestLiquidationFunds(Id id, uint256 amount, address executor) external override {
         onlyWhiteListedLiquidationContract();
+        /// @dev we set the executor address here.
+        /// this will be used to know who is the active liquidator that handle a pool PA liquidation
+        /// only this address will be allowed to call receiveTradeExecuctionResultFunds and receiveLeftoverFunds
+        /// this is restricted because now we will pause the vault withdrawal. If we allow anyone to call it then it'll have a DoS surface of attack
+        activeLiquidator[id] = executor;
+
         State storage state = states[id];
         state.requestLiquidationFunds(amount, _msgSender());
         emit LiquidationFundsRequested(id, _msgSender(), amount);
     }
 
     function receiveTradeExecuctionResultFunds(Id id, uint256 amount) external override {
+        if (_msgSender() != activeLiquidator[id]) {
+            revert OnlyWhiteListed();
+        }
+
         State storage state = states[id];
         state.receiveTradeExecuctionResultFunds(amount, _msgSender());
         emit TradeExecutionResultFundsReceived(id, _msgSender(), amount);
@@ -182,6 +192,14 @@ abstract contract VaultCore is ModuleState, Context, IVault, IVaultLiquidation {
     }
 
     function receiveLeftoverFunds(Id id, uint256 amount) external override {
+        if (_msgSender() != activeLiquidator[id]) {
+            revert OnlyWhiteListed();
+        }
+
+        /// @dev we reset liquidator address
+        /// the reason we do this here is that the liquidator contract will and must call this function last when finishing order in the liquidator contract
+        delete activeLiquidator[id];
+
         states[id].receiveLeftoverFunds(amount, _msgSender());
     }
 

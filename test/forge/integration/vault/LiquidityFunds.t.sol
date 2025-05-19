@@ -53,6 +53,10 @@ contract VaultLiquidityFundsTest is Helper {
         (ct, ds) = moduleCore.swapAsset(currencyId, dsId);
     }
 
+    function caller() internal returns (address caller) {
+        (, caller,) = vm.readCallers();
+    }
+
     // ff to expiry and update infos
     function ff_expired() internal {
         // fast forward to expiry
@@ -73,7 +77,7 @@ contract VaultLiquidityFundsTest is Helper {
         vm.assertEq(fundsAvailable, 0);
 
         vm.expectRevert(IErrors.InsufficientFunds.selector);
-        moduleCore.requestLiquidationFunds(currencyId, 1 ether);
+        moduleCore.requestLiquidationFunds(currencyId, 1 ether, caller());
     }
 
     function test_requestAfterExpiries() external {
@@ -87,7 +91,7 @@ contract VaultLiquidityFundsTest is Helper {
 
         vm.assertTrue(fundsAvailable > 0);
 
-        moduleCore.requestLiquidationFunds(currencyId, fundsAvailable);
+        moduleCore.requestLiquidationFunds(currencyId, fundsAvailable, caller());
 
         fundsAvailable = moduleCore.liquidationFundsAvailable(currencyId);
         vm.assertEq(fundsAvailable, 0);
@@ -97,13 +101,25 @@ contract VaultLiquidityFundsTest is Helper {
         vm.stopPrank();
 
         vm.expectRevert(IErrors.OnlyWhiteListed.selector);
-        moduleCore.requestLiquidationFunds(currencyId, 1 ether);
+        moduleCore.requestLiquidationFunds(currencyId, 1 ether, caller());
     }
 
     function test_receiveFunds() external {
+        uint256 amount = 1000 ether;
+        // we redeem 1000 RA first first
+        Asset(ds).approve(address(moduleCore), 1000 ether);
+        moduleCore.redeemRaWithDsPa(currencyId, dsId, 1000 ether);
+
+        ff_expired();
+
+        uint256 fundsAvailable = moduleCore.liquidationFundsAvailable(currencyId);
+
+        vm.assertTrue(fundsAvailable > 0);
+
+        moduleCore.requestLiquidationFunds(currencyId, fundsAvailable, caller());
+
         uint256 raBalanceBefore = ra.balanceOf(address(moduleCore));
 
-        uint256 amount = 1000 ether;
         ra.approve(address(moduleCore), amount);
 
         moduleCore.receiveTradeExecuctionResultFunds(currencyId, amount);
@@ -115,17 +131,59 @@ contract VaultLiquidityFundsTest is Helper {
 
     function test_useFundsAfterReceive() external {
         uint256 amount = 1000 ether;
+
+        // we redeem 1000 RA first first
+        Asset(ds).approve(address(moduleCore), 1000 ether);
+        moduleCore.redeemRaWithDsPa(currencyId, dsId, 1000 ether);
+
+        ff_expired();
+
+        uint256 fundsAvailable = moduleCore.liquidationFundsAvailable(currencyId);
+
+        vm.assertTrue(fundsAvailable > 0);
+
+        moduleCore.requestLiquidationFunds(currencyId, fundsAvailable, caller());
+
         ra.approve(address(moduleCore), amount);
 
         moduleCore.receiveTradeExecuctionResultFunds(currencyId, amount);
 
         uint256 tradeFundsAvailable = moduleCore.tradeExecutionFundsAvailable(currencyId);
 
-        vm.assertEq(tradeFundsAvailable, 1000 ether);
+        vm.assertEq(tradeFundsAvailable, 1010 ether);
 
         corkConfig.useVaultTradeExecutionResultFunds(currencyId);
 
         tradeFundsAvailable = moduleCore.tradeExecutionFundsAvailable(currencyId);
         vm.assertEq(tradeFundsAvailable, 0);
+    }
+
+    function test_redeemLvShouldPauseDuringLiquidation() external {
+        uint256 amount = 10 ether;
+        uint256 received = moduleCore.depositLv(currencyId, amount, 0, 0, block.timestamp + 30 minutes);
+
+        Asset(ds).approve(address(moduleCore), 1000 ether);
+        moduleCore.redeemRaWithDsPa(currencyId, dsId, 1000 ether);
+
+        ff_expired();
+
+        uint256 fundsAvailable = moduleCore.liquidationFundsAvailable(currencyId);
+        vm.assertTrue(fundsAvailable > 0);
+
+        moduleCore.requestLiquidationFunds(currencyId, fundsAvailable, caller());
+        Asset lv = Asset(moduleCore.lvAsset(currencyId));
+        lv.approve(address(moduleCore), received);
+
+        IVault.RedeemEarlyParams memory redeemParams =
+            IVault.RedeemEarlyParams(currencyId, received, 0, block.timestamp, 0, 0, 0);
+
+        vm.expectRevert(IErrors.LVWithdrawalPaused.selector);
+        moduleCore.redeemEarlyLv(redeemParams);
+
+        // resume withdrawal when liquidation is finished
+        moduleCore.receiveLeftoverFunds(currencyId, received);
+
+        // should work now as withdrawal is resumed
+        moduleCore.redeemEarlyLv(redeemParams);
     }
 }
