@@ -614,29 +614,6 @@ library VaultLibrary {
         self.vault.pool.reserve(self.vault.lv.totalIssued(), psmRa, psmPa);
     }
 
-    function __calculateTotalRaAndCtBalanceWithReserve(
-        State storage self,
-        uint256 raReserve,
-        uint256 ctReserve,
-        uint256 lpSupply,
-        uint256 lpBalance
-    )
-        internal
-        view
-        returns (
-            uint256 totalRa,
-            uint256 ammCtBalance,
-            uint256 raPerLv,
-            uint256 ctPerLv,
-            uint256 raPerLp,
-            uint256 ctPerLp
-        )
-    {
-        (raPerLv, ctPerLv, raPerLp, ctPerLp, totalRa, ammCtBalance) = MathHelper.calculateLvValueFromUniLp(
-            lpSupply, lpBalance, raReserve, ctReserve, Asset(self.vault.lv._address).totalSupply()
-        );
-    }
-
     // IMPORTANT : only psm, flash swap router can call this function
     function allocateFeesToVault(State storage self, uint256 amount) public {
         self.vault.balances.ra.incLocked(amount);
@@ -849,7 +826,7 @@ library VaultLibrary {
         SafeERC20.safeTransfer(IERC20(self.info.pa), to, amount);
     }
 
-    function receiveTradeExecuctionResultFunds(State storage self, uint256 amount, address from) external {
+    function receiveTradeExecutionResultFunds(State storage self, uint256 amount, address from) external {
         self.vault.balances.ra.lockFrom(amount, from);
     }
 

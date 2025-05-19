@@ -19,7 +19,7 @@ interface IVaultLiquidation {
     /// it is important to note that the vault will only transfer RA from the liquidation contract
     /// @param id The id of the vault
     /// @param amount The amount of funds to receive
-    function receiveTradeExecuctionResultFunds(Id id, uint256 amount) external;
+    function receiveTradeExecutionResultFunds(Id id, uint256 amount) external;
 
     /// @notice Use funds from liquidation, the vault will use the received funds to provide liquidity
     /// @param id The id of the vault

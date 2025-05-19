@@ -51,8 +51,6 @@ contract ProtectedUnit is
     IProtectedUnitLiquidation,
     ERC20BurnableUpgradeable
 {
-    string public constant DS_PERMIT_MINT_TYPEHASH = "mint(uint256 amount)";
-
     using SafeERC20 for IERC20;
 
     CorkConfig public config;
@@ -84,7 +82,7 @@ contract ProtectedUnit is
     Id public id;
 
     /// @notice The ERC20 token representing the ds asset.
-    Asset internal ds;
+    Asset public ds;
 
     /// @notice Maximum supply cap for minting ProtectedUnit tokens
     uint256 public mintCap;
@@ -217,6 +215,8 @@ contract ProtectedUnit is
         permit2 = IPermit2(_permit2);
         factory = _msgSender();
         raDustThreshold = 0.1 ether;
+
+        emit MintCapUpdated(_mintCap);
     }
 
     /**
@@ -650,11 +650,11 @@ contract ProtectedUnit is
 
         _burnFrom(dissolver, amount);
 
-        TransferHelper.transferNormalize(_pa, dissolver, paAmount);
-        TransferHelper.transferNormalize(_ra, dissolver, raAmount);
+        paAmount = TransferHelper.transferNormalize(_pa, dissolver, paAmount);
+        raAmount = TransferHelper.transferNormalize(_ra, dissolver, raAmount);
         IERC20(ds).safeTransfer(dissolver, dsAmount);
 
-        emit Burn(dissolver, amount, dsAmount, paAmount);
+        emit Burn(dissolver, amount, dsAmount, paAmount, raAmount);
     }
 
     /// @notice Internal function to burn tokens from an account
@@ -720,10 +720,6 @@ contract ProtectedUnit is
      */
     function unpause() external onlyOwner {
         _unpause();
-    }
-
-    function _normalize(uint256 amount, uint8 decimalsBefore, uint8 decimalsAfter) public pure returns (uint256) {
-        return ProtectedUnitMath.normalizeDecimals(amount, decimalsBefore, decimalsAfter);
     }
 
     //  Make reserves in sync with the actual balance of the contract

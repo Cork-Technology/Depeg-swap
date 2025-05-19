@@ -70,7 +70,8 @@ abstract contract ModuleState is IErrors, ReentrancyGuardTransient, Extsload {
         AMM_HOOK = _ammHook;
     }
 
-    function _setWithdrawalContract(address _withdrawalContract) internal {
+    function _setWithdrawalContract(address _withdrawalContract) internal returns (address oldAddress) {
+        oldAddress = WITHDRAWAL_CONTRACT;
         WITHDRAWAL_CONTRACT = _withdrawalContract;
     }
 

@@ -122,7 +122,7 @@ contract VaultLiquidityFundsTest is Helper {
 
         ra.approve(address(moduleCore), amount);
 
-        moduleCore.receiveTradeExecuctionResultFunds(currencyId, amount);
+        moduleCore.receiveTradeExecutionResultFunds(currencyId, amount);
 
         uint256 raBalanceAfter = ra.balanceOf(address(moduleCore));
 
@@ -146,7 +146,7 @@ contract VaultLiquidityFundsTest is Helper {
 
         ra.approve(address(moduleCore), amount);
 
-        moduleCore.receiveTradeExecuctionResultFunds(currencyId, amount);
+        moduleCore.receiveTradeExecutionResultFunds(currencyId, amount);
 
         uint256 tradeFundsAvailable = moduleCore.tradeExecutionFundsAvailable(currencyId);
 

@@ -32,9 +32,6 @@ contract ProtectedUnitTest is Helper {
     uint256 constant USER_BALANCE = 500 * 1e18;
     uint256 internal USER_PK = 1;
 
-    // TODO : Add the hookTrampoline address
-    address hookTrampoline = DEFAULT_ADDRESS;
-
     address settlementContract = 0x9008D19f58AAbD9eD0D60971565AA8510560ab41;
 
     function setUp() public {
@@ -72,7 +69,7 @@ contract ProtectedUnitTest is Helper {
         // we disable the redemption fee so its easier to test
         corkConfig.updatePsmBaseRedemptionFeePercentage(defaultCurrencyId, 0);
 
-        liquidator = new Liquidator(address(corkConfig), DEFAULT_ADDRESS, address(this), address(moduleCore));
+        liquidator = new Liquidator(address(corkConfig), address(this), address(moduleCore));
 
         corkConfig.grantLiquidatorRole(address(liquidator), DEFAULT_ADDRESS);
         corkConfig.whitelist(address(liquidator));

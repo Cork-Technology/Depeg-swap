@@ -52,7 +52,8 @@ contract ModuleCore is OwnableUpgradeable, UUPSUpgradeable, PsmCore, Initialize,
 
     function setWithdrawalContract(address _withdrawalContract) external {
         onlyConfig();
-        _setWithdrawalContract(_withdrawalContract);
+        address oldAddress = _setWithdrawalContract(_withdrawalContract);
+        emit WithdrawalContractUpdated(oldAddress, _withdrawalContract);
     }
 
     /// @notice Authorization function for UUPS proxy upgrades
