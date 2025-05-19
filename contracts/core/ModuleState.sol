@@ -136,4 +136,10 @@ abstract contract ModuleState is IErrors, ReentrancyGuardTransient {
             revert OnlyWhiteListed();
         }
     }
+
+    function withinDeadline(uint256 deadline) internal view {
+        if (block.timestamp > deadline) {
+            revert DeadlineExceeded();
+        }
+    }
 }

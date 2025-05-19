@@ -23,6 +23,7 @@ import {IWithdrawalRouter} from "./../interfaces/IWithdrawalRouter.sol";
 import {TransferHelper} from "./TransferHelper.sol";
 import {NavCircuitBreakerLibrary} from "./NavCircuitBreaker.sol";
 import {VaultBalanceLibrary} from "./VaultBalancesLib.sol";
+import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
 /**
  * @title Vault Library Contract
@@ -191,7 +192,8 @@ library VaultLibrary {
         uint256 dsId = self.globalAssetIdx;
         uint256 ctRatio = __getAmmCtPriceRatio(self, flashSwapRouter, dsId);
 
-        (ra, ct) = MathHelper.calculateProvideLiquidityAmountBasedOnCtPrice(amount, ctRatio);
+        (ra, ct) =
+            MathHelper.calculateProvideLiquidityAmountBasedOnCtPrice(amount, ctRatio, ERC20(self.info.ra).decimals());
     }
 
     function __provideLiquidityWithRatio(
@@ -300,7 +302,8 @@ library VaultLibrary {
 
         uint256 ctRatio = __getAmmCtPriceRatio(self, flashSwapRouter, dsId);
 
-        (uint256 ra, uint256 ct, uint256 originalBalance) = self.vault.pool.rationedToAmm(ctRatio);
+        (uint256 ra, uint256 ct, uint256 originalBalance) =
+            self.vault.pool.rationedToAmm(ctRatio, ERC20(self.info.ra).decimals());
 
         // this doesn't really matter tbh, since the amm is fresh and we're the first one to add liquidity to it
         (uint256 raTolerance, uint256 ctTolerance) =
@@ -690,10 +693,8 @@ library VaultLibrary {
             revert IErrors.InsufficientOutputAmount(redeemParams.amountOutMin, result.raReceivedFromAmm);
         }
 
-        if (result.ctReceivedFromAmm + result.ctReceivedFromVault < redeemParams.ctAmountOutMin) {
-            revert IErrors.InsufficientOutputAmount(
-                redeemParams.ctAmountOutMin, result.ctReceivedFromAmm + result.ctReceivedFromVault
-            );
+        if (result.ctReceivedFromAmm < redeemParams.ctAmountOutMin) {
+            revert IErrors.InsufficientOutputAmount(redeemParams.ctAmountOutMin, result.ctReceivedFromAmm);
         }
 
         if (result.dsReceived < redeemParams.dsAmountOutMin) {
