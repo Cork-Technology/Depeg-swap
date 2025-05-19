@@ -311,7 +311,7 @@ contract BuyDsTest is Helper {
         );
 
         IDsFlashSwapCore.OffchainGuess memory offchainGuess;
-        offchainGuess.borrow = result.borrow;
+        offchainGuess.borrowOnBuy = result.borrowOnBuy;
 
         revertRouterState();
 
@@ -341,7 +341,7 @@ contract BuyDsTest is Helper {
             currencyId, dsId, amount, 0, params, defaultOffchainGuessParams(), block.timestamp + 30 minutes
         );
 
-        offchainGuess.borrow = result.borrow;
+        offchainGuess.borrowOnBuy = result.borrowOnBuy;
 
         revertRouterState();
         result = flashSwapRouter.swapRaforDs(
@@ -360,7 +360,7 @@ contract BuyDsTest is Helper {
             currencyId, dsId, amount, 0, params, defaultOffchainGuessParams(), block.timestamp + 30 minutes
         );
 
-        offchainGuess.borrow = result.borrow;
+        offchainGuess.borrowOnBuy = result.borrowOnBuy;
 
         revertRouterState();
 

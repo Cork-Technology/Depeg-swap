@@ -10,6 +10,9 @@ import {ERC20, IERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import {IVault} from "../../../contracts/interfaces/IVault.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {IDsFlashSwapCore} from "../../../contracts/interfaces/IDsFlashSwapRouter.sol";
+import {AssetFactory} from "../../../contracts/core/assets/AssetFactory.sol";
+import {RouterState} from "../../../contracts/core/flash-swaps/FlashSwapRouter.sol";
+import {Utils} from "../Utils/Utils.s.sol";
 
 struct Market {
     address redemptionAsset;
@@ -33,6 +36,7 @@ contract SimulateScript is Script {
 
     uint256 public pk = vm.envUint("PRIVATE_KEY");
     address public deployer = vm.addr(pk);
+    address public user = 0x5313b39bf226ced2332C81eB97BB28c6fD50d1a3;
 
     address constant weth = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
     address constant wstETH = 0x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca0;
@@ -116,112 +120,117 @@ contract SimulateScript is Script {
     function setUp() public {}
 
     function run() public {
-        vm.startBroadcast(pk);
-        vm.pauseGasMetering();
+        vm.startPrank(0x8724f0884FFeF34A73084F026F317b903C6E9d06);
+        AssetFactory factory = new AssetFactory();
+        AssetFactory factoryProxy = AssetFactory(0x96E0121D1cb39a46877aaE11DB85bc661f88D5fA);
+        factoryProxy.upgradeToAndCall(address(factory), bytes(""));
+        console.log("Assets Factory Upgraded");
 
+        RouterState router = new RouterState();
+        routerState.upgradeToAndCall(address(router), bytes(""));
+        console.log("Flash Swap Router Upgraded");
         console.log("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-");
 
-        Market[4] memory markets = [weth_wstETH_market, wstETH_weETH_market, sUSDS_USDe_market, sUSDe_USDT_market];
-
+        // Market[4] memory markets = [weth_wstETH_market, wstETH_weETH_market, sUSDS_USDe_market, sUSDe_USDT_market];
+        Market[1] memory markets = [wstETH_weETH_market];
         for (uint256 i = 0; i < markets.length; i++) {
             Market memory market = markets[i];
             Id marketId = moduleCore.getId(
                 market.peggedAsset, market.redemptionAsset, market.arp, market.expiryInterval, exchangeProvider
             );
 
+            config.updateReserveSellPressurePercentage(marketId, 5 ether);
+
             uint256 dsId = moduleCore.lastDsId(marketId);
             (address ct, address ds) = moduleCore.swapAsset(marketId, dsId);
             address lv = moduleCore.lvAsset(marketId);
 
-            uint256 lvDepositAmt = 5000;
-            depositLv(market, marketId, lvDepositAmt);
+            vm.startPrank(user);
 
-            uint256 psmDepositAmt = 100;
-            depositPsm(market, marketId, psmDepositAmt);
+            uint256 swapAmt = 10;
+            console.log("SwapRaForDs With 50% Sell Pressure Thresold");
+            swapRaForDs(market, marketId, dsId, swapAmt, ct, ds);
+            console.log("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-");
 
-            uint256 redeemAmt = 5;
-            redeemRaWithDsPa(market, marketId, dsId, redeemAmt, ds);
-
-            returnRaWithCtDs(market, marketId, redeemAmt, ds, ct);
-
-            redeemLv(market, marketId, redeemAmt, lv);
-
-            uint256 swapAmt = 1;
-            swapDsForRa(market, marketId, dsId, swapAmt, ds);
-
-            swapRaForDs(market, marketId, dsId, swapAmt);
-
-            swapRaCtTokens(market, marketId, swapAmt, ct);
+            console.log("");
         }
 
         console.log("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-");
-        vm.stopBroadcast();
-    }
-
-    function depositPsm(Market memory market, Id marketId, uint256 depositAmt) public {
-        depositAmt = convertToDecimals(market.redemptionAsset, depositAmt);
-        ERC20(market.redemptionAsset).approve(address(moduleCore), depositAmt);
-        moduleCore.depositPsm(marketId, depositAmt);
-    }
-
-    function depositLv(Market memory market, Id marketId, uint256 depositAmt) public {
-        depositAmt = convertToDecimals(market.redemptionAsset, depositAmt);
-        ERC20(market.redemptionAsset).approve(address(moduleCore), depositAmt);
-        moduleCore.depositLv(marketId, depositAmt, 0, 0, block.timestamp + 30 minutes);
-    }
-
-    function redeemRaWithDsPa(Market memory market, Id marketId, uint256 dsId, uint256 redeemAmt, address ds) public {
-        redeemAmt = convertToDecimals(market.peggedAsset, redeemAmt);
-        IERC20(market.peggedAsset).safeIncreaseAllowance(address(moduleCore), redeemAmt);
-
-        uint256 decimals = ERC20(ds).decimals();
-        ERC20(ds).approve(address(moduleCore), redeemAmt * 10 ** decimals);
-
-        moduleCore.redeemRaWithDsPa(marketId, dsId, redeemAmt);
-    }
-
-    function returnRaWithCtDs(Market memory market, Id marketId, uint256 redeemAmt, address ds, address ct) public {
-        redeemAmt = convertToDecimals(ds, redeemAmt);
-        ERC20(ds).approve(address(moduleCore), redeemAmt);
-        ERC20(ct).approve(address(moduleCore), redeemAmt);
-        moduleCore.returnRaWithCtDs(marketId, redeemAmt);
-    }
-
-    function redeemLv(Market memory market, Id marketId, uint256 redeemAmt, address lv) public {
-        redeemAmt = convertToDecimals(lv, redeemAmt);
-        ERC20(lv).approve(address(moduleCore), redeemAmt);
-        moduleCore.redeemEarlyLv(IVault.RedeemEarlyParams(marketId, redeemAmt, 0, block.timestamp + 1 days, 0, 0, 0));
+        vm.stopPrank();
     }
 
     function swapDsForRa(Market memory market, Id marketId, uint256 dsId, uint256 swapAmt, address ds) public {
         swapAmt = convertToDecimals(ds, swapAmt);
         ERC20(ds).approve(address(routerState), swapAmt);
-        routerState.swapDsforRa(marketId, dsId, swapAmt, 0, block.timestamp + 30 minutes);
+        routerState.swapDsforRa(marketId, dsId, swapAmt, 0, 0);
     }
 
-    function swapRaForDs(Market memory market, Id marketId, uint256 dsId, uint256 swapAmt) public {
+    function swapRaForDs(Market memory market, Id marketId, uint256 dsId, uint256 swapAmt, address ct, address ds)
+        public
+    {
+        console.log(
+            "RA price Before    : ",
+            Utils.formatEther(corkHook.getAmountOut(market.redemptionAsset, ct, false, 1 ether))
+        );
+        console.log(
+            "CT price Before    : ", Utils.formatEther(corkHook.getAmountOut(market.redemptionAsset, ct, true, 1 ether))
+        );
+        console.log(
+            "LV reserve Before  : ", Utils.formatEther(RouterState(address(routerState)).getLvReserve(marketId, dsId))
+        );
+        console.log(
+            "PSM reserve Before : ", Utils.formatEther(RouterState(address(routerState)).getPsmReserve(marketId, dsId))
+        );
+        console.log("User RA bal Before : ", Utils.formatEther(ERC20(market.redemptionAsset).balanceOf(user)));
+        console.log("User CT bal Before : ", Utils.formatEther(ERC20(ct).balanceOf(user)));
+        console.log("User DS bal Before : ", Utils.formatEther(ERC20(ds).balanceOf(user)));
+
+        {
+            (uint256 raBal, uint256 ctBal) = corkHook.getReserves(market.redemptionAsset, ct);
+            console.log("AMM RA bal Before  : ", Utils.formatEther(raBal));
+            console.log("AMM CT bal Before  : ", Utils.formatEther(ctBal));
+        }
+        console.log("------------------------------");
+
         swapAmt = convertToDecimals(market.redemptionAsset, swapAmt);
         ERC20(market.redemptionAsset).approve(address(routerState), swapAmt);
         IDsFlashSwapCore.BuyAprroxParams memory buyApprox =
             IDsFlashSwapCore.BuyAprroxParams(108, 108, 1 ether, 1 gwei, 1 gwei, 0.01 ether);
         IDsFlashSwapCore.OffchainGuess memory offchainguess = IDsFlashSwapCore.OffchainGuess(0, 0);
-        routerState.swapRaforDs(marketId, dsId, swapAmt, 0, buyApprox, offchainguess, block.timestamp + 30 minutes);
-    }
+        IDsFlashSwapCore.SwapRaForDsReturn memory result =
+            routerState.swapRaforDs(marketId, dsId, swapAmt, 0, buyApprox, offchainguess, 0);
 
-    function swapRaCtTokens(Market memory market, Id marketId, uint256 swapAmt, address ct) public {
-        uint256 inputAmt = convertToDecimals(market.redemptionAsset, swapAmt);
-        uint256 amountOut = corkHook.getAmountOut(market.redemptionAsset, ct, true, inputAmt);
-        uint256 inputOut = corkHook.getAmountIn(market.redemptionAsset, ct, true, amountOut);
-        ERC20(market.redemptionAsset).approve(address(corkHook), inputOut + inputOut / 100000);
-        corkHook.swap(market.redemptionAsset, ct, 0, amountOut, bytes(""));
-        console.log("Swapped RA with CT");
+        string memory raSymbol = ERC20(market.redemptionAsset).symbol();
+        console.log("Swapped", raSymbol, "for DS");
+        console.log("Swap Amount         : ", Utils.formatEther(swapAmt));
+        console.log("Swap Amount Out     : ", Utils.formatEther(result.amountOut));
+        console.log("CT Refunded         : ", Utils.formatEther(result.ctRefunded));
+        console.log("Borrow              : ", Utils.formatEther(result.borrowOnBuy));
+        console.log("Fee                 : ", result.fee);
+        console.log("reserveSellPressure : ", Utils.formatEther(result.reserveSellPressure), "%");
+        console.log("------------------------------");
 
-        inputAmt = convertToDecimals(ct, swapAmt);
-        amountOut = corkHook.getAmountOut(market.redemptionAsset, ct, false, inputAmt);
-        inputOut = corkHook.getAmountIn(market.redemptionAsset, ct, false, amountOut);
-        ERC20(ct).approve(address(corkHook), inputOut + inputOut / 100000);
-        corkHook.swap(market.redemptionAsset, ct, amountOut, 0, bytes(""));
-        console.log("Swapped CT with RA");
+        console.log(
+            "RA price After     : ",
+            Utils.formatEther(corkHook.getAmountOut(market.redemptionAsset, ct, false, 1 ether))
+        );
+        console.log(
+            "CT price After     : ", Utils.formatEther(corkHook.getAmountOut(market.redemptionAsset, ct, true, 1 ether))
+        );
+        console.log(
+            "LV reserve After   : ", Utils.formatEther(RouterState(address(routerState)).getLvReserve(marketId, dsId))
+        );
+        console.log(
+            "PSM reserve After  : ", Utils.formatEther(RouterState(address(routerState)).getPsmReserve(marketId, dsId))
+        );
+        console.log("User RA bal After  : ", Utils.formatEther(ERC20(market.redemptionAsset).balanceOf(user)));
+        console.log("User CT bal After  : ", Utils.formatEther(ERC20(ct).balanceOf(user)));
+        console.log("User DS bal After  : ", Utils.formatEther(ERC20(ds).balanceOf(user)));
+        {
+            (uint256 raBal, uint256 ctBal) = corkHook.getReserves(market.redemptionAsset, ct);
+            console.log("AMM RA bal After   : ", Utils.formatEther(raBal));
+            console.log("AMM CT bal After   : ", Utils.formatEther(ctBal));
+        }
     }
 
     function convertToDecimals(address token, uint256 value) public view returns (uint256) {
