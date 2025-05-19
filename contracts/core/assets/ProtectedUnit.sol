@@ -289,7 +289,7 @@ contract ProtectedUnit is
 
         activeLiquidators = executor;
 
-        // pause contract if liquidation occurs
+        // pause contract during liquidation
         _pause();
 
         IERC20(token).safeTransfer(_msgSender(), amount);
@@ -457,6 +457,10 @@ contract ProtectedUnit is
 
         if (totalSupply() + amount > mintCap) {
             revert MintCapExceeded();
+        }
+
+        if (raReserve > 0) {
+            revert EnforcedPause();
         }
 
         Asset currentDs = _fetchLatestDS();
