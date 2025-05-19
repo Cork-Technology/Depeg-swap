@@ -40,6 +40,28 @@ abstract contract CustomERC20Permit is ERC20, ICustomERC20Permit, EIP712, Nonces
     constructor(string memory name) EIP712(name, "1") {}
 
     /**
+     * @dev Standard EIP-2612 permit function for compatibility with third-party integrations.
+     */
+    function permit(address owner, address spender, uint256 value, uint256 deadline, uint8 v, bytes32 r, bytes32 s)
+        public
+    {
+        if (block.timestamp > deadline) {
+            revert ERC2612ExpiredSignature(deadline);
+        }
+
+        bytes32 structHash = keccak256(abi.encode(PERMIT_TYPEHASH, owner, spender, value, _useNonce(owner), deadline));
+
+        bytes32 hash = _hashTypedDataV4(structHash);
+
+        address signer = ECDSA.recover(hash, v, r, s);
+        if (signer != owner) {
+            revert ERC2612InvalidSigner(signer, owner);
+        }
+
+        _approve(owner, spender, value);
+    }
+
+    /**
      * @dev This function is modified to include an additional parameter `functionHash` which is used to compute the
      * function hash for the permit signature.
      */
@@ -51,7 +73,7 @@ abstract contract CustomERC20Permit is ERC20, ICustomERC20Permit, EIP712, Nonces
         uint8 v,
         bytes32 r,
         bytes32 s,
-        string memory functionName // Additional parameter to include function name
+        string memory functionName // Additional parameter function name for adding cross-context security
     ) public {
         if (block.timestamp > deadline) {
             revert ERC2612ExpiredSignature(deadline);
