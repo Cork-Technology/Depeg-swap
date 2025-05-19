@@ -47,7 +47,7 @@ abstract contract ChildLiquidatorBase is OwnableUpgradeable {
      * @custom:reverts OnlyLiquidator if the caller is not the owner
      */
     modifier onlyLiquidator() {
-        if (msg.sender != owner()) {
+        if (_msgSender() != owner()) {
             revert IErrors.OnlyLiquidator();
         }
         _;
@@ -123,6 +123,8 @@ contract ProtectedUnitChildLiquidator is ChildLiquidatorBase {
         SafeERC20.safeIncreaseAllowance(IERC20(order.sellToken), receiver, leftover);
 
         IProtectedUnitLiquidation(receiver).receiveFunds(leftover, order.sellToken);
+
+        IProtectedUnitLiquidation(receiver).finishLiquidating();
     }
 }
 

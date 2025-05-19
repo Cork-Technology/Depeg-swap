@@ -46,7 +46,6 @@ contract DeployScript is Script {
     ProtectedUnit public protectedUnitOmgUSD;
 
     bool public isProd = vm.envBool("PRODUCTION");
-    uint256 public base_redemption_fee = vm.envUint("PSM_BASE_REDEMPTION_FEE_PERCENTAGE");
     address public ceth = vm.envAddress("WETH");
     address public cusd = vm.envAddress("CUSD");
     uint256 public pk = vm.envUint("PRIVATE_KEY");
@@ -86,6 +85,9 @@ contract DeployScript is Script {
 
     function run() public {
         vm.startBroadcast(pk);
+        console.log("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-");
+        console.log("Deployer                        : ", deployer);
+        console.log("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-");
         if (!isProd && ceth == address(0)) {
             // Deploy the WETH contract
             cETH = new CETH("Cork Competition ETH", "cETH");
@@ -143,7 +145,6 @@ contract DeployScript is Script {
             console.log("omgUSD                          : ", address(omgUSD));
             console.log("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-");
         } else {
-            console.log("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-");
             console.log("CETH USED                       : ", address(ceth));
             console.log("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-");
         }
@@ -216,6 +217,9 @@ contract DeployScript is Script {
         protectedUnitRouter = new ProtectedUnitRouter(PERMIT2);
         console.log("ProtectedUnit Router            : ", address(protectedUnitRouter));
 
+        // Deploy Implementation of ProtectedUnit
+        ProtectedUnit protectedUnitImpl = new ProtectedUnit();
+
         // Deploy the ProtectedUnitFactory implementation (logic) contract
         ProtectedUnitFactory protectedUnitFactoryImpl = new ProtectedUnitFactory();
         console.log("ProtectedUnitFactory Implementation: ", address(protectedUnitFactoryImpl));
@@ -225,7 +229,8 @@ contract DeployScript is Script {
             address(moduleCore),
             address(config),
             address(flashswapRouter),
-            address(PERMIT2)
+            address(PERMIT2),
+            address(protectedUnitImpl)
         );
         ERC1967Proxy protectedUnitFactoryProxy = new ERC1967Proxy(address(protectedUnitFactoryImpl), data);
         protectedUnitFactory = ProtectedUnitFactory(address(protectedUnitFactoryProxy));
@@ -277,7 +282,7 @@ contract DeployScript is Script {
                 INITIAL_MINT_CAP
             )
         );
-        console.log("HU wamuETH                      : ", address(protectedUnitWamuETH));
+        console.log("PU wamuETH                      : ", address(protectedUnitWamuETH));
 
         protectedUnitBsETH = ProtectedUnit(
             config.deployProtectedUnit(
@@ -288,7 +293,7 @@ contract DeployScript is Script {
                 INITIAL_MINT_CAP
             )
         );
-        console.log("HU bsETH                        : ", address(protectedUnitBsETH));
+        console.log("PU bsETH                        : ", address(protectedUnitBsETH));
 
         protectedUnitMlETH = ProtectedUnit(
             config.deployProtectedUnit(
@@ -299,7 +304,7 @@ contract DeployScript is Script {
                 INITIAL_MINT_CAP
             )
         );
-        console.log("HU mlETH                        : ", address(protectedUnitMlETH));
+        console.log("PU mlETH                        : ", address(protectedUnitMlETH));
 
         protectedUnitSvbUSD = ProtectedUnit(
             config.deployProtectedUnit(
@@ -310,7 +315,7 @@ contract DeployScript is Script {
                 INITIAL_MINT_CAP
             )
         );
-        console.log("HU svbUSD                       : ", address(protectedUnitSvbUSD));
+        console.log("PU svbUSD                       : ", address(protectedUnitSvbUSD));
 
         protectedUnitFedUSD = ProtectedUnit(
             config.deployProtectedUnit(
@@ -321,7 +326,7 @@ contract DeployScript is Script {
                 INITIAL_MINT_CAP
             )
         );
-        console.log("HU fedUSD                       : ", address(protectedUnitFedUSD));
+        console.log("PU fedUSD                       : ", address(protectedUnitFedUSD));
 
         protectedUnitOmgUSD = ProtectedUnit(
             config.deployProtectedUnit(
@@ -332,7 +337,7 @@ contract DeployScript is Script {
                 INITIAL_MINT_CAP
             )
         );
-        console.log("HU omgUSD                       : ", address(protectedUnitOmgUSD));
+        console.log("PU omgUSD                       : ", address(protectedUnitOmgUSD));
         console.log("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-");
 
         // EarlyRedemptionFee = 0.2%,  DSPrice=1.285%  repurchaseFee = 0.75%
@@ -388,7 +393,7 @@ contract DeployScript is Script {
         console.log("Updated fees");
 
         CETH(raToken).approve(address(moduleCore), depositLVAmt);
-        moduleCore.depositLv(id, depositLVAmt, 0, 0);
+        moduleCore.depositLv(id, depositLVAmt, 0, 0, 0, block.timestamp + 30 minutes);
         console.log("LV Deposited");
         console.log("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-");
     }
@@ -397,14 +402,7 @@ contract DeployScript is Script {
         CETH(raToken).approve(uniswapV2RouterSepolia, liquidityAmt);
         IERC20(paToken).approve(uniswapV2RouterSepolia, liquidityAmt);
         univ2Router.addLiquidity(
-            raToken,
-            paToken,
-            liquidityAmt,
-            liquidityAmt,
-            liquidityAmt,
-            liquidityAmt,
-            deployer,
-            block.timestamp + 10000 minutes
+            raToken, paToken, liquidityAmt, liquidityAmt, 0, 0, deployer, block.timestamp + 10000 minutes
         );
         console.log("Liquidity Added to AMM");
     }

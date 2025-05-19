@@ -21,11 +21,11 @@ contract SwapMathTest is Test {
         vm.assertApproxEqAbs(unwrap(discount), 99e18, 0.0000001 ether);
     }
 
-    function test_calculateRolloverSale() external {
+    function test_calculateReserveSale() external {
         uint256 lvReserve = 100 ether;
         uint256 psmReserve = 100 ether;
         uint256 raProvided = 1 ether;
-        uint256 hiya = 0.1111111111 ether;
+        uint256 price = 99999999991000000;
 
         (
             uint256 lvProfit,
@@ -34,7 +34,7 @@ contract SwapMathTest is Test {
             uint256 dsReceived,
             uint256 lvReserveUsed,
             uint256 psmReserveUsed
-        ) = SwapperMathLibrary.calculateRolloverSale(lvReserve, psmReserve, raProvided, hiya);
+        ) = SwapperMathLibrary.calculateReserveSale(lvReserve, psmReserve, raProvided, price);
 
         vm.assertApproxEqAbs(lvProfit, 0.5 ether, 0.0001 ether);
         vm.assertApproxEqAbs(psmProfit, 0.5 ether, 0.0001 ether);
@@ -49,7 +49,7 @@ contract SwapMathTest is Test {
         psmReserve = 150 ether;
 
         (lvProfit, psmProfit, raLeft, dsReceived, lvReserveUsed, psmReserveUsed) =
-            SwapperMathLibrary.calculateRolloverSale(lvReserve, psmReserve, raProvided, hiya);
+            SwapperMathLibrary.calculateReserveSale(lvReserve, psmReserve, raProvided, price);
 
         vm.assertApproxEqAbs(lvProfit, 0.25 ether, 0.0001 ether);
         vm.assertApproxEqAbs(psmProfit, 0.75 ether, 0.0001 ether);
@@ -108,5 +108,15 @@ contract SwapMathTest is Test {
             SwapperMathLibrary.calculateOptimalSellPressureWithRiskPremium(ud(currentRiskPremium), ud(threshold));
         // should be 50%
         vm.assertEq(percentage, 50 ether);
+    }
+
+    function test_calculateDsSpotPrice() external {
+        uint256 raReserve = 1000 ether;
+        uint256 ctReserve = 1050 ether;
+        uint256 t = 0.9 ether;
+
+        uint256 price = SwapperMathLibrary.calculateDsSpotPrice(raReserve, ctReserve, t);
+
+        assertApproxEqAbs(price, 0.0429 ether, 0.0001 ether);
     }
 }

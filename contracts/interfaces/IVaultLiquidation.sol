@@ -10,9 +10,10 @@ interface IVaultLiquidation {
     /// @notice Request funds for liquidation, will transfer the funds directly from the vault to the liquidation contract
     /// @param id The id of the vault
     /// @param amount The amount of funds to request
+    /// @param executor The actual trade executor, this is the contract that holds all the funds associated with the trade
     /// will revert if there's not enough funds in the vault
     /// IMPORTANT :  the vault must make sure only whitelisted liquidation contract adddress can call this function
-    function requestLiquidationFunds(Id id, uint256 amount) external;
+    function requestLiquidationFunds(Id id, uint256 amount, address executor) external;
 
     /// @notice Receive funds from liquidation, the vault will do a transferFrom from the liquidation contract
     /// it is important to note that the vault will only transfer RA from the liquidation contract
