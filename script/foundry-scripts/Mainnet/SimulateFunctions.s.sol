@@ -167,7 +167,7 @@ contract SimulateScript is Script {
     function depositLv(Market memory market, Id marketId, uint256 depositAmt) public {
         depositAmt = convertToDecimals(market.redemptionAsset, depositAmt);
         ERC20(market.redemptionAsset).approve(address(moduleCore), depositAmt);
-        moduleCore.depositLv(marketId, depositAmt, 0, 0, block.timestamp + 30 minutes);
+        moduleCore.depositLv(marketId, depositAmt, 0, 0, 0, block.timestamp + 30 minutes);
     }
 
     function redeemRaWithDsPa(Market memory market, Id marketId, uint256 dsId, uint256 redeemAmt, address ds) public {

@@ -44,7 +44,7 @@ contract DsReserveSellTest is Helper {
         ra.approve(address(moduleCore), 100_000_000_000 ether);
 
         moduleCore.depositPsm(currencyId, DEFAULT_DEPOSIT_AMOUNT);
-        moduleCore.depositLv(currencyId, DEFAULT_DEPOSIT_AMOUNT, 0, 0, block.timestamp + 30 minutes);
+        moduleCore.depositLv(currencyId, DEFAULT_DEPOSIT_AMOUNT, 0, 0, 0, block.timestamp);
 
         dsId = moduleCore.lastDsId(currencyId);
         (ct, ds) = moduleCore.swapAsset(currencyId, dsId);
@@ -147,7 +147,7 @@ contract DsReserveSellTest is Helper {
         corkConfig.updateReserveSellPressurePercentage(currencyId, 100 ether);
 
         ra.approve(address(moduleCore), type(uint256).max);
-        moduleCore.depositLv(currencyId, 10 ether, 0, 0, block.timestamp + 30 minutes);
+        moduleCore.depositLv(currencyId, 10 ether, 0, 0, 0, block.timestamp + 30 minutes);
 
         // Prepare for swap
         ra.approve(address(flashSwapRouter), type(uint256).max);

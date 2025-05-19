@@ -78,8 +78,7 @@ contract DepositTest is Helper {
 
         uint256 adjustedDepositAmount = TransferHelper.normalizeDecimals(depositAmount, TARGET_DECIMALS, raDecimals);
 
-        uint256 received =
-            moduleCore.depositLv(defaultCurrencyId, adjustedDepositAmount, 0, 0, block.timestamp + 30 minutes);
+        uint256 received = moduleCore.depositLv(defaultCurrencyId, adjustedDepositAmount, 0, 0, 0, block.timestamp);
 
         VaultBalances memory balances = moduleCore.getVaultBalances(defaultCurrencyId);
         vm.assertEq(balances.ra.locked, 0);
@@ -110,8 +109,7 @@ contract DepositTest is Helper {
 
         uint256 adjustedDepositAmount = TransferHelper.normalizeDecimals(depositAmount, TARGET_DECIMALS, raDecimals);
 
-        uint256 received =
-            moduleCore.depositLv(defaultCurrencyId, adjustedDepositAmount, 0, 0, block.timestamp + 30 minutes);
+        uint256 received = moduleCore.depositLv(defaultCurrencyId, adjustedDepositAmount, 0, 0, 0, block.timestamp);
 
         VaultBalances memory balances = moduleCore.getVaultBalances(defaultCurrencyId);
         vm.assertEq(balances.ra.locked, 0);
@@ -200,7 +198,7 @@ contract DepositTest is Helper {
         {
             uint256 balanceBefore = lv.balanceOf(DEFAULT_ADDRESS);
 
-            received = moduleCore.depositLv(id, amount, 0, 0, block.timestamp + 30 minutes);
+            received = moduleCore.depositLv(id, amount, 0, 0, 0, block.timestamp);
 
             uint256 balanceAfter = lv.balanceOf(DEFAULT_ADDRESS);
 
@@ -230,7 +228,7 @@ contract DepositTest is Helper {
 
         // should fail since we have PA deposited in PSM
         vm.expectRevert(IErrors.LVDepositPaused.selector);
-        received = moduleCore.depositLv(id, 1 ether, 0, 0, block.timestamp + 30 minutes);
+        received = moduleCore.depositLv(id, 1 ether, 0, 0, 0, block.timestamp);
 
         forceUnpause();
         IVault.RedeemEarlyResult memory result = moduleCore.redeemEarlyLv(redeemParams);
@@ -268,7 +266,7 @@ contract DepositTest is Helper {
 
         uint256 balanceBefore = lv.balanceOf(DEFAULT_ADDRESS);
 
-        uint256 received = moduleCore.depositLv(id, amount, 0, 0, block.timestamp + 30 minutes);
+        uint256 received = moduleCore.depositLv(id, amount, 0, 0, 0, block.timestamp);
 
         uint256 balanceAfter = lv.balanceOf(DEFAULT_ADDRESS);
 
@@ -302,10 +300,10 @@ contract DepositTest is Helper {
         Id id = defaultCurrencyId;
 
         // set the first deposit
-        uint256 received = moduleCore.depositLv(id, amount, 0 ether, 0 ether, block.timestamp + 30 minutes);
+        uint256 received = moduleCore.depositLv(id, amount, 0 ether, 0 ether, 0, block.timestamp);
 
         vm.expectRevert();
-        received = moduleCore.depositLv(id, amount, 100000 ether, 10000 ether, block.timestamp + 30 minutes);
+        received = moduleCore.depositLv(id, amount, 100000 ether, 10000 ether, 0, block.timestamp);
     }
 
     function test_redeemStateFailure() external {
@@ -326,7 +324,7 @@ contract DepositTest is Helper {
         {
             uint256 balanceBefore = lv.balanceOf(DEFAULT_ADDRESS);
 
-            received = moduleCore.depositLv(id, amount, 0, 0, block.timestamp + 30 minutes);
+            received = moduleCore.depositLv(id, amount, 0, 0, 0, block.timestamp);
 
             uint256 balanceAfter = lv.balanceOf(DEFAULT_ADDRESS);
 
@@ -363,7 +361,7 @@ contract DepositTest is Helper {
 
         // should fail since we have PA deposited in PSM
         vm.expectRevert(IErrors.LVDepositPaused.selector);
-        received = moduleCore.depositLv(id, 1 ether, 0, 0, block.timestamp + 30 minutes);
+        received = moduleCore.depositLv(id, 1 ether, 0, 0, 0, block.timestamp);
 
         forceUnpause();
         IVault.RedeemEarlyResult memory result1 = moduleCore.redeemEarlyLv(redeemParams);
@@ -386,7 +384,7 @@ contract DepositTest is Helper {
         {
             uint256 balanceBefore = lv.balanceOf(DEFAULT_ADDRESS);
 
-            received = moduleCore.depositLv(id, amount, 0, 0, block.timestamp + 30 minutes);
+            received = moduleCore.depositLv(id, amount, 0, 0, 0, block.timestamp);
 
             uint256 balanceAfter = lv.balanceOf(DEFAULT_ADDRESS);
 
@@ -403,7 +401,7 @@ contract DepositTest is Helper {
             lv.approve(address(moduleCore), 2 ** 256 - 1);
         }
 
-        moduleCore.depositLv(id, amount, 0, 0, block.timestamp + 30 minutes); // a second deposit
+        moduleCore.depositLv(id, amount, 0, 0, 0, block.timestamp); // a second deposit
         assertApproxEqAbs(received = lv.balanceOf(DEFAULT_ADDRESS), amount * 2, amount / 500); // there is going to be less than a 0.1% difference
         // fast forward to expiry
         ff_expired();
@@ -425,7 +423,7 @@ contract DepositTest is Helper {
 
         // should fail since we have PA deposited in PSM
         vm.expectRevert(IErrors.LVDepositPaused.selector);
-        moduleCore.depositLv(id, 1 ether, 0, 0, block.timestamp + 30 minutes);
+        moduleCore.depositLv(id, 1 ether, 0, 0, 0, block.timestamp);
 
         forceUnpause();
 
@@ -473,7 +471,7 @@ contract DepositTest is Helper {
 
             uint256 balanceBefore = lv.balanceOf(DEFAULT_ADDRESS);
 
-            received = moduleCore.depositLv(id, amount, 0, 0, block.timestamp + 30 minutes);
+            received = moduleCore.depositLv(id, amount, 0, 0, 0, block.timestamp);
 
             uint256 balanceAfter = lv.balanceOf(DEFAULT_ADDRESS);
 
@@ -494,7 +492,7 @@ contract DepositTest is Helper {
         }
 
         {
-            moduleCore.depositLv(id, amount, 0, 0, block.timestamp + 30 minutes); // a second deposit
+            moduleCore.depositLv(id, amount, 0, 0, 0, block.timestamp); // a second deposit
             uint256 expectedLvBalance = TransferHelper.normalizeDecimals(amount * 2, raDecimals, TARGET_DECIMALS);
             assertApproxEqAbs(received = lv.balanceOf(DEFAULT_ADDRESS), expectedLvBalance, expectedLvBalance / 500); // there is going to be less than a 0.1% difference
         }
@@ -519,7 +517,7 @@ contract DepositTest is Helper {
         // should fail since we have PA deposited in PSM
         {
             vm.expectRevert(IErrors.LVDepositPaused.selector);
-            moduleCore.depositLv(id, 1 ether, 0, 0, block.timestamp + 30 minutes);
+            moduleCore.depositLv(id, 1 ether, 0, 0, 0, block.timestamp);
         }
 
         forceUnpause();
@@ -561,7 +559,7 @@ contract DepositTest is Helper {
     }
 
     function test_depositInflation() external {
-        uint256 depositAmount = 1e10;
+        uint256 depositAmount = 1e15;
 
         uint256 adjustedDepositAmount = depositAmount;
 
@@ -569,8 +567,7 @@ contract DepositTest is Helper {
         vm.assertEq(balances.ra.locked, 0);
         vm.assertEq(balances.ctBalance, 0);
 
-        uint256 received =
-            moduleCore.depositLv(defaultCurrencyId, adjustedDepositAmount, 0, 0, block.timestamp + 30 minutes);
+        uint256 received = moduleCore.depositLv(defaultCurrencyId, adjustedDepositAmount, 0, 0, 0, block.timestamp);
 
         balances = moduleCore.getVaultBalances(defaultCurrencyId);
         vm.assertEq(balances.ra.locked, 0);
@@ -587,14 +584,20 @@ contract DepositTest is Helper {
         (received,) = moduleCore.depositPsm(defaultCurrencyId, 1 ether);
 
         ICorkHook ammRouter = moduleCore.getAmmRouter();
+
+        IERC20 lpToken = IERC20(ammRouter.getLiquidityToken(address(ra), ct));
+
         ra.approve(address(ammRouter), 1 ether);
+
         IERC20(ct).approve(address(ammRouter), 1 ether);
-        (,, uint256 minted) = ammRouter.addLiquidity(address(ra), ct, 1 ether, 1 ether, 0, 0, block.timestamp);
+        // the returned minted amount is higher than what actually minted, so we use the balance
+        ammRouter.addLiquidity(address(ra), ct, 1 ether, 1 ether, 0, 0, block.timestamp);
 
+        uint256 minted = lpToken.balanceOf(DEFAULT_ADDRESS);
         vm.assertGe(minted, 1e9);
-        IERC20(ammRouter.getLiquidityToken(address(ra), ct)).transfer(address(moduleCore), minted);
+        lpToken.transfer(address(moduleCore), minted);
 
-        received = moduleCore.depositLv(defaultCurrencyId, 1 ether, 0, 0, block.timestamp + 30 minutes);
+        received = moduleCore.depositLv(defaultCurrencyId, 1 ether, 0, 0, 0, block.timestamp);
         vm.assertGe(received, 100);
     }
 
@@ -606,7 +609,7 @@ contract DepositTest is Helper {
 
         uint256 balanceBefore = lv.balanceOf(DEFAULT_ADDRESS);
 
-        uint256 received = moduleCore.depositLv(id, amount, 0, 0, block.timestamp + 30 minutes);
+        uint256 received = moduleCore.depositLv(id, amount, 0, 0, 0, block.timestamp);
 
         uint256 balanceAfter = lv.balanceOf(DEFAULT_ADDRESS);
 
@@ -622,7 +625,7 @@ contract DepositTest is Helper {
 
         // should fail to deposit as this is expired
         vm.expectRevert(IErrors.Expired.selector);
-        moduleCore.depositLv(id, amount, 0, 0, block.timestamp + 30 minutes);
+        moduleCore.depositLv(id, amount, 0, 0, 0, block.timestamp);
 
         IVault.RedeemEarlyResult memory result = moduleCore.redeemEarlyLv(redeemParams);
         vm.warp(block.timestamp + 3 days);
@@ -649,7 +652,7 @@ contract DepositTest is Helper {
 
         (uint256 received,) = moduleCore.depositPsm(defaultCurrencyId, 150 ether);
 
-        moduleCore.depositLv(defaultCurrencyId, 100 ether, 0, 0, block.timestamp + 30 minutes);
+        moduleCore.depositLv(defaultCurrencyId, 100 ether, 0, 0, 0, block.timestamp);
 
         // we fast forward 1 day to make the next malicious deposit update the second nav reference value
         vm.warp(block.timestamp + 1 days);
@@ -667,6 +670,6 @@ contract DepositTest is Helper {
         corkConfig.updateNavThreshold(defaultCurrencyId, 99 ether);
 
         vm.expectRevert();
-        moduleCore.depositLv(defaultCurrencyId, 100 ether, 0, 0, block.timestamp + 30 minutes);
+        moduleCore.depositLv(defaultCurrencyId, 100 ether, 0, 0, 0, block.timestamp);
     }
 }

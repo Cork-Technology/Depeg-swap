@@ -97,9 +97,14 @@ interface IVault is IErrors {
      * @param ctTolerance The tolerance for the CT
      * @param deadline The deadline for the deposit
      */
-    function depositLv(Id id, uint256 amount, uint256 raTolerance, uint256 ctTolerance, uint256 deadline)
-        external
-        returns (uint256 received);
+    function depositLv(
+        Id id,
+        uint256 amount,
+        uint256 raTolerance,
+        uint256 ctTolerance,
+        uint256 minimumLvAmountOut,
+        uint256 deadline
+    ) external returns (uint256 received);
 
     /**
      * @notice Redeem lv before expiry

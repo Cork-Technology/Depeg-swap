@@ -210,6 +210,12 @@ interface IErrors {
     /// or it's verrrry close to expiry
     error InvalidPoolStateOrNearExpired();
 
+    /// @notice inssuficient balance to perform rollover redeem(e.g having 5 CT worth of rollover to redeem but trying to redeem 10)
+    error InsufficientRolloverBalance(address caller, uint256 requested, uint256 balance);
+
+    /// @notice thrown when trying to rollover while no active issuance
+    error NoActiveIssuance();
+
     /// @notice thrown when the deadline is exceeded
     error DeadlineExceeded();
 }
