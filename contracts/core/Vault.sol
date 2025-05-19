@@ -149,7 +149,7 @@ abstract contract VaultCore is ModuleState, Context, IVault, IVaultLiquidation {
         onlyWhiteListedLiquidationContract();
         /// @dev we set the executor address here.
         /// this will be used to know who is the active liquidator that handle a pool PA liquidation
-        /// only this address will be allowed to call receiveTradeExecuctionResultFunds and useTradeExecutionResultFunds
+        /// only this address will be allowed to call receiveTradeExecuctionResultFunds and receiveLeftoverFunds
         /// this is restricted because now we will pause the vault withdrawal. If we allow anyone to call it then it'll have a DoS surface of attack
         activeLiquidator[id] = executor;
 
