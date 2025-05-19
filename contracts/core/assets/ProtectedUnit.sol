@@ -89,6 +89,9 @@ contract ProtectedUnit is
     /// @notice Maximum supply cap for minting ProtectedUnit tokens
     uint256 public mintCap;
 
+    /// @notice The amount of RA tokens in reserve above which the contract will be paused
+    uint256 public raDustThreshold;
+
     /// @notice Historical record of all DS tokens used by this contract
     /// @dev Used to track deposits across DS token rotations
     DSData[] public dsHistory;
@@ -213,6 +216,7 @@ contract ProtectedUnit is
         config = CorkConfig(_config);
         permit2 = IPermit2(_permit2);
         factory = _msgSender();
+        raDustThreshold = 0.1 ether;
     }
 
     /**
@@ -459,7 +463,7 @@ contract ProtectedUnit is
             revert MintCapExceeded();
         }
 
-        if (raReserve > 0) {
+        if (raReserve > raDustThreshold) {
             revert EnforcedPause();
         }
 
@@ -675,6 +679,21 @@ contract ProtectedUnit is
         }
         mintCap = _newMintCap;
         emit MintCapUpdated(_newMintCap);
+    }
+
+    /**
+     * @notice Updates the RA dust threshold
+     * @param _newRaDustThreshold The new RA dust threshold
+     * @custom:reverts InvalidValue if the RA dust threshold isn't change
+     * @custom:reverts OnlyFactory if caller is not the factory
+     * @custom:emits RaDustThresholdUpdated when the threshold is successfully updated
+     */
+    function updateRaDustThreshold(uint256 _newRaDustThreshold) external onlyFactory {
+        if (_newRaDustThreshold == raDustThreshold) {
+            revert InvalidValue();
+        }
+        raDustThreshold = _newRaDustThreshold;
+        emit RaDustThresholdUpdated(_newRaDustThreshold);
     }
 
     function pa() external view returns (address) {
