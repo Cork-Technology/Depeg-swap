@@ -222,6 +222,21 @@ contract ProtectedUnitFactory is IProtectedUnitFactory, OwnableUpgradeable, UUPS
     }
 
     /**
+     * @notice Updates the RA dust threshold for a Protected Unit
+     * @param _protectedUnit Address of the Protected Unit contract
+     * @param _newRaDustThreshold The new RA dust threshold value
+     * @custom:reverts OnlyOwner if caller is not the owner
+     * @custom:reverts InvalidValue if the RA dust threshold is 0
+     */
+    function updateRaDustThreshold(address _protectedUnit, uint256 _newRaDustThreshold) external onlyOwner {
+        if (_newRaDustThreshold == 0 || _protectedUnit == address(0)) {
+            revert InvalidValue();
+        }
+
+        ProtectedUnit(_protectedUnit).updateRaDustThreshold(_newRaDustThreshold);
+    }
+
+    /**
      * @notice Updates the implementation contract for new ProtectedUnit instances
      * @dev Only the owner can update the implementation
      * @param _newImplementation Address of the new implementation

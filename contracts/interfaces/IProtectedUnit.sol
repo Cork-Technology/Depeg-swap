@@ -41,6 +41,12 @@ interface IProtectedUnit is IErrors {
     event MintCapUpdated(uint256 newMintCap);
 
     /**
+     * @notice Emmits when the RA dust threshold changes
+     * @param newRaDustThreshold The new RA dust threshold
+     */
+    event RaDustThresholdUpdated(uint256 newRaDustThreshold);
+
+    /**
      * @notice Emmits when RA tokens are redeemed
      * @param redeemer The wallet address that performed the redemption
      * @param dsId The identifier of the DS token used

@@ -89,12 +89,17 @@ contract ProtectedUnit is
     /// @notice Maximum supply cap for minting ProtectedUnit tokens
     uint256 public mintCap;
 
+    /// @notice The amount of RA tokens in reserve above which the contract will be paused
+    uint256 public raDustThreshold;
+
     /// @notice Historical record of all DS tokens used by this contract
     /// @dev Used to track deposits across DS token rotations
     DSData[] public dsHistory;
 
     /// @notice Mapping from DS token address to its index in dsHistory array
     mapping(address => uint256) public dsIndexMap;
+
+    address public activeLiquidators;
 
     /// @notice __gap variable to prevent storage collisions
     // slither-disable-next-line unused-state
@@ -110,6 +115,17 @@ contract ProtectedUnit is
      */
     modifier autoUpdateDS() {
         _getLastDS();
+        _;
+    }
+
+    modifier onlyActiveLiquidators() {
+        if (activeLiquidators != _msgSender()) revert OnlyLiquidator();
+
+        _;
+    }
+
+    modifier onlyNoLiquidation() {
+        if (activeLiquidators != address(0)) revert EnforcedPause();
         _;
     }
 
@@ -200,6 +216,7 @@ contract ProtectedUnit is
         config = CorkConfig(_config);
         permit2 = IPermit2(_permit2);
         factory = _msgSender();
+        raDustThreshold = 0.1 ether;
     }
 
     /**
@@ -262,25 +279,22 @@ contract ProtectedUnit is
         _raReserves = raReserve;
     }
 
-    /**
-     * @notice Allows the liquidator to request funds for liquidation
-     * @param amount How many tokens to request
-     * @param token Which token to request (must be PA or RA)
-     * @custom:reverts InsufficientFunds if the contract has insufficient tokens
-     * @custom:reverts OnlyLiquidator if caller is not whitelisted
-     * @custom:reverts InvalidToken if token is neither PA nor RA
-     * @custom:emits LiquidationFundsRequested when funds are successfully transferred
-     */
-    function requestLiquidationFunds(uint256 amount, address token)
+    function requestLiquidationFunds(uint256 amount, address token, address executor)
         external
         onlyLiquidationContract
         onlyValidToken(token)
     {
-        uint256 balance = IERC20(token).balanceOf(address(this));
+        uint256 balance;
 
-        if (balance < amount) {
-            revert InsufficientFunds();
-        }
+        if (token == address(_pa)) balance = _selfPaReserve();
+        else balance = _selfRaReserve();
+
+        if (balance < amount) revert InsufficientFunds();
+
+        activeLiquidators = executor;
+
+        // pause contract during liquidation
+        _pause();
 
         IERC20(token).safeTransfer(_msgSender(), amount);
         if (token == address(_ra)) {
@@ -292,14 +306,15 @@ contract ProtectedUnit is
     }
 
     /**
-     * @notice Accepts incoming funds from liquidation or other operations
+     * @notice Accepts incoming funds from liquidation
      * @dev Transfers the specified amount of the token from the sender to this contract
      * @param amount How many tokens are being received
      * @param token Which token is being received (must be PA or RA)
      * @custom:reverts InvalidToken if token is neither PA nor RA
      * @custom:emits FundsReceived when funds are successfully transferred
      */
-    function receiveFunds(uint256 amount, address token) external onlyValidToken(token) whenNotPaused {
+    function receiveFunds(uint256 amount, address token) external onlyValidToken(token) onlyActiveLiquidators {
+        // we won't pause since it's already paused on request liquidation
         IERC20(token).safeTransferFrom(_msgSender(), address(this), amount);
 
         if (token == address(_ra)) {
@@ -308,6 +323,10 @@ contract ProtectedUnit is
             paReserve += amount;
         }
         emit FundsReceived(_msgSender(), token, amount);
+    }
+
+    function finishLiquidating() external onlyActiveLiquidators {
+        delete activeLiquidators;
     }
 
     /**
@@ -337,6 +356,8 @@ contract ProtectedUnit is
         amountOut = result.amountOut;
         dsReserve += amountOut;
         raReserve -= amount;
+
+        if (raReserve == 0) _unpause();
 
         emit FundsUsed(_msgSender(), dsId, amount, result.amountOut);
     }
@@ -442,6 +463,10 @@ contract ProtectedUnit is
             revert MintCapExceeded();
         }
 
+        if (raReserve > raDustThreshold) {
+            revert EnforcedPause();
+        }
+
         Asset currentDs = _fetchLatestDS();
 
         uint256 reserveDs = currentDs == ds ? _selfDsReserve() : 0;
@@ -467,6 +492,7 @@ contract ProtectedUnit is
         whenNotPaused
         nonReentrant
         autoUpdateDS
+        onlyNoLiquidation
         returns (uint256 dsAmount, uint256 paAmount)
     {
         // Calculate token amounts needed for minting
@@ -509,6 +535,7 @@ contract ProtectedUnit is
         whenNotPaused
         nonReentrant
         autoUpdateDS
+        onlyNoLiquidation
         returns (uint256 dsAmount, uint256 paAmount)
     {
         // checks that DS and PA are in the permitted array and that the transfer details are for the correct tokens
@@ -582,24 +609,28 @@ contract ProtectedUnit is
     /**
      * @notice Burns ProtectedUnit tokens from a specific account and returns the underlying assets
      * @dev Requires approval if caller isn't the token owner
+     * @dev since pausing would typically happens when PU is liquidating PA to RA AND if there's RA inside the PU(mint is paused in this case)
+     * we only enforce the pausing on burn only if there's liquidation happening
      * @param account The address from which to burn tokens
      * @param amount The amount of ProtectedUnit tokens to burn
      * @custom:reverts EnforcedPause if burning is paused
      * @custom:reverts InvalidAmount if amount is invalid
      * @custom:emits Burn when tokens are successfully burned
      */
-    function burnFrom(address account, uint256 amount) public override whenNotPaused nonReentrant autoUpdateDS {
+    function burnFrom(address account, uint256 amount) public override nonReentrant autoUpdateDS onlyNoLiquidation {
         _burnPU(account, amount);
     }
 
     /**
      * @notice Burns ProtectedUnit tokens from the caller and returns the underlying assets
+     * @dev since pausing would  typically happens when PU is liquidating PA to RA AND if there's RA inside the PU(mint is paused in this case)
+     * we only enforce the pausing on burn only if there's liquidation happening
      * @param amount The amount of ProtectedUnit tokens to burn
      * @custom:reverts EnforcedPause if burning is paused
      * @custom:reverts InvalidAmount if amount is invalid
      * @custom:emits Burn when tokens are successfully burned
      */
-    function burn(uint256 amount) public override whenNotPaused nonReentrant autoUpdateDS {
+    function burn(uint256 amount) public override nonReentrant autoUpdateDS onlyNoLiquidation {
         _burnPU(_msgSender(), amount);
     }
 
@@ -648,6 +679,21 @@ contract ProtectedUnit is
         }
         mintCap = _newMintCap;
         emit MintCapUpdated(_newMintCap);
+    }
+
+    /**
+     * @notice Updates the RA dust threshold
+     * @param _newRaDustThreshold The new RA dust threshold
+     * @custom:reverts InvalidValue if the RA dust threshold isn't change
+     * @custom:reverts OnlyFactory if caller is not the factory
+     * @custom:emits RaDustThresholdUpdated when the threshold is successfully updated
+     */
+    function updateRaDustThreshold(uint256 _newRaDustThreshold) external onlyFactory {
+        if (_newRaDustThreshold == raDustThreshold) {
+            revert InvalidValue();
+        }
+        raDustThreshold = _newRaDustThreshold;
+        emit RaDustThresholdUpdated(_newRaDustThreshold);
     }
 
     function pa() external view returns (address) {

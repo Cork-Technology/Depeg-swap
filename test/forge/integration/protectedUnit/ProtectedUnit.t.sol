@@ -194,9 +194,6 @@ contract ProtectedUnitTest is Helper {
         // Generate the batch permit signature
         bytes memory signature = getPermitBatchSignature(permitBatchData, USER_PK, IPermit2(permit2).DOMAIN_SEPARATOR());
 
-        dsToken.allowance(user, address(permit2));
-        pa.allowance(user, address(permit2));
-
         // Record initial balances
         uint256 startBalanceDS = dsToken.balanceOf(user);
         uint256 startBalancePA = pa.balanceOf(user);
@@ -444,7 +441,7 @@ contract ProtectedUnitTest is Helper {
         vm.stopPrank();
     }
 
-    function test_DissolvingTokens() public {
+    function test_BurnPU() public {
         // Mint tokens first
         test_MintingTokens();
 
