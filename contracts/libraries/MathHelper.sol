@@ -23,17 +23,39 @@ library MathHelper {
      *
      * @param amountra the total amount of liquidity user provide(e.g 2 ra)
      * @param priceRatio the price ratio of the pair, should be retrieved from the AMM as sqrtx96 and be converted to ratio
+     * @param raDecimals the number of decimals for the RA token
      * @return ra the amount of ra needed to provide AMM with liquidity
      * @return ct the amount of ct needed to provide AMM with liquidity, also the amount of how much ra should be converted to ct
      */
-    function calculateProvideLiquidityAmountBasedOnCtPrice(uint256 amountra, uint256 priceRatio)
+    function calculateProvideLiquidityAmountBasedOnCtPrice(uint256 amountra, uint256 priceRatio, uint8 raDecimals)
         external
         pure
         returns (uint256 ra, uint256 ct)
     {
-        UD60x18 _ct = div(ud(amountra), ud(priceRatio) + convert(1));
+        // Convert RA amount to 18 decimals for calculation if needed
+        uint256 amountraAdjusted = amountra;
+        if (raDecimals != DEFAULT_DECIMAL) {
+            if (raDecimals < DEFAULT_DECIMAL) {
+                amountraAdjusted = amountra * 10 ** (DEFAULT_DECIMAL - raDecimals);
+            } else {
+                amountraAdjusted = amountra / 10 ** (raDecimals - DEFAULT_DECIMAL);
+            }
+        }
+
+        UD60x18 _ct = div(ud(amountraAdjusted), ud(priceRatio) + convert(1));
         ct = unwrap(_ct);
-        ra = amountra - ct;
+
+        // Convert RA back to original decimals if needed
+        uint256 raAdjusted = amountraAdjusted - ct;
+        if (raDecimals != DEFAULT_DECIMAL) {
+            if (raDecimals < DEFAULT_DECIMAL) {
+                ra = raAdjusted / 10 ** (DEFAULT_DECIMAL - raDecimals);
+            } else {
+                ra = raAdjusted * 10 ** (raDecimals - DEFAULT_DECIMAL);
+            }
+        } else {
+            ra = raAdjusted;
+        }
     }
 
     /**

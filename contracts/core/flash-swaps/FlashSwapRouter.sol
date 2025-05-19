@@ -20,6 +20,7 @@ import {IErrors} from "./../../interfaces/IErrors.sol";
 import {TransferHelper} from "./../../libraries/TransferHelper.sol";
 import {ReturnDataSlotLib} from "./../../libraries/ReturnDataSlotLib.sol";
 import {CorkConfig} from "../CorkConfig.sol";
+import {Asset} from "../assets/Asset.sol";
 
 /**
  * @title Router contract for Flashswap
@@ -87,21 +88,21 @@ contract RouterState is
     uint256[49] private __gap;
 
     modifier onlyDefaultAdmin() {
-        if (!hasRole(DEFAULT_ADMIN_ROLE, msg.sender)) {
+        if (!hasRole(DEFAULT_ADMIN_ROLE, _msgSender())) {
             revert NotDefaultAdmin();
         }
         _;
     }
 
     modifier onlyModuleCore() {
-        if (!hasRole(MODULE_CORE, msg.sender)) {
+        if (!hasRole(MODULE_CORE, _msgSender())) {
             revert NotModuleCore();
         }
         _;
     }
 
     modifier onlyConfig() {
-        if (!hasRole(CONFIG, msg.sender)) {
+        if (!hasRole(CONFIG, _msgSender())) {
             revert NotConfig();
         }
         _;
@@ -115,6 +116,13 @@ contract RouterState is
         ReturnDataSlotLib.clear(ReturnDataSlotLib.DS_FEE_AMOUNT);
     }
 
+    modifier withinDeadline(uint256 deadline) {
+        if (block.timestamp > deadline) {
+            revert IErrors.DeadlineExceeded();
+        }
+        _;
+    }
+
     constructor() {
         _disableInitializers();
     }
@@ -122,7 +130,7 @@ contract RouterState is
     function initialize(address _config) external initializer {
         __AccessControl_init();
         __UUPSUpgradeable_init();
-        _grantRole(DEFAULT_ADMIN_ROLE, msg.sender);
+        _grantRole(DEFAULT_ADMIN_ROLE, _msgSender());
         _grantRole(CONFIG, _config);
         config = CorkConfig(_config);
     }
@@ -509,6 +517,8 @@ contract RouterState is
         if (rawRaPermitSig.length == 0 || deadline == 0) {
             revert InvalidSignature();
         }
+        dsNotExpired(reserveId, dsId);
+
         ReserveState storage self = reserves[reserveId];
         AssetPair storage assetPair = self.ds[dsId];
 
@@ -516,7 +526,9 @@ contract RouterState is
             revert PermitNotSupported();
         }
 
-        DepegSwapLibrary.permitForRA(address(assetPair.ra), rawRaPermitSig, msg.sender, address(this), amount, deadline);
+        DepegSwapLibrary.permitForRA(
+            address(assetPair.ra), rawRaPermitSig, _msgSender(), address(this), amount, deadline
+        );
 
         result = _swapRaForDsTopLevel(reserveId, dsId, amount, amountOutMin, params, offchainGuess);
     }
@@ -532,9 +544,9 @@ contract RouterState is
         ReserveState storage self = reserves[reserveId];
         AssetPair storage assetPair = self.ds[dsId];
 
-        IERC20(assetPair.ra).safeTransferFrom(msg.sender, address(this), amount);
+        IERC20(assetPair.ra).safeTransferFrom(_msgSender(), address(this), amount);
 
-        result.borrow = _swapRaforDs(assetPair, reserveId, dsId, amount, msg.sender, params, offchainGuess);
+        result.borrow = _swapRaforDs(assetPair, reserveId, dsId, amount, _msgSender(), params, offchainGuess);
 
         result.amountOut = ReturnDataSlotLib.get(ReturnDataSlotLib.RETURN_SLOT_BUY);
 
@@ -557,7 +569,7 @@ contract RouterState is
         emit RaSwapped(
             reserveId,
             dsId,
-            msg.sender,
+            _msgSender(),
             amount,
             result.amountOut,
             result.ctRefunded,
@@ -576,6 +588,7 @@ contract RouterState is
      * @param amountOutMin The minimum amount of DS tokens to receive.
      * @param params Additional parameters for the swap.
      * @param offchainGuess Offchain data used for the swap.
+     * @param deadline The deadline for the swap.
      * @return result The result of the swap, including amounts and other details.
      */
     function swapRaforDs(
@@ -584,8 +597,10 @@ contract RouterState is
         uint256 amount,
         uint256 amountOutMin,
         BuyAprroxParams calldata params,
-        OffchainGuess calldata offchainGuess
-    ) external autoClearReturnData returns (SwapRaForDsReturn memory result) {
+        OffchainGuess calldata offchainGuess,
+        uint256 deadline
+    ) external withinDeadline(deadline) autoClearReturnData returns (SwapRaForDsReturn memory result) {
+        dsNotExpired(reserveId, dsId);
         result = _swapRaForDsTopLevel(reserveId, dsId, amount, amountOutMin, params, offchainGuess);
     }
 
@@ -616,11 +631,12 @@ contract RouterState is
         if (rawDsPermitSig.length == 0 || deadline == 0) {
             revert InvalidSignature();
         }
+        dsNotExpired(reserveId, dsId);
         ReserveState storage self = reserves[reserveId];
         AssetPair storage assetPair = self.ds[dsId];
 
         DepegSwapLibrary.permit(
-            address(assetPair.ds), rawDsPermitSig, msg.sender, address(this), amount, deadline, "swapDsforRa"
+            address(assetPair.ds), rawDsPermitSig, _msgSender(), address(this), amount, deadline, "swapDsforRa"
         );
 
         amountOut = _swapDsforRaTopLevel(reserveId, dsId, amount, amountOutMin);
@@ -633,9 +649,9 @@ contract RouterState is
         ReserveState storage self = reserves[reserveId];
         AssetPair storage assetPair = self.ds[dsId];
 
-        assetPair.ds.transferFrom(msg.sender, address(this), amount);
+        assetPair.ds.transferFrom(_msgSender(), address(this), amount);
 
-        (, bool success) = __swapDsforRa(assetPair, reserveId, dsId, amount, amountOutMin, msg.sender);
+        (, bool success) = __swapDsforRa(assetPair, reserveId, dsId, amount, amountOutMin, _msgSender());
 
         if (!success) {
             revert IErrors.InsufficientLiquidityForSwap();
@@ -645,7 +661,7 @@ contract RouterState is
 
         self.recalculateHIYA(dsId, TransferHelper.tokenNativeDecimalsToFixed(amountOut, assetPair.ra), amount);
 
-        emit DsSwapped(reserveId, dsId, msg.sender, amount, amountOut);
+        emit DsSwapped(reserveId, dsId, _msgSender(), amount, amountOut);
     }
 
     /**
@@ -654,14 +670,17 @@ contract RouterState is
      * @param dsId the ds id of the pair, the same as the DS id on PSM and LV
      * @param amount the amount of DS to swap
      * @param amountOutMin the minimum amount of RA to receive, will revert if the actual amount is less than this.
+     * @param deadline The deadline for the swap.
      * @return amountOut amount of RA that's received
      * @dev Reverts if the actual amount is less than `amountOutMin`
      */
-    function swapDsforRa(Id reserveId, uint256 dsId, uint256 amount, uint256 amountOutMin)
+    function swapDsforRa(Id reserveId, uint256 dsId, uint256 amount, uint256 amountOutMin, uint256 deadline)
         external
         autoClearReturnData
+        withinDeadline(deadline)
         returns (uint256 amountOut)
     {
+        dsNotExpired(reserveId, dsId);
         amountOut = _swapDsforRaTopLevel(reserveId, dsId, amount, amountOutMin);
     }
 
@@ -732,7 +751,7 @@ contract RouterState is
 
         {
             // make sure only hook and forwarder can call this function
-            assert(msg.sender == address(hook) || msg.sender == address(hook.getForwarder()));
+            assert(_msgSender() == address(hook) || _msgSender() == address(hook.getForwarder()));
             assert(sender == address(this));
         }
 
@@ -847,5 +866,11 @@ contract RouterState is
         IERC20(ra).safeTransfer(poolManager, actualRepaymentAmount);
 
         ReturnDataSlotLib.increase(ReturnDataSlotLib.RETURN_SLOT_SELL, received);
+    }
+
+    function dsNotExpired(Id reserveId, uint256 dsId) internal {
+        if (Asset(reserves[reserveId].ds[dsId].ds).isExpired()) {
+            revert Expired();
+        }
     }
 }

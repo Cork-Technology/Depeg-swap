@@ -63,6 +63,12 @@ interface ICustomERC20Permit {
      *
      * CAUTION: See Security Considerations above.
      */
+    function permit(address owner, address spender, uint256 value, uint256 deadline, uint8 v, bytes32 r, bytes32 s)
+        external;
+
+    /**
+     * @dev Extended permit function with additional functionName parameter.
+     */
     function permit(
         address owner,
         address spender,

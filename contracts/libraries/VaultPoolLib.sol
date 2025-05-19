@@ -3,6 +3,7 @@ pragma solidity ^0.8.24;
 
 import {VaultPool} from "./State.sol";
 import {MathHelper} from "./MathHelper.sol";
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 /**
  * @title VaultPool Library Contract
@@ -32,14 +33,14 @@ library VaultPoolLibrary {
         assert(totalRa == self.withdrawalPool.raBalance + self.ammLiquidityPool.balance);
     }
 
-    function rationedToAmm(VaultPool storage self, uint256 ratio)
+    function rationedToAmm(VaultPool storage self, uint256 ratio, uint8 raDecimals)
         internal
         view
         returns (uint256 ra, uint256 ct, uint256 originalBalance)
     {
         originalBalance = self.ammLiquidityPool.balance;
 
-        (ra, ct) = MathHelper.calculateProvideLiquidityAmountBasedOnCtPrice(originalBalance, ratio);
+        (ra, ct) = MathHelper.calculateProvideLiquidityAmountBasedOnCtPrice(originalBalance, ratio, raDecimals);
     }
 
     function resetAmmPool(VaultPool storage self) internal {
