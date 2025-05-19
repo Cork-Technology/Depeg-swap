@@ -579,17 +579,17 @@ contract RouterState is
         // TODO  fill from reserve here directly checking if currently the router is on a rollover sale or not
         if (_isRolloverSaleEligible(reserveId, dsId)) {
             // try to swap the RA for DS via rollover, this will noop if the condition for rollover is not met
-            (amount,) = _fillFromReserveRollover(reserveId, dsId, msg.sender, amount);
+            (amount,) = _fillFromReserveRollover(reserveId, dsId, _msgSender(), amount);
         } else {
             // make we only do the fill when the price of DS is positive to prevent undefined behaviour
             (amount,, result.borrowOnFill, result.reserveSellPressure) = self.getCurrentDsPrice(assetPair, hook) != 0
-                ? _fillFromReserveSpotMarketPrice(assetPair, reserveId, dsId, amount, msg.sender, params, offchainGuess)
+                ? _fillFromReserveSpotMarketPrice(assetPair, reserveId, dsId, amount, _msgSender(), params, offchainGuess)
                 : (amount, 0, 0, 0);
         }
 
         // short circuit if all the swap is filled using the reserve
         result.borrowOnBuy =
-            amount != 0 ? _swapRaforDs(assetPair, reserveId, dsId, amount, msg.sender, params, offchainGuess) : 0;
+            amount != 0 ? _swapRaforDs(assetPair, reserveId, dsId, amount, _msgSender(), params, offchainGuess) : 0;
 
         result.amountOut = ReturnDataSlotLib.get(ReturnDataSlotLib.RETURN_SLOT_BUY);
 
