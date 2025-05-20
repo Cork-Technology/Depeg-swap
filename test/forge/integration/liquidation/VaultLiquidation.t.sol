@@ -43,9 +43,9 @@ contract VaultLiquidationTest is Helper {
         corkConfig.updateLvStrategyCtSplitPercentage(currencyId, 50 ether);
 
         moduleCore.depositPsm(currencyId, DEFAULT_DEPOSIT_AMOUNT);
-        moduleCore.depositLv(currencyId, DEFAULT_DEPOSIT_AMOUNT, 0, 0, block.timestamp + 30 minutes);
+        moduleCore.depositLv(currencyId, DEFAULT_DEPOSIT_AMOUNT, 0, 0, 0, block.timestamp);
 
-        liquidator = new Liquidator(address(corkConfig), DEFAULT_ADDRESS, address(this), address(moduleCore));
+        liquidator = new Liquidator(address(corkConfig), address(this), address(moduleCore));
 
         corkConfig.grantLiquidatorRole(address(liquidator), DEFAULT_ADDRESS);
         corkConfig.whitelist(address(liquidator));

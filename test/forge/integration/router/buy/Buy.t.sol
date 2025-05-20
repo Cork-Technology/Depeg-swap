@@ -57,7 +57,7 @@ contract BuyDsTest is Helper {
         ra.approve(address(moduleCore), 100_000_000_000 ether);
 
         moduleCore.depositPsm(currencyId, DEFAULT_DEPOSIT_AMOUNT);
-        moduleCore.depositLv(currencyId, DEFAULT_DEPOSIT_AMOUNT, 0, 0, block.timestamp + 30 minutes);
+        moduleCore.depositLv(currencyId, DEFAULT_DEPOSIT_AMOUNT, 0, 0, 0, block.timestamp);
 
         dsId = moduleCore.lastDsId(currencyId);
         (ct, ds) = moduleCore.swapAsset(currencyId, dsId);
@@ -98,7 +98,7 @@ contract BuyDsTest is Helper {
         uint256 depositAmount = TransferHelper.normalizeDecimals(DEFAULT_DEPOSIT_AMOUNT, TARGET_DECIMALS, raDecimals);
 
         moduleCore.depositPsm(currencyId, depositAmount);
-        moduleCore.depositLv(currencyId, depositAmount, 0, 0, block.timestamp + 30 minutes);
+        moduleCore.depositLv(currencyId, depositAmount, 0, 0, 0, block.timestamp);
 
         return (raDecimals, paDecimals);
     }
@@ -311,7 +311,7 @@ contract BuyDsTest is Helper {
         );
 
         IDsFlashSwapCore.OffchainGuess memory offchainGuess;
-        offchainGuess.borrow = result.borrow;
+        offchainGuess.borrowOnBuy = result.borrowOnBuy;
 
         revertRouterState();
 
@@ -341,7 +341,7 @@ contract BuyDsTest is Helper {
             currencyId, dsId, amount, 0, params, defaultOffchainGuessParams(), block.timestamp + 30 minutes
         );
 
-        offchainGuess.borrow = result.borrow;
+        offchainGuess.borrowOnBuy = result.borrowOnBuy;
 
         revertRouterState();
         result = flashSwapRouter.swapRaforDs(
@@ -360,7 +360,7 @@ contract BuyDsTest is Helper {
             currencyId, dsId, amount, 0, params, defaultOffchainGuessParams(), block.timestamp + 30 minutes
         );
 
-        offchainGuess.borrow = result.borrow;
+        offchainGuess.borrowOnBuy = result.borrowOnBuy;
 
         revertRouterState();
 

@@ -89,6 +89,11 @@ interface IVault is IErrors {
 
     event VaultNavThresholdUpdated(Id indexed id, uint256 navThreshold);
 
+    /// @notice Emitted when the withdrawal contract is updated
+    /// @param oldContract The old withdrawal contract address
+    /// @param newContract The new withdrawal contract address
+    event WithdrawalContractUpdated(address oldContract, address newContract);
+
     /**
      * @notice Deposit a wrapped asset into a given vault
      * @param id The Module id that is used to reference both psm and lv of a given pair
@@ -97,9 +102,14 @@ interface IVault is IErrors {
      * @param ctTolerance The tolerance for the CT
      * @param deadline The deadline for the deposit
      */
-    function depositLv(Id id, uint256 amount, uint256 raTolerance, uint256 ctTolerance, uint256 deadline)
-        external
-        returns (uint256 received);
+    function depositLv(
+        Id id,
+        uint256 amount,
+        uint256 raTolerance,
+        uint256 ctTolerance,
+        uint256 minimumLvAmountOut,
+        uint256 deadline
+    ) external returns (uint256 received);
 
     /**
      * @notice Redeem lv before expiry

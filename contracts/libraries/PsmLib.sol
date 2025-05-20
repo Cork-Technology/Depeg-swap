@@ -39,12 +39,6 @@ library PsmLibrary {
      */
     uint256 internal constant MAX_ALLOWED_FEES = 5 ether;
 
-    /// @notice inssuficient balance to perform rollover redeem(e.g having 5 CT worth of rollover to redeem but trying to redeem 10)
-    error InsufficientRolloverBalance(address caller, uint256 requested, uint256 balance);
-
-    /// @notice thrown when trying to rollover while no active issuance
-    error NoActiveIssuance();
-
     function isInitialized(State storage self) external view returns (bool status) {
         status = self.info.isInitialized();
     }
@@ -129,8 +123,7 @@ library PsmLibrary {
     // 3. mint new CT and DS equal to backed RA user has
     // 4. send DS to flashswap router if user opt-in for auto sell or send to user if not
     // 5. send CT to user
-    // 6. send RA to user if they don't opt-in for auto sell
-    // 7. send PA to user
+    // 6. send PA to user
     // regardless of amount, it will always send user all the profit from rollover
 
     function _rolloverExpiredCt(
@@ -141,7 +134,7 @@ library PsmLibrary {
         IDsFlashSwapCore flashSwapRouter
     ) internal returns (uint256 ctReceived, uint256 dsReceived, uint256 paReceived) {
         if (prevDsId == self.globalAssetIdx) {
-            revert NoActiveIssuance();
+            revert IErrors.NoActiveIssuance();
         }
 
         if (amount == 0) {
@@ -200,7 +193,7 @@ library PsmLibrary {
         Guard.safeAfterExpired(prevDs);
 
         if (Asset(prevDs.ct).balanceOf(owner) < amount) {
-            revert InsufficientRolloverBalance(owner, amount, Asset(prevDs.ct).balanceOf(owner));
+            revert IErrors.InsufficientRolloverBalance(owner, amount, Asset(prevDs.ct).balanceOf(owner));
         }
 
         // separate liquidity first so that we can properly calculate the attributed amount
@@ -228,7 +221,7 @@ library PsmLibrary {
         uint256 prevDsId
     ) private returns (uint256 rolloverProfit, uint256 remainingRolloverDs) {
         if (prevArchive.rolloverClaims[owner] < amount) {
-            revert InsufficientRolloverBalance(owner, amount, prevArchive.rolloverClaims[owner]);
+            revert IErrors.InsufficientRolloverBalance(owner, amount, prevArchive.rolloverClaims[owner]);
         }
 
         remainingRolloverDs = MathHelper.calculateAccrued(

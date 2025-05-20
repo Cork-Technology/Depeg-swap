@@ -234,7 +234,7 @@ contract SimulateScript is Test {
     function depositLv(Market memory market, Id marketId, uint256 depositAmt) public returns (uint256) {
         depositAmt = convertToDecimals(market.redemptionAsset, depositAmt);
         ERC20(market.redemptionAsset).approve(address(moduleCore), depositAmt);
-        return moduleCore.depositLv(marketId, depositAmt, 0, 0, block.timestamp + 30 minutes);
+        return moduleCore.depositLv(marketId, depositAmt, 0, 0, 0, block.timestamp);
     }
 
     function redeemRaWithDsPa(Market memory market, Id marketId, uint256 dsId, uint256 redeemAmt, address ds) public {
@@ -271,7 +271,7 @@ contract SimulateScript is Test {
         ERC20(market.redemptionAsset).approve(address(routerState), swapAmt);
         IDsFlashSwapCore.BuyAprroxParams memory buyApprox =
             IDsFlashSwapCore.BuyAprroxParams(108, 108, 1 ether, 1 gwei, 1 gwei, 0.01 ether);
-        IDsFlashSwapCore.OffchainGuess memory offchainguess = IDsFlashSwapCore.OffchainGuess({borrow: swapAmt});
+        IDsFlashSwapCore.OffchainGuess memory offchainguess = IDsFlashSwapCore.OffchainGuess(0, 0);
         routerState.swapRaforDs(marketId, dsId, swapAmt, 0, buyApprox, offchainguess, block.timestamp + 30 minutes);
     }
 
