@@ -92,7 +92,8 @@ interface IDsFlashSwapCore is IDsFlashSwapUtility {
     /// using this will greatly reduce the gas cost.
     /// will be the default way to swap RA for DS
     struct OffchainGuess {
-        uint256 borrow;
+        uint256 borrowOnBuy;
+        uint256 borrowOnFill;
     }
 
     struct SwapRaForDsReturn {
@@ -103,7 +104,8 @@ interface IDsFlashSwapCore is IDsFlashSwapUtility {
         /// or the DS reserve sale is disabled. in such cases, this will be the final amount of RA that's borrowed
         /// and the "afterSoldBorrow" will be 0.
         /// if the swap is fully fullfilled by the rollover sale, borrow
-        uint256 borrow;
+        uint256 borrowOnBuy;
+        uint256 borrowOnFill;
         uint256 fee;
         uint256 reserveSellPressure;
     }
@@ -170,15 +172,15 @@ interface IDsFlashSwapCore is IDsFlashSwapUtility {
     event ReserveEmptied(Id indexed reserveId, uint256 indexed dsId, uint256 amount);
 
     /**
-     * @notice Emitted when some DS is swapped via rollover
+     * @notice Emitted when some DS is filled from the psm or vault reserve(or both)
      * @param reserveId the reserve id same as the id on PSM and LV
      * @param dsId the ds id of the pair, the same as the DS id on PSM and LV
      * @param user the user that's swapping
      * @param dsReceived the amount of DS that's received
-     * @param raLeft the amount of RA that's left
+     * @param raFilled the amount of RA that's filled
      */
-    event RolloverSold(
-        Id indexed reserveId, uint256 indexed dsId, address indexed user, uint256 dsReceived, uint256 raLeft
+    event Filled(
+        Id indexed reserveId, uint256 indexed dsId, address indexed user, uint256 dsReceived, uint256 raFilled
     );
 
     /**
@@ -284,6 +286,7 @@ interface IDsFlashSwapCore is IDsFlashSwapUtility {
      * @param amountOutMin The minimum amount of DS tokens to receive.
      * @param params Additional parameters for the swap.
      * @param offchainGuess Offchain data used for the swap.
+     * @param deadline The deadline for the swap.
      * @return result The result of the swap, including amounts and other details.
      */
     function swapRaforDs(
@@ -292,7 +295,8 @@ interface IDsFlashSwapCore is IDsFlashSwapUtility {
         uint256 amount,
         uint256 amountOutMin,
         BuyAprroxParams memory params,
-        OffchainGuess memory offchainGuess
+        OffchainGuess memory offchainGuess,
+        uint256 deadline
     ) external returns (SwapRaForDsReturn memory result);
 
     /**
@@ -325,10 +329,11 @@ interface IDsFlashSwapCore is IDsFlashSwapUtility {
      * @param dsId the ds id of the pair, the same as the DS id on PSM and LV
      * @param amount the amount of DS to swap
      * @param amountOutMin the minimum amount of RA to receive, will revert if the actual amount is less than this.
+     * @param deadline the deadline for the swap
      * @return amountOut amount of RA that's received
      * @dev Reverts if the actual amount is less than `amountOutMin`
      */
-    function swapDsforRa(Id reserveId, uint256 dsId, uint256 amount, uint256 amountOutMin)
+    function swapDsforRa(Id reserveId, uint256 dsId, uint256 amount, uint256 amountOutMin, uint256 deadline)
         external
         returns (uint256 amountOut);
 
@@ -338,6 +343,8 @@ interface IDsFlashSwapCore is IDsFlashSwapUtility {
      * @param dsId the ds id of the pair, the same as the DS id on PSM and LV
      * @param amount the amount of DS to swap
      * @param amountOutMin the minimum amount of RA to receive, will revert if the actual amount is less than this.
+     * @param rawDsPermitSig The raw signature for the DS permit.
+     * @param deadline The deadline by which the swap must be completed.
      * @return amountOut amount of RA that's received
      * @dev Reverts if the actual amount is less than `amountOutMin`
      */
@@ -380,6 +387,8 @@ interface IDsFlashSwapCore is IDsFlashSwapUtility {
      * @param newPercentage The new reserve sell pressure percentage to be applied.
      */
     function updateReserveSellPressurePercentage(Id id, uint256 newPercentage) external;
+
+    function sellPressureThreshold(Id id) external view returns (uint256);
 
     event DiscountRateUpdated(Id indexed id, uint256 discountRateInDays);
 

@@ -31,9 +31,6 @@ contract ProtectedUnitRouterTest is Helper {
     uint256 constant USER_BALANCE = 500 * 1e18;
     uint256 internal USER_PK = 1;
 
-    // TODO : Add the hookTrampoline address
-    address hookTrampoline = DEFAULT_ADDRESS;
-
     address settlementContract = 0x9008D19f58AAbD9eD0D60971565AA8510560ab41;
 
     function setUp() public {
@@ -55,12 +52,12 @@ contract ProtectedUnitRouterTest is Helper {
         ra.transfer(user, 1000 ether);
 
         moduleCore.depositPsm(currencyId, USER_BALANCE * 2);
-        moduleCore.depositLv(currencyId, USER_BALANCE * 2, 0, 0);
+        moduleCore.depositLv(currencyId, USER_BALANCE * 2, 0, 0, 0, block.timestamp);
 
         fetchProtocolGeneralInfo();
 
         // Deploy the Liquidator contract
-        liquidator = new Liquidator(address(corkConfig), hookTrampoline, settlementContract, address(moduleCore));
+        liquidator = new Liquidator(address(corkConfig), settlementContract, address(moduleCore));
 
         // Deploy the ProtectedUnit contract
         corkConfig.deployProtectedUnit(currencyId, address(pa), address(ra), "DS/PA", INITIAL_MINT_CAP);
