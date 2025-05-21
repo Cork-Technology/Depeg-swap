@@ -209,7 +209,7 @@ contract DeployScript is Script {
         console.log("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-");
 
         // Deploy the Liquidator contract
-        liquidator = new Liquidator(address(config), deployer, settlementContract, address(moduleCore));
+        liquidator = new Liquidator(address(config), settlementContract, address(moduleCore));
         console.log("Liquidator                      : ", address(liquidator));
         console.log("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-");
 
@@ -393,7 +393,7 @@ contract DeployScript is Script {
         console.log("Updated fees");
 
         CETH(raToken).approve(address(moduleCore), depositLVAmt);
-        moduleCore.depositLv(id, depositLVAmt, 0, 0, 0);
+        moduleCore.depositLv(id, depositLVAmt, 0, 0, 0, block.timestamp + 30 minutes);
         console.log("LV Deposited");
         console.log("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-");
     }

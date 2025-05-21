@@ -10,6 +10,7 @@ import {Id} from "./../../../../contracts/libraries/Pair.sol";
 import {PausableUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/PausableUpgradeable.sol";
 import "./../../../../contracts/core/liquidators/cow-protocol/Liquidator.sol";
 import {IPermit2} from "permit2/src/interfaces/IPermit2.sol";
+import {IAllowanceTransfer} from "permit2/src/interfaces/IAllowanceTransfer.sol";
 
 contract ProtectedUnitTest is Helper {
     ProtectedUnit public protectedUnit;
@@ -29,9 +30,7 @@ contract ProtectedUnitTest is Helper {
     uint256 public DEFAULT_DEPOSIT_AMOUNT = 2050 ether;
     uint256 constant INITIAL_MINT_CAP = 1000 * 1e18; // 1000 tokens
     uint256 constant USER_BALANCE = 500 * 1e18;
-
-    // TODO : Add the hookTrampoline address
-    address hookTrampoline = DEFAULT_ADDRESS;
+    uint256 internal USER_PK = 1;
 
     address settlementContract = 0x9008D19f58AAbD9eD0D60971565AA8510560ab41;
 
@@ -54,7 +53,7 @@ contract ProtectedUnitTest is Helper {
         ra.transfer(user, 1000 ether);
 
         moduleCore.depositPsm(currencyId, USER_BALANCE * 2);
-        moduleCore.depositLv(currencyId, USER_BALANCE * 2, 0, 0, 0);
+        moduleCore.depositLv(currencyId, USER_BALANCE * 2, 0, 0, 0, block.timestamp);
 
         fetchProtocolGeneralInfo();
 
@@ -70,7 +69,7 @@ contract ProtectedUnitTest is Helper {
         // we disable the redemption fee so its easier to test
         corkConfig.updatePsmBaseRedemptionFeePercentage(defaultCurrencyId, 0);
 
-        liquidator = new Liquidator(address(corkConfig), DEFAULT_ADDRESS, address(this), address(moduleCore));
+        liquidator = new Liquidator(address(corkConfig), address(this), address(moduleCore));
 
         corkConfig.grantLiquidatorRole(address(liquidator), DEFAULT_ADDRESS);
         corkConfig.whitelist(address(liquidator));
@@ -87,6 +86,12 @@ contract ProtectedUnitTest is Helper {
             address(dsToken), address(protectedUnit), uint160(amount), uint48(block.timestamp + 10 days)
         );
         protectedUnit.mint(amount);
+
+        (, address caller,) = vm.readCallers();
+        corkConfig.whitelist(caller);
+        corkConfig.whitelist(address(this));
+
+        vm.warp(block.timestamp + 7.1 days);
     }
 
     function fetchProtocolGeneralInfo() internal {
@@ -293,5 +298,134 @@ contract ProtectedUnitTest is Helper {
         liquidator.finishProtectedUnitOrderAndExecuteTrade(
             randomRefId, 10000000 ether, defaultBuyApproxParams(), defaultOffchainGuessParams()
         );
+    }
+
+    function test_MintWhileLiquidationIsInProgress() public {
+        startLiquidation();
+
+        vm.startPrank(user);
+        // Without Permit
+        vm.expectRevert(PausableUpgradeable.EnforcedPause.selector);
+        protectedUnit.mint(100 * 1e18);
+
+        // With Permit
+        uint256 mintAmount = 100 * 1e18;
+
+        // Calculate token amounts needed for minting
+        (uint256 dsAmount, uint256 paAmount) = protectedUnit.previewMint(mintAmount);
+
+        // Create the tokens array
+        address[] memory tokens = new address[](2);
+        tokens[0] = address(dsToken);
+        tokens[1] = address(pa);
+
+        IAllowanceTransfer.PermitBatch memory permitBatchData;
+        {
+            // Set up nonce and deadline
+            uint48 nonce = uint48(0);
+            uint48 deadline = uint48(block.timestamp + 1 hours);
+
+            // Create the Permit2 PermitBatchTransferFrom struct
+            IAllowanceTransfer.PermitDetails[] memory permitted = new IAllowanceTransfer.PermitDetails[](2);
+            permitted[0] = IAllowanceTransfer.PermitDetails({
+                token: address(dsToken),
+                amount: uint160(dsAmount),
+                expiration: deadline,
+                nonce: nonce
+            });
+            permitted[1] = IAllowanceTransfer.PermitDetails({
+                token: address(pa),
+                amount: uint160(paAmount),
+                expiration: deadline,
+                nonce: nonce
+            });
+
+            permitBatchData = IAllowanceTransfer.PermitBatch({
+                details: permitted,
+                spender: address(protectedUnit),
+                sigDeadline: deadline
+            });
+        }
+        // Generate the batch permit signature
+        bytes memory signature = getPermitBatchSignature(permitBatchData, USER_PK, IPermit2(permit2).DOMAIN_SEPARATOR());
+
+        // Call the mint function with Permit2 data
+        vm.expectRevert(PausableUpgradeable.EnforcedPause.selector);
+        protectedUnit.mint(mintAmount, permitBatchData, signature);
+
+        vm.stopPrank();
+    }
+
+    function test_BurnPUWhileLiquidationIsInProgress() public {
+        vm.startPrank(user);
+        pa.approve(permit2, USER_BALANCE);
+        dsToken.approve(permit2, USER_BALANCE);
+
+        // Approve tokens for ProtectedUnit contract
+        IPermit2(permit2).approve(
+            address(pa), address(protectedUnit), uint160(USER_BALANCE), uint48(block.timestamp + 1 hours)
+        );
+        IPermit2(permit2).approve(
+            address(dsToken), address(protectedUnit), uint160(USER_BALANCE), uint48(block.timestamp + 1 hours)
+        );
+
+        // Mint 100 ProtectedUnit tokens
+        uint256 mintAmount = 100 * 1e18;
+        protectedUnit.mint(mintAmount);
+
+        // Started liquidation
+        startLiquidation();
+
+        vm.startPrank(user);
+        // burn 50 tokens
+        vm.expectRevert(PausableUpgradeable.EnforcedPause.selector);
+        protectedUnit.burn(50 * 1e18);
+
+        vm.stopPrank();
+    }
+
+    function test_BurnFromWhileLiquidationIsInProgress() public {
+        vm.startPrank(user);
+        pa.approve(permit2, USER_BALANCE);
+        dsToken.approve(permit2, USER_BALANCE);
+
+        // Approve tokens for ProtectedUnit contract
+        IPermit2(permit2).approve(
+            address(pa), address(protectedUnit), uint160(USER_BALANCE), uint48(block.timestamp + 1 hours)
+        );
+        IPermit2(permit2).approve(
+            address(dsToken), address(protectedUnit), uint160(USER_BALANCE), uint48(block.timestamp + 1 hours)
+        );
+
+        // Mint 100 ProtectedUnit tokens
+        uint256 mintAmount = 100 * 1e18;
+        protectedUnit.mint(mintAmount);
+
+        // Started liquidation
+        startLiquidation();
+
+        vm.startPrank(user);
+        // burn 50 tokens
+        vm.expectRevert(PausableUpgradeable.EnforcedPause.selector);
+        protectedUnit.burnFrom(user, 50 * 1e18);
+
+        vm.stopPrank();
+    }
+
+    function startLiquidation() internal {
+        vm.startPrank(DEFAULT_ADDRESS);
+        uint256 amountToSell = 10 ether;
+        bytes32 randomRefId = keccak256("ref");
+        bytes memory randomOrderUid = bytes.concat(keccak256("orderUid"));
+        ILiquidator.CreateProtectedUnitOrderParams memory params = ILiquidator.CreateProtectedUnitOrderParams({
+            internalRefId: randomRefId,
+            orderUid: randomOrderUid,
+            sellToken: address(pa),
+            sellAmount: amountToSell,
+            buyToken: address(ra),
+            protectedUnit: address(protectedUnit)
+        });
+        liquidator.createOrderProtectedUnit(params);
+        vm.stopPrank();
     }
 }

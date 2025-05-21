@@ -39,6 +39,8 @@ contract ProtectedUnitFactory is IProtectedUnitFactory, OwnableUpgradeable, UUPS
      */
     mapping(Id => address) public protectedUnitContracts;
 
+    mapping(Id => uint256) public protectedUnitIndex;
+
     /**
      * @notice Mapping of indices to pair IDs for deployed Protected Units
      * @dev Used for pagination in getDeployedProtectedUnits function
@@ -47,10 +49,10 @@ contract ProtectedUnitFactory is IProtectedUnitFactory, OwnableUpgradeable, UUPS
 
     /**
      * @notice Restricts function access to the configuration contract only
-     * @custom:reverts NotConfig if msg.sender is not the CONFIG address
+     * @custom:reverts NotConfig if _msgSender() is not the CONFIG address
      */
     modifier onlyConfig() {
-        if (msg.sender != config) {
+        if (_msgSender() != config) {
             revert NotConfig();
         }
         _;
@@ -87,7 +89,7 @@ contract ProtectedUnitFactory is IProtectedUnitFactory, OwnableUpgradeable, UUPS
             revert ZeroAddress();
         }
 
-        __Ownable_init(msg.sender);
+        __Ownable_init(_msgSender());
         __UUPSUpgradeable_init();
 
         moduleCore = _moduleCore;
@@ -173,8 +175,11 @@ contract ProtectedUnitFactory is IProtectedUnitFactory, OwnableUpgradeable, UUPS
         // Store the address of the new protected unit proxy contract
         protectedUnitContracts[_id] = newUnit;
 
+        uint256 index = ++idx;
+
         // solhint-disable-next-line gas-increment-by-one
-        protectedUnits[idx++] = _id;
+        protectedUnits[index] = _id;
+        protectedUnitIndex[_id] = index;
 
         emit ProtectedUnitDeployed(_id, _pa, _ra, newUnit);
     }
@@ -196,7 +201,39 @@ contract ProtectedUnitFactory is IProtectedUnitFactory, OwnableUpgradeable, UUPS
      * @custom:reverts NotConfig if caller is not the CONFIG address
      */
     function deRegisterProtectedUnit(Id _id) external onlyConfig {
+        ProtectedUnit pu = ProtectedUnit(protectedUnitContracts[_id]);
+
+        if (address(pu) == address(0)) revert InvalidParam();
+
+        address ra = pu.ra();
+        address pa = pu.pa();
+
         delete protectedUnitContracts[_id];
+
+        uint256 index = protectedUnitIndex[_id];
+
+        delete protectedUnitIndex[_id];
+
+        // for some reason the compiler won't let us delete a user defined types
+        // so we just set it to default value
+        protectedUnits[index] = Id.wrap(bytes32(""));
+
+        emit ProtectedUnitDeregistered(_id, pa, ra, address(pu));
+    }
+
+    /**
+     * @notice Updates the RA dust threshold for a Protected Unit
+     * @param _protectedUnit Address of the Protected Unit contract
+     * @param _newRaDustThreshold The new RA dust threshold value
+     * @custom:reverts OnlyOwner if caller is not the owner
+     * @custom:reverts InvalidValue if the RA dust threshold is 0
+     */
+    function updateRaDustThreshold(address _protectedUnit, uint256 _newRaDustThreshold) external onlyOwner {
+        if (_newRaDustThreshold == 0 || _protectedUnit == address(0)) {
+            revert InvalidValue();
+        }
+
+        ProtectedUnit(_protectedUnit).updateRaDustThreshold(_newRaDustThreshold);
     }
 
     /**

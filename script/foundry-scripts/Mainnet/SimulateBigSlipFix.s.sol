@@ -162,7 +162,7 @@ contract SimulateScript is Script {
     function swapDsForRa(Market memory market, Id marketId, uint256 dsId, uint256 swapAmt, address ds) public {
         swapAmt = convertToDecimals(ds, swapAmt);
         ERC20(ds).approve(address(routerState), swapAmt);
-        routerState.swapDsforRa(marketId, dsId, swapAmt, 0);
+        routerState.swapDsforRa(marketId, dsId, swapAmt, 0, 0);
     }
 
     function swapRaForDs(Market memory market, Id marketId, uint256 dsId, uint256 swapAmt, address ct, address ds)
@@ -198,7 +198,7 @@ contract SimulateScript is Script {
             IDsFlashSwapCore.BuyAprroxParams(108, 108, 1 ether, 1 gwei, 1 gwei, 0.01 ether);
         IDsFlashSwapCore.OffchainGuess memory offchainguess = IDsFlashSwapCore.OffchainGuess(0, 0);
         IDsFlashSwapCore.SwapRaForDsReturn memory result =
-            routerState.swapRaforDs(marketId, dsId, swapAmt, 0, buyApprox, offchainguess);
+            routerState.swapRaforDs(marketId, dsId, swapAmt, 0, buyApprox, offchainguess, 0);
 
         string memory raSymbol = ERC20(market.redemptionAsset).symbol();
         console.log("Swapped", raSymbol, "for DS");

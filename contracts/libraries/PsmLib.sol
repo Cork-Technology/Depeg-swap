@@ -123,8 +123,7 @@ library PsmLibrary {
     // 3. mint new CT and DS equal to backed RA user has
     // 4. send DS to flashswap router if user opt-in for auto sell or send to user if not
     // 5. send CT to user
-    // 6. send RA to user if they don't opt-in for auto sell
-    // 7. send PA to user
+    // 6. send PA to user
     // regardless of amount, it will always send user all the profit from rollover
 
     function _rolloverExpiredCt(

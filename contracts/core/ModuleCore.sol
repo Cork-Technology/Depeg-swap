@@ -15,8 +15,6 @@ import {Context} from "@openzeppelin/contracts/utils/Context.sol";
 import {ContextUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/ContextUpgradeable.sol";
 import {AmmId, toAmmId} from "Cork-Hook/lib/State.sol";
 
-// TODO : add minimum output amount for deposit vault
-
 /**
  * @title ModuleCore Contract
  * @author Cork Team
@@ -25,7 +23,8 @@ import {AmmId, toAmmId} from "Cork-Hook/lib/State.sol";
 contract ModuleCore is OwnableUpgradeable, UUPSUpgradeable, PsmCore, Initialize, VaultCore {
     /// @notice __gap variable to prevent storage collisions
     // slither-disable-next-line unused-state
-    uint256[49] private __gap;
+    // upgrade to add access control for pausing PA liquidation
+    uint256[48] private __gap;
 
     using PsmLibrary for State;
     using PairLibrary for Pair;
@@ -46,14 +45,15 @@ contract ModuleCore is OwnableUpgradeable, UUPSUpgradeable, PsmCore, Initialize,
             revert ZeroAddress();
         }
 
-        __Ownable_init(msg.sender);
+        __Ownable_init(_msgSender());
         __UUPSUpgradeable_init();
         initializeModuleState(_swapAssetFactory, _ammHook, _flashSwapRouter, _config);
     }
 
     function setWithdrawalContract(address _withdrawalContract) external {
         onlyConfig();
-        _setWithdrawalContract(_withdrawalContract);
+        address oldAddress = _setWithdrawalContract(_withdrawalContract);
+        emit WithdrawalContractUpdated(oldAddress, _withdrawalContract);
     }
 
     /// @notice Authorization function for UUPS proxy upgrades
@@ -118,7 +118,7 @@ contract ModuleCore is OwnableUpgradeable, UUPSUpgradeable, PsmCore, Initialize,
         address lv = assetsFactory.deployLv(ra, pa, address(this), initialArp, expiryInterval, exchangeRateProvider);
 
         PsmLibrary.initialize(state, key);
-        VaultLibrary.initialize(state.vault, lv, ra, initialArp);
+        VaultLibrary.initialize(state.vault, lv, ra);
 
         emit InitializedModuleCore(id, pa, ra, lv, expiryInterval, initialArp, exchangeRateProvider);
     }
