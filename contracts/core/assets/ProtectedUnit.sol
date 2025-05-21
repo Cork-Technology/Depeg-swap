@@ -640,15 +640,15 @@ contract ProtectedUnit is
     {
         (dsAmount, paAmount, raAmount) = previewBurn(dissolver, amount);
 
-        dsReserve -= dsAmount;
-        paReserve -= paAmount;
-        raReserve -= raAmount;
-
         _burnFrom(dissolver, amount);
 
         paAmount = TransferHelper.transferNormalize(_pa, dissolver, paAmount);
         raAmount = TransferHelper.transferNormalize(_ra, dissolver, raAmount);
         IERC20(ds).safeTransfer(dissolver, dsAmount);
+
+        dsReserve -= dsAmount;
+        paReserve -= paAmount;
+        raReserve -= raAmount;
 
         emit Burn(dissolver, amount, dsAmount, paAmount, raAmount);
     }
