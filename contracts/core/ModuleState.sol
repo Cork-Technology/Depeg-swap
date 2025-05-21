@@ -12,13 +12,14 @@ import {ReentrancyGuardTransient} from "@openzeppelin/contracts/utils/Reentrancy
 import {Withdrawal} from "./Withdrawal.sol";
 import {CorkConfig} from "./CorkConfig.sol";
 import {Pair} from "../libraries/Pair.sol";
+import {Extsload} from "v4-core/Extsload.sol";
 
 /**
  * @title ModuleState Abstract Contract
  * @author Cork Team
  * @notice Abstract ModuleState contract for providing base for Modulecore contract
  */
-abstract contract ModuleState is IErrors, ReentrancyGuardTransient {
+abstract contract ModuleState is IErrors, ReentrancyGuardTransient, Extsload {
     using PsmLibrary for State;
 
     mapping(Id => State) internal states;
@@ -33,6 +34,9 @@ abstract contract ModuleState is IErrors, ReentrancyGuardTransient {
     address internal CONFIG;
 
     address internal WITHDRAWAL_CONTRACT;
+
+    /// @dev new storage variable
+    mapping(Id => address) public activeLiquidator;
 
     /**
      * @dev checks if caller is config contract or not
@@ -66,7 +70,8 @@ abstract contract ModuleState is IErrors, ReentrancyGuardTransient {
         AMM_HOOK = _ammHook;
     }
 
-    function _setWithdrawalContract(address _withdrawalContract) internal {
+    function _setWithdrawalContract(address _withdrawalContract) internal returns (address oldAddress) {
+        oldAddress = WITHDRAWAL_CONTRACT;
         WITHDRAWAL_CONTRACT = _withdrawalContract;
     }
 
@@ -131,6 +136,12 @@ abstract contract ModuleState is IErrors, ReentrancyGuardTransient {
     function onlyWhiteListedLiquidationContract() internal view {
         if (!ILiquidatorRegistry(CONFIG).isLiquidationWhitelisted(msg.sender)) {
             revert OnlyWhiteListed();
+        }
+    }
+
+    function withinDeadline(uint256 deadline) internal view {
+        if (block.timestamp > deadline) {
+            revert DeadlineExceeded();
         }
     }
 }

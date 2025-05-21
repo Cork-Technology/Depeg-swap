@@ -3,6 +3,7 @@ pragma solidity ^0.8.24;
 
 import {VaultPool} from "./State.sol";
 import {MathHelper} from "./MathHelper.sol";
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 /**
  * @title VaultPool Library Contract
@@ -16,30 +17,25 @@ library VaultPoolLibrary {
 
         // RA
         uint256 totalRa = self.withdrawalPool.raBalance + addedRa;
-        (, uint256 attributedToAmm, uint256 ratePerLv) =
-            MathHelper.separateLiquidity(totalRa, totalLvIssued, totalLvWithdrawn);
 
-        self.ammLiquidityPool.balance = attributedToAmm;
-        self.withdrawalPool.raExchangeRate = ratePerLv;
+        self.ammLiquidityPool.balance = totalRa;
 
         // PA
         uint256 totalPa = self.withdrawalPool.paBalance + addedPa;
-        (, attributedToAmm, ratePerLv) = MathHelper.separateLiquidity(totalPa, totalLvIssued, 0);
 
-        self.withdrawalPool.paBalance = attributedToAmm;
-        self.withdrawalPool.paExchangeRate = ratePerLv;
+        self.withdrawalPool.paBalance = totalPa;
 
         assert(totalRa == self.withdrawalPool.raBalance + self.ammLiquidityPool.balance);
     }
 
-    function rationedToAmm(VaultPool storage self, uint256 ratio)
+    function rationedToAmm(VaultPool storage self, uint256 ratio, uint8 raDecimals)
         internal
         view
         returns (uint256 ra, uint256 ct, uint256 originalBalance)
     {
         originalBalance = self.ammLiquidityPool.balance;
 
-        (ra, ct) = MathHelper.calculateProvideLiquidityAmountBasedOnCtPrice(originalBalance, ratio);
+        (ra, ct) = MathHelper.calculateProvideLiquidityAmountBasedOnCtPrice(originalBalance, ratio, raDecimals);
     }
 
     function resetAmmPool(VaultPool storage self) internal {

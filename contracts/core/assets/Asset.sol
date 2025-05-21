@@ -10,12 +10,12 @@ import {CustomERC20Permit} from "../../libraries/ERC/CustomERC20Permit.sol";
 import {ModuleCore} from "./../ModuleCore.sol";
 import {IReserve} from "./../../interfaces/IReserve.sol";
 import {Id} from "./../../libraries/Pair.sol";
+
 /**
  * @title Contract for Adding Exchange Rate functionality
  * @author Cork Team
  * @notice Adds Exchange Rate functionality to Assets contracts
  */
-
 abstract contract ExchangeRate is IRates {
     uint256 internal rate;
 
@@ -41,6 +41,10 @@ abstract contract Expiry is IExpiry {
     uint256 internal immutable EXPIRY;
     uint256 internal immutable ISSUED_AT;
 
+    /**
+     * @notice Initializes the asset with the given expiry timestamp. If the expiry timestamp is not 0 and is in the past, the transaction will revert with an Expired error.
+     * @param _expiry The expiry timestamp for the asset. If set to 0, the asset does not expire.
+     */
     constructor(uint256 _expiry) {
         if (_expiry != 0 && _expiry < block.timestamp) {
             revert Expired();
@@ -97,6 +101,14 @@ contract Asset is ERC20Burnable, CustomERC20Permit, Ownable, Expiry, ExchangeRat
         _;
     }
 
+    /**
+     * @notice Constructor for the Asset contract
+     * @param _pairName The name of the asset pair
+     * @param _owner The address of the owner of the contract
+     * @param _expiry The expiry time of the asset
+     * @param _rate The exchange rate of the asset
+     * @param _dsId The ID of the Depeg Swap
+     */
     constructor(string memory _pairName, address _owner, uint256 _expiry, uint256 _rate, uint256 _dsId)
         ExchangeRate(_rate)
         ERC20(_pairName, _pairName)
@@ -110,14 +122,29 @@ contract Asset is ERC20Burnable, CustomERC20Permit, Ownable, Expiry, ExchangeRat
         factory = _msgSender();
     }
 
+    /**
+     * @notice Sets the market ID for the asset contract
+     * @dev This function can only be called by the factory contract
+     * @param _marketId The market ID for the asset contract
+     */
     function setMarketId(Id _marketId) external onlyFactory {
         marketId = _marketId;
     }
 
+    /**
+     * @notice Sets the module core address for the asset contract
+     * @dev This function can only be called by the factory contract
+     * @param _moduleCore The address of the module core contract
+     */
     function setModuleCore(address _moduleCore) external onlyFactory {
         moduleCore = ModuleCore(_moduleCore);
     }
 
+    /**
+     * @notice Provides RA & PA assets reserves for the asset contract
+     * @param ra The RA reserve amount for asset contract.
+     * @param pa The PA reserve amount for asset contract.
+     */
     function getReserves() external view returns (uint256 ra, uint256 pa) {
         uint256 epoch = moduleCore.lastDsId(marketId);
 
@@ -150,6 +177,11 @@ contract Asset is ERC20Burnable, CustomERC20Permit, Ownable, Expiry, ExchangeRat
         return DS_ID;
     }
 
+    /**
+     * @notice Updates the rate of the asset.
+     * @dev This function can only be called by the owner of the contract.
+     * @param newRate The new rate to be set for the asset.
+     */
     function updateRate(uint256 newRate) external override onlyOwner {
         rate = newRate;
     }

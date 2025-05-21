@@ -11,7 +11,7 @@ contract MathHelperTest is Helper {
         uint256 priceRatio = 1 ether;
         uint256 exchangeRate = 1 ether;
 
-        (uint256 ra, uint256 ct) = MathHelper.calculateProvideLiquidityAmountBasedOnCtPrice(amountRa, priceRatio);
+        (uint256 ra, uint256 ct) = MathHelper.calculateProvideLiquidityAmountBasedOnCtPrice(amountRa, priceRatio, 18);
 
         vm.assertApproxEqAbs(ra, amountRa / 2, 1);
         vm.assertApproxEqAbs(ct, amountRa / 2, 1);

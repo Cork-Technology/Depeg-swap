@@ -14,6 +14,9 @@ library ReturnDataSlotLib {
     // keccak256("DS_FEE_AMOUNT")
     bytes32 public constant DS_FEE_AMOUNT = 0x2edcf68d3b1bfd48ba1b97a39acb4e9553bc609ae5ceef6b88a0581565dba754;
 
+    // keccak256("DS_FEE_PERCENTAGE")
+    bytes32 public constant DS_FEE_PERCENTAGE = 0xd7398119f47d6f8967a859c111a043862f21ce0f6a433f21fca432ec6f693ff3;
+
     function increase(bytes32 slot, uint256 _value) internal {
         uint256 prev = get(slot);
 

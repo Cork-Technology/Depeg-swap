@@ -23,11 +23,11 @@ interface IDsFlashSwapUtility is IErrors {
         returns (uint256 raPriceRatio, uint256 ctPriceRatio);
 
     /**
-     * @notice returns the current reserve of the pair
-     * @param id the id of the pair
-     * @param dsId the ds id of the pair
-     * @return raReserve reserve of RA
-     * @return ctReserve reserve of CT
+     * @notice Gets the AMM reserve for a specific reserve and DS.
+     * @param id The id of the given pair in modulecore.
+     * @param dsId The dsId of the pair in moduelcore.
+     * @return raReserve The RA reserve amount.
+     * @return ctReserve The CT reserve amount.
      */
     function getAmmReserve(Id id, uint256 dsId) external view returns (uint256 raReserve, uint256 ctReserve);
 
@@ -35,7 +35,7 @@ interface IDsFlashSwapUtility is IErrors {
      * @notice returns the current DS reserve that is owned by liquidity vault
      * @param id the id of the pair
      * @param dsId the ds id of the pair
-     * @return lvReserve reserve of DS
+     * @return lvReserve the LV reserve amount
      */
     function getLvReserve(Id id, uint256 dsId) external view returns (uint256 lvReserve);
 
@@ -43,7 +43,7 @@ interface IDsFlashSwapUtility is IErrors {
      * @notice returns the current DS reserve that is owned by PSM
      * @param id the id of the pair
      * @param dsId the ds id of the pair
-     * @return psmReserve reserve of DS
+     * @return psmReserve the PSM reserve amount
      */
     function getPsmReserve(Id id, uint256 dsId) external view returns (uint256 psmReserve);
 
@@ -92,7 +92,8 @@ interface IDsFlashSwapCore is IDsFlashSwapUtility {
     /// using this will greatly reduce the gas cost.
     /// will be the default way to swap RA for DS
     struct OffchainGuess {
-        uint256 borrow;
+        uint256 borrowOnBuy;
+        uint256 borrowOnFill;
     }
 
     struct SwapRaForDsReturn {
@@ -103,7 +104,8 @@ interface IDsFlashSwapCore is IDsFlashSwapUtility {
         /// or the DS reserve sale is disabled. in such cases, this will be the final amount of RA that's borrowed
         /// and the "afterSoldBorrow" will be 0.
         /// if the swap is fully fullfilled by the rollover sale, borrow
-        uint256 borrow;
+        uint256 borrowOnBuy;
+        uint256 borrowOnFill;
         uint256 fee;
         uint256 reserveSellPressure;
     }
@@ -170,19 +172,20 @@ interface IDsFlashSwapCore is IDsFlashSwapUtility {
     event ReserveEmptied(Id indexed reserveId, uint256 indexed dsId, uint256 amount);
 
     /**
-     * @notice Emitted when some DS is swapped via rollover
+     * @notice Emitted when some DS is filled from the psm or vault reserve(or both)
      * @param reserveId the reserve id same as the id on PSM and LV
      * @param dsId the ds id of the pair, the same as the DS id on PSM and LV
      * @param user the user that's swapping
      * @param dsReceived the amount of DS that's received
-     * @param raLeft the amount of RA that's left
+     * @param raFilled the amount of RA that's filled
      */
-    event RolloverSold(
-        Id indexed reserveId, uint256 indexed dsId, address indexed user, uint256 dsReceived, uint256 raLeft
+    event Filled(
+        Id indexed reserveId, uint256 indexed dsId, address indexed user, uint256 dsReceived, uint256 raFilled
     );
 
     /**
-     * @notice trigger new issuance logic, can only be called my moduleCore
+     * @notice trigger new issuance logic for a specific pair
+     * @dev can only be called by the moduleCore
      * @param reserveId the pair id
      * @param dsId the ds id of the pair
      * @param ds the address of the new issued DS
@@ -204,36 +207,68 @@ interface IDsFlashSwapCore is IDsFlashSwapUtility {
         uint256 rolloverPeriodInblocks
     ) external;
 
+    /**
+     * @notice Updates the DS extra fee percentage for a specific reserve identified by `id`.
+     * @dev This function can only be called by the config contract.
+     * @param id The identifier of the reserve to update.
+     * @param newPercentage The new DS extra fee percentage to be applied.
+     */
     function updateDsExtraFeePercentage(Id id, uint256 newPercentage) external;
 
+    /**
+     * @notice Updates the DS extra fee treasury split percentage for a specific reserve identified by `id`.
+     * @dev This function can only be called by the config contract.
+     * @param id The identifier of the reserve to update.
+     * @param newPercentage The new DS extra fee treasury split percentage to be applied.
+     */
     function updateDsExtraFeeTreasurySplitPercentage(Id id, uint256 newPercentage) external;
 
     /**
-     * @notice add more DS reserve from liquidity vault, can only be called by moduleCore
+     * @notice add more DS reserve from liquidity vault,
+     * @dev can only be called by moduleCore
      * @param id the pair id
      * @param dsId the ds id of the pair
-     * @param amount the amount of DS to add
+     * @param amount the amount of DS to add to the LV reserve
      */
     function addReserveLv(Id id, uint256 dsId, uint256 amount) external;
 
+    /**
+     * @notice Adds an amount to the PSM reserve for a specific reserve and DS.
+     * @dev This function can only be called by the module core.
+     * @param id The identifier of the reserve.
+     * @param dsId The identifier of the DS.
+     * @param amount The amount to add to the PSM reserve.
+     */
     function addReservePsm(Id id, uint256 dsId, uint256 amount) external;
 
     /**
      * @notice empty all DS reserve to liquidity vault, can only be called by moduleCore
+     * @dev this can only be called by the moduleCore
      * @param reserveId the pair id
      * @param dsId the ds id of the pair
-     * @return amount the amount of DS that's emptied
+     * @return amount the amount that's emptied from Vault reserve
      */
     function emptyReserveLv(Id reserveId, uint256 dsId) external returns (uint256 amount);
 
+    /**
+     * @notice empty all DS reserve to PSM, can only be called by moduleCore
+     * @dev this can only be called by the moduleCore
+     * @param reserveId the pair id
+     * @param dsId the ds id of the pair
+     * @return amount the amount that's emptied from PSM reserve
+     */
     function emptyReservePsm(Id reserveId, uint256 dsId) external returns (uint256 amount);
 
+    /**
+     * @notice empty some or all DS reserve to PSM, can only be called by moduleCore
+     * @param reserveId the pair id
+     * @param dsId the ds id of the pair
+     * @param amount the amount of DS to empty
+     * @return emptied emptied amount of DS that's emptied
+     */
     function emptyReservePartialPsm(Id reserveId, uint256 dsId, uint256 amount) external returns (uint256 emptied);
 
     /**
-     * @notice empty some or all DS reserve to liquidity vault, can only be called by moduleCore
-     * @param reserveId the pair id
-     * @param dsId the ds id of the pair
      * @notice empty some or all DS reserve to liquidity vault, can only be called by moduleCore
      * @param reserveId the pair id
      * @param dsId the ds id of the pair
@@ -243,13 +278,16 @@ interface IDsFlashSwapCore is IDsFlashSwapUtility {
     function emptyReservePartialLv(Id reserveId, uint256 dsId, uint256 amount) external returns (uint256 emptied);
 
     /**
-     * @notice Swaps RA for DS
-     * @param reserveId the reserve id same as the id on PSM and LV
-     * @param dsId the ds id of the pair, the same as the DS id on PSM and LV
-     * @param amount the amount of RA to swap
-     * @param amountOutMin the minimum amount of DS to receive, will revert if the actual amount is less than this.
-     * @param params the buy approximation params(math stuff)
-     * @param params the buy approximation params(math stuff)
+     * @notice Executes a swap from RA to DS tokens.
+     * @dev This function performs a flash swap, requiring a valid signature and deadline.
+     * @param reserveId The ID of the reserve for RA:PA market in modulecore.
+     * @param dsId The ID of the DS token to receive.
+     * @param amount The amount of RA tokens to swap.
+     * @param amountOutMin The minimum amount of DS tokens to receive.
+     * @param params Additional parameters for the swap.
+     * @param offchainGuess Offchain data used for the swap.
+     * @param deadline The deadline for the swap.
+     * @return result The result of the swap, including amounts and other details.
      */
     function swapRaforDs(
         Id reserveId,
@@ -257,17 +295,22 @@ interface IDsFlashSwapCore is IDsFlashSwapUtility {
         uint256 amount,
         uint256 amountOutMin,
         BuyAprroxParams memory params,
-        OffchainGuess memory offchainGuess
+        OffchainGuess memory offchainGuess,
+        uint256 deadline
     ) external returns (SwapRaForDsReturn memory result);
 
     /**
-     * @notice Swaps RA for DS
-     * @param reserveId the reserve id same as the id on PSM and LV
-     * @param dsId the ds id of the pair, the same as the DS id on PSM and LV
-     * @param amount the amount of RA to swap
-     * @param amountOutMin the minimum amount of DS to receive, will revert if the actual amount is less than this. should be inserted with value from previewSwapRaforDs
-     * @param rawRaPermitSig the raw permit signature of RA
-     * @param deadline the deadline for the swap
+     * @notice Executes a swap from RA to DS tokens.
+     * @dev This function performs a flash swap, requiring a valid signature and deadline.
+     * @param reserveId The ID of the reserve for RA:PA market in modulecore.
+     * @param dsId The ID of the DS token to receive.
+     * @param amount The amount of RA tokens to swap.
+     * @param amountOutMin The minimum amount of DS tokens to receive.
+     * @param rawRaPermitSig The raw signature for the RA permit.
+     * @param deadline The deadline by which the swap must be completed.
+     * @param params Additional parameters for the swap.
+     * @param offchainGuess Offchain data used for the swap.
+     * @return result The result of the swap, including amounts and other details.
      */
     function swapRaforDs(
         Id reserveId,
@@ -281,24 +324,29 @@ interface IDsFlashSwapCore is IDsFlashSwapUtility {
     ) external returns (SwapRaForDsReturn memory result);
 
     /**
-     * @notice Swaps DS for RA
+     * @notice Swaps specified amount of DS tokens for RA tokens
      * @param reserveId the reserve id same as the id on PSM and LV
      * @param dsId the ds id of the pair, the same as the DS id on PSM and LV
      * @param amount the amount of DS to swap
      * @param amountOutMin the minimum amount of RA to receive, will revert if the actual amount is less than this.
+     * @param deadline the deadline for the swap
      * @return amountOut amount of RA that's received
+     * @dev Reverts if the actual amount is less than `amountOutMin`
      */
-    function swapDsforRa(Id reserveId, uint256 dsId, uint256 amount, uint256 amountOutMin)
+    function swapDsforRa(Id reserveId, uint256 dsId, uint256 amount, uint256 amountOutMin, uint256 deadline)
         external
         returns (uint256 amountOut);
 
     /**
-     * @notice Swaps DS for RA
+     * @notice Swaps specified amount of DS tokens for RA tokens
      * @param reserveId the reserve id same as the id on PSM and LV
      * @param dsId the ds id of the pair, the same as the DS id on PSM and LV
      * @param amount the amount of DS to swap
-     * @param amountOutMin the minimum amount of RA to receive, will revert if the actual amount is less than this. should be inserted with value from previewSwapDsforRa
+     * @param amountOutMin the minimum amount of RA to receive, will revert if the actual amount is less than this.
+     * @param rawDsPermitSig The raw signature for the DS permit.
+     * @param deadline The deadline by which the swap must be completed.
      * @return amountOut amount of RA that's received
+     * @dev Reverts if the actual amount is less than `amountOutMin`
      */
     function swapDsforRa(
         Id reserveId,
@@ -313,17 +361,34 @@ interface IDsFlashSwapCore is IDsFlashSwapUtility {
      * @notice Updates the discount rate in D days for the pair
      * @param id the pair id
      * @param discountRateInDays the new discount rate in D days
+     * @dev only callable by the config contract
      */
     function updateDiscountRateInDdays(Id id, uint256 discountRateInDays) external;
 
     /**
-     * @notice update the gradual sale status, if true, will try to sell DS tokens from the reserve gradually
+     * @notice Updates the gradual sale status for a given reserve ID.
+     * @dev This function can only be called by the contract configuration. If true, the reserve will try to sell DS tokens from the reserve gradually.
+     * @param id The ID of the reserve to update.
+     * @param status The new status to set for the gradual sale (true to disable, false to enable).
      */
     function updateGradualSaleStatus(Id id, bool status) external;
 
+    /**
+     * @notice Checks if the given reserve ID is in a rollover sale state.
+     * @param id The ID of the reserve to check.
+     * @return bool True if the reserve is in a rollover sale state, false otherwise.
+     */
     function isRolloverSale(Id id) external view returns (bool);
 
+    /**
+     * @notice Updates the reserve sell pressure percentage for a specific reserve identified by `id`.
+     * @dev This function can only be called by the config contract.
+     * @param id The identifier of the reserve to update.
+     * @param newPercentage The new reserve sell pressure percentage to be applied.
+     */
     function updateReserveSellPressurePercentage(Id id, uint256 newPercentage) external;
+
+    function sellPressureThreshold(Id id) external view returns (uint256);
 
     event DiscountRateUpdated(Id indexed id, uint256 discountRateInDays);
 

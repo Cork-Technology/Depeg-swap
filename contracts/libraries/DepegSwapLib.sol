@@ -4,6 +4,7 @@ pragma solidity ^0.8.24;
 import {IERC20Permit} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Permit.sol";
 import {Asset} from "../core/assets/Asset.sol";
 import {Signature, MinimalSignatureHelper} from "./SignatureHelperLib.sol";
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 /**
  * @dev DepegSwap structure for DS(DepegSwap)
@@ -25,9 +26,12 @@ library DepegSwapLibrary {
 
     /// @notice the exchange rate of DS can only go down at maximum 10% at a time
     uint256 internal constant MAX_RATE_DELTA_PERCENTAGE = 10e18;
-    /// @notice Zero Address error, thrown when passed address is 0
 
+    /// @notice Zero Address error, thrown when passed address is 0
     error ZeroAddress();
+
+    /// @notice Permit failed error, thrown when permit call fails
+    error PermitFailed();
 
     function isExpired(DepegSwap storage self) internal view returns (bool) {
         return Asset(self._address).isExpired();
@@ -56,7 +60,12 @@ library DepegSwapLibrary {
         Signature memory sig = MinimalSignatureHelper.split(rawSig);
 
         // Call the underlying ERC-20 contract's permit function
-        IERC20Permit(contract_).permit(owner, spender, value, deadline, sig.v, sig.r, sig.s);
+        try IERC20Permit(contract_).permit(owner, spender, value, deadline, sig.v, sig.r, sig.s) {}
+        catch {
+            if (IERC20(contract_).allowance(owner, spender) < value || block.timestamp > deadline) {
+                revert PermitFailed();
+            }
+        }
     }
 
     function permit(
@@ -72,7 +81,12 @@ library DepegSwapLibrary {
         Signature memory sig = MinimalSignatureHelper.split(rawSig);
 
         // Call the underlying ERC-20 contract's permit function
-        Asset(contract_).permit(owner, spender, value, deadline, sig.v, sig.r, sig.s, functionName);
+        try Asset(contract_).permit(owner, spender, value, deadline, sig.v, sig.r, sig.s, functionName) {}
+        catch {
+            if (Asset(contract_).allowance(owner, spender) < value || block.timestamp > deadline) {
+                revert PermitFailed();
+            }
+        }
     }
 
     function issue(DepegSwap memory self, address to, uint256 amount) internal {

@@ -67,12 +67,6 @@ contract Liquidator is ILiquidator {
     address public immutable CONFIG;
 
     /**
-     * @notice Address of the hook trampoline contract
-     * @dev Used to interact with CoW Protocol hooks
-     */
-    address public immutable HOOK_TRAMPOLINE;
-
-    /**
      * @notice Address of the base vault liquidator contract for cloning
      * @dev Used as a template for creating new vault liquidator instances
      */
@@ -89,17 +83,6 @@ contract Liquidator is ILiquidator {
     mapping(bytes32 => Orders) internal orderCalls;
 
     /**
-     * @notice Ensures function access only to the hook trampoline contract
-     * @custom:reverts OnlyTrampoline if caller is not the HOOK_TRAMPOLINE
-     */
-    modifier onlyTrampoline() {
-        if (msg.sender != HOOK_TRAMPOLINE) {
-            revert IErrors.OnlyTrampoline();
-        }
-        _;
-    }
-
-    /**
      * @notice Ensures function access only to authorized liquidators
      * @custom:reverts OnlyLiquidator if caller is not authorized
      */
@@ -113,21 +96,16 @@ contract Liquidator is ILiquidator {
     /**
      * @notice Sets up the liquidator with required contract addresses
      * @param _config Address of the Cork Config contract
-     * @param _hookTrampoline Address of the hook trampoline contract from CoW Protocol
      * @param _settlementContract Address of the CoW Protocol settlement contract
      * @param _moduleCore Address of the Module Core contract
      * @custom:reverts ZeroAddress if any provided address is zero
      */
-    constructor(address _config, address _hookTrampoline, address _settlementContract, address _moduleCore) {
-        if (
-            _config == address(0) || _hookTrampoline == address(0) || _settlementContract == address(0)
-                || _moduleCore == address(0)
-        ) {
+    constructor(address _config, address _settlementContract, address _moduleCore) {
+        if (_config == address(0) || _settlementContract == address(0) || _moduleCore == address(0)) {
             revert IErrors.ZeroAddress();
         }
         SETTLEMENT = IGPv2SettlementContract(_settlementContract);
         CONFIG = _config;
-        HOOK_TRAMPOLINE = _hookTrampoline;
         VAULT_LIQUIDATOR_BASE = address(new VaultChildLiquidator());
         PROTECTED_UNIT_LIQUIDATOR_BASE = address(new ProtectedUnitChildLiquidator());
         MODULE_CORE = _moduleCore;
@@ -139,7 +117,7 @@ contract Liquidator is ILiquidator {
      * @param refId A unique reference ID for this liquidation
      * @return receiver The address where liquidated funds will be sent
      */
-    function fetchVaultReceiver(bytes32 refId) external returns (address receiver) {
+    function fetchVaultReceiver(bytes32 refId) external view returns (address receiver) {
         receiver = Clones.predictDeterministicAddress(VAULT_LIQUIDATOR_BASE, refId, address(this));
     }
 
@@ -149,7 +127,7 @@ contract Liquidator is ILiquidator {
      * @param refId A unique reference ID for this liquidation
      * @return receiver The address where liquidated funds will be sent
      */
-    function fetchProtectedUnitReceiver(bytes32 refId) external returns (address receiver) {
+    function fetchProtectedUnitReceiver(bytes32 refId) external view returns (address receiver) {
         receiver = Clones.predictDeterministicAddress(PROTECTED_UNIT_LIQUIDATOR_BASE, refId, address(this));
     }
 
@@ -172,13 +150,15 @@ contract Liquidator is ILiquidator {
     }
 
     function _moveVaultFunds(Details memory details, Id id, address liquidator) internal {
-        IVaultLiquidation(MODULE_CORE).requestLiquidationFunds(id, details.sellAmount);
+        IVaultLiquidation(MODULE_CORE).requestLiquidationFunds(id, details.sellAmount, liquidator);
 
         SafeERC20.safeTransfer(IERC20(details.sellToken), liquidator, details.sellAmount);
     }
 
     function _moveProtectedUnitFunds(Details memory details, address protectedUnit, address liquidator) internal {
-        IProtectedUnitLiquidation(protectedUnit).requestLiquidationFunds(details.sellAmount, details.sellToken);
+        IProtectedUnitLiquidation(protectedUnit).requestLiquidationFunds(
+            details.sellAmount, details.sellToken, liquidator
+        );
 
         SafeERC20.safeTransfer(IERC20(details.sellToken), liquidator, details.sellAmount);
     }
