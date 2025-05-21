@@ -21,6 +21,7 @@ import "./../../contracts/core/Withdrawal.sol";
 import "./../../contracts/core/assets/ProtectedUnitFactory.sol";
 import {ProtectedUnitRouter} from "../../contracts/core/assets/ProtectedUnitRouter.sol";
 import {Permit2} from "./../../script/foundry-scripts/Utils/Permit2Mock.sol";
+import {ProtectedUnit} from "./../../contracts/core/assets/ProtectedUnit.sol";
 
 contract CustomErc20 is DummyWETH {
     uint8 internal __decimals;
@@ -46,6 +47,7 @@ abstract contract Helper is SigUtils, TestHelper {
     ProtectedUnitFactory internal protectedUnitFactory;
     ProtectedUnitRouter internal protectedUnitRouter;
     address internal permit2;
+    address internal protectedUnitImpl;
     EnvGetters internal env = new EnvGetters();
 
     Id defaultCurrencyId;
@@ -77,6 +79,9 @@ abstract contract Helper is SigUtils, TestHelper {
     address internal constant CORK_PROTOCOL_TREASURY = address(789);
 
     address private overridenAddress;
+
+    // 10% sell pressure threshold for the router
+    uint256 internal DEFAULT_SELLPRESSURE_THRESHOLD = 10 ether;
 
     function overridePrank(address _as) public {
         (, address currentCaller,) = vm.readCallers();
@@ -115,7 +120,8 @@ abstract contract Helper is SigUtils, TestHelper {
 
     function defaultOffchainGuessParams() internal pure returns (IDsFlashSwapCore.OffchainGuess memory params) {
         // we return 0 since in most cases, we want to actually test the on-chain calculation logic
-        params.borrow = 0;
+        params.borrowOnBuy = 0;
+        params.borrowOnFill = 0;
     }
 
     function initializeNewModuleCore(
@@ -156,6 +162,7 @@ abstract contract Helper is SigUtils, TestHelper {
         corkConfig.updateDecayDiscountRateInDays(decayDiscountRateInDays);
         corkConfig.updateRolloverPeriodInBlocks(rolloverPeriodInblocks);
         corkConfig.updateRepurchaseFeeRate(id, repurchaseFeePercentage);
+        corkConfig.updateReserveSellPressurePercentage(id, DEFAULT_SELLPRESSURE_THRESHOLD);
     }
 
     function issueNewDs(Id id) internal {
@@ -391,9 +398,21 @@ abstract contract Helper is SigUtils, TestHelper {
     }
 
     function initializeProtectedUnitFactory() internal {
+        protectedUnitImpl = address(new ProtectedUnit());
+        ERC1967Proxy protectedUnitProxy = new ERC1967Proxy(
+            address(new ProtectedUnitFactory()),
+            abi.encodeWithSignature(
+                "initialize(address,address,address,address,address)",
+                address(moduleCore),
+                address(corkConfig),
+                address(flashSwapRouter),
+                permit2,
+                protectedUnitImpl
+            )
+        );
+        protectedUnitFactory = ProtectedUnitFactory(address(protectedUnitProxy));
+
         protectedUnitRouter = new ProtectedUnitRouter(permit2);
-        protectedUnitFactory =
-            new ProtectedUnitFactory(address(moduleCore), address(corkConfig), address(flashSwapRouter), permit2);
         corkConfig.setProtectedUnitFactory(address(protectedUnitFactory));
     }
 

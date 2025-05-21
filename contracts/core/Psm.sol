@@ -263,7 +263,7 @@ abstract contract PsmCore is IPSMcore, ModuleState, Context {
         State storage state = states[id];
         state.acceptRolloverProfit(profit);
 
-        emit PsmDsSaleProfitReceived(msg.sender, id, profit);
+        emit PsmDsSaleProfitReceived(_msgSender(), id, profit);
     }
 
     function rolloverExpiredCt(
@@ -309,7 +309,7 @@ abstract contract PsmCore is IPSMcore, ModuleState, Context {
 
     function rolloverProfitRemaining(Id id, uint256 dsId) external view returns (uint256) {
         State storage state = states[id];
-        return state.psm.poolArchive[dsId].rolloverClaims[msg.sender];
+        return state.psm.poolArchive[dsId].rolloverClaims[_msgSender()];
     }
 
     function updatePsmAutoSellStatus(Id id, bool status) external {

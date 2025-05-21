@@ -11,6 +11,15 @@ import {IErrors} from "./IErrors.sol";
  * @author Cork Protocol Team
  */
 interface IProtectedUnitFactory is IErrors {
+    /// @notice Emmits when the implementation contract address is updated
+    event ProtectedUnitImplUpdated(address indexed oldImpl, address indexed newImpl);
+
+    /// @notice Emmits when a Protected Unit contract is upgraded
+    event ProtectedUnitUpgraded(address indexed protectedUnit);
+
+    /// @notice Emmits when a Protected Unit contract's upgradeability is renounced
+    event RenouncedUpgradeability(address indexed protectedUnit);
+
     /**
      * @notice Emmits when a new Protected Unit contract is created
      * @param pairId Unique identifier for the token pair
@@ -18,7 +27,13 @@ interface IProtectedUnitFactory is IErrors {
      * @param ra Address of the Return Asset (RA) token
      * @param protectedUnitAddress Address of the newly created Protected Unit contract
      */
-    event ProtectedUnitDeployed(Id indexed pairId, address pa, address ra, address indexed protectedUnitAddress);
+    event ProtectedUnitDeployed(
+        Id indexed pairId, address indexed pa, address indexed ra, address protectedUnitAddress
+    );
+
+    event ProtectedUnitDeregistered(
+        Id indexed pairId, address indexed pa, address indexed ra, address protectedUnitAddress
+    );
 
     /**
      * @notice Creates a new Protected Unit contract
