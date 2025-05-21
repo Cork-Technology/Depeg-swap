@@ -18,6 +18,8 @@ contract UpgradeContractScript is Script {
     function run() public {
         vm.startBroadcast(pk);
         console.log("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-");
+        console.log("Deployer                            : ", deployer);
+        console.log("-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-=-");
 
         // Deploy the FlashSwapRouter implementation (logic) contract
         RouterState routerImplementation = new RouterState();
@@ -30,7 +32,7 @@ contract UpgradeContractScript is Script {
 
         // Deploy the ModuleCore implementation contract
         ModuleCore moduleCoreImplementation = new ModuleCore();
-        console.log("New ModuleCore Implementation : ", address(moduleCoreImplementation));
+        console.log("New ModuleCore Implementation       : ", address(moduleCoreImplementation));
 
         // Upgrade the ModuleCore Proxy contract
         moduleCore = ModuleCore(moduleCoreProxy);
