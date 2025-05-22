@@ -22,6 +22,9 @@ abstract contract CustomERC20Permit is ERC20, ICustomERC20Permit, EIP712, Nonces
         "Permit(address owner,address spender,uint256 value,uint256 nonce,uint256 deadline,bytes32 functionHash)"
     );
 
+    bytes32 private constant ERC2612_PERMIT_TYPEHASH =
+        keccak256("Permit(address owner,address spender,uint256 value,uint256 nonce,uint256 deadline)");
+
     /**
      * @dev Permit deadline has expired.
      */
@@ -49,7 +52,8 @@ abstract contract CustomERC20Permit is ERC20, ICustomERC20Permit, EIP712, Nonces
             revert ERC2612ExpiredSignature(deadline);
         }
 
-        bytes32 structHash = keccak256(abi.encode(PERMIT_TYPEHASH, owner, spender, value, _useNonce(owner), deadline));
+        bytes32 structHash =
+            keccak256(abi.encode(ERC2612_PERMIT_TYPEHASH, owner, spender, value, _useNonce(owner), deadline));
 
         bytes32 hash = _hashTypedDataV4(structHash);
 
