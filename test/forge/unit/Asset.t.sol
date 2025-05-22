@@ -4,6 +4,7 @@ import "./../Helper.sol";
 import "./../../../contracts/dummy/DummyWETH.sol";
 import "./../../../contracts/core/assets/Asset.sol";
 import "./../../../contracts/libraries/Pair.sol";
+import {IErrors} from "./../../../contracts/interfaces/IErrors.sol";
 
 contract AssetTest is Helper {
     DummyWETH ra;
@@ -88,5 +89,14 @@ contract AssetTest is Helper {
         assertReserve(ct, redeemAmount, redeemAmount);
         assertReserve(ds, redeemAmount, redeemAmount);
         assertReserve(lv, redeemAmount, redeemAmount);
+    }
+
+    function test_initializeModuleCoreRevertWhenConfigIsPaused() external {
+        vm.startPrank(DEFAULT_ADDRESS);
+        corkConfig.pause();
+        assertTrue(corkConfig.paused());
+
+        vm.expectRevert(IErrors.ConfigPaused.selector);
+        corkConfig.initializeModuleCore(address(0), address(0), 0, 0, address(0));
     }
 }
