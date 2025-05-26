@@ -4,6 +4,7 @@ pragma solidity ^0.8.24;
 import {BuyMathBisectionSolver, SwapperMathLibrary} from "./DsSwapperMathLib.sol";
 import {UD60x18, convert, ud, add, mul, pow, sub, div, unwrap, intoSD59x18} from "@prb/math/src/UD60x18.sol";
 import {intoUD60x18} from "@prb/math/src/SD59x18.sol";
+import {IErrors} from "./../interfaces/IErrors.sol";
 
 /**
  * @title MathHelper Library Contract
@@ -17,6 +18,8 @@ library MathHelper {
     // this is used to calculate tolerance level when adding liqudity to AMM pair
     /// @dev 1e18 == 1%.
     uint256 internal constant UNI_STATIC_TOLERANCE = 95e18;
+
+    uint256 internal constant CT_PRICE_THRESHOLD = 1.05 ether;
 
     /**
      * @dev calculate the amount of ra and ct needed to provide AMM with liquidity in respect to the price ratio
@@ -246,8 +249,8 @@ library MathHelper {
         pure
         returns (uint256 lvMinted)
     {
-        if(nav == 0) return depositAmount;
-        
+        if (nav == 0) return depositAmount;
+
         UD60x18 navPerShare = div(ud(nav), ud(lvSupply));
 
         return unwrap(div(ud(depositAmount), navPerShare));
@@ -269,6 +272,9 @@ library MathHelper {
     function calculateInternalPrice(NavParams memory params) internal pure returns (InternalPrices memory) {
         UD60x18 t = sub(convert(1), ud(params.oneMinusT));
         UD60x18 ctPrice = calculatePriceQuote(ud(params.reserveRa), ud(params.reserveCt), t);
+
+        if (ctPrice > ud(CT_PRICE_THRESHOLD)) revert IErrors.InvalidPoolStateOrNearExpired();
+
         // we set the default ds price to 0 if for some reason the ct price is worth above 1 RA
         // if not, this'll trigger an underflow error
         UD60x18 dsPrice = ctPrice > convert(1) ? ud(0) : sub(convert(1), ctPrice);
