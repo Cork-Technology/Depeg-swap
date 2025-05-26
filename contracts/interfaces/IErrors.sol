@@ -122,6 +122,9 @@ interface IErrors {
     /// @notice LV Withdrawal is paused, i.e thrown when withdrawal is paused for LV
     error LVWithdrawalPaused();
 
+    /// @notice Config is paused, i.e thrown when config is paused
+    error ConfigPaused();
+
     /// @notice When transaction is mutex locked for ensuring non-reentrancy
     error StateLocked();
 

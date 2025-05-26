@@ -101,6 +101,8 @@ contract ModuleCore is OwnableUpgradeable, UUPSUpgradeable, PsmCore, Initialize,
         address exchangeRateProvider
     ) external override {
         onlyConfig();
+        configNotPaused();
+
         if (expiryInterval == 0) {
             revert InvalidExpiry();
         }
