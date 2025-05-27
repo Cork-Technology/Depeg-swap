@@ -7,7 +7,7 @@ import {ERC20Burnable} from "@openzeppelin/contracts/token/ERC20/extensions/ERC2
 import {IExpiry} from "../../interfaces/IExpiry.sol";
 import {IRates} from "../../interfaces/IRates.sol";
 import {CustomERC20Permit} from "../../libraries/ERC/CustomERC20Permit.sol";
-import {IModuleCore} from "../../interfaces/IModuleCore.sol";
+import {Initialize} from "../../interfaces/Init.sol";
 import {IReserve} from "./../../interfaces/IReserve.sol";
 import {Id} from "./../../libraries/Pair.sol";
 
@@ -89,7 +89,7 @@ contract Asset is ERC20Burnable, CustomERC20Permit, Ownable, Expiry, ExchangeRat
 
     Id public marketId;
 
-    IModuleCore public moduleCore;
+    Initialize public moduleCore;
 
     address public factory;
 
@@ -137,7 +137,7 @@ contract Asset is ERC20Burnable, CustomERC20Permit, Ownable, Expiry, ExchangeRat
      * @param _moduleCore The address of the module core contract
      */
     function setModuleCore(address _moduleCore) external onlyFactory {
-        moduleCore = IModuleCore(_moduleCore);
+        moduleCore = Initialize(_moduleCore);
     }
 
     /**
