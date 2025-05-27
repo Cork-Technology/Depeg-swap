@@ -10,12 +10,12 @@ interface IProtectedUnitLiquidation {
     /// @notice Request funds for liquidation, will transfer the funds directly from the Protected Unit to the liquidation contract
     /// @param amount The amount of funds to request
     /// @param token The token to request, must be either RA or PA in the contract, will fail otherwise
+    /// @param executor the actual trade executor that holds all the funds and receive the resulting trade tokens
     /// will revert if there's not enough funds in the Protected Unit
     /// IMPORTANT :  the Protected Unit must make sure only whitelisted liquidation contract adddress can call this function
-    function requestLiquidationFunds(uint256 amount, address token) external;
+    function requestLiquidationFunds(uint256 amount, address token, address executor) external;
 
     /// @notice Receive funds from liquidation or leftover, the Protected Unit will do a transferFrom from the liquidation contract
-    /// it is important to note that the Protected Unit will only transfer RA from the liquidation contract
     /// @param amount The amount of funds to receive
     /// @param token The token to receive, must be either RA or PA in the contract, will fail otherwise
     function receiveFunds(uint256 amount, address token) external;
@@ -28,6 +28,10 @@ interface IProtectedUnitLiquidation {
         IDsFlashSwapCore.BuyAprroxParams calldata params,
         IDsFlashSwapCore.OffchainGuess calldata offchainGuess
     ) external returns (uint256 amountOut);
+
+    /// @notice call this to notify the protected unit that the liquidation is successfull. This will unpause minting and burning
+    /// @dev NOTE: MUST ONLY BE CALLED BY THE CURRENT ACTIVE LIQUIDATOR AND AFTER ALL TOKENS INCLUDING LEFTOVER IS TRANSFERRED TO THE PROTECTED UNIT
+    function finishLiquidating() external;
 
     /// @notice Returns the amount of funds available for liquidation or trading
     /// @param token The token to check, must be either RA or PA in the contract, will fail otherwise

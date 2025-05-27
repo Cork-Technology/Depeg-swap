@@ -4,6 +4,7 @@ pragma solidity ^0.8.24;
 import {BuyMathBisectionSolver, SwapperMathLibrary} from "./DsSwapperMathLib.sol";
 import {UD60x18, convert, ud, add, mul, pow, sub, div, unwrap, intoSD59x18} from "@prb/math/src/UD60x18.sol";
 import {intoUD60x18} from "@prb/math/src/SD59x18.sol";
+import {IErrors} from "./../interfaces/IErrors.sol";
 
 /**
  * @title MathHelper Library Contract
@@ -18,22 +19,46 @@ library MathHelper {
     /// @dev 1e18 == 1%.
     uint256 internal constant UNI_STATIC_TOLERANCE = 95e18;
 
+    uint256 internal constant CT_PRICE_THRESHOLD = 1.05 ether;
+
     /**
      * @dev calculate the amount of ra and ct needed to provide AMM with liquidity in respect to the price ratio
      *
      * @param amountra the total amount of liquidity user provide(e.g 2 ra)
-     * @param priceRatio the price ratio of the pair, should be retrieved from the AMM as sqrtx96 and be converted to ratio
+     * @param priceRatio the price ratio of the pair
+     * @param raDecimals the number of decimals for the RA token
      * @return ra the amount of ra needed to provide AMM with liquidity
      * @return ct the amount of ct needed to provide AMM with liquidity, also the amount of how much ra should be converted to ct
      */
-    function calculateProvideLiquidityAmountBasedOnCtPrice(uint256 amountra, uint256 priceRatio)
+    function calculateProvideLiquidityAmountBasedOnCtPrice(uint256 amountra, uint256 priceRatio, uint8 raDecimals)
         external
         pure
         returns (uint256 ra, uint256 ct)
     {
-        UD60x18 _ct = div(ud(amountra), ud(priceRatio) + convert(1));
+        // Convert RA amount to 18 decimals for calculation if needed
+        uint256 amountraAdjusted = amountra;
+        if (raDecimals != DEFAULT_DECIMAL) {
+            if (raDecimals < DEFAULT_DECIMAL) {
+                amountraAdjusted = amountra * 10 ** (DEFAULT_DECIMAL - raDecimals);
+            } else {
+                amountraAdjusted = amountra / 10 ** (raDecimals - DEFAULT_DECIMAL);
+            }
+        }
+
+        UD60x18 _ct = div(ud(amountraAdjusted), ud(priceRatio) + convert(1));
         ct = unwrap(_ct);
-        ra = amountra - ct;
+
+        // Convert RA back to original decimals if needed
+        uint256 raAdjusted = amountraAdjusted - ct;
+        if (raDecimals != DEFAULT_DECIMAL) {
+            if (raDecimals < DEFAULT_DECIMAL) {
+                ra = raAdjusted / 10 ** (DEFAULT_DECIMAL - raDecimals);
+            } else {
+                ra = raAdjusted * 10 ** (raDecimals - DEFAULT_DECIMAL);
+            }
+        } else {
+            ra = raAdjusted;
+        }
     }
 
     /**
@@ -224,6 +249,8 @@ library MathHelper {
         pure
         returns (uint256 lvMinted)
     {
+        if (nav == 0 || lvSupply == 0) return depositAmount;
+
         UD60x18 navPerShare = div(ud(nav), ud(lvSupply));
 
         return unwrap(div(ud(depositAmount), navPerShare));
@@ -245,6 +272,9 @@ library MathHelper {
     function calculateInternalPrice(NavParams memory params) internal pure returns (InternalPrices memory) {
         UD60x18 t = sub(convert(1), ud(params.oneMinusT));
         UD60x18 ctPrice = calculatePriceQuote(ud(params.reserveRa), ud(params.reserveCt), t);
+
+        if (ctPrice > ud(CT_PRICE_THRESHOLD)) revert IErrors.InvalidPoolStateOrNearExpired();
+
         // we set the default ds price to 0 if for some reason the ct price is worth above 1 RA
         // if not, this'll trigger an underflow error
         UD60x18 dsPrice = ctPrice > convert(1) ? ud(0) : sub(convert(1), ctPrice);
