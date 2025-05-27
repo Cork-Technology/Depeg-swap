@@ -144,4 +144,11 @@ abstract contract ModuleState is IErrors, ReentrancyGuardTransient, Extsload {
             revert DeadlineExceeded();
         }
     }
+
+    // @notice checks if config contract is paused or not
+    function configNotPaused() internal view {
+        if (CorkConfig(CONFIG).paused()) {
+            revert ConfigPaused();
+        }
+    }
 }

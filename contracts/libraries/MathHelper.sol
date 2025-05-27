@@ -249,7 +249,7 @@ library MathHelper {
         pure
         returns (uint256 lvMinted)
     {
-        if (nav == 0) return depositAmount;
+        if (nav == 0 || lvSupply == 0) return depositAmount;
 
         UD60x18 navPerShare = div(ud(nav), ud(lvSupply));
 

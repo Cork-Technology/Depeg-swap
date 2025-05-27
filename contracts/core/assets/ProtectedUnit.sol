@@ -349,9 +349,8 @@ contract ProtectedUnit is
         uint256 dsId = moduleCore.lastDsId(id);
         IERC20(_ra).safeIncreaseAllowance(address(flashswapRouter), amount);
 
-        IDsFlashSwapCore.SwapRaForDsReturn memory result = flashswapRouter.swapRaforDs(
-            id, dsId, amount, amountOutMin, params, offchainGuess, block.timestamp + 30 minutes
-        );
+        IDsFlashSwapCore.SwapRaForDsReturn memory result =
+            flashswapRouter.swapRaforDs(id, dsId, amount, amountOutMin, params, offchainGuess, block.timestamp);
 
         amountOut = result.amountOut;
         dsReserve += amountOut;
@@ -640,15 +639,15 @@ contract ProtectedUnit is
     {
         (dsAmount, paAmount, raAmount) = previewBurn(dissolver, amount);
 
-        dsReserve -= dsAmount;
-        paReserve -= paAmount;
-        raReserve -= raAmount;
-
         _burnFrom(dissolver, amount);
 
         paAmount = TransferHelper.transferNormalize(_pa, dissolver, paAmount);
         raAmount = TransferHelper.transferNormalize(_ra, dissolver, raAmount);
         IERC20(ds).safeTransfer(dissolver, dsAmount);
+
+        dsReserve -= dsAmount;
+        paReserve -= paAmount;
+        raReserve -= raAmount;
 
         emit Burn(dissolver, amount, dsAmount, paAmount, raAmount);
     }
