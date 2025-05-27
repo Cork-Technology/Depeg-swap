@@ -13,6 +13,9 @@ library ReturnDataSlotLib {
 
     // keccak256("DS_FEE_AMOUNT")
     bytes32 public constant DS_FEE_AMOUNT = 0x2edcf68d3b1bfd48ba1b97a39acb4e9553bc609ae5ceef6b88a0581565dba754;
+    
+    // keccak256("SWAP_FLAG")
+    bytes32 public constant SWAP_FLAG = 0xf7759a68245581b79743d862e96eeb16db0204aaed91644c247f2bfbf042a57f;
 
     function increase(bytes32 slot, uint256 _value) internal {
         uint256 prev = get(slot);
@@ -23,6 +26,18 @@ library ReturnDataSlotLib {
     function set(bytes32 slot, uint256 _value) private {
         assembly {
             tstore(slot, _value)
+        }
+    }
+
+    function set_swap_flag(bool flag) internal{
+        assembly {
+            tstore(SWAP_FLAG, flag )
+        }
+    }
+
+    function get_swap_flag() internal view returns(bool value){
+        assembly {
+            value := tload(SWAP_FLAG)
         }
     }
 

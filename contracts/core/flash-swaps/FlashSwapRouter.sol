@@ -635,6 +635,8 @@ contract RouterState is
 
         bytes memory data = abi.encode(callbackData);
 
+        ReturnDataSlotLib.set_swap_flag(true);
+
         hook.swap(address(assetPair.ra), address(assetPair.ct), raAmount, ctAmount, data);
     }
 
@@ -645,6 +647,11 @@ contract RouterState is
         address paymentToken,
         address poolManager
     ) external {
+        bool isSwapping = ReturnDataSlotLib.get_swap_flag();
+
+        if (!isSwapping) revert IErrors.StateLocked();
+        else ReturnDataSlotLib.set_swap_flag(false);
+
         CallbackData memory callbackData = abi.decode(data, (CallbackData));
 
         ReserveState storage self = reserves[callbackData.reserveId];
