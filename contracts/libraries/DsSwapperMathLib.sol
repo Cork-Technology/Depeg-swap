@@ -133,7 +133,7 @@ library SwapperMathLibrary {
     int256 internal constant ONE_MINUS_T_CAP = 1e18;
 
     // ds reserve sell pressure cap, set to 95% to still allow price impact being made
-    uint256 internal constant SELL_PRESSURE_CAP = 95e18;
+    uint256 internal constant SELL_PRESSURE_CAP = 97.5 ether; // same as 97.5 x 1e18
 
     // Calculate price ratio of two tokens in AMM, will return ratio on 18 decimals precision
     function getPriceRatio(uint256 raReserve, uint256 ctReserve)
@@ -292,7 +292,7 @@ library SwapperMathLibrary {
         decay = sub(convertUd(100), discount);
     }
 
-    function _calculateRolloverSale(UD60x18 lvDsReserve, UD60x18 psmDsReserve, UD60x18 raProvided, UD60x18 hpa)
+    function _calculateReserveSale(UD60x18 lvDsReserve, UD60x18 psmDsReserve, UD60x18 raProvided, UD60x18 dsPrice)
         public
         view
         returns (
@@ -307,7 +307,7 @@ library SwapperMathLibrary {
         UD60x18 totalDsReserve = add(lvDsReserve, psmDsReserve);
 
         // calculate the amount of DS user will receive
-        dsReceived = div(raProvided, hpa);
+        dsReceived = div(raProvided, dsPrice);
 
         // returns the RA if, the total reserve cannot cover the DS that user will receive. this Ra left must subject to the AMM rates
         if (totalDsReserve >= dsReceived) {
@@ -317,7 +317,7 @@ library SwapperMathLibrary {
             dsReceived = totalDsReserve;
 
             // Recalculate raLeft to account for the dust
-            raLeft = sub(raProvided, mul(dsReceived, hpa));
+            raLeft = sub(raProvided, mul(dsReceived, dsPrice));
         }
 
         // recalculate the DS user will receive, after the RA left is deducted
@@ -345,11 +345,11 @@ library SwapperMathLibrary {
         assert(totalDsReserve >= lvReserveUsed + psmReserveUsed);
 
         // calculate the RA profit of LV and PSM
-        lvProfit = mul(lvReserveUsed, hpa);
-        psmProfit = mul(psmReserveUsed, hpa);
+        lvProfit = mul(lvReserveUsed, dsPrice);
+        psmProfit = mul(psmReserveUsed, dsPrice);
     }
 
-    function calculateRolloverSale(uint256 lvDsReserve, uint256 psmDsReserve, uint256 raProvided, uint256 hiya)
+    function calculateReserveSale(uint256 lvDsReserve, uint256 psmDsReserve, uint256 raProvided, uint256 price)
         external
         view
         returns (
@@ -364,7 +364,7 @@ library SwapperMathLibrary {
         UD60x18 _lvDsReserve = ud(lvDsReserve);
         UD60x18 _psmDsReserve = ud(psmDsReserve);
         UD60x18 _raProvided = ud(raProvided);
-        UD60x18 _hpa = sub(convertUd(1), calcPtConstFixed(ud(hiya)));
+        UD60x18 dsPrice = ud(price);
 
         (
             UD60x18 _lvProfit,
@@ -373,7 +373,7 @@ library SwapperMathLibrary {
             UD60x18 _dsReceived,
             UD60x18 _lvReserveUsed,
             UD60x18 _psmReserveUsed
-        ) = _calculateRolloverSale(_lvDsReserve, _psmDsReserve, _raProvided, _hpa);
+        ) = _calculateReserveSale(_lvDsReserve, _psmDsReserve, _raProvided, dsPrice);
 
         lvProfit = unwrap(_lvProfit);
         psmProfit = unwrap(_psmProfit);
@@ -381,6 +381,22 @@ library SwapperMathLibrary {
         dsReceived = unwrap(_dsReceived);
         lvReserveUsed = unwrap(_lvReserveUsed);
         psmReserveUsed = unwrap(_psmReserveUsed);
+    }
+
+    function calculateDsSpotPrice(uint256 raReserve, uint256 ctReserve, uint256 _t)
+        external
+        pure
+        returns (uint256 spot)
+    {
+        UD60x18 t = ud(_t);
+        UD60x18 one = convertUd(1);
+
+        UD60x18 ctSpotPrice = pow(ud(raReserve) / ud(ctReserve), t);
+
+        // prevent underflow
+        UD60x18 dsSpotPrice = ctSpotPrice > one ? ud(0) : one - ctSpotPrice;
+
+        spot = unwrap(dsSpotPrice);
     }
 
     /**
@@ -461,6 +477,25 @@ library SwapperMathLibrary {
     function calcPtConstFixed(UD60x18 rate) internal pure returns (UD60x18) {
         UD60x18 ratePlusOne = add(convertUd(1), rate);
         return div(convertUd(1), ratePlusOne);
+    }
+
+    /// @dev this is basically just 1 - (f/ (rate+1)^t) where the latter part is just pT or CT price
+    /// since they're inversely related, we just do 1 -
+    /// f is always 1
+    function calculateDsSpotPriceWithRiskPremium(uint256 _riskPremiumPercentage, uint256 _t)
+        internal
+        pure
+        returns (uint256 spotPrice)
+    {
+        UD60x18 riskPremiumPercentage = ud(_riskPremiumPercentage);
+        // normalize from 0-100 to 0-1
+        riskPremiumPercentage = div(riskPremiumPercentage, convertUd(100));
+
+        UD60x18 t = ud(_t);
+
+        UD60x18 one = convertUd(1);
+
+        spotPrice = unwrap(sub(one, div(one, pow(add(riskPremiumPercentage, one), t))));
     }
 
     struct OptimalBorrowParams {

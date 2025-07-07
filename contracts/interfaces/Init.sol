@@ -2,13 +2,14 @@
 pragma solidity ^0.8.24;
 
 import {Id, Pair} from "../libraries/Pair.sol";
+import {IPSMcore} from "./IPSMcore.sol";
 
 /**
  * @title Initialize Interface
  * @author Cork Team
  * @notice Initialize interface for providing Initialization related functions through ModuleCore contract
  */
-interface Initialize {
+interface Initialize is IPSMcore {
     /**
      * @notice initialize a new pool, this will initialize PSM and Liquidity Vault and deploy new LV token
      * @param pa address of PA token(e.g stETH)

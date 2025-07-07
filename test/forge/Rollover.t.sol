@@ -56,7 +56,7 @@ contract RolloverTest is Helper {
         ra.approve(address(moduleCore), 100_000_000 ether);
 
         moduleCore.depositPsm(currencyId, DEFAULT_DEPOSIT_AMOUNT);
-        moduleCore.depositLv(currencyId, DEFAULT_DEPOSIT_AMOUNT, 0, 0);
+        moduleCore.depositLv(currencyId, DEFAULT_DEPOSIT_AMOUNT, 0, 0, 0, block.timestamp);
     }
 
     function fetchProtocolGeneralInfo() internal {
@@ -152,7 +152,13 @@ contract RolloverTest is Helper {
         vm.warp(expiry - 100);
 
         IDsFlashSwapCore.SwapRaForDsReturn memory result = flashSwapRouter.swapRaforDs(
-            currencyId, dsId, 1 ether, 0, defaultBuyApproxParams(), defaultOffchainGuessParams()
+            currencyId,
+            dsId,
+            1 ether,
+            0,
+            defaultBuyApproxParams(),
+            defaultOffchainGuessParams(),
+            block.timestamp + 30 minutes
         );
         uint256 amountOut = result.amountOut;
 
@@ -167,8 +173,8 @@ contract RolloverTest is Helper {
         vm.assertNotEq(vHiyaCummulated, 0);
         vm.assertNotEq(HiyaCummulated, 0);
 
-        // expected to be around 1% ARP
-        vm.assertApproxEqAbs(Hiya, 0.017895624717812529 ether, 0.01 ether);
+        // expected to be around 0.25% RP, with 10% threshold
+        vm.assertApproxEqAbs(Hiya, 0.0025 ether, 0.001 ether);
 
         IPSMcore(moduleCore).updatePsmAutoSellStatus(currencyId, true);
 
@@ -180,7 +186,13 @@ contract RolloverTest is Helper {
         vm.assertEq(dsReceived, 0);
 
         result = flashSwapRouter.swapRaforDs(
-            currencyId, dsId, 1 ether, 0, defaultBuyApproxParams(), defaultOffchainGuessParams()
+            currencyId,
+            dsId,
+            1 ether,
+            0,
+            defaultBuyApproxParams(),
+            defaultOffchainGuessParams(),
+            block.timestamp + 30 minutes
         );
         amountOut = result.amountOut;
 
@@ -227,7 +239,13 @@ contract RolloverTest is Helper {
         vm.warp(expiry - 100);
 
         IDsFlashSwapCore.SwapRaForDsReturn memory result = flashSwapRouter.swapRaforDs(
-            currencyId, dsId, 1 ether, 0, defaultBuyApproxParams(), defaultOffchainGuessParams()
+            currencyId,
+            dsId,
+            1 ether,
+            0,
+            defaultBuyApproxParams(),
+            defaultOffchainGuessParams(),
+            block.timestamp + 30 minutes
         );
         uint256 amountOut = result.amountOut;
 
@@ -242,8 +260,8 @@ contract RolloverTest is Helper {
         vm.assertNotEq(vHiyaCummulated, 0);
         vm.assertNotEq(HiyaCummulated, 0);
 
-        // expected to be around 1% ARP
-        vm.assertApproxEqAbs(Hiya, 0.017895624717812529 ether, 0.01 ether);
+        // expected to be around 0.25% RP, with 10% threshold
+        vm.assertApproxEqAbs(Hiya, 0.0025 ether, 0.001 ether);
 
         IPSMcore(moduleCore).updatePsmAutoSellStatus(currencyId, true);
 
@@ -255,7 +273,13 @@ contract RolloverTest is Helper {
         vm.assertEq(dsReceived, 0);
 
         result = flashSwapRouter.swapRaforDs(
-            currencyId, dsId, 1 ether, 0, defaultBuyApproxParams(), defaultOffchainGuessParams()
+            currencyId,
+            dsId,
+            1 ether,
+            0,
+            defaultBuyApproxParams(),
+            defaultOffchainGuessParams(),
+            block.timestamp + 30 minutes
         );
         amountOut = result.amountOut;
 
@@ -285,7 +309,13 @@ contract RolloverTest is Helper {
         vm.warp(expiry - 100);
 
         IDsFlashSwapCore.SwapRaForDsReturn memory result = flashSwapRouter.swapRaforDs(
-            currencyId, dsId, 1 ether, 0, defaultBuyApproxParams(), defaultOffchainGuessParams()
+            currencyId,
+            dsId,
+            1 ether,
+            0,
+            defaultBuyApproxParams(),
+            defaultOffchainGuessParams(),
+            block.timestamp + 30 minutes
         );
         uint256 amountOut = result.amountOut;
 
@@ -300,8 +330,8 @@ contract RolloverTest is Helper {
         vm.assertNotEq(vHiyaCummulated, 0);
         vm.assertNotEq(HiyaCummulated, 0);
 
-        // expected to be around 1% ARP
-        vm.assertApproxEqAbs(Hiya, 0.017895624717812529 ether, 0.01 ether);
+        // expected to be around 0.25% RP, with 10% threshold
+        vm.assertApproxEqAbs(Hiya, 0.0025 ether, 0.001 ether);
 
         IPSMcore(moduleCore).updatePsmAutoSellStatus(currencyId, true);
 
@@ -314,21 +344,33 @@ contract RolloverTest is Helper {
 
         vm.assertEq(true, flashSwapRouter.isRolloverSale(currencyId));
 
-        // based on the Hiya = 0.017895624717812529 (~1% ARP) and t = 1
-        uint256 expectedHPA = 0.017895624717812529 ether;
+        // based on the Hiya = 0.0025  (~0.25% RP) and t = 1
+        uint256 expectedHPA = 0.0025 ether;
 
         // we disable graduale sale to get an accurate representation
         disableDsGradualSale();
 
         result = flashSwapRouter.swapRaforDs(
-            currencyId, dsId, expectedHPA, 0, defaultBuyApproxParams(), defaultOffchainGuessParams()
+            currencyId,
+            dsId,
+            expectedHPA,
+            0,
+            defaultBuyApproxParams(),
+            defaultOffchainGuessParams(),
+            block.timestamp + 30 minutes
         );
         amountOut = result.amountOut;
 
         vm.assertApproxEqAbs(amountOut, 1 ether, 0.018 ether);
 
         result = flashSwapRouter.swapRaforDs(
-            currencyId, dsId, expectedHPA * 10, 0, defaultBuyApproxParams(), defaultOffchainGuessParams()
+            currencyId,
+            dsId,
+            expectedHPA * 10,
+            0,
+            defaultBuyApproxParams(),
+            defaultOffchainGuessParams(),
+            block.timestamp + 30 minutes
         );
         amountOut = result.amountOut;
 
@@ -345,7 +387,13 @@ contract RolloverTest is Helper {
         vm.warp(expiry - 100);
 
         IDsFlashSwapCore.SwapRaForDsReturn memory result = flashSwapRouter.swapRaforDs(
-            currencyId, dsId, 1 ether, 0, defaultBuyApproxParams(), defaultOffchainGuessParams()
+            currencyId,
+            dsId,
+            1 ether,
+            0,
+            defaultBuyApproxParams(),
+            defaultOffchainGuessParams(),
+            block.timestamp + 30 minutes
         );
         uint256 amountOut = result.amountOut;
 
@@ -360,8 +408,8 @@ contract RolloverTest is Helper {
         vm.assertNotEq(vHiyaCummulated, 0);
         vm.assertNotEq(HiyaCummulated, 0);
 
-        // expected to be around 1% ARP
-        vm.assertApproxEqAbs(Hiya, 0.017895624717812529 ether, 0.01 ether);
+        // expected to be around 0.25% RP, with 10% threshold
+        vm.assertApproxEqAbs(Hiya, 0.0025 ether, 0.001 ether);
 
         IPSMcore(moduleCore).updatePsmAutoSellStatus(currencyId, true);
 
@@ -376,7 +424,13 @@ contract RolloverTest is Helper {
 
         vm.expectRevert();
         flashSwapRouter.swapRaforDs(
-            currencyId, dsId, Hiya, 1000000 ether, defaultBuyApproxParams(), defaultOffchainGuessParams()
+            currencyId,
+            dsId,
+            Hiya,
+            1000000 ether,
+            defaultBuyApproxParams(),
+            defaultOffchainGuessParams(),
+            block.timestamp + 30 minutes
         );
     }
 }

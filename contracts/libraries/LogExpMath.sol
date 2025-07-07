@@ -259,7 +259,7 @@ library LogExpMath {
             }
 
             // Instead of computing x^y directly, we instead rely on the properties of logarithms and exponentiation to
-            // arrive at that r`esult. In particular, exp(ln(x)) = x, and ln(x^y) = y * ln(x). This means
+            // arrive at that result. In particular, exp(ln(x)) = x, and ln(x^y) = y * ln(x). This means
             // x^y = exp(y * ln(x)).
 
             // The ln function takes a signed value, so we need to make sure x fits in the signed 256 bit range.

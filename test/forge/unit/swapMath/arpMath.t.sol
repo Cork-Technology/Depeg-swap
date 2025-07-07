@@ -86,8 +86,19 @@ contract ArpMath is Test {
         vm.assertApproxEqAbs(0.66 ether, unwrap(rt), 0.01 ether);
     }
 
-    function calcSpotArp() external {
-        UD60x18 result = SwapperMathLibrary.calcSpotArp(convert(1), convert(0.4 ether));
+    function test_calcSpotArp() external {
+        UD60x18 result = SwapperMathLibrary.calcSpotArp(convert(1), ud(0.4 ether));
         vm.assertApproxEqAbs(0.66 ether, unwrap(result), 0.01 ether);
+    }
+
+    function test_calculateDsSpotPriceWithRiskPremium() external {
+        // 5%
+        uint256 rp = 5 ether;
+        // 0.8 t
+        uint256 _t = 0.8 ether;
+
+        uint256 price = SwapperMathLibrary.calculateDsSpotPriceWithRiskPremium(rp, _t);
+
+        vm.assertApproxEqAbs(price, 0.03828019269 ether, 0.001 ether);
     }
 }

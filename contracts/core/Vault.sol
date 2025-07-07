@@ -22,17 +22,28 @@ abstract contract VaultCore is ModuleState, Context, IVault, IVaultLiquidation {
      * @notice Deposit a wrapped asset into a given vault
      * @param id The Module id that is used to reference both psm and lv of a given pair
      * @param amount The amount of the redemption asset(ra) deposited
+     * @param raTolerance The tolerance for the RA
+     * @param ctTolerance The tolerance for the CT
+     * @param minimumLvAmountOut The minimum amount of lv that the user wants to receive
+     * @param deadline The deadline for the deposit
      * @return received The amount of lv received
      */
-    function depositLv(Id id, uint256 amount, uint256 raTolerance, uint256 ctTolerance)
-        external
-        override
-        nonReentrant
-        returns (uint256 received)
-    {
+    function depositLv(
+        Id id,
+        uint256 amount,
+        uint256 raTolerance,
+        uint256 ctTolerance,
+        uint256 minimumLvAmountOut,
+        uint256 deadline
+    ) external override nonReentrant returns (uint256 received) {
         LVDepositNotPaused(id);
+        withinDeadline(deadline);
         State storage state = states[id];
-        received = state.deposit(_msgSender(), amount, getRouterCore(), getAmmRouter(), raTolerance, ctTolerance);
+        received =
+            state.deposit(_msgSender(), amount, getRouterCore(), getAmmRouter(), raTolerance, ctTolerance, deadline);
+
+        if (received < minimumLvAmountOut) revert InsufficientOutputAmount(minimumLvAmountOut, received);
+
         emit LvDeposited(id, _msgSender(), received, amount);
     }
 
@@ -57,7 +68,7 @@ abstract contract VaultCore is ModuleState, Context, IVault, IVaultLiquidation {
             withdrawalContract: getWithdrawalContract()
         });
 
-        result = states[redeemParams.id].redeemEarly(msg.sender, redeemParams, routers, permitParams);
+        result = states[redeemParams.id].redeemEarly(_msgSender(), redeemParams, routers, permitParams);
 
         emit LvRedeemEarly(
             redeemParams.id,
@@ -119,7 +130,7 @@ abstract contract VaultCore is ModuleState, Context, IVault, IVaultLiquidation {
         onlyFlashSwapRouter();
         State storage state = states[id];
         state.allocateFeesToVault(amount);
-        emit VaultDsSaleProfitReceived(msg.sender, id, amount);
+        emit VaultDsSaleProfitReceived(_msgSender(), id, amount);
     }
 
     /**
@@ -127,7 +138,7 @@ abstract contract VaultCore is ModuleState, Context, IVault, IVaultLiquidation {
      * @param id The Module id that is used to reference both psm and lv of a given pair
      */
     function vaultLp(Id id) external view returns (uint256) {
-        return states[id].vaultLp(getAmmRouter());
+        return states[id].vaultLp();
     }
 
     function lvAcceptRolloverProfit(Id id, uint256 amount) external {
@@ -141,24 +152,35 @@ abstract contract VaultCore is ModuleState, Context, IVault, IVaultLiquidation {
         states[id].updateCtHeldPercentage(ctHeldPercentage);
     }
 
-    function requestLiquidationFunds(Id id, uint256 amount) external override {
+    function requestLiquidationFunds(Id id, uint256 amount, address executor) external override {
         onlyWhiteListedLiquidationContract();
+        /// @dev we set the executor address here.
+        /// this will be used to know who is the active liquidator that handle a pool PA liquidation
+        /// only this address will be allowed to call receiveTradeExecutionResultFunds and receiveLeftoverFunds
+        /// this is restricted because now we will pause the vault withdrawal. If we allow anyone to call it then it'll have a DoS surface of attack
+        activeLiquidator[id] = executor;
+
         State storage state = states[id];
-        state.requestLiquidationFunds(amount, msg.sender);
-        emit LiquidationFundsRequested(id, msg.sender, amount);
+        state.requestLiquidationFunds(amount, _msgSender());
+        emit LiquidationFundsRequested(id, _msgSender(), amount);
     }
 
-    function receiveTradeExecuctionResultFunds(Id id, uint256 amount) external override {
+    function receiveTradeExecutionResultFunds(Id id, uint256 amount) external override {
+        if (_msgSender() != activeLiquidator[id]) {
+            revert OnlyWhiteListed();
+        }
+
         State storage state = states[id];
-        state.receiveTradeExecuctionResultFunds(amount, msg.sender);
-        emit TradeExecutionResultFundsReceived(id, msg.sender, amount);
+        state.receiveTradeExecutionResultFunds(amount, _msgSender());
+        emit TradeExecutionResultFundsReceived(id, _msgSender(), amount);
     }
 
     function useTradeExecutionResultFunds(Id id) external override {
         onlyConfig();
         State storage state = states[id];
-        uint256 used = state.useTradeExecutionResultFunds(getRouterCore(), getAmmRouter());
-        emit TradeExecutionResultFundsUsed(id, msg.sender, used);
+        // not ideal but since we can't change the function signature here we have no other option
+        uint256 used = state.useTradeExecutionResultFunds(getRouterCore(), getAmmRouter(), block.timestamp);
+        emit TradeExecutionResultFundsUsed(id, _msgSender(), used);
     }
 
     function liquidationFundsAvailable(Id id) external view returns (uint256) {
@@ -178,6 +200,14 @@ abstract contract VaultCore is ModuleState, Context, IVault, IVaultLiquidation {
     }
 
     function receiveLeftoverFunds(Id id, uint256 amount) external override {
+        if (_msgSender() != activeLiquidator[id]) {
+            revert OnlyWhiteListed();
+        }
+
+        /// @dev we reset liquidator address
+        /// the reason we do this here is that the liquidator contract will and must call this function last when finishing order in the liquidator contract
+        delete activeLiquidator[id];
+
         states[id].receiveLeftoverFunds(amount, _msgSender());
     }
 

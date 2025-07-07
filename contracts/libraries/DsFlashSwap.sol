@@ -9,6 +9,7 @@ import {MarketSnapshot, MarketSnapshotLib} from "Cork-Hook/lib/MarketSnapshot.so
 import {IDsFlashSwapCore} from "./../interfaces/IDsFlashSwapRouter.sol";
 import {TransferHelper} from "./TransferHelper.sol";
 import {IErrors} from "./../interfaces/IErrors.sol";
+import {UD60x18, convert, ud, unwrap} from "@prb/math/src/UD60x18.sol";
 
 /**
  * @dev AssetPair structure for Asset Pairs
@@ -69,7 +70,7 @@ library DsFlashSwaplibrary {
         }
     }
 
-    function rolloverSale(ReserveState storage self) external view returns (bool) {
+    function rolloverSale(ReserveState storage self) public view returns (bool) {
         return block.number <= self.rolloverEndInBlockNumber;
     }
 
@@ -125,9 +126,8 @@ library DsFlashSwaplibrary {
         uint256 end = self.ds[dsId].ds.expiry();
         uint256 current = block.timestamp;
 
-        pressurePercentage = SwapperMathLibrary.calculateOptimalSellPressure(
-            start, end, current, dsOut, raProvided, self.reserveSellPressurePercentageThreshold
-        );
+        pressurePercentage =
+            SwapperMathLibrary.calculateOptimalSellPressure(start, end, current, dsOut, raProvided, threshold);
     }
 
     function emptyReservePartialLv(ReserveState storage self, uint256 dsId, uint256 amount, address to)
@@ -288,5 +288,38 @@ library DsFlashSwaplibrary {
 
     function isRAsupportsPermit(address token) external view returns (bool) {
         return PermitChecker.supportsPermit(token);
+    }
+
+    /// @dev will return an implied yield average price if rollover
+    /// else it will just return the spot ds price that's derived from the spot price of CT
+    function getCurrentDsPrice(ReserveState storage self, AssetPair storage pair, ICorkHook router)
+        external
+        view
+        returns (uint256 price)
+    {
+        if (rolloverSale(self) && self.hiya != 0) {
+            return unwrap(convert(1) - SwapperMathLibrary.calcPtConstFixed(ud(self.hiya)));
+        } else {
+            MarketSnapshot memory market = router.getMarketSnapshot(address(pair.ra), address(pair.ct));
+            market.reserveRa = TransferHelper.tokenNativeDecimalsToFixed(market.reserveRa, pair.ra);
+
+            /// @dev t is 18 decimals so we do this
+            uint256 t = 1e18 - market.oneMinusT;
+
+            // if for some reason this fails. e.g reserve is 0 or t is 0. we return 0. unlikely to happen but just in case
+            try SwapperMathLibrary.calculateDsSpotPrice(market.reserveRa, market.reserveCt, t) returns (uint256 _price)
+            {
+                price = _price;
+            } catch {
+                price = 0;
+            }
+
+            /// @dev we basically cap the price of the DS to half of the threshold. we treat that cap as a risk premium and derive the spot DS price
+            /// using 1 - (f/ (rate+1)^t) where the latter part is just pT or CT price and f is hardcoded to 1 since CT + DS will always converge to 1 RA
+            uint256 priceFloor = self.reserveSellPressurePercentageThreshold / 2;
+            priceFloor = SwapperMathLibrary.calculateDsSpotPriceWithRiskPremium(priceFloor, t);
+
+            price = price < priceFloor ? priceFloor : price;
+        }
     }
 }

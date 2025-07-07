@@ -234,7 +234,7 @@ contract SimulateScript is Test {
     function depositLv(Market memory market, Id marketId, uint256 depositAmt) public returns (uint256) {
         depositAmt = convertToDecimals(market.redemptionAsset, depositAmt);
         ERC20(market.redemptionAsset).approve(address(moduleCore), depositAmt);
-        return moduleCore.depositLv(marketId, depositAmt, 0, 0);
+        return moduleCore.depositLv(marketId, depositAmt, 0, 0, 0, block.timestamp);
     }
 
     function redeemRaWithDsPa(Market memory market, Id marketId, uint256 dsId, uint256 redeemAmt, address ds) public {
@@ -263,7 +263,7 @@ contract SimulateScript is Test {
     function swapDsForRa(Market memory market, Id marketId, uint256 dsId, uint256 swapAmt, address ds) public {
         swapAmt = convertToDecimals(ds, swapAmt);
         ERC20(ds).approve(address(routerState), swapAmt);
-        routerState.swapDsforRa(marketId, dsId, swapAmt, 0);
+        routerState.swapDsforRa(marketId, dsId, swapAmt, 0, block.timestamp + 30 minutes);
     }
 
     function swapRaForDs(Market memory market, Id marketId, uint256 dsId, uint256 swapAmt) public {
@@ -271,8 +271,8 @@ contract SimulateScript is Test {
         ERC20(market.redemptionAsset).approve(address(routerState), swapAmt);
         IDsFlashSwapCore.BuyAprroxParams memory buyApprox =
             IDsFlashSwapCore.BuyAprroxParams(108, 108, 1 ether, 1 gwei, 1 gwei, 0.01 ether);
-        IDsFlashSwapCore.OffchainGuess memory offchainguess = IDsFlashSwapCore.OffchainGuess({borrow: swapAmt});
-        routerState.swapRaforDs(marketId, dsId, swapAmt, 0, buyApprox, offchainguess);
+        IDsFlashSwapCore.OffchainGuess memory offchainguess = IDsFlashSwapCore.OffchainGuess(0, 0);
+        routerState.swapRaforDs(marketId, dsId, swapAmt, 0, buyApprox, offchainguess, block.timestamp + 30 minutes);
     }
 
     function swapRaCtTokens(Market memory market, Id marketId, uint256 swapAmt, address ct) public {

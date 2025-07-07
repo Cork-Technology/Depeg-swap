@@ -47,7 +47,7 @@ abstract contract ChildLiquidatorBase is OwnableUpgradeable {
      * @custom:reverts OnlyLiquidator if the caller is not the owner
      */
     modifier onlyLiquidator() {
-        if (msg.sender != owner()) {
+        if (_msgSender() != owner()) {
             revert IErrors.OnlyLiquidator();
         }
         _;
@@ -123,6 +123,8 @@ contract ProtectedUnitChildLiquidator is ChildLiquidatorBase {
         SafeERC20.safeIncreaseAllowance(IERC20(order.sellToken), receiver, leftover);
 
         IProtectedUnitLiquidation(receiver).receiveFunds(leftover, order.sellToken);
+
+        IProtectedUnitLiquidation(receiver).finishLiquidating();
     }
 }
 
@@ -146,7 +148,7 @@ contract VaultChildLiquidator is ChildLiquidatorBase {
         uint256 balance = IERC20(order.buyToken).balanceOf(address(this));
         SafeERC20.safeIncreaseAllowance(IERC20(order.buyToken), receiver, balance);
 
-        IVaultLiquidation(receiver).receiveTradeExecuctionResultFunds(id, balance);
+        IVaultLiquidation(receiver).receiveTradeExecutionResultFunds(id, balance);
 
         // move leftover sell token balance of this contract to vault, by approving the vault to transfer the funds
         balance = IERC20(order.sellToken).balanceOf(address(this));

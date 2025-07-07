@@ -46,6 +46,12 @@ contract AssetFactory is IAssetFactory, OwnableUpgradeable, UUPSUpgradeable {
         _disableInitializers();
     }
 
+    /**
+     * @notice generates a variant string for a given base symbol and id
+     * @param baseSymbol The base symbol to which the variant number will be appended.
+     * @param id The unique identifier used to determine the variant number.
+     * @return variant The generated variant string.
+     */
     function _generateVariant(string memory baseSymbol, Id id) internal returns (string memory variant) {
         bytes32 hash = keccak256(abi.encodePacked(baseSymbol));
 
@@ -57,7 +63,14 @@ contract AssetFactory is IAssetFactory, OwnableUpgradeable, UUPSUpgradeable {
         variant = string.concat(baseSymbol, "-", Strings.toString(variantUint));
     }
 
-    // will generate symbol such as wstETH03CT-1
+    /**
+     * @dev will generate symbol such as wstETH03CT-1.
+     * @param pa The address of the Pegged Asset(PA) token.
+     * @param expiry The expiry date in Unix timestamp format.
+     * @param prefix The prefix to be added to the symbol.
+     * @param id The identifier used to generate the variant.
+     * @return symbol The generated symbol with the variant.
+     */
     function _generateSymbolWithVariant(address pa, uint256 expiry, string memory prefix, Id id)
         internal
         returns (string memory symbol)
@@ -92,6 +105,15 @@ contract AssetFactory is IAssetFactory, OwnableUpgradeable, UUPSUpgradeable {
         _;
     }
 
+    /**
+     * @notice Retrieves the address of the liquidity vault (LV) for a given pair and parameters.
+     * @param _ra The address of the Redemption Asset(RA) token.
+     * @param _pa The address of the Pegged Asset(PA) token.
+     * @param initialArp The initial annualized return percentage value.
+     * @param expiryInterval The expiry interval for the given pair market.
+     * @param exchangeRateProvider The address of the exchange rate provider.
+     * @return The address of the liquidity vault corresponding to the given parameters.
+     */
     function getLv(address _ra, address _pa, uint256 initialArp, uint256 expiryInterval, address exchangeRateProvider)
         external
         view
@@ -189,6 +211,13 @@ contract AssetFactory is IAssetFactory, OwnableUpgradeable, UUPSUpgradeable {
         }
     }
 
+    /**
+     * @notice Deploys new swap assets based on the provided parameters.
+     * @dev This function deploys two new Asset contracts and registers them as a swap pair. Only the ModuleCore contract can call this function.
+     * @param params The parameters required to deploy the swap assets.
+     * @return ct The address of the first deployed Cover Token contract.
+     * @return ds The address of the second deployed Depeg-Swap token contract.
+     */
     function deploySwapAssets(DeployParams calldata params)
         external
         override
@@ -248,9 +277,13 @@ contract AssetFactory is IAssetFactory, OwnableUpgradeable, UUPSUpgradeable {
 
     /**
      * @notice deploys new LV Assets for given RA & PA
+     * @dev Only the ModuleCore contract can call this function.
      * @param _ra Address of RA
      * @param _pa Address of PA
      * @param _owner Address of asset owners
+     * @param _initialArp Initial Annualized Return Percentage value
+     * @param _expiryInterval Expiry interval for the given pair market
+     * @param _exchangeRateProvider Address of the exchange rate provider contract
      * @return lv new LV contract address
      */
     function deployLv(
@@ -284,6 +317,11 @@ contract AssetFactory is IAssetFactory, OwnableUpgradeable, UUPSUpgradeable {
     // solhint-disable-next-line no-empty-blocks
     function _authorizeUpgrade(address newImplementation) internal override onlyOwner {}
 
+    /**
+     * @notice Sets the ModuleCore contract address for the factory contract.
+     * @dev Only the owner of the factory contract can call this function.
+     * @param _moduleCore The address of the ModuleCore contract.
+     */
     function setModuleCore(address _moduleCore) external onlyOwner {
         if (_moduleCore == address(0)) {
             revert ZeroAddress();
