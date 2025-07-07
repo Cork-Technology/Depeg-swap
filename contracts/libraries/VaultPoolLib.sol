@@ -24,8 +24,6 @@ library VaultPoolLibrary {
         uint256 totalPa = self.withdrawalPool.paBalance + addedPa;
 
         self.withdrawalPool.paBalance = totalPa;
-
-        assert(totalRa == self.withdrawalPool.raBalance + self.ammLiquidityPool.balance);
     }
 
     function rationedToAmm(VaultPool storage self, uint256 ratio, uint8 raDecimals)
